@@ -106,7 +106,7 @@ data ChatConfig = ChatConfig
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     inlineFiles :: InlineFilesConfig,
-    xftpSendFiles :: Bool,
+    xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -169,6 +169,7 @@ data ChatController = ChatController
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
+    userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     logFilePath :: Maybe FilePath
   }
 
@@ -616,6 +617,19 @@ instance ToJSON ComposedMessage where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data XFTPFileConfig = XFTPFileConfig
+  { minFileSize :: Integer,
+    tempDirectory :: Maybe FilePath
+  }
+  deriving (Show, Generic, FromJSON)
+
+defaultXFTPFileConfig :: XFTPFileConfig
+defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0, tempDirectory = Nothing}
+
+instance ToJSON XFTPFileConfig where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
 data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
   deriving (Show, Generic)
 
@@ -677,8 +691,8 @@ data CoreVersionInfo = CoreVersionInfo
 instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data SendFileMode
-  = SendFileSMP {fileChunkSize :: Integer, fileInline :: Maybe InlineFileMode}
-  | SendFileXFTP
+  = SendFileSMP (Maybe InlineFileMode)
+  | SendFileXFTP XFTPFileConfig
   deriving (Show, Generic)
 
 data ChatError

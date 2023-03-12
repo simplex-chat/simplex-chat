@@ -106,7 +106,7 @@ defaultChatConfig =
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
       inlineFiles = defaultInlineFilesConfig,
-      xftpSendFiles = False,
+      xftpFileConfig = Nothing,
       logLevel = CLLImportant,
       subscriptionEvents = False,
       hostEvents = False,
@@ -166,7 +166,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   cleanupManagerAsync <- newTVarIO Nothing
   timedItemThreads <- atomically TM.empty
   showLiveItems <- newTVarIO False
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, logFilePath = logFile}
+  userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -399,17 +400,18 @@ processChatCommand = \case
         setupSndFileTransfer ct = forM file_ $ \file -> do
           (fileSize, fileMode) <- checkSndFile mc file 1
           case fileMode of
-            SendFileSMP chSize fileInline -> smpSndFileTransfer file fileSize chSize fileInline
-            SendFileXFTP -> xftpSndFileTransfer user file fileSize 1 $ Left ct
+            SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
+            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg 1 $ Left ct
           where
-            smpSndFileTransfer :: FilePath -> Integer -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-            smpSndFileTransfer file fileSize chSize fileInline = do
+            smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+            smpSndFileTransfer file fileSize fileInline = do
               (agentConnId_, fileConnReq) <-
                 if isJust fileInline
                   then pure (Nothing, Nothing)
                   else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing)
               let fileName = takeFileName file
                   fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
+              chSize <- asks $ fileChunkSize . config
               withStore' $ \db -> do
                 ft@FileTransferMeta {fileId} <- createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
                 fileStatus <- case fileInline of
@@ -453,16 +455,17 @@ processChatCommand = \case
       where
         setupSndFileTransfer :: GroupInfo -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer gInfo n = forM file_ $ \file -> do
-          (fileSize, fileMode) <- checkSndFile mc file 1
+          (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
           case fileMode of
-            SendFileSMP chSize fileInline -> smpSndFileTransfer file fileSize chSize fileInline
-            SendFileXFTP -> xftpSndFileTransfer user file fileSize n $ Right gInfo
+            SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
+            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg n $ Right gInfo
           where
-            smpSndFileTransfer :: FilePath -> Integer -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-            smpSndFileTransfer file fileSize chSize fileInline = do
+            smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+            smpSndFileTransfer file fileSize fileInline = do
               let fileName = takeFileName file
                   fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescr = Nothing}
                   fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer 0 1 else CIFSSndStored
+              chSize <- asks $ fileChunkSize . config
               withStore' $ \db -> do
                 ft@FileTransferMeta {fileId} <- createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
                 let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus}
@@ -520,15 +523,14 @@ processChatCommand = \case
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
           qTextOrFile = if T.null qText then qFileName else qText
-      xftpSndFileTransfer :: User -> FilePath -> Integer -> Int -> Either Contact GroupInfo -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-      xftpSndFileTransfer user file fileSize n contactOrGroup = do
-        -- TODO put temp folder to config?
+      xftpSndFileTransfer :: User -> FilePath -> Integer -> XFTPFileConfig -> Int -> Either Contact GroupInfo -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+      xftpSndFileTransfer user file fileSize XFTPFileConfig {tempDirectory} n contactOrGroup = do
         let fileName = takeFileName file
-            fileInvitation = xftpFileInvitation fileName fileSize
-        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) n "." file
-        ft@FileTransferMeta {fileId} <- withStore' $ \db -> createFileTransferXFTP db user contactOrGroup file fileInvitation $ AgentSndFileId aFileId
+            fInv = xftpFileInvitation fileName fileSize
+        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) file n tempDirectory
+        ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv $ AgentSndFileId aFileId
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
-        pure (fileInvitation, ciFile, ft)
+        pure (fInv, ciFile, ft)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
@@ -1467,11 +1469,16 @@ processChatCommand = \case
     checkSndFile mc f n = do
       fsFilePath <- toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
-      ChatConfig {fileChunkSize, inlineFiles, xftpSendFiles} <- asks config
+      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      xftpCfg <- readTVarIO =<< asks userXFTPFileConfig
       fileSize <- getFileSize fsFilePath
       let chunks = - ((- fileSize) `div` fileChunkSize)
           fileInline = inlineFileMode mc inlineFiles chunks n
-          fileMode = if fileInline == Just IFMSent || not xftpSendFiles then SendFileSMP {fileChunkSize, fileInline} else SendFileXFTP
+          fileMode = case xftpCfg of
+            Just cfg
+              | fileInline == Just IFMSent || fileSize < minFileSize cfg -> SendFileSMP fileInline
+              | otherwise -> SendFileXFTP cfg
+            _ -> SendFileSMP fileInline
       pure (fileSize, fileMode)
     inlineFileMode mc InlineFilesConfig {offerChunks, sendChunks, totalSendChunks} chunks n
       | chunks > offerChunks = Nothing

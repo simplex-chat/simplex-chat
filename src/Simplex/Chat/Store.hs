@@ -155,7 +155,7 @@ module Simplex.Chat.Store
     updateSndDirectFTDelivery,
     updateSndGroupFTDelivery,
     getSndInlineFTViaMsgDelivery,
-    createFileTransferXFTP,
+    createSndFileTransferXFTP,
     getAgentSndFileXFTP,
     getAgentRcvFileXFTP,
     updateFileCancelled,
@@ -2723,9 +2723,21 @@ getSndInlineFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} a
       (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName = n, connId, agentConnId})
         <$> (contactName_ <|> memberName_)
 
--- TODO create record only in files table, not in snd_files
-createFileTransferXFTP :: DB.Connection -> User -> Either Contact GroupInfo -> FilePath -> FileInvitation -> AgentSndFileId -> IO FileTransferMeta
-createFileTransferXFTP _db _user _ctOrGroup _file _fileInvitation _agentFileId = undefined
+createSndFileTransferXFTP :: DB.Connection -> User -> Either Contact GroupInfo -> FilePath -> FileInvitation -> AgentSndFileId -> IO FileTransferMeta
+createSndFileTransferXFTP db User {userId} ctOrGroup filePath FileInvitation {fileName, fileSize} agentSndFileId = do
+  currentTs <- getCurrentTime
+  let chunkSize = 0
+      xftpSndFile = Just XFTPSndFile {agentSndFileId, sndFileDescr = Nothing}
+  DB.execute
+    db
+    "INSERT INTO files (user_id, contact_id, group_id, file_name, file_path, file_size, chunk_size, agent_snd_file_id, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+    ((userId, ctId, gId) :. (fileName, filePath, fileSize, chunkSize, agentSndFileId, CIFSSndStored, currentTs, currentTs))
+  fileId <- insertedRowId db
+  pure FileTransferMeta {fileId, xftpSndFile, fileName, filePath, fileSize, fileInline = Nothing, chunkSize, cancelled = False}
+  where
+    (ctId, gId) = case ctOrGroup of
+      Left Contact {contactId} -> (Just contactId, Nothing)
+      Right GroupInfo {groupId} -> (Nothing, Just groupId)
 
 getAgentSndFileXFTP :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferMeta
 getAgentSndFileXFTP _db _user _aFileId = undefined
