@@ -3427,6 +3427,31 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">\~刪除線~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve" approved="no">
+        <source>Different names, avatars and transport isolation.</source>
+        <target state="translated">不同的名稱、頭像和傳輸隔離。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Thanks to the users – contribute via Weblate!" xml:space="preserve" approved="no">
+        <source>Thanks to the users – contribute via Weblate!</source>
+        <target state="translated">感謝用戶使用 Weblate 貢獻翻譯！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve" approved="no">
+        <source>To protect timezone, image/voice files use UTC.</source>
+        <target state="translated">為隱藏時區資料，圖片及聲音檔案會以 UTC 時區記錄。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open user profiles" xml:space="preserve" approved="no">
+        <source>Open user profiles</source>
+        <target state="translated">打開用戶個人資料</target>
+        <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve" approved="no">
+        <source>You already have a chat profile with the same display name. Please choose another name.</source>
+        <target state="translated">你所選用的新個人檔案顯示名稱和現有的其中一個個人檔案相同。請選擇其他名稱。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="zh-Hant" datatype="plaintext">
