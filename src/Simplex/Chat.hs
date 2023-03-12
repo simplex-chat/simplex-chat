@@ -381,9 +381,9 @@ processChatCommand = \case
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         else do
-          (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
+          (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
           timed_ <- sndContactCITimed live ct
-          (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ timed_
+          (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_
           (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
           case ft_ of
             Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
@@ -418,8 +418,8 @@ processChatCommand = \case
                 let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus}
                 pure (fileInvitation, ciFile, ft)
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> m (MsgContainer, Maybe (CIQuote 'CTDirect))
-        prepareMsg fileInvitation_ timed_ = case quotedItemId_ of
-          Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Nothing)
+        prepareMsg fInv_ timed_ = case quotedItemId_ of
+          Nothing -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
           Just quotedItemId -> do
             CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
               withStore $ \db -> getDirectChatItem db user chatId quotedItemId
@@ -427,7 +427,7 @@ processChatCommand = \case
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                 qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
+            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
           where
             quoteData :: ChatItem c d -> m (MsgContent, CIQDirection 'CTDirect, Bool)
             quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidQuote
@@ -440,9 +440,9 @@ processChatCommand = \case
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
         else do
-          (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
+          (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo
-          (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ timed_ membership
+          (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
           ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
@@ -478,8 +478,8 @@ processChatCommand = \case
                 sendMemberFileInline m conn ft sharedMsgId
             processMember _ = pure ()
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> GroupMember -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
-        prepareMsg fileInvitation_ timed_ membership = case quotedItemId_ of
-          Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Nothing)
+        prepareMsg fInv_ timed_ membership = case quotedItemId_ of
+          Nothing -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
           Just quotedItemId -> do
             CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
               withStore $ \db -> getGroupChatItem db user chatId quotedItemId
@@ -487,7 +487,7 @@ processChatCommand = \case
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                 qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
+            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
           where
             quoteData :: ChatItem c d -> GroupMember -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
             quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwChatError CEInvalidQuote
@@ -525,8 +525,8 @@ processChatCommand = \case
         -- TODO put temp folder to config?
         let fileName = takeFileName file
             fileInvitation = xftpFileInvitation fileName fileSize
-        agentFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) n "." file
-        ft@FileTransferMeta {fileId} <- withStore' $ \db -> createFileTransferXFTP db user contactOrGroup file fileInvitation agentFileId
+        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) n "." file
+        ft@FileTransferMeta {fileId} <- withStore' $ \db -> createFileTransferXFTP db user contactOrGroup file fileInvitation $ AgentSndFileId aFileId
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
         pure (fileInvitation, ciFile, ft)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
@@ -1735,18 +1735,22 @@ toFSFilePath f =
   maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, rcvFileDescription, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
-  case fileConnReq of
+  case (rcvFileDescription, fileConnReq) of
     -- direct file protocol
-    Just connReq -> do
+    (Nothing, Just connReq) -> do
       connIds <- joinAgentConnectionAsync user True connReq . directMessage $ XFileAcpt fName
       filePath <- getRcvFilePath fileId filePath_ fName
       withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
     -- group & direct file protocol
-    Nothing -> do
+    (Just _fd, _) -> do
+      -- check if file description is fully received, error otherwise
+      -- pass file description to the agent and save AgentRcvFileId
+      throwChatError $ CEFileInternal "XFTP file receiption not implemented"
+    _ -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
         (ChatRef CTDirect contactId, Nothing) -> do
@@ -2130,7 +2134,7 @@ processAgentMsgSndFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      _sndFile <- withStore (\db -> getAgentSndFileXFTP db user $ AgentSndFileId aFileId)
+      _ft@FileTransferMeta {fileId} <- withStore (\db -> getAgentSndFileXFTP db user $ AgentSndFileId aFileId)
       --  >>= updateConnStatus
       -- load file transfer meta (add chat item status to type and also contact/group)
       case msg of
@@ -2138,10 +2142,31 @@ processAgentMsgSndFile _corrId aFileId msg =
           -- update chat item status
           -- send status to view
           pure ()
-        SFDONE _rcvDescr _sndDescr -> do
-          -- update chat item status
-          -- send descriptions to the recipients in XMsgFileDescr
-          -- send status to view
+        SFDONE _sndDescr rds -> do
+          AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}} <-
+            withStore $ \db -> getChatItemByFileId db user fileId
+          case (msgId_, itemDeleted) of
+            (Just msgId, Nothing) -> case (rds, d, cInfo) of
+              (fd : _, SMDSnd, DirectChat ct) -> do
+                -- store file description and file to snd_files
+                -- TODO send multiple parts, as needed
+                let fileDescr = FileDescr {fileDescrText = safeDecodeUtf8 (strEncode fd), fileDescrPartNo = 0, fileDescrComplete = True}
+                void $ sendDirectContactMessage ct $ XMsgFileDescr {msgId, fileDescr}
+                -- update chat item file status (CIFileStatus)
+                -- update sent file status
+                -- ??? possibly another event as we need one event per group, not per member
+                -- toView $ CRSndFileComplete user ci ft
+                pure ()
+              (_, SMDSnd, GroupChat _g) -> do
+                -- store file descriptions and files to snd_files
+                -- send messages with descriptions to the recipients
+                -- update chat item file status (CIFileStatus)
+                -- update sent file status
+                -- ??? possibly another event as we need one event per group, not per member
+                -- toView $ CRSndFileComplete user ci ft
+                pure ()
+              _ -> pure () -- TODO error
+            _ -> pure () -- TODO error
           pure ()
 
 processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> m ()
@@ -2807,7 +2832,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     newContentMessage ct@Contact {localDisplayName = c, contactUsed, chatSettings} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      let ExtMsgContent content fileInvitation_ _ _ = mcExtMsgContent mc
+      let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
       if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
@@ -2816,7 +2841,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           let ExtMsgContent _ _ itemTTL live_ = mcExtMsgContent mc
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
-          ciFile_ <- processFileInvitation fileInvitation_ content $ \db -> createRcvFileTransfer db userId ct
+          ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_ timed_ live
           when (enableNtfs chatSettings) $ do
             showMsgToast (c <> "> ") content formattedText
@@ -3012,8 +3037,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       setActive $ ActiveG g
 
     receiveInlineMode :: FileInvitation -> Maybe MsgContent -> Integer -> m (Maybe InlineFileMode)
-    receiveInlineMode FileInvitation {fileSize, fileInline} mc_ chSize = case fileInline of
-      Just mode -> do
+    receiveInlineMode FileInvitation {fileSize, fileInline, fileDescr} mc_ chSize = case (fileInline, fileDescr) of
+      (Just mode, Nothing) -> do
         InlineFilesConfig {receiveChunks, receiveInstant} <- asks $ inlineFiles . config
         pure $ if fileSize <= receiveChunks * chSize then inline' receiveInstant else Nothing
         where

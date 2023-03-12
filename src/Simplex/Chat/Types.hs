@@ -1483,7 +1483,7 @@ instance ToJSON FileInvitation where
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
-data FileDescr = FileDescr {fdText :: Text, fdPartNo :: Int, fdComplete :: Bool}
+data FileDescr = FileDescr {fileDescrText :: Text, fileDescrPartNo :: Int, fileDescrComplete :: Bool}
   deriving (Eq, Show, Generic)
 
 instance ToJSON FileDescr where
@@ -1501,7 +1501,7 @@ xftpFileInvitation fileName fileSize =
       fileDigest = Nothing,
       fileConnReq = Nothing,
       fileInline = Nothing,
-      fileDescr = Just FileDescr {fdText = "", fdPartNo = 0, fdComplete = False}
+      fileDescr = Just FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
     }
 
 data InlineFileMode
@@ -1546,9 +1546,9 @@ instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.default
 
 data RcvFileDescr = RcvFileDescr
   { fileDescrId :: Int64,
-    fileDescrStatus :: RcvFileStatus,
     fileDescrText :: Text,
-    chunkSize :: Integer
+    fileDescrPartNo :: Int,
+    fileDescrComplete :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -1662,6 +1662,7 @@ instance ToJSON FileTransfer where
 
 data FileTransferMeta = FileTransferMeta
   { fileId :: FileTransferId,
+    xftpSndFile :: Maybe XFTPSndFile,
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,
@@ -1672,6 +1673,14 @@ data FileTransferMeta = FileTransferMeta
   deriving (Eq, Show, Generic)
 
 instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaultOptions
+
+data XFTPSndFile = XFTPSndFile
+  { agentSndFileId :: AgentSndFileId,
+    sndFileDescr :: Maybe Text
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON XFTPSndFile where toEncoding = J.genericToEncoding J.defaultOptions
 
 fileTransferCancelled :: FileTransfer -> Bool
 fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled

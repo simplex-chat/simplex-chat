@@ -193,7 +193,9 @@ CREATE TABLE files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   cancelled INTEGER,
   ci_file_status TEXT,
-  file_inline TEXT
+  file_inline TEXT,
+  agent_snd_file_id BLOB NULL,
+  private_snd_file_descr TEXT NULL
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -215,7 +217,10 @@ CREATE TABLE rcv_files(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   rcv_file_inline TEXT,
-  file_inline TEXT
+  file_inline TEXT,
+  file_descr_id INTEGER NULL
+  REFERENCES xftp_file_descriptions ON DELETE SET NULL,
+  agent_rcv_file_id BLOB NULL
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
@@ -551,3 +556,19 @@ CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
 CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON chat_items(
   item_deleted_by_group_member_id
 );
+CREATE TABLE xftp_file_descriptions(
+  file_descr_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  file_descr_text TEXT NOT NULL,
+  file_descr_part_no INTEGER NOT NULL DEFAULT(0),
+  file_descr_complete INTEGER NOT NULL DEFAULT(0),
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE xftp_snd_files(
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  file_descr_id INTEGER NOT NULL REFERENCES xftp_file_descriptions ON DELETE RESTRICT,
+  created_at TEXT CHECK(created_at NOT NULL),
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  PRIMARY KEY(file_id, group_member_id)
+) WITHOUT ROWID;
