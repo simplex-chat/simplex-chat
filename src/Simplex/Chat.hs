@@ -2161,12 +2161,13 @@ processAgentMsgSndFile _corrId aFileId msg =
           -- send status to view
           pure ()
         SFDONE _sndDescr rfds -> do
-          AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}} <-
+          ci@(AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
             withStore $ \db -> getChatItemByFileId db user fileId
           case (msgId_, itemDeleted) of
             (Just sharedMsgId, Nothing) -> do
-              sfts <- withStore $ \db -> getSndFileTransfers db user fileId
-              when (length sfts < length rfds) $ pure () -- TODO error
+              (ft, sfts) <- withStore $ \db -> getSndFileTransfer db user fileId
+              when (length sfts < length rfds) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
+              toView $ CRSndFileProgressXFTP user ci ft 1 1
               case (rfds, sfts, d, cInfo) of
                 (rfd : _, sft : _, SMDSnd, DirectChat ct) ->
                   sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
@@ -2187,37 +2188,8 @@ processAgentMsgSndFile _corrId aFileId msg =
                     sendToMember (rfd, (conn, sft)) =
                       sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
                 _ -> pure ()
-
-            -- TODO update chat item status to show 100% progress
-
-            -- case (rfds, d, cInfo) of
-            -- (rfd : _, SMDSnd, DirectChat ct) -> do
-            --   let rfdText = safeDecodeUtf8 $ strEncode rfd
-            --   withStore' $ \db -> createSndDirectFTDescrXFTP db user ct ft rfdText
-            --   sendDirectFileDescription ct rfdText ft sharedMsgId
-            -- (rfds, SMDSnd, GroupChat g) -> do
-            --   ms <- withStore' $ \db -> getGroupMembers db user g
-            --   let mds = zipWith ms $ cycle $ map (safeDecodeUtf8 . strEncode) rfds
-            --   let rfdTexts =
-            --   sendDirectFileDescription ct rfdText ft sharedMsgId
-            -- store file descriptions and files to snd_files
-            -- send messages with descriptions to the recipients
-            -- update chat item file status (CIFileStatus)
-            -- update sent file status
-            -- ??? possibly another event as we need one event per group, not per member
-            -- toView $ CRSndFileComplete user ci ft
-            _ -> pure () -- TODO error
-          pure ()
+            _ -> pure () -- TODO error?
       where
-        -- sendDirectFileDescription :: Contact -> Text -> FileTransferMeta -> SharedMsgId -> m ()
-        -- sendDirectFileDescription ct rfd ft sharedMsgId = do
-        --   msgDeliveryId <- sendFileDescription_ rfd sharedMsgId $ sendDirectContactMessage ct
-        --   withStore' $ \db -> updateSndDirectFTDelivery db ct ft msgDeliveryId
-
-        -- sendMemberFileDescription :: GroupMember -> Connection -> Text -> FileTransferMeta -> SharedMsgId -> m ()
-        -- sendMemberFileDescription m@GroupMember {groupId} conn rfd ft sharedMsgId = do
-        --   msgDeliveryId <- sendFileDescription_ rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
-        --   withStore' $ \db -> updateSndGroupFTDelivery db m conn ft msgDeliveryId
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m ()
         sendFileDescription sft rfd msgId sendMsg = do
           let rfdText = safeDecodeUtf8 $ strEncode rfd

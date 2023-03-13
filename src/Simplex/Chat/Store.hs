@@ -2757,7 +2757,7 @@ createSndFTDescrXFTP db User {userId} m Connection {connId} FileTransferMeta {fi
     (fileId, fileStatus, fileDescrId, groupMemberId' <$> m, connId)
 
 updateSndFTDescrXFTP :: DB.Connection -> User -> SndFileTransfer -> Text -> IO ()
-updateSndFTDescrXFTP db User {userId} SndFileTransfer {connId, fileId, fileDescrId} rfdText = do
+updateSndFTDescrXFTP db user@User {userId} sft@SndFileTransfer {fileId, fileDescrId} rfdText = do
   DB.execute
     db
     [sql|
@@ -2766,10 +2766,8 @@ updateSndFTDescrXFTP db User {userId} SndFileTransfer {connId, fileId, fileDescr
       WHERE user_id = ? AND file_descr_id = ?
     |]
     (rfdText, 1 :: Int, True, userId, fileDescrId)
-  DB.execute
-    db
-    "UPDATE snd_files SET file_status = ? WHERE connection_id = ? AND file_id = ? AND file_descr_id = ?"
-    (FSConnected, connId, fileId, fileDescrId)
+  updateCIFileStatus db user fileId $ CIFSSndTransfer 1 1
+  updateSndFileStatus db sft FSConnected
 
 updateSndFTDeliveryXFTP :: DB.Connection -> SndFileTransfer -> Int64 -> IO ()
 updateSndFTDeliveryXFTP db SndFileTransfer {connId, fileId, fileDescrId} msgDeliveryId =
