@@ -239,7 +239,11 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func answerCall(invitation: RcvCallInvitation) {
-        callManager.answerIncomingCall(invitation: invitation)
+        if CallController.useCallKit(), let callUUID = invitation.callkitUUID {
+            requestTransaction(with: CXAnswerCallAction(call: callUUID))
+        } else {
+            callManager.answerIncomingCall(invitation: invitation)
+        }
         if invitation.contact.id == self.activeCallInvitation?.contact.id {
             self.activeCallInvitation = nil
         }
