@@ -134,13 +134,13 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     }
 
-    // This will be needed when we have notification service extension
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
         if type == .voIP {
             if (!ChatModel.shared.chatInitialized) {
                 initChatAndMigrate()
-                startChatAndActivate()
                 CallController.shared.onEndCall = { terminateChat() }
+                // CallKit will be called from different place, see SimpleXAPI.startChat()
+                return
             } else {
                 startChatAndActivate()
                 CallController.shared.onEndCall = {
