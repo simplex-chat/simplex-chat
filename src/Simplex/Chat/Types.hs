@@ -49,7 +49,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import GHC.Records.Compat
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..))
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolTypeI)
@@ -125,8 +125,6 @@ data UserInfo = UserInfo
 instance ToJSON UserInfo where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
-
-type UserId = Int64
 
 type ContactId = Int64
 
@@ -288,6 +286,13 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
+
+data ContactOrGroup = CGContact Contact | CGGroup GroupInfo
+
+contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
+contactAndGroupIds = \case
+  CGContact Contact {contactId} -> (Just contactId, Nothing)
+  CGGroup GroupInfo {groupId} -> (Nothing, Just groupId)
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
@@ -1457,6 +1462,7 @@ data SndFileTransfer = SndFileTransfer
     connId :: Int64,
     agentConnId :: AgentConnId,
     fileStatus :: FileStatus,
+    fileDescrId :: Maybe Int64,
     fileInline :: Maybe InlineFileMode
   }
   deriving (Eq, Show, Generic)
@@ -1485,18 +1491,26 @@ instance ToJSON FileInvitation where
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
-data FileDescr
-  = FDText {fileDescrText :: Text}
-  | FDInline {fileDescrSize :: Integer, fileDescrInline :: InlineFileMode}
-  | FDPending
+data FileDescr = FileDescr {fileDescrText :: Text, fileDescrPartNo :: Int, fileDescrComplete :: Bool}
   deriving (Eq, Show, Generic)
 
 instance ToJSON FileDescr where
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "FD"
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "FD"
+  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions
 
 instance FromJSON FileDescr where
   parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
+
+xftpFileInvitation :: FilePath -> Integer -> FileInvitation
+xftpFileInvitation fileName fileSize =
+  FileInvitation
+    { fileName,
+      fileSize,
+      fileDigest = Nothing,
+      fileConnReq = Nothing,
+      fileInline = Nothing,
+      fileDescr = Just FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+    }
 
 data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted
@@ -1540,9 +1554,9 @@ instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.default
 
 data RcvFileDescr = RcvFileDescr
   { fileDescrId :: Int64,
-    fileDescrStatus :: RcvFileStatus,
     fileDescrText :: Text,
-    chunkSize :: Integer
+    fileDescrPartNo :: Int,
+    fileDescrComplete :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -1594,6 +1608,38 @@ instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
 
 instance ToField AgentConnId where toField (AgentConnId m) = toField m
 
+newtype AgentSndFileId = AgentSndFileId ConnId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentSndFileId where
+  strEncode (AgentSndFileId connId) = strEncode connId
+  strDecode s = AgentSndFileId <$> strDecode s
+  strP = AgentSndFileId <$> strP
+
+instance ToJSON AgentSndFileId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromField f
+
+instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
+
+newtype AgentRcvFileId = AgentRcvFileId ConnId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentRcvFileId where
+  strEncode (AgentRcvFileId connId) = strEncode connId
+  strDecode s = AgentRcvFileId <$> strDecode s
+  strP = AgentRcvFileId <$> strP
+
+instance ToJSON AgentRcvFileId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentRcvFileId where fromField f = AgentRcvFileId <$> fromField f
+
+instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField m
+
 newtype AgentInvId = AgentInvId InvitationId
   deriving (Eq, Show)
 
@@ -1624,6 +1670,7 @@ instance ToJSON FileTransfer where
 
 data FileTransferMeta = FileTransferMeta
   { fileId :: FileTransferId,
+    xftpSndFile :: Maybe XFTPSndFile,
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,
@@ -1635,10 +1682,19 @@ data FileTransferMeta = FileTransferMeta
 
 instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaultOptions
 
+data XFTPSndFile = XFTPSndFile
+  { agentSndFileId :: AgentSndFileId,
+    privateSndFileDescr :: Maybe Text
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON XFTPSndFile where toEncoding = J.genericToEncoding J.defaultOptions
+
 fileTransferCancelled :: FileTransfer -> Bool
 fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
 fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
 
+-- For XFTP file transfers FSConnected means "uploaded to XFTP relays"
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ textDecode

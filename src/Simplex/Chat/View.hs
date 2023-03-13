@@ -130,6 +130,9 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
+  CRRcvFileDescrReady _ _ -> []
+  CRRcvFileDescrNotReady _ _ -> []
+  CRRcvFileProgressXFTP _ _ _ _ -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndGroupFileCancelled u _ ftm fts -> ttyUser u $ viewSndGroupFileCancelled ftm fts
@@ -147,6 +150,10 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
+  CRSndFileStartXFTP _ _ _ -> []
+  CRSndFileProgressXFTP _ _ _ _ _ -> []
+  CRSndFileCompleteXFTP _ _ _ -> []
+  CRSndFileCancelledXFTP _ _ _ -> []
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting u _ -> ttyUser u []
@@ -1007,7 +1014,7 @@ viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts = case filePa
   where
     ttySentFile fPath = ["/f " <> to <> ttyFilePath fPath] <> cancelSending
     cancelSending = case fileStatus of
-      CIFSSndTransfer -> []
+      CIFSSndTransfer _ _ -> []
       _ -> ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
 sentWithTime_ :: CurrentTime -> [StyledString] -> CIMeta c d -> [StyledString]
@@ -1207,6 +1214,8 @@ viewChatError logLevel = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
+    CENoSndFileUser aFileId -> ["error: snd file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
+    CENoRcvFileUser aFileId -> ["error: rcv file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
     CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]

@@ -105,7 +105,9 @@ data ChatConfig = ChatConfig
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
+    xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
+    xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -168,6 +170,7 @@ data ChatController = ChatController
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
+    userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     logFilePath :: Maybe FilePath
   }
 
@@ -421,9 +424,12 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
+  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
   | CRRcvFileStart {user :: User, chatItem :: AChatItem}
+  | CRRcvFileProgressXFTP {user :: User, chatItem :: AChatItem, receivedChunks :: Int, totalChunks :: Int}
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
   | CRRcvFileCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
@@ -432,6 +438,10 @@ data ChatResponse
   | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileProgressXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sentChunks :: Int, totalChunks :: Int}
+  | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
@@ -608,6 +618,19 @@ instance ToJSON ComposedMessage where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data XFTPFileConfig = XFTPFileConfig
+  { minFileSize :: Integer,
+    tempDirectory :: Maybe FilePath
+  }
+  deriving (Show, Generic, FromJSON)
+
+defaultXFTPFileConfig :: XFTPFileConfig
+defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0, tempDirectory = Nothing}
+
+instance ToJSON XFTPFileConfig where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
 data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
   deriving (Show, Generic)
 
@@ -668,6 +691,11 @@ data CoreVersionInfo = CoreVersionInfo
 
 instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
+data SendFileMode
+  = SendFileSMP (Maybe InlineFileMode)
+  | SendFileXFTP XFTPFileConfig
+  deriving (Show, Generic)
+
 data ChatError
   = ChatError {errorType :: ChatErrorType}
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
@@ -682,6 +710,8 @@ instance ToJSON ChatError where
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
+  | CENoSndFileUser {agentSndFileId :: AgentSndFileId}
+  | CENoRcvFileUser {agentRcvFileId :: AgentRcvFileId}
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
