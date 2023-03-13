@@ -2899,54 +2899,40 @@ deleteSndFileChunks db SndFileTransfer {fileId, connId} =
   DB.execute db "DELETE FROM snd_file_chunks WHERE file_id = ? AND connection_id = ?" (fileId, connId)
 
 createRcvFileTransfer :: DB.Connection -> UserId -> Contact -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
-createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = ExceptT $ do
+createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
   currentTs <- liftIO getCurrentTime
-  DB.execute
-    db
-    "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (userId, contactId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
-  fileId <- insertedRowId db
-  case fileDescr of
-    Just fd -> runExceptT $ do
-      rfd <- createRcvFD_ db userId fd
-      let rfdId = (fileDescrId :: RcvFileDescr -> Int64) rfd
-      liftIO $
-        DB.execute
-          db
-          "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-          (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
-      pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = Just rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
-    Nothing -> do
-      DB.execute
-        db
-        "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-        (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, currentTs, currentTs)
-      pure $ Right RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
+  fileId <- liftIO $ do
+    DB.execute
+      db
+      "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
+    insertedRowId db
+  rfd <- mapM (createRcvFD_ db userId) fileDescr
+  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd
+  liftIO $
+    DB.execute
+      db
+      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
+  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
 
 createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupMember -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
-createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = ExceptT $ do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
-  fileId <- insertedRowId db
-  case fileDescr of
-    Just fd -> runExceptT $ do
-      rfd <- createRcvFD_ db userId fd
-      let rfdId = (fileDescrId :: RcvFileDescr -> Int64) rfd
-      liftIO $
-        DB.execute
-          db
-          "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-          (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, rfdId, currentTs, currentTs)
-      pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = Just rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
-    Nothing -> do
-      DB.execute
-        db
-        "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-        (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, currentTs, currentTs)
-      pure $ Right RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
+createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
+  currentTs <- liftIO getCurrentTime
+  fileId <- liftIO $ do
+    DB.execute
+      db
+      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
+    insertedRowId db
+  rfd <- mapM (createRcvFD_ db userId) fileDescr
+  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd
+  liftIO $
+    DB.execute
+      db
+      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, rfdId, currentTs, currentTs)
+  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 createRcvFD_ :: DB.Connection -> UserId -> FileDescr -> ExceptT StoreError IO RcvFileDescr
 createRcvFD_ db userId FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
@@ -2960,25 +2946,24 @@ createRcvFD_ db userId FileDescr {fileDescrText, fileDescrPartNo, fileDescrCompl
   pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText, fileDescrComplete}
 
 appendRcvFD :: DB.Connection -> UserId -> FileTransferId -> FileDescr -> ExceptT StoreError IO RcvFileDescr
-appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = ExceptT $ do
-  currentTs <- getCurrentTime
-  getRcvFileDescrByFileId_ db fileId >>= \case
-    Nothing -> runExceptT $ do
-      rfd <- createRcvFD_ db userId fd
-      let rfdId = (fileDescrId :: RcvFileDescr -> Int64) rfd
+appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
+  currentTs <- liftIO getCurrentTime
+  liftIO (getRcvFileDescrByFileId_ db fileId) >>= \case
+    Nothing -> do
+      RcvFileDescr {fileDescrId} <- createRcvFD_ db userId fd
       liftIO $
         DB.execute
           db
           "UPDATE rcv_files SET file_descr_id = ?, updated_at = ? WHERE file_id = ?"
-          (rfdId, currentTs, fileId)
-      pure RcvFileDescr {fileDescrId = rfdId, fileDescrPartNo, fileDescrText, fileDescrComplete}
+          (fileDescrId, currentTs, fileId)
+      pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText, fileDescrComplete}
     Just
       RcvFileDescr
-        { fileDescrId = rfdId,
+        { fileDescrId,
           fileDescrText = rfdText,
           fileDescrPartNo = rfdPNo,
           fileDescrComplete = rfdComplete
-        } -> runExceptT $ do
+        } -> do
         when (fileDescrPartNo /= rfdPNo + 1 || rfdComplete) $ throwError SERcvFileInvalidDescrPart
         let fileDescrText' = rfdText <> fileDescrText
         liftIO $
@@ -2989,8 +2974,8 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
               SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?
               WHERE file_descr_id = ?
             |]
-            (fileDescrText', fileDescrPartNo, fileDescrComplete, rfdId)
-        pure RcvFileDescr {fileDescrId = rfdId, fileDescrPartNo, fileDescrText = fileDescrText', fileDescrComplete}
+            (fileDescrText', fileDescrPartNo, fileDescrComplete, fileDescrId)
+        pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText = fileDescrText', fileDescrComplete}
 
 getRcvFileDescrByFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe RcvFileDescr)
 getRcvFileDescrByFileId_ db fileId =

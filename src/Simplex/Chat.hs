@@ -171,7 +171,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   timedItemThreads <- atomically TM.empty
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, logFilePath = logFile}
+  tempDirectory <- newTVarIO Nothing
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -405,7 +406,7 @@ processChatCommand = \case
           (fileSize, fileMode) <- checkSndFile mc file 1
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg 1 $ CGContact ct
+            SendFileXFTP -> xftpSndFileTransfer user file fileSize 1 $ CGContact ct
           where
             smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer file fileSize fileInline = do
@@ -462,7 +463,7 @@ processChatCommand = \case
           (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg n $ CGGroup gInfo
+            SendFileXFTP -> xftpSndFileTransfer user file fileSize n $ CGGroup gInfo
           where
             smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer file fileSize fileInline = do
@@ -527,11 +528,12 @@ processChatCommand = \case
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
           qTextOrFile = if T.null qText then qFileName else qText
-      xftpSndFileTransfer :: User -> FilePath -> Integer -> XFTPFileConfig -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-      xftpSndFileTransfer user file fileSize XFTPFileConfig {tempDirectory} n contactOrGroup = do
+      xftpSndFileTransfer :: User -> FilePath -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+      xftpSndFileTransfer user file fileSize n contactOrGroup = do
         let fileName = takeFileName file
             fInv = xftpFileInvitation fileName fileSize
-        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) file n tempDirectory
+        tmp <- readTVarIO =<< asks tempDirectory
+        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) file n tmp
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv $ AgentSndFileId aFileId
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
         pure (fInv, ciFile, ft)
@@ -1481,7 +1483,7 @@ processChatCommand = \case
           fileMode = case xftpCfg of
             Just cfg
               | fileInline == Just IFMSent || fileSize < minFileSize cfg -> SendFileSMP fileInline
-              | otherwise -> SendFileXFTP cfg
+              | otherwise -> SendFileXFTP
             _ -> SendFileSMP fileInline
       pure (fileSize, fileMode)
     inlineFileMode mc InlineFilesConfig {offerChunks, sendChunks, totalSendChunks} chunks n
@@ -2893,20 +2895,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      xftpCfg <- readTVarIO =<< asks userXFTPFileConfig
-      case xftpCfg of
-        Nothing -> pure ()
-        Just XFTPFileConfig {tempDirectory} -> do
-          (rfd, _aci) <- withStore $ \db -> do
-            rfd <- appendRcvFD db userId fileId fileDescr
-            aci <- getChatItemByFileId db user fileId
-            -- ? re-create file item if it does not exist
-            pure (rfd, aci)
-          let RcvFileDescr {fileDescrText, fileDescrComplete} = rfd
-          when fileDescrComplete $ do
-            rd <- parseRcvFileDescription fileDescrText
-            aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd tempDirectory
-            withStore' $ \db -> updateRcvFileAgentId db fileId aFileId
+      (rfd, _aci) <- withStore $ \db -> do
+        rfd <- appendRcvFD db userId fileId fileDescr
+        aci <- getChatItemByFileId db user fileId
+        -- ? re-create file item if it does not exist
+        pure (rfd, aci)
+      let RcvFileDescr {fileDescrText, fileDescrComplete} = rfd
+      when fileDescrComplete $ do
+        rd <- parseRcvFileDescription fileDescrText
+        tmp <- readTVarIO =<< asks tempDirectory
+        aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd tmp
+        withStore' $ \db -> updateRcvFileAgentId db fileId aFileId
 
     cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
     cancelMessageFile ct _sharedMsgId msgMeta = do
