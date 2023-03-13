@@ -17,7 +17,7 @@ import WebRTC
 class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, ObservableObject {
     static let shared = CallController()
     static let isInChina = SKStorefront().countryCode == "CHN"
-    static func useCallKit() -> Bool { !isInChina && UserDefaults.standard.bool(forKey: GROUP_DEFAULT_CALL_KIT_ENABLED) }
+    static func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
     private let provider = CXProvider(configuration: {
         let configuration = CXProviderConfiguration()

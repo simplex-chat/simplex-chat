@@ -209,7 +209,7 @@ func chatRecvMsg() async -> ChatResponse? {
 }
 
 private let isInChina = SKStorefront().countryCode == "CHN"
-private func useCallKit() -> Bool { !isInChina && UserDefaults.standard.bool(forKey: GROUP_DEFAULT_CALL_KIT_ENABLED) }
+private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
 func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
     logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
@@ -255,8 +255,9 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
                     logger.debug("reportNewIncomingVoIPPushPayload success for \(invitation.contact.id)")
                 }
             }
+            return (invitation.contact.id, (UNNotificationContent().mutableCopy() as! UNMutableNotificationContent))
         }
-        return useCallKit() ? nil : (invitation.contact.id, createCallInvitationNtf(invitation))
+        return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
         return nil
