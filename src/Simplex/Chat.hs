@@ -58,6 +58,8 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (diffInMicros, diffInSeconds)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
+import Simplex.FileTransfer.Description (ValidFileDescription)
+import Simplex.FileTransfer.Protocol (FileParty (..))
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
@@ -438,12 +440,12 @@ processChatCommand = \case
             quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
             quoteData _ = throwChatError CEInvalidQuote
     CTGroup -> do
-      Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
+      g@(Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms) <- withStore $ \db -> getGroup db user chatId
       assertUserGroupRole gInfo GRAuthor
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
         else do
-          (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
+          (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
@@ -454,12 +456,12 @@ processChatCommand = \case
           setActive $ ActiveG gName
           pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
       where
-        setupSndFileTransfer :: GroupInfo -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
-        setupSndFileTransfer gInfo n = forM file_ $ \file -> do
+        setupSndFileTransfer :: Group -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
+        setupSndFileTransfer g@(Group gInfo _) n = forM file_ $ \file -> do
           (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg n $ CGGroup gInfo
+            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg n $ CGGroup g
           where
             smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer file fileSize fileInline = do
@@ -527,10 +529,20 @@ processChatCommand = \case
       xftpSndFileTransfer :: User -> FilePath -> Integer -> XFTPFileConfig -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
       xftpSndFileTransfer user file fileSize XFTPFileConfig {tempDirectory} n contactOrGroup = do
         let fileName = takeFileName file
-            fInv = xftpFileInvitation fileName fileSize
+            fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+            fInv = xftpFileInvitation fileName fileSize fileDescr
         aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) file n tempDirectory
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv $ AgentSndFileId aFileId
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
+        case contactOrGroup of
+          CGContact Contact {activeConn} -> withStore' $ \db -> createSndFTDescrXFTP db user Nothing activeConn ft fileDescr
+          CGGroup (Group _ ms) -> forM_ ms $ \m -> sendToMember m `catchError` (toView . CRChatError (Just user))
+            where
+              -- we are not sending files to pending members, same as with inline files
+              sendToMember m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
+                when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
+                  withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
+              sendToMember _ = pure ()
         pure (fInv, ciFile, ft)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
@@ -2142,7 +2154,7 @@ processAgentMsgSndFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      ft@FileTransferMeta {fileId} <- withStore $ \db -> getAgentSndFileXFTP db user $ AgentSndFileId aFileId
+      fileId <- withStore $ \db -> getAgentSndFileIdXFTP db user $ AgentSndFileId aFileId
       case msg of
         SFPROG _sent _total -> do
           -- update chat item status
@@ -2152,41 +2164,71 @@ processAgentMsgSndFile _corrId aFileId msg =
           AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}} <-
             withStore $ \db -> getChatItemByFileId db user fileId
           case (msgId_, itemDeleted) of
-            (Just sharedMsgId, Nothing) -> case (rfds, d, cInfo) of
-              (rfd : _, SMDSnd, DirectChat ct) -> do
-                let rfdText = safeDecodeUtf8 $ strEncode rfd
-                withStore' $ \db -> createSndDirectFTDescrXFTP db user ct ft rfdText
-                -- TODO update chat item status to show 100% progress
-                sendDirectFileDescription ct rfdText ft sharedMsgId
-              (_, SMDSnd, GroupChat _g) -> do
-                -- store file descriptions and files to snd_files
-                -- send messages with descriptions to the recipients
-                -- update chat item file status (CIFileStatus)
-                -- update sent file status
-                -- ??? possibly another event as we need one event per group, not per member
-                -- toView $ CRSndFileComplete user ci ft
-                pure ()
-              _ -> pure () -- TODO error
+            (Just sharedMsgId, Nothing) -> do
+              sfts <- withStore $ \db -> getSndFileTransfers db user fileId
+              when (length sfts < length rfds) $ pure () -- TODO error
+              case (rfds, sfts, d, cInfo) of
+                (rfd : _, sft : _, SMDSnd, DirectChat ct) ->
+                  sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
+                (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
+                  ms <- withStore' $ \db -> getGroupMembers db user g
+                  forM_ (zip rfds $ memberFTs ms) $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
+                  where
+                    memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
+                    memberFTs ms = [(conn, sft) | (mId, conn) <- ms', (mId', sft) <- sfts', mId == mId']
+                      where
+                        ms' = mapMaybe useMember $ sortOn groupMemberId' ms
+                        sfts' = sortOn fst $ mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
+                        useMember GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
+                          | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
+                          | otherwise = Nothing
+                        useMember _ = Nothing
+                    sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m ()
+                    sendToMember (rfd, (conn, sft)) =
+                      sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
+                _ -> pure ()
+
+            -- TODO update chat item status to show 100% progress
+
+            -- case (rfds, d, cInfo) of
+            -- (rfd : _, SMDSnd, DirectChat ct) -> do
+            --   let rfdText = safeDecodeUtf8 $ strEncode rfd
+            --   withStore' $ \db -> createSndDirectFTDescrXFTP db user ct ft rfdText
+            --   sendDirectFileDescription ct rfdText ft sharedMsgId
+            -- (rfds, SMDSnd, GroupChat g) -> do
+            --   ms <- withStore' $ \db -> getGroupMembers db user g
+            --   let mds = zipWith ms $ cycle $ map (safeDecodeUtf8 . strEncode) rfds
+            --   let rfdTexts =
+            --   sendDirectFileDescription ct rfdText ft sharedMsgId
+            -- store file descriptions and files to snd_files
+            -- send messages with descriptions to the recipients
+            -- update chat item file status (CIFileStatus)
+            -- update sent file status
+            -- ??? possibly another event as we need one event per group, not per member
+            -- toView $ CRSndFileComplete user ci ft
             _ -> pure () -- TODO error
           pure ()
       where
-        sendDirectFileDescription :: Contact -> Text -> FileTransferMeta -> SharedMsgId -> m ()
-        sendDirectFileDescription ct rfd ft sharedMsgId = do
-          msgDeliveryId <- sendFileDescription_ rfd sharedMsgId $ sendDirectContactMessage ct
-          withStore' $ \db -> updateSndDirectFTDelivery db ct ft msgDeliveryId
+        -- sendDirectFileDescription :: Contact -> Text -> FileTransferMeta -> SharedMsgId -> m ()
+        -- sendDirectFileDescription ct rfd ft sharedMsgId = do
+        --   msgDeliveryId <- sendFileDescription_ rfd sharedMsgId $ sendDirectContactMessage ct
+        --   withStore' $ \db -> updateSndDirectFTDelivery db ct ft msgDeliveryId
 
-        _sendMemberFileDescription :: GroupMember -> Connection -> Text -> FileTransferMeta -> SharedMsgId -> m ()
-        _sendMemberFileDescription m@GroupMember {groupId} conn rfd ft sharedMsgId = do
-          msgDeliveryId <- sendFileDescription_ rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
-          withStore' $ \db -> updateSndGroupFTDelivery db m conn ft msgDeliveryId
-
-        sendFileDescription_ :: Text -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
-        sendFileDescription_ rfdText msgId sendMsg = do
+        -- sendMemberFileDescription :: GroupMember -> Connection -> Text -> FileTransferMeta -> SharedMsgId -> m ()
+        -- sendMemberFileDescription m@GroupMember {groupId} conn rfd ft sharedMsgId = do
+        --   msgDeliveryId <- sendFileDescription_ rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
+        --   withStore' $ \db -> updateSndGroupFTDelivery db m conn ft msgDeliveryId
+        sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m ()
+        sendFileDescription sft rfd msgId sendMsg = do
+          let rfdText = safeDecodeUtf8 $ strEncode rfd
+          withStore' $ \db -> updateSndFTDescrXFTP db user sft rfdText
           partSize <- asks $ xftpDescrPartSize . config
-          sendParts 1 partSize rfdText
+          msgDeliveryId <- sendParts 1 partSize rfdText
+          -- msgDeliveryId <- sendFileDescription_ rfd sharedMsgId sendMsg
+          withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
           where
-            sendParts partNo partSize rfd = do
-              let (part, rest) = T.splitAt partSize rfd
+            sendParts partNo partSize rfdText = do
+              let (part, rest) = T.splitAt partSize rfdText
                   complete = T.null rest
                   fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
               (_, msgDeliveryId) <- sendMsg $ XMsgFileDescr {msgId, fileDescr}

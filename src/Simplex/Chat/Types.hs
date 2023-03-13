@@ -287,12 +287,12 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
-data ContactOrGroup = CGContact Contact | CGGroup GroupInfo
+data ContactOrGroup = CGContact Contact | CGGroup Group
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
   CGContact Contact {contactId} -> (Just contactId, Nothing)
-  CGGroup GroupInfo {groupId} -> (Nothing, Just groupId)
+  CGGroup (Group GroupInfo {groupId} _) -> (Nothing, Just groupId)
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
@@ -1461,6 +1461,7 @@ data SndFileTransfer = SndFileTransfer
     recipientDisplayName :: ContactName,
     connId :: Int64,
     agentConnId :: AgentConnId,
+    groupMemberId :: Maybe Int64,
     fileStatus :: FileStatus,
     fileDescrId :: Maybe Int64,
     fileInline :: Maybe InlineFileMode
@@ -1501,15 +1502,15 @@ instance ToJSON FileDescr where
 instance FromJSON FileDescr where
   parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
 
-xftpFileInvitation :: FilePath -> Integer -> FileInvitation
-xftpFileInvitation fileName fileSize =
+xftpFileInvitation :: FilePath -> Integer -> FileDescr -> FileInvitation
+xftpFileInvitation fileName fileSize fileDescr =
   FileInvitation
     { fileName,
       fileSize,
       fileDigest = Nothing,
       fileConnReq = Nothing,
       fileInline = Nothing,
-      fileDescr = Just FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+      fileDescr = Just fileDescr
     }
 
 data InlineFileMode
