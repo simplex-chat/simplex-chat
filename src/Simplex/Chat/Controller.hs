@@ -764,6 +764,7 @@ data ChatErrorType
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
   | CEAgentCommandError {message :: String}
+  | CEInvalidFileDescription {message :: String}
   | CEInternalError {message :: String}
   deriving (Show, Exception, Generic)
 
