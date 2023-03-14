@@ -29,7 +29,7 @@ struct ContentView: View {
                 ActiveCallView(call: call, userAuthorized: $userAuthorized)
             }
             if prefPerformLA && userAuthorized != true {
-                Rectangle().fill(colorScheme == .dark ? .white : .black).frame(width: .infinity, height: .infinity).onTapGesture(perform: {})
+                Rectangle().fill(colorScheme == .dark ? .black : .white).frame(width: .infinity, height: .infinity).onTapGesture(perform: {})
                 Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
             } else if let status = chatModel.chatDbStatus, status != .ok {
                 DatabaseErrorView(status: status)
