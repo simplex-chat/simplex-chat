@@ -138,6 +138,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         if type == .voIP {
             if (!ChatModel.shared.chatInitialized) {
                 initChatAndMigrate()
+                startChatAndActivate()
                 CallController.shared.onEndCall = { terminateChat() }
                 // CallKit will be called from different place, see SimpleXAPI.startChat()
                 return
