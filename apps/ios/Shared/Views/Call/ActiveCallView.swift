@@ -38,17 +38,11 @@ struct ActiveCallView: View {
         }
         .onAppear {
             logger.debug("ActiveCallView: appear client is nil \(client == nil), userAuthorized \(userAuthorized.debugDescription)")
-            if client == nil && userAuthorized == true {
-                client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-                sendCommandToClient()
-            }
+            createWebRTCClient()
         }
-        .onChange(of: userAuthorized) { authorized in
-            logger.debug("ActiveCallView: userAuthorized changed to \(authorized.debugDescription)")
-            if client == nil && authorized == true {
-                client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-                sendCommandToClient()
-            }
+        .onChange(of: userAuthorized) { _ in
+            logger.debug("ActiveCallView: userAuthorized changed to \(userAuthorized.debugDescription)")
+            createWebRTCClient()
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
@@ -57,6 +51,13 @@ struct ActiveCallView: View {
         .onChange(of: m.callCommand) { _ in sendCommandToClient()}
         .background(.black)
         .preferredColorScheme(.dark)
+    }
+
+    private func createWebRTCClient() {
+        if client == nil && userAuthorized == true {
+            client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
+            sendCommandToClient()
+        }
     }
 
     private func sendCommandToClient() {
