@@ -28,8 +28,12 @@ ALTER TABLE files ADD COLUMN private_snd_file_descr TEXT NULL;
 ALTER TABLE snd_files ADD COLUMN file_descr_id INTEGER NULL
   REFERENCES xftp_file_descriptions ON DELETE SET NULL;
 
+CREATE INDEX idx_snd_files_file_descr_id ON snd_files(file_descr_id);
+
 ALTER TABLE rcv_files ADD COLUMN file_descr_id INTEGER NULL
   REFERENCES xftp_file_descriptions ON DELETE SET NULL;
+
+CREATE INDEX idx_rcv_files_file_descr_id ON rcv_files(file_descr_id);
 
 ALTER TABLE rcv_files ADD COLUMN agent_rcv_file_id BLOB NULL;
 |]

@@ -160,7 +160,7 @@ module Simplex.Chat.Store
     updateSndFTDescrXFTP,
     updateSndFTDeliveryXFTP,
     getAgentSndFileIdXFTP,
-    getAgentRcvFileXFTP,
+    getAgentRcvFileIdXFTP,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -184,6 +184,7 @@ module Simplex.Chat.Store
     acceptRcvInlineFT,
     startRcvInlineFT,
     updateRcvFileStatus,
+    updateRcvFileStatus',
     createRcvFileChunk,
     updatedRcvFileChunkStored,
     deleteRcvFileChunks,
@@ -360,7 +361,7 @@ import Simplex.Chat.Migrations.M20230304_file_description
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..), RcvFileId, UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -2783,8 +2784,10 @@ getAgentSndFileIdXFTP db User {userId} aSndFileId =
   ExceptT . firstRow fromOnly (SESndFileNotFoundXFTP aSndFileId) $
     DB.query db "SELECT file_id FROM files WHERE user_id = ? AND agent_snd_file_id = ?" (userId, aSndFileId)
 
-getAgentRcvFileXFTP :: DB.Connection -> User -> AgentRcvFileId -> ExceptT StoreError IO FileTransferMeta
-getAgentRcvFileXFTP _db _user _aFileId = undefined
+getAgentRcvFileIdXFTP :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO FileTransferId
+getAgentRcvFileIdXFTP db aRcvFileId =
+  ExceptT . firstRow fromOnly (SERcvFileNotFoundXFTP aRcvFileId) $
+    DB.query db "SELECT file_id FROM rcv_files WHERE agent_rcv_file_id = ?" (Only aRcvFileId)
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do
@@ -3019,7 +3022,7 @@ getRcvFileDescrByFileId_ db fileId =
     toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete) =
       RcvFileDescr {fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete}
 
-updateRcvFileAgentId :: DB.Connection -> FileTransferId -> RcvFileId -> IO ()
+updateRcvFileAgentId :: DB.Connection -> FileTransferId -> AgentRcvFileId -> IO ()
 updateRcvFileAgentId db fileId aFileId = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE rcv_files SET agent_rcv_file_id = ?, updated_at = ? WHERE file_id = ?" (aFileId, currentTs, fileId)
@@ -3115,7 +3118,10 @@ acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
     (rcvFileInline, FSAccepted, currentTs, fileId)
 
 updateRcvFileStatus :: DB.Connection -> RcvFileTransfer -> FileStatus -> IO ()
-updateRcvFileStatus db RcvFileTransfer {fileId} status = do
+updateRcvFileStatus db RcvFileTransfer {fileId} = updateRcvFileStatus' db fileId
+
+updateRcvFileStatus' :: DB.Connection -> FileTransferId -> FileStatus -> IO ()
+updateRcvFileStatus' db fileId status = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?" (status, currentTs, fileId)
 
@@ -5136,7 +5142,8 @@ data StoreError
   | SERcvFileInvalidDescrPart
   | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
   | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
-  | SESndFileNotFoundXFTP {agentFileId :: AgentSndFileId}
+  | SESndFileNotFoundXFTP {agentSndFileId :: AgentSndFileId}
+  | SERcvFileNotFoundXFTP {agentRcvFileId :: AgentRcvFileId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
   | SEConnectionNotFoundById {connId :: Int64}
   | SEPendingConnectionNotFound {connId :: Int64}
