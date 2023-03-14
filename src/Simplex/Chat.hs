@@ -2166,7 +2166,7 @@ processAgentMsgSndFile _corrId aFileId msg =
           case (msgId_, itemDeleted) of
             (Just sharedMsgId, Nothing) -> do
               (ft, sfts) <- withStore $ \db -> getSndFileTransfer db user fileId
-              when (length sfts < length rfds) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
+              when (length rfds < length sfts) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
               toView $ CRSndFileProgressXFTP user ci ft 1 1
               case (rfds, sfts, d, cInfo) of
                 (rfd : _, sft : _, SMDSnd, DirectChat ct) ->
