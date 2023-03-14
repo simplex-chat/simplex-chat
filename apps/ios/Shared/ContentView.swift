@@ -13,6 +13,7 @@ struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
+    @Environment(\.colorScheme) var colorScheme
     @Binding var doAuthenticate: Bool
     @Binding var userAuthorized: Bool?
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
@@ -25,15 +26,16 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if chatModel.showCallView, let call = chatModel.activeCall {
-                ActiveCallView(call: call)
-                .onDisappear { if userAuthorized == false { runAuthenticateIfAllowed() } }
-            } else if prefPerformLA && userAuthorized != true {
-                Button(action: runAuthenticateIfAllowed) { Label("Unlock", systemImage: "lock") }
+                ActiveCallView(call: call, userAuthorized: $userAuthorized)
+            }
+            if prefPerformLA && userAuthorized != true {
+                Rectangle().fill(colorScheme == .dark ? .white : .black).frame(width: .infinity, height: .infinity).onTapGesture(perform: {})
+                Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
             } else if let status = chatModel.chatDbStatus, status != .ok {
                 DatabaseErrorView(status: status)
             } else if !chatModel.v3DBMigration.startChat {
                 MigrateToAppGroupView()
-            } else if let step = chatModel.onboardingStage  {
+            } else if let step = chatModel.onboardingStage, (!chatModel.showCallView || chatModel.activeCall == nil)  {
                 if case .onboardingComplete = step,
                    chatModel.currentUser != nil {
                     mainView()
@@ -42,8 +44,8 @@ struct ContentView: View {
                 }
             }
         }
-        .onAppear { runAuthenticateIfAllowed() }
-        .onChange(of: doAuthenticate) { _ in runAuthenticateIfAllowed() }
+        .onAppear { runAuthenticate() }
+        .onChange(of: doAuthenticate) { _ in runAuthenticate() }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
 
@@ -99,16 +101,15 @@ struct ContentView: View {
         }
     }
 
-    private func runAuthenticateIfAllowed() {
+    private func runAuthenticate() {
         if !prefPerformLA {
             userAuthorized = true
-        } else if doAuthenticate && (!chatModel.showCallView || chatModel.activeCall == nil) {
+        } else if doAuthenticate {
+            userAuthorized = false
             dismissAllSheets(animated: false) {
                 chatModel.chatId = nil
                 justAuthenticate()
             }
-        } else if (doAuthenticate) {
-            userAuthorized = false
         }
     }
 

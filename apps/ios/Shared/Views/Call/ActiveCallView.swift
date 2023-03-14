@@ -13,6 +13,7 @@ import SimpleXChat
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
     @ObservedObject var call: Call
+    @Binding var userAuthorized: Bool?
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
@@ -36,7 +37,13 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
-            if client == nil {
+            if client == nil && userAuthorized == true {
+                client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
+                sendCommandToClient()
+            }
+        }
+        .onChange(of: userAuthorized) { authorized in
+            if client == nil && authorized == true {
                 client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
                 sendCommandToClient()
             }

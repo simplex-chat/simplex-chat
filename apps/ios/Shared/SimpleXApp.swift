@@ -18,7 +18,7 @@ struct SimpleXApp: App {
     @ObservedObject var alertManager = AlertManager.shared
     @Environment(\.scenePhase) var scenePhase
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @State private var userAuthorized: Bool?
+    @State private var userAuthorized: Bool? = true
     @State private var doAuthenticate = false
     @State private var enteredBackground: TimeInterval? = nil
 
