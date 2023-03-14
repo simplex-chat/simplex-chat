@@ -292,6 +292,10 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         provider.configuration = conf
     }
 
+    func hasActiveCalls() -> Bool {
+        controller.callObserver.calls.count > 0
+    }
+
     private func requestTransaction(with action: CXAction, onSuccess: @escaping () -> Void = {}) {
         controller.request(CXTransaction(action: action)) { error in
             if let error = error {

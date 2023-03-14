@@ -67,7 +67,9 @@ struct SimpleXApp: App {
                         startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {
                             updateChats()
-                            updateCallInvitations()
+                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                updateCallInvitations()
+                            }
                         }
                         doAuthenticate = authenticationExpired()
                     default:
