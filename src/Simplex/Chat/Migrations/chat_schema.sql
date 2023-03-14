@@ -567,3 +567,5 @@ CREATE TABLE xftp_file_descriptions(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE INDEX idx_snd_files_file_descr_id ON snd_files(file_descr_id);
+CREATE INDEX idx_rcv_files_file_descr_id ON rcv_files(file_descr_id);

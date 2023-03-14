@@ -2219,18 +2219,20 @@ processAgentMsgRcvFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      _rcvFile <- withStore (\db -> getAgentRcvFileXFTP db user $ AgentRcvFileId aFileId)
-      --  >>= updateConnStatus
-      -- load file transfer meta (add chat item status to type and also contact/group)
+      fileId <- withStore (`getAgentRcvFileIdXFTP` AgentRcvFileId aFileId)
       case msg of
         RFPROG _sent _total -> do
           -- update chat item status
           -- send status to view
           pure ()
         RFDONE _filePath -> do
-          -- update chat item status
-          -- send status to view
-          pure ()
+          ci <- withStore $ \db -> do
+            liftIO $ do
+              updateRcvFileStatus' db fileId FSComplete
+              updateCIFileStatus db user fileId CIFSRcvComplete
+            getChatItemByFileId db user fileId
+          -- ack to agent
+          toView $ CRRcvFileComplete user ci
         RFERR _e -> do
           -- update chat item status
           -- send status to view
@@ -2907,17 +2909,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      (rfd, _aci) <- withStore $ \db -> do
-        rfd <- appendRcvFD db userId fileId fileDescr
-        aci <- getChatItemByFileId db user fileId
-        -- ? re-create file item if it does not exist
-        pure (rfd, aci)
+      rfd <- withStore $ \db -> appendRcvFD db userId fileId fileDescr
       let RcvFileDescr {fileDescrText, fileDescrComplete} = rfd
       when fileDescrComplete $ do
         rd <- parseRcvFileDescription fileDescrText
         tmp <- readTVarIO =<< asks tempDirectory
         aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd tmp
-        withStore' $ \db -> updateRcvFileAgentId db fileId aFileId
+        withStore' $ \db -> updateRcvFileAgentId db fileId (AgentRcvFileId aFileId)
 
     cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
     cancelMessageFile ct _sharedMsgId msgMeta = do
