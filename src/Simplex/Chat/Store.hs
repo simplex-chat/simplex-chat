@@ -2950,13 +2950,13 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
   currentTs <- liftIO getCurrentTime
   liftIO (getRcvFileDescrByFileId_ db fileId) >>= \case
     Nothing -> do
-      RcvFileDescr {fileDescrId} <- createRcvFD_ db userId fd
+      rfd@RcvFileDescr {fileDescrId} <- createRcvFD_ db userId fd
       liftIO $
         DB.execute
           db
           "UPDATE rcv_files SET file_descr_id = ?, updated_at = ? WHERE file_id = ?"
           (fileDescrId, currentTs, fileId)
-      pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText, fileDescrComplete}
+      pure rfd
     Just
       RcvFileDescr
         { fileDescrId,
@@ -2975,7 +2975,7 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
               WHERE file_descr_id = ?
             |]
             (fileDescrText', fileDescrPartNo, fileDescrComplete, fileDescrId)
-        pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText = fileDescrText', fileDescrComplete}
+        pure RcvFileDescr {fileDescrId, fileDescrText = fileDescrText', fileDescrPartNo, fileDescrComplete}
 
 getRcvFileDescrByFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe RcvFileDescr)
 getRcvFileDescrByFileId_ db fileId =
