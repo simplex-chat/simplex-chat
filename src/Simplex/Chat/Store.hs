@@ -1440,7 +1440,9 @@ getLiveRcvFileTransfers db user@User {userId} = do
           SELECT f.file_id
           FROM files f
           JOIN rcv_files r USING (file_id)
-          WHERE f.user_id = ? AND r.file_status IN (?, ?) AND r.rcv_file_inline IS NULL
+          WHERE f.user_id = ? AND r.file_status IN (?, ?)
+            AND r.rcv_file_inline IS NULL
+            AND r.file_descr_id IS NULL
             AND r.created_at > ?
         |]
         (userId, FSAccepted, FSConnected, cutoffTs)
