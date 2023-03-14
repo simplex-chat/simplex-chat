@@ -2919,8 +2919,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      rfd <- withStore $ \db -> appendRcvFD db userId fileId fileDescr
-      RcvFileTransfer {fileStatus} <- withStore $ \db -> getRcvFileTransfer db user fileId
+      (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
+        rfd <- appendRcvFD db userId fileId fileDescr
+        ft <- getRcvFileTransfer db user fileId
+        pure (rfd, ft)
       case fileStatus of
         RFSAccepted RcvFileInfo {filePath} -> receiveViaCompleteFD user fileId filePath rfd
         _ -> pure ()
