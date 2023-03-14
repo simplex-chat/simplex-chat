@@ -1271,6 +1271,7 @@ viewChatError logLevel = \case
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CECommandError e -> ["bad chat command: " <> plain e]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
+    CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEInternalError e -> ["internal chat error: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
