@@ -37,18 +37,21 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
+            logger.debug("ActiveCallView: appear client is nil \(client == nil), userAuthorized \(userAuthorized.debugDescription)")
             if client == nil && userAuthorized == true {
                 client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
                 sendCommandToClient()
             }
         }
         .onChange(of: userAuthorized) { authorized in
+            logger.debug("ActiveCallView: userAuthorized changed to \(authorized.debugDescription)")
             if client == nil && authorized == true {
                 client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
                 sendCommandToClient()
             }
         }
         .onDisappear {
+            logger.debug("ActiveCallView: disappear")
             client?.endCall()
         }
         .onChange(of: m.callCommand) { _ in sendCommandToClient()}
