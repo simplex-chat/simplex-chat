@@ -41,32 +41,30 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    if (!chatModel.chatInitialized) {
-                        do {
-                            chatModel.v3DBMigration = v3DBMigrationDefault.get()
-                            try initializeChat(start: chatModel.v3DBMigration.startChat)
-                        } catch let error {
-                            fatalError("Failed to start or load chats: \(responseError(error))")
-                        }
-                    }
+                    initChatAndMigrate()
                 }
                 .onChange(of: scenePhase) { phase in
-                    logger.debug("scenePhase \(String(describing: scenePhase))")
+                    logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                     switch (phase) {
                     case .background:
-                        suspendChat()
-                        BGManager.shared.schedule()
+                        if CallController.useCallKit() && chatModel.activeCall != nil {
+                            CallController.shared.onEndCall = {
+                                suspendChat()
+                                BGManager.shared.schedule()
+                            }
+                        } else {
+                            suspendChat()
+                            BGManager.shared.schedule()
+                        }
                         if userAuthorized == true {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
-                        if chatModel.chatRunning == true {
-                            ChatReceiver.shared.start()
-                        }
+                        CallController.shared.onEndCall = nil
                         let appState = appStateGroupDefault.get()
-                        activateChat()
+                        startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {
                             updateChats()
                             updateCallInvitations()
