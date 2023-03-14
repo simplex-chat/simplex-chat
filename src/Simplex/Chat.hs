@@ -2179,10 +2179,10 @@ processAgentMsgSndFile _corrId aFileId msg =
                   forM_ (zip rfds $ memberFTs ms) $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
                   where
                     memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
-                    memberFTs ms = [(conn, sft) | (mId, conn) <- ms', (mId', sft) <- sfts', mId == mId']
+                    memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
                       where
-                        ms' = mapMaybe useMember $ sortOn groupMemberId' ms
-                        sfts' = sortOn fst $ mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
+                        mConns' = mapMaybe useMember ms
+                        sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
                         useMember GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
                           | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
                           | otherwise = Nothing
