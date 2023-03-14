@@ -183,6 +183,7 @@ module Simplex.Chat.Store
     getContactByFileId,
     acceptRcvInlineFT,
     startRcvInlineFT,
+    xftpAcceptRcvFT,
     updateRcvFileStatus,
     updateRcvFileStatus',
     createRcvFileChunk,
@@ -1439,7 +1440,9 @@ getLiveRcvFileTransfers db user@User {userId} = do
           SELECT f.file_id
           FROM files f
           JOIN rcv_files r USING (file_id)
-          WHERE f.user_id = ? AND r.file_status IN (?, ?) AND r.rcv_file_inline IS NULL
+          WHERE f.user_id = ? AND r.file_status IN (?, ?)
+            AND r.rcv_file_inline IS NULL
+            AND r.file_descr_id IS NULL
             AND r.created_at > ?
         |]
         (userId, FSAccepted, FSConnected, cutoffTs)
@@ -3050,12 +3053,14 @@ getRcvFileTransfer db User {userId} fileId = do
           WHERE f.user_id = ? AND f.file_id = ?
         |]
         (userId, fileId)
-  rcvFileTransfer rftRow
+  rfd <- liftIO $ getRcvFileDescrByFileId_ db fileId
+  rcvFileTransfer rfd rftRow
   where
     rcvFileTransfer ::
+      Maybe RcvFileDescr ->
       (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
+    rcvFileTransfer rcvFileDescription ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
       let fileInv = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
           fileInfo = (filePath_, connId_, agentConnId_)
       case contactName_ <|> memberName_ of
@@ -3069,7 +3074,7 @@ getRcvFileTransfer db User {userId} fileId = do
             FSCancelled -> ft name fileInv . RFSCancelled <$> rfi_ fileInfo
       where
         ft senderDisplayName fileInvitation fileStatus =
-          RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName, chunkSize, cancelled, grpMemberId}
+          RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, rcvFileDescription, senderDisplayName, chunkSize, cancelled, grpMemberId}
         rfi fileInfo = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_ fileInfo
         rfi_ = \case
           (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
@@ -3097,7 +3102,7 @@ getContactByFileId db user@User {userId} fileId = do
       ExceptT . firstRow fromOnly (SEContactNotFoundByFileId fileId) $
         DB.query db "SELECT contact_id FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
 
-acceptRcvInlineFT :: DB.Connection -> User -> Int64 -> FilePath -> ExceptT StoreError IO AChatItem
+acceptRcvInlineFT :: DB.Connection -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvInlineFT db user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath (Just IFMOffer) =<< getCurrentTime
   getChatItemByFileId db user fileId
@@ -3106,7 +3111,12 @@ startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Mayb
 startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
   acceptRcvFT_ db user fileId filePath rcvFileInline =<< getCurrentTime
 
-acceptRcvFT_ :: DB.Connection -> User -> Int64 -> FilePath -> Maybe InlineFileMode -> UTCTime -> IO ()
+xftpAcceptRcvFT :: DB.Connection -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+xftpAcceptRcvFT db user fileId filePath = do
+  liftIO $ acceptRcvFT_ db user fileId filePath Nothing =<< getCurrentTime
+  getChatItemByFileId db user fileId
+
+acceptRcvFT_ :: DB.Connection -> User -> FileTransferId -> FilePath -> Maybe InlineFileMode -> UTCTime -> IO ()
 acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
   DB.execute
     db

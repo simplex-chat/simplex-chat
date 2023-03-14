@@ -1768,11 +1768,13 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, rcvFileDescription
       connIds <- joinAgentConnectionAsync user True connReq . directMessage $ XFileAcpt fName
       filePath <- getRcvFilePath fileId filePath_ fName
       withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
+    -- XFTP
+    (Just rfd, _) -> do
+      filePath <- getRcvFilePath fileId filePath_ fName
+      ci <- withStore $ \db -> xftpAcceptRcvFT db user fileId filePath
+      receiveViaCompleteFD user fileId filePath rfd
+      pure ci
     -- group & direct file protocol
-    (Just _fd, _) -> do
-      -- check if file description is fully received, error otherwise
-      -- pass file description to the agent and save AgentRcvFileId
-      throwChatError $ CEFileInternal "XFTP file receiption not implemented"
     _ -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
@@ -1812,6 +1814,14 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, rcvFileDescription
           && ( fileSize <= fileChunkSize * receiveChunks
                  || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
              )
+
+receiveViaCompleteFD :: ChatMonad m => User -> FileTransferId -> FilePath -> RcvFileDescr -> m ()
+receiveViaCompleteFD user fileId filePath RcvFileDescr {fileDescrText, fileDescrComplete} =
+  when fileDescrComplete $ do
+    rd <- parseRcvFileDescription fileDescrText
+    tmp <- readTVarIO =<< asks tempDirectory
+    aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd tmp filePath
+    withStore' $ \db -> updateRcvFileAgentId db fileId (AgentRcvFileId aFileId)
 
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
 getRcvFilePath fileId fPath_ fn = case fPath_ of
@@ -2225,7 +2235,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
           -- update chat item status
           -- send status to view
           pure ()
-        RFDONE _filePath -> do
+        RFDONE -> do
           ci <- withStore $ \db -> do
             liftIO $ do
               updateRcvFileStatus' db fileId FSComplete
@@ -2909,13 +2919,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      rfd <- withStore $ \db -> appendRcvFD db userId fileId fileDescr
-      let RcvFileDescr {fileDescrText, fileDescrComplete} = rfd
-      when fileDescrComplete $ do
-        rd <- parseRcvFileDescription fileDescrText
-        tmp <- readTVarIO =<< asks tempDirectory
-        aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd tmp
-        withStore' $ \db -> updateRcvFileAgentId db fileId (AgentRcvFileId aFileId)
+      (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
+        rfd <- appendRcvFD db userId fileId fileDescr
+        ft <- getRcvFileTransfer db user fileId
+        pure (rfd, ft)
+      case fileStatus of
+        RFSAccepted RcvFileInfo {filePath} -> receiveViaCompleteFD user fileId filePath rfd
+        _ -> pure ()
 
     cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
     cancelMessageFile ct _sharedMsgId msgMeta = do
