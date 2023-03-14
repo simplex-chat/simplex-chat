@@ -539,13 +539,13 @@ processChatCommand = \case
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
         case contactOrGroup of
           CGContact Contact {activeConn} -> withStore' $ \db -> createSndFTDescrXFTP db user Nothing activeConn ft fileDescr
-          CGGroup (Group _ ms) -> forM_ ms $ \m -> sendToMember m `catchError` (toView . CRChatError (Just user))
+          CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchError` (toView . CRChatError (Just user))
             where
               -- we are not sending files to pending members, same as with inline files
-              sendToMember m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
+              saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
                 when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
                   withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
-              sendToMember _ = pure ()
+              saveMemberFD _ = pure ()
         pure (fInv, ciFile, ft)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
