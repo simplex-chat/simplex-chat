@@ -171,6 +171,7 @@ data ChatController = ChatController
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
     userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
+    tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath
   }
 
@@ -619,13 +620,12 @@ instance ToJSON ComposedMessage where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data XFTPFileConfig = XFTPFileConfig
-  { minFileSize :: Integer,
-    tempDirectory :: Maybe FilePath
+  { minFileSize :: Integer
   }
   deriving (Show, Generic, FromJSON)
 
 defaultXFTPFileConfig :: XFTPFileConfig
-defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0, tempDirectory = Nothing}
+defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0}
 
 instance ToJSON XFTPFileConfig where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -693,7 +693,7 @@ instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.default
 
 data SendFileMode
   = SendFileSMP (Maybe InlineFileMode)
-  | SendFileXFTP XFTPFileConfig
+  | SendFileXFTP
   deriving (Show, Generic)
 
 data ChatError
@@ -764,6 +764,7 @@ data ChatErrorType
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
   | CEAgentCommandError {message :: String}
+  | CEInvalidFileDescription {message :: String}
   | CEInternalError {message :: String}
   deriving (Show, Exception, Generic)
 
