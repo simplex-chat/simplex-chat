@@ -531,15 +531,10 @@ processChatCommand = \case
       xftpSndFileTransfer :: User -> FilePath -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
       xftpSndFileTransfer user file fileSize n contactOrGroup = do
         let fileName = takeFileName file
-<<<<<<< HEAD
             fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
             fInv = xftpFileInvitation fileName fileSize fileDescr
-        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) file n tempDirectory
-=======
-            fInv = xftpFileInvitation fileName fileSize
         tmp <- readTVarIO =<< asks tempDirectory
         aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) file n tmp
->>>>>>> xftp
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv $ AgentSndFileId aFileId
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
         case contactOrGroup of
