@@ -35,7 +35,7 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall)
+            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall, enteredBackground: $enteredBackground)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
@@ -65,6 +65,7 @@ struct SimpleXApp: App {
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.onEndCall = nil
+                        chatModel.sceneWasActiveOnce = true
                         let appState = appStateGroupDefault.get()
                         startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {

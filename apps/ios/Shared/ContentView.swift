@@ -17,6 +17,7 @@ struct ContentView: View {
     @Binding var doAuthenticate: Bool
     @Binding var userAuthorized: Bool?
     @Binding var canConnectCall: Bool
+    @Binding var enteredBackground: TimeInterval?
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -27,7 +28,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if chatModel.showCallView, let call = chatModel.activeCall {
-                ActiveCallView(call: call, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall)
+                ActiveCallView(call: call, canConnectCall: $canConnectCall)
             }
             if prefPerformLA && userAuthorized != true {
                 Rectangle().fill(colorScheme == .dark ? .black : .white)
@@ -128,6 +129,10 @@ struct ContentView: View {
             case .success:
                 userAuthorized = true
                 canConnectCall = true
+                // Update this value because scene changes state from Active to Inactive, then from Inactive to Active
+                // after showing auth screen without entering into Background state.
+                // Which means canConnectCall will be false in SimpleXApp `case .active:` block
+                enteredBackground = ProcessInfo.processInfo.systemUptime
             case .failed:
                 break
             case .unavailable:
