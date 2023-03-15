@@ -131,7 +131,7 @@
     <string name="settings_section_title_chats">GESPREKKEN</string>
     <string name="chat_with_developers">Praat met de ontwikkelaars</string>
     <string name="smp_servers_check_address">Controleer het serveradres en probeer het opnieuw.</string>
-    <string name="choose_file">Kies bestand</string>
+    <string name="choose_file">Bestand</string>
     <string name="clear_verb">Wissen</string>
     <string name="v4_4_verify_connection_security_desc">Vergelijk beveiligingscodes met je contacten.</string>
     <string name="icon_descr_contact_checked">Contact gecontroleerd</string>
@@ -385,7 +385,7 @@
     <string name="error_saving_file">Fout bij opslaan van bestand</string>
     <string name="file_not_found">Bestand niet gevonden</string>
     <string name="file_saved">Bestand opgeslagen</string>
-    <string name="from_gallery_button">Uit galerij</string>
+    <string name="from_gallery_button">Galerij</string>
     <string name="error_saving_ICE_servers">Fout bij opslaan van ICE-servers</string>
     <string name="callstate_ended">geëindigd</string>
     <string name="group_members_can_send_disappearing">Groepsleden kunnen verdwijnende berichten sturen.</string>
@@ -573,7 +573,7 @@
     <string name="only_you_can_send_disappearing">Alleen jij kunt verdwijnende berichten verzenden.</string>
     <string name="only_your_contact_can_send_disappearing">Alleen uw contactpersoon kan verdwijnende berichten verzenden.</string>
     <string name="only_you_can_delete_messages">Alleen jij kunt berichten onomkeerbaar verwijderen (je contactpersoon kan ze markeren voor verwijdering).</string>
-    <string name="feature_offered_item_with_param">aangeboden %s: %2s</string>
+    <string name="feature_offered_item_with_param">voorgesteld %s: %2s</string>
     <string name="old_database_archive">Oud database archief</string>
     <string name="enter_correct_current_passphrase">Voer het juiste huidige wachtwoord in.</string>
     <string name="group_member_role_owner">eigenaar</string>
@@ -605,7 +605,7 @@
     <string name="only_you_can_send_voice">Alleen jij kunt spraak berichten verzenden.</string>
     <string name="only_your_contact_can_send_voice">Alleen uw contactpersoon kan spraak berichten verzenden.</string>
     <string name="prohibit_message_deletion">Verbied het onomkeerbaar verwijderen van berichten.</string>
-    <string name="feature_offered_item">aangeboden %s</string>
+    <string name="feature_offered_item">voorgesteld %s</string>
     <string name="store_passphrase_securely_without_recover">Sla het wachtwoord veilig op. Als u deze kwijtraakt, heeft u GEEN toegang tot de gesprekken.</string>
     <string name="store_passphrase_securely">Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u deze kwijtraakt.</string>
     <string name="open_chat">Gesprekken openen</string>
@@ -860,7 +860,7 @@
     <string name="send_live_message_desc">Stuur een live bericht, het wordt bijgewerkt voor de ontvanger(s) terwijl u het typt</string>
     <string name="to_share_with_your_contact">(om te delen met uw contact)</string>
     <string name="thank_you_for_installing_simplex">Bedankt voor het installeren van <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
-    <string name="use_camera_button">Gebruik camera</string>
+    <string name="use_camera_button">Camera</string>
     <string name="smp_servers_use_server_for_new_conn">Gebruik voor nieuwe verbindingen</string>
     <string name="star_on_github">Star on GitHub</string>
     <string name="smp_servers_per_user">De servers voor nieuwe verbindingen van je huidige chat profiel</string>
