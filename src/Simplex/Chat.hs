@@ -1867,7 +1867,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       liftIO $ B.hPut h "" >> hFlush h
       pure fPath
     getTmpHandle :: FilePath -> m Handle
-    getTmpHandle fPath = do
+    getTmpHandle fPath =
       liftIO (openFile fPath AppendMode) `E.catch` (throwChatError . CEFileInternal . (show :: E.SomeException -> String))
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
