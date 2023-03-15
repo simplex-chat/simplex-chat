@@ -67,7 +67,9 @@ struct SimpleXApp: App {
                         startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {
                             updateChats()
-                            updateCallInvitations()
+                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                updateCallInvitations()
+                            }
                         }
                         doAuthenticate = authenticationExpired()
                     default:
@@ -103,7 +105,7 @@ struct SimpleXApp: App {
 
     private func authenticationExpired() -> Bool {
         if let enteredBackground = enteredBackground {
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
+            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 3
         } else {
             return true
         }

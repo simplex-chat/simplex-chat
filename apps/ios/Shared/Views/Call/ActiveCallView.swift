@@ -13,6 +13,7 @@ import SimpleXChat
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
     @ObservedObject var call: Call
+    @Environment(\.scenePhase) var scenePhase
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
@@ -36,12 +37,14 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
+            logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase), privacy: .public)")
             if client == nil {
                 client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
                 sendCommandToClient()
             }
         }
         .onDisappear {
+            logger.debug("ActiveCallView: disappear")
             client?.endCall()
         }
         .onChange(of: m.callCommand) { _ in sendCommandToClient()}
