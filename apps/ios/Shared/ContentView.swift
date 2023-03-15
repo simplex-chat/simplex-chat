@@ -16,6 +16,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var doAuthenticate: Bool
     @Binding var userAuthorized: Bool?
+    @Binding var canConnectCall: Bool
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -26,10 +27,12 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if chatModel.showCallView, let call = chatModel.activeCall {
-                ActiveCallView(call: call, userAuthorized: $userAuthorized)
+                ActiveCallView(call: call, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall)
             }
             if prefPerformLA && userAuthorized != true {
-                Rectangle().fill(colorScheme == .dark ? .black : .white).frame(width: .infinity, height: .infinity).onTapGesture(perform: {})
+                Rectangle().fill(colorScheme == .dark ? .black : .white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onTapGesture(perform: {})
                 Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
             } else if let status = chatModel.chatDbStatus, status != .ok {
                 DatabaseErrorView(status: status)
@@ -123,10 +126,12 @@ struct ContentView: View {
             switch (laResult) {
             case .success:
                 userAuthorized = true
+                canConnectCall = true
             case .failed:
                 break
             case .unavailable:
                 userAuthorized = true
+                canConnectCall = true
                 prefPerformLA = false
                 AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
             }

@@ -14,6 +14,7 @@ struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
     @ObservedObject var call: Call
     @Binding var userAuthorized: Bool?
+    @Binding var canConnectCall: Bool
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
@@ -44,6 +45,9 @@ struct ActiveCallView: View {
             logger.debug("ActiveCallView: userAuthorized changed to \(userAuthorized.debugDescription)")
             createWebRTCClient()
         }
+        .onChange(of: canConnectCall) { _ in
+            createWebRTCClient()
+        }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
             client?.endCall()
@@ -54,7 +58,7 @@ struct ActiveCallView: View {
     }
 
     private func createWebRTCClient() {
-        if client == nil && userAuthorized == true {
+        if client == nil && userAuthorized == true && canConnectCall {
             client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
             sendCommandToClient()
         }
