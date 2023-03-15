@@ -20,7 +20,6 @@ struct SimpleXApp: App {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var userAuthorized: Bool?
     @State private var doAuthenticate = false
-    @State private var canConnectCall = false
     @State private var enteredBackground: TimeInterval? = nil
 
     init() {
@@ -35,7 +34,7 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall)
+            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
@@ -61,7 +60,6 @@ struct SimpleXApp: App {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
-                        canConnectCall = false
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.onEndCall = nil
@@ -69,12 +67,9 @@ struct SimpleXApp: App {
                         startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {
                             updateChats()
-                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                updateCallInvitations()
-                            }
+                            updateCallInvitations()
                         }
                         doAuthenticate = authenticationExpired()
-                        canConnectCall = !(doAuthenticate && prefPerformLA)
                     default:
                         break
                     }

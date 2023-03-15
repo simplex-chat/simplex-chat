@@ -49,7 +49,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         self.localRendererAspectRatio = localRendererAspectRatio
         rtcAudioSession.useManualAudio = CallController.useCallKit()
         rtcAudioSession.isAudioEnabled = !CallController.useCallKit()
-        logger.debug("WebRTCClient: rtcAudioSession has manual audio \(self.rtcAudioSession.useManualAudio) and audio enabled \(self.rtcAudioSession.isAudioEnabled)}")
         super.init()
     }
 
@@ -242,7 +241,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     func enableMedia(_ media: CallMediaType, _ enable: Bool) {
-        logger.debug("WebRTCClient: enabling media \(media.rawValue) \(enable)")
         media == .video ? setVideoEnabled(enable) : setAudioEnabled(enable)
     }
 
@@ -365,7 +363,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     func endCall() {
         guard let call = activeCall.wrappedValue else { return }
-        logger.debug("WebRTCClient: ending the call")
         activeCall.wrappedValue = nil
         call.connection.close()
         call.connection.delegate = nil
@@ -537,7 +534,6 @@ extension WebRTCClient {
     }
 
     func setSpeakerEnabledAndConfigureSession( _ enabled: Bool) {
-        logger.debug("WebRTCClient: configuring session with speaker enabled \(enabled)")
         audioQueue.async { [weak self] in
             guard let self = self else { return }
             self.rtcAudioSession.lockForConfiguration()
@@ -549,7 +545,6 @@ extension WebRTCClient {
                 try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
                 try self.rtcAudioSession.overrideOutputAudioPort(enabled ? .speaker : .none)
                 try self.rtcAudioSession.setActive(true)
-                logger.debug("WebRTCClient: configuring session with speaker enabled \(enabled) success")
             } catch let error {
                 logger.debug("Error configuring AVAudioSession: \(error)")
             }
@@ -557,7 +552,6 @@ extension WebRTCClient {
     }
 
     func audioSessionToDefaults() {
-        logger.debug("WebRTCClient: audioSession to defaults")
         audioQueue.async { [weak self] in
             guard let self = self else { return }
             self.rtcAudioSession.lockForConfiguration()
@@ -569,7 +563,6 @@ extension WebRTCClient {
                 try self.rtcAudioSession.setMode(AVAudioSession.Mode.default.rawValue)
                 try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 try self.rtcAudioSession.setActive(false)
-                logger.debug("WebRTCClient: audioSession to defaults success")
             } catch let error {
                 logger.debug("Error configuring AVAudioSession with defaults: \(error)")
             }

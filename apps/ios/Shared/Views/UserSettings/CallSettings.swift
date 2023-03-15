@@ -22,16 +22,16 @@ struct CallSettings: View {
                 Section {
                     Toggle("Connect via relay", isOn: $webrtcPolicyRelay)
 
-                    if !CallController.isInChina {
+                    if !CallController.isInChina && developerTools {
                         Toggle("Use CallKit", isOn: $callKitEnabled)
 
-//                        if allowChangingCallsHistory {
-//                            Toggle("Show calls in phone history", isOn: $callKitCallsInRecents)
-//                            .disabled(!callKitEnabled)
-//                            .onChange(of: callKitCallsInRecents) { value in
-//                                CallController.shared.showInRecents(value)
-//                            }
-//                        }
+                        if allowChangingCallsHistory {
+                            Toggle("Show calls in phone history", isOn: $callKitCallsInRecents)
+                            .disabled(!callKitEnabled)
+                            .onChange(of: callKitCallsInRecents) { value in
+                                CallController.shared.showInRecents(value)
+                            }
+                        }
                     }
 
                     NavigationLink {

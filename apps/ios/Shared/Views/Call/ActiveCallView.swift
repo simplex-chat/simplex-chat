@@ -12,10 +12,7 @@ import SimpleXChat
 
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.scenePhase) var scenePhase
     @ObservedObject var call: Call
-    @Binding var userAuthorized: Bool?
-    @Binding var canConnectCall: Bool
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
@@ -39,31 +36,17 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
-            logger.debug("ActiveCallView: appear client is nil \(client == nil), userAuthorized \(userAuthorized.debugDescription, privacy: .public), scenePhase \(String(describing: scenePhase), privacy: .public)")
-            createWebRTCClient()
-        }
-        .onChange(of: userAuthorized) { _ in
-            logger.debug("ActiveCallView: userAuthorized changed to \(userAuthorized.debugDescription, privacy: .public)")
-            createWebRTCClient()
-        }
-        .onChange(of: canConnectCall) { _ in
-            logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall, privacy: .public)")
-            createWebRTCClient()
+            if client == nil {
+                client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
+                sendCommandToClient()
+            }
         }
         .onDisappear {
-            logger.debug("ActiveCallView: disappear")
             client?.endCall()
         }
         .onChange(of: m.callCommand) { _ in sendCommandToClient()}
         .background(.black)
         .preferredColorScheme(.dark)
-    }
-
-    private func createWebRTCClient() {
-        if client == nil && ((userAuthorized == true && canConnectCall) || scenePhase == .background) {
-            client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-            sendCommandToClient()
-        }
     }
 
     private func sendCommandToClient() {
