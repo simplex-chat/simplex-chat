@@ -9,15 +9,12 @@ android {
 
     defaultConfig {
         applicationId "chat.simplex.app"
-        minSdk 29
+        minSdk 26
         targetSdk 32
         versionCode 102
         versionName "4.5.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        ndk {
-            abiFilters 'arm64-v8a'
-        }
         vectorDrawables {
             useSupportLibrary true
         }
@@ -80,6 +77,18 @@ android {
     if (isRelease) {
         // Comma separated list of languages that will be included in the apk
         android.defaultConfig.resConfigs("en", "ru", "de", "fr", "it", "nl", "cs")
+    }
+    splits {
+        abi {
+            enable true
+            reset()
+            if (isRelease) {
+                include 'arm64-v8a', 'armeabi-v7a'
+            } else {
+                include "$abi_filter"
+                universalApk false
+            }
+        }
     }
 }
 
@@ -196,6 +205,8 @@ tasks.register("compressApk") {
 
         if (project.properties['android.injected.signing.key.alias'] != null && buildType == 'release') {
             new File(outputDir, "app-release.apk").renameTo(new File(outputDir, "simplex.apk"))
+            new File(outputDir, "app-armeabi-v7a-release.apk").renameTo(new File(outputDir, "simplex-armeabi-v7a.apk"))
+            new File(outputDir, "app-arm64-v8a-release.apk").renameTo(new File(outputDir, "simplex-arm64-v8a.apk"))
         }
 
         // View all gradle properties set

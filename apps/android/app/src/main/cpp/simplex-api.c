@@ -7,6 +7,17 @@ void hs_init(int * argc, char **argv[]);
 void setLineBuffering(void);
 int pipe_std_to_socket(const char * name);
 
+extern void __svfscanf(void){};
+extern void __vfwscanf(void){};
+extern void __memset_chk_fail(void){};
+extern void __strcpy_chk_generic(void){};
+extern void __strcat_chk_generic(void){};
+extern void __libc_globals(void){};
+extern void __rel_iplt_start(void){};
+
+// Android 9 only, not 13
+extern void reallocarray(void){};
+
 JNIEXPORT jint JNICALL
 Java_chat_simplex_app_SimplexAppKt_pipeStdOutToSocket(JNIEnv *env, __unused jclass clazz, jstring socket_name) {
     const char *name = (*env)->GetStringUTFChars(env, socket_name, JNI_FALSE);
