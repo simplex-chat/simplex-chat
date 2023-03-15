@@ -27,48 +27,64 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
+            contentView()
             if chatModel.showCallView, let call = chatModel.activeCall {
-                ActiveCallView(call: call, canConnectCall: $canConnectCall)
-            }
-            if prefPerformLA && userAuthorized != true {
-                Rectangle().fill(colorScheme == .dark ? .black : .white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .onTapGesture(perform: {})
-                Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
-            } else if let status = chatModel.chatDbStatus, status != .ok {
-                DatabaseErrorView(status: status)
-            } else if !chatModel.v3DBMigration.startChat {
-                MigrateToAppGroupView()
-            } else if let step = chatModel.onboardingStage, (!chatModel.showCallView || chatModel.activeCall == nil)  {
-                if case .onboardingComplete = step,
-                   chatModel.currentUser != nil {
-                    mainView()
-                } else {
-                    OnboardingView(onboarding: step)
-                }
+                callView(call)
             }
         }
         .onAppear {
-            logger.debug("ContentView: canConnectCall \(canConnectCall), doAuthenticate \(doAuthenticate)")
-            if doAuthenticate { runAuthenticate() }
+            if prefPerformLA { requestNtfAuthorization() }
+            initAuthenticate()
         }
-        .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
+        .onChange(of: doAuthenticate) { _ in
+            initAuthenticate()
+        }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+    }
+
+    @ViewBuilder private func contentView() -> some View {
+        if prefPerformLA && userAuthorized != true {
+            lockButton()
+        } else if let status = chatModel.chatDbStatus, status != .ok {
+            DatabaseErrorView(status: status)
+        } else if !chatModel.v3DBMigration.startChat {
+            MigrateToAppGroupView()
+        } else if let step = chatModel.onboardingStage {
+            if case .onboardingComplete = step,
+               chatModel.currentUser != nil {
+                mainView()
+            } else {
+                OnboardingView(onboarding: step)
+            }
+        }
+    }
+
+    @ViewBuilder private func callView(_ call: Call) -> some View {
+        if CallController.useCallKit() {
+            ActiveCallView(call: call, canConnectCall: Binding.constant(true))
+                .onDisappear {
+                    if userAuthorized == false && doAuthenticate { runAuthenticate() }
+                }
+        } else {
+            ActiveCallView(call: call, canConnectCall: $canConnectCall)
+            if prefPerformLA && userAuthorized != true {
+                Rectangle()
+                    .fill(colorScheme == .dark ? .black : .white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                lockButton()
+            }
+        }
+    }
+
+    private func lockButton() -> some View {
+        Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
     }
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
             ChatListView().privacySensitive(protectScreen)
             .onAppear {
-                NtfManager.shared.requestAuthorization(
-                    onDeny: {
-                        if (!notificationAlertShown) {
-                            notificationAlertShown = true
-                            alertManager.showAlert(notificationAlert())
-                        }
-                    },
-                    onAuthorized: { notificationAlertShown = false }
-                )
+                if !prefPerformLA { requestNtfAuthorization() }
                 // Local Authentication notice is to be shown on next start after onboarding is complete
                 if (!prefLANoticeShown && prefShowLANotice && !chatModel.chats.isEmpty) {
                     prefLANoticeShown = true
@@ -93,23 +109,28 @@ struct ContentView: View {
     }
 
 //    private func processUserActivity(_ activity: NSUserActivity) {
-//        let intent = activity.interaction?.intent
-//        if let contacts = (intent as? INStartCallIntent)?.contacts {
-//            callToContact(contacts, .audio)
-//        } else if let contacts = (intent as? INStartAudioCallIntent)?.contacts {
-//            callToContact(contacts, .audio)
-//        } else if let contacts = (intent as? INStartVideoCallIntent)?.contacts {
-//            callToContact(contacts, .video)
+//        let callToContact = { (contactId: ChatId?, mediaType: CallMediaType) in
+//            if let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
+//                case let .direct(contact) = chatInfo {
+//                CallController.shared.startCall(contact, mediaType)
+//            }
+//        }
+//        if let intent = activity.interaction?.intent as? INStartCallIntent {
+//            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
+//        } else if let intent = activity.interaction?.intent as? INStartAudioCallIntent {
+//            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
+//        } else if let intent = activity.interaction?.intent as? INStartVideoCallIntent {
+//            callToContact(intent.contacts?.first?.personHandle?.value, .video)
 //        }
 //    }
-//
-//    private func callToContact(_ contacts: [INPerson], _ mediaType: CallMediaType) {
-//        if let contactId = contacts.first?.personHandle?.value,
-//           let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
-//           case let .direct(contact) = chatInfo {
-//            CallController.shared.startCall(contact, mediaType)
-//        }
-//    }
+
+    private func initAuthenticate() {
+        if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {
+            userAuthorized = false
+        } else if doAuthenticate {
+            runAuthenticate()
+        }
+    }
 
     private func runAuthenticate() {
         if !prefPerformLA {
@@ -134,11 +155,23 @@ struct ContentView: View {
                 break
             case .unavailable:
                 userAuthorized = true
-                canConnectCall = true
                 prefPerformLA = false
+                canConnectCall = true
                 AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
             }
         }
+    }
+
+    func requestNtfAuthorization() {
+        NtfManager.shared.requestAuthorization(
+            onDeny: {
+                if (!notificationAlertShown) {
+                    notificationAlertShown = true
+                    alertManager.showAlert(notificationAlert())
+                }
+            },
+            onAuthorized: { notificationAlertShown = false }
+        )
     }
 
     func laNoticeAlert() -> Alert {

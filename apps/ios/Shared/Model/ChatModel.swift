@@ -59,9 +59,6 @@ final class ChatModel: ObservableObject {
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
 
-    var sceneWasActiveAtLeastOnce = false
-    var onLockScreenCurrently = false
-
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
     var filesToDelete: [String] = []

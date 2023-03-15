@@ -20,8 +20,8 @@ struct SimpleXApp: App {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var userAuthorized: Bool?
     @State private var doAuthenticate = false
-    @State private var canConnectCall = false
     @State private var enteredBackground: TimeInterval? = nil
+    @State private var canConnectCall = false
     @State private var lastSuccessfulUnlock: TimeInterval? = nil
 
     init() {
@@ -66,7 +66,6 @@ struct SimpleXApp: App {
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.onEndCall = nil
-                        chatModel.sceneWasActiveAtLeastOnce = true
                         let appState = appStateGroupDefault.get()
                         startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {
@@ -115,7 +114,6 @@ struct SimpleXApp: App {
             return true
         }
     }
-
 
     private func unlockedRecently() -> Bool {
         if let lastSuccessfulUnlock = lastSuccessfulUnlock {

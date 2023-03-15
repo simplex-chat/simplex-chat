@@ -97,7 +97,6 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-        print("received", #function)
         logger.debug("CallController: activating audioSession and audio in WebRTCClient")
         RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
         RTCAudioSession.sharedInstance().isAudioEnabled = true
@@ -113,7 +112,6 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
-        print("received", #function)
         logger.debug("CallController: deactivating audioSession and audio in WebRTCClient")
         RTCAudioSession.sharedInstance().audioSessionDidDeactivate(audioSession)
         RTCAudioSession.sharedInstance().isAudioEnabled = false
@@ -265,7 +263,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func endCall(callUUID: UUID) {
-        logger.debug("CallController: ending the call")
+        logger.debug("CallController: ending the call with UUID \(callUUID.uuidString)")
         if CallController.useCallKit() {
             requestTransaction(with: CXEndCallAction(call: callUUID))
         } else {
@@ -280,7 +278,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func endCall(invitation: RcvCallInvitation) {
-        logger.debug("CallController: ending the call")
+        logger.debug("CallController: ending the call with invitation")
         callManager.endCall(invitation: invitation) {
             if invitation.contact.id == self.activeCallInvitation?.contact.id {
                 DispatchQueue.main.async {
@@ -291,7 +289,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func endCall(call: Call, completed: @escaping () -> Void) {
-        logger.debug("CallController: ending the call")
+        logger.debug("CallController: ending the call with call instance")
         callManager.endCall(call: call, completed: completed)
     }
 
