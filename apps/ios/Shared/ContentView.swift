@@ -27,84 +27,8 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            if chatModel.showCallView, let call = chatModel.activeCall {
-                if CallController.useCallKit() {
-                    ActiveCallView(call: call, canConnectCall: Binding.constant(true))
-                        .onDisappear {
-                            if userAuthorized == false && doAuthenticate { runAuthenticate() }
-                        }
-                } else {
-                    ActiveCallView(call: call, canConnectCall: $canConnectCall)
-                    if prefPerformLA && userAuthorized != true {
-                        Rectangle()
-                            .fill(colorScheme == .dark ? .black : .white)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        lockButton()
-                    }
-                }
-            } else if prefPerformLA && userAuthorized != true {
-                lockButton()
-            } else if let status = chatModel.chatDbStatus, status != .ok {
-                DatabaseErrorView(status: status)
-            } else if !chatModel.v3DBMigration.startChat {
-                MigrateToAppGroupView()
-            } else if let step = chatModel.onboardingStage {
-                if case .onboardingComplete = step,
-                   chatModel.currentUser != nil {
-                    mainView()
-                } else {
-                    OnboardingView(onboarding: step)
-                }
-            }
-
-// refactored:
-
-//            if CallController.useCallKit() {
-//                if chatModel.showCallView, let call = chatModel.activeCall {
-//                    ActiveCallView(call: call, canConnectCall: Binding.constant(true))
-//                    .onDisappear { if userAuthorized == false && doAuthenticate { runAuthenticate() } }
-//                } else  {
-//                    contentView()
-//                }
-//            } else if chatModel.showCallView, let call = chatModel.activeCall {
-//                ActiveCallView(call: call, canConnectCall: $canConnectCall)
-//                if prefPerformLA && userAuthorized != true {
-//                    Rectangle()
-//                        .fill(colorScheme == .dark ? .black : .white)
-//                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-//                    lockButton()
-//                }
-//            } else {
-//                contentView()
-//            }
-
-// initial:
-//
-//            if !CallController.useCallKit() && chatModel.showCallView, let call = chatModel.activeCall {
-//                ActiveCallView(call: call, canConnectCall: $canConnectCall)
-//            }
-//            if CallController.useCallKit() && chatModel.showCallView, let call = chatModel.activeCall {
-//                ActiveCallView(call: call, canConnectCall: Binding.constant(true))
-//                .onDisappear { if userAuthorized == false && doAuthenticate { runAuthenticate() } }
-//            } else if prefPerformLA && userAuthorized != true {
-//                if !CallController.useCallKit() {
-//                    Rectangle()
-//                        .fill(colorScheme == .dark ? .black : .white)
-//                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-//                }
-//                Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
-//            } else if let status = chatModel.chatDbStatus, status != .ok {
-//                DatabaseErrorView(status: status)
-//            } else if !chatModel.v3DBMigration.startChat {
-//                MigrateToAppGroupView()
-//            } else if let step = chatModel.onboardingStage, !CallController.useCallKit() || !chatModel.showCallView || chatModel.activeCall == nil {
-//                if case .onboardingComplete = step,
-//                   chatModel.currentUser != nil {
-//                    mainView()
-//                } else {
-//                    OnboardingView(onboarding: step)
-//                }
-//            }
+            contentView()
+            callView()
         }
         .onAppear {
             if prefPerformLA { requestNtfAuthorization() }
@@ -114,6 +38,42 @@ struct ContentView: View {
             initAuthenticate()
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+    }
+
+    @ViewBuilder private func contentView() -> some View {
+        if prefPerformLA && userAuthorized != true {
+            lockButton()
+        } else if let status = chatModel.chatDbStatus, status != .ok {
+            DatabaseErrorView(status: status)
+        } else if !chatModel.v3DBMigration.startChat {
+            MigrateToAppGroupView()
+        } else if let step = chatModel.onboardingStage {
+            if case .onboardingComplete = step,
+               chatModel.currentUser != nil {
+                mainView()
+            } else {
+                OnboardingView(onboarding: step)
+            }
+        }
+    }
+
+    @ViewBuilder private func callView() -> some View {
+        if chatModel.showCallView, let call = chatModel.activeCall {
+            if CallController.useCallKit() {
+                ActiveCallView(call: call, canConnectCall: Binding.constant(true))
+                    .onDisappear {
+                        if userAuthorized == false && doAuthenticate { runAuthenticate() }
+                    }
+            } else {
+                ActiveCallView(call: call, canConnectCall: $canConnectCall)
+                if prefPerformLA && userAuthorized != true {
+                    Rectangle()
+                        .fill(colorScheme == .dark ? .black : .white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    lockButton()
+                }
+            }
+        }
     }
 
     private func lockButton() -> some View {
