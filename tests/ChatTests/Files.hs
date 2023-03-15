@@ -12,7 +12,6 @@ import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFil
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesFileExist)
-import System.FilePath ((</>))
 import Test.Hspec
 
 chatFileTests :: SpecWith FilePath
@@ -50,7 +49,7 @@ chatFileTests = do
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "file transfer over XFTP" $ do
-    fit "send and receive file" testXFTPFileTransfer
+    it "send and receive file" testXFTPFileTransfer
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -922,37 +921,23 @@ testXFTPFileTransfer :: HasCallStack => FilePath -> IO ()
 testXFTPFileTransfer =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
-    startFileTransfer'' alice bob "test.pdf" "266.0 KiB / 272376 bytes"
-    concurrentlyN_
-      [ do
-          bob #> "@alice receiving here..."
-          bob <## "completed receiving file 1 (test.pdf) from alice",
-        alice
-          <### [ WithTime "bob> receiving here...",
-                 "completed sending file 1 (test.pdf) to bob"
-               ]
-      ]
+
+    alice #> "/f @bob ./tests/fixtures/test.pdf"
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob ##> "/fr 1 ./tests/tmp"
+    bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+    -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+    alice <## "completed sending file 1 (test.pdf) to bob"
+    bob <## "started receiving file 1 (test.pdf) from alice"
+    bob <## "completed receiving file 1 (test.pdf) from alice"
+
     src <- B.readFile "./tests/fixtures/test.pdf"
     dest <- B.readFile "./tests/tmp/test.pdf"
     dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}}
-    startFileTransfer'' :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
-    startFileTransfer'' cc1 cc2 fileName fileSize = startFileTransferWithDest'' cc1 cc2 fileName fileSize $ Just "./tests/tmp"
-    startFileTransferWithDest'' :: HasCallStack => TestCC -> TestCC -> String -> String -> Maybe String -> IO ()
-    startFileTransferWithDest'' cc1 cc2 fileName fileSize fileDest_ = do
-      name1 <- userName cc1
-      name2 <- userName cc2
-      cc1 #> ("/f @" <> name2 <> " ./tests/fixtures/" <> fileName)
-      cc1 <## "use /fc 1 to cancel sending"
-      cc2 <# (name1 <> "> sends file " <> fileName <> " (" <> fileSize <> ")")
-      cc2 <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      cc2 ##> ("/fr 1" <> maybe "" (" " <>) fileDest_)
-      cc2 <## ("saving file 1 from " <> name1 <> " to " <> maybe id (</>) fileDest_ fileName)
-      -- concurrently_
-      --   (cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1))
-      --   (cc1 <## ("started sending file 1 (" <> fileName <> ") to " <> name2))
-      cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1)
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =

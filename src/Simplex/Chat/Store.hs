@@ -185,7 +185,6 @@ module Simplex.Chat.Store
     startRcvInlineFT,
     xftpAcceptRcvFT,
     updateRcvFileStatus,
-    updateRcvFileStatus',
     createRcvFileChunk,
     updatedRcvFileChunkStored,
     deleteRcvFileChunks,
@@ -274,7 +273,6 @@ module Simplex.Chat.Store
 where
 
 import Control.Applicative ((<|>))
-import Control.Concurrent.STM (stateTVar)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad.Except
@@ -562,7 +560,7 @@ getUserByASndFileId db aSndFileId =
 getUserByARcvFileId :: DB.Connection -> AgentRcvFileId -> IO (Maybe User)
 getUserByARcvFileId db aRcvFileId =
   maybeFirstRow toUser $
-    DB.query db (userQuery <> " JOIN rcv_files r USING (file_id) JOIN files f ON f.user_id = u.user_id WHERE r.agent_rcv_file_id = ?") (Only aRcvFileId)
+    DB.query db (userQuery <> " JOIN files f ON f.user_id = u.user_id JOIN rcv_files r ON r.file_id = f.file_id WHERE r.agent_rcv_file_id = ?") (Only aRcvFileId)
 
 getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
 getUserByContactId db contactId =
@@ -3128,11 +3126,8 @@ acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
     "UPDATE rcv_files SET rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
     (rcvFileInline, FSAccepted, currentTs, fileId)
 
-updateRcvFileStatus :: DB.Connection -> RcvFileTransfer -> FileStatus -> IO ()
-updateRcvFileStatus db RcvFileTransfer {fileId} = updateRcvFileStatus' db fileId
-
-updateRcvFileStatus' :: DB.Connection -> FileTransferId -> FileStatus -> IO ()
-updateRcvFileStatus' db fileId status = do
+updateRcvFileStatus :: DB.Connection -> FileTransferId -> FileStatus -> IO ()
+updateRcvFileStatus db fileId status = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?" (status, currentTs, fileId)
 
