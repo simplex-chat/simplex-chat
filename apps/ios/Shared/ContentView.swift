@@ -55,14 +55,10 @@ struct ContentView: View {
         }
         .onAppear {
             if prefPerformLA { requestNtfAuthorization() }
-            if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {
-                userAuthorized = false
-            } else if doAuthenticate { runAuthenticate() }
+            initAuthenticate()
         }
         .onChange(of: doAuthenticate) { _ in
-            if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {
-                userAuthorized = false
-            } else if doAuthenticate { runAuthenticate() }
+            initAuthenticate()
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
@@ -110,6 +106,14 @@ struct ContentView: View {
 //            callToContact(intent.contacts?.first?.personHandle?.value, .video)
 //        }
 //    }
+
+    private func initAuthenticate() {
+        if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {
+            userAuthorized = false
+        } else if doAuthenticate {
+            runAuthenticate()
+        }
+    }
 
     private func runAuthenticate() {
         if !prefPerformLA {
