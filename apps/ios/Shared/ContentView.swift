@@ -13,8 +13,10 @@ struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
+    @Environment(\.colorScheme) var colorScheme
     @Binding var doAuthenticate: Bool
     @Binding var userAuthorized: Bool?
+    @Binding var canConnectCall: Bool
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -24,22 +26,29 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
+            if chatModel.showCallView, let call = chatModel.activeCall {
+                ActiveCallView(call: call, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall)
+            }
             if prefPerformLA && userAuthorized != true {
+                Rectangle().fill(colorScheme == .dark ? .black : .white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onTapGesture(perform: {})
                 Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
             } else if let status = chatModel.chatDbStatus, status != .ok {
                 DatabaseErrorView(status: status)
             } else if !chatModel.v3DBMigration.startChat {
                 MigrateToAppGroupView()
-            } else if let step = chatModel.onboardingStage  {
+            } else if let step = chatModel.onboardingStage, (!chatModel.showCallView || chatModel.activeCall == nil)  {
                 if case .onboardingComplete = step,
                    chatModel.currentUser != nil {
-                    mainView().privacySensitive(protectScreen)
+                    mainView()
                 } else {
                     OnboardingView(onboarding: step)
                 }
             }
         }
         .onAppear {
+            logger.debug("ContentView: canConnectCall \(canConnectCall), doAuthenticate \(doAuthenticate)")
             if doAuthenticate { runAuthenticate() }
         }
         .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
@@ -48,7 +57,7 @@ struct ContentView: View {
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
-            ChatListView()
+            ChatListView().privacySensitive(protectScreen)
             .onAppear {
                 NtfManager.shared.requestAuthorization(
                     onDeny: {
@@ -75,31 +84,31 @@ struct ContentView: View {
             .sheet(isPresented: $showWhatsNew) {
                 WhatsNewView()
             }
-            if chatModel.showCallView, let call = chatModel.activeCall {
-                ActiveCallView(call: call)
-            }
             IncomingCallView()
         }
-        .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
-        .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
-        .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+//        .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
+//        .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
+//        .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
     }
 
-    private func processUserActivity(_ activity: NSUserActivity) {
-        let callToContact = { (contactId: ChatId?, mediaType: CallMediaType) in
-            if let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
-                case let .direct(contact) = chatInfo {
-                CallController.shared.startCall(contact, mediaType)
-            }
-        }
-        if let intent = activity.interaction?.intent as? INStartCallIntent {
-            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
-        } else if let intent = activity.interaction?.intent as? INStartAudioCallIntent {
-            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
-        } else if let intent = activity.interaction?.intent as? INStartVideoCallIntent {
-            callToContact(intent.contacts?.first?.personHandle?.value, .video)
-        }
-    }
+//    private func processUserActivity(_ activity: NSUserActivity) {
+//        let intent = activity.interaction?.intent
+//        if let contacts = (intent as? INStartCallIntent)?.contacts {
+//            callToContact(contacts, .audio)
+//        } else if let contacts = (intent as? INStartAudioCallIntent)?.contacts {
+//            callToContact(contacts, .audio)
+//        } else if let contacts = (intent as? INStartVideoCallIntent)?.contacts {
+//            callToContact(contacts, .video)
+//        }
+//    }
+//
+//    private func callToContact(_ contacts: [INPerson], _ mediaType: CallMediaType) {
+//        if let contactId = contacts.first?.personHandle?.value,
+//           let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
+//           case let .direct(contact) = chatInfo {
+//            CallController.shared.startCall(contact, mediaType)
+//        }
+//    }
 
     private func runAuthenticate() {
         if !prefPerformLA {
@@ -118,10 +127,12 @@ struct ContentView: View {
             switch (laResult) {
             case .success:
                 userAuthorized = true
+                canConnectCall = true
             case .failed:
                 break
             case .unavailable:
                 userAuthorized = true
+                canConnectCall = true
                 prefPerformLA = false
                 AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
             }

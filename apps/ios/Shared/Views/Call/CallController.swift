@@ -21,9 +21,9 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     private let provider = CXProvider(configuration: {
         let configuration = CXProviderConfiguration()
-        configuration.supportsVideo = false
+        configuration.supportsVideo = true
         configuration.supportedHandleTypes = [.generic]
-        configuration.includesCallsInRecents = UserDefaults.standard.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
+        configuration.includesCallsInRecents = false // UserDefaults.standard.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
         configuration.maximumCallGroups = 1
         configuration.maximumCallsPerCallGroup = 1
         configuration.iconTemplateImageData = UIImage(named: "icon-transparent")?.pngData()
@@ -98,6 +98,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
         print("received", #function)
+        logger.debug("CallController: activating audioSession and audio in WebRTCClient")
         RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
         RTCAudioSession.sharedInstance().isAudioEnabled = true
         do {
@@ -113,10 +114,12 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
         print("received", #function)
+        logger.debug("CallController: deactivating audioSession and audio in WebRTCClient")
         RTCAudioSession.sharedInstance().audioSessionDidDeactivate(audioSession)
         RTCAudioSession.sharedInstance().isAudioEnabled = false
         do {
             try audioSession.setActive(false)
+            logger.debug("audioSession deactivated")
         } catch {
             print(error)
             logger.error("failed deactivating audio session")
@@ -125,6 +128,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         // see `.onChange(of: scenePhase)` in SimpleXApp
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
             if ChatModel.shared.activeCall == nil {
+                logger.debug("CallController: calling callback onEndCall which is \(self?.onEndCall == nil ? "nil" : "non-nil", privacy: .public)")
                 self?.onEndCall?()
             }
         }
@@ -136,14 +140,17 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
+        logger.debug("CallController: did receive push with type \(type.rawValue, privacy: .public)")
         if type == .voIP {
             if (!ChatModel.shared.chatInitialized) {
+                logger.debug("CallController: initializing chat and returning")
                 initChatAndMigrate()
                 startChatAndActivate()
                 CallController.shared.onEndCall = { terminateChat() }
                 // CallKit will be called from different place, see SimpleXAPI.startChat()
                 return
             } else {
+                logger.debug("CallController: starting chat (already initialized)")
                 startChatAndActivate()
                 CallController.shared.onEndCall = {
                     suspendChat()
@@ -162,6 +169,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 callUpdate.remoteHandle = CXHandle(type: .generic, value: contactId)
                 callUpdate.localizedCallerName = displayName
                 callUpdate.hasVideo = media == CallMediaType.video.rawValue
+                logger.debug("CallController: reporting incoming call directly to CallKit")
                 CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
                     if error != nil {
                         ChatModel.shared.callInvitations.removeValue(forKey: contactId)
@@ -174,7 +182,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
-        logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID))")
+        logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID), privacy: .public)")
         if CallController.useCallKit(), let uuid = invitation.callkitUUID {
             let update = CXCallUpdate()
             update.remoteHandle = CXHandle(type: .generic, value: invitation.contact.id)
@@ -190,6 +198,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func reportIncomingCall(call: Call, connectedAt dateConnected: Date?) {
+        logger.debug("CallController: reporting incoming call connected")
         if CallController.useCallKit() {
             // Fulfilling this action only after connect, otherwise there are no audio and mic on lockscreen
             fulfillOnConnect?.fulfill()
@@ -198,12 +207,14 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func reportOutgoingCall(call: Call, connectedAt dateConnected: Date?) {
+        logger.debug("CallController: reporting outgoing call connected")
         if CallController.useCallKit(), let uuid = call.callkitUUID {
             provider.reportOutgoingCall(with: uuid, connectedAt: dateConnected)
         }
     }
 
     func reportCallRemoteEnded(invitation: RcvCallInvitation) {
+        logger.debug("CallController: reporting remote ended")
         if CallController.useCallKit(), let uuid = invitation.callkitUUID {
             provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
         } else if invitation.contact.id == activeCallInvitation?.contact.id {
@@ -212,6 +223,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func reportCallRemoteEnded(call: Call) {
+        logger.debug("CallController: reporting remote ended")
         if CallController.useCallKit(), let uuid = call.callkitUUID {
             provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
         }
@@ -241,6 +253,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func answerCall(invitation: RcvCallInvitation) {
+        logger.debug("CallController: answering a call")
         if CallController.useCallKit(), let callUUID = invitation.callkitUUID {
             requestTransaction(with: CXAnswerCallAction(call: callUUID))
         } else {
@@ -252,6 +265,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func endCall(callUUID: UUID) {
+        logger.debug("CallController: ending the call")
         if CallController.useCallKit() {
             requestTransaction(with: CXEndCallAction(call: callUUID))
         } else {
@@ -266,6 +280,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func endCall(invitation: RcvCallInvitation) {
+        logger.debug("CallController: ending the call")
         callManager.endCall(invitation: invitation) {
             if invitation.contact.id == self.activeCallInvitation?.contact.id {
                 DispatchQueue.main.async {
@@ -276,6 +291,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func endCall(call: Call, completed: @escaping () -> Void) {
+        logger.debug("CallController: ending the call")
         callManager.endCall(call: call, completed: completed)
     }
 
@@ -292,10 +308,14 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         provider.configuration = conf
     }
 
+    func hasActiveCalls() -> Bool {
+        controller.callObserver.calls.count > 0
+    }
+
     private func requestTransaction(with action: CXAction, onSuccess: @escaping () -> Void = {}) {
         controller.request(CXTransaction(action: action)) { error in
             if let error = error {
-                logger.error("CallController.requestTransaction error requesting transaction: \(error.localizedDescription)")
+                logger.error("CallController.requestTransaction error requesting transaction: \(error.localizedDescription, privacy: .public)")
             } else {
                 logger.debug("CallController.requestTransaction requested transaction successfully")
                 onSuccess()
