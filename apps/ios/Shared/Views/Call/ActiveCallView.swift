@@ -14,6 +14,7 @@ struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.scenePhase) var scenePhase
     @ObservedObject var call: Call
+    @Binding var userAuthorized: Bool?
     @Binding var canConnectCall: Bool
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
@@ -38,7 +39,11 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
-            logger.debug("ActiveCallView: appear client is nil \(client == nil), canConnectCall \(canConnectCall, privacy: .public), scenePhase \(String(describing: scenePhase), privacy: .public)")
+            logger.debug("ActiveCallView: appear client is nil \(client == nil), userAuthorized \(userAuthorized.debugDescription, privacy: .public), scenePhase \(String(describing: scenePhase), privacy: .public)")
+            createWebRTCClient()
+        }
+        .onChange(of: userAuthorized) { _ in
+            logger.debug("ActiveCallView: userAuthorized changed to \(userAuthorized.debugDescription, privacy: .public)")
             createWebRTCClient()
         }
         .onChange(of: canConnectCall) { _ in
@@ -55,22 +60,8 @@ struct ActiveCallView: View {
     }
 
     private func createWebRTCClient() {
-        if client == nil && (canConnectCall || m.onLockScreenCurrently) {
-            createWebRTCClientWithoutWait()
-        } else if (!m.sceneWasActiveAtLeastOnce) {
-            // This code waits a second until it recheck `sceneWasActiveAtLeastOnce`.
-            // It helps to know whether a call from lockscreen or not.
-            // After the second `sceneWasActiveAtLeastOnce` will still be false when the call from lockscreen
-            Task {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                createWebRTCClientWithoutWait()
-            }
-        }
-    }
-
-    private func createWebRTCClientWithoutWait() {
-        if client == nil && (canConnectCall || !m.sceneWasActiveAtLeastOnce || m.onLockScreenCurrently) {
-            client = WebRTCClient($activeCall, { msg in await MainActor.run {processRtcMessage(msg: msg)} }, $localRendererAspectRatio)
+        if client == nil && ((userAuthorized == true && canConnectCall) || scenePhase == .background) {
+            client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
             sendCommandToClient()
         }
     }

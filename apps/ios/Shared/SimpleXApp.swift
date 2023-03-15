@@ -22,7 +22,6 @@ struct SimpleXApp: App {
     @State private var doAuthenticate = false
     @State private var canConnectCall = false
     @State private var enteredBackground: TimeInterval? = nil
-    @State private var lastSuccessfulUnlock: TimeInterval? = nil
 
     init() {
         hs_init(0, nil)
@@ -36,7 +35,7 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall, lastSuccessfulUnlock: $lastSuccessfulUnlock)
+            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
@@ -66,7 +65,6 @@ struct SimpleXApp: App {
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.onEndCall = nil
-                        chatModel.sceneWasActiveAtLeastOnce = true
                         let appState = appStateGroupDefault.get()
                         startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {
@@ -76,7 +74,7 @@ struct SimpleXApp: App {
                             }
                         }
                         doAuthenticate = authenticationExpired()
-                        canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
+                        canConnectCall = !(doAuthenticate && prefPerformLA)
                     default:
                         break
                     }
@@ -113,15 +111,6 @@ struct SimpleXApp: App {
             return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
         } else {
             return true
-        }
-    }
-
-
-    private func unlockedRecently() -> Bool {
-        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
-            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
-        } else {
-            return false
         }
     }
 

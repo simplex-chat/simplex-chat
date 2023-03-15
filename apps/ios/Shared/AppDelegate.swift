@@ -94,16 +94,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return configuration
     }
 
-    func applicationProtectedDataWillBecomeUnavailable(_ application: UIApplication) {
-        logger.debug("AppDelegate: will lock screen")
-        ChatModel.shared.onLockScreenCurrently = true
-    }
-
-    func applicationProtectedDataDidBecomeAvailable(_ application: UIApplication) {
-        logger.debug("AppDelegate: did unlock screen")
-        ChatModel.shared.onLockScreenCurrently = false
-    }
-
     private func receiveMessages(_ completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         let complete = BGManager.shared.completionHandler {
             logger.debug("AppDelegate: completed BGManager.receiveMessages")
