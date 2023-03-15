@@ -55,21 +55,23 @@ struct ActiveCallView: View {
     }
 
     private func createWebRTCClient() {
-        let block = {
-            if client == nil && (canConnectCall || !m.sceneWasActiveOnce) {
-                client = WebRTCClient($activeCall, { msg in await MainActor.run {processRtcMessage(msg: msg)} }, $localRendererAspectRatio)
-                sendCommandToClient()
-            }
-        }
-        if client == nil && canConnectCall {
-            block()
-        } else if (!m.sceneWasActiveOnce) {
-            // This code waits a second until it recheck `sceneWasActiveOnce`. It helps to know whether a call from lockscreen
-            // or not. After the second `sceneWasActiveOnce` will be still false when the call from lockscreen
+        if client == nil && (canConnectCall || m.onLockScreenCurrently) {
+            createWebRTCClientWithoutWait()
+        } else if (!m.sceneWasActiveAtLeastOnce) {
+            // This code waits a second until it recheck `sceneWasActiveAtLeastOnce`.
+            // It helps to know whether a call from lockscreen or not.
+            // After the second `sceneWasActiveAtLeastOnce` will still be false when the call from lockscreen
             Task {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
-                block()
+                createWebRTCClientWithoutWait()
             }
+        }
+    }
+
+    private func createWebRTCClientWithoutWait() {
+        if client == nil && (canConnectCall || !m.sceneWasActiveAtLeastOnce || m.onLockScreenCurrently) {
+            client = WebRTCClient($activeCall, { msg in await MainActor.run {processRtcMessage(msg: msg)} }, $localRendererAspectRatio)
+            sendCommandToClient()
         }
     }
 

@@ -17,7 +17,7 @@ struct ContentView: View {
     @Binding var doAuthenticate: Bool
     @Binding var userAuthorized: Bool?
     @Binding var canConnectCall: Bool
-    @Binding var enteredBackground: TimeInterval?
+    @Binding var lastSuccessfulUnlock: TimeInterval?
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -129,10 +129,7 @@ struct ContentView: View {
             case .success:
                 userAuthorized = true
                 canConnectCall = true
-                // Update this value because scene changes state from Active to Inactive, then from Inactive to Active
-                // after showing auth screen without entering into Background state.
-                // Which means canConnectCall will be false in SimpleXApp `case .active:` block
-                enteredBackground = ProcessInfo.processInfo.systemUptime
+                lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
             case .failed:
                 break
             case .unavailable:
