@@ -28,7 +28,9 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             contentView()
-            callView()
+            if chatModel.showCallView, let call = chatModel.activeCall {
+                callView(call)
+            }
         }
         .onAppear {
             if prefPerformLA { requestNtfAuthorization() }
@@ -57,21 +59,19 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder private func callView() -> some View {
-        if chatModel.showCallView, let call = chatModel.activeCall {
-            if CallController.useCallKit() {
-                ActiveCallView(call: call, canConnectCall: Binding.constant(true))
-                    .onDisappear {
-                        if userAuthorized == false && doAuthenticate { runAuthenticate() }
-                    }
-            } else {
-                ActiveCallView(call: call, canConnectCall: $canConnectCall)
-                if prefPerformLA && userAuthorized != true {
-                    Rectangle()
-                        .fill(colorScheme == .dark ? .black : .white)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    lockButton()
+    @ViewBuilder private func callView(_ call: Call) -> some View {
+        if CallController.useCallKit() {
+            ActiveCallView(call: call, canConnectCall: Binding.constant(true))
+                .onDisappear {
+                    if userAuthorized == false && doAuthenticate { runAuthenticate() }
                 }
+        } else {
+            ActiveCallView(call: call, canConnectCall: $canConnectCall)
+            if prefPerformLA && userAuthorized != true {
+                Rectangle()
+                    .fill(colorScheme == .dark ? .black : .white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                lockButton()
             }
         }
     }
