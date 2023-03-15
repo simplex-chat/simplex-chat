@@ -9,7 +9,6 @@
 import Foundation
 import Combine
 import SwiftUI
-import WebKit
 import SimpleXChat
 
 final class ChatModel: ObservableObject {
@@ -59,7 +58,9 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
-    var callWebView: WKWebView?
+
+    var sceneWasActiveAtLeastOnce = false
+    var onLockScreenCurrently = false
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
