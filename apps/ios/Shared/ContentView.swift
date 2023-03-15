@@ -48,6 +48,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            logger.debug("ContentView: canConnectCall \(canConnectCall), doAuthenticate \(doAuthenticate)")
             if doAuthenticate { runAuthenticate() }
         }
         .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
@@ -85,29 +86,29 @@ struct ContentView: View {
             }
             IncomingCallView()
         }
-        .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
-        .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
-        .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+//        .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
+//        .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
+//        .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
     }
 
-    private func processUserActivity(_ activity: NSUserActivity) {
-        let intent = activity.interaction?.intent
-        if let contacts = (intent as? INStartCallIntent)?.contacts {
-            callToContact(contacts, .audio)
-        } else if let contacts = (intent as? INStartAudioCallIntent)?.contacts {
-            callToContact(contacts, .audio)
-        } else if let contacts = (intent as? INStartVideoCallIntent)?.contacts {
-            callToContact(contacts, .video)
-        }
-    }
-
-    private func callToContact(_ contacts: [INPerson], _ mediaType: CallMediaType) {
-        if let contactId = contacts.first?.personHandle?.value,
-           let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
-           case let .direct(contact) = chatInfo {
-            CallController.shared.startCall(contact, mediaType)
-        }
-    }
+//    private func processUserActivity(_ activity: NSUserActivity) {
+//        let intent = activity.interaction?.intent
+//        if let contacts = (intent as? INStartCallIntent)?.contacts {
+//            callToContact(contacts, .audio)
+//        } else if let contacts = (intent as? INStartAudioCallIntent)?.contacts {
+//            callToContact(contacts, .audio)
+//        } else if let contacts = (intent as? INStartVideoCallIntent)?.contacts {
+//            callToContact(contacts, .video)
+//        }
+//    }
+//
+//    private func callToContact(_ contacts: [INPerson], _ mediaType: CallMediaType) {
+//        if let contactId = contacts.first?.personHandle?.value,
+//           let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
+//           case let .direct(contact) = chatInfo {
+//            CallController.shared.startCall(contact, mediaType)
+//        }
+//    }
 
     private func runAuthenticate() {
         if !prefPerformLA {

@@ -21,9 +21,9 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     private let provider = CXProvider(configuration: {
         let configuration = CXProviderConfiguration()
-        configuration.supportsVideo = false
+        configuration.supportsVideo = true
         configuration.supportedHandleTypes = [.generic]
-        configuration.includesCallsInRecents = UserDefaults.standard.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
+        configuration.includesCallsInRecents = false // UserDefaults.standard.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
         configuration.maximumCallGroups = 1
         configuration.maximumCallsPerCallGroup = 1
         configuration.iconTemplateImageData = UIImage(named: "icon-transparent")?.pngData()
@@ -128,7 +128,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         // see `.onChange(of: scenePhase)` in SimpleXApp
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
             if ChatModel.shared.activeCall == nil {
-                logger.debug("CallController: calling callback onEndCall which is \(self?.onEndCall == nil ? "nil" : "non-nil")")
+                logger.debug("CallController: calling callback onEndCall which is \(self?.onEndCall == nil ? "nil" : "non-nil", privacy: .public)")
                 self?.onEndCall?()
             }
         }
@@ -140,7 +140,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
-        logger.debug("CallController: did receive push with type \(type.rawValue)")
+        logger.debug("CallController: did receive push with type \(type.rawValue, privacy: .public)")
         if type == .voIP {
             if (!ChatModel.shared.chatInitialized) {
                 logger.debug("CallController: initializing chat and returning")
@@ -182,7 +182,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
-        logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID))")
+        logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID), privacy: .public)")
         if CallController.useCallKit(), let uuid = invitation.callkitUUID {
             let update = CXCallUpdate()
             update.remoteHandle = CXHandle(type: .generic, value: invitation.contact.id)
@@ -315,7 +315,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     private func requestTransaction(with action: CXAction, onSuccess: @escaping () -> Void = {}) {
         controller.request(CXTransaction(action: action)) { error in
             if let error = error {
-                logger.error("CallController.requestTransaction error requesting transaction: \(error.localizedDescription)")
+                logger.error("CallController.requestTransaction error requesting transaction: \(error.localizedDescription, privacy: .public)")
             } else {
                 logger.debug("CallController.requestTransaction requested transaction successfully")
                 onSuccess()

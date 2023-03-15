@@ -12,6 +12,7 @@ import SimpleXChat
 
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.scenePhase) var scenePhase
     @ObservedObject var call: Call
     @Binding var userAuthorized: Bool?
     @Binding var canConnectCall: Bool
@@ -38,14 +39,15 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
-            logger.debug("ActiveCallView: appear client is nil \(client == nil), userAuthorized \(userAuthorized.debugDescription)")
+            logger.debug("ActiveCallView: appear client is nil \(client == nil), userAuthorized \(userAuthorized.debugDescription, privacy: .public), scenePhase \(String(describing: scenePhase), privacy: .public)")
             createWebRTCClient()
         }
         .onChange(of: userAuthorized) { _ in
-            logger.debug("ActiveCallView: userAuthorized changed to \(userAuthorized.debugDescription)")
+            logger.debug("ActiveCallView: userAuthorized changed to \(userAuthorized.debugDescription, privacy: .public)")
             createWebRTCClient()
         }
         .onChange(of: canConnectCall) { _ in
+            logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall, privacy: .public)")
             createWebRTCClient()
         }
         .onDisappear {
@@ -58,7 +60,7 @@ struct ActiveCallView: View {
     }
 
     private func createWebRTCClient() {
-        if client == nil && userAuthorized == true && canConnectCall {
+        if client == nil && ((userAuthorized == true && canConnectCall) || scenePhase == .background) {
             client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
             sendCommandToClient()
         }
