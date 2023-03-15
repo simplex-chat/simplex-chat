@@ -1500,7 +1500,7 @@ instance ToJSON FileDescr where
   toJSON = J.genericToJSON J.defaultOptions
 
 instance FromJSON FileDescr where
-  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
+  parseJSON = J.genericParseJSON J.defaultOptions
 
 xftpFileInvitation :: FilePath -> Integer -> FileDescr -> FileInvitation
 xftpFileInvitation fileName fileSize fileDescr =
