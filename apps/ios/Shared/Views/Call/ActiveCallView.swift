@@ -17,6 +17,7 @@ struct ActiveCallView: View {
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
+    @Binding var canConnectCall: Bool
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -37,11 +38,12 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
-            logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase), privacy: .public)")
-            if client == nil {
-                client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-                sendCommandToClient()
-            }
+            logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase), privacy: .public), canConnectCall \(canConnectCall)")
+            createWebRTCClient()
+        }
+        .onChange(of: canConnectCall) { _ in
+            logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall, privacy: .public)")
+            createWebRTCClient()
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
@@ -50,6 +52,13 @@ struct ActiveCallView: View {
         .onChange(of: m.callCommand) { _ in sendCommandToClient()}
         .background(.black)
         .preferredColorScheme(.dark)
+    }
+
+    private func createWebRTCClient() {
+        if client == nil && canConnectCall {
+            client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
+            sendCommandToClient()
+        }
     }
 
     private func sendCommandToClient() {
