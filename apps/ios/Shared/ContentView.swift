@@ -103,26 +103,26 @@ struct ContentView: View {
             }
             IncomingCallView()
         }
-//        .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
-//        .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
-//        .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+        .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
+        .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
+        .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
     }
 
-//    private func processUserActivity(_ activity: NSUserActivity) {
-//        let callToContact = { (contactId: ChatId?, mediaType: CallMediaType) in
-//            if let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
-//                case let .direct(contact) = chatInfo {
-//                CallController.shared.startCall(contact, mediaType)
-//            }
-//        }
-//        if let intent = activity.interaction?.intent as? INStartCallIntent {
-//            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
-//        } else if let intent = activity.interaction?.intent as? INStartAudioCallIntent {
-//            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
-//        } else if let intent = activity.interaction?.intent as? INStartVideoCallIntent {
-//            callToContact(intent.contacts?.first?.personHandle?.value, .video)
-//        }
-//    }
+    private func processUserActivity(_ activity: NSUserActivity) {
+        let callToContact = { (contactId: ChatId?, mediaType: CallMediaType) in
+            if let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
+                case let .direct(contact) = chatInfo {
+                CallController.shared.startCall(contact, mediaType)
+            }
+        }
+        if let intent = activity.interaction?.intent as? INStartCallIntent {
+            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
+        } else if let intent = activity.interaction?.intent as? INStartAudioCallIntent {
+            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
+        } else if let intent = activity.interaction?.intent as? INStartVideoCallIntent {
+            callToContact(intent.contacts?.first?.personHandle?.value, .video)
+        }
+    }
 
     private func initAuthenticate() {
         if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {

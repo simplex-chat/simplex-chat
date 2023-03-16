@@ -20,26 +20,13 @@ struct CallSettings: View {
         VStack {
             List {
                 Section {
-                    Toggle("Connect via relay", isOn: $webrtcPolicyRelay)
-
-                    if !CallController.isInChina {
-                        Toggle("Use CallKit", isOn: $callKitEnabled)
-
-//                        if allowChangingCallsHistory {
-//                            Toggle("Show calls in phone history", isOn: $callKitCallsInRecents)
-//                            .disabled(!callKitEnabled)
-//                            .onChange(of: callKitCallsInRecents) { value in
-//                                CallController.shared.showInRecents(value)
-//                            }
-//                        }
-                    }
-
                     NavigationLink {
                         RTCServers()
                             .navigationTitle("Your ICE servers")
                     } label: {
                         Text("WebRTC ICE servers")
                     }
+                    Toggle("Always use relay", isOn: $webrtcPolicyRelay)
                 } header: {
                     Text("Settings")
                 } footer: {
@@ -50,10 +37,29 @@ struct CallSettings: View {
                     }
                 }
 
+                if !CallController.isInChina {
+                    Section {
+                        Toggle("Use iOS call interface", isOn: $callKitEnabled)
+                        Toggle("Show calls in phone history", isOn: $callKitCallsInRecents)
+                        .disabled(!callKitEnabled)
+                        .onChange(of: callKitCallsInRecents) { value in
+                            CallController.shared.showInRecents(value)
+                        }
+                    } header: {
+                        Text("Interface")
+                    } footer: {
+                        if callKitEnabled {
+                            Text("You can accept calls from lock screen, without device and app authentication.")
+                        } else {
+                            Text("Authentication is required before the call is connected, but you may miss calls.")
+                        }
+                    }
+                }
+
                 Section("Limitations") {
                     VStack(alignment: .leading, spacing: 8) {
                         textListItem("1.", "Do NOT use SimpleX for emergency calls.")
-                        textListItem("2.", "To prevent the call interruption, enable Do Not Disturb mode.")
+                        textListItem("2.", "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.")
                     }
                     .font(.callout)
                     .padding(.vertical, 8)

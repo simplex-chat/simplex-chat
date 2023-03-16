@@ -23,7 +23,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         let configuration = CXProviderConfiguration()
         configuration.supportsVideo = true
         configuration.supportedHandleTypes = [.generic]
-        configuration.includesCallsInRecents = false // UserDefaults.standard.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
+        configuration.includesCallsInRecents = UserDefaults.standard.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
         configuration.maximumCallGroups = 1
         configuration.maximumCallsPerCallGroup = 1
         configuration.iconTemplateImageData = UIImage(named: "icon-transparent")?.pngData()
