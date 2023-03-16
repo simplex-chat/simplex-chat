@@ -2208,6 +2208,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                   ms <- withStore' $ \db -> getGroupMembers db user g
                   forM_ (zip rfds $ memberFTs ms) $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
                   -- TODO update database status and send event to view CRSndFileCompleteXFTP
+                  pure ()
                   where
                     memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                     memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -2218,7 +2219,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                           | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
                           | otherwise = Nothing
                         useMember _ = Nothing
-                    sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m ()
+                    sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m Int64
                     sendToMember (rfd, (conn, sft)) =
                       sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
                 _ -> pure ()
