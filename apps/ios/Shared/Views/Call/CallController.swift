@@ -35,17 +35,23 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     var onEndCall: (() -> Void)? = nil
     var fulfillOnConnect: CXAnswerCallAction? = nil
 
-    // PKPushRegistry is used from notification service extension
-    private let registry = PKPushRegistry(queue: nil)
+    private let registry = PKPushRegistry(queue: DispatchQueue(
+        label: "chat.simplex.app.AppDelegate.PKPushRegistry",
+        qos: .userInteractive
+    ))
 
     override init() {
         super.init()
-        provider.setDelegate(self, queue: nil)
+        provider.setDelegate(self, queue: DispatchQueue(
+            label: "chat.simplex.app.CallController.CXProvider",
+            qos: .userInteractive
+        ))
         registry.delegate = self
         registry.desiredPushTypes = [.voIP]
     }
 
     func providerDidReset(_ provider: CXProvider) {
+        logger.debug("CallController.providerDidReset")
     }
 
     func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
@@ -60,7 +66,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
-        dismissAllSheets {
+        DispatchQueue.main.async {
             if self.callManager.answerIncomingCall(callUUID: action.callUUID) {
                 // WebRTC call should be in connected state to fulfill.
                 // Otherwise no audio and mic working on lockscreen
@@ -68,6 +74,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             } else {
                 action.fail()
             }
+            dismissAllSheets()
         }
     }
 
@@ -136,7 +143,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     @objc(pushRegistry:didUpdatePushCredentials:forType:)
     func pushRegistry(_ registry: PKPushRegistry, didUpdate pushCredentials: PKPushCredentials, for type: PKPushType) {
-
+        logger.debug("CallController: didUpdate push credentials for type \(type.rawValue, privacy: .public)")
     }
 
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
