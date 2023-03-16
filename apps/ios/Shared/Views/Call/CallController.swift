@@ -35,17 +35,11 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     var onEndCall: (() -> Void)? = nil
     var fulfillOnConnect: CXAnswerCallAction? = nil
 
-    private let registry = PKPushRegistry(queue: DispatchQueue(
-        label: "chat.simplex.app.AppDelegate.PKPushRegistry",
-        qos: .userInteractive
-    ))
+    private let registry = PKPushRegistry(queue: nil)
 
     override init() {
         super.init()
-        provider.setDelegate(self, queue: DispatchQueue(
-            label: "chat.simplex.app.CallController.CXProvider",
-            qos: .userInteractive
-        ))
+        provider.setDelegate(self, queue: nil)
         registry.delegate = self
         registry.desiredPushTypes = [.voIP]
     }
@@ -144,12 +138,9 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         logger.debug("CallController: didUpdate push credentials for type \(type.rawValue, privacy: .public)")
     }
 
-    func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
+    func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType) async {
         logger.debug("CallController: did receive push with type \(type.rawValue, privacy: .public)")
-        if type != .voIP {
-            completion()
-            return
-        }
+        if type != .voIP { return }
         if (!ChatModel.shared.chatInitialized) {
             logger.debug("CallController: initializing chat and returning")
             initChatAndMigrate(refreshInvitations: false)
@@ -171,37 +162,41 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         // Extract the call information from the push notification payload
         if let displayName = payload.dictionaryPayload["displayName"] as? String,
            let contactId = payload.dictionaryPayload["contactId"] as? String,
-           let uuid = invitations?.first(where: { $0.contact.id == contactId })?.callkitUUID,
+           let invitations = invitations,
+           let uuid = invitations.first(where: { $0.contact.id == contactId })?.callkitUUID,
            let media = payload.dictionaryPayload["media"] as? String {
+            let r = invitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+            await MainActor.run { ChatModel.shared.callInvitations = r }
             let callUpdate = CXCallUpdate()
             callUpdate.remoteHandle = CXHandle(type: .generic, value: contactId)
             callUpdate.localizedCallerName = displayName
             callUpdate.hasVideo = media == CallMediaType.video.rawValue
             logger.debug("CallController: reporting incoming call directly to CallKit")
-            CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
-                if error != nil {
-                    ChatModel.shared.callInvitations.removeValue(forKey: contactId)
-                }
-                // Tell PushKit that the notification is handled.
-                completion()
-            })
+            do {
+                try await CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate)
+            } catch let error {
+                logger.error("CallController reportNewIncomingCall error: \(String(describing: error))")
+                _ = await MainActor.run { ChatModel.shared.callInvitations.removeValue(forKey: contactId) }
+            }
         } else {
             logger.debug("CallController: displayName \(String(describing: payload.dictionaryPayload["displayName"] as? String))")
             logger.debug("CallController: contactId \(String(describing: payload.dictionaryPayload["contactId"] as? String))")
             logger.debug("CallController: uuid \(String(describing: invitations?.first(where: { $0.contact.id == payload.dictionaryPayload["contactId"] as? String })?.callkitUUID))")
-            self.reportFakeCall(completion)
+            await reportExpiredCall()
         }
     }
 
-    private func reportFakeCall(_ completion: @escaping () -> Void) {
+    private func reportExpiredCall() async {
         let uuid = UUID()
         let callUpdate = CXCallUpdate()
-        CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
-            completion()
+        do {
+            try await CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate)
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 CallController.shared.provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
             }
-        })
+        } catch let error {
+            logger.error("reportExpiredCall: \(String(describing: error))")
+        }
     }
 
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
