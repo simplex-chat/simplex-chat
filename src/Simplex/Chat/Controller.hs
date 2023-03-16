@@ -108,6 +108,7 @@ data ChatConfig = ChatConfig
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
+    tempDir :: Maybe FilePath,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,

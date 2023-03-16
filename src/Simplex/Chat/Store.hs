@@ -185,7 +185,6 @@ module Simplex.Chat.Store
     startRcvInlineFT,
     xftpAcceptRcvFT,
     updateRcvFileStatus,
-    updateRcvFileStatus',
     createRcvFileChunk,
     updatedRcvFileChunkStored,
     deleteRcvFileChunks,
@@ -274,7 +273,6 @@ module Simplex.Chat.Store
 where
 
 import Control.Applicative ((<|>))
-import Control.Concurrent.STM (stateTVar)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad.Except
@@ -562,7 +560,7 @@ getUserByASndFileId db aSndFileId =
 getUserByARcvFileId :: DB.Connection -> AgentRcvFileId -> IO (Maybe User)
 getUserByARcvFileId db aRcvFileId =
   maybeFirstRow toUser $
-    DB.query db (userQuery <> " JOIN rcv_files r USING (file_id) JOIN files f ON f.user_id = u.user_id WHERE r.agent_rcv_file_id = ?") (Only aRcvFileId)
+    DB.query db (userQuery <> " JOIN files f ON f.user_id = u.user_id JOIN rcv_files r ON r.file_id = f.file_id WHERE r.agent_rcv_file_id = ?") (Only aRcvFileId)
 
 getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
 getUserByContactId db contactId =
@@ -2751,16 +2749,17 @@ createSndFileTransferXFTP db User {userId} contactOrGroup filePath FileInvitatio
 
 createSndFTDescrXFTP :: DB.Connection -> User -> Maybe GroupMember -> Connection -> FileTransferMeta -> FileDescr -> IO ()
 createSndFTDescrXFTP db User {userId} m Connection {connId} FileTransferMeta {fileId} FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
+  currentTs <- getCurrentTime
   let fileStatus = FSNew
   DB.execute
     db
-    "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete) VALUES (?,?,?,?)"
-    (userId, fileDescrText, fileDescrPartNo, fileDescrComplete)
+    "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+    (userId, fileDescrText, fileDescrPartNo, fileDescrComplete, currentTs, currentTs)
   fileDescrId <- insertedRowId db
   DB.execute
     db
-    "INSERT INTO snd_files (file_id, file_status, file_descr_id, group_member_id, connection_id) VALUES (?,?,?,?,?)"
-    (fileId, fileStatus, fileDescrId, groupMemberId' <$> m, connId)
+    "INSERT INTO snd_files (file_id, file_status, file_descr_id, group_member_id, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+    (fileId, fileStatus, fileDescrId, groupMemberId' <$> m, connId, currentTs, currentTs)
 
 updateSndFTDescrXFTP :: DB.Connection -> User -> SndFileTransfer -> Text -> IO ()
 updateSndFTDescrXFTP db user@User {userId} sft@SndFileTransfer {fileId, fileDescrId} rfdText = do
@@ -2937,7 +2936,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (userId, contactId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
     insertedRowId db
-  rfd <- mapM (createRcvFD_ db userId) fileDescr
+  rfd <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd
   liftIO $
     DB.execute
@@ -2955,7 +2954,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
       "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
     insertedRowId db
-  rfd <- mapM (createRcvFD_ db userId) fileDescr
+  rfd <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd
   liftIO $
     DB.execute
@@ -2964,14 +2963,14 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, rfdId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
-createRcvFD_ :: DB.Connection -> UserId -> FileDescr -> ExceptT StoreError IO RcvFileDescr
-createRcvFD_ db userId FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
+createRcvFD_ :: DB.Connection -> UserId -> UTCTime -> FileDescr -> ExceptT StoreError IO RcvFileDescr
+createRcvFD_ db userId currentTs FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
   when (fileDescrPartNo /= 0) $ throwError SERcvFileInvalidDescrPart
   fileDescrId <- liftIO $ do
     DB.execute
       db
-      "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete) VALUES (?,?,?,?)"
-      (userId, fileDescrText, fileDescrPartNo, fileDescrComplete)
+      "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (userId, fileDescrText, fileDescrPartNo, fileDescrComplete, currentTs, currentTs)
     insertedRowId db
   pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText, fileDescrComplete}
 
@@ -2980,7 +2979,7 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
   currentTs <- liftIO getCurrentTime
   liftIO (getRcvFileDescrByFileId_ db fileId) >>= \case
     Nothing -> do
-      rfd@RcvFileDescr {fileDescrId} <- createRcvFD_ db userId fd
+      rfd@RcvFileDescr {fileDescrId} <- createRcvFD_ db userId currentTs fd
       liftIO $
         DB.execute
           db
@@ -3127,11 +3126,8 @@ acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
     "UPDATE rcv_files SET rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
     (rcvFileInline, FSAccepted, currentTs, fileId)
 
-updateRcvFileStatus :: DB.Connection -> RcvFileTransfer -> FileStatus -> IO ()
-updateRcvFileStatus db RcvFileTransfer {fileId} = updateRcvFileStatus' db fileId
-
-updateRcvFileStatus' :: DB.Connection -> FileTransferId -> FileStatus -> IO ()
-updateRcvFileStatus' db fileId status = do
+updateRcvFileStatus :: DB.Connection -> FileTransferId -> FileStatus -> IO ()
+updateRcvFileStatus db fileId status = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?" (status, currentTs, fileId)
 

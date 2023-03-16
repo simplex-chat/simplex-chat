@@ -15,7 +15,7 @@
 module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
-import Control.Concurrent.STM (retry, stateTVar)
+import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -111,6 +111,7 @@ defaultChatConfig =
       xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       xftpFileConfig = Nothing,
+      tempDir = Nothing,
       logLevel = CLLImportant,
       subscriptionEvents = False,
       hostEvents = False,
@@ -145,7 +146,7 @@ createChatDatabase filePrefix key yesToMigrations = do
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles} ChatOpts {coreOptions = CoreChatOpts {smpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, allowInstantFiles} sendToast = do
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, allowInstantFiles} sendToast = do
   let inlineFiles' = if allowInstantFiles then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
       config = cfg {logLevel, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
@@ -171,7 +172,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   timedItemThreads <- atomically TM.empty
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
-  tempDirectory <- newTVarIO Nothing
+  tempDirectory <- newTVarIO tempDir
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
@@ -535,6 +536,7 @@ processChatCommand = \case
             fInv = xftpFileInvitation fileName fileSize fileDescr
         tmp <- readTVarIO =<< asks tempDirectory
         aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) file n tmp
+        -- TODO CRSndFileStart event for XFTP
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv $ AgentSndFileId aFileId
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
         case contactOrGroup of
@@ -1766,11 +1768,11 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, rcvFileDescription
     -- direct file protocol
     (Nothing, Just connReq) -> do
       connIds <- joinAgentConnectionAsync user True connReq . directMessage $ XFileAcpt fName
-      filePath <- getRcvFilePath fileId filePath_ fName
+      filePath <- getRcvFilePath fileId filePath_ fName True
       withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
     -- XFTP
     (Just rfd, _) -> do
-      filePath <- getRcvFilePath fileId filePath_ fName
+      filePath <- getRcvFilePath fileId filePath_ fName False
       ci <- withStore $ \db -> xftpAcceptRcvFT db user fileId filePath
       receiveViaCompleteFD user fileId filePath rfd
       pure ci
@@ -1791,7 +1793,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, rcvFileDescription
   where
     acceptFile :: CommandFunction -> (ChatMsgEvent 'Json -> m ()) -> m AChatItem
     acceptFile cmdFunction send = do
-      filePath <- getRcvFilePath fileId filePath_ fName
+      filePath <- getRcvFilePath fileId filePath_ fName True
       inline <- receiveInline
       if
           | inline -> do
@@ -1821,10 +1823,19 @@ receiveViaCompleteFD user fileId filePath RcvFileDescr {fileDescrText, fileDescr
     rd <- parseRcvFileDescription fileDescrText
     tmp <- readTVarIO =<< asks tempDirectory
     aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd tmp filePath
+    startReceivingFile user fileId
     withStore' $ \db -> updateRcvFileAgentId db fileId (AgentRcvFileId aFileId)
 
-getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
-getRcvFilePath fileId fPath_ fn = case fPath_ of
+startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
+startReceivingFile user fileId = do
+  ci <- withStore $ \db -> do
+    liftIO $ updateRcvFileStatus db fileId FSConnected
+    liftIO $ updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
+    getChatItemByFileId db user fileId
+  toView $ CRRcvFileStart user ci
+
+getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> Bool -> m FilePath
+getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
   Nothing ->
     asks filesFolder >>= readTVarIO >>= \case
       Nothing -> do
@@ -1849,9 +1860,15 @@ getRcvFilePath fileId fPath_ fn = case fPath_ of
     createEmptyFile fPath = emptyFile fPath `E.catch` (throwChatError . CEFileWrite fPath . (show :: E.SomeException -> String))
     emptyFile :: FilePath -> m FilePath
     emptyFile fPath = do
-      h <- getFileHandle fileId fPath rcvFiles AppendMode
+      h <-
+        if keepHandle
+          then getFileHandle fileId fPath rcvFiles AppendMode
+          else getTmpHandle fPath
       liftIO $ B.hPut h "" >> hFlush h
       pure fPath
+    getTmpHandle :: FilePath -> m Handle
+    getTmpHandle fPath =
+      liftIO (openFile fPath AppendMode) `E.catch` (throwChatError . CEFileInternal . (show :: E.SomeException -> String))
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
@@ -2238,7 +2255,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
         RFDONE -> do
           ci <- withStore $ \db -> do
             liftIO $ do
-              updateRcvFileStatus' db fileId FSComplete
+              updateRcvFileStatus db fileId FSComplete
               updateCIFileStatus db user fileId CIFSRcvComplete
             getChatItemByFileId db user fileId
           -- ack to agent
@@ -2673,7 +2690,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case chatMsgEvent of
             XOk -> allowAgentConnectionAsync user conn confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
             _ -> pure ()
-        CON -> startReceivingFile ft
+        CON -> startReceivingFile user fileId
         MSG meta _ msgBody -> do
           parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
         OK ->
@@ -2687,14 +2704,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
-
-    startReceivingFile :: RcvFileTransfer -> m ()
-    startReceivingFile ft@RcvFileTransfer {fileId} = do
-      ci <- withStore $ \db -> do
-        liftIO $ updateRcvFileStatus db ft FSConnected
-        liftIO $ updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
-        getChatItemByFileId db user fileId
-      toView $ CRRcvFileStart user ci
 
     receiveFileChunk :: RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> m ()
     receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize, cancelled} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
@@ -2720,7 +2729,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 appendFileChunk ft chunkNo chunk
                 ci <- withStore $ \db -> do
                   liftIO $ do
-                    updateRcvFileStatus db ft FSComplete
+                    updateRcvFileStatus db fileId FSComplete
                     updateCIFileStatus db user fileId CIFSRcvComplete
                     deleteRcvFileChunks db ft
                   getChatItemByFileId db user fileId
@@ -2945,7 +2954,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ft@RcvFileTransfer {fileId} <- withStore $ \db -> createRcvFT db fInv inline fileChunkSize
       (filePath, fileStatus) <- case inline of
         Just IFMSent -> do
-          fPath <- getRcvFilePath fileId Nothing fileName
+          fPath <- getRcvFilePath fileId Nothing fileName True
           withStore' $ \db -> startRcvInlineFT db user ft fPath inline
           pure (Just fPath, CIFSRcvAccepted)
         _ -> pure (Nothing, CIFSRcvInvitation)
@@ -3171,9 +3180,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
       | chunkNo == 1 = throwChatError $ CEInlineFileProhibited fileId
       | otherwise = pure ()
-    receiveInlineChunk ft chunk meta = do
+    receiveInlineChunk ft@RcvFileTransfer {fileId} chunk meta = do
       case chunk of
-        FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile ft
+        FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile user fileId
         _ -> pure ()
       receiveFileChunk ft Nothing meta chunk
 
@@ -3714,7 +3723,7 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, rcvFileInline} =
       closeFileHandle fileId rcvFiles
       withStore' $ \db -> do
         updateFileCancelled db user fileId CIFSRcvCancelled
-        updateRcvFileStatus db ft FSCancelled
+        updateRcvFileStatus db fileId FSCancelled
         deleteRcvFileChunks db ft
       pure fileConnId
     fileConnId = if isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing

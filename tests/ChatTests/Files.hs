@@ -8,7 +8,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import qualified Data.ByteString.Char8 as B
-import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), defaultInlineFilesConfig)
+import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFileConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesFileExist)
@@ -48,6 +48,8 @@ chatFileTests = do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
+  describe "file transfer over XFTP" $ do
+    it "send and receive file" testXFTPFileTransfer
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -914,6 +916,28 @@ testAsyncGroupFileTransfer tmp = do
   dest `shouldBe` src
   dest2 <- B.readFile "./tests/tmp/test_1.jpg"
   dest2 `shouldBe` src
+
+testXFTPFileTransfer :: HasCallStack => FilePath -> IO ()
+testXFTPFileTransfer =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+
+    alice #> "/f @bob ./tests/fixtures/test.pdf"
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob ##> "/fr 1 ./tests/tmp"
+    bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+    -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+    alice <## "completed sending file 1 (test.pdf) to bob"
+    bob <## "started receiving file 1 (test.pdf) from alice"
+    bob <## "completed receiving file 1 (test.pdf) from alice"
+
+    src <- B.readFile "./tests/fixtures/test.pdf"
+    dest <- B.readFile "./tests/tmp/test.pdf"
+    dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
