@@ -144,11 +144,9 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         if type == .voIP {
             if (!ChatModel.shared.chatInitialized) {
                 logger.debug("CallController: initializing chat and returning")
-                initChatAndMigrate()
+                initChatAndMigrate(refreshInvitations: false)
                 startChatAndActivate()
                 CallController.shared.onEndCall = { terminateChat() }
-                // CallKit will be called from different place, see SimpleXAPI.startChat()
-                return
             } else {
                 logger.debug("CallController: starting chat (already initialized)")
                 startChatAndActivate()
@@ -177,8 +175,21 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                     // Tell PushKit that the notification is handled.
                     completion()
                 })
+            } else {
+                reportFakeCall(completion)
             }
         }
+    }
+
+    private func reportFakeCall(_ completion: @escaping () -> Void) {
+        let uuid = UUID()
+        let callUpdate = CXCallUpdate()
+        CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
+            completion()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                CallController.shared.provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
+            }
+        })
     }
 
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {

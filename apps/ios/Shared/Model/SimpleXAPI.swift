@@ -909,7 +909,7 @@ func apiGetVersion() throws -> CoreVersionInfo {
     throw r
 }
 
-func initializeChat(start: Bool, dbKey: String? = nil) throws {
+func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey)
@@ -925,13 +925,13 @@ func initializeChat(start: Bool, dbKey: String? = nil) throws {
     if m.currentUser == nil {
         m.onboardingStage = .step1_SimpleXInfo
     } else if start {
-        try startChat()
+        try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
     }
 }
 
-func startChat() throws {
+func startChat(refreshInvitations: Bool = true) throws {
     logger.debug("startChat")
     let m = ChatModel.shared
     try setNetworkConfig(getNetCfg())
@@ -940,7 +940,9 @@ func startChat() throws {
     if justStarted {
         try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
-        try refreshCallInvitations()
+        if (refreshInvitations) {
+            try refreshCallInvitations()
+        }
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
