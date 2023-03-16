@@ -50,10 +50,7 @@ struct SimpleXApp: App {
                     switch (phase) {
                     case .background:
                         if CallController.useCallKit() && chatModel.activeCall != nil {
-                            CallController.shared.onEndCall = {
-                                suspendChat()
-                                BGManager.shared.schedule()
-                            }
+                            CallController.shared.shouldSuspendChat = true
                         } else {
                             suspendChat()
                             BGManager.shared.schedule()
@@ -65,7 +62,7 @@ struct SimpleXApp: App {
                         canConnectCall = false
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
-                        CallController.shared.onEndCall = nil
+                        CallController.shared.shouldSuspendChat = false
                         let appState = appStateGroupDefault.get()
                         startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {
