@@ -109,18 +109,25 @@ struct ContentView: View {
     }
 
     private func processUserActivity(_ activity: NSUserActivity) {
-        let callToContact = { (contactId: ChatId?, mediaType: CallMediaType) in
-            if let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
-                case let .direct(contact) = chatInfo {
+        let intent = activity.interaction?.intent
+        if let intent = intent as? INStartCallIntent {
+            callToRecentContact(intent.contacts, intent.callCapability == .videoCall ? .video : .audio)
+        } else if let intent = intent as? INStartAudioCallIntent {
+            callToRecentContact(intent.contacts, .audio)
+        } else if let intent = intent as? INStartVideoCallIntent {
+            callToRecentContact(intent.contacts, .video)
+        }
+    }
+
+    private func callToRecentContact(_ contacts: [INPerson]?, _ mediaType: CallMediaType) {
+        logger.debug("callToRecentContact")
+        if let contactId = contacts?.first?.personHandle?.value,
+           let chat = chatModel.getChat(contactId),
+           case let .direct(contact) = chat.chatInfo {
+            logger.debug("callToRecentContact: schedule call")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 CallController.shared.startCall(contact, mediaType)
             }
-        }
-        if let intent = activity.interaction?.intent as? INStartCallIntent {
-            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
-        } else if let intent = activity.interaction?.intent as? INStartAudioCallIntent {
-            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
-        } else if let intent = activity.interaction?.intent as? INStartVideoCallIntent {
-            callToContact(intent.contacts?.first?.personHandle?.value, .video)
         }
     }
 
