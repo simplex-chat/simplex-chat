@@ -2198,13 +2198,16 @@ processAgentMsgSndFile _corrId aFileId msg =
             (Just sharedMsgId, Nothing) -> do
               (ft, sfts) <- withStore $ \db -> getSndFileTransfer db user fileId
               when (length rfds < length sfts) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
+              -- TODO either update database status or move to SFPROG
               toView $ CRSndFileProgressXFTP user ci ft 1 1
               case (rfds, sfts, d, cInfo) of
-                (rfd : _, sft : _, SMDSnd, DirectChat ct) ->
-                  sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
+                (rfd : _, sft : _, SMDSnd, DirectChat ct) -> do
+                  msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
+                  withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
                 (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
                   ms <- withStore' $ \db -> getGroupMembers db user g
                   forM_ (zip rfds $ memberFTs ms) $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
+                  -- TODO update database status and send event to view CRSndFileCompleteXFTP
                   where
                     memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                     memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -2226,9 +2229,7 @@ processAgentMsgSndFile _corrId aFileId msg =
           let rfdText = safeDecodeUtf8 $ strEncode rfd
           withStore' $ \db -> updateSndFTDescrXFTP db user sft rfdText
           partSize <- asks $ xftpDescrPartSize . config
-          msgDeliveryId <- sendParts 1 partSize rfdText
-          -- msgDeliveryId <- sendFileDescription_ rfd sharedMsgId sendMsg
-          withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+          sendParts 1 partSize rfdText
           where
             sendParts partNo partSize rfdText = do
               let (part, rest) = T.splitAt partSize rfdText
