@@ -2219,9 +2219,9 @@ processAgentMsgSndFile _corrId aFileId msg =
                           | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
                           | otherwise = Nothing
                         useMember _ = Nothing
-                    sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m Int64
+                    sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m ()
                     sendToMember (rfd, (conn, sft)) =
-                      sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
+                      void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
                 _ -> pure ()
             _ -> pure () -- TODO error?
       where
