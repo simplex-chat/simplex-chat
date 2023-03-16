@@ -291,7 +291,7 @@ struct ComposeView: View {
                     .background(.background)
                     .disabled(!chat.userCanSend)
 
-                    if (!chat.userCanSend) {
+                    if chat.userIsObserver {
                         Text("you are observer")
                             .italic()
                             .foregroundColor(.secondary)

@@ -496,6 +496,14 @@ data class Chat (
       else -> false
     }
 
+  val userIsObserver: Boolean get() = when(chatInfo) {
+    is ChatInfo.Group -> {
+      val m = chatInfo.groupInfo.membership
+      m.memberActive && m.memberRole == GroupMemberRole.Observer
+    }
+    else -> false
+  }
+
   val id: String get() = chatInfo.id
 
   @Serializable
