@@ -244,18 +244,17 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
     case let .callInvitation(invitation):
         // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
         if useCallKit() {
-            CXProvider.reportNewIncomingVoIPPushPayload([
-                "displayName": invitation.contact.displayName,
-                "contactId": invitation.contact.id,
-                "media": invitation.callType.media.rawValue
-            ]) { error in
-                if let error = error {
-                    logger.error("reportNewIncomingVoIPPushPayload error \(error.localizedDescription, privacy: .public)")
-                } else {
-                    logger.debug("reportNewIncomingVoIPPushPayload success for \(invitation.contact.id)")
-                }
+            do {
+                try await CXProvider.reportNewIncomingVoIPPushPayload([
+                    "displayName": invitation.contact.displayName,
+                    "contactId": invitation.contact.id,
+                    "media": invitation.callType.media.rawValue
+                ])
+                logger.debug("reportNewIncomingVoIPPushPayload success for \(invitation.contact.id)")
+                return (invitation.contact.id, (UNNotificationContent().mutableCopy() as! UNMutableNotificationContent))
+            } catch let error {
+                logger.error("reportNewIncomingVoIPPushPayload error \(String(describing: error), privacy: .public)")
             }
-            return (invitation.contact.id, (UNNotificationContent().mutableCopy() as! UNMutableNotificationContent))
         }
         return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
