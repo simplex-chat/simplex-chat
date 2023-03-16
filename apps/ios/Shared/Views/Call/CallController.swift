@@ -60,12 +60,14 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
-        if callManager.answerIncomingCall(callUUID: action.callUUID) {
-            // WebRTC call should be in connected state to fulfill.
-            // Otherwise no audio and mic working on lockscreen
-            fulfillOnConnect = action
-        } else {
-            action.fail()
+        dismissAllSheets {
+            if self.callManager.answerIncomingCall(callUUID: action.callUUID) {
+                // WebRTC call should be in connected state to fulfill.
+                // Otherwise no audio and mic working on lockscreen
+                self.fulfillOnConnect = action
+            } else {
+                action.fail()
+            }
         }
     }
 

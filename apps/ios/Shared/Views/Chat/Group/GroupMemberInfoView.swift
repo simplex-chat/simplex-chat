@@ -142,7 +142,7 @@ struct GroupMemberInfoView: View {
 
     func knownDirectChatButton(_ chat: Chat) -> some View {
         Button {
-            dismissAllSheets(animated: true)
+            dismissAllSheets()
             DispatchQueue.main.async {
                 chatModel.chatId = chat.id
             }
@@ -156,7 +156,7 @@ struct GroupMemberInfoView: View {
             do {
                 let chat = try apiGetChat(type: .direct, id: contactId)
                 chatModel.addChat(chat)
-                dismissAllSheets(animated: true)
+                dismissAllSheets()
                 DispatchQueue.main.async {
                     chatModel.chatId = chat.id
                 }
