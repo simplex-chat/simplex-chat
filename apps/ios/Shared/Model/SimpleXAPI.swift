@@ -1311,8 +1311,13 @@ func refreshCallInvitations() throws {
 
 func justRefreshCallInvitations() throws -> [RcvCallInvitation] {
     let m = ChatModel.shared
+    logger.debug("justRefreshCallInvitations (from CallController?)")
     let callInvitations = try apiGetCallInvitations()
-    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    logger.debug("justRefreshCallInvitations after apiGetCallInvitations (from CallController?) \(callInvitations, privacy: .public)")
+    let r = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    logger.debug("justRefreshCallInvitations after reduce (from CallController?) \(r, privacy: .public)")
+//    m.callInvitations = r
+    logger.debug("justRefreshCallInvitations after callInvitations.reduce (from CallController?)")
     return callInvitations
 }
 

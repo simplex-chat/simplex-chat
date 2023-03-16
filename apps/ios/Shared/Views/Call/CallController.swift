@@ -66,16 +66,14 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
-        DispatchQueue.main.async {
-            if self.callManager.answerIncomingCall(callUUID: action.callUUID) {
-                // WebRTC call should be in connected state to fulfill.
-                // Otherwise no audio and mic working on lockscreen
-                self.fulfillOnConnect = action
-            } else {
-                action.fail()
-            }
-            dismissAllSheets()
+        if self.callManager.answerIncomingCall(callUUID: action.callUUID) {
+            // WebRTC call should be in connected state to fulfill.
+            // Otherwise no audio and mic working on lockscreen
+            self.fulfillOnConnect = action
+        } else {
+            action.fail()
         }
+//        dismissAllSheets()
     }
 
     func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
@@ -148,43 +146,50 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
         logger.debug("CallController: did receive push with type \(type.rawValue, privacy: .public)")
-        if type == .voIP {
-            if (!ChatModel.shared.chatInitialized) {
-                logger.debug("CallController: initializing chat and returning")
-                initChatAndMigrate(refreshInvitations: false)
-                startChatAndActivate()
-                CallController.shared.onEndCall = { terminateChat() }
-            } else {
-                logger.debug("CallController: starting chat (already initialized)")
-                startChatAndActivate()
-                CallController.shared.onEndCall = {
-                    suspendChat()
-                    BGManager.shared.schedule()
+        if type != .voIP {
+            completion()
+            return
+        }
+        if (!ChatModel.shared.chatInitialized) {
+            logger.debug("CallController: initializing chat and returning")
+            initChatAndMigrate(refreshInvitations: false)
+            startChatAndActivate()
+            CallController.shared.onEndCall = { terminateChat() }
+        } else {
+            logger.debug("CallController: starting chat (already initialized)")
+            startChatAndActivate()
+            logger.debug("CallController: after startChatAndActivate")
+            CallController.shared.onEndCall = {
+                suspendChat()
+                BGManager.shared.schedule()
+            }
+        }
+        // No actual list of invitations in model before this line
+        logger.debug("CallController: before justRefreshCallInvitations")
+        let invitations = try? justRefreshCallInvitations()
+        logger.debug("CallController: invitations \(String(describing: invitations))")
+        // Extract the call information from the push notification payload
+        if let displayName = payload.dictionaryPayload["displayName"] as? String,
+           let contactId = payload.dictionaryPayload["contactId"] as? String,
+           let uuid = invitations?.first(where: { $0.contact.id == contactId })?.callkitUUID,
+           let media = payload.dictionaryPayload["media"] as? String {
+            let callUpdate = CXCallUpdate()
+            callUpdate.remoteHandle = CXHandle(type: .generic, value: contactId)
+            callUpdate.localizedCallerName = displayName
+            callUpdate.hasVideo = media == CallMediaType.video.rawValue
+            logger.debug("CallController: reporting incoming call directly to CallKit")
+            CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
+                if error != nil {
+                    ChatModel.shared.callInvitations.removeValue(forKey: contactId)
                 }
-            }
-            // No actual list of invitations in model before this line
-            let invitations = try? justRefreshCallInvitations()
-            logger.debug("Invitations \(String(describing: invitations))")
-            // Extract the call information from the push notification payload
-            if let displayName = payload.dictionaryPayload["displayName"] as? String,
-               let contactId = payload.dictionaryPayload["contactId"] as? String,
-               let uuid = ChatModel.shared.callInvitations.first(where: { (key, value) in value.contact.id == contactId } )?.value.callkitUUID,
-               let media = payload.dictionaryPayload["media"] as? String {
-                let callUpdate = CXCallUpdate()
-                callUpdate.remoteHandle = CXHandle(type: .generic, value: contactId)
-                callUpdate.localizedCallerName = displayName
-                callUpdate.hasVideo = media == CallMediaType.video.rawValue
-                logger.debug("CallController: reporting incoming call directly to CallKit")
-                CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
-                    if error != nil {
-                        ChatModel.shared.callInvitations.removeValue(forKey: contactId)
-                    }
-                    // Tell PushKit that the notification is handled.
-                    completion()
-                })
-            } else {
-                reportFakeCall(completion)
-            }
+                // Tell PushKit that the notification is handled.
+                completion()
+            })
+        } else {
+            logger.debug("CallController: displayName \(String(describing: payload.dictionaryPayload["displayName"] as? String))")
+            logger.debug("CallController: contactId \(String(describing: payload.dictionaryPayload["contactId"] as? String))")
+            logger.debug("CallController: uuid \(String(describing: invitations?.first(where: { $0.contact.id == payload.dictionaryPayload["contactId"] as? String })?.callkitUUID))")
+            self.reportFakeCall(completion)
         }
     }
 
