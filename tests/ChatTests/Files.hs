@@ -48,7 +48,7 @@ chatFileTests = do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
-  describe "file transfer over XFTP" $ do
+  describe "file transfer over XFTP" $
     it "send and receive file" testXFTPFileTransfer
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
@@ -920,22 +920,23 @@ testAsyncGroupFileTransfer tmp = do
 testXFTPFileTransfer :: HasCallStack => FilePath -> IO ()
 testXFTPFileTransfer =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
+    withXFTPServer $ do
+      connectUsers alice bob
 
-    alice #> "/f @bob ./tests/fixtures/test.pdf"
-    alice <## "use /fc 1 to cancel sending"
-    bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
-    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-    bob ##> "/fr 1 ./tests/tmp"
-    bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
-    -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
-    alice <## "completed sending file 1 (test.pdf) to bob"
-    bob <## "started receiving file 1 (test.pdf) from alice"
-    bob <## "completed receiving file 1 (test.pdf) from alice"
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+      alice <## "completed sending file 1 (test.pdf) to bob"
+      bob <## "started receiving file 1 (test.pdf) from alice"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
 
-    src <- B.readFile "./tests/fixtures/test.pdf"
-    dest <- B.readFile "./tests/tmp/test.pdf"
-    dest `shouldBe` src
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
