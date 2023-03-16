@@ -2225,7 +2225,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                 _ -> pure ()
             _ -> pure () -- TODO error?
       where
-        sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m ()
+        sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
           let rfdText = safeDecodeUtf8 $ strEncode rfd
           withStore' $ \db -> updateSndFTDescrXFTP db user sft rfdText
