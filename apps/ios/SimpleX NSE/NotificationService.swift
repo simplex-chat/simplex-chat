@@ -250,7 +250,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
                     "contactId": invitation.contact.id,
                     "media": invitation.callType.media.rawValue
                 ])
-                logger.debug("reportNewIncomingVoIPPushPayload success for \(invitation.contact.id)")
+                logger.debug("reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
                 return (invitation.contact.id, (UNNotificationContent().mutableCopy() as! UNMutableNotificationContent))
             } catch let error {
                 logger.error("reportNewIncomingVoIPPushPayload error \(String(describing: error), privacy: .public)")
