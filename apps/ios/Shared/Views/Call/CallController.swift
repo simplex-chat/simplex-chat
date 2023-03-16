@@ -124,21 +124,21 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             print(error)
             logger.error("failed deactivating audio session")
         }
-        // Allows to accept second call while in call with a previous before suspending a chat,
-        // see `.onChange(of: scenePhase)` in SimpleXApp
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-            if ChatModel.shared.activeCall == nil {
-                logger.debug("CallController: shouldSuspendChat \(String(describing: self?.shouldSuspendChat), privacy: .public)")
-                self?.suspendOnEndCall()
-            }
-        }
+        suspendOnEndCall()
     }
 
     func suspendOnEndCall() {
         if shouldSuspendChat {
-            shouldSuspendChat = false
-            suspendChat()
-            BGManager.shared.schedule()
+            // The delay allows to accept the second call before suspending a chat
+            // see `.onChange(of: scenePhase)` in SimpleXApp
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                logger.debug("CallController: shouldSuspendChat \(String(describing: self?.shouldSuspendChat), privacy: .public)")
+                if ChatModel.shared.activeCall == nil && self?.shouldSuspendChat == true {
+                    self?.shouldSuspendChat = false
+                    suspendChat()
+                    BGManager.shared.schedule()
+                }
+            }
         }
     }
 
