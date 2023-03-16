@@ -4264,14 +4264,14 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <note>enabled status
    group pref value</note>
       </trans-unit>
-      <trans-unit id="offered %@" xml:space="preserve">
+      <trans-unit id="offered %@" xml:space="preserve" approved="no">
         <source>offered %@</source>
-        <target>aangeboden %@</target>
+        <target state="translated">voorgesteld %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="offered %@: %@" xml:space="preserve">
+      <trans-unit id="offered %@: %@" xml:space="preserve" approved="no">
         <source>offered %1$@: %2$@</source>
-        <target>aangeboden %1$@: %2$@</target>
+        <target state="translated">voorgesteld %1$@: %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
