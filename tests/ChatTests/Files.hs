@@ -48,7 +48,7 @@ chatFileTests = do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
-  describe "file transfer over XFTP" $
+  describe "file transfer over XFTP" $ do
     it "send and receive file" testXFTPFileTransfer
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
