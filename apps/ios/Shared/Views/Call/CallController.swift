@@ -46,6 +46,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func providerDidReset(_ provider: CXProvider) {
+        logger.debug("CallController.providerDidReset")
     }
 
     func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
@@ -134,7 +135,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     @objc(pushRegistry:didUpdatePushCredentials:forType:)
     func pushRegistry(_ registry: PKPushRegistry, didUpdate pushCredentials: PKPushCredentials, for type: PKPushType) {
-
+        logger.debug("CallController: didUpdate push credentials for type \(type.rawValue, privacy: .public)")
     }
 
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
