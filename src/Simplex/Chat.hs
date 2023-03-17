@@ -15,7 +15,7 @@
 module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
-import Control.Concurrent.STM (retry, stateTVar)
+import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -3224,9 +3224,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts to from = do
-      withStore' $ \db -> mergeContactRecords db userId to from
-      toView $ CRContactsMerged user to from
+    mergeContacts c1 c2 = do
+      withStore' $ \db -> mergeContactRecords db userId c1 c2
+      toView $ CRContactsMerged user c1 c2
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
