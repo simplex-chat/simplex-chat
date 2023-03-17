@@ -259,7 +259,6 @@ module Simplex.Chat.Store
 where
 
 import Control.Applicative ((<|>))
-import Control.Concurrent.STM (stateTVar)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad.Except
@@ -1592,7 +1591,10 @@ matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = d
     cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
 
 mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
-mergeContactRecords db userId Contact {contactId = toContactId} Contact {contactId = fromContactId, localDisplayName} = do
+mergeContactRecords db userId ct1 ct2 = do
+  let (to, from) = toFromContacts ct1 ct2
+      Contact {contactId = toContactId} = to
+      Contact {contactId = fromContactId, localDisplayName} = from
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1629,6 +1631,16 @@ mergeContactRecords db userId Contact {contactId = toContactId} Contact {contact
   deleteContactProfile_ db userId fromContactId
   DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+  where
+    toFromContacts :: Contact -> Contact -> (Contact, Contact)
+    toFromContacts c1 c2
+      | directOrUsed c1 && not (directOrUsed c2) = (c1, c2)
+      | directOrUsed c2 && not (directOrUsed c1) = (c2, c1)
+      | otherwise = olderYoungerContacts c1 c2
+    olderYoungerContacts c1 c2
+      | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
+      | otherwise = (c2, c1)
+    ctCreatedAt Contact {createdAt} = createdAt
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db user@User {userId, userContactId} agentConnId = do

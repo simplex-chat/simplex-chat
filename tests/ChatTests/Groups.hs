@@ -1984,6 +1984,5 @@ testGroupLinkLeaveDelete =
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
       bob ##> "/contacts"
-      -- bob <## "alice (Alice)"
-      -- bob <## "cath (Catherine)"
-      pure ()
+      bob <## "alice (Alice)"
+      bob <## "cath (Catherine)"

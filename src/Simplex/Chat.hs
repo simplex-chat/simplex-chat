@@ -15,7 +15,7 @@
 module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
-import Control.Concurrent.STM (retry, stateTVar)
+import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -646,9 +646,12 @@ processChatCommand = \case
       where
         deleteUnusedContact :: ContactId -> m [ConnId]
         deleteUnusedContact contactId =
-          (withStore (\db -> getContact db user contactId) >>= delete)
+          (withStore (\db -> getContact db user contactId) >>= printCt >>= delete)
             `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
           where
+            printCt ct@Contact {localDisplayName, contactUsed, activeConn = Connection {connLevel, viaGroupLink}} = do
+              liftIO $ print $ "deleteUnusedContact ldn: " <> show localDisplayName <> ", contactUsed: " <> show contactUsed <> ", connLevel: " <> show connLevel <> ", viaGroupLink: " <> show viaGroupLink
+              pure ct
             delete ct
               | directOrUsed ct = pure []
               | otherwise =
@@ -3224,9 +3227,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts to from = do
-      withStore' $ \db -> mergeContactRecords db userId to from
-      toView $ CRContactsMerged user to from
+    mergeContacts c1 c2 = do
+      withStore' $ \db -> mergeContactRecords db userId c1 c2
+      toView $ CRContactsMerged user c1 c2
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
