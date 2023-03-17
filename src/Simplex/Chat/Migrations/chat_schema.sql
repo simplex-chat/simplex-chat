@@ -35,7 +35,7 @@ CREATE TABLE users(
   view_pwd_salt BLOB NULL,
   wipe_pwd_hash BLOB NULL,
   wipe_pwd_salt BLOB NULL,
-  hide_ntfs INTEGER NULL DEFAULT 0, -- 1 for active user
+  show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

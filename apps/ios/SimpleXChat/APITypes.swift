@@ -16,7 +16,9 @@ public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
     case listUsers
-    case apiSetActiveUser(userId: Int64)
+    case apiSetActiveUser(userId: Int64, viewPwd: String)
+    case apiSetUserPrivacy(userId: Int64, viewPwd: String, privacyCfg: UserPrivacyCfg?)
+    case apiWipeUser(userId: Int64, wipePwd: String)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool)
     case startChat(subscribe: Bool, expire: Bool)
     case apiStopChat
@@ -103,7 +105,9 @@ public enum ChatCommand {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/create user \(profile.displayName) \(profile.fullName)"
             case .listUsers: return "/users"
-            case let .apiSetActiveUser(userId): return "/_user \(userId)"
+            case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(viewPwd == "" ? "" : " " + encodeJSON(viewPwd))"
+            case let .apiSetUserPrivacy(userId, viewPwd, privacyCfg): return "/_privacy \(userId) \(encodeJSON(viewPwd)) \(encodeJSON(privacyCfg))"
+            case let .apiWipeUser(userId, wipePwd): return "/_wipe user \(userId) \(encodeJSON(wipePwd))"
             case let .apiDeleteUser(userId, delSMPQueues): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))"
             case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
@@ -202,6 +206,8 @@ public enum ChatCommand {
             case .createActiveUser: return "createActiveUser"
             case .listUsers: return "listUsers"
             case .apiSetActiveUser: return "apiSetActiveUser"
+            case .apiSetUserPrivacy: return "apiSetUserPrivacy"
+            case .apiWipeUser: return "apiWipeUser"
             case .apiDeleteUser: return "apiDeleteUser"
             case .startChat: return "startChat"
             case .apiStopChat: return "apiStopChat"
@@ -348,6 +354,7 @@ public enum ChatResponse: Decodable, Error {
     case chatCleared(user: User, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile)
+    case userPrivacy(user: User)
     case contactAliasUpdated(user: User, toContact: Contact)
     case connectionAliasUpdated(user: User, toConnection: PendingContactConnection)
     case contactPrefsUpdated(user: User, fromContact: Contact, toContact: Contact)
@@ -456,6 +463,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
+            case .userPrivacy: return "userPrivacy"
             case .contactAliasUpdated: return "contactAliasUpdated"
             case .connectionAliasUpdated: return "connectionAliasUpdated"
             case .contactPrefsUpdated: return "contactPrefsUpdated"
@@ -564,6 +572,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(u, _, toProfile): return withUser(u, String(describing: toProfile))
+            case let .userPrivacy(u): return withUser(u, "")
             case let .contactAliasUpdated(u, toContact): return withUser(u, String(describing: toContact))
             case let .connectionAliasUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .contactPrefsUpdated(u, fromContact, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))")
@@ -651,6 +660,13 @@ public enum ChatResponse: Decodable, Error {
         }
         return s
     }
+}
+
+public struct UserPrivacyCfg: Codable {
+    var currViewPwd: String
+    var showNtfs: Bool
+    var viewPwd: String
+    var wipePwd: String
 }
 
 public enum ChatPagination {

@@ -253,9 +253,10 @@ chatParseServer = LB.unpack . J.encode . toServerAddress . strDecode . B.pack
     enc = B.unpack . strEncode
 
 chatPasswordHash :: String -> String -> String
-chatPasswordHash pwd salt = B.unpack $ U.encode $ C.sha512Hash $ enc $ pwd <> salt
+chatPasswordHash pwd salt = either (const "") passwordHash salt'
   where
-    enc = encodeUtf8 . T.pack
+    salt' = U.decode $ B.pack salt
+    passwordHash = B.unpack . U.encode . C.sha512Hash . (encodeUtf8 (T.pack pwd) <>)
 
 data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
   deriving (Generic)

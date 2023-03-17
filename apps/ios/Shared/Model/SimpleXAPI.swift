@@ -139,9 +139,15 @@ func listUsers() throws -> [UserInfo] {
     throw r
 }
 
-func apiSetActiveUser(_ userId: Int64) throws -> User {
-    let r = chatSendCmdSync(.apiSetActiveUser(userId: userId))
+func apiSetActiveUser(_ userId: Int64, viewPwd: String = "") throws -> User {
+    let r = chatSendCmdSync(.apiSetActiveUser(userId: userId, viewPwd: viewPwd))
     if case let .activeUser(user) = r { return user }
+    throw r
+}
+
+func apiSetUserPrivacy(_ userId: Int64, viewPwd: String, privacyCfg: UserPrivacyCfg?) throws -> User {
+    let r = chatSendCmdSync(.apiSetUserPrivacy(userId: userId, viewPwd: viewPwd, privacyCfg: privacyCfg))
+    if case let .userPrivacy(user) = r { return user }
     throw r
 }
 

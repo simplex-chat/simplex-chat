@@ -19,7 +19,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -182,12 +182,12 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile Bool
   | ListUsers
-  | APISetActiveUser UserId (Maybe ViewUserPwd)
-  | SetActiveUser UserName (Maybe ViewUserPwd)
+  | APISetActiveUser UserId UserPwd
+  | SetActiveUser UserName UserPwd
+  | APISetUserPrivacy UserId UserPrivacyCfg
+  | SetUserPrivacy UserPrivacyCfg
+  | APIWipeUser UserId UserPwd
   | APIDeleteUser UserId Bool
-  | APISetUserPrivacy UserId (Maybe UserPrivacyCfg)
-  | SetUserPrivacy UserName (Maybe UserPrivacyCfg)
-  | APIWipeUser UserId WipeUserPwd
   | DeleteUser UserName Bool
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
@@ -408,6 +408,7 @@ data ChatResponse
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
+  | CRUserPrivacy {user :: User}
   | CRVersionInfo {versionInfo :: CoreVersionInfo}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation {user :: User}
@@ -525,15 +526,26 @@ instance ToJSON ChatResponse where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
 data UserPrivacyCfg = UserPrivacyCfg
-  { hideNtfs :: Bool,
-    viewPwd :: Text,
-    wipePwd :: Maybe Text
+  { currViewPwd :: UserPwd,
+    showNtfs :: Bool,
+    viewPwd :: UserPwd,
+    wipePwd :: UserPwd
   }
   deriving (Show, Generic, FromJSON)
 
 instance ToJSON UserPrivacyCfg where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+newtype UserPwd = UserPwd {unUserPwd :: Text}
+  deriving (Eq, Show)
+
+instance FromJSON UserPwd where
+  parseJSON v = UserPwd <$> parseJSON v
+
+instance ToJSON UserPwd where
+  toJSON (UserPwd p) = toJSON p
+  toEncoding (UserPwd p) = toEncoding p
 
 newtype AgentQueueId = AgentQueueId QueueId
   deriving (Eq, Show)
@@ -696,6 +708,7 @@ instance ToJSON ChatError where
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
+  | CEUserUnknown
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
@@ -777,7 +790,9 @@ instance ToJSON SQLiteError where
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
-type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
+type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
+
+type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError

@@ -113,15 +113,9 @@ data User = User
     activeUser :: Bool,
     viewPwdHash :: Maybe UserPwdHash,
     wipePwdHash :: Maybe UserPwdHash,
-    hideNtfs :: Bool
+    showNtfs :: Bool
   }
   deriving (Show, Generic, FromJSON)
-
-newtype ViewUserPwd = ViewUserPwd Text
-  deriving (Eq, Show)
-
-newtype WipeUserPwd = WipeUserPwd Text
-  deriving (Eq, Show)
 
 instance ToJSON User where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}

@@ -41,6 +41,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
@@ -195,7 +196,7 @@ activeAgentServers ChatConfig {defaultServers} srvSel =
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
 
-startChatController :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => Bool -> Bool -> m (Async ())
+startChatController :: forall m. ChatMonad' m => Bool -> Bool -> m (Async ())
 startChatController subConns enableExpireCIs = do
   asks smpAgent >>= resumeAgentClient
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
@@ -227,7 +228,7 @@ startChatController subConns enableExpireCIs = do
           startExpireCIThread user
           setExpireCIFlag user True
 
-subscribeUsers :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => [User] -> m ()
+subscribeUsers :: forall m. ChatMonad' m => [User] -> m ()
 subscribeUsers users = do
   let (us, us') = partition activeUser users
   subscribe us
@@ -236,7 +237,7 @@ subscribeUsers users = do
     subscribe :: [User] -> m ()
     subscribe = mapM_ $ runExceptT . subscribeUserConnections Agent.subscribeConnections
 
-restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+restoreCalls :: ChatMonad' m => m ()
 restoreCalls = do
   savedCalls <- fromRight [] <$> runExceptT (withStore' $ \db -> getCalls db)
   let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
@@ -260,7 +261,7 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
       mapM_ hClose fs
       atomically $ writeTVar files M.empty
 
-execChatCommand :: (MonadUnliftIO m, MonadReader ChatController m) => ByteString -> m ChatResponse
+execChatCommand :: ChatMonad' m => ByteString -> m ChatResponse
 execChatCommand s = do
   u <- readTVarIO =<< asks currentUser
   case parseChatCommand s of
@@ -308,32 +309,47 @@ processChatCommand = \case
           DefaultAgentServers {smp} <- asks $ defaultServers . config
           pure (smp, [])
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
-  APISetActiveUser userId pwd_ -> do
-    u <- asks currentUser
-    user <- withStore $ \db -> getSetActiveUser db userId
+  APISetActiveUser userId' viewPwd -> withUser $ \User {userId} -> do
+    user <- validateUserPassword userId userId' viewPwd
+    withStore' $ \db -> setActiveUser db userId'
     setActive ActiveNone
-    atomically . writeTVar u $ Just user
-    pure $ CRActiveUser user
-  SetActiveUser uName pwd_ -> withUserName uName (`APISetActiveUser` pwd_)
+    let user' = user {activeUser = True}
+    asks currentUser >>= atomically . (`writeTVar` Just user')
+    pure $ CRActiveUser user'
+  SetActiveUser uName viewPwd -> do
+    tryError (withStore (`getUserIdByName` uName)) >>= \case
+      Left _ -> throwChatError CEUserUnknown
+      Right userId -> processChatCommand $ APISetActiveUser userId viewPwd
+  APISetUserPrivacy userId' privacyCfg@UserPrivacyCfg {currViewPwd} -> withUser $ \User {userId} -> do
+    user <- validateUserPassword userId userId' currViewPwd
+    user' <- setPrivacyCfg user privacyCfg
+    asks currentUser >>= atomically . (`writeTVar` Just user')
+    withStore' (`updateUserPrivacy` user')
+    pure $ CRUserPrivacy user'
+    where
+      setPrivacyCfg user UserPrivacyCfg {showNtfs, viewPwd, wipePwd} = do
+        let pwd = unUserPwd viewPwd
+        viewPwdHash <- hashPassword pwd
+        wipePwdHash <- if T.null pwd then pure Nothing else hashPassword $ unUserPwd wipePwd
+        pure user {showNtfs, viewPwdHash, wipePwdHash}
+        where
+          hashPassword "" = pure Nothing
+          hashPassword pwd = do
+            salt <- drgRandomBytes 16
+            let hash = B64UrlByteString $ C.sha512Hash $ encodeUtf8 pwd <> salt
+            pure $ Just UserPwdHash {hash, salt = B64UrlByteString salt}
+  SetUserPrivacy privacyCfg -> withUser $ \User {userId} ->
+    processChatCommand $ APISetUserPrivacy userId privacyCfg
+  APIWipeUser userId' wipePwd -> do
+    user <- checkDeleteChatUser userId'
+    validateUserWipePassword userId' wipePwd
+    -- This is probably not good enough as it doesn't lock the chat, and locking would lock the UI
+    _ <- forkIO $ void $ deleteChatUser user False
+    ok_
   APIDeleteUser userId delSMPQueues -> do
-    user <- withStore (`getUser` userId)
-    when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
-    users <- withStore' getUsers
-    -- shouldn't happen - last user should be active
-    when (length users == 1) $ throwChatError (CECantDeleteLastUser userId)
-    filesInfo <- withStore' (`getUserFileInfo` user)
-    withChatLock "deleteUser" . procCmd $ do
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-      withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
-      withStore' (`deleteUserRecord` user)
-      setActive ActiveNone
-      ok_
+    user <- checkDeleteChatUser userId
+    withChatLock "deleteUser" . procCmd $ deleteChatUser user delSMPQueues
   DeleteUser uName delSMPQueues -> withUserName uName (`APIDeleteUser` delSMPQueues)
-  APISetUserPrivacy userId privacyCfg_ -> do
-    pure $ chatCmdError Nothing "TODO"
-  SetUserPrivacy uName privacyCfg_ -> withUserName uName (`APISetUserPrivacy` privacyCfg_)
-  APIWipeUser userId pwd_ -> do
-    pure $ chatCmdError Nothing "TODO"
   StartChat subConns enableExpireCIs -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
@@ -709,7 +725,7 @@ processChatCommand = \case
     assertDirectAllowed user MDSnd ct XCallInv_
     calls <- asks currentCalls
     withChatLock "sendCallInvitation" $ do
-      callId <- CallId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
+      callId <- CallId <$> drgRandomBytes 16
       dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
       let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
           callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
@@ -1211,7 +1227,7 @@ processChatCommand = \case
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     assertUserGroupRole gInfo GRAdmin
     when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
-    groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
+    groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact $ Just crClientData
     withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole
@@ -1427,7 +1443,7 @@ processChatCommand = \case
       withStore' (\db -> getConnReqContactXContactId db user cReqHash) >>= \case
         (Just contact, _) -> pure $ CRContactAlreadyExists user contact
         (_, xContactId_) -> procCmd $ do
-          let randomXContactId = XContactId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
+          let randomXContactId = XContactId <$> drgRandomBytes 16
           xContactId <- maybe randomXContactId pure xContactId_
           -- [incognito] generate profile to send
           -- if user makes a contact request using main profile, then turns on incognito mode and repeats the request,
@@ -1585,6 +1601,43 @@ processChatCommand = \case
         <$> if live
           then pure Nothing
           else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
+    drgRandomBytes :: Int -> m ByteString
+    drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
+    validateUserPassword :: UserId -> UserId -> UserPwd -> m User
+    validateUserPassword userId userId' (UserPwd viewPwd) = do
+      tryError (withStore (`getUser` userId')) >>= \case
+        Left _ -> throwChatError CEUserUnknown
+        Right user'@User {viewPwdHash} -> do
+          forM_ viewPwdHash $ \pwdHash ->
+            let pwdOk = if T.null viewPwd then userId == userId' else validPassword viewPwd pwdHash
+             in unless pwdOk $ throwChatError CEUserUnknown
+          pure user'
+    validateUserWipePassword :: UserId -> UserPwd -> m ()
+    validateUserWipePassword userId' (UserPwd wipePwd) =
+      tryError (withStore (`getUser` userId')) >>= \case
+        Left _ -> throwChatError CEUserUnknown
+        Right User {wipePwdHash} -> do
+          forM_ wipePwdHash $ \pwdHash ->
+            unless (not (T.null wipePwd) && validPassword wipePwd pwdHash) $ throwChatError CEUserUnknown
+    validPassword :: Text -> UserPwdHash -> Bool
+    validPassword pwd UserPwdHash {hash = B64UrlByteString hash, salt = B64UrlByteString salt} =
+      hash == C.sha512Hash (encodeUtf8 pwd <> salt)
+    checkDeleteChatUser :: UserId -> m User
+    checkDeleteChatUser userId = do
+      user <- withStore (`getUser` userId)
+      when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
+      users <- withStore' getUsers
+      -- shouldn't happen - last user should be active
+      when (length users == 1) $ throwChatError (CECantDeleteLastUser userId)
+      setActive ActiveNone
+      pure user
+    deleteChatUser :: User -> Bool -> m ChatResponse
+    deleteChatUser user delSMPQueues = do
+      filesInfo <- withStore' (`getUserFileInfo` user)
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
+      withStore' (`deleteUserRecord` user)
+      ok_
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -1601,7 +1654,7 @@ assertDirectAllowed user dir ct event =
       XCallInv_ -> False
       _ -> True
 
-startExpireCIThread :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
+startExpireCIThread :: forall m. ChatMonad' m => User -> m ()
 startExpireCIThread user@User {userId} = do
   expireThreads <- asks expireCIThreads
   atomically (TM.lookup userId expireThreads) >>= \case
@@ -1620,12 +1673,12 @@ startExpireCIThread user@User {userId} = do
           forM_ ttl $ \t -> expireChatItems user t False
         threadDelay interval
 
-setExpireCIFlag :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m ()
+setExpireCIFlag :: ChatMonad' m => User -> Bool -> m ()
 setExpireCIFlag User {userId} b = do
   expireFlags <- asks expireCIFlags
   atomically $ TM.insert userId b expireFlags
 
-setAllExpireCIFlags :: (MonadUnliftIO m, MonadReader ChatController m) => Bool -> m ()
+setAllExpireCIFlags :: ChatMonad' m => Bool -> m ()
 setAllExpireCIFlags b = do
   expireFlags <- asks expireCIFlags
   atomically $ do
@@ -1842,7 +1895,7 @@ deleteGroupLink_ user gInfo conn = do
   deleteAgentConnectionAsync user $ aConnId conn
   withStore' $ \db -> deleteGroupLink db user gInfo
 
-agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+agentSubscriber :: ChatMonad' m => m ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
@@ -2105,7 +2158,7 @@ processAgentMessageConn user _ agentConnId END =
   withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
     RcvDirectMsgConnection _ (Just ct@Contact {localDisplayName = c}) -> do
       toView $ CRContactAnotherClient user ct
-      showToast (c <> "> ") "connected to another client"
+      whenUserNtfs user $ showToast (c <> "> ") "connected to another client"
       unsetActive $ ActiveC c
     entity -> toView $ CRSubscriptionEnd user entity
 processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
@@ -2238,8 +2291,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               toView $ CRContactConnected user ct (fmap fromLocalProfile incognitoProfile)
               when (directOrUsed ct) $ createFeatureEnabledItems ct
-              setActive $ ActiveC c
-              showToast (c <> "> ") "connected"
+              whenUserNtfs user $ do
+                setActive $ ActiveC c
+                showToast (c <> "> ") "connected"
               forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
@@ -2369,13 +2423,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
             forM_ description $ groupDescriptionChatItem gInfo m
-            setActive $ ActiveG gName
-            showToast ("#" <> gName) "you are connected to group"
+            whenUserNtfs user $ do
+              setActive $ ActiveG gName
+              showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
-            setActive $ ActiveG gName
-            showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
+            whenGroupNtfs user gInfo $ do
+              setActive $ ActiveG gName
+              showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
@@ -2623,7 +2679,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                         toView $ CRAcceptingGroupJoinRequest user gInfo ct
                     _ -> do
                       toView $ CRReceivedContactRequest user cReq
-                      showToast (localDisplayName <> "> ") "wants to connect to you"
+                      whenUserNtfs user $
+                        showToast (localDisplayName <> "> ") "wants to connect to you"
                 _ -> pure ()
 
     incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> m ()
@@ -2704,8 +2761,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       memberConnectedChatItem gInfo m
       toView $ CRConnectedToGroupMember user gInfo m
       let g = groupName' gInfo
-      setActive $ ActiveG g
-      showToast ("#" <> g) $ "member " <> c <> " is connected"
+      whenGroupNtfs user gInfo $ do
+        setActive $ ActiveG g
+        showToast ("#" <> g) $ "member " <> c <> " is connected"
 
     probeMatchingContacts :: Contact -> Bool -> m ()
     probeMatchingContacts ct connectedIncognito = do
@@ -2731,7 +2789,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     messageError = toView . CRMessageError user "error"
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
-    newContentMessage ct@Contact {localDisplayName = c, contactUsed, chatSettings} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
+    newContentMessage ct@Contact {localDisplayName = c, contactUsed} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fileInvitation_ _ _ = mcExtMsgContent mc
@@ -2745,7 +2803,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               live = fromMaybe False live_
           ciFile_ <- processFileInvitation fileInvitation_ content $ \db -> createRcvFileTransfer db userId ct
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_ timed_ live
-          when (enableNtfs chatSettings) $ do
+          whenContactNtfs user ct $ do
             showMsgToast (c <> "> ") content formattedText
             setActive $ ActiveC c
       where
@@ -2812,7 +2870,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
-    newGroupContentMessage gInfo@GroupInfo {chatSettings} m@GroupMember {localDisplayName = c} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
+    newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       let (ExtMsgContent content fInv_ _ _) = mcExtMsgContent mc
       if isVoice content && not (groupFeatureAllowed SGFVoice gInfo)
         then void $ newChatItem (CIRcvGroupFeatureRejected GFVoice) Nothing Nothing False
@@ -2823,7 +2881,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_ timed_ live
           let g = groupName' gInfo
-          when (enableNtfs chatSettings) $ do
+          whenGroupNtfs user gInfo $ do
             showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
             setActive $ ActiveG g
       where
@@ -2897,8 +2955,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
       ci <- saveRcvChatItem' user (CDDirectRcv ct) msg sharedMsgId_ msgMeta (CIRcvMsgContent $ MCFile "") ciFile Nothing False
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-      showToast (c <> "> ") "wants to send a file"
-      setActive $ ActiveC c
+      whenContactNtfs user ct $ do
+        showToast (c <> "> ") "wants to send a file"
+        setActive $ ActiveC c
 
     -- TODO remove once XFile is discontinued
     processGroupFileInvitation' :: GroupInfo -> GroupMember -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
@@ -2910,8 +2969,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta (CIRcvMsgContent $ MCFile "") ciFile Nothing False
       groupMsgToView gInfo m ci msgMeta
       let g = groupName' gInfo
-      showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
-      setActive $ ActiveG g
+      whenGroupNtfs user gInfo $ do
+        showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
+        setActive $ ActiveG g
 
     receiveInlineMode :: FileInvitation -> Maybe MsgContent -> Integer -> m (Maybe InlineFileMode)
     receiveInlineMode FileInvitation {fileSize, fileInline} mc_ chSize = case fileInline of
@@ -3042,7 +3102,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       toView $ CRNewChatItem user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupInvitation ct@Contact {localDisplayName = c, activeConn = Connection {customUserProfileId, groupLinkId = groupLinkId'}} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} msg msgMeta = do
+    processGroupInvitation ct inv msg msgMeta = do
+      let Contact {localDisplayName = c, activeConn = Connection {customUserProfileId, groupLinkId = groupLinkId'}} = ct
+          GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
@@ -3062,7 +3124,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
           toView $ CRReceivedGroupInvitation user gInfo ct memRole
-          showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
+          whenContactNtfs user ct $
+            showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
       where
         sameGroupLinkId :: Maybe GroupLinkId -> Maybe GroupLinkId -> Bool
         sameGroupLinkId (Just gli) (Just gli') = gli == gli'
@@ -3889,17 +3952,26 @@ getCreateActiveUser st = do
     getWithPrompt :: String -> IO String
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
 
-showMsgToast :: (MonadUnliftIO m, MonadReader ChatController m) => Text -> MsgContent -> Maybe MarkdownList -> m ()
+whenUserNtfs :: ChatMonad' m => User -> m () -> m ()
+whenUserNtfs User {showNtfs, activeUser} = when $ showNtfs || activeUser
+
+whenContactNtfs :: ChatMonad' m => User -> Contact -> m () -> m ()
+whenContactNtfs user Contact {chatSettings} = whenUserNtfs user . when (enableNtfs chatSettings)
+
+whenGroupNtfs :: ChatMonad' m => User -> GroupInfo -> m () -> m ()
+whenGroupNtfs user GroupInfo {chatSettings} = whenUserNtfs user . when (enableNtfs chatSettings)
+
+showMsgToast :: ChatMonad' m => Text -> MsgContent -> Maybe MarkdownList -> m ()
 showMsgToast from mc md_ = showToast from $ maybe (msgContentText mc) (mconcat . map hideSecret) md_
   where
     hideSecret :: FormattedText -> Text
     hideSecret FormattedText {format = Just Secret} = "..."
     hideSecret FormattedText {text} = text
 
-showToast :: (MonadUnliftIO m, MonadReader ChatController m) => Text -> Text -> m ()
+showToast :: ChatMonad' m => Text -> Text -> m ()
 showToast title text = atomically . (`writeTBQueue` Notification {title, text}) =<< asks notifyQ
 
-notificationSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+notificationSubscriber :: ChatMonad' m => m ()
 notificationSubscriber = do
   ChatController {notifyQ, sendNotification} <- ask
   forever $ atomically (readTBQueue notifyQ) >>= liftIO . sendNotification
@@ -3968,12 +4040,12 @@ chatCommandP =
                pure $ CreateActiveUser uProfile sameSmp
            ),
       "/users" $> ListUsers,
-      "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (ViewUserPwd <$> pwdP)),
-      ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (ViewUserPwd <$> pwdP)),
+      "/_user " *> (APISetActiveUser <$> A.decimal <*> (A.space *> jsonP <|> pure (UserPwd ""))),
+      ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> (UserPwd <$> (A.space *> pwdP <|> pure ""))),
+      "/_privacy " *> (APISetUserPrivacy <$> A.decimal <* A.space <*> jsonP),
+      "/privacy" *> (SetUserPrivacy <$> privacyCfgP),
+      "/_wipe user " *> (APIWipeUser <$> A.decimal <* A.space <*> jsonP),
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP),
-      "/_privacy" *> (APISetUserPrivacy <$> A.decimal <* A.space <*> jsonP),
-      "/privacy" *> (SetUserPrivacy <$> displayName <*> optional (A.space *> privacyCfgP)),
-      "/_wipe user " *> (APIWipeUser <$> A.decimal <*> (WipeUserPwd <$> pwdP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True),
       ("/user" <|> "/u") $> ShowActiveUser,
       "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP),
@@ -4201,13 +4273,12 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     textP = safeDecodeUtf8 <$> A.takeByteString
-    pwdP = A.takeWhile (== ' ') *> pwdP'
-    pwdP' = safeDecodeUtf8 <$> A.takeTill (== ' ') <|> jsonP
+    pwdP = jsonP <|> safeDecodeUtf8 <$> A.takeTill (== ' ')
     privacyCfgP = do
-      hideNtfs <- ("ntf=" *> onOffP <* A.space) <|> pure True
-      viewPwd <- "view=" *> pwdP'
-      wipePwd <- optional $ A.space *> ("wipe=" *> pwdP')
-      pure UserPrivacyCfg {hideNtfs, viewPwd, wipePwd}
+      showNtfs <- " ntf=" *> onOffP <|> pure True
+      viewPwd <- UserPwd <$> (" view=" *> pwdP <|> pure "")
+      wipePwd <- UserPwd <$> (" wipe=" *> pwdP <|> pure "")
+      pure UserPrivacyCfg {currViewPwd = UserPwd "", showNtfs, viewPwd, wipePwd}
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePath = stringP

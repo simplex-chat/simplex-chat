@@ -39,6 +39,7 @@ module Simplex.Chat.Store
     getUserByContactRequestId,
     getUserFileInfo,
     deleteUserRecord,
+    updateUserPrivacy,
     createDirectConnection,
     createConnReqConnection,
     getProfileById,
@@ -276,6 +277,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -450,8 +452,8 @@ createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, pr
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, hide_ntfs, created_at, updated_at) VALUES (?,?,?,0,?,?,?)"
-      (auId, displayName, activeUser, False, currentTs, currentTs)
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, created_at, updated_at) VALUES (?,?,?,0,?,?,?)"
+      (auId, displayName, activeUser, True, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -468,7 +470,7 @@ createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, pr
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences, Just False) :. (Nothing, Nothing) :. (Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences, True) :. (Nothing, Nothing) :. (Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -506,22 +508,21 @@ getUsers db =
 userQuery :: Query
 userQuery =
   [sql|
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.local_display_name, ucp.full_name, ucp.image, ucp.preferences, u.hide_ntfs, u.view_pwd_hash, u.view_pwd_salt, u.wipe_pwd_hash, u.wipe_pwd_salt
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.local_display_name, ucp.full_name, ucp.image, ucp.preferences, u.show_ntfs, u.view_pwd_hash, u.view_pwd_salt, u.wipe_pwd_hash, u.wipe_pwd_salt
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
-toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences, Maybe Bool) :. (Maybe B64UrlByteString, Maybe B64UrlByteString) :. (Maybe B64UrlByteString, Maybe B64UrlByteString) -> User
-toUser ((userId, auId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences, hideNtfs_) :. viewPwdHash_ :. wipePwdHash_) =
-  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences, hideNtfs, viewPwdHash, wipePwdHash}
+toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences, Bool) :. (Maybe B64UrlByteString, Maybe B64UrlByteString) :. (Maybe B64UrlByteString, Maybe B64UrlByteString) -> User
+toUser ((userId, auId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences, showNtfs) :. viewPwdHash_ :. wipePwdHash_) =
+  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences, showNtfs, viewPwdHash, wipePwdHash}
   where
     profile = LocalProfile {profileId, displayName, fullName, image, preferences = userPreferences, localAlias = ""}
     fullPreferences = mergePreferences Nothing userPreferences
-    hideNtfs = fromMaybe False hideNtfs_
-    viewPwdHash = toPwdHash viewPwdHash_
-    wipePwdHash = toPwdHash wipePwdHash_
-    toPwdHash (hash_, salt_) = UserPwdHash <$> hash_ <*> salt_
+    viewPwdHash = toHash viewPwdHash_
+    wipePwdHash = toHash wipePwdHash_
+    toHash (hash_, salt_) = UserPwdHash <$> hash_ <*> salt_
 
 setActiveUser :: DB.Connection -> UserId -> IO ()
 setActiveUser db userId = do
@@ -587,6 +588,19 @@ toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, file
 deleteUserRecord :: DB.Connection -> User -> IO ()
 deleteUserRecord db User {userId} =
   DB.execute db "DELETE FROM users WHERE user_id = ?" (Only userId)
+
+updateUserPrivacy :: DB.Connection -> User -> IO ()
+updateUserPrivacy db User {userId, showNtfs, viewPwdHash, wipePwdHash} =
+  DB.execute
+    db
+    [sql|
+      UPDATE users
+      SET view_pwd_hash = ?, view_pwd_salt = ?, wipe_pwd_hash = ?, wipe_pwd_salt = ?, show_ntfs = ?
+      WHERE user_id = ?
+    |]
+    (hashSalt viewPwdHash :. hashSalt wipePwdHash :. (showNtfs, userId))
+  where
+    hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId = do
