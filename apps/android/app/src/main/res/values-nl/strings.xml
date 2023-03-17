@@ -321,7 +321,7 @@
     <string name="icon_descr_server_status_error">Fout</string>
     <string name="icon_descr_email">Email</string>
     <string name="edit_image">Bewerk afbeelding</string>
-    <string name="exit_without_saving">Afsluiten zonder op te slaan</string>
+    <string name="exit_without_saving">Afsluiten zonder opslaan</string>
     <string name="full_name_optional__prompt">Volledige naam (optioneel)</string>
     <string name="encrypted_video_call">e2e versleuteld video gesprek</string>
     <string name="allow_accepting_calls_from_lock_screen">Schakel oproepen vanaf het vergrendelscherm in via Instellingen.</string>
