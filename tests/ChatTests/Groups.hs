@@ -47,7 +47,7 @@ chatGroupTests = do
     it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
     it "group link member role" testGroupLinkMemberRole
-    fit "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
+    it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup

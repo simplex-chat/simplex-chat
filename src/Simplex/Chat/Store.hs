@@ -1592,10 +1592,16 @@ matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = d
 
 mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
 mergeContactRecords db userId ct1 ct2 = do
-  let (to, from) = toFromContacts ct1 ct2
-      Contact {contactId = toContactId} = to
-      Contact {contactId = fromContactId, localDisplayName} = from
+  let (toCt, fromCt) = toFromContacts ct1 ct2
+      Contact {contactId = toContactId} = toCt
+      Contact {contactId = fromContactId, localDisplayName} = fromCt
   currentTs <- getCurrentTime
+    -- TODO next query fixes incorrect unused contacts deletion; consider more thorough fix
+  when (contactDirect toCt) $
+    DB.execute
+      db
+      "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?"
+      (currentTs, userId, toContactId)
   DB.execute
     db
     "UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"

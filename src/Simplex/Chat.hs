@@ -646,12 +646,9 @@ processChatCommand = \case
       where
         deleteUnusedContact :: ContactId -> m [ConnId]
         deleteUnusedContact contactId =
-          (withStore (\db -> getContact db user contactId) >>= printCt >>= delete)
+          (withStore (\db -> getContact db user contactId) >>= delete)
             `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
           where
-            printCt ct@Contact {localDisplayName, contactUsed, activeConn = Connection {connLevel, viaGroupLink}} = do
-              liftIO $ print $ "deleteUnusedContact ldn: " <> show localDisplayName <> ", contactUsed: " <> show contactUsed <> ", connLevel: " <> show connLevel <> ", viaGroupLink: " <> show viaGroupLink
-              pure ct
             delete ct
               | directOrUsed ct = pure []
               | otherwise =
