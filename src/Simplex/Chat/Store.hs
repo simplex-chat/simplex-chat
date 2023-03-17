@@ -1596,8 +1596,8 @@ mergeContactRecords db userId ct1 ct2 = do
       Contact {contactId = toContactId} = toCt
       Contact {contactId = fromContactId, localDisplayName} = fromCt
   currentTs <- getCurrentTime
-    -- TODO next query fixes incorrect unused contacts deletion; consider more thorough fix
-  when (contactDirect toCt) $
+  -- TODO next query fixes incorrect unused contacts deletion; consider more thorough fix
+  when (contactDirect toCt && not (contactUsed toCt)) $
     DB.execute
       db
       "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?"
