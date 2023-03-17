@@ -71,20 +71,22 @@ fun ActiveCallView(chatModel: ChatModel) {
         super.onAudioDevicesAdded(addedDevices)
         val addedCount = addedDevices.count { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
         btDeviceCount += addedCount
-        if (addedCount > 0) {
+        audioViaBluetooth.value = btDeviceCount > 0
+        if (addedCount > 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
+          // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
           setCallSound(chatModel.activeCall.value?.soundSpeaker ?: return, audioViaBluetooth)
         }
-        audioViaBluetooth.value = btDeviceCount > 0
       }
       override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
         Log.d(TAG, "Removed audio devices: ${removedDevices.map { it.type }}")
         super.onAudioDevicesRemoved(removedDevices)
         val removedCount = removedDevices.count { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
         btDeviceCount -= removedCount
-        if (btDeviceCount == 0) {
+        audioViaBluetooth.value = btDeviceCount > 0
+        if (btDeviceCount == 0 && chatModel.activeCall.value?.callState == CallState.Connected) {
+          // Setting params in Connected state makes sure that Bluetooth will NOT be broken on Android < 12
           setCallSound(chatModel.activeCall.value?.soundSpeaker ?: return, audioViaBluetooth)
         }
-        audioViaBluetooth.value = btDeviceCount > 0
       }
     }
     am.registerAudioDeviceCallback(audioCallback, null)
@@ -133,8 +135,6 @@ fun ActiveCallView(chatModel: ChatModel) {
           is WCallResponse.Connected -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
             scope.launch {
-              setCallSound(call.soundSpeaker, audioViaBluetooth)
-              delay(2000L)
               setCallSound(call.soundSpeaker, audioViaBluetooth)
             }
           }
@@ -209,9 +209,8 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, audioViaBluetoot
 
 private fun setCallSound(speaker: Boolean, audioViaBluetooth: MutableState<Boolean>) {
   val am = SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-  Log.d(TAG, "setCallSound: set audio mode")
+  Log.d(TAG, "setCallSound: set audio mode, speaker enabled: $speaker")
   am.mode = AudioManager.MODE_IN_COMMUNICATION
-  am.isSpeakerphoneOn = speaker
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
     val btDevice = am.availableCommunicationDevices.lastOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
     val preferredSecondaryDevice = if (speaker) AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
@@ -222,16 +221,27 @@ private fun setCallSound(speaker: Boolean, audioViaBluetooth: MutableState<Boole
         am.setCommunicationDevice(it)
       }
     }
+  } else {
+    if (audioViaBluetooth.value) {
+      am.isSpeakerphoneOn = false
+      am.startBluetoothSco()
+    } else {
+      am.stopBluetoothSco()
+      am.isSpeakerphoneOn = speaker
+    }
+    am.isBluetoothScoOn = am.isBluetoothScoAvailableOffCall && audioViaBluetooth.value
   }
 }
 
 private fun dropAudioManagerOverrides() {
   val am = SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
   am.mode = AudioManager.MODE_NORMAL
-  am.isSpeakerphoneOn = false
   // Clear selected communication device to default value after we changed it in call
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
     am.clearCommunicationDevice()
+  } else {
+    am.isSpeakerphoneOn = false
+    am.stopBluetoothSco()
   }
 }
 
