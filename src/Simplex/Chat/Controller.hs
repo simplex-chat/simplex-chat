@@ -182,9 +182,12 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile Bool
   | ListUsers
-  | APISetActiveUser UserId
-  | SetActiveUser UserName
+  | APISetActiveUser UserId (Maybe ViewUserPwd)
+  | SetActiveUser UserName (Maybe ViewUserPwd)
   | APIDeleteUser UserId Bool
+  | APISetUserPrivacy UserId (Maybe UserPrivacyCfg)
+  | SetUserPrivacy UserName (Maybe UserPrivacyCfg)
+  | APIWipeUser UserId WipeUserPwd
   | DeleteUser UserName Bool
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
@@ -520,6 +523,17 @@ logResponseToFile = \case
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+data UserPrivacyCfg = UserPrivacyCfg
+  { hideNtfs :: Bool,
+    viewPwd :: Text,
+    wipePwd :: Maybe Text
+  }
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON UserPrivacyCfg where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 newtype AgentQueueId = AgentQueueId QueueId
   deriving (Eq, Show)

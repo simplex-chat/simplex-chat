@@ -308,13 +308,13 @@ processChatCommand = \case
           DefaultAgentServers {smp} <- asks $ defaultServers . config
           pure (smp, [])
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
-  APISetActiveUser userId -> do
+  APISetActiveUser userId pwd_ -> do
     u <- asks currentUser
     user <- withStore $ \db -> getSetActiveUser db userId
     setActive ActiveNone
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
-  SetActiveUser uName -> withUserName uName APISetActiveUser
+  SetActiveUser uName pwd_ -> withUserName uName (`APISetActiveUser` pwd_)
   APIDeleteUser userId delSMPQueues -> do
     user <- withStore (`getUser` userId)
     when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
@@ -328,7 +328,12 @@ processChatCommand = \case
       withStore' (`deleteUserRecord` user)
       setActive ActiveNone
       ok_
-  DeleteUser uName delSMPQueues -> withUserName uName $ \uId -> APIDeleteUser uId delSMPQueues
+  DeleteUser uName delSMPQueues -> withUserName uName (`APIDeleteUser` delSMPQueues)
+  APISetUserPrivacy userId privacyCfg_ -> do
+    pure $ chatCmdError Nothing "TODO"
+  SetUserPrivacy uName privacyCfg_ -> withUserName uName (`APISetUserPrivacy` privacyCfg_)
+  APIWipeUser userId pwd_ -> do
+    pure $ chatCmdError Nothing "TODO"
   StartChat subConns enableExpireCIs -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
@@ -1350,7 +1355,7 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) "" --  $(simplexmqCommitQ)
+  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
@@ -3963,9 +3968,12 @@ chatCommandP =
                pure $ CreateActiveUser uProfile sameSmp
            ),
       "/users" $> ListUsers,
-      "/_user " *> (APISetActiveUser <$> A.decimal),
-      ("/user " <|> "/u ") *> (SetActiveUser <$> displayName),
+      "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (ViewUserPwd <$> pwdP)),
+      ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (ViewUserPwd <$> pwdP)),
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP),
+      "/_privacy" *> (APISetUserPrivacy <$> A.decimal <* A.space <*> jsonP),
+      "/privacy" *> (SetUserPrivacy <$> displayName <*> optional (A.space *> privacyCfgP)),
+      "/_wipe user " *> (APIWipeUser <$> A.decimal <*> (WipeUserPwd <$> pwdP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True),
       ("/user" <|> "/u") $> ShowActiveUser,
       "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP),
@@ -4193,6 +4201,13 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     textP = safeDecodeUtf8 <$> A.takeByteString
+    pwdP = A.takeWhile (== ' ') *> pwdP'
+    pwdP' = safeDecodeUtf8 <$> A.takeTill (== ' ') <|> jsonP
+    privacyCfgP = do
+      hideNtfs <- ("ntf=" *> onOffP <* A.space) <|> pure True
+      viewPwd <- "view=" *> pwdP'
+      wipePwd <- optional $ A.space *> ("wipe=" *> pwdP')
+      pure UserPrivacyCfg {hideNtfs, viewPwd, wipePwd}
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePath = stringP

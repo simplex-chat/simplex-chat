@@ -22,7 +22,13 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
 
+    public var viewPwdHash: UserPwdHash?
+    public var wipePwdHash: UserPwdHash?
+    public var hideNtfs: Bool? = false
+
     public var id: Int64 { userId }
+
+    public var hidden: Bool { viewPwdHash != nil }
 
     public static let sampleData = User(
         userId: 1,
@@ -30,8 +36,14 @@ public struct User: Decodable, NamedChat, Identifiable {
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
-        activeUser: true
+        activeUser: true,
+        hideNtfs: false
     )
+}
+
+public struct UserPwdHash: Decodable {
+    var hash: String
+    var salt: String
 }
 
 public struct UserInfo: Decodable, Identifiable {

@@ -12,7 +12,8 @@ struct UserProfilesView: View {
     @State private var showDeleteConfirmation = false
     @State private var userToDelete: Int?
     @State private var alert: UserProfilesAlert?
-    @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var searchTextOrPassword = ""
 
     private enum UserProfilesAlert: Identifiable {
         case deleteUser(index: Int, delSMPQueues: Bool)
@@ -42,7 +43,7 @@ struct UserProfilesView: View {
     private func userProfilesView() -> some View {
         List {
             Section {
-                ForEach(m.users) { u in
+                ForEach(filteredUsers()) { u in
                     userView(u.user)
                 }
                 .onDelete { indexSet in
@@ -65,6 +66,7 @@ struct UserProfilesView: View {
         }
         .toolbar { EditButton() }
         .navigationTitle("Your chat profiles")
+        .searchable(text: $searchTextOrPassword)
         .confirmationDialog("Delete chat profile?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
             deleteModeButton("Profile and server connections", true)
             deleteModeButton("Local profile data only", false)
@@ -88,6 +90,16 @@ struct UserProfilesView: View {
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
+        }
+    }
+
+    private func filteredUsers() -> [UserInfo] {
+        let s = searchTextOrPassword.trimmingCharacters(in: .whitespaces)
+        let lower = s.localizedLowercase
+        return m.users.filter { u in
+            u.user.hidden
+            ? false // TODO compute password hash with available salt and compare with stored hash
+            : s == "" || u.user.chatViewName.localizedLowercase.contains(lower)
         }
     }
 
@@ -144,6 +156,11 @@ struct UserProfilesView: View {
         .disabled(user.activeUser)
         .foregroundColor(.primary)
         .deleteDisabled(m.users.count <= 1)
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button("Hide") {
+
+            }
+        }
     }
 }
 

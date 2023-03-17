@@ -30,7 +30,12 @@ CREATE TABLE users(
   active_user INTEGER NOT NULL DEFAULT 0,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  agent_user_id INTEGER CHECK(agent_user_id NOT NULL), -- 1 for active user
+  agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
+  view_pwd_hash BLOB NULL,
+  view_pwd_salt BLOB NULL,
+  wipe_pwd_hash BLOB NULL,
+  wipe_pwd_salt BLOB NULL,
+  hide_ntfs INTEGER NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
