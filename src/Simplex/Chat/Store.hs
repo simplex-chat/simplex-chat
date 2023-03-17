@@ -1640,12 +1640,12 @@ mergeContactRecords db userId ct1 ct2 = do
   where
     toFromContacts :: Contact -> Contact -> (Contact, Contact)
     toFromContacts c1 c2
-      | directOrUsed c1 && not (directOrUsed c2) = (c1, c2)
-      | directOrUsed c2 && not (directOrUsed c1) = (c2, c1)
-      | otherwise = olderYoungerContacts c1 c2
-    olderYoungerContacts c1 c2
+      | d1 && not d2 = (c1, c2)
+      | d2 && not d1 = (c2, c1)
       | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
       | otherwise = (c2, c1)
+    d1 = directOrUsed c1
+    d2 = directOrUsed c2
     ctCreatedAt Contact {createdAt} = createdAt
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
