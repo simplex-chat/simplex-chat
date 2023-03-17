@@ -1931,15 +1931,21 @@ testGroupLinkLeaveDelete =
       gLink <- getGroupLink alice "team" GRMember True
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: you joined the group"
+        [ alice
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages",
+                   EndsWith "invited to group #team via your group link",
+                   EndsWith "joined the group"
+                 ],
+          bob
+            <### [ "alice_1 (Alice): contact is connected",
+                   "contact alice_1 is merged into alice",
+                   "use @alice <message> to send messages",
+                   "#team: you joined the group"
+                 ]
         ]
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
@@ -1947,27 +1953,37 @@ testGroupLinkLeaveDelete =
       concurrentlyN_
         [ alice
             <### [ "cath (Catherine): contact is connected",
-                   EndsWith "invited to group #team via your group link",
-                   EndsWith "joined the group"
+                   "cath invited to group #team via your group link",
+                   "#team: cath joined the group"
                  ],
           cath
             <### [ "alice (Alice): contact is connected",
                    "#team: you joined the group",
-                   "#team: member bob (Bob) is connected"
+                   "#team: member bob_1 (Bob) is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages"
                  ],
-          do
-            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
-            bob <## "#team: new member cath is connected"
+          bob
+            <### [ "#team: alice added cath_1 (Catherine) to the group (connecting...)",
+                   "#team: new member cath_1 is connected",
+                   "contact cath_1 is merged into cath",
+                   "use @cath <message> to send messages"
+                 ]
         ]
       bob ##> "/l team"
       concurrentlyN_
         [ do
             bob <## "#team: you left the group"
             bob <## "use /d #team to delete the group",
-          alice <## "#team: bob left the group"
+          alice <## "#team: bob left the group",
+          cath <## "#team: bob left the group"
         ]
-      -- bob ##> "/d team"
-      -- bob <## "#team: you deleted the group"
       bob ##> "/contacts"
       bob <## "alice (Alice)"
       bob <## "cath (Catherine)"
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      bob ##> "/contacts"
+      -- bob <## "alice (Alice)"
+      -- bob <## "cath (Catherine)"
+      pure ()
