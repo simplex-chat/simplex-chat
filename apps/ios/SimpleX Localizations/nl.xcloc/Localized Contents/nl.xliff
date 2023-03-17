@@ -1568,9 +1568,9 @@
         <target>Fout: geen database bestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Exit without saving" xml:space="preserve">
+      <trans-unit id="Exit without saving" xml:space="preserve" approved="no">
         <source>Exit without saving</source>
-        <target>Afsluiten zonder op te slaan</target>
+        <target state="translated">Afsluiten zonder opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
