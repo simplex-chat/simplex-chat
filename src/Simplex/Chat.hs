@@ -15,7 +15,7 @@
 module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
-import Control.Concurrent.STM (retry, stateTVar)
+import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -824,8 +824,10 @@ processChatCommand = \case
     ok user
   SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserSMPServers userId smpServersConfig
-  TestSMPServer userId smpServer -> withUserId userId $ \user ->
+  APITestSMPServer userId smpServer -> withUserId userId $ \user ->
     CRSmpTestResult user <$> withAgent (\a -> testSMPServerConnection a (aUserId user) smpServer)
+  TestSMPServer smpServer -> withUser $ \User {userId} ->
+    processChatCommand $ APITestSMPServer userId smpServer
   APISetChatItemTTL userId newTTL_ -> withUser' $ \user -> do
     checkSameUser userId user
     checkStoreNotChanged $
@@ -1189,25 +1191,36 @@ processChatCommand = \case
     CRGroupProfile user <$> withStore (\db -> getGroupInfoByName db user gName)
   UpdateGroupDescription gName description ->
     updateGroupProfileByName gName $ \p -> p {description}
-  APICreateGroupLink groupId -> withUser $ \user -> withChatLock "createGroupLink" $ do
+  APICreateGroupLink groupId mRole -> withUser $ \user -> withChatLock "createGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     assertUserGroupRole gInfo GRAdmin
+    when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact $ Just crClientData
-    withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId
-    pure $ CRGroupLinkCreated user gInfo cReq
+    withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole
+    pure $ CRGroupLinkCreated user gInfo cReq mRole
+  APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withChatLock "groupLinkMemberRole " $ do
+    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    (groupLinkId, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
+    assertUserGroupRole gInfo GRAdmin
+    when (mRole' > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole'
+    when (mRole' /= mRole) $ withStore' $ \db -> setGroupLinkMemberRole db user groupLinkId mRole'
+    pure $ CRGroupLink user gInfo groupLink mRole'
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
-    groupLink <- withStore $ \db -> getGroupLink db user gInfo
-    pure $ CRGroupLink user gInfo groupLink
-  CreateGroupLink gName -> withUser $ \user -> do
+    (_, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
+    pure $ CRGroupLink user gInfo groupLink mRole
+  CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APICreateGroupLink groupId
+    processChatCommand $ APICreateGroupLink groupId mRole
+  GroupLinkMemberRole gName mRole -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIGroupLinkMemberRole groupId mRole
   DeleteGroupLink gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIDeleteGroupLink groupId
@@ -2211,7 +2224,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_) -> do
+                  Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_, gLinkMemRole) -> do
                     forM_ mc_ $ \mc -> do
                       (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -2219,7 +2232,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     forM_ groupId_ $ \groupId -> do
                       gVar <- asks idsDrg
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation
-                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct GRMember groupConnIds
+                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -2576,7 +2589,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (UserContactLink {autoAccept}, groupId_) ->
+                Just (UserContactLink {autoAccept}, groupId_, _) ->
                   case autoAccept of
                     Just AutoAccept {acceptIncognito} -> case groupId_ of
                       Nothing -> do
@@ -3211,9 +3224,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts to from = do
-      withStore' $ \db -> mergeContactRecords db userId to from
-      toView $ CRContactsMerged user to from
+    mergeContacts c1 c2 = do
+      withStore' $ \db -> mergeContactRecords db userId c1 c2
+      toView $ CRContactsMerged user c1 c2
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
@@ -4000,7 +4013,8 @@ chatCommandP =
       "/smp_servers " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
       "/smp default" $> SetUserSMPServers (SMPServersConfig []),
-      "/smp test " *> (TestSMPServer <$> A.decimal <* A.space <*> strP),
+      "/_smp test " *> (APITestSMPServer <$> A.decimal <* A.space <*> strP),
+      "/smp test " *> (TestSMPServer <$> strP),
       "/_smp " *> (APISetUserSMPServers <$> A.decimal <* A.space <*> jsonP),
       "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/_smp " *> (APIGetUserSMPServers <$> A.decimal),
@@ -4035,13 +4049,14 @@ chatCommandP =
       "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
+      ("/help contacts" <|> "/help contact" <|> "/hc") $> ChatHelp HSContacts,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
       ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),
-      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
+      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRAdmin)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
@@ -4056,10 +4071,12 @@ chatCommandP =
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayName <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayName),
       "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> optional (A.space *> msgTextP)),
-      "/_create link #" *> (APICreateGroupLink <$> A.decimal),
+      "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
+      "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
-      "/create link #" *> (CreateGroupLink <$> displayName),
+      "/create link #" *> (CreateGroupLink <$> displayName <*> (memberRole <|> pure GRMember)),
+      "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
@@ -4169,8 +4186,7 @@ chatCommandP =
         [ " owner" $> GROwner,
           " admin" $> GRAdmin,
           " member" $> GRMember,
-          -- " observer" $> GRObserver,
-          pure GRAdmin
+          " observer" $> GRObserver
         ]
     chatNameP = ChatName <$> chatTypeP <*> displayName
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName

@@ -154,7 +154,7 @@ fun DatabaseLayout(
   val operationsDisabled = !stopped || progressIndicator
 
   Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 48.dp),
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = DEFAULT_BOTTOM_PADDING),
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.your_chat_database))
