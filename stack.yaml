@@ -50,6 +50,8 @@ extra-deps:
   # - ../simplexmq
   - github: simplex-chat/simplexmq
     commit: 40da7e76ddd5694da386720f61a69d5a15812a81
+  - github: kazu-yamamoto/http2
+    commit: 78e18f52295a7f89e828539a03fbcb24931461a3
   # - ../direct-sqlcipher
   - github: simplex-chat/direct-sqlcipher
     commit: 34309410eb2069b029b8fc1872deb1e0db123294
