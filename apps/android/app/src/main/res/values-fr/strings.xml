@@ -967,4 +967,15 @@
     <string name="v4_5_transport_isolation">Isolation du transport</string>
     <string name="v4_5_multiple_chat_profiles_descr">Différents noms, avatars et mode d\'isolation de transport.</string>
     <string name="moderated_description">modéré</string>
+    <string name="moderated_item_description">modéré par %s</string>
+    <string name="delete_member_message__question">Supprimer le message de ce membre \?</string>
+    <string name="moderate_verb">Modéré</string>
+    <string name="moderate_message_will_be_deleted_warning">Le message sera supprimé pour tous les membres.</string>
+    <string name="moderate_message_will_be_marked_warning">Le message sera marqué comme modéré pour tous les membres.</string>
+    <string name="you_are_observer">vous êtes observateur</string>
+    <string name="error_updating_link_for_group">Erreur lors de la mise à jour du lien de groupe</string>
+    <string name="initial_member_role">Rôle initial</string>
+    <string name="observer_cant_send_message_desc">Veuillez contacter l\'administrateur du groupe.</string>
+    <string name="observer_cant_send_message_title">Vous ne pouvez pas envoyer de messages !</string>
+    <string name="group_member_role_observer">observateur</string>
 </resources>
