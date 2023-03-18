@@ -1133,8 +1133,9 @@
         <target>Supprimer le lien ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete member message?" xml:space="preserve">
+      <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
         <source>Delete member message?</source>
+        <target state="translated">Supprimer le message de ce membre ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -1547,8 +1548,9 @@
         <target>Erreur lors du changement de profil !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error updating group link" xml:space="preserve">
+      <trans-unit id="Error updating group link" xml:space="preserve" approved="no">
         <source>Error updating group link</source>
+        <target state="translated">Erreur lors de la mise à jour du lien de groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating message" xml:space="preserve">
@@ -2168,8 +2170,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>La migration est terminée</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Moderate" xml:space="preserve">
+      <trans-unit id="Moderate" xml:space="preserve" approved="no">
         <source>Moderate</source>
+        <target state="translated">Modéré</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
@@ -2467,8 +2470,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Veuillez vérifier vos préférences ainsi que celles de votre contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please contact group admin." xml:space="preserve">
+      <trans-unit id="Please contact group admin." xml:space="preserve" approved="no">
         <source>Please contact group admin.</source>
+        <target state="translated">Veuillez contacter l'administrateur du groupe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
@@ -3201,12 +3205,14 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Le groupe est entièrement décentralisé – il n'est visible que par ses membres.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The message will be deleted for all members." xml:space="preserve">
+      <trans-unit id="The message will be deleted for all members." xml:space="preserve" approved="no">
         <source>The message will be deleted for all members.</source>
+        <target state="translated">Le message sera supprimé pour tous les membres.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve">
+      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve" approved="no">
         <source>The message will be marked as moderated for all members.</source>
+        <target state="translated">Le message sera marqué comme modéré pour tous les membres.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The microphone does not work when the app is in the background." xml:space="preserve">
@@ -3653,8 +3659,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Vous pouvez utiliser le format markdown pour mettre en forme les messages :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can't send messages!" xml:space="preserve">
+      <trans-unit id="You can't send messages!" xml:space="preserve" approved="no">
         <source>You can't send messages!</source>
+        <target state="translated">Vous ne pouvez pas envoyer de messages !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
@@ -4266,8 +4273,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>modéré</target>
         <note>moderated chat item</note>
       </trans-unit>
-      <trans-unit id="moderated by %@" xml:space="preserve">
+      <trans-unit id="moderated by %@" xml:space="preserve" approved="no">
         <source>moderated by %@</source>
+        <target state="translated">modéré par %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
@@ -4290,8 +4298,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>sans chiffrement de bout en bout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="observer" xml:space="preserve">
+      <trans-unit id="observer" xml:space="preserve" approved="no">
         <source>observer</source>
+        <target state="translated">observateur</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="off" xml:space="preserve">
@@ -4450,8 +4459,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>vous êtes invité·e au groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you are observer" xml:space="preserve">
+      <trans-unit id="you are observer" xml:space="preserve" approved="no">
         <source>you are observer</source>
+        <target state="translated">vous êtes observateur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
