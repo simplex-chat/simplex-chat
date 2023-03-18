@@ -967,4 +967,15 @@
     <string name="v4_5_private_filenames_descr">Per proteggere il fuso orario, i file immagine/vocali usano UTC.</string>
     <string name="v4_5_multiple_chat_profiles_descr">Nomi e avatar diversi, isolamento del trasporto.</string>
     <string name="moderated_description">moderato</string>
+    <string name="moderated_item_description">moderato da %s</string>
+    <string name="delete_member_message__question">Eliminare il messaggio del membro\?</string>
+    <string name="moderate_verb">Modera</string>
+    <string name="moderate_message_will_be_deleted_warning">Il messaggio verrà eliminato per tutti i membri.</string>
+    <string name="moderate_message_will_be_marked_warning">Il messaggio sarà segnato come moderato per tutti i membri.</string>
+    <string name="you_are_observer">sei un osservatore</string>
+    <string name="initial_member_role">Ruolo iniziale</string>
+    <string name="error_updating_link_for_group">Errore nell\'aggiornamento del link del gruppo</string>
+    <string name="group_member_role_observer">osservatore</string>
+    <string name="observer_cant_send_message_desc">Contatta l\'amministratore del gruppo.</string>
+    <string name="observer_cant_send_message_title">Non puoi inviare messaggi!</string>
 </resources>
