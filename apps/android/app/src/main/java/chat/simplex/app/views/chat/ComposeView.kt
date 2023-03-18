@@ -648,6 +648,7 @@ fun ComposeView(
   }
 
   val userCanSend = rememberUpdatedState(chat.userCanSend)
+  val userIsObserver = rememberUpdatedState(chat.userIsObserver)
 
   Column {
     contextItemView()
@@ -744,6 +745,7 @@ fun ComposeView(
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,
         allowVoiceToContact = ::allowVoiceToContact,
+        userIsObserver = userIsObserver.value,
         userCanSend = userCanSend.value,
         sendMessage = {
           sendMessage()

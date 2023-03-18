@@ -60,6 +60,7 @@ fun SendMsgView(
   liveMessageAlertShown: SharedPreference<Boolean>,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
+  userIsObserver: Boolean,
   userCanSend: Boolean,
   allowVoiceToContact: () -> Unit,
   sendMessage: () -> Unit,
@@ -75,7 +76,7 @@ fun SendMsgView(
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
-    NativeKeyboard(composeState, textStyle, showDeleteTextButton, userCanSend, onMessageChange)
+    NativeKeyboard(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange)
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview || !userCanSend) {
       Box(Modifier
@@ -182,7 +183,7 @@ private fun NativeKeyboard(
   composeState: MutableState<ComposeState>,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
-  userCanSend: Boolean,
+  userIsObserver: Boolean,
   onMessageChange: (String) -> Unit
 ) {
   val cs = composeState.value
@@ -262,14 +263,21 @@ private fun NativeKeyboard(
     }
     showDeleteTextButton.value = it.lineCount >= 4
   }
-  if (composeState.value.preview is ComposePreview.VoicePreview || !userCanSend) {
-    Text(
-      if (composeState.value.preview is ComposePreview.VoicePreview) generalGetString(R.string.voice_message_send_text) else generalGetString(R.string.you_are_observer),
-      Modifier.padding(padding),
-      color = HighOrLowlight,
-      style = textStyle.value.copy(fontStyle = FontStyle.Italic)
-    )
+  if (composeState.value.preview is ComposePreview.VoicePreview) {
+    ComposeOverlay(R.string.voice_message_send_text, textStyle, padding)
+  } else if (userIsObserver) {
+    ComposeOverlay(R.string.you_are_observer, textStyle, padding)
   }
+}
+
+@Composable
+private fun ComposeOverlay(textId: Int, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
+  Text(
+    generalGetString(textId),
+    Modifier.padding(padding),
+    color = HighOrLowlight,
+    style = textStyle.value.copy(fontStyle = FontStyle.Italic)
+  )
 }
 
 @Composable
@@ -581,6 +589,7 @@ fun PreviewSendMsgView() {
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
+      userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
       sendMessage = {},
@@ -610,6 +619,7 @@ fun PreviewSendMsgViewEditing() {
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
+      userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
       sendMessage = {},
@@ -639,6 +649,7 @@ fun PreviewSendMsgViewInProgress() {
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
+      userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
       sendMessage = {},
