@@ -75,6 +75,7 @@ module Simplex.Chat.Store
     deleteGroupLink,
     getGroupLink,
     getGroupLinkId,
+    setGroupLinkMemberRole,
     createOrUpdateContactRequest,
     getContactRequest',
     getContactRequest,
@@ -231,6 +232,8 @@ module Simplex.Chat.Store
     setGroupChatItemDeleteAt,
     getSMPServers,
     overwriteSMPServers,
+    getProtocolServers,
+    overwriteProtocolServers,
     createCall,
     deleteCalls,
     getCalls,
@@ -341,15 +344,17 @@ import Simplex.Chat.Migrations.M20230117_fkey_indexes
 import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
 import Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
 import Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
+import Simplex.Chat.Migrations.M20230303_group_link_role
+-- import Simplex.Chat.Migrations.M20230304_file_description
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), pattern SMPServer)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), pattern SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
@@ -406,7 +411,9 @@ schemaMigrations =
     ("20230117_fkey_indexes", m20230117_fkey_indexes),
     ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers),
     ("20230129_drop_chat_items_group_idx", m20230129_drop_chat_items_group_idx),
-    ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id)
+    ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id),
+    ("20230303_group_link_role", m20230303_group_link_role)
+    -- ("20230304_file_description", m20230304_file_description)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1086,13 +1093,13 @@ getUserAddress db User {userId} =
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (UserContactLink, Maybe GroupId))
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (UserContactLink, Maybe GroupId, GroupMemberRole))
 getUserContactLinkById db userId userContactLinkId =
-  maybeFirstRow (\(ucl :. Only groupId_) -> (toUserContactLink ucl, groupId_)) $
+  maybeFirstRow (\(ucl :. (groupId_, mRole_)) -> (toUserContactLink ucl, groupId_, fromMaybe GRMember mRole_)) $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
@@ -1117,14 +1124,14 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
 
-createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> GroupLinkId -> ExceptT StoreError IO ()
-createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq groupLinkId =
+createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> GroupLinkId -> GroupMemberRole -> ExceptT StoreError IO ()
+createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq groupLinkId memberRole =
   checkConstraint (SEDuplicateGroupLink groupInfo) . liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, True, currentTs, currentTs)
+      "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, memberRole, True, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing Nothing Nothing 0 currentTs
 
@@ -1182,15 +1189,21 @@ deleteGroupLink db User {userId} GroupInfo {groupId} = do
     (userId, groupId)
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
-getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO ConnReqContact
+getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO (Int64, ConnReqContact, GroupMemberRole)
 getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
-  ExceptT . firstRow fromOnly (SEGroupLinkNotFound gInfo) $
-    DB.query db "SELECT conn_req_contact FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
+  ExceptT . firstRow groupLink (SEGroupLinkNotFound gInfo) $
+    DB.query db "SELECT user_contact_link_id, conn_req_contact, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
+  where
+    groupLink (linkId, cReq, mRole_) = (linkId, cReq, fromMaybe GRMember mRole_)
 
 getGroupLinkId :: DB.Connection -> User -> GroupInfo -> IO (Maybe GroupLinkId)
 getGroupLinkId db User {userId} GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
+
+setGroupLinkMemberRole :: DB.Connection -> User -> Int64 -> GroupMemberRole -> IO ()
+setGroupLinkMemberRole db User {userId} userContactLinkId memberRole =
+  DB.execute db "UPDATE user_contact_links SET group_link_member_role = ? WHERE user_id = ? AND user_contact_link_id = ?" (memberRole, userId, userContactLinkId)
 
 createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
 createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profile {displayName, fullName, image, preferences} xContactId_ =
@@ -1583,8 +1596,17 @@ matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = d
     cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
 
 mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
-mergeContactRecords db userId Contact {contactId = toContactId} Contact {contactId = fromContactId, localDisplayName} = do
+mergeContactRecords db userId ct1 ct2 = do
+  let (toCt, fromCt) = toFromContacts ct1 ct2
+      Contact {contactId = toContactId} = toCt
+      Contact {contactId = fromContactId, localDisplayName} = fromCt
   currentTs <- getCurrentTime
+  -- TODO next query fixes incorrect unused contacts deletion; consider more thorough fix
+  when (contactDirect toCt && not (contactUsed toCt)) $
+    DB.execute
+      db
+      "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?"
+      (currentTs, userId, toContactId)
   DB.execute
     db
     "UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
@@ -1620,6 +1642,17 @@ mergeContactRecords db userId Contact {contactId = toContactId} Contact {contact
   deleteContactProfile_ db userId fromContactId
   DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+  where
+    toFromContacts :: Contact -> Contact -> (Contact, Contact)
+    toFromContacts c1 c2
+      | d1 && not d2 = (c1, c2)
+      | d2 && not d1 = (c2, c1)
+      | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
+      | otherwise = (c2, c1)
+      where
+        d1 = directOrUsed c1
+        d2 = directOrUsed c2
+        ctCreatedAt Contact {createdAt} = createdAt
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db user@User {userId, userContactId} agentConnId = do
@@ -2843,7 +2876,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
     db
     "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
+  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
 
 createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupMember -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer
 createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline} rcvFileInline chunkSize = do
@@ -2857,7 +2890,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
     db
     "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
     (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
+  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 getRcvFileTransferById :: DB.Connection -> FileTransferId -> ExceptT StoreError IO (User, RcvFileTransfer)
 getRcvFileTransferById db fileId = do
@@ -2888,7 +2921,7 @@ getRcvFileTransfer db User {userId} fileId = do
       (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
     rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
-      let fileInv = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
+      let fileInv = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
           fileInfo = (filePath_, connId_, agentConnId_)
       case contactName_ <|> memberName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
@@ -2901,7 +2934,7 @@ getRcvFileTransfer db User {userId} fileId = do
             FSCancelled -> ft name fileInv . RFSCancelled <$> rfi_ fileInfo
       where
         ft senderDisplayName fileInvitation fileStatus =
-          RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId}
+          RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName, chunkSize, cancelled, grpMemberId}
         rfi fileInfo = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_ fileInfo
         rfi_ = \case
           (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
@@ -4606,7 +4639,7 @@ toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just
   either (const []) (: []) $ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. memberRow_ :. (quoteRow :. quotedMemberRow_) :. deletedByGroupMemberRow_)
 toGroupChatItemList _ _ _ _ = []
 
-getSMPServers :: DB.Connection -> User -> IO [ServerCfg]
+getSMPServers :: DB.Connection -> User -> IO [ServerCfg 'PSMP]
 getSMPServers db User {userId} =
   map toServerCfg
     <$> DB.query
@@ -4618,12 +4651,12 @@ getSMPServers db User {userId} =
       |]
       (Only userId)
   where
-    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg 'PSMP
     toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
       let server = ProtoServerWithAuth (SMPServer host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
        in ServerCfg {server, preset, tested, enabled}
 
-overwriteSMPServers :: DB.Connection -> User -> [ServerCfg] -> ExceptT StoreError IO ()
+overwriteSMPServers :: DB.Connection -> User -> [ServerCfg 'PSMP] -> ExceptT StoreError IO ()
 overwriteSMPServers db User {userId} servers =
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
@@ -4639,6 +4672,16 @@ overwriteSMPServers db User {userId} servers =
         |]
         (host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, preset, tested, enabled, userId, currentTs, currentTs)
     pure $ Right ()
+
+getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
+getProtocolServers db user = case protocolTypeI @p of
+  SPSMP -> getSMPServers db user
+  _ -> pure [] -- TODO read from the new table of all servers (alternatively, we could migrate data)
+
+overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
+overwriteProtocolServers db user servers = case protocolTypeI @p of
+  SPSMP -> overwriteSMPServers db user servers
+  _ -> pure () -- TODO write the new table of all servers
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, chatItemId, callState} callTs = do

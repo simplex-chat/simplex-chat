@@ -22,6 +22,7 @@
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
   <string name="marked_deleted_description">marked deleted</string>
+  <string name="moderated_item_description">moderated by %s</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -182,9 +183,13 @@
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
+  <string name="moderate_verb">Moderate</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="delete_member_message__question">Delete member message?</string>
+  <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
+  <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 
@@ -222,6 +227,9 @@
   <string name="images_limit_desc">Only 10 images can be sent at the same time</string>
   <string name="image_decoding_exception_title">Decoding error</string>
   <string name="image_decoding_exception_desc">The image cannot be decoded. Please, try a different image or contact developers.</string>
+  <string name="you_are_observer">you are observer</string>
+  <string name="observer_cant_send_message_title">You can\'t send messages!</string>
+  <string name="observer_cant_send_message_desc">Please contact group admin.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -868,6 +876,7 @@
   <string name="snd_conn_event_switch_queue_phase_changing">changing address…</string>
 
   <!-- GroupMemberRole -->
+  <string name="group_member_role_observer">observer</string>
   <string name="group_member_role_member">member</string>
   <string name="group_member_role_admin">admin</string>
   <string name="group_member_role_owner">owner</string>
@@ -890,6 +899,7 @@
   <!-- AddGroupMembersView.kt -->
   <string name="no_contacts_to_add">No contacts to add</string>
   <string name="new_member_role">New member role</string>
+  <string name="initial_member_role">Initial role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
   <string name="skip_inviting_button">Skip inviting members</string>
@@ -919,6 +929,7 @@
   <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group. You won\'t lose members of the group if you later delete it.</string>
   <string name="all_group_members_will_remain_connected">All group members will remain connected.</string>
   <string name="error_creating_link_for_group">Error creating group link</string>
+  <string name="error_updating_link_for_group">Error updating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
 

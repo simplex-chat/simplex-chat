@@ -154,7 +154,7 @@ fun DatabaseLayout(
   val operationsDisabled = !stopped || progressIndicator
 
   Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 48.dp),
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = DEFAULT_BOTTOM_PADDING),
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.your_chat_database))
@@ -190,7 +190,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
       SectionDivider()
-      SettingsPreferenceItem(Icons.Outlined.Backup, stringResource(R.string.full_backup), privacyFullBackup)
+      AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
       SectionDivider()
       SettingsActionItem(
         Icons.Outlined.IosShare,
@@ -267,6 +267,36 @@ fun DatabaseLayout(
         String.format(stringResource(R.string.total_files_count_and_size), count, formatBytes(size))
       }
     )
+  }
+}
+
+@Composable
+private fun AppDataBackupPreference(privacyFullBackup: SharedPreference<Boolean>, initialRandomDBPassphrase: SharedPreference<Boolean>) {
+  SectionItemView {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Icon(Icons.Outlined.Backup, stringResource(R.string.full_backup), tint = HighOrLowlight)
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      val prefState = remember { mutableStateOf(privacyFullBackup.get()) }
+      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.full_backup), Modifier.padding(end = 24.dp))
+        Spacer(Modifier.fillMaxWidth().weight(1f))
+        Switch(
+          checked = prefState.value,
+          onCheckedChange = {
+            if (initialRandomDBPassphrase.get()) {
+              exportProhibitedAlert()
+            } else {
+              privacyFullBackup.set(it)
+              prefState.value = it
+            }
+          },
+          colors = SwitchDefaults.colors(
+            checkedThumbColor = MaterialTheme.colors.primary,
+            uncheckedThumbColor = HighOrLowlight
+          )
+        )
+      }
+    }
   }
 }
 

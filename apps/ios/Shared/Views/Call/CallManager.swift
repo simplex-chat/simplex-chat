@@ -12,7 +12,9 @@ import SimpleXChat
 class CallManager {
     func newOutgoingCall(_ contact: Contact, _ media: CallMediaType) -> UUID {
         let uuid = UUID()
-        ChatModel.shared.activeCall = Call(direction: .outgoing, contact: contact, callkitUUID: uuid, callState: .waitCapabilities, localMedia: media)
+        let call = Call(direction: .outgoing, contact: contact, callkitUUID: uuid, callState: .waitCapabilities, localMedia: media)
+        call.speakerEnabled = media == .video
+        ChatModel.shared.activeCall = call
         return uuid
     }
 
@@ -20,7 +22,7 @@ class CallManager {
         let m = ChatModel.shared
         if let call = m.activeCall, call.callkitUUID == callUUID {
             m.showCallView = true
-            m.callCommand = .capabilities(media: call.localMedia, useWorker: true)
+            m.callCommand = .capabilities(media: call.localMedia)
             return true
         }
         return false
@@ -37,7 +39,7 @@ class CallManager {
     func answerIncomingCall(invitation: RcvCallInvitation) {
         let m = ChatModel.shared
         m.callInvitations.removeValue(forKey: invitation.contact.id)
-        m.activeCall = Call(
+        let call = Call(
             direction: .incoming,
             contact: invitation.contact,
             callkitUUID: invitation.callkitUUID,
@@ -45,6 +47,8 @@ class CallManager {
             localMedia: invitation.callType.media,
             sharedKey: invitation.sharedKey
         )
+        call.speakerEnabled = invitation.callType.media == .video
+        m.activeCall = call
         m.showCallView = true
         let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
         let iceServers = getIceServers()
@@ -53,7 +57,6 @@ class CallManager {
         m.callCommand = .start(
             media: invitation.callType.media,
             aesKey: invitation.sharedKey,
-            useWorker: true,
             iceServers: iceServers,
             relay: useRelay
         )

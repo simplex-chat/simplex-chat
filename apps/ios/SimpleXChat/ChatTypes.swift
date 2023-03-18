@@ -1517,7 +1517,7 @@ public struct GroupMember: Identifiable, Decodable {
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if !canBeRemoved(groupInfo: groupInfo) { return nil }
         let userRole = groupInfo.membership.memberRole
-        return GroupMemberRole.allCases.filter { $0 <= userRole }
+        return GroupMemberRole.allCases.filter { $0 <= userRole && $0 != .observer }
     }
 
     public var memberIncognito: Bool {
@@ -1546,6 +1546,7 @@ public struct GroupMemberRef: Decodable {
 }
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
+    case observer = "observer"
     case member = "member"
     case admin = "admin"
     case owner = "owner"
@@ -1554,6 +1555,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
 
     public var text: String {
         switch self {
+        case .observer: return NSLocalizedString("observer", comment: "member role")
         case .member: return NSLocalizedString("member", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
@@ -1562,9 +1564,10 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
 
     private var comparisonValue: Int {
         switch self {
-        case .member: return 0
-        case .admin: return 1
-        case .owner: return 2
+        case .observer: return 0
+        case .member: return 1
+        case .admin: return 2
+        case .owner: return 3
         }
     }
 
@@ -1719,6 +1722,8 @@ public struct ChatItem: Identifiable, Decodable {
         switch content {
         case .sndDeleted: return true
         case .rcvDeleted: return true
+        case .sndModerated: return true
+        case .rcvModerated: return true
         default: return false
         }
     }
@@ -1783,6 +1788,17 @@ public struct ChatItem: Identifiable, Decodable {
             } else {
                 return nil
             }
+        }
+    }
+
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
+        switch (chatInfo, chatDir) {
+        case let (.group(groupInfo), .groupRcv(groupMember)):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
+                    ? (groupInfo, groupMember)
+                    : nil
+        default: return nil
         }
     }
 

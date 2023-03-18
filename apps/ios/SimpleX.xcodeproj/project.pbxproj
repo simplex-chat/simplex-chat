@@ -7,11 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		184152CEF68D2336FC2EBCB0 /* CallViewRenderers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415B08031E8FB0F7FC27F9 /* CallViewRenderers.swift */; };
 		1841538E296606C74533367C /* UserPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415835CBD939A9ABDC108A /* UserPicker.swift */; };
 		1841560FD1CD447955474C1D /* UserProfilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415845648CA4F5A8BCA272 /* UserProfilesView.swift */; };
 		1841594C978674A7B42EF0C0 /* AnimatedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841511920742C6E152E469F /* AnimatedImageView.swift */; };
 		18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */; };
-		3C714777281C081000CB4D4B /* WebRTCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C714776281C081000CB4D4B /* WebRTCView.swift */; };
+		18415C6C56DBCEC2CBBD2F11 /* WebRTCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415323A4082FC92887F906 /* WebRTCClient.swift */; };
 		3C71477A281C0F6800CB4D4B /* www in Resources */ = {isa = PBXBuildFile; fileRef = 3C714779281C0F6800CB4D4B /* www */; };
 		3C8C548928133C84000A3EC7 /* PasteToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */; };
 		3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */; };
@@ -51,11 +52,11 @@
 		5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5E5D3A2824468B00B0488A /* ActiveCallView.swift */; };
 		5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */; };
 		5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */; };
-		5C646BAC29A82FC70005A88F /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BA729A82FC70005A88F /* libgmp.a */; };
-		5C646BAD29A82FC70005A88F /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BA829A82FC70005A88F /* libffi.a */; };
-		5C646BAE29A82FC70005A88F /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BA929A82FC70005A88F /* libgmpxx.a */; };
-		5C646BAF29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BAA29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD-ghc8.10.7.a */; };
-		5C646BB029A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BAB29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD.a */; };
+		5C65DACB29C5D0DC003CEE45 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAC629C5D0DC003CEE45 /* libgmpxx.a */; };
+		5C65DACC29C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAC729C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS.a */; };
+		5C65DACD29C5D0DC003CEE45 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAC829C5D0DC003CEE45 /* libffi.a */; };
+		5C65DACE29C5D0DC003CEE45 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAC929C5D0DC003CEE45 /* libgmp.a */; };
+		5C65DACF29C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DACA29C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS-ghc8.10.7.a */; };
 		5C65F343297D45E100B67AF3 /* VersionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C65F341297D3F3600B67AF3 /* VersionView.swift */; };
 		5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
 		5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6BA666289BD954009B8ECC /* DismissSheets.swift */; };
@@ -164,8 +165,10 @@
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */; };
 		64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */; };
+		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
+		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -226,10 +229,11 @@
 
 /* Begin PBXFileReference section */
 		1841511920742C6E152E469F /* AnimatedImageView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnimatedImageView.swift; sourceTree = "<group>"; };
+		18415323A4082FC92887F906 /* WebRTCClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebRTCClient.swift; sourceTree = "<group>"; };
 		18415835CBD939A9ABDC108A /* UserPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserPicker.swift; sourceTree = "<group>"; };
 		18415845648CA4F5A8BCA272 /* UserProfilesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserProfilesView.swift; sourceTree = "<group>"; };
 		18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PressedButtonStyle.swift; sourceTree = "<group>"; };
-		3C714776281C081000CB4D4B /* WebRTCView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCView.swift; sourceTree = "<group>"; };
+		18415B08031E8FB0F7FC27F9 /* CallViewRenderers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CallViewRenderers.swift; sourceTree = "<group>"; };
 		3C714779281C0F6800CB4D4B /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; name = www; path = ../android/app/src/main/assets/www; sourceTree = "<group>"; };
 		3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteToConnectView.swift; sourceTree = "<group>"; };
 		3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeLinkView.swift; sourceTree = "<group>"; };
@@ -272,11 +276,11 @@
 		5C5E5D3C282447AB00B0488A /* CallTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallTypes.swift; sourceTree = "<group>"; };
 		5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImage.swift; sourceTree = "<group>"; };
-		5C646BA729A82FC70005A88F /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
-		5C646BA829A82FC70005A88F /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		5C646BA929A82FC70005A88F /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		5C646BAA29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD-ghc8.10.7.a"; sourceTree = "<group>"; };
-		5C646BAB29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD.a"; sourceTree = "<group>"; };
+		5C65DAC629C5D0DC003CEE45 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		5C65DAC729C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS.a"; sourceTree = "<group>"; };
+		5C65DAC829C5D0DC003CEE45 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		5C65DAC929C5D0DC003CEE45 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		5C65DACA29C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS-ghc8.10.7.a"; sourceTree = "<group>"; };
 		5C65F341297D3F3600B67AF3 /* VersionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionView.swift; sourceTree = "<group>"; };
 		5C6AD81227A834E300348BD7 /* NewChatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatButton.swift; sourceTree = "<group>"; };
 		5C6BA666289BD954009B8ECC /* DismissSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissSheets.swift; sourceTree = "<group>"; };
@@ -289,6 +293,10 @@
 		5C84FE9229A216C800D95B1A /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5C84FE9329A2179C00D95B1A /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = "nl.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5C84FE9429A2179C00D95B1A /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		5C8B41C929AF41BC00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C8B41CA29AF41BC00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C8B41CB29AF44CF00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = "cs.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5C8B41CC29AF44CF00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5C93292E29239A170090FFF9 /* SMPServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServersView.swift; sourceTree = "<group>"; };
 		5C93293029239BED0090FFF9 /* SMPServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServerView.swift; sourceTree = "<group>"; };
 		5C93293E2928E0FD0090FFF9 /* AudioRecPlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecPlay.swift; sourceTree = "<group>"; };
@@ -403,6 +411,7 @@
 		64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIGroupInvitationView.swift; sourceTree = "<group>"; };
 		64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncognitoHelp.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
+		D7AA2C3429A936B400737B40 /* MediaEncryption.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = MediaEncryption.playground; path = Shared/MediaEncryption.playground; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -411,7 +420,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */,
+				D7197A1829AE89660055C05A /* WebRTC in Frameworks */,
 				D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */,
+				D7F0E33929964E7E0068AF69 /* LZString in Frameworks */,
 				646BB38C283BEEB9001CE359 /* LocalAuthentication.framework in Frameworks */,
 				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
 			);
@@ -436,13 +447,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C65DACB29C5D0DC003CEE45 /* libgmpxx.a in Frameworks */,
 				5CE2BA93284534B000EC33A6 /* libiconv.tbd in Frameworks */,
-				5C646BB029A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD.a in Frameworks */,
-				5C646BAF29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD-ghc8.10.7.a in Frameworks */,
-				5C646BAE29A82FC70005A88F /* libgmpxx.a in Frameworks */,
-				5C646BAC29A82FC70005A88F /* libgmp.a in Frameworks */,
 				5CE2BA94284534BB00EC33A6 /* libz.tbd in Frameworks */,
-				5C646BAD29A82FC70005A88F /* libffi.a in Frameworks */,
+				5C65DACD29C5D0DC003CEE45 /* libffi.a in Frameworks */,
+				5C65DACE29C5D0DC003CEE45 /* libgmp.a in Frameworks */,
+				5C65DACC29C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS.a in Frameworks */,
+				5C65DACF29C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS-ghc8.10.7.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -452,13 +463,14 @@
 		3C714775281C080100CB4D4B /* Call */ = {
 			isa = PBXGroup;
 			children = (
-				3C714776281C081000CB4D4B /* WebRTCView.swift */,
 				5C9D13A2282187BB00AB8B43 /* WebRTC.swift */,
 				5C5E5D3A2824468B00B0488A /* ActiveCallView.swift */,
 				5C029EA9283942EA004A9677 /* CallController.swift */,
 				5C55A91E283AD0E400C4E99E /* CallManager.swift */,
 				5C55A920283CCCB700C4E99E /* IncomingCallView.swift */,
 				5C55A922283CEDE600C4E99E /* SoundPlayer.swift */,
+				18415323A4082FC92887F906 /* WebRTCClient.swift */,
+				18415B08031E8FB0F7FC27F9 /* CallViewRenderers.swift */,
 			);
 			path = Call;
 			sourceTree = "<group>";
@@ -500,11 +512,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				5C646BA829A82FC70005A88F /* libffi.a */,
-				5C646BA729A82FC70005A88F /* libgmp.a */,
-				5C646BA929A82FC70005A88F /* libgmpxx.a */,
-				5C646BAA29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD-ghc8.10.7.a */,
-				5C646BAB29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD.a */,
+				5C65DAC829C5D0DC003CEE45 /* libffi.a */,
+				5C65DAC929C5D0DC003CEE45 /* libgmp.a */,
+				5C65DAC629C5D0DC003CEE45 /* libgmpxx.a */,
+				5C65DACA29C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS-ghc8.10.7.a */,
+				5C65DAC729C5D0DC003CEE45 /* libHSsimplex-chat-4.5.4.2-HCtiem6UXOf38lPV2PRbjS.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
@@ -581,6 +593,7 @@
 				5C764E87279CBC8E000C6508 /* Model */,
 				5C2E260D27A30E2400F70299 /* Views */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
+				D7AA2C3429A936B400737B40 /* MediaEncryption.playground */,
 				5C13730C2815740A00F43030 /* DebugJSON.playground */,
 			);
 			path = Shared;
@@ -810,6 +823,8 @@
 			packageProductDependencies = (
 				5C8F01CC27A6F0D8007D2C8D /* CodeScanner */,
 				D77B92DB2952372200A5A1CC /* SwiftyGif */,
+				D7F0E33829964E7E0068AF69 /* LZString */,
+				D7197A1729AE89660055C05A /* WebRTC */,
 			);
 			productName = "SimpleX (iOS)";
 			productReference = 5CA059CA279559F40002BEB4 /* SimpleX.app */;
@@ -912,11 +927,14 @@
 				fr,
 				it,
 				nl,
+				cs,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
 				5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */,
 				D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */,
+				D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */,
+				D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */,
 			);
 			productRefGroup = 5CA059CB279559F40002BEB4 /* Products */;
 			projectDirPath = "";
@@ -1072,7 +1090,6 @@
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
 				5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
-				3C714777281C081000CB4D4B /* WebRTCView.swift in Sources */,
 				6440CA00288857A10062C672 /* CIEventView.swift in Sources */,
 				5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */,
 				5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */,
@@ -1094,6 +1111,8 @@
 				1841538E296606C74533367C /* UserPicker.swift in Sources */,
 				18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */,
 				1841560FD1CD447955474C1D /* UserProfilesView.swift in Sources */,
+				18415C6C56DBCEC2CBBD2F11 /* WebRTCClient.swift in Sources */,
+				184152CEF68D2336FC2EBCB0 /* CallViewRenderers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1168,6 +1187,7 @@
 				5CBD285829565D2600EC2CF4 /* fr */,
 				5CA85D0D297219EF0095AF72 /* it */,
 				5C84FE9429A2179C00D95B1A /* nl */,
+				5C8B41CC29AF44CF00888272 /* cs */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1181,6 +1201,7 @@
 				5CBD285629565CAE00EC2CF4 /* fr */,
 				5CA85D0B297218AA0095AF72 /* it */,
 				5C84FE9229A216C800D95B1A /* nl */,
+				5C8B41CA29AF41BC00888272 /* cs */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1194,6 +1215,7 @@
 				5CBD285529565CAE00EC2CF4 /* fr */,
 				5CA85D0A297218AA0095AF72 /* it */,
 				5C84FE9129A216C800D95B1A /* nl */,
+				5C8B41C929AF41BC00888272 /* cs */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1206,6 +1228,7 @@
 				5CBD285729565D2600EC2CF4 /* fr */,
 				5CA85D0C297219EF0095AF72 /* it */,
 				5C84FE9329A2179C00D95B1A /* nl */,
+				5C8B41CB29AF44CF00888272 /* cs */,
 			);
 			name = "SimpleX--iOS--InfoPlist.strings";
 			sourceTree = "<group>";
@@ -1339,7 +1362,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 126;
+				CURRENT_PROJECT_VERSION = 128;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -1360,7 +1383,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.5.3;
+				MARKETING_VERSION = 4.5.4;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
 				PRODUCT_NAME = SimpleX;
 				SDKROOT = iphoneos;
@@ -1381,7 +1404,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 126;
+				CURRENT_PROJECT_VERSION = 128;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -1402,7 +1425,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.5.3;
+				MARKETING_VERSION = 4.5.4;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
 				PRODUCT_NAME = SimpleX;
 				SDKROOT = iphoneos;
@@ -1460,7 +1483,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 126;
+				CURRENT_PROJECT_VERSION = 128;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1473,7 +1496,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 4.5.3;
+				MARKETING_VERSION = 4.5.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.SimpleX-NSE";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1490,7 +1513,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 126;
+				CURRENT_PROJECT_VERSION = 128;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1503,7 +1526,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 4.5.3;
+				MARKETING_VERSION = 4.5.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.SimpleX-NSE";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1667,12 +1690,28 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/simplex-chat/WebRTC.git";
+			requirement = {
+				kind = revision;
+				revision = 34bedc50f9c58dccf4967ea59c7e6a47d620803b;
+			};
+		};
 		D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kirualex/SwiftyGif";
 			requirement = {
 				branch = master;
 				kind = branch;
+			};
+		};
+		D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Ibrahimhass/lzstring-swift";
+			requirement = {
+				kind = revision;
+				revision = 7f62f21de5b18582a950e1753b775cc614722407;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -1683,10 +1722,20 @@
 			package = 5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */;
 			productName = CodeScanner;
 		};
+		D7197A1729AE89660055C05A /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
+		};
 		D77B92DB2952372200A5A1CC /* SwiftyGif */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */;
 			productName = SwiftyGif;
+		};
+		D7F0E33829964E7E0068AF69 /* LZString */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */;
+			productName = LZString;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1502,6 +1502,9 @@
 /* call status */
 "missed call" = "Anruf verpasst";
 
+/* moderated chat item */
+"moderated" = "Moderiert";
+
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Weitere Verbesserungen sind bald verfügbar!";
 
@@ -1658,6 +1661,9 @@
 
 /* No comment provided by engineer. */
 "Open Settings" = "Geräte-Einstellungen öffnen";
+
+/* authentication reason */
+"Open user profiles" = "Benutzerprofile öffnen";
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.";

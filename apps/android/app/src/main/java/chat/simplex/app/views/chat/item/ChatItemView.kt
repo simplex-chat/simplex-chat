@@ -91,6 +91,14 @@ fun ChatItemView(
         }
       }
 
+      fun moderateMessageQuestionText(): String {
+        return if (fullDeleteAllowed) {
+          generalGetString(R.string.moderate_message_will_be_deleted_warning)
+        } else {
+          generalGetString(R.string.moderate_message_will_be_marked_warning)
+        }
+      }
+
       @Composable
       fun MsgContentItemDropdownMenu() {
         DropdownMenu(
@@ -153,6 +161,10 @@ fun ChatItemView(
           if (!(live && cItem.meta.isLive)) {
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
           }
+          val groupInfo = cItem.memberToModerate(cInfo)?.first
+          if (groupInfo != null) {
+            ModerateItemAction(cItem, questionText = moderateMessageQuestionText(), showMenu, deleteMessage)
+          }
         }
       }
 
@@ -163,14 +175,16 @@ fun ChatItemView(
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          ItemAction(
-            stringResource(R.string.reveal_verb),
-            Icons.Outlined.Visibility,
-            onClick = {
-              revealed.value = true
-              showMenu.value = false
-            }
-          )
+          if (!cItem.isDeletedContent) {
+            ItemAction(
+              stringResource(R.string.reveal_verb),
+              Icons.Outlined.Visibility,
+              onClick = {
+                revealed.value = true
+                showMenu.value = false
+              }
+            )
+          }
           DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
@@ -238,8 +252,8 @@ fun ChatItemView(
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
         is CIContent.RcvGroupFeatureRejected -> CIChatFeatureView(cItem, c.groupFeature, Color.Red)
-        is CIContent.SndModerated -> DeletedItem()
-        is CIContent.RcvModerated -> DeletedItem()
+        is CIContent.SndModerated -> MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
+        is CIContent.RcvModerated -> MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
         is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
       }
     }
@@ -259,6 +273,24 @@ fun DeleteItemAction(
     onClick = {
       showMenu.value = false
       deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+fun ModerateItemAction(
+  cItem: ChatItem,
+  questionText: String,
+  showMenu: MutableState<Boolean>,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
+) {
+  ItemAction(
+    stringResource(R.string.moderate_verb),
+    Icons.Outlined.Flag,
+    onClick = {
+      showMenu.value = false
+      moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
     },
     color = Color.Red
   )
@@ -304,6 +336,18 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
           }) { Text(stringResource(R.string.for_everybody)) }
         }
       }
+    }
+  )
+}
+
+fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.delete_member_message__question),
+    text = questionText,
+    confirmText = generalGetString(R.string.delete_verb),
+    destructive = true,
+    onConfirm = {
+      deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
     }
   )
 }

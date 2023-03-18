@@ -57,6 +57,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (diffInMicros, diffInSeconds)
+import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
@@ -68,7 +69,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer)
+import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
@@ -99,6 +100,7 @@ defaultChatConfig =
         DefaultAgentServers
           { smp = _defaultSMPServers,
             ntf = _defaultNtfServers,
+            xftp = defaultXFTPServers,
             netCfg = defaultNetworkConfig
           },
       tbqSize = 1024,
@@ -170,21 +172,25 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       let smp' = fromMaybe (smp (defaultServers :: DefaultAgentServers)) (nonEmpty smpServers)
        in defaultServers {smp = smp', netCfg = networkConfig}
     agentServers :: ChatConfig -> IO InitialAgentServers
-    agentServers config@ChatConfig {defaultServers = DefaultAgentServers {smp, ntf, netCfg}} = do
+    agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
       users <- withTransaction chatStore getUsers
-      smp' <- case users of
-        [] -> pure $ M.fromList [(1, smp)]
-        _ -> M.fromList <$> initialServers users
-      pure InitialAgentServers {smp = smp', ntf, netCfg}
+      smp' <- getUserServers users smp
+      xftp' <- getUserServers users xftp
+      pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
       where
-        initialServers :: [User] -> IO [(UserId, NonEmpty SMPServerWithAuth)]
-        initialServers = mapM $ \u -> (aUserId u,) <$> userServers u
-        userServers :: User -> IO (NonEmpty SMPServerWithAuth)
-        userServers user' = activeAgentServers config <$> withTransaction chatStore (`getSMPServers` user')
+        getUserServers :: forall p. ProtocolTypeI p => [User] -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p)) -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
+        getUserServers users srvSel = case users of
+          [] -> pure $ M.fromList [(1, srvSel defServers)]
+          _ -> M.fromList <$> initialServers
+          where
+            initialServers :: IO [(UserId, NonEmpty (ProtoServerWithAuth p))]
+            initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
+            userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
+            userServers user' = activeAgentServers config srvSel <$> withTransaction chatStore (`getProtocolServers` user')
 
-activeAgentServers :: ChatConfig -> [ServerCfg] -> NonEmpty SMPServerWithAuth
-activeAgentServers ChatConfig {defaultServers = DefaultAgentServers {smp}} =
-  fromMaybe smp
+activeAgentServers :: ChatConfig -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p)) -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
+activeAgentServers ChatConfig {defaultServers} srvSel =
+  fromMaybe (srvSel defaultServers)
     . nonEmpty
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
@@ -289,7 +295,7 @@ processChatCommand = \case
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
-      chooseServers :: m (NonEmpty SMPServerWithAuth, [ServerCfg])
+      chooseServers :: m (NonEmpty SMPServerWithAuth, [ServerCfg 'PSMP])
       chooseServers
         | sameServers =
           asks currentUser >>= readTVarIO >>= \case
@@ -297,7 +303,7 @@ processChatCommand = \case
             Just user -> do
               smpServers <- withStore' (`getSMPServers` user)
               cfg <- asks config
-              pure (activeAgentServers cfg smpServers, smpServers)
+              pure (activeAgentServers cfg smp smpServers, smpServers)
         | otherwise = do
           DefaultAgentServers {smp} <- asks $ defaultServers . config
           pure (smp, [])
@@ -396,7 +402,7 @@ processChatCommand = \case
               then pure (Nothing, Nothing)
               else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing)
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
+              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
             fileStatus <- case fileInline of
@@ -442,7 +448,7 @@ processChatCommand = \case
         setupSndFileTransfer gInfo n = forM file_ $ \file -> do
           (fileSize, chSize, fileInline) <- checkSndFile mc file $ fromIntegral n
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing, fileInline}
+              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescr = Nothing}
               fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer else CIFSSndStored
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
@@ -495,6 +501,7 @@ processChatCommand = \case
             MCFile _ -> False
             MCLink {} -> True
             MCImage {} -> True
+            MCVideo {} -> True
             MCVoice {} -> False
             MCUnknown {} -> True
           qText = msgContentText qmc
@@ -820,12 +827,18 @@ processChatCommand = \case
   APISetUserSMPServers userId (SMPServersConfig smpServers) -> withUserId userId $ \user -> withChatLock "setUserSMPServers" $ do
     withStore $ \db -> overwriteSMPServers db user smpServers
     cfg <- asks config
-    withAgent $ \a -> setSMPServers a (aUserId user) $ activeAgentServers cfg smpServers
+    withAgent $ \a -> setSMPServers a (aUserId user) $ activeAgentServers cfg smp smpServers
     ok user
   SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserSMPServers userId smpServersConfig
-  TestSMPServer userId smpServer -> withUserId userId $ \user ->
+  APIGetUserServers _ -> pure $ chatCmdError Nothing "TODO"
+  GetUserServers -> pure $ chatCmdError Nothing "TODO"
+  APISetUserServers _ _ -> pure $ chatCmdError Nothing "TODO"
+  SetUserServers _ -> pure $ chatCmdError Nothing "TODO"
+  APITestSMPServer userId smpServer -> withUserId userId $ \user ->
     CRSmpTestResult user <$> withAgent (\a -> testSMPServerConnection a (aUserId user) smpServer)
+  TestSMPServer smpServer -> withUser $ \User {userId} ->
+    processChatCommand $ APITestSMPServer userId smpServer
   APISetChatItemTTL userId newTTL_ -> withUser' $ \user -> do
     checkSameUser userId user
     checkStoreNotChanged $
@@ -1189,25 +1202,36 @@ processChatCommand = \case
     CRGroupProfile user <$> withStore (\db -> getGroupInfoByName db user gName)
   UpdateGroupDescription gName description ->
     updateGroupProfileByName gName $ \p -> p {description}
-  APICreateGroupLink groupId -> withUser $ \user -> withChatLock "createGroupLink" $ do
+  APICreateGroupLink groupId mRole -> withUser $ \user -> withChatLock "createGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     assertUserGroupRole gInfo GRAdmin
+    when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact $ Just crClientData
-    withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId
-    pure $ CRGroupLinkCreated user gInfo cReq
+    withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole
+    pure $ CRGroupLinkCreated user gInfo cReq mRole
+  APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withChatLock "groupLinkMemberRole " $ do
+    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    (groupLinkId, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
+    assertUserGroupRole gInfo GRAdmin
+    when (mRole' > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole'
+    when (mRole' /= mRole) $ withStore' $ \db -> setGroupLinkMemberRole db user groupLinkId mRole'
+    pure $ CRGroupLink user gInfo groupLink mRole'
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
-    groupLink <- withStore $ \db -> getGroupLink db user gInfo
-    pure $ CRGroupLink user gInfo groupLink
-  CreateGroupLink gName -> withUser $ \user -> do
+    (_, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
+    pure $ CRGroupLink user gInfo groupLink mRole
+  CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APICreateGroupLink groupId
+    processChatCommand $ APICreateGroupLink groupId mRole
+  GroupLinkMemberRole gName mRole -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIGroupLinkMemberRole groupId mRole
   DeleteGroupLink gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIDeleteGroupLink groupId
@@ -1253,9 +1277,11 @@ processChatCommand = \case
     unless (".jpg" `isSuffixOf` f || ".jpeg" `isSuffixOf` f) $ throwChatError CEFileImageType {filePath}
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
+    -- TODO include file description for preview
     processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
+  SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
   ReceiveFile fileId rcvInline_ filePath_ -> withUser $ \_ ->
     withChatLock "receiveFile" . procCmd $ do
       (user, ft) <- withStore $ \db -> getRcvFileTransferById db fileId
@@ -1816,7 +1842,7 @@ agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
   forever $ do
-    (corrId, connId, msg) <- atomically $ readTBQueue q
+    (corrId, connId, APC _ msg) <- atomically $ readTBQueue q
     let name = "agentSubscriber connId=" <> str connId <> " corrId=" <> str corrId <> " msg=" <> str (aCommandTag msg)
     withLock l name . void . runExceptT $
       processAgentMessage corrId connId msg `catchError` (toView . CRChatError Nothing)
@@ -2040,7 +2066,7 @@ expireChatItems user@User {userId} ttl sync = do
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
-processAgentMessage :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent -> m ()
+processAgentMessage :: forall e m. (AEntityI e, ChatMonad m) => ACorrId -> ConnId -> ACommand 'Agent e -> m ()
 processAgentMessage _ "" msg =
   processAgentMessageNoConn msg `catchError` (toView . CRChatError Nothing)
 processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
@@ -2052,7 +2078,7 @@ processAgentMessage corrId connId msg =
     Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
-processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent -> m ()
+processAgentMessageNoConn :: forall e m. ChatMonad m => ACommand 'Agent e -> m ()
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
@@ -2062,13 +2088,14 @@ processAgentMessageNoConn = \case
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
   _ -> pure ()
   where
+    hostEvent :: ChatResponse -> m ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
     serverEvent srv@(SMPServer host _ _) conns event str = do
       cs <- withStore' $ \db -> getConnectionsContacts db conns
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 
-processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent -> m ()
+processAgentMessageConn :: forall e m. (AEntityI e, ChatMonad m) => User -> ACorrId -> ConnId -> ACommand 'Agent e -> m ()
 processAgentMessageConn user _ agentConnId END =
   withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
     RcvDirectMsgConnection _ (Just ct@Contact {localDisplayName = c}) -> do
@@ -2102,14 +2129,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     isMember memId GroupInfo {membership} members =
       sameMemberId memId membership || isJust (find (sameMemberId memId) members)
 
-    agentMsgConnStatus :: ACommand 'Agent -> Maybe ConnStatus
+    agentMsgConnStatus :: ACommand 'Agent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
       CONF {} -> Just ConnRequested
       INFO _ -> Just ConnSndReady
       CON -> Just ConnReady
       _ -> Nothing
 
-    processDirectMessage :: ACommand 'Agent -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
+    processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
@@ -2211,7 +2238,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_) -> do
+                  Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_, gLinkMemRole) -> do
                     forM_ mc_ $ \mc -> do
                       (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -2219,7 +2246,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     forM_ groupId_ $ \groupId -> do
                       gVar <- asks idsDrg
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation
-                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct GRMember groupConnIds
+                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -2256,7 +2283,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- TODO add debugging output
         _ -> pure ()
 
-    processGroupMessage :: ACommand 'Agent -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
+    processGroupMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
     processGroupMessage agentMsg connEntity conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
@@ -2413,7 +2440,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- TODO add debugging output
       _ -> pure ()
 
-    processSndFileConn :: ACommand 'Agent -> ConnectionEntity -> Connection -> SndFileTransfer -> m ()
+    processSndFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg connEntity conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
         -- SMP CONF for SndFileConnection happens for direct file protocol
@@ -2457,7 +2484,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- TODO add debugging output
         _ -> pure ()
 
-    processRcvFileConn :: ACommand 'Agent -> ConnectionEntity -> Connection -> RcvFileTransfer -> m ()
+    processRcvFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> RcvFileTransfer -> m ()
     processRcvFileConn agentMsg connEntity conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
       case agentMsg of
         INV (ACR _ cReq) ->
@@ -2552,7 +2579,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             withAckMessage agentConnId cmdId meta a
           Nothing -> a
 
-    processUserContactRequest :: ACommand 'Agent -> ConnectionEntity -> Connection -> UserContact -> m ()
+    processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
@@ -2576,7 +2603,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (UserContactLink {autoAccept}, groupId_) ->
+                Just (UserContactLink {autoAccept}, groupId_, _) ->
                   case autoAccept of
                     Just AutoAccept {acceptIncognito} -> case groupId_ of
                       Nothing -> do
@@ -2603,20 +2630,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             toView $ CRConnectionDisabled connEntity
         _ -> pure ()
 
-    updateChatLock :: MsgEncodingI e => String -> ChatMsgEvent e -> m ()
+    updateChatLock :: MsgEncodingI enc => String -> ChatMsgEvent enc -> m ()
     updateChatLock name event = do
       l <- asks chatLock
       atomically $ tryReadTMVar l >>= mapM_ (swapTMVar l . (<> s))
       where
         s = " " <> name <> "=" <> B.unpack (strEncode $ toCMEventTag event)
 
-    withCompletedCommand :: Connection -> ACommand 'Agent -> (CommandData -> m ()) -> m ()
+    withCompletedCommand :: Connection -> ACommand 'Agent e -> (CommandData -> m ()) -> m ()
     withCompletedCommand Connection {connId} agentMsg action = do
-      let agentMsgTag = aCommandTag agentMsg
+      let agentMsgTag = APCT (sAEntity @e) $ aCommandTag agentMsg
       cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
       case cmdData_ of
         Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
-          | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == ERR_) -> do
+          | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
             withStore' $ \db -> deleteCommand db user cmdId
             action cmdData
           | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
@@ -3211,9 +3238,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts to from = do
-      withStore' $ \db -> mergeContactRecords db userId to from
-      toView $ CRContactsMerged user to from
+    mergeContacts c1 c2 = do
+      withStore' $ \db -> mergeContactRecords db userId c1 c2
+      toView $ CRContactsMerged user c1 c2
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
@@ -4000,7 +4027,8 @@ chatCommandP =
       "/smp_servers " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
       "/smp default" $> SetUserSMPServers (SMPServersConfig []),
-      "/smp test " *> (TestSMPServer <$> A.decimal <* A.space <*> strP),
+      "/_smp test " *> (APITestSMPServer <$> A.decimal <* A.space <*> strP),
+      "/smp test " *> (TestSMPServer <$> strP),
       "/_smp " *> (APISetUserSMPServers <$> A.decimal <* A.space <*> jsonP),
       "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/_smp " *> (APIGetUserSMPServers <$> A.decimal),
@@ -4035,13 +4063,14 @@ chatCommandP =
       "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
+      ("/help contacts" <|> "/help contact" <|> "/hc") $> ChatHelp HSContacts,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
       ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),
-      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
+      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRAdmin)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
@@ -4056,10 +4085,12 @@ chatCommandP =
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayName <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayName),
       "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> optional (A.space *> msgTextP)),
-      "/_create link #" *> (APICreateGroupLink <$> A.decimal),
+      "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
+      "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
-      "/create link #" *> (CreateGroupLink <$> displayName),
+      "/create link #" *> (CreateGroupLink <$> displayName <*> (memberRole <|> pure GRMember)),
+      "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
@@ -4088,6 +4119,7 @@ chatCommandP =
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
+      ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
       ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
@@ -4169,8 +4201,7 @@ chatCommandP =
         [ " owner" $> GROwner,
           " admin" $> GRAdmin,
           " member" $> GRMember,
-          -- " observer" $> GRObserver,
-          pure GRAdmin
+          " observer" $> GRObserver
         ]
     chatNameP = ChatName <$> chatTypeP <*> displayName
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName

@@ -17,6 +17,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import chat.simplex.app.*
@@ -645,6 +647,9 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
+  val userCanSend = rememberUpdatedState(chat.userCanSend)
+  val userIsObserver = rememberUpdatedState(chat.userIsObserver)
+
   Column {
     contextItemView()
     when {
@@ -656,11 +661,11 @@ fun ComposeView(
       modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled) {
+      IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
           Icons.Filled.AttachFile,
           contentDescription = stringResource(R.string.attach),
-          tint = if (!composeState.value.attachmentDisabled) MaterialTheme.colors.primary else HighOrLowlight,
+          tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else HighOrLowlight,
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)
@@ -695,6 +700,13 @@ fun ComposeView(
         if (chatModel.draftChatId.value == chat.id) {
           chatModel.draft.value = null
           chatModel.draftChatId.value = null
+        }
+      }
+
+      LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
+        if (!chat.userCanSend) {
+          clearCurrentDraft()
+          clearState()
         }
       }
 
@@ -733,6 +745,8 @@ fun ComposeView(
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,
         allowVoiceToContact = ::allowVoiceToContact,
+        userIsObserver = userIsObserver.value,
+        userCanSend = userCanSend.value,
         sendMessage = {
           sendMessage()
           resetLinkPreview()

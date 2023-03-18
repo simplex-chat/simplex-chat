@@ -288,6 +288,12 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
+func apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64) async throws -> (ChatItem, ChatItem?) {
+    let r = await chatSendCmd(.apiDeleteMemberChatItem(groupId: groupId, groupMemberId: groupMemberId, itemId: itemId), bgDelay: msgDelay)
+    if case let .chatItemDeleted(_, deletedChatItem, toChatItem, _) = r { return (deletedChatItem.chatItem, toChatItem?.chatItem) }
+    throw r
+}
+
 func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
@@ -344,7 +350,7 @@ func setUserSMPServers(smpServers: [ServerCfg]) async throws {
 
 func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
     guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("testSMPServer: no current user") }
-    let r = await chatSendCmd(.testSMPServer(userId: userId, smpServer: smpServer))
+    let r = await chatSendCmd(.apiTestSMPServer(userId: userId, smpServer: smpServer))
     if case let .smpTestResult(_, testFailure) = r {
         if let t = testFailure {
             return .failure(t)
@@ -868,9 +874,15 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
     throw r
 }
 
-func apiCreateGroupLink(_ groupId: Int64) async throws -> String {
-    let r = await chatSendCmd(.apiCreateGroupLink(groupId: groupId))
-    if case let .groupLinkCreated(_, _, connReq) = r { return connReq }
+func apiCreateGroupLink(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> (String, GroupMemberRole) {
+    let r = await chatSendCmd(.apiCreateGroupLink(groupId: groupId, memberRole: memberRole))
+    if case let .groupLinkCreated(_, _, connReq, memberRole) = r { return (connReq, memberRole) }
+    throw r
+}
+
+func apiGroupLinkMemberRole(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> (String, GroupMemberRole) {
+    let r = await chatSendCmd(.apiGroupLinkMemberRole(groupId: groupId, memberRole: memberRole))
+    if case let .groupLink(_, _, connReq, memberRole) = r { return (connReq, memberRole) }
     throw r
 }
 
@@ -880,11 +892,11 @@ func apiDeleteGroupLink(_ groupId: Int64) async throws {
     throw r
 }
 
-func apiGetGroupLink(_ groupId: Int64) throws -> String? {
+func apiGetGroupLink(_ groupId: Int64) throws -> (String, GroupMemberRole)? {
     let r = chatSendCmdSync(.apiGetGroupLink(groupId: groupId))
     switch r {
-    case let .groupLink(_, _, connReq):
-        return connReq
+    case let .groupLink(_, _, connReq, memberRole):
+        return (connReq, memberRole)
     case .chatCmdError(_, chatError: .errorStore(storeError: .groupLinkNotFound)):
         return nil
     default: throw r
@@ -1180,6 +1192,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if active(user) {
                 m.updateGroup(toGroup)
             }
+        case let .memberRole(user, groupInfo, _, _, _, _):
+            if active(user) {
+                m.updateGroup(groupInfo)
+            }
         case let .rcvFileStart(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
@@ -1224,7 +1240,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     offer: offer.rtcSession,
                     iceCandidates: offer.rtcIceCandidates,
                     media: callType.media, aesKey: sharedKey,
-                    useWorker: true,
                     iceServers: iceServers,
                     relay: useRelay
                 )

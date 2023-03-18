@@ -323,13 +323,13 @@ getContactLink cc created = do
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
 
-getGroupLink :: HasCallStack => TestCC -> String -> Bool -> IO String
-getGroupLink cc gName created = do
+getGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getGroupLink cc gName mRole created = do
   cc <## if created then "Group link is created!" else "Group link:"
   cc <## ""
   link <- getTermLine cc
   cc <## ""
-  cc <## "Anybody can connect to you and join group with: /c <group_link_above>"
+  cc <## ("Anybody can connect to you and join group as " <> B.unpack (strEncode mRole) <> " with: /c <group_link_above>")
   cc <## ("to show it again: /show link #" <> gName)
   cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
   pure link

@@ -83,6 +83,10 @@ public enum VideoCamera: String, Codable, Equatable {
 
 public struct CallCapabilities: Codable, Equatable {
     public var encryption: Bool
+
+    public init(encryption: Bool) {
+        self.encryption = encryption
+    }
 }
 
 public enum WebRTCCallStatus: String, Encodable {

@@ -29,8 +29,12 @@ struct FramedItemView: View {
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                if chatItem.meta.itemDeleted != nil {
-                    framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
+                if let di = chatItem.meta.itemDeleted {
+                    if case let .moderated(byGroupMember) = di {
+                        framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.chatViewName)").italic())
+                    } else {
+                        framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
+                    }
                 } else if chatItem.meta.isLive {
                     framedItemHeader(caption: Text("LIVE"))
                 }

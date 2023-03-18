@@ -34,7 +34,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, onGroupLinkUpdated: (String?) -> Unit, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -95,9 +95,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, onGroupLinkUpdat
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
       manageGroupLink = {
-        withApi {
-          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink, onGroupLinkUpdated) }
-        }
+          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
       }
     )
   }
@@ -300,6 +298,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
+      Modifier.weight(1f).padding(end = DEFAULT_PADDING),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {

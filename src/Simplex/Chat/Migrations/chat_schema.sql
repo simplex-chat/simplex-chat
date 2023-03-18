@@ -282,6 +282,7 @@ CREATE TABLE user_contact_links(
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   auto_accept_incognito INTEGER DEFAULT 0 CHECK(auto_accept_incognito NOT NULL),
   group_link_id BLOB,
+  group_link_member_role TEXT NULL,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(

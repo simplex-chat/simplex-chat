@@ -37,6 +37,7 @@ import androidx.webkit.WebViewClientCompat
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.DEFAULT_BOTTOM_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.helpers.withApi
@@ -240,7 +241,7 @@ private fun ActiveCallOverlayLayout(
           CallInfoView(call, alignment = Alignment.CenterHorizontally)
         }
         Spacer(Modifier.fillMaxHeight().weight(1f))
-        Box(Modifier.fillMaxWidth().padding(bottom = 48.dp), contentAlignment = Alignment.CenterStart) {
+        Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
           Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconButton(onClick = dismiss) {
               Icon(Icons.Filled.CallEnd, stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))

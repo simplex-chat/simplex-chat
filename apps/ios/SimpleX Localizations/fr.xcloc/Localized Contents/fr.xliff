@@ -2382,6 +2382,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Open user profiles" xml:space="preserve">
         <source>Open user profiles</source>
+        <target>Ouvrir les profils d'utilisateurs</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
@@ -2576,7 +2577,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
         <source>Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).</source>
-        <target>Pour en savoir plus, consultez notre [dépôt GitHub] (https://github.com/simplex-chat/simplex-chat#readme).</target>
+        <target>Pour en savoir plus, consultez notre [dépôt GitHub](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
@@ -4234,6 +4235,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="moderated" xml:space="preserve">
         <source>moderated</source>
+        <target>modéré</target>
         <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">

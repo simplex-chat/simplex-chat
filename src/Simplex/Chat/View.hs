@@ -45,7 +45,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtocolType, ProtocolServer (..))
+import Simplex.Messaging.Protocol (AProtocolType, ProtocolServer (..), ProtocolTypeI)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
@@ -94,6 +94,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
     HSMain -> chatHelpInfo
     HSFiles -> filesHelpInfo
     HSGroups -> groupsHelpInfo
+    HSContacts -> contactsHelpInfo
     HSMyAddress -> myAddressHelpInfo
     HSMessages -> messagesHelpInfo
     HSMarkdown -> markdownInfo
@@ -185,8 +186,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
-  CRGroupLinkCreated u g cReq -> ttyUser u $ groupLink_ "Group link is created!" g cReq
-  CRGroupLink u g cReq -> ttyUser u $ groupLink_ "Group link:" g cReq
+  CRGroupLinkCreated u g cReq mRole -> ttyUser u $ groupLink_ "Group link is created!" g cReq mRole
+  CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequest _ g c -> [ttyFullContact c <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
@@ -540,13 +541,13 @@ autoAcceptStatus_ = \case
     maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
   _ -> ["auto_accept off"]
 
-groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> [StyledString]
-groupLink_ intro g cReq =
+groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
+groupLink_ intro g cReq mRole =
   [ intro,
     "",
     (plain . strEncode) cReq,
     "",
-    "Anybody can connect to you and join group with: " <> highlight' "/c <group_link_above>",
+    "Anybody can connect to you and join group as " <> showRole mRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> groupName' g),
     "to delete it: " <> highlight ("/delete link #" <> groupName' g) <> " (joined members will remain connected to you)"
   ]
@@ -720,12 +721,13 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewSMPServers :: [ServerCfg] -> Bool -> [StyledString]
-viewSMPServers smpServers testView =
+-- TODO make more generic messages or split
+viewSMPServers :: ProtocolTypeI p => [ServerCfg p] -> Bool -> [StyledString]
+viewSMPServers servers testView =
   if testView
-    then [customSMPServers]
+    then [customServers]
     else
-      [ customSMPServers,
+      [ customServers,
         "",
         "use " <> highlight' "/smp test <srv>" <> " to test SMP server connection",
         "use " <> highlight' "/smp set <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
@@ -733,10 +735,10 @@ viewSMPServers smpServers testView =
         "(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"
       ]
   where
-    customSMPServers =
-      if null smpServers
+    customServers =
+      if null servers
         then "no custom SMP servers saved"
-        else viewServers smpServers
+        else viewServers servers
 
 viewSMPTestResult :: Maybe SMPTestFailure -> [StyledString]
 viewSMPTestResult = \case
@@ -797,7 +799,7 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
   ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
     <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
-viewServers :: [ServerCfg] -> StyledString
+viewServers :: ProtocolTypeI p => [ServerCfg p] -> StyledString
 viewServers = plain . intercalate ", " . map (B.unpack . strEncode . (\ServerCfg {server} -> server))
 
 viewServerHosts :: [SMPServer] -> StyledString
@@ -1224,6 +1226,7 @@ viewChatError logLevel = \case
       (: []) . (ttyGroup' g <>) $ case role of
         GRAuthor -> ": you don't have permission to send messages"
         _ -> ": you have insufficient permissions for this action, the required role is " <> plain (strEncode role)
+    CEGroupMemberInitialRole g role -> [ttyGroup' g <> ": initial role for group member cannot be " <> plain (strEncode role) <> ", use member or observer"]
     CEContactIncognitoCantInvite -> ["you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"]
     CEGroupIncognitoCantInvite -> ["you've connected to this group using an incognito profile - prohibited to invite contacts"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]

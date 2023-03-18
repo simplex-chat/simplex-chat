@@ -258,36 +258,52 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.attachmentDisabled)
+                .disabled(composeState.attachmentDisabled || !chat.userCanSend)
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
-                SendMessageView(
-                    composeState: $composeState,
-                    sendMessage: {
-                        sendMessage()
-                        resetLinkPreview()
-                    },
-                    sendLiveMessage: sendLiveMessage,
-                    updateLiveMessage: updateLiveMessage,
-                    cancelLiveMessage: {
-                        composeState.liveMessage = nil
-                        chatModel.removeLiveDummy()
-                    },
-                    voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
-                    showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
-                    startVoiceMessageRecording: {
-                        Task {
-                            await startVoiceMessageRecording()
-                        }
-                    },
-                    finishVoiceMessageRecording: finishVoiceMessageRecording,
-                    allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                    onImagesAdded: { images in if !images.isEmpty { chosenImages = images }},
-                    keyboardVisible: $keyboardVisible
-                )
-                .padding(.trailing, 12)
-                .background(.background)
+                ZStack(alignment: .leading) {
+                    SendMessageView(
+                        composeState: $composeState,
+                        sendMessage: {
+                            sendMessage()
+                            resetLinkPreview()
+                        },
+                        sendLiveMessage: sendLiveMessage,
+                        updateLiveMessage: updateLiveMessage,
+                        cancelLiveMessage: {
+                            composeState.liveMessage = nil
+                            chatModel.removeLiveDummy()
+                        },
+                        voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
+                        showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
+                        startVoiceMessageRecording: {
+                            Task {
+                                await startVoiceMessageRecording()
+                            }
+                        },
+                        finishVoiceMessageRecording: finishVoiceMessageRecording,
+                        allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                        onImagesAdded: { images in if !images.isEmpty { chosenImages = images }},
+                        keyboardVisible: $keyboardVisible
+                    )
+                    .padding(.trailing, 12)
+                    .background(.background)
+                    .disabled(!chat.userCanSend)
+
+                    if chat.userIsObserver {
+                        Text("you are observer")
+                            .italic()
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 12)
+                            .onTapGesture {
+                                AlertManager.shared.showAlertMsg(
+                                    title: "You can't send messages!",
+                                    message: "Please contact group admin."
+                                )
+                            }
+                    }
+                }
             }
         }
         .onChange(of: composeState.message) { _ in
@@ -297,6 +313,13 @@ struct ComposeView: View {
                 } else {
                     resetLinkPreview()
                 }
+            }
+        }
+        .onChange(of: chat.userCanSend) { canSend in
+            if !canSend {
+                cancelCurrentVoiceRecording()
+                clearCurrentDraft()
+                clearState()
             }
         }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {

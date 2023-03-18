@@ -545,6 +545,25 @@ final class Chat: ObservableObject, Identifiable {
         self.chatStats = chatStats
     }
 
+    var userCanSend: Bool {
+        switch chatInfo {
+        case .direct: return true
+        case let .group(groupInfo):
+            let m = groupInfo.membership
+            return m.memberActive && m.memberRole >= .member
+        default: return false
+        }
+    }
+
+    var userIsObserver: Bool {
+        switch chatInfo {
+        case let .group(groupInfo):
+            let m = groupInfo.membership
+            return m.memberActive && m.memberRole == .observer
+        default: return false
+        }
+    }
+
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }

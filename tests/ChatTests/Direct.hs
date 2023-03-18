@@ -405,14 +405,14 @@ testTestSMPServerConnection :: HasCallStack => FilePath -> IO ()
 testTestSMPServerConnection =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice ##> "/smp test 1 smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"
       alice <## "SMP server test passed"
       -- to test with password:
       -- alice <## "SMP server test failed at CreateQueue, error: SMP AUTH"
       -- alice <## "Server requires authorization to create queues, check password"
-      alice ##> "/smp test 1 smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
       alice <## "SMP server test passed"
-      alice ##> "/smp test 1 smp://LcJU@localhost:7001"
+      alice ##> "/smp test smp://LcJU@localhost:7001"
       alice <## "SMP server test failed at Connect, error: BROKER smp://LcJU@localhost:7001 NETWORK"
       alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
