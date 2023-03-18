@@ -159,9 +159,12 @@ contactConnId = aConnId . contactConn
 contactConnIncognito :: Contact -> Bool
 contactConnIncognito = connIncognito . contactConn
 
+contactDirect :: Contact -> Bool
+contactDirect Contact {activeConn = Connection {connLevel, viaGroupLink}} = connLevel == 0 && not viaGroupLink
+
 directOrUsed :: Contact -> Bool
-directOrUsed Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
-  (connLevel == 0 && not viaGroupLink) || contactUsed
+directOrUsed ct@Contact {contactUsed} =
+  contactDirect ct || contactUsed
 
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
