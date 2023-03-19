@@ -120,13 +120,6 @@ struct SettingsView: View {
                     }
 
                     NavigationLink {
-                        ProfilePrivacyView()
-                            .navigationTitle("Your profile privacy")
-                    } label: {
-                        settingsRow(user.hidden ? "lock.shield" : "shield") { Text("Profile privacy") }
-                    }
-
-                    NavigationLink {
                         UserProfilesView()
                     } label: {
                         settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }

@@ -97,9 +97,10 @@ struct UserProfilesView: View {
         let s = searchTextOrPassword.trimmingCharacters(in: .whitespaces)
         let lower = s.localizedLowercase
         return m.users.filter { u in
-            u.user.hidden
-            ? false // TODO compute password hash with available salt and compare with stored hash
-            : s == "" || u.user.chatViewName.localizedLowercase.contains(lower)
+            if let ph = u.user.viewPwdHash {
+                return s != "" && chatPasswordHash(s, ph.salt) == ph.hash
+            }
+            return s == "" || u.user.chatViewName.localizedLowercase.contains(lower)
         }
     }
 
@@ -157,11 +158,37 @@ struct UserProfilesView: View {
         .foregroundColor(.primary)
         .deleteDisabled(m.users.count <= 1)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button("Hide") {
-
+            if user.hidden {
+                Button("Unhide") {
+                    // api request to unhide
+                }
+                .tint(.green)
+            } else {
+                Button("Hide") {
+//                    ProfilePrivacyView(user: user)
+                }
             }
+            Group {
+                if user.showNtfs {
+                    Button("Mute") {
+                    }
+                } else {
+                    Button("Unmute") {
+                    }
+                }
+            }
+            .tint(.accentColor)
         }
     }
+}
+
+public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
+    var cPwd = pwd.cString(using: .utf8)!
+    var cSalt = salt.cString(using: .utf8)!
+    let cHash  = chat_password_hash(&cPwd, &cSalt)!
+    let hash = fromCString(cHash)
+    free(cHash)
+    return hash
 }
 
 struct UserProfilesView_Previews: PreviewProvider {

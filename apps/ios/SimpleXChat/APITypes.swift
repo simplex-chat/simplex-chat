@@ -662,9 +662,10 @@ public enum ChatResponse: Decodable, Error {
     }
 }
 
-public struct UserPrivacyCfg: Codable {
+public struct UserPrivacyCfg: Encodable {
     var currViewPwd: String
     var showNtfs: Bool
+    var forceIncognito: Bool
     var viewPwd: String
     var wipePwd: String
 }

@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct PrivacySettings: View {
+    @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -19,6 +20,17 @@ struct PrivacySettings: View {
     var body: some View {
         VStack {
             List {
+                if let user = m.currentUser {
+                    Section("Profile") {
+                        NavigationLink {
+                            ProfilePrivacyView(user: user)
+                                .navigationTitle("Your profile privacy")
+                        } label: {
+                            settingsRow(user.hidden ? "lock.shield" : "shield") { Text("Profile privacy") }
+                        }
+                    }
+                }
+
                 Section("Device") {
                     SimplexLockSetting()
                     settingsRow("eye.slash") {
