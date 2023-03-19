@@ -1,4 +1,4 @@
-| Updated 26.02.2023 | Languages: EN, [CZ](/docs/lang/cs/TRANSLATIONS.md) |
+| Updated 07.02.2023 | Languages: EN, [CZ](/docs/lang/cs/TRANSLATIONS.md) |
 
 # Contributing translations to SimpleX Chat
 

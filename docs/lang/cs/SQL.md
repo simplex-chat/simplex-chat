@@ -1,4 +1,4 @@
-| Aktualizováno 26.02.2023 | Jazyky: CZ, [EN](/docs/SQL.md), [FR](/docs/lang/fr/SQL.md) |
+| Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/SQL.md), [FR](/docs/lang/fr/SQL.md) |
 
 # Přístup ke zprávám v databázi
 

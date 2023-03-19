@@ -1,4 +1,4 @@
-| Aktualizováno 26.02.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md) |
+| Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md) |
 
 # Hostování vlastního serveru SMP
 

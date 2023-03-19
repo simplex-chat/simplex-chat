@@ -1,4 +1,4 @@
-| Aktualizováno 26.02.2023 | Jazyky: CZ, [EN](/docs/CLI.md), [FR](/docs/lang/fr/CLI.md) |
+| Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/CLI.md), [FR](/docs/lang/fr/CLI.md) |
 
 # SimpleX Chat terminálová (konzolová) aplikace pro Linux/MacOS/Windows
 

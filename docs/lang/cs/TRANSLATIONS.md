@@ -1,4 +1,4 @@
-| Aktualizováno 26.02.2023 | Jazyky: CZ, [EN](/docs/TRANSLATIONS.md) |
+| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/TRANSLATIONS.md) |
 
 # Přispívání překladů do SimpleX Chat
 
