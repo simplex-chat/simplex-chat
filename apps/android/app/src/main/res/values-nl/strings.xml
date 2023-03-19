@@ -635,7 +635,7 @@
     <string name="you_control_your_chat">Jij beheert je gesprek!</string>
     <string name="your_profile_is_stored_on_your_device">Uw profiel, contacten en afgeleverde berichten worden op uw apparaat opgeslagen.</string>
     <string name="callstate_starting">beginnen…</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">U bepaalt via welke server(s) je de berichten <b>ontvangt</b>, uw contacten – de servers die u gebruikt om ze berichten te sturen.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">U bepaalt via welke server(s) je de berichten <b>ontvangt</b>, uw contacten de servers die u gebruikt om ze berichten te sturen.</string>
     <string name="icon_descr_video_on">Video aan</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
     <string name="messages_section_description">Deze instelling is van toepassing op berichten in jou huidige chat profiel</string>
