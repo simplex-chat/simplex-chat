@@ -877,7 +877,7 @@
     <string name="update_network_session_mode_question">Transportisolatiemodus updaten\?</string>
     <string name="callstate_received_confirmation">bevestiging ontvangen…</string>
     <string name="callstate_waiting_for_confirmation">Wachten op bevestiging…</string>
-    <string name="first_platform_without_user_ids">Het eerste platform zonder gebruikers ID\'s - privé door ontwerp.</string>
+    <string name="first_platform_without_user_ids">Het eerste platform zonder gebruikers ID\'s, privé door ontwerp.</string>
     <string name="prohibit_direct_messages">Verbied het sturen van directe berichten naar leden.</string>
     <string name="prohibit_sending_voice">Verbieden het verzenden van spraak berichten.</string>
     <string name="v4_2_security_assessment_desc">De beveiliging van SimpleX Chat is gecontroleerd door Trail of Bits.</string>
