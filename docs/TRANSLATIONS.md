@@ -10,7 +10,7 @@ This document is created to speed up this process, and share some important "got
 
 1. Create an account in Weblate, using the same email that you use in GitHub - it will make your contributions associated with your GitHub account, and might help you in some cases. Once translation is released to the users we will add your account name to the [list of translators](https://github.com/simplex-chat/simplex-chat#translate-the-apps).
 
-2. Before you start the translation there is a simple contributor agreement to sign via Weblate - this is to avoid any conflicts around IP rights.
+2. Before you start the translation there is a simple contributor license agreement to sign via Weblate - this is to avoid any conflicts around IP rights. The copy of this agreement is also [available here](https://github.com/simplex-chat/cla/blob/master/CLA.md).
 
 3. We can also add you to the group of translators for any questions and updates - please connect to me via chat.
 
