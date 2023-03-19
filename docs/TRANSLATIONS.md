@@ -12,7 +12,7 @@ This document is created to speed up this process, and share some important "got
 
 1. Create an account in Weblate, using the same email that you use in GitHub - it will make your contributions associated with your GitHub account, and might help you in some cases. Once translation is released to the users we will add your account name to the [list of translators](https://github.com/simplex-chat/simplex-chat#translate-the-apps).
 
-2. Before you start the translation there is a simple contributor agreement to sign via Weblate - this is to avoid any conflicts around IP rights.
+2. Before you start the translation there is a simple contributor license agreement to sign via Weblate - this is to avoid any conflicts around IP rights. The copy of this agreement is also [available here](https://github.com/simplex-chat/cla/blob/master/CLA.md).
 
 3. We can also add you to the group of translators for any questions and updates - please connect to me via chat.
 
@@ -45,13 +45,21 @@ We will then:
 
 *Please note*: we aim to keep app functions consistent between Android and iOS platforms, when possible, so we will release and announce a new language once both platforms have been translated. It doesn't mean you have to do it, but we will have to wait until somebody else translates the second platform. But if you start from Android, iOS usually takes 3-4x less time to add.
 
+## How we review the translations
+
+To validate the correctness of the translations we review reverse translations by browsing Weblate pages in Google Chrome browser in "Translate to English" mode. E.g., to review the German translations of Android interface somebody from our team scrolled through [these 49 pages](https://hosted.weblate.org/browse/simplex-chat/android/de/).
+
+We are not looking for reverse translation being exactly the same as the original, it is rarely the case, only that it is generally correct.
+
+You would make the review much easier if you could review it in advance in the same way, and comment on any cases where reverse translations are completely different (there may be valid cases for that).
+
 ## What is next
 
 1. As we update the app, we post the updates in the group of translators. You are absolutely under no obligation to translate these additional strings. We hugely appreciate if you do though, as it makes the users experience so much better when they depend on your translations, than if some new part of the app is not translated.
 
-2. You can also help adoption in your country / language group by translating our documents - we have just started it - and also our website content. There have been many requests to do it and we are currently adding the translation framework for the website.
+2. You can further help SimpleX adoption in your country / language group by translating [our website](https://simplex.chat) (also [via weblate](https://hosted.weblate.org/projects/simplex-chat/website/)) and/or [GitHub documents](https://github.com/simplex-chat/simplex-chat/tree/master/docs/lang) (this is only possible via git)!
 
-3. Also, if you want to be a moderator/admin of the users group in your language, once the app is translated we can host such group - we are preparing community guidelines and adding some moderation tools to the app to be released in v5 in March.
+3. Also, if you want to be a moderator/admin of the users group in your language, once the app is translated we can host such group - we are preparing community guidelines and adding some moderation tools to the app to be released in v4.6 in March.
 
 
 Thank you very much again for helping us grow SimpleX Chat!
