@@ -530,8 +530,9 @@
         <target>Verificatie mislukt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
+      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
         <source>Authentication is required before the call is connected, but you may miss calls.</source>
+        <target state="translated">Verificatie is vereist voordat het gesprek wordt verbonden, maar u kunt gesprekken missen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
@@ -1914,8 +1915,9 @@
         <target>Meteen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Interface" xml:space="preserve">
+      <trans-unit id="Interface" xml:space="preserve" approved="no">
         <source>Interface</source>
+        <target state="translated">Interface</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -2983,8 +2985,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Toon QR-code</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show calls in phone history" xml:space="preserve">
+      <trans-unit id="Show calls in phone history" xml:space="preserve" approved="no">
         <source>Show calls in phone history</source>
+        <target state="translated">Toon oproepen in de telefoongeschiedenis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -3374,8 +3377,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Onverwachte migratiestatus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unknown caller" xml:space="preserve">
+      <trans-unit id="Unknown caller" xml:space="preserve" approved="no">
         <source>Unknown caller</source>
+        <target state="translated">Onbekende beller</target>
         <note>callkit banner</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
