@@ -10,7 +10,7 @@
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 [![Follow on Mastodon](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)](https://mastodon.social/@simplex)
 
-<img src="./images/trail-of-bits.jpg" height="40"> &nbsp; <img src="./images/privacy-guides.jpg" height="40"> &nbsp; <img src="./images/kuketz-blog.jpg" height="40">
+[<img src="./images/trail-of-bits.jpg" height="80">](http://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) &nbsp; [<img src="./images/privacy-guides.jpg" height="80">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp; [<img src="./images/kuketz-blog.jpg" height="80">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
 
 **NEW**: Security audit by [Trail of Bits](https://www.trailofbits.com/about), the [new website](https://simplex.chat) and v4.2 released! [See the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
 
