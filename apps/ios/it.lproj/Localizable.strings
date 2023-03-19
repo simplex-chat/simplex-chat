@@ -312,6 +312,9 @@
 "always" = "sempre";
 
 /* No comment provided by engineer. */
+"Always use relay" = "Connetti via relay";
+
+/* No comment provided by engineer. */
 "Answer call" = "Rispondi alla chiamata";
 
 /* No comment provided by engineer. */
@@ -532,9 +535,6 @@
 
 /* No comment provided by engineer. */
 "Connect via one-time link?" = "Connettere via link una tantum?";
-
-/* No comment provided by engineer. */
-"Connect via relay" = "Connetti via relay";
 
 /* No comment provided by engineer. */
 "connected" = "connesso";
@@ -787,6 +787,9 @@
 
 /* No comment provided by engineer. */
 "Delete link?" = "Eliminare il link?";
+
+/* No comment provided by engineer. */
+"Delete member message?" = "Eliminare il messaggio del membro?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Eliminare il messaggio?";
@@ -1068,6 +1071,9 @@
 "Error switching profile!" = "Errore nel cambio di profilo!";
 
 /* No comment provided by engineer. */
+"Error updating group link" = "Errore nell'aggiornamento del link del gruppo";
+
+/* No comment provided by engineer. */
 "Error updating message" = "Errore nell'aggiornamento del messaggio";
 
 /* No comment provided by engineer. */
@@ -1219,9 +1225,6 @@
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "Server ICE (uno per riga)";
-
-/* No comment provided by engineer. */
-"If the video fails to connect, flip the camera to resolve it." = "Se il video non riesce a connettersi, cambia la fotocamera (frontale/posteriore) per risolvere.";
 
 /* No comment provided by engineer. */
 "If you can't meet in person, **show QR code in the video call**, or share the link." = "Se non potete incontrarvi di persona, **mostra il codice QR durante la videochiamata** o condividi il link.";
@@ -1502,8 +1505,14 @@
 /* call status */
 "missed call" = "chiamata persa";
 
+/* chat item action */
+"Moderate" = "Modera";
+
 /* moderated chat item */
 "moderated" = "moderato";
+
+/* No comment provided by engineer. */
+"moderated by %@" = "moderato da %@";
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Altri miglioramenti sono in arrivo!";
@@ -1588,6 +1597,9 @@
 
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Le notifiche sono disattivate!";
+
+/* member role */
+"observer" = "osservatore";
 
 /* enabled status
    group pref value */
@@ -1715,6 +1727,9 @@
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Controlla le preferenze tue e del tuo contatto.";
+
+/* No comment provided by engineer. */
+"Please contact group admin." = "Contatta l'amministratore del gruppo.";
 
 /* No comment provided by engineer. */
 "Please enter correct current passphrase." = "Inserisci la password attuale corretta.";
@@ -2185,7 +2200,10 @@
 "The group is fully decentralized – it is visible only to the members." = "Il gruppo è completamente decentralizzato: è visibile solo ai membri.";
 
 /* No comment provided by engineer. */
-"The microphone does not work when the app is in the background." = "Il microfono non funziona quando l'app è in secondo piano.";
+"The message will be deleted for all members." = "Il messaggio verrà eliminato per tutti i membri.";
+
+/* No comment provided by engineer. */
+"The message will be marked as moderated for all members." = "Il messaggio sarà segnato come moderato per tutti i membri.";
 
 /* No comment provided by engineer. */
 "The next generation of private messaging" = "La nuova generazione di messaggistica privata";
@@ -2234,9 +2252,6 @@
 
 /* No comment provided by engineer. */
 "To make a new connection" = "Per creare una nuova connessione";
-
-/* No comment provided by engineer. */
-"To prevent the call interruption, enable Do Not Disturb mode." = "Per evitare l'interruzione della chiamata, attiva la modalità Non disturbare.";
 
 /* No comment provided by engineer. */
 "To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Per proteggere la privacy, invece degli ID utente utilizzati da tutte le altre piattaforme, SimpleX ha identificatori per le code di messaggi, separati per ciascuno dei tuoi contatti.";
@@ -2470,6 +2485,9 @@
 "You are invited to group" = "Sei stato/a invitato/a al gruppo";
 
 /* No comment provided by engineer. */
+"you are observer" = "sei un osservatore";
+
+/* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Puoi anche connetterti cliccando il link. Se si apre nel browser, clicca il pulsante **Apri nell'app mobile**.";
 
 /* notification body */
@@ -2489,6 +2507,9 @@
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Puoi usare il markdown per formattare i messaggi:";
+
+/* No comment provided by engineer. */
+"You can't send messages!" = "Non puoi inviare messaggi!";
 
 /* chat item text */
 "you changed address" = "hai cambiato indirizzo";

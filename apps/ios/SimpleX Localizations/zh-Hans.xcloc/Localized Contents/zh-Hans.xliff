@@ -4482,6 +4482,56 @@ SimpleX 服务器无法看到您的资料。</target>
         <target state="translated">已审核</target>
         <note>moderated chat item</note>
       </trans-unit>
+      <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
+        <source>Delete member message?</source>
+        <target state="translated">删除成员消息？</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error updating group link" xml:space="preserve" approved="no">
+        <source>Error updating group link</source>
+        <target state="translated">更新群组链接错误</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please contact group admin." xml:space="preserve" approved="no">
+        <source>Please contact group admin.</source>
+        <target state="translated">请联系群组管理员。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The message will be deleted for all members." xml:space="preserve" approved="no">
+        <source>The message will be deleted for all members.</source>
+        <target state="translated">将为所有成员删除该消息。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can't send messages!" xml:space="preserve" approved="no">
+        <source>You can't send messages!</source>
+        <target state="translated">您无法发送消息！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="moderated by %@" xml:space="preserve" approved="no">
+        <source>moderated by %@</source>
+        <target state="translated">由 %@ 审核</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="observer" xml:space="preserve" approved="no">
+        <source>observer</source>
+        <target state="translated">观察者</target>
+        <note>member role</note>
+      </trans-unit>
+      <trans-unit id="you are observer" xml:space="preserve" approved="no">
+        <source>you are observer</source>
+        <target state="translated">您是观察者</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Moderate" xml:space="preserve" approved="no">
+        <source>Moderate</source>
+        <target state="translated">审核</target>
+        <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve" approved="no">
+        <source>The message will be marked as moderated for all members.</source>
+        <target state="translated">该消息将对所有成员显示为已审核。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="zh-Hans" datatype="plaintext">
