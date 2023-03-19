@@ -77,10 +77,10 @@ android {
         jniLibs.useLegacyPackaging = compression_level != "0"
     }
     def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
-    if (isRelease) {
+//    if (isRelease) {
         // Comma separated list of languages that will be included in the apk
-        android.defaultConfig.resConfigs("en", "ru", "de", "fr", "it", "nl", "cs")
-    }
+    android.defaultConfig.resConfigs("en", "ru", "de", "fr", "it", "nl", "cs", "zh-rCN")
+//    }
 }
 
 dependencies {
