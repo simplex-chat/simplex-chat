@@ -13,9 +13,11 @@ import SimpleXChat
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
     @ObservedObject var call: Call
+    @Environment(\.scenePhase) var scenePhase
     @State private var client: WebRTCClient? = nil
     @State private var activeCall: WebRTCClient.Call? = nil
     @State private var localRendererAspectRatio: CGFloat? = nil
+    @Binding var canConnectCall: Bool
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -36,17 +38,28 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
-            if client == nil {
-                client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-                sendCommandToClient()
-            }
+            logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase), privacy: .public), canConnectCall \(canConnectCall)")
+            createWebRTCClient()
+            dismissAllSheets()
+        }
+        .onChange(of: canConnectCall) { _ in
+            logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall, privacy: .public)")
+            createWebRTCClient()
         }
         .onDisappear {
+            logger.debug("ActiveCallView: disappear")
             client?.endCall()
         }
         .onChange(of: m.callCommand) { _ in sendCommandToClient()}
         .background(.black)
         .preferredColorScheme(.dark)
+    }
+
+    private func createWebRTCClient() {
+        if client == nil && canConnectCall {
+            client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
+            sendCommandToClient()
+        }
     }
 
     private func sendCommandToClient() {
@@ -117,9 +130,9 @@ struct ActiveCallView: View {
             case let .connection(state):
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
-//                    if case .outgoing = call.direction {
-//                        CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
-//                    }
+                    call.direction == .outgoing
+                        ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
+                        : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
                 }
                 if state.connectionState == "closed" {
@@ -252,7 +265,7 @@ struct ActiveCallOverlay: View {
 
     private func endCallButton() -> some View {
         let cc = CallController.shared
-        return callButton("phone.down.fill", size: 60) {
+        return callButton("phone.down.fill", width: 60, height: 60) {
             if let uuid = call.callkitUUID {
                 cc.endCall(callUUID: uuid)
             } else {
@@ -274,7 +287,7 @@ struct ActiveCallOverlay: View {
     }
 
     private func toggleSpeakerButton() -> some View {
-        controlButton(call, call.speakerEnabled ? "speaker.fill" : "speaker.slash") {
+        controlButton(call, call.speakerEnabled ? "speaker.wave.2.fill" : "speaker.wave.1.fill") {
             Task {
                 client.setSpeakerEnabledAndConfigureSession(!call.speakerEnabled)
                 DispatchQueue.main.async {
@@ -305,22 +318,22 @@ struct ActiveCallOverlay: View {
 
     @ViewBuilder private func controlButton(_ call: Call, _ imageName: String, _ perform: @escaping () -> Void) -> some View {
         if call.hasMedia {
-            callButton(imageName, size: 40, perform)
+            callButton(imageName, width: 50, height: 38, perform)
                 .foregroundColor(.white)
                 .opacity(0.85)
         } else {
-            Color.clear.frame(width: 40, height: 40)
+            Color.clear.frame(width: 50, height: 38)
         }
     }
 
-    private func callButton(_ imageName: String, size: CGFloat, _ perform: @escaping () -> Void) -> some View {
+    private func callButton(_ imageName: String, width: CGFloat, height: CGFloat, _ perform: @escaping () -> Void) -> some View {
         Button {
             perform()
         } label: {
             Image(systemName: imageName)
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: size, maxHeight: size)
+                .frame(maxWidth: width, maxHeight: height)
         }
     }
 }

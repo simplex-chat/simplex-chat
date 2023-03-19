@@ -968,7 +968,7 @@
     <string name="moderated_description">gemodereerd</string>
     <string name="moderated_item_description">gemodereerd door %s</string>
     <string name="delete_member_message__question">Bericht van lid verwijderen\?</string>
-    <string name="moderate_verb">gemodereerd</string>
+    <string name="moderate_verb">Modereren</string>
     <string name="moderate_message_will_be_deleted_warning">Het bericht wordt verwijderd voor alle leden.</string>
     <string name="moderate_message_will_be_marked_warning">Het bericht wordt gemarkeerd als gemodereerd voor alle leden.</string>
     <string name="observer_cant_send_message_desc">Neem contact op met de groep beheerder.</string>

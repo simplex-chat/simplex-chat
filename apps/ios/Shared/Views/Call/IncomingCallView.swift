@@ -65,6 +65,7 @@ struct IncomingCallView: View {
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .onAppear { dismissAllSheets() }
     }
 
     private func callButton(_ text: LocalizedStringKey, _ image: String, _ color: Color, action: @escaping () -> Void) -> some View {
