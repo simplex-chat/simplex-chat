@@ -2173,8 +2173,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Migratie is voltooid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Moderate" xml:space="preserve">
+      <trans-unit id="Moderate" xml:space="preserve" approved="no">
         <source>Moderate</source>
+        <target state="translated">Modereren</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
