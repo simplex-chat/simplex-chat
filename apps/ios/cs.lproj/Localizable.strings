@@ -212,7 +212,7 @@
 "above, then choose:" = "výše, pak vyberte:";
 
 /* No comment provided by engineer. */
-"Accent color" = "Barva přízvuku";
+"Accent color" = "Zbarvení";
 
 /* accept contact request via notification
    accept incoming call via notification */
@@ -300,7 +300,7 @@
 "Allow your contacts to irreversibly delete sent messages." = "Umožněte svým kontaktům nevratně odstranit odeslané zprávy.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to send disappearing messages." = "Umožněte svým kontaktům odesílat mizející zprávy.";
+"Allow your contacts to send disappearing messages." = "Umožněte svým kontaktům odesílat mizící zprávy.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Povolte svým kontaktům odesílání hlasových zpráv.";
@@ -369,7 +369,7 @@
 "Both you and your contact can irreversibly delete sent messages." = "Vy i váš kontakt můžete nevratně mazat odeslané zprávy.";
 
 /* No comment provided by engineer. */
-"Both you and your contact can send disappearing messages." = "Vy i váš kontakt můžete posílat mizející zprávy.";
+"Both you and your contact can send disappearing messages." = "Vy i váš kontakt můžete posílat mizící zprávy.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Hlasové zprávy můžete posílat vy i váš kontakt.";
@@ -591,7 +591,7 @@
 "connection:%@" = "připojení:%@";
 
 /* No comment provided by engineer. */
-"Contact allows" = "Kontakt povoluje";
+"Contact allows" = "Kontakt povolil";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Kontakt již existuje";
@@ -744,7 +744,7 @@
 "Delete chat archive?" = "Smazat archiv chatu?";
 
 /* No comment provided by engineer. */
-"Delete chat profile?" = "Smazat profil chatu?";
+"Delete chat profile?" = "Smazat chat profil?";
 
 /* No comment provided by engineer. */
 "Delete connection" = "Smazat připojení";
@@ -855,7 +855,7 @@
 "Disable SimpleX Lock" = "Vypnutí zámku SimpleX";
 
 /* chat feature */
-"Disappearing messages" = "Zmizení zpráv";
+"Disappearing messages" = "Mizící zprávy";
 
 /* No comment provided by engineer. */
 "Disappearing messages are prohibited in this chat." = "Mizící zprávy jsou v tomto chatu zakázány.";
@@ -1164,7 +1164,7 @@
 "Group members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Členové skupiny mohou posílat mizející zprávy.";
+"Group members can send disappearing messages." = "Členové skupiny mohou posílat mizící zprávy.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Členové skupiny mohou posílat hlasové zprávy.";
@@ -1765,7 +1765,7 @@
 "Prohibit sending direct messages to members." = "Zakázat odesílání přímých zpráv členům.";
 
 /* No comment provided by engineer. */
-"Prohibit sending disappearing messages." = "Zakázat posílání mizejících zpráv.";
+"Prohibit sending disappearing messages." = "Zakázat posílání mizících zpráv.";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Zakázat odesílání hlasových zpráv.";
@@ -2371,7 +2371,7 @@
 "via group link" = "prostřednictvím skupinového odkazu";
 
 /* chat list item description */
-"via one-time link" = "prostřednictvím jednorázového odkazu";
+"via one-time link" = "jednorázovým odkazem";
 
 /* No comment provided by engineer. */
 "via relay" = "přes relé";
@@ -2584,34 +2584,34 @@
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Vaše chat databáze není šifrována – nastavte přístupovou frázi pro její šifrování.";
 
 /* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Váš profil v chatu bude zaslán členům skupiny";
+"Your chat profile will be sent to group members" = "Váš chat profil bude zaslán členům skupiny";
 
 /* No comment provided by engineer. */
-"Your chat profile will be sent to your contact" = "Váš profil v chatu bude odeslán vašemu kontaktu";
+"Your chat profile will be sent to your contact" = "Váš chat profil bude odeslán vašemu kontaktu";
 
 /* No comment provided by engineer. */
-"Your chat profiles" = "Vaše profily v chatu";
+"Your chat profiles" = "Vaše chat profily";
 
 /* No comment provided by engineer. */
-"Your chat profiles are stored locally, only on your device." = "Vaše profily v chatu jsou uloženy lokálně, pouze ve vašem zařízení.";
+"Your chat profiles are stored locally, only on your device." = "Vaše chat profily jsou uloženy lokálně, pouze ve vašem zařízení.";
 
 /* No comment provided by engineer. */
 "Your chats" = "Vaše konverzace";
 
 /* No comment provided by engineer. */
-"Your contact address" = "Vaše kontaktní adresa";
+"Your contact address" = "Vaše adresa";
 
 /* No comment provided by engineer. */
 "Your contact can scan it from the app." = "Váš kontakt jej může naskenovat z aplikace.";
 
 /* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Aby se připojení dokončilo, musí být váš kontakt online.\nToto připojení můžete zrušit a kontakt odebrat (a zkusit to později s novým odkazem).";
+"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "K dokončení připojení, musí být váš kontakt online.\nToto připojení můžete zrušit a kontakt odebrat (a zkusit to později s novým odkazem).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kontakt odeslal soubor, který je větší než aktuálně podporovaná maximální velikost (%@).";
 
 /* No comment provided by engineer. */
-"Your contacts can allow full message deletion." = "Vaše kontakty mohou povolit úplné vymazání zpráv.";
+"Your contacts can allow full message deletion." = "Vaše kontakty mohou povolit úplné mazání zpráv.";
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Vaše aktuální chat databáze bude ODSTRANĚNA a NAHRAZENA importovanou.";

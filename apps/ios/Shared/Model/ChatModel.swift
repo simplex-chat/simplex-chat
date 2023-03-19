@@ -553,6 +553,15 @@ final class Chat: ObservableObject, Identifiable {
         }
     }
 
+    var userIsObserver: Bool {
+        switch chatInfo {
+        case let .group(groupInfo):
+            let m = groupInfo.membership
+            return m.memberActive && m.memberRole == .observer
+        default: return false
+        }
+    }
+
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }

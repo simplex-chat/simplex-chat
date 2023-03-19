@@ -25,21 +25,21 @@
             "enabled": true
         },
         {
+            "label": "it",
+            "name": "Italiano",
+            "flag": "/img/flags/it.svg",
+            "enabled": true
+        },
+        {
             "label": "nl",
             "name": "Nederlands",
             "flag": "/img/flags/nl.svg",
-            "enabled": false
+            "enabled": true
         },
         {
             "label": "nb_NO",
             "name": "Norsk",
             "flag": "/img/flags/nb_NO.svg",
-            "enabled": false
-        },
-        {
-            "label": "it",
-            "name": "Italian",
-            "flag": "/img/flags/it.svg",
             "enabled": false
         },
         {

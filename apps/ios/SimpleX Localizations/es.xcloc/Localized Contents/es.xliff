@@ -5,97 +5,121 @@
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
     </header>
     <body>
-      <trans-unit id="&#10;" xml:space="preserve">
+      <trans-unit id="&#10;" xml:space="preserve" approved="no">
         <source>
 </source>
+        <target state="needs-translation">
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" " xml:space="preserve">
+      <trans-unit id=" " xml:space="preserve" approved="no">
         <source> </source>
+        <target state="needs-translation"> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="  " xml:space="preserve">
+      <trans-unit id="  " xml:space="preserve" approved="no">
         <source>  </source>
+        <target state="needs-translation">  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="   " xml:space="preserve">
+      <trans-unit id="   " xml:space="preserve" approved="no">
         <source>   </source>
+        <target state="needs-translation">   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" (" xml:space="preserve">
+      <trans-unit id=" (" xml:space="preserve" approved="no">
         <source> (</source>
+        <target state="needs-translation"> (</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" (can be copied)" xml:space="preserve">
+      <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
         <source> (can be copied)</source>
+        <target state="translated"> (puede copiarse)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="!1 colored!" xml:space="preserve">
+      <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
         <source>!1 colored!</source>
+        <target state="translated">!1 coloreado!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="#secret#" xml:space="preserve">
+      <trans-unit id="#secret#" xml:space="preserve" approved="no">
         <source>#secret#</source>
+        <target state="translated">#secreto#</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@" xml:space="preserve">
+      <trans-unit id="%@" xml:space="preserve" approved="no">
         <source>%@</source>
+        <target state="translated">%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ %@" xml:space="preserve">
+      <trans-unit id="%@ %@" xml:space="preserve" approved="no">
         <source>%@ %@</source>
+        <target state="needs-translation">%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ / %@" xml:space="preserve">
+      <trans-unit id="%@ / %@" xml:space="preserve" approved="no">
         <source>%@ / %@</source>
+        <target state="needs-translation">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ is connected!" xml:space="preserve">
+      <trans-unit id="%@ is connected!" xml:space="preserve" approved="no">
         <source>%@ is connected!</source>
+        <target state="translated">%@ ¡está conectado!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@ is not verified" xml:space="preserve">
+      <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
         <source>%@ is not verified</source>
+        <target state="translated">%@ no está verificado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ is verified" xml:space="preserve">
+      <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
         <source>%@ is verified</source>
+        <target state="translated">%@ está verificado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ wants to connect!" xml:space="preserve">
+      <trans-unit id="%@ wants to connect!" xml:space="preserve" approved="no">
         <source>%@ wants to connect!</source>
+        <target state="translated">%@ ¡quiere conectar!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%d days" xml:space="preserve">
+      <trans-unit id="%d days" xml:space="preserve" approved="no">
         <source>%d days</source>
+        <target state="translated">%d días</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d hours" xml:space="preserve">
+      <trans-unit id="%d hours" xml:space="preserve" approved="no">
         <source>%d hours</source>
+        <target state="translated">%d horas</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d min" xml:space="preserve">
+      <trans-unit id="%d min" xml:space="preserve" approved="no">
         <source>%d min</source>
+        <target state="translated">%d minutos</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d months" xml:space="preserve">
+      <trans-unit id="%d months" xml:space="preserve" approved="no">
         <source>%d months</source>
+        <target state="translated">%d meses</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d sec" xml:space="preserve">
+      <trans-unit id="%d sec" xml:space="preserve" approved="no">
         <source>%d sec</source>
+        <target state="translated">%d segundos</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d skipped message(s)" xml:space="preserve">
+      <trans-unit id="%d skipped message(s)" xml:space="preserve" approved="no">
         <source>%d skipped message(s)</source>
+        <target state="translated">%d mensaje(s) saltado(s</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="%lld" xml:space="preserve">
+      <trans-unit id="%lld" xml:space="preserve" approved="no">
         <source>%lld</source>
+        <target state="translated">%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld %@" xml:space="preserve">
+      <trans-unit id="%lld %@" xml:space="preserve" approved="no">
         <source>%lld %@</source>
+        <target state="translated">%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve">

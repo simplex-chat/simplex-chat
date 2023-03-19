@@ -14,6 +14,8 @@ let interfaceStyles: [UIUserInterfaceStyle] = [.unspecified, .light, .dark]
 
 let interfaceStyleNames: [LocalizedStringKey] = ["System", "Light", "Dark"]
 
+let appSettingsURL = URL(string: UIApplication.openSettingsURLString)!
+
 struct AppearanceSettings: View {
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @State private var iconLightTapped = false
@@ -24,6 +26,16 @@ struct AppearanceSettings: View {
     var body: some View {
         VStack{
             List {
+                Section(String("Language")) {
+                    HStack {
+                        Text(currentLanguage)
+                        Spacer()
+                        Button("Change") {
+                            UIApplication.shared.open(appSettingsURL)
+                        }
+                    }
+                }
+
                 Section("App icon") {
                     HStack {
                         updateAppIcon(image: "icon-light", icon: nil, tapped: $iconLightTapped)
@@ -60,6 +72,11 @@ struct AppearanceSettings: View {
                 }
             }
         }
+    }
+
+    private var currentLanguage: String {
+        let lang = Bundle.main.preferredLocalizations.first ?? "en"
+        return Locale.current.localizedString(forIdentifier: lang)?.localizedCapitalized ?? lang
     }
 
     private func updateAppIcon(image: String, icon: String?, tapped: Binding<Bool>) -> some View {

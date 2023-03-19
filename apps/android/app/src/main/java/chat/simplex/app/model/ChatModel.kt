@@ -496,6 +496,14 @@ data class Chat (
       else -> false
     }
 
+  val userIsObserver: Boolean get() = when(chatInfo) {
+    is ChatInfo.Group -> {
+      val m = chatInfo.groupInfo.membership
+      m.memberActive && m.memberRole == GroupMemberRole.Observer
+    }
+    else -> false
+  }
+
   val id: String get() = chatInfo.id
 
   @Serializable
@@ -942,7 +950,7 @@ data class GroupMember (
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (!canBeRemoved(groupInfo)) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.values().filter { it <= userRole }
+      GroupMemberRole.values().filter { it <= userRole && it != GroupMemberRole.Observer }
     }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
