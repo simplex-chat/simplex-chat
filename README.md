@@ -14,11 +14,11 @@
 
 ## Welcome to SimpleX Chat!
 
-1. [Install the app](#install-the-app)
-2. [Connect to the team](#connect-to-the-team-via-the-app) and [join user groups](#join-user-groups)
-3. [Make a private connection](#make-a-private-connection) with a friend
-4. [Help translating SimpleX Chat](#help-translating-simplex-chat)
-5. [Contribute](#contribute) and [help us with donations](#help-us-with-donations)
+1. [Install the app](#install-the-app).
+2. [Connect to the team](#connect-to-the-team-via-the-app) and [join user groups](#join-user-groups).
+3. [Make a private connection](#make-a-private-connection) with a friend.
+4. [Help translating SimpleX Chat](#help-translating-simplex-chat).
+5. [Contribute](#contribute) and [help us with donations](#help-us-with-donations).
 
 [Learn more about SimpleX Chat](#contents).
 
