@@ -20,6 +20,8 @@
 4. [Help translating SimpleX Chat](#translate-simplex-chat)
 5. [Contribute](#contribute) and [help us with donations](#help-us-with-donations)
 
+[Learn more about SimpleX Chat](#contents).
+
 ## Install the app
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
@@ -83,10 +85,10 @@ Languages in progress: Arabic, Hindi, Japanese, Spanish and [many others](https:
 
 ## Contribute
 
-We would love to have you join the development! You can contribute to SimpleX Chat with:
+We would love to have you join the development! You can help us with:
 
-- translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
 - writing a tutorial or recipes about hosting servers, chat bot automations, etc.
+- contributing to SimpleX Chat knowledge-base.
 - developing features - please connect to us via chat so we can help you get started.
 
 ## Help us with donations
