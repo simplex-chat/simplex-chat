@@ -12,7 +12,15 @@
 
 **NEW**: Security audit by [Trail of Bits](https://www.trailofbits.com/about), the [new website](https://simplex.chat) and v4.2 released! [See the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
 
-## Install SimpleX Chat
+## Welcome to SimpleX Chat!
+
+1. [Install the app](#install-the-app)
+2. [Connect to the team](#connect-to-the-team) and [join user groups](#join-user-groups)
+3. [Make a private connection with a friend](#make-a-private-connection-with-a-friend)
+4. [Help translating SimpleX Chat](#translate-simplex-chat)
+5. [Contribute](#contribute) and [help us with donations](#help-us-with-donations)
+
+## Install the app
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
@@ -30,15 +38,15 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) [app / CLI](#zap-quick-installation-of-a-terminal-app) on Linux, MacOS, Windows.
 
-## Make a private connection
+## Connect to the team
 
-You need to share a link or scan a QR code (in person or during a video call) to make a connection and start messaging.
+Once you create the profile you can connect to the team via the app to:
 
-The channel through which you share the link does not have to be secure - it is enough that you can confirm who sent you the message and that your SimpleX connection is established.
+- ask any questions
+- suggest any improvements
+- share anything relevant
 
-<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Make a private connection" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Video call" height="360">
-
-## Join a user group
+## Join user groups
 
 You can join an English-speaking group if you want to ask any questions: [#SimpleX-Group-2](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FQP8zaGjjmlXV-ix_Er4JgJ0lNPYGS1KX%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEApAgBkRZ3x12ayZ7sHrjHQWNMvqzZpWUgM_fFCUdLXwo%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xWpPXEZZsQp_F7vwAcAYDw%3D%3D%22%7D)
 
@@ -53,7 +61,15 @@ You can join these groups either by opening these links in the app or by opening
 
 Join via the app to share what's going on and ask any questions!
 
-## Translate SimpleX Chat
+## Make a private connection with a friend
+
+You need to share a link or scan a QR code (in person or during a video call) to make a connection and start messaging.
+
+The channel through which you share the link does not have to be secure - it is enough that you can confirm who sent you the message and that your SimpleX connection is established.
+
+<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Make a private connection" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Video call" height="360">
+
+## Help translating SimpleX Chat
 
 Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps, website and documents are translated to many other languages.
 
@@ -72,6 +88,40 @@ Join our translators to help SimpleX grow!
 
 Languages in progress: Arabic, Hindi, Japanese, Spanish and [many others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages, review the [translation guide](./docs/TRANSLATIONS.md) and get in touch with us!
 
+## Contribute
+
+We would love to have you join the development! You can contribute to SimpleX Chat with:
+
+- translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
+- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
+- developing features - please connect to us via chat so we can help you get started.
+
+## Help us with donations
+
+Huge thank you to everybody who donated to SimpleX Chat!
+
+We are prioritizing users privacy and security - it would be impossible without your support.
+
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+
+Your donations help us raise more funds – any amount, even the price of the cup of coffee, would make a big difference for us.
+
+It is possible to donate via:
+
+- [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
+- [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
+- Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
+- Solana address: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+
+Thank you,
+
+Evgeny
+
+SimpleX Chat founder
+
 ## Contents
 
 - [Why privacy matters](#why-privacy-matters)
@@ -88,10 +138,6 @@ Languages in progress: Arabic, Hindi, Japanese, Spanish and [many others](https:
 - [Privacy: technical details and limitations](#privacy-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
-- [Join a user group](#join-a-user-group)
-- [Translate SimpleX Chat](#translate-simplex-chat)
-- [Contribute](#contribute)
-- [Help us with donations](#help-us-with-donations)
 - [Disclaimers, Security contact, License](#disclaimers)
 
 ## Why privacy matters
@@ -260,41 +306,6 @@ If you are considering developing with SimpleX platform please get in touch for 
 - Hosting server for large groups, communities and public channels.
 - Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - High capacity multi-node SMP relays.
-
-## Contribute
-
-We would love to have you join the development! You can contribute to SimpleX Chat with:
-
-- translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- developing features - please connect to us via chat so we can help you get started.
-
-## Help us with donations
-
-Huge thank you to everybody who donated to SimpleX Chat!
-
-We are prioritizing users privacy and security - it would be impossible without your support.
-
-Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
-
-Your donations help us raise more funds – any amount, even the price of the cup of coffee, would make a big difference for us.
-
-It is possible to donate via:
-
-- [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
-- [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
-- Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Solana address: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
-- please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
-
-Thank you,
-
-Evgeny
-
-SimpleX Chat founder
 
 ## Disclaimers
 
