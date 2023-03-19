@@ -480,6 +480,11 @@
         <target>Già connesso?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Always use relay" xml:space="preserve">
+        <source>Always use relay</source>
+        <target>Connetti via relay</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve">
         <source>Answer call</source>
         <target>Rispondi alla chiamata</target>
@@ -523,6 +528,10 @@
       <trans-unit id="Authentication failed" xml:space="preserve">
         <source>Authentication failed</source>
         <target>Autenticazione fallita</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
+        <source>Authentication is required before the call is connected, but you may miss calls.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
@@ -768,11 +777,6 @@
       <trans-unit id="Connect via one-time link?" xml:space="preserve">
         <source>Connect via one-time link?</source>
         <target>Connettere via link una tantum?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Connect via relay" xml:space="preserve">
-        <source>Connect via relay</source>
-        <target>Connetti via relay</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -1796,11 +1800,6 @@
         <target>Server ICE (uno per riga)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If the video fails to connect, flip the camera to resolve it." xml:space="preserve">
-        <source>If the video fails to connect, flip the camera to resolve it.</source>
-        <target>Se il video non riesce a connettersi, cambia la fotocamera (frontale/posteriore) per risolvere.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
         <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
         <target>Se non potete incontrarvi di persona, **mostra il codice QR durante la videochiamata** o condividi il link.</target>
@@ -1911,6 +1910,10 @@
       <trans-unit id="Instantly" xml:space="preserve">
         <source>Instantly</source>
         <target>Istantaneamente</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Interface" xml:space="preserve">
+        <source>Interface</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -2976,6 +2979,10 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Mostra codice QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Show calls in phone history" xml:space="preserve">
+        <source>Show calls in phone history</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
         <target>Mostra anteprima</target>
@@ -3209,11 +3216,6 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <source>The message will be marked as moderated for all members.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The microphone does not work when the app is in the background." xml:space="preserve">
-        <source>The microphone does not work when the app is in the background.</source>
-        <target>Il microfono non funziona quando l'app è in secondo piano.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
         <source>The next generation of private messaging</source>
         <target>La nuova generazione di messaggistica privata</target>
@@ -3287,11 +3289,6 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       <trans-unit id="To make a new connection" xml:space="preserve">
         <source>To make a new connection</source>
         <target>Per creare una nuova connessione</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="To prevent the call interruption, enable Do Not Disturb mode." xml:space="preserve">
-        <source>To prevent the call interruption, enable Do Not Disturb mode.</source>
-        <target>Per evitare l'interruzione della chiamata, attiva la modalità Non disturbare.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
@@ -3371,6 +3368,10 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Stato di migrazione imprevisto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unknown caller" xml:space="preserve">
+        <source>Unknown caller</source>
+        <note>callkit banner</note>
+      </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
         <source>Unknown database error: %@</source>
         <target>Errore del database sconosciuto: %@</target>
@@ -3379,6 +3380,10 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
       <trans-unit id="Unknown error" xml:space="preserve">
         <source>Unknown error</source>
         <target>Errore sconosciuto</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
+        <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
@@ -3456,6 +3461,10 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       <trans-unit id="Use for new connections" xml:space="preserve">
         <source>Use for new connections</source>
         <target>Usa per connessioni nuove</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use iOS call interface" xml:space="preserve">
+        <source>Use iOS call interface</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -3616,6 +3625,10 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       <trans-unit id="You are invited to group" xml:space="preserve">
         <source>You are invited to group</source>
         <target>Sei stato/a invitato/a al gruppo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
+        <source>You can accept calls from lock screen, without device and app authentication.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">
