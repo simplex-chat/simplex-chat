@@ -49,7 +49,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import GHC.Records.Compat
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..))
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolTypeI)
@@ -126,8 +126,6 @@ instance ToJSON UserInfo where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
-type UserId = Int64
-
 type ContactId = Int64
 
 type ProfileId = Int64
@@ -161,9 +159,12 @@ contactConnId = aConnId . contactConn
 contactConnIncognito :: Contact -> Bool
 contactConnIncognito = connIncognito . contactConn
 
+contactDirect :: Contact -> Bool
+contactDirect Contact {activeConn = Connection {connLevel, viaGroupLink}} = connLevel == 0 && not viaGroupLink
+
 directOrUsed :: Contact -> Bool
-directOrUsed Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
-  (connLevel == 0 && not viaGroupLink) || contactUsed
+directOrUsed ct@Contact {contactUsed} =
+  contactDirect ct || contactUsed
 
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed

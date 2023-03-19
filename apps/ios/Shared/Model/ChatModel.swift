@@ -9,7 +9,6 @@
 import Foundation
 import Combine
 import SwiftUI
-import WebKit
 import SimpleXChat
 
 final class ChatModel: ObservableObject {
@@ -59,7 +58,6 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
-    var callWebView: WKWebView?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -551,6 +549,15 @@ final class Chat: ObservableObject, Identifiable {
         case let .group(groupInfo):
             let m = groupInfo.membership
             return m.memberActive && m.memberRole >= .member
+        default: return false
+        }
+    }
+
+    var userIsObserver: Bool {
+        switch chatInfo {
+        case let .group(groupInfo):
+            let m = groupInfo.membership
+            return m.memberActive && m.memberRole == .observer
         default: return false
         }
     }

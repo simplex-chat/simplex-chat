@@ -41,7 +41,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time (NominalDiffTime, addUTCTime)
+import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
@@ -354,6 +354,10 @@ processChatCommand = \case
     asks incognitoMode >>= atomically . (`writeTVar` onOff)
     ok_
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
+  ExportArchive -> do
+    ts <- liftIO getCurrentTime
+    let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
+    processChatCommand $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
   APIImportArchive cfg -> withStoreChanged $ importArchive cfg
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
@@ -1350,7 +1354,7 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) "" --  $(simplexmqCommitQ)
+  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
@@ -3238,9 +3242,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts to from = do
-      withStore' $ \db -> mergeContactRecords db userId to from
-      toView $ CRContactsMerged user to from
+    mergeContacts c1 c2 = do
+      withStore' $ \db -> mergeContactRecords db userId c1 c2
+      toView $ CRContactsMerged user c1 c2
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
@@ -3974,8 +3978,9 @@ chatCommandP =
       "/_app activate" $> APIActivateChat,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
-      "/_files_folder " *> (SetFilesFolder <$> filePath),
+      ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_db export " *> (APIExportArchive <$> jsonP),
+      "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
       "/_db encryption " *> (APIStorageEncryption <$> jsonP),
@@ -4067,6 +4072,7 @@ chatCommandP =
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
       ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
+      ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),

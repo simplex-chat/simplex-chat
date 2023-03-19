@@ -349,7 +349,7 @@ import Simplex.Chat.Migrations.M20230303_group_link_role
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -1596,8 +1596,17 @@ matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = d
     cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
 
 mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
-mergeContactRecords db userId Contact {contactId = toContactId} Contact {contactId = fromContactId, localDisplayName} = do
+mergeContactRecords db userId ct1 ct2 = do
+  let (toCt, fromCt) = toFromContacts ct1 ct2
+      Contact {contactId = toContactId} = toCt
+      Contact {contactId = fromContactId, localDisplayName} = fromCt
   currentTs <- getCurrentTime
+  -- TODO next query fixes incorrect unused contacts deletion; consider more thorough fix
+  when (contactDirect toCt && not (contactUsed toCt)) $
+    DB.execute
+      db
+      "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?"
+      (currentTs, userId, toContactId)
   DB.execute
     db
     "UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
@@ -1633,6 +1642,17 @@ mergeContactRecords db userId Contact {contactId = toContactId} Contact {contact
   deleteContactProfile_ db userId fromContactId
   DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+  where
+    toFromContacts :: Contact -> Contact -> (Contact, Contact)
+    toFromContacts c1 c2
+      | d1 && not d2 = (c1, c2)
+      | d2 && not d1 = (c2, c1)
+      | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
+      | otherwise = (c2, c1)
+      where
+        d1 = directOrUsed c1
+        d2 = directOrUsed c2
+        ctCreatedAt Contact {createdAt} = createdAt
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db user@User {userId, userContactId} agentConnId = do
