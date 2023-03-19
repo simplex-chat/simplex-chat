@@ -1137,9 +1137,9 @@
         <target>Удалить ссылку?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
+      <trans-unit id="Delete member message?" xml:space="preserve">
         <source>Delete member message?</source>
-        <target state="translated">Удалить сообщение участника?</target>
+        <target>Удалить сообщение участника?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -1552,9 +1552,9 @@
         <target>Ошибка выбора профиля!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error updating group link" xml:space="preserve" approved="no">
+      <trans-unit id="Error updating group link" xml:space="preserve">
         <source>Error updating group link</source>
-        <target state="translated">Ошибка обновления ссылки группы</target>
+        <target>Ошибка обновления ссылки группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating message" xml:space="preserve">
@@ -2173,9 +2173,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Перемещение данных завершено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Moderate" xml:space="preserve" approved="no">
+      <trans-unit id="Moderate" xml:space="preserve">
         <source>Moderate</source>
-        <target state="translated">Модерировать</target>
+        <target>Модерировать</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
@@ -2398,9 +2398,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Открыть консоль</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open user profiles" xml:space="preserve" approved="no">
+      <trans-unit id="Open user profiles" xml:space="preserve">
         <source>Open user profiles</source>
-        <target state="translated">Открыть профили пользователя</target>
+        <target>Открыть профили пользователя</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
@@ -2473,9 +2473,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Проверьте предпочтения вашего контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please contact group admin." xml:space="preserve" approved="no">
+      <trans-unit id="Please contact group admin." xml:space="preserve">
         <source>Please contact group admin.</source>
-        <target state="translated">Пожалуйста, свяжитесь с админом группы.</target>
+        <target>Пожалуйста, свяжитесь с админом группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
@@ -3212,14 +3212,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Группа полностью децентрализована — она видна только членам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The message will be deleted for all members." xml:space="preserve" approved="no">
+      <trans-unit id="The message will be deleted for all members." xml:space="preserve">
         <source>The message will be deleted for all members.</source>
-        <target state="translated">Сообщение будет удалено для всех членов группы.</target>
+        <target>Сообщение будет удалено для всех членов группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve" approved="no">
+      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve">
         <source>The message will be marked as moderated for all members.</source>
-        <target state="translated">Сообщение будет помечено как удаленное для всех членов группы.</target>
+        <target>Сообщение будет помечено как удаленное для всех членов группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
@@ -3672,9 +3672,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Вы можете форматировать сообщения:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can't send messages!" xml:space="preserve" approved="no">
+      <trans-unit id="You can't send messages!" xml:space="preserve">
         <source>You can't send messages!</source>
-        <target state="translated">Вы не можете отправлять сообщения!</target>
+        <target>Вы не можете отправлять сообщения!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
@@ -4281,14 +4281,14 @@ SimpleX серверы не могут получить доступ к ваше
         <target>пропущенный звонок</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="moderated" xml:space="preserve" approved="no">
+      <trans-unit id="moderated" xml:space="preserve">
         <source>moderated</source>
-        <target state="translated">удалено</target>
+        <target>удалено</target>
         <note>moderated chat item</note>
       </trans-unit>
-      <trans-unit id="moderated by %@" xml:space="preserve" approved="no">
+      <trans-unit id="moderated by %@" xml:space="preserve">
         <source>moderated by %@</source>
-        <target state="translated">удалено %@</target>
+        <target>удалено %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
@@ -4311,9 +4311,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>нет e2e шифрования</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="observer" xml:space="preserve" approved="no">
+      <trans-unit id="observer" xml:space="preserve">
         <source>observer</source>
-        <target state="translated">читатель</target>
+        <target>читатель</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="off" xml:space="preserve">
@@ -4472,9 +4472,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>вы приглашены в группу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you are observer" xml:space="preserve" approved="no">
+      <trans-unit id="you are observer" xml:space="preserve">
         <source>you are observer</source>
-        <target state="translated">только чтение сообщений</target>
+        <target>только чтение сообщений</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">

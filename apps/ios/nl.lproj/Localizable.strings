@@ -312,6 +312,9 @@
 "always" = "altijd";
 
 /* No comment provided by engineer. */
+"Always use relay" = "Verbinden via relais";
+
+/* No comment provided by engineer. */
 "Answer call" = "Beantwoord oproep";
 
 /* No comment provided by engineer. */
@@ -532,9 +535,6 @@
 
 /* No comment provided by engineer. */
 "Connect via one-time link?" = "Verbinden via een eenmalige link?";
-
-/* No comment provided by engineer. */
-"Connect via relay" = "Verbinden via relais";
 
 /* No comment provided by engineer. */
 "connected" = "verbonden";
@@ -787,6 +787,9 @@
 
 /* No comment provided by engineer. */
 "Delete link?" = "Link verwijderen?";
+
+/* No comment provided by engineer. */
+"Delete member message?" = "Bericht van lid verwijderen?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Verwijder bericht?";
@@ -1068,6 +1071,9 @@
 "Error switching profile!" = "Fout bij wisselen van profiel!";
 
 /* No comment provided by engineer. */
+"Error updating group link" = "Fout bij bijwerken van groep link";
+
+/* No comment provided by engineer. */
 "Error updating message" = "Fout bij updaten van bericht";
 
 /* No comment provided by engineer. */
@@ -1219,9 +1225,6 @@
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE-servers (één per lijn)";
-
-/* No comment provided by engineer. */
-"If the video fails to connect, flip the camera to resolve it." = "Als de video geen verbinding kan maken, draait u de camera om om het probleem op te lossen.";
 
 /* No comment provided by engineer. */
 "If you can't meet in person, **show QR code in the video call**, or share the link." = "Als je elkaar niet persoonlijk kunt ontmoeten, **toon QR-code in het video gesprek** of deel de link.";
@@ -1502,8 +1505,14 @@
 /* call status */
 "missed call" = "gemiste oproep";
 
+/* chat item action */
+"Moderate" = "Modereren";
+
 /* moderated chat item */
 "moderated" = "gemodereerd";
+
+/* No comment provided by engineer. */
+"moderated by %@" = "gemodereerd door %@";
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Meer verbeteringen volgen snel!";
@@ -1588,6 +1597,9 @@
 
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Meldingen zijn uitgeschakeld!";
+
+/* member role */
+"observer" = "waarnemer";
 
 /* enabled status
    group pref value */
@@ -1715,6 +1727,9 @@
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Controleer de uwe en uw contact voorkeuren.";
+
+/* No comment provided by engineer. */
+"Please contact group admin." = "Neem contact op met de groep beheerder.";
 
 /* No comment provided by engineer. */
 "Please enter correct current passphrase." = "Voer het juiste huidige wachtwoord in.";
@@ -2185,6 +2200,12 @@
 "The group is fully decentralized – it is visible only to the members." = "De groep is volledig gedecentraliseerd – het is alleen zichtbaar voor de leden.";
 
 /* No comment provided by engineer. */
+"The message will be deleted for all members." = "Het bericht wordt verwijderd voor alle leden.";
+
+/* No comment provided by engineer. */
+"The message will be marked as moderated for all members." = "Het bericht wordt gemarkeerd als gemodereerd voor alle leden.";
+
+/* No comment provided by engineer. */
 "The next generation of private messaging" = "De volgende generatie privéberichten";
 
 /* No comment provided by engineer. */
@@ -2231,9 +2252,6 @@
 
 /* No comment provided by engineer. */
 "To make a new connection" = "Om een nieuwe verbinding te maken";
-
-/* No comment provided by engineer. */
-"To prevent the call interruption, enable Do Not Disturb mode." = "Schakel de modus Niet storen in om te voorkomen dat het gesprek wordt onderbroken.";
 
 /* No comment provided by engineer. */
 "To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers ID's die door alle andere platforms worden gebruikt, ID's voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.";
@@ -2467,6 +2485,9 @@
 "You are invited to group" = "Je bent uitgenodigd voor de groep";
 
 /* No comment provided by engineer. */
+"you are observer" = "jij bent waarnemer";
+
+/* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop **Openen in mobiele app**.";
 
 /* notification body */
@@ -2486,6 +2507,9 @@
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "U kunt markdown gebruiken voor opmaak in berichten:";
+
+/* No comment provided by engineer. */
+"You can't send messages!" = "Je kunt geen berichten versturen!";
 
 /* chat item text */
 "you changed address" = "je bent van adres veranderd";
