@@ -45,7 +45,7 @@
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
 - [Join a user group](#join-a-user-group)
-- [Translate the apps](#translate-the-apps)
+- [Translate SimpleX Chat](#translate-simplex-chat)
 - [Contribute](#contribute)
 - [Help us with donations](#help-us-with-donations)
 - [Disclaimers, Security contact, License](#disclaimers)
@@ -244,11 +244,9 @@ Join via the app to share what's going on and ask any questions!
 
 Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps, website and documents are translated to many other languages.
 
-Join our translators to help SimpleX grow faster!
+Join our translators to help SimpleX grow!
 
-Current languages:
-
-|language |contributor|Android app|iOS app|website|Github docs|
+|language |contributor|[Android app](https://play.google.com/store/apps/details?id=chat.simplex.app)|[iOS app](https://apps.apple.com/us/app/simplex-chat/id1605771084)|[website](https://simplex.chat)|Github docs|
 |:-------:|:---------:|----------:|------:|------:|:---------:|
 |🇬🇧 English   | |✓|✓|✓|✓|
 |🇨🇿 Čeština   |[zen0bit](https://github.com/zen0bit)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/cs/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/cs/)|[![ios app](https://hosted.weblate.org/widgets/simplex-chat/cs/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/cs/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/cs/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/cs/)|[✓](https://github.com/simplex-chat/simplex-chat/tree/master/docs/lang/cs)|
