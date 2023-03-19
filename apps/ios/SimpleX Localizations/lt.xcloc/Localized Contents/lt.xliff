@@ -5,29 +5,36 @@
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.2" build-num="14C18"/>
     </header>
     <body>
-      <trans-unit id="&#10;" xml:space="preserve">
+      <trans-unit id="&#10;" xml:space="preserve" approved="no">
         <source>
 </source>
+        <target state="translated">
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" " xml:space="preserve">
+      <trans-unit id=" " xml:space="preserve" approved="no">
         <source> </source>
+        <target state="translated"> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="  " xml:space="preserve">
+      <trans-unit id="  " xml:space="preserve" approved="no">
         <source>  </source>
+        <target state="translated">  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="   " xml:space="preserve">
+      <trans-unit id="   " xml:space="preserve" approved="no">
         <source>   </source>
+        <target state="translated">   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" (" xml:space="preserve">
+      <trans-unit id=" (" xml:space="preserve" approved="no">
         <source> (</source>
+        <target state="translated"> (</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" (can be copied)" xml:space="preserve">
+      <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
         <source> (can be copied)</source>
+        <target state="translated"> (galima nukopijuoti)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
@@ -38,16 +45,19 @@
         <source>#secret#</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@" xml:space="preserve">
+      <trans-unit id="%@" xml:space="preserve" approved="no">
         <source>%@</source>
+        <target state="translated">%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ %@" xml:space="preserve">
+      <trans-unit id="%@ %@" xml:space="preserve" approved="no">
         <source>%@ %@</source>
+        <target state="translated">%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ / %@" xml:space="preserve">
+      <trans-unit id="%@ / %@" xml:space="preserve" approved="no">
         <source>%@ / %@</source>
+        <target state="translated">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
