@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.2" build-num="14C18"/>
     </header>
     <body>
       <trans-unit id="&#10;" xml:space="preserve">
@@ -1133,6 +1133,10 @@
         <target>Link löschen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete member message?" xml:space="preserve">
+        <source>Delete member message?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
         <source>Delete message?</source>
         <target>Die Nachricht löschen?</target>
@@ -1541,6 +1545,10 @@
       <trans-unit id="Error switching profile!" xml:space="preserve">
         <source>Error switching profile!</source>
         <target>Fehler beim Umschalten des Profils!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error updating group link" xml:space="preserve">
+        <source>Error updating group link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating message" xml:space="preserve">
@@ -2160,6 +2168,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Die Migration wurde abgeschlossen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Moderate" xml:space="preserve">
+        <source>Moderate</source>
+        <note>chat item action</note>
+      </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
         <source>More improvements are coming soon!</source>
         <target>Weitere Verbesserungen sind bald verfügbar!</target>
@@ -2453,6 +2465,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
         <source>Please check yours and your contact preferences.</source>
         <target>Bitte überprüfen sie sowohl Ihre, als auch die Präferenzen Ihres Kontakts.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please contact group admin." xml:space="preserve">
+        <source>Please contact group admin.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
@@ -3185,6 +3201,14 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The message will be deleted for all members." xml:space="preserve">
+        <source>The message will be deleted for all members.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve">
+        <source>The message will be marked as moderated for all members.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The microphone does not work when the app is in the background." xml:space="preserve">
         <source>The microphone does not work when the app is in the background.</source>
         <target>Das Mikrofon wird nicht funktionieren, wenn sich die App im Hintergrund befindet.</target>
@@ -3627,6 +3651,10 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
         <source>You can use markdown to format messages:</source>
         <target>Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can't send messages!" xml:space="preserve">
+        <source>You can't send messages!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
@@ -4238,6 +4266,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Moderiert</target>
         <note>moderated chat item</note>
       </trans-unit>
+      <trans-unit id="moderated by %@" xml:space="preserve">
+        <source>moderated by %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="never" xml:space="preserve">
         <source>never</source>
         <target>nie</target>
@@ -4257,6 +4289,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>no e2e encryption</source>
         <target>Keine E2E-Verschlüsselung</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="observer" xml:space="preserve">
+        <source>observer</source>
+        <note>member role</note>
       </trans-unit>
       <trans-unit id="off" xml:space="preserve">
         <source>off</source>
@@ -4414,6 +4450,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Sie sind zur Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you are observer" xml:space="preserve">
+        <source>you are observer</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
         <source>you changed address</source>
         <target>Sie haben die Adresse gewechselt</target>
@@ -4468,7 +4508,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.2" build-num="14C18"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -4500,7 +4540,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.2" build-num="14C18"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">

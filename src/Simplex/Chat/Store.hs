@@ -349,7 +349,7 @@ import Simplex.Chat.Migrations.M20230303_group_link_role
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
