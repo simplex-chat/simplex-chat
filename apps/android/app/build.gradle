@@ -5,12 +5,12 @@ plugins {
 }
 
 android {
-    compileSdk 32
+    compileSdk 33
 
     defaultConfig {
         applicationId "chat.simplex.app"
         minSdk 29
-        targetSdk 32
+        targetSdk 33
         versionCode 103
         versionName "4.5.4"
 
