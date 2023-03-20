@@ -43,6 +43,7 @@ import chat.simplex.app.model.SharedPreference
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.godaddy.android.colorpicker.*
+import kotlinx.coroutines.delay
 import java.util.*
 
 enum class AppIcon(val resId: Int) {
@@ -108,12 +109,15 @@ fun AppearanceView(m: ChatModel) {
         SectionItemView {
           LangSelector(state) {
             state.value = it
-            val activity = context as? Activity
-            if (activity != null) {
-              if (it == "system") {
-                saveAppLocale(languagePref, activity)
-              } else {
-                saveAppLocale(languagePref, activity, it)
+            withApi {
+              delay(200)
+              val activity = context as? Activity
+              if (activity != null) {
+                if (it == "system") {
+                  saveAppLocale(languagePref, activity)
+                } else {
+                  saveAppLocale(languagePref, activity, it)
+                }
               }
             }
           }

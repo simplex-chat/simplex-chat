@@ -504,14 +504,13 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
     restore = { json.decodeFromString(it) }
   )
 
-fun saveAppLocale(pref: SharedPreference<String?>, activity: Activity, vararg languageCodes: String) {
+fun saveAppLocale(pref: SharedPreference<String?>, activity: Activity, languageCode: String? = null) {
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
     val localeManager = SimplexApp.context.getSystemService(LocaleManager::class.java)
-    val locales = languageCodes.map { Locale.forLanguageTag(it) }
-    localeManager.applicationLocales = LocaleList(*locales.toTypedArray())
+    localeManager.applicationLocales = LocaleList(Locale.forLanguageTag(languageCode ?: return))
   } else {
-    pref.set(languageCodes.firstOrNull())
-    if (languageCodes.firstOrNull() == null) {
+    pref.set(languageCode)
+    if (languageCode == null) {
       activity.applyLocale(SimplexApp.context.defaultLocale)
     }
     activity.recreate()
