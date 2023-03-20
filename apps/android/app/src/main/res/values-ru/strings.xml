@@ -1039,4 +1039,15 @@
     <string name="v4_5_reduced_battery_usage">Уменьшенное потребление батареи</string>
     <string name="v4_5_transport_isolation">Отдельные транспортные сессии</string>
     <string name="moderated_description">удалено</string>
+    <string name="moderated_item_description">удалено %s</string>
+    <string name="delete_member_message__question">Удалить сообщение участника\?</string>
+    <string name="moderate_verb">Модерировать</string>
+    <string name="moderate_message_will_be_deleted_warning">Сообщение будет удалено для всех членов группы.</string>
+    <string name="moderate_message_will_be_marked_warning">Сообщение будет помечено как удаленное для всех членов группы.</string>
+    <string name="observer_cant_send_message_desc">Пожалуйста, свяжитесь с админом группы.</string>
+    <string name="observer_cant_send_message_title">Вы не можете отправлять сообщения!</string>
+    <string name="you_are_observer">только чтение сообщений</string>
+    <string name="group_member_role_observer">читатель</string>
+    <string name="initial_member_role">Роль при вступлении</string>
+    <string name="error_updating_link_for_group">Ошибка обновления ссылки группы</string>
 </resources>

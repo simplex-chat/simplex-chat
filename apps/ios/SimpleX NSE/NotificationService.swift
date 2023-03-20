@@ -8,6 +8,8 @@
 
 import UserNotifications
 import OSLog
+import StoreKit
+import CallKit
 import SimpleXChat
 
 let logger = Logger()
@@ -206,6 +208,9 @@ func chatRecvMsg() async -> ChatResponse? {
     }
 }
 
+private let isInChina = SKStorefront().countryCode == "CHN"
+private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
+
 func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
     logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
     switch res {
@@ -237,6 +242,20 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
          }
         return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(user, cInfo, cItem)) : nil
     case let .callInvitation(invitation):
+        // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
+        if useCallKit() {
+            do {
+                try await CXProvider.reportNewIncomingVoIPPushPayload([
+                    "displayName": invitation.contact.displayName,
+                    "contactId": invitation.contact.id,
+                    "media": invitation.callType.media.rawValue
+                ])
+                logger.debug("reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
+                return (invitation.contact.id, (UNNotificationContent().mutableCopy() as! UNMutableNotificationContent))
+            } catch let error {
+                logger.error("reportNewIncomingVoIPPushPayload error \(String(describing: error), privacy: .public)")
+            }
+        }
         return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")

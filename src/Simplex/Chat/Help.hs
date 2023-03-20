@@ -11,6 +11,7 @@ module Simplex.Chat.Help
     messagesHelpInfo,
     markdownInfo,
     settingsInfo,
+    databaseHelpInfo,
   )
 where
 
@@ -85,7 +86,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "settings"],
+      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "settings", "db"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/chats           " <> " - most recent chats",
@@ -276,3 +277,17 @@ settingsInfo =
       indent <> highlight "/get stats               " <> " - get usage statistics",
       indent <> highlight "/reset stats             " <> " - reset usage statistics"
     ]
+
+databaseHelpInfo :: [StyledString]
+databaseHelpInfo =
+  map
+    styleMarkdown
+      [ green "Database export:",
+        indent <> highlight "/db export             " <> " - create database export file that can be imported in mobile apps",
+        indent <> highlight "/files_folder <path>   " <> " - set files folder path to include app files in the exported archive",
+        "",
+        green "Database encryption:",
+        indent <> highlight "/db encrypt <key>      " <> " - encrypt chat database with key/passphrase",
+        indent <> highlight "/db key <current> <new>" <> " - change the key of the encrypted app database",
+        indent <> highlight "/db decrypt <key>      " <> " - decrypt chat database"
+      ]

@@ -909,7 +909,7 @@ func apiGetVersion() throws -> CoreVersionInfo {
     throw r
 }
 
-func initializeChat(start: Bool, dbKey: String? = nil) throws {
+func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey)
@@ -925,13 +925,13 @@ func initializeChat(start: Bool, dbKey: String? = nil) throws {
     if m.currentUser == nil {
         m.onboardingStage = .step1_SimpleXInfo
     } else if start {
-        try startChat()
+        try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
     }
 }
 
-func startChat() throws {
+func startChat(refreshInvitations: Bool = true) throws {
     logger.debug("startChat")
     let m = ChatModel.shared
     try setNetworkConfig(getNetCfg())
@@ -940,7 +940,9 @@ func startChat() throws {
     if justStarted {
         try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
-        try refreshCallInvitations()
+        if (refreshInvitations) {
+            try refreshCallInvitations()
+        }
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
@@ -1214,19 +1216,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)
-
-// This will be called from notification service extension
-//            CXProvider.reportNewIncomingVoIPPushPayload([
-//                "displayName": contact.displayName,
-//                "contactId": contact.id,
-//                "uuid": invitation.callkitUUID
-//            ]) { error in
-//                if let error = error {
-//                    logger.error("reportNewIncomingVoIPPushPayload error \(error.localizedDescription)")
-//                } else {
-//                    logger.debug("reportNewIncomingVoIPPushPayload success for \(contact.id)")
-//                }
-//            }
         case let .callOffer(_, contact, callType, offer, sharedKey, _):
             withCall(contact) { call in
                 call.callState = .offerReceived
@@ -1259,7 +1248,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
             withCall(contact) { call in
                 m.callCommand = .end
-//                CallController.shared.reportCallRemoteEnded(call: call)
+                CallController.shared.reportCallRemoteEnded(call: call)
             }
         case .chatSuspended:
             chatSuspended()
@@ -1310,8 +1299,7 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
 
 func refreshCallInvitations() throws {
     let m = ChatModel.shared
-    let callInvitations = try apiGetCallInvitations()
-    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    let callInvitations = try justRefreshCallInvitations()
     if let (chatId, ntfAction) = m.ntfCallInvitationAction,
        let invitation = m.callInvitations.removeValue(forKey: chatId) {
         m.ntfCallInvitationAction = nil
@@ -1319,6 +1307,13 @@ func refreshCallInvitations() throws {
     } else if let invitation = callInvitations.last {
         activateCall(invitation)
     }
+}
+
+func justRefreshCallInvitations() throws -> [RcvCallInvitation] {
+    let m = ChatModel.shared
+    let callInvitations = try apiGetCallInvitations()
+    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    return callInvitations
 }
 
 func activateCall(_ callInvitation: RcvCallInvitation) {

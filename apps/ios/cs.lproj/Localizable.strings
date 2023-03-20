@@ -312,6 +312,9 @@
 "always" = "vždy";
 
 /* No comment provided by engineer. */
+"Always use relay" = "Spojení přes relé";
+
+/* No comment provided by engineer. */
 "Answer call" = "Přijmout hovor";
 
 /* No comment provided by engineer. */
@@ -532,9 +535,6 @@
 
 /* No comment provided by engineer. */
 "Connect via one-time link?" = "Připojit se jednorázovým odkazem?";
-
-/* No comment provided by engineer. */
-"Connect via relay" = "Spojení přes relé";
 
 /* No comment provided by engineer. */
 "connected" = "připojeno";
@@ -787,6 +787,9 @@
 
 /* No comment provided by engineer. */
 "Delete link?" = "Smazat odkaz?";
+
+/* No comment provided by engineer. */
+"Delete member message?" = "Smazat zprávu člena?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Smazat zprávu?";
@@ -1068,6 +1071,9 @@
 "Error switching profile!" = "Chyba při přepínání profilu!";
 
 /* No comment provided by engineer. */
+"Error updating group link" = "Chyba aktualizace odkazu skupiny";
+
+/* No comment provided by engineer. */
 "Error updating message" = "Chyba aktualizace zprávy";
 
 /* No comment provided by engineer. */
@@ -1219,9 +1225,6 @@
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "Servery ICE (jeden na řádek)";
-
-/* No comment provided by engineer. */
-"If the video fails to connect, flip the camera to resolve it." = "Pokud se připojení videa nezdaří, vyřešte to otočením kamery.";
 
 /* No comment provided by engineer. */
 "If you can't meet in person, **show QR code in the video call**, or share the link." = "Pokud se nemůžete setkat osobně, **ukažte QR kód ve videohovoru**, nebo sdílejte odkaz.";
@@ -1502,8 +1505,14 @@
 /* call status */
 "missed call" = "zmeškané volání";
 
+/* chat item action */
+"Moderate" = "Moderovat";
+
 /* moderated chat item */
 "moderated" = "moderované";
+
+/* No comment provided by engineer. */
+"moderated by %@" = "moderovaný %@";
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Další vylepšení se chystají již brzy!";
@@ -1588,6 +1597,9 @@
 
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Oznámení jsou zakázána!";
+
+/* member role */
+"observer" = "pozorovatel";
 
 /* enabled status
    group pref value */
@@ -1715,6 +1727,9 @@
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Zkontrolujte prosím nastavení své i svého kontaktu.";
+
+/* No comment provided by engineer. */
+"Please contact group admin." = "Kontaktujte prosím správce skupiny.";
 
 /* No comment provided by engineer. */
 "Please enter correct current passphrase." = "Zadejte prosím správnou aktuální přístupovou frázi.";
@@ -2185,7 +2200,10 @@
 "The group is fully decentralized – it is visible only to the members." = "Skupina je plně decentralizovaná - je viditelná pouze pro členy.";
 
 /* No comment provided by engineer. */
-"The microphone does not work when the app is in the background." = "Mikrofon nefunguje, pokud je aplikace na pozadí.";
+"The message will be deleted for all members." = "Zpráva bude smazána pro všechny členy.";
+
+/* No comment provided by engineer. */
+"The message will be marked as moderated for all members." = "Zpráva bude pro všechny členy označena jako moderovaná.";
 
 /* No comment provided by engineer. */
 "The next generation of private messaging" = "Nová generace soukromých zpráv";
@@ -2234,9 +2252,6 @@
 
 /* No comment provided by engineer. */
 "To make a new connection" = "Vytvoření nového připojení";
-
-/* No comment provided by engineer. */
-"To prevent the call interruption, enable Do Not Disturb mode." = "K zabránění přerušení hovoru, povolte režim Nerušit.";
 
 /* No comment provided by engineer. */
 "To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Pro ochranu soukromí namísto ID uživatelů používaných všemi ostatními platformami má SimpleX identifikátory pro fronty zpráv, oddělené pro každý z vašich kontaktů.";
@@ -2470,6 +2485,9 @@
 "You are invited to group" = "Jste pozváni do skupiny";
 
 /* No comment provided by engineer. */
+"you are observer" = "jste pozorovatel";
+
+/* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Můžete se také připojit kliknutím na odkaz. Pokud se otevře v prohlížeči, klikněte na tlačítko **Otevřít v mobilní aplikaci**.";
 
 /* notification body */
@@ -2489,6 +2507,9 @@
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "K formátování zpráv můžete použít markdown:";
+
+/* No comment provided by engineer. */
+"You can't send messages!" = "Nemůžete posílat zprávy!";
 
 /* chat item text */
 "you changed address" = "změnili jste adresu";

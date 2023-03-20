@@ -38,6 +38,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   var isAppOnForeground: Boolean = false
 
+  val defaultLocale: Locale = Locale.getDefault()
+
   fun initChatController(useKey: String? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
