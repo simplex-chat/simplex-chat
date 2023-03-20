@@ -378,7 +378,7 @@
     <string name="icon_descr_call_progress">Chiamata in corso</string>
     <string name="call_on_lock_screen">Chiamate sulla schermata di blocco:</string>
     <string name="icon_descr_call_connecting">Connessione chiamata</string>
-    <string name="connect_calls_via_relay">Connetti via relay</string>
+    <string name="always_use_relay">Connetti via relay</string>
     <string name="status_contact_has_e2e_encryption">il contatto ha la crittografia e2e</string>
     <string name="status_contact_has_no_e2e_encryption">il contatto non ha la crittografia e2e</string>
     <string name="no_call_on_lock_screen">Disattiva</string>
@@ -718,6 +718,8 @@
     <string name="icon_descr_video_off">Video off</string>
     <string name="icon_descr_video_on">Video on</string>
     <string name="webrtc_ice_servers">Server WebRTC ICE</string>
+    <string name="relay_server_protects_ip">Il server relay protegge il tuo indirizzo IP, ma può osservare la durata della chiamata.</string>
+    <string name="relay_server_if_necessary">Il server relay viene usato solo se necessario. Un altro utente può osservare il tuo indirizzo IP.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> messaggio/i saltato/i</string>
     <string name="your_calls">Le tue chiamate</string>
     <string name="your_ice_servers">I tuoi server ICE</string>

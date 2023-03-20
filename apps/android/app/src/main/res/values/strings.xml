@@ -631,13 +631,15 @@
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
   <string name="your_calls">Your calls</string>
-  <string name="connect_calls_via_relay">Connect via relay</string>
+  <string name="always_use_relay">Always use relay</string>
   <string name="call_on_lock_screen">Calls on lock screen:</string>
   <string name="accept_call_on_lock_screen">Accept</string>
   <string name="show_call_on_lock_screen">Show</string>
   <string name="no_call_on_lock_screen">Disable</string>
   <string name="your_ice_servers">Your ICE servers</string>
   <string name="webrtc_ice_servers">WebRTC ICE servers</string>
+  <string name="relay_server_protects_ip">Relay server protects your IP address, but it can observe the duration of the call.</string>
+  <string name="relay_server_if_necessary">Relay server is only used if necessary. Another party can observe your IP address.</string>
 
   <!-- Call Lock Screen -->
   <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
