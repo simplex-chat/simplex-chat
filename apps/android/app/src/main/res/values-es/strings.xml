@@ -318,7 +318,7 @@
     <string name="confirm_new_passphrase">Confirme nueva contraseña…</string>
     <string name="network_disable_socks_info">Si confirmas los servidores de mensajería podrán ver tu IP, y tu proveedor de acceso a internet a qué servidores te estás conectando.</string>
     <string name="image_saved">Imagen guardada en la Galería</string>
-    <string name="file_will_be_received_when_contact_is_online">El archivo se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde!</string>
+    <string name="file_will_be_received_when_contact_is_online">El archivo se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="add_contact">Enlace de invitación único</string>
     <string name="paste_the_link_you_received">Pegar enlace recibido</string>
     <string name="error_saving_group_profile">Error al guardar perfil de grupo</string>
@@ -389,8 +389,8 @@
     <string name="for_everybody">Para todos</string>
     <string name="icon_descr_file">Archivo</string>
     <string name="icon_descr_image_snd_complete">Imagen enviada</string>
-    <string name="image_will_be_received_when_contact_is_online">La imagen se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde!</string>
-    <string name="image_descr_link_preview">enlace vista previa</string>
+    <string name="image_will_be_received_when_contact_is_online">La imagen se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
+    <string name="image_descr_link_preview">vista previa del enlace</string>
     <string name="error_saving_ICE_servers">Error al guardar servidores ICE</string>
     <string name="enter_one_ICE_server_per_line">Servidores ICE (uno por línea)</string>
     <string name="full_name__field">Nombre completo:</string>
@@ -855,4 +855,127 @@
     <string name="smp_servers_use_server">Usar servidor</string>
     <string name="smp_servers_use_server_for_new_conn">Usar para conexiones nuevas</string>
     <string name="theme_system">Sistema</string>
+    <string name="description_via_one_time_link">mediante enlace único</string>
+    <string name="your_chats">Tus chats</string>
+    <string name="voice_message_send_text">Mensaje de voz…</string>
+    <string name="your_contact_address">Tu dirección de contacto</string>
+    <string name="icon_descr_video_off">Desactivar vídeo</string>
+    <string name="icon_descr_video_on">Activar vídeo</string>
+    <string name="wrong_passphrase">Contraseña de base de datos incorrecta</string>
+    <string name="wrong_passphrase_title">¡Contraseña incorrecta!</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Te has unido a este grupo. Conectando con miembro del grupo invitado.</string>
+    <string name="alert_title_cant_invite_contacts_descr">Estás utilizando un perfil Incógnito para este grupo. Para evitar compartir tu perfil principal, invitar contactos no está permitido</string>
+    <string name="you_are_invited_to_group">Has sido invitado al grupo</string>
+    <string name="v4_3_voice_messages">Mensajes de voz</string>
+    <string name="v4_3_irreversible_message_deletion_desc">Tus contactos pueden permitir la eliminación completa de mensajes.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Tú controlas a través de qué servidor(es) <b>recibes</b> los mensajes. Tus contactos controlan a través de qué servidor(es) reciben tus mensajes.</string>
+    <string name="voice_messages">Mensajes de voz</string>
+    <string name="voice_messages_are_prohibited">Los mensajes de voz están prohibidos en este grupo.</string>
+    <string name="v4_4_verify_connection_security">Comprobar la seguridad de la conexión</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">¡Ya estás conectado a <xliff:g id="contactName" example="Alice">%1$s! </xliff:g>.</string>
+    <string name="welcome">¡Bienvenido!</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Tu perfil de chat será enviado
+\na tu contacto</string>
+    <string name="your_ICE_servers">Tus servidores ICE</string>
+    <string name="you_rejected_group_invitation">Has rechazado la invitación del grupo.</string>
+    <string name="snd_group_event_changed_member_role">has cambiado el rol de %s a %s</string>
+    <string name="call_connection_via_relay">mediante relay</string>
+    <string name="contact_wants_to_connect_with_you">¡quiere conectar contigo!</string>
+    <string name="voice_message">Mensaje de voz</string>
+    <string name="waiting_for_image">Esperando imagen</string>
+    <string name="webrtc_ice_servers">Servidores WebRTC ICE</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> quiere conectarse contigo mediante</string>
+    <string name="failed_to_create_user_duplicate_desc">Ya tienes un perfil de chat con el mismo nombre. Debes elegir otro nombre.</string>
+    <string name="you_can_also_connect_by_clicking_the_link">También puedes conectarte haciendo clic en el enlace. Si se abre en el navegador, haz clic en <b>Abrir en aplicación móvil</b>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0088ff">conectar con los desarrolladores de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para hacer cualquier pregunta y recibir actualizaciones</font>.</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo. Si lo eliminas más tarde tus contactos no se perderán.</string>
+    <string name="observer_cant_send_message_title">¡No puedes enviar mensajes!</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">Puedes utilizar marcadores para dar formato a los mensajes:</string>
+    <string name="you_must_use_the_most_recent_version_of_database">Debes utilizar la versión más reciente de tu base de datos de chat SÓLO en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Tu contacto debe estar en línea para que se complete la conexión.
+\nPuedes cancelar esta conexión y eliminar el contacto (e intentarlo más tarde con un enlace nuevo).</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Tu base de datos de chat actual será ELIMINADA y SUSTITUIDA por la importada.
+\nEsta acción no se puede deshacer. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</string>
+    <string name="incognito_random_profile">Tu perfil aleatorio</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando se acepte tu solicitud de conexión, por favor espere o compruébalo más tarde.</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Te conectarás cuando el dispositivo de tu contacto esté en línea, por favor espera o compruébelo más tarde.</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Se pedirá identificarte cuándo comienzas o continuas usando la aplicación tras 30 segundos en segundo plano.</string>
+    <string name="invite_prohibited_description">Estás intentando invitar a un contacto con el que has compartido un perfil Incógnito, al grupo en el que utilizas tu perfil principal</string>
+    <string name="simplex_link_mode_browser">mediante navegador</string>
+    <string name="simplex_link_connection">mediante <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_service_notification_title">Servicio <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="personal_welcome">¡Bienvenido <xliff:g>%1$s</xliff:g> !</string>
+    <string name="group_preview_you_are_invited">has sido invitado al grupo</string>
+    <string name="waiting_for_file">Esperando archivo</string>
+    <string name="icon_descr_waiting_for_image">Esperando imagen</string>
+    <string name="voice_message_with_duration">Mensaje de voz (<xliff:g id="duration">%1$s</xliff:g> )</string>
+    <string name="network_use_onion_hosts_prefer">Si disponibles</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">No almacenamos ninguno de tus contactos o mensajes (una vez entregados) en los servidores.</string>
+    <string name="you_are_invited_to_group_join_to_connect_with_group_members">Has sido invitado al grupo. Únete para conectarte con los miembros del grupo.</string>
+    <string name="snd_group_event_member_deleted">has eliminado <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="group_info_member_you">Tú: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puedes compartir un enlace o un código QR: cualquiera podrá unirse al grupo. Si lo eliminas más tarde los miembros del grupo no se perderán.</string>
+    <string name="incognito_info_share">Cuando compartes un perfil Incógnito con alguien, este perfil se utilizará para los grupos a los que te inviten.</string>
+    <string name="your_preferences">Tus preferencias</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">Con mensaje de bienvenida opcional.</string>
+    <string name="you_are_observer">tu rol es observador</string>
+    <string name="verify_security_code">Verificar código de seguridad</string>
+    <string name="you_accepted_connection">Has aceptado la conexión</string>
+    <string name="you_invited_your_contact">Has invitado a tu contacto</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo del anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
+    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Tu contacto puede escanear el código QR desde la aplicación.</string>
+    <string name="your_settings">Tu configuración</string>
+    <string name="your_SMP_servers">Tus servidores SMP</string>
+    <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
+    <string name="your_profile_is_stored_on_your_device">Tu perfil, contactos y mensajes entregados se almacenan en tu dispositivo.</string>
+    <string name="callstate_waiting_for_answer">esperando respuesta…</string>
+    <string name="callstate_waiting_for_confirmation">esperando confirmación…</string>
+    <string name="onboarding_notifications_mode_off">Cuando la aplicación se está ejecutando</string>
+    <string name="icon_descr_video_call">Videollamada</string>
+    <string name="your_calls">Tus llamadas</string>
+    <string name="your_ice_servers">Tus servidores ICE</string>
+    <string name="your_privacy">Tu privacidad</string>
+    <string name="settings_section_title_you">TU</string>
+    <string name="your_chat_database">Tu base de datos de chat</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puedes iniciar el chat mediante Ajustes / Base de datos o reiniciando la aplicación.</string>
+    <string name="you_sent_group_invitation">Has enviado una invitación de grupo</string>
+    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contacto(s) seleccionado(s)</string>
+    <string name="group_info_section_title_num_members"><xliff:g id="num_members"> %1$s </xliff:g> MIEMBROS</string>
+    <string name="your_chat_profiles_stored_locally">Tus perfiles de chat se almacenan localmente, sólo en tu dispositivo</string>
+    <string name="voice_prohibited_in_this_chat">Los mensajes de voz están prohibidos en este chat.</string>
+    <string name="whats_new">Novedades</string>
+    <string name="you_have_to_enter_passphrase_every_time">La contraseña no se almacena en el dispositivo, tienes que introducirla cada vez que inicies la aplicación.</string>
+    <string name="you_joined_this_group">Te has unido a este grupo</string>
+    <string name="chat_preferences_yes">sí</string>
+    <string name="chat_preferences_you_allow">Permites</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="profile_will_be_sent_to_contact_sending_link">Tu perfil se enviará al contacto del que has recibido este enlace.</string>
+    <string name="you_will_join_group">Te unirás al grupo al que hace referencia este enlace y te conectarás con sus miembros.</string>
+    <string name="sender_you_pronoun">tú</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor utilizado para recibir mensajes de este contacto.</string>
+    <string name="description_via_contact_address_link">mediante enlace de dirección de contacto</string>
+    <string name="description_via_group_link">mediante enlace de grupo</string>
+    <string name="description_you_shared_one_time_link">has compartido un enlace único</string>
+    <string name="description_you_shared_one_time_link_incognito">has compartido un enlace único Incógnito</string>
+    <string name="you_have_no_chats">No tienes chats</string>
+    <string name="contact_sent_large_file">Tu contacto ha enviado un archivo mayor al máximo admitido (<xliff:g id="maxFileSize">%1$s</xliff:g> ).</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> mensaje(s) omitido(s)</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Dejarás de recibir mensajes de este grupo. El historial del chat se conservará.</string>
+    <string name="view_security_code">Ver código de seguridad</string>
+    <string name="you_need_to_allow_to_send_voice">Debes permitir que tu contacto envíe mensajes de voz para poder enviarlos.</string>
+    <string name="voice_messages_prohibited">¡Mensajes de voz prohibidos!</string>
+    <string name="group_main_profile_sent">Tu perfil de chat se enviará a los miembros del grupo</string>
+    <string name="icon_descr_address">Dirección <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="image_descr_simplex_logo">Logo <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="icon_descr_simplex_team">Equipo <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="your_profile_will_be_sent">Tu perfil de chat se enviará a tu contacto</string>
+    <string name="your_chat_profiles">Tus perfiles de chat</string>
+    <string name="your_simplex_contact_address">Tu dirección de contacto <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="smp_servers_your_server">Tu servidor</string>
+    <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
+    <string name="section_title_welcome_message">MENSAJE DE BIENVENIDA</string>
+    <string name="your_current_profile">Tu perfil actual</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos.
+\n
+\nLos servidores <xliff:g id="appName">SimpleX</xliff:g> no pueden ver tu perfil.</string>
 </resources>
