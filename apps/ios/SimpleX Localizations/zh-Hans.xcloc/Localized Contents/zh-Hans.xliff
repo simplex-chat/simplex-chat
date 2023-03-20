@@ -4524,7 +4524,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve" approved="no">
         <source>Moderate</source>
-        <target state="translated">审核</target>
+        <target state="translated">管理员移除</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve" approved="no">
