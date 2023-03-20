@@ -230,13 +230,13 @@ private fun LangSelector(state: State<String>, onSelected: (String) -> Unit) {
   val supportedLanguages = mapOf(
     "system" to generalGetString(R.string.language_system),
     "en" to "English",
-    "ru" to "Русский",
+    "cs" to "Čeština",
     "de" to "Deutsch",
     "fr" to "Français",
     "it" to "Italiano",
     "nl" to "Nederlands",
-    "cs" to "Čeština",
-    "zh-CN" to "Chinese"
+    "ru" to "Русский",
+    "zh-CN" to "简体中文"
   )
   val values by remember { mutableStateOf(supportedLanguages.map { it.key to it.value }) }
   ExposedDropDownSettingRow(
