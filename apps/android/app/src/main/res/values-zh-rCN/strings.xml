@@ -674,7 +674,7 @@
     <string name="ttl_months">%d 月</string>
     <string name="network_and_servers">网络和服务器</string>
     <string name="network_settings_title">网络设置</string>
-    <string name="moderated_description">已审核</string>
+    <string name="moderated_description">已被管理员移除</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion 主机将在可用时使用。</string>
     <string name="network_use_onion_hosts_no_desc">将不会使用 Onion 主机。</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 手机：点击<b>在手机应用程序中打开</b>，然后在应用程序中点击<b>连接</b>。</string>
@@ -738,7 +738,7 @@
     <string name="reject_contact_button">拒绝</string>
     <string name="reply_verb">回复</string>
     <string name="network_options_reset_to_defaults">重置为默认</string>
-    <string name="run_chat_section">运行聊天</string>
+    <string name="run_chat_section">运行聊天程序</string>
     <string name="save_archive">保存存档</string>
     <string name="scan_code">扫码</string>
     <string name="scan_code_from_contacts_app">从您联系人的应用程序中扫描安全码。</string>
@@ -764,7 +764,7 @@
     <string name="update_onion_hosts_settings_question">更新 .onion 主机设置？</string>
     <string name="update_network_session_mode_question">更新传输隔离模式？</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">（从剪贴板扫描或粘贴）</string>
-    <string name="smp_server_test_secure_queue">安全队列</string>
+    <string name="smp_server_test_secure_queue">保护队列</string>
     <string name="reveal_verb">揭示</string>
     <string name="la_notice_turn_on">打开</string>
     <string name="icon_descr_sent_msg_status_send_failed">发送失败</string>
@@ -795,7 +795,7 @@
     <string name="settings_section_title_support">支持 SIMPLEX CHAT</string>
     <string name="send_link_previews">发送链接预览</string>
     <string name="settings_section_title_socks">SOCKS 代理</string>
-    <string name="stop_chat_question">停止聊天？</string>
+    <string name="stop_chat_question">停止聊天程序？</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。</string>
     <string name="restore_database">恢复数据库备份</string>
     <string name="restore_database_alert_title">恢复数据库备份？</string>
