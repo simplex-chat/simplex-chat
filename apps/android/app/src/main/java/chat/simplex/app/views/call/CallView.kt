@@ -5,10 +5,10 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.*
 import android.content.pm.ActivityInfo
-import android.media.AudioDeviceCallback
-import android.media.AudioDeviceInfo
-import android.media.AudioManager
+import android.media.*
 import android.os.Build
+import android.os.PowerManager
+import android.os.PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
@@ -90,11 +90,19 @@ fun ActiveCallView(chatModel: ChatModel) {
       }
     }
     am.registerAudioDeviceCallback(audioCallback, null)
+    val pm = (SimplexApp.context.getSystemService(Context.POWER_SERVICE) as PowerManager)
+    val proximityLock = if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
+      pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "proximityLock")
+    } else {
+      null
+    }
+    proximityLock?.acquire()
     onDispose {
       // Stop it when call ended
       if (!ntfModeService) SimplexService.safeStopService(SimplexApp.context)
       dropAudioManagerOverrides()
       am.unregisterAudioDeviceCallback(audioCallback)
+      proximityLock?.release()
     }
   }
   val scope = rememberCoroutineScope()
