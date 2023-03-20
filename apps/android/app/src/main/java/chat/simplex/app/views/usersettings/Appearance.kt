@@ -101,7 +101,7 @@ fun AppearanceView(m: ChatModel) {
         SectionItemWithValue(
           generalGetString(R.string.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
           remember { mutableStateOf("system") },
-          listOf(ValueTitleDesc("system", generalGetString(R.string.language_system), "")),
+          listOf(ValueTitleDesc("system", generalGetString(R.string.change_verb), "")),
           onSelected = { openSystemLangPicker(context as? Activity ?: return@SectionItemWithValue) }
         )
       } else {
