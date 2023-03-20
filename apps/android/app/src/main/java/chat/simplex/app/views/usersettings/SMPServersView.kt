@@ -247,7 +247,7 @@ private fun HowToButton() {
   SettingsActionItem(
     Icons.Outlined.OpenInNew,
     stringResource(R.string.how_to_use_your_servers),
-    { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
+    { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary
   )
