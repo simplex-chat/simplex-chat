@@ -42,7 +42,6 @@ import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import java.util.*
 
 class MainActivity: FragmentActivity() {
   companion object {
@@ -60,8 +59,6 @@ class MainActivity: FragmentActivity() {
       userAuthorized.value = null
       enteredBackground.value = null
     }
-
-    val defaultLocale: Locale = Locale.getDefault()
   }
   private val vm by viewModels<SimplexViewModel>()
 

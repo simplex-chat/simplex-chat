@@ -512,7 +512,7 @@ fun saveAppLocale(pref: SharedPreference<String?>, activity: Activity, vararg la
   } else {
     pref.set(languageCodes.firstOrNull())
     if (languageCodes.firstOrNull() == null) {
-      activity.applyLocale(MainActivity.defaultLocale)
+      activity.applyLocale(SimplexApp.context.defaultLocale)
     }
     activity.recreate()
   }
@@ -525,7 +525,6 @@ fun Activity.applyAppLocale(pref: SharedPreference<String?>) {
     applyLocale(Locale.forLanguageTag(lang))
   }
 }
-
 
 private fun Activity.applyLocale(locale: Locale) {
   Locale.setDefault(locale)
