@@ -67,7 +67,7 @@
     <string name="connect_via_contact_link">通过联系人链接连接？</string>
     <string name="connect_via_group_link">通过群组链接连接？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
-    <string name="connect_calls_via_relay">通过中继连接</string>
+    <string name="always_use_relay">通过中继连接</string>
     <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不可撤回地删除已发送消息。</string>
     <string name="chat_preferences_contact_allows">联系人允许</string>
     <string name="allow_voice_messages_only_if">仅有您的联系人许可后才允许语音消息。</string>
@@ -924,6 +924,8 @@
     <string name="use_simplex_chat_servers__question">使用 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 服务器？</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">我们不会在服务器上存储您的任何联系人或消息（一旦发送）。</string>
     <string name="webrtc_ice_servers">WebRTC ICE 服务器</string>
+    <string name="relay_server_protects_ip">中继服务器保护您的 IP 地址，但它可以观察通话的持续时间。</string>
+    <string name="relay_server_if_necessary">中继服务器仅在必要时使用。其他人可能会观察到您的IP地址。</string>
     <string name="your_ice_servers">您的 ICE 服务器</string>
     <string name="icon_descr_video_off">视频关闭</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">您可以通过应用设置/数据库或重启应用开始聊天。</string>

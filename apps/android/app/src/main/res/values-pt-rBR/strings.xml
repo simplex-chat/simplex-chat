@@ -134,7 +134,7 @@
     <string name="v4_3_improved_server_configuration_desc">Adicione servidores digitalizando QR code.</string>
     <string name="allow_to_send_voice">Permitir enviar mensagens de voz.</string>
     <string name="create_group">Criar grupo secreto</string>
-    <string name="connect_calls_via_relay">Conectar via relay</string>
+    <string name="always_use_relay">Conectar via relay</string>
     <string name="users_add">Adicionar perfil</string>
     <string name="connect_via_link">Conectar via link</string>
     <string name="create_profile">Criar perfil</string>
