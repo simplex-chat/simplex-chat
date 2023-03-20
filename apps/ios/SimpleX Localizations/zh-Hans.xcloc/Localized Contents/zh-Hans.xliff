@@ -2574,7 +2574,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve" approved="no">
         <source>Run chat</source>
-        <target state="translated">开始聊天</target>
+        <target state="translated">运行聊天程序</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SMP servers" xml:space="preserve" approved="no">
@@ -2664,7 +2664,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve" approved="no">
         <source>Secure queue</source>
-        <target state="translated">安全队列</target>
+        <target state="translated">保护队列</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Security assessment" xml:space="preserve" approved="no">
@@ -2914,7 +2914,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Stop chat?" xml:space="preserve" approved="no">
         <source>Stop chat?</source>
-        <target state="translated">停止聊天？</target>
+        <target state="translated">停止聊天程序？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve" approved="no">
@@ -4479,7 +4479,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="moderated" xml:space="preserve" approved="no">
         <source>moderated</source>
-        <target state="translated">已审核</target>
+        <target state="translated">已被管理员移除</target>
         <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
