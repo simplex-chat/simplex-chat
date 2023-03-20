@@ -3,9 +3,7 @@ package chat.simplex.app
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Parcelable
+import android.os.*
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import android.view.WindowManager
@@ -68,6 +66,7 @@ class MainActivity: FragmentActivity() {
     super.onCreate(savedInstanceState)
     // testJson()
     val m = vm.chatModel
+    applyAppLocale(m.controller.appPrefs.appLanguage)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {

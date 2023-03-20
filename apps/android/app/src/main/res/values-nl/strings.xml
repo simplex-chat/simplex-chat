@@ -215,7 +215,7 @@
     <string name="create_profile_button">Maak</string>
     <string name="create_profile">Maak een profiel aan</string>
     <string name="delete_address">Adres verwijderen</string>
-    <string name="connect_calls_via_relay">Verbinden via relais</string>
+    <string name="always_use_relay">Verbinden via relais</string>
     <string name="status_contact_has_e2e_encryption">contact heeft e2e-codering</string>
     <string name="status_contact_has_no_e2e_encryption">contact heeft geen e2e versleuteling</string>
     <string name="set_password_to_export_desc">De database is versleuteld met een willekeurige wachtwoord. Wijzig dit voordat u exporteert.</string>
@@ -752,6 +752,8 @@
     <string name="your_calls">Uw oproepen</string>
     <string name="show_call_on_lock_screen">Toon</string>
     <string name="webrtc_ice_servers">WebRTC ICE-servers</string>
+    <string name="relay_server_protects_ip">Relay server beschermt uw IP-adres, maar kan de duur van het gesprek observeren.</string>
+    <string name="relay_server_if_necessary">Relay server wordt alleen gebruikt als dat nodig is. Een andere partij kan uw IP-adres zien.</string>
     <string name="your_ice_servers">Uw ICE-servers</string>
     <string name="alert_title_skipped_messages">Overgeslagen berichten</string>
     <string name="call_connection_via_relay">via relais</string>
@@ -968,7 +970,7 @@
     <string name="moderated_description">gemodereerd</string>
     <string name="moderated_item_description">gemodereerd door %s</string>
     <string name="delete_member_message__question">Bericht van lid verwijderen\?</string>
-    <string name="moderate_verb">gemodereerd</string>
+    <string name="moderate_verb">Modereren</string>
     <string name="moderate_message_will_be_deleted_warning">Het bericht wordt verwijderd voor alle leden.</string>
     <string name="moderate_message_will_be_marked_warning">Het bericht wordt gemarkeerd als gemodereerd voor alle leden.</string>
     <string name="observer_cant_send_message_desc">Neem contact op met de groep beheerder.</string>

@@ -42,7 +42,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMayb
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time (NominalDiffTime, addUTCTime)
+import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
@@ -375,6 +375,10 @@ processChatCommand = \case
     asks incognitoMode >>= atomically . (`writeTVar` onOff)
     ok_
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
+  ExportArchive -> do
+    ts <- liftIO getCurrentTime
+    let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
+    processChatCommand $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
   APIImportArchive cfg -> withStoreChanged $ importArchive cfg
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
@@ -4054,8 +4058,9 @@ chatCommandP =
       "/_app activate" $> APIActivateChat,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
-      "/_files_folder " *> (SetFilesFolder <$> filePath),
+      ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_db export " *> (APIExportArchive <$> jsonP),
+      "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
       "/_db encryption " *> (APIStorageEncryption <$> jsonP),
@@ -4147,6 +4152,7 @@ chatCommandP =
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
       ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
+      ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),

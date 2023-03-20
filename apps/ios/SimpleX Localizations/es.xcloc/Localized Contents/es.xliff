@@ -8,28 +8,28 @@
       <trans-unit id="&#10;" xml:space="preserve" approved="no">
         <source>
 </source>
-        <target state="needs-translation">
+        <target state="translated">
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" " xml:space="preserve" approved="no">
         <source> </source>
-        <target state="needs-translation"> </target>
+        <target state="translated"> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="  " xml:space="preserve" approved="no">
         <source>  </source>
-        <target state="needs-translation">  </target>
+        <target state="translated">  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="   " xml:space="preserve" approved="no">
         <source>   </source>
-        <target state="needs-translation">   </target>
+        <target state="translated">   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve" approved="no">
         <source> (</source>
-        <target state="needs-translation"> (</target>
+        <target state="translated"> (</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
@@ -54,12 +54,12 @@
       </trans-unit>
       <trans-unit id="%@ %@" xml:space="preserve" approved="no">
         <source>%@ %@</source>
-        <target state="needs-translation">%@ %@</target>
+        <target state="translated">%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ / %@" xml:space="preserve" approved="no">
         <source>%@ / %@</source>
-        <target state="needs-translation">%@ / %@</target>
+        <target state="translated">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve" approved="no">
@@ -596,20 +596,24 @@
         <source>Colors</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Compare security codes with your contacts." xml:space="preserve">
+      <trans-unit id="Compare security codes with your contacts." xml:space="preserve" approved="no">
         <source>Compare security codes with your contacts.</source>
+        <target state="translated">Compare los códigos de seguridad con sus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure ICE servers" xml:space="preserve">
+      <trans-unit id="Configure ICE servers" xml:space="preserve" approved="no">
         <source>Configure ICE servers</source>
+        <target state="translated">Configure servidores ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm" xml:space="preserve">
+      <trans-unit id="Confirm" xml:space="preserve" approved="no">
         <source>Confirm</source>
+        <target state="translated">Confirmar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm new passphrase…" xml:space="preserve">
+      <trans-unit id="Confirm new passphrase…" xml:space="preserve" approved="no">
         <source>Confirm new passphrase…</source>
+        <target state="translated">Confirme nueva contraseña…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">

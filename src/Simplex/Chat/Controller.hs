@@ -171,7 +171,7 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -197,6 +197,7 @@ data ChatCommand
   | SetFilesFolder FilePath
   | SetIncognito Bool
   | APIExportArchive ArchiveConfig
+  | ExportArchive
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
