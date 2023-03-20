@@ -3,6 +3,7 @@ package chat.simplex.app.views.helpers
 import android.app.Activity
 import android.app.Application
 import android.app.LocaleManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -533,4 +534,12 @@ private fun Activity.applyLocale(locale: Locale) {
   SimplexApp.context.resources.updateConfiguration(appConf, resources.displayMetrics)
   @Suppress("DEPRECATION")
   resources.updateConfiguration(activityConf, resources.displayMetrics)
+}
+
+fun UriHandler.openUriCatching(uri: String) {
+  try {
+    openUri(uri)
+  } catch (e: ActivityNotFoundException) {
+    Log.e(TAG, e.stackTraceToString())
+  }
 }

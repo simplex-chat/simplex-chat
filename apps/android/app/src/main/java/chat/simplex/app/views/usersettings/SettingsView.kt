@@ -173,9 +173,9 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Email, stringResource(R.string.send_us_an_email), { uriHandler.openUri("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
+        SettingsActionItem(Icons.Outlined.Email, stringResource(R.string.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
       }
       SectionSpacer()
 
@@ -313,7 +313,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable private fun ContributeItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat#contribute") }) {
+  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat#contribute") }) {
     Icon(
       Icons.Outlined.Keyboard,
       contentDescription = "GitHub",
@@ -326,8 +326,8 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 
 @Composable private fun RateAppItem(uriHandler: UriHandler) {
   SectionItemView({
-    runCatching { uriHandler.openUri("market://details?id=chat.simplex.app") }
-      .onFailure { uriHandler.openUri("https://play.google.com/store/apps/details?id=chat.simplex.app") }
+    runCatching { uriHandler.openUriCatching("market://details?id=chat.simplex.app") }
+      .onFailure { uriHandler.openUriCatching("https://play.google.com/store/apps/details?id=chat.simplex.app") }
   }
   ) {
     Icon(
@@ -341,7 +341,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable private fun StarOnGithubItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
+  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
       contentDescription = "GitHub",
@@ -365,7 +365,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable private fun InstallTerminalAppItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
+  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
       contentDescription = "GitHub",
