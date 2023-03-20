@@ -735,10 +735,9 @@ viewUserProfile Profile {displayName, fullName} =
   ]
 
 viewUserPrivacy :: User -> [StyledString]
-viewUserPrivacy User {showNtfs, viewPwdHash, wipePwdHash} =
+viewUserPrivacy User {showNtfs, viewPwdHash} =
   [ "user messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
-    "user profile is " <> if isJust viewPwdHash then "hidden" else "visible",
-    "profile wipe password is " <> if isJust wipePwdHash then "enabled" else "disabled"
+    "user profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
 -- TODO make more generic messages or split
@@ -1233,6 +1232,10 @@ viewChatError logLevel = \case
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]
     CECantDeleteActiveUser _ -> ["cannot delete active user"]
     CECantDeleteLastUser _ -> ["cannot delete last user"]
+    CECantHideLastUser _ -> ["cannot hide last visible user"]
+    CEEmptyUserPassword _ -> ["cannot set empty password"]
+    CEUserAlreadyHidden _ -> ["user is already hidden"]
+    CEUserNotHidden _ -> ["user is not hidden"]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]

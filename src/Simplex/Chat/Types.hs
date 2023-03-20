@@ -112,7 +112,6 @@ data User = User
     fullPreferences :: FullPreferences,
     activeUser :: Bool,
     viewPwdHash :: Maybe UserPwdHash,
-    wipePwdHash :: Maybe UserPwdHash,
     showNtfs :: Bool
   }
   deriving (Show, Generic, FromJSON)

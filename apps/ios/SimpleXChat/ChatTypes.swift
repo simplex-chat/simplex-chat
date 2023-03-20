@@ -22,10 +22,8 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
 
-    public var showNtfs: Bool = true
-    public var forceIncognito: Bool? = false
+    public var showNtfs: Bool? = true
     public var viewPwdHash: UserPwdHash?
-    public var wipePwdHash: UserPwdHash?
 
     public var id: Int64 { userId }
 
@@ -38,8 +36,7 @@ public struct User: Decodable, NamedChat, Identifiable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
-        showNtfs: true,
-        forceIncognito: false
+        showNtfs: true
     )
 }
 

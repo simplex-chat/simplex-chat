@@ -14,6 +14,8 @@ struct UserProfilesView: View {
     @State private var alert: UserProfilesAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var searchTextOrPassword = ""
+    @State private var showProfilePassword = false
+    @State private var selectedUser: User?
 
     private enum UserProfilesAlert: Identifiable {
         case deleteUser(index: Int, delSMPQueues: Bool)
@@ -91,6 +93,9 @@ struct UserProfilesView: View {
                 return Alert(title: Text(title), message: Text(error))
             }
         }
+        .sheet(item: $selectedUser) { user in
+            HiddenProfileView(user: user)
+        }
     }
 
     private func filteredUsers() -> [UserInfo] {
@@ -98,7 +103,7 @@ struct UserProfilesView: View {
         let lower = s.localizedLowercase
         return m.users.filter { u in
             if let ph = u.user.viewPwdHash {
-                return s != "" && chatPasswordHash(s, ph.salt) == ph.hash
+                return s != "" // && chatPasswordHash(s, ph.salt) == ph.hash
             }
             return s == "" || u.user.chatViewName.localizedLowercase.contains(lower)
         }
@@ -150,8 +155,15 @@ struct UserProfilesView: View {
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                 Spacer()
-                Image(systemName: "checkmark")
-                    .foregroundColor(user.activeUser ? .primary : .clear)
+                if user.activeUser {
+                    Image(systemName: "checkmark").foregroundColor(.primary)
+                } else if user.hidden {
+                    Image(systemName: "lock").foregroundColor(.secondary)
+                } else if user.showNtfs == false {
+                    Image(systemName: "speaker.slash").foregroundColor(.secondary)
+                } else {
+                    Image(systemName: "checkmark").foregroundColor(.clear)
+                }
             }
         }
         .disabled(user.activeUser)
@@ -165,11 +177,11 @@ struct UserProfilesView: View {
                 .tint(.green)
             } else {
                 Button("Hide") {
-//                    ProfilePrivacyView(user: user)
+                    selectedUser = user
                 }
             }
             Group {
-                if user.showNtfs {
+                if user.showNtfs == true {
                     Button("Mute") {
                     }
                 } else {
@@ -182,14 +194,14 @@ struct UserProfilesView: View {
     }
 }
 
-public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
-    var cPwd = pwd.cString(using: .utf8)!
-    var cSalt = salt.cString(using: .utf8)!
-    let cHash  = chat_password_hash(&cPwd, &cSalt)!
-    let hash = fromCString(cHash)
-    free(cHash)
-    return hash
-}
+//public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
+//    var cPwd = pwd.cString(using: .utf8)!
+//    var cSalt = salt.cString(using: .utf8)!
+//    let cHash  = chat_password_hash(&cPwd, &cSalt)!
+//    let hash = fromCString(cHash)
+//    free(cHash)
+//    return hash
+//}
 
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {

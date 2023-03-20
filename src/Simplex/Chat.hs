@@ -309,43 +309,49 @@ processChatCommand = \case
           DefaultAgentServers {smp} <- asks $ defaultServers . config
           pure (smp, [])
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
-  APISetActiveUser userId' viewPwd -> withUser $ \User {userId} -> do
-    user <- validateUserPassword userId userId' viewPwd
+  APISetActiveUser userId' viewPwd_ -> withUser $ \User {userId} -> do
+    user <- validateUserPassword userId userId' viewPwd_
     withStore' $ \db -> setActiveUser db userId'
     setActive ActiveNone
     let user' = user {activeUser = True}
     asks currentUser >>= atomically . (`writeTVar` Just user')
     pure $ CRActiveUser user'
-  SetActiveUser uName viewPwd -> do
+  SetActiveUser uName viewPwd_ -> do
     tryError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
-      Right userId -> processChatCommand $ APISetActiveUser userId viewPwd
-  APISetUserPrivacy userId' privacyCfg@UserPrivacyCfg {currViewPwd} -> withUser $ \User {userId} -> do
-    user <- validateUserPassword userId userId' currViewPwd
-    user' <- setPrivacyCfg user privacyCfg
-    asks currentUser >>= atomically . (`writeTVar` Just user')
-    withStore' (`updateUserPrivacy` user')
-    pure $ CRUserPrivacy user'
-    where
-      setPrivacyCfg user UserPrivacyCfg {showNtfs, viewPwd, wipePwd} = do
-        let pwd = unUserPwd viewPwd
-        viewPwdHash <- hashPassword pwd
-        wipePwdHash <- if T.null pwd then pure Nothing else hashPassword $ unUserPwd wipePwd
-        pure user {showNtfs, viewPwdHash, wipePwdHash}
+      Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
+  APIHideUser userId' (UserPwd viewPwd) -> withUser $ \_ -> do
+    user' <- withStore (`getUser` userId')
+    case viewPwdHash user' of
+      Just _ -> throwChatError $ CEUserAlreadyHidden userId'
+      _ -> do
+        when (T.null viewPwd) $ throwChatError $ CEEmptyUserPassword userId'
+        users <- withStore' getUsers
+        unless (length (filter (isNothing . viewPwdHash) users) > 1) $ throwChatError $ CECantHideLastUser userId'
+        viewPwdHash' <- hashPassword
+        setUserPrivacy user' {viewPwdHash = viewPwdHash'}
         where
-          hashPassword "" = pure Nothing
-          hashPassword pwd = do
+          hashPassword = do
             salt <- drgRandomBytes 16
-            let hash = B64UrlByteString $ C.sha512Hash $ encodeUtf8 pwd <> salt
+            let hash = B64UrlByteString $ C.sha512Hash $ encodeUtf8 viewPwd <> salt
             pure $ Just UserPwdHash {hash, salt = B64UrlByteString salt}
-  SetUserPrivacy privacyCfg -> withUser $ \User {userId} ->
-    processChatCommand $ APISetUserPrivacy userId privacyCfg
-  APIWipeUser userId' wipePwd -> do
-    user <- checkDeleteChatUser userId'
-    validateUserWipePassword userId' wipePwd
-    -- This is probably not good enough as it doesn't lock the chat, and locking would lock the UI
-    _ <- forkIO $ void $ deleteChatUser user False
-    ok_
+  APIUnhideUser userId' viewPwd_ -> withUser $ \User {userId} -> do
+    user' <- withStore (`getUser` userId')
+    case viewPwdHash user' of
+      Nothing -> throwChatError $ CEUserNotHidden userId'
+      _ -> do
+        user <- validateUserPassword userId userId' viewPwd_
+        setUserPrivacy user {viewPwdHash = Nothing}
+  APIMuteUser userId' viewPwd_ -> withUser $ \User {userId} -> do
+    user <- validateUserPassword userId userId' viewPwd_
+    setUserPrivacy user {showNtfs = False}
+  APIUnmuteUser userId' viewPwd_ -> withUser $ \User {userId} -> do
+    user <- validateUserPassword userId userId' viewPwd_
+    setUserPrivacy user {showNtfs = True}
+  HideUser viewPwd -> withUser $ \User {userId} -> processChatCommand $ APIHideUser userId viewPwd
+  UnhideUser -> withUser $ \User {userId} -> processChatCommand $ APIUnhideUser userId Nothing
+  MuteUser -> withUser $ \User {userId} -> processChatCommand $ APIMuteUser userId Nothing
+  UnmuteUser -> withUser $ \User {userId} -> processChatCommand $ APIUnmuteUser userId Nothing
   APIDeleteUser userId delSMPQueues -> do
     user <- checkDeleteChatUser userId
     withChatLock "deleteUser" . procCmd $ deleteChatUser user delSMPQueues
@@ -1607,25 +1613,25 @@ processChatCommand = \case
           else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
     drgRandomBytes :: Int -> m ByteString
     drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
-    validateUserPassword :: UserId -> UserId -> UserPwd -> m User
-    validateUserPassword userId userId' (UserPwd viewPwd) = do
+    validateUserPassword :: UserId -> UserId -> Maybe UserPwd -> m User
+    validateUserPassword userId userId' viewPwd_ = do
       tryError (withStore (`getUser` userId')) >>= \case
         Left _ -> throwChatError CEUserUnknown
         Right user'@User {viewPwdHash} -> do
           forM_ viewPwdHash $ \pwdHash ->
-            let pwdOk = if T.null viewPwd then userId == userId' else validPassword viewPwd pwdHash
+            let pwdOk = case viewPwd_ of
+                          Nothing -> userId == userId'
+                          Just (UserPwd viewPwd) -> validPassword viewPwd pwdHash
              in unless pwdOk $ throwChatError CEUserUnknown
           pure user'
-    validateUserWipePassword :: UserId -> UserPwd -> m ()
-    validateUserWipePassword userId' (UserPwd wipePwd) =
-      tryError (withStore (`getUser` userId')) >>= \case
-        Left _ -> throwChatError CEUserUnknown
-        Right User {wipePwdHash} -> do
-          forM_ wipePwdHash $ \pwdHash ->
-            unless (not (T.null wipePwd) && validPassword wipePwd pwdHash) $ throwChatError CEUserUnknown
     validPassword :: Text -> UserPwdHash -> Bool
     validPassword pwd UserPwdHash {hash = B64UrlByteString hash, salt = B64UrlByteString salt} =
       hash == C.sha512Hash (encodeUtf8 pwd <> salt)
+    setUserPrivacy :: User -> m ChatResponse
+    setUserPrivacy user = do
+      asks currentUser >>= atomically . (`writeTVar` Just user)
+      withStore' (`updateUserPrivacy` user)
+      pure $ CRUserPrivacy user
     checkDeleteChatUser :: UserId -> m User
     checkDeleteChatUser userId = do
       user <- withStore (`getUser` userId)
@@ -4044,11 +4050,16 @@ chatCommandP =
                pure $ CreateActiveUser uProfile sameSmp
            ),
       "/users" $> ListUsers,
-      "/_user " *> (APISetActiveUser <$> A.decimal <*> (A.space *> jsonP <|> pure (UserPwd ""))),
-      ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> (UserPwd <$> (A.space *> pwdP <|> pure ""))),
-      "/_privacy " *> (APISetUserPrivacy <$> A.decimal <* A.space <*> jsonP),
-      "/privacy" *> (SetUserPrivacy <$> privacyCfgP),
-      "/_wipe user " *> (APIWipeUser <$> A.decimal <* A.space <*> jsonP),
+      "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
+      "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
+      "/_unhide user" *> (APIUnhideUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_mute user" *> (APIMuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_unmute user" *> (APIUnmuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/hide user " *> (HideUser <$> pwdP),
+      "/unhide user" $> UnhideUser,
+      "/mute user" $> MuteUser,
+      "/unmute user" $> UnmuteUser,
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True),
       ("/user" <|> "/u") $> ShowActiveUser,
@@ -4279,12 +4290,7 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     textP = safeDecodeUtf8 <$> A.takeByteString
-    pwdP = jsonP <|> safeDecodeUtf8 <$> A.takeTill (== ' ')
-    privacyCfgP = do
-      showNtfs <- " ntf=" *> onOffP <|> pure True
-      viewPwd <- UserPwd <$> (" view=" *> pwdP <|> pure "")
-      wipePwd <- UserPwd <$> (" wipe=" *> pwdP <|> pure "")
-      pure UserPrivacyCfg {currViewPwd = UserPwd "", showNtfs, viewPwd, wipePwd}
+    pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePath = stringP

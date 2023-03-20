@@ -182,11 +182,16 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile Bool
   | ListUsers
-  | APISetActiveUser UserId UserPwd
-  | SetActiveUser UserName UserPwd
-  | APISetUserPrivacy UserId UserPrivacyCfg
-  | SetUserPrivacy UserPrivacyCfg
-  | APIWipeUser UserId UserPwd
+  | APISetActiveUser UserId (Maybe UserPwd)
+  | SetActiveUser UserName (Maybe UserPwd)
+  | APIHideUser UserId UserPwd
+  | APIUnhideUser UserId (Maybe UserPwd)
+  | APIMuteUser UserId (Maybe UserPwd)
+  | APIUnmuteUser UserId (Maybe UserPwd)
+  | HideUser UserPwd
+  | UnhideUser
+  | MuteUser
+  | UnmuteUser
   | APIDeleteUser UserId Bool
   | DeleteUser UserName Bool
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
@@ -526,18 +531,6 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
-data UserPrivacyCfg = UserPrivacyCfg
-  { currViewPwd :: UserPwd,
-    showNtfs :: Bool,
-    viewPwd :: UserPwd,
-    wipePwd :: UserPwd
-  }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON UserPrivacyCfg where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
 
@@ -715,6 +708,10 @@ data ChatErrorType
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
+  | CECantHideLastUser {userId :: UserId}
+  | CEEmptyUserPassword {userId :: UserId}
+  | CEUserAlreadyHidden {userId :: UserId}
+  | CEUserNotHidden {userId :: UserId}
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged

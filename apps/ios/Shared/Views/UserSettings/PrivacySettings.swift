@@ -20,17 +20,6 @@ struct PrivacySettings: View {
     var body: some View {
         VStack {
             List {
-                if let user = m.currentUser {
-                    Section("Profile") {
-                        NavigationLink {
-                            ProfilePrivacyView(user: user)
-                                .navigationTitle("Your profile privacy")
-                        } label: {
-                            settingsRow(user.hidden ? "lock.shield" : "shield") { Text("Profile privacy") }
-                        }
-                    }
-                }
-
                 Section("Device") {
                     SimplexLockSetting()
                     settingsRow("eye.slash") {

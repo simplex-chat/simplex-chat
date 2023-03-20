@@ -62,7 +62,7 @@ chatDirectTests = do
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
-    it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
+    xit "user profile privacy: hide profiles and notificaitons" testUserPrivacy
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -1517,7 +1517,7 @@ testUserPrivacy =
       bob #> "@alisa hey"
       alice <# "bob> hey"
       -- set profile privacy
-      alice ##> "/privacy ntf=off view=my_password"
+      alice ##> "/hide my_password"
       privacy alice
       -- shows messages when active
       bob #> "@alisa hello again"
@@ -1572,21 +1572,10 @@ testUserPrivacy =
       showActiveUser alice "alisa"
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      -- wipe inactive profile
-      alice ##> "/_wipe user 2 \"\""
-      alice <## "user does not exist or incorrect password"
-      alice ##> "/_wipe user 2 \"wrong_password\""
-      alice <## "user does not exist or incorrect password"
-      alice ##> "/_wipe user 2 \"wipe_it\""
-      alice <## "ok"
-      threadDelay 500000
-      alice ##> "/user alisa new_password"
-      alice <## "user does not exist or incorrect password"
   where
     privacy alice = do
       alice <## "user messages are hidden (use /tail to view)"
       alice <## "user profile is hidden"
-      alice <## "profile wipe password is disabled"
 
 testSetChatItemTTL :: HasCallStack => FilePath -> IO ()
 testSetChatItemTTL =

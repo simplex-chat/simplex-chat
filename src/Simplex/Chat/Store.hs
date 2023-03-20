@@ -471,7 +471,7 @@ createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, pr
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences, True) :. (Nothing, Nothing) :. (Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences, True) :. (Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -509,21 +509,19 @@ getUsers db =
 userQuery :: Query
 userQuery =
   [sql|
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.local_display_name, ucp.full_name, ucp.image, ucp.preferences, u.show_ntfs, u.view_pwd_hash, u.view_pwd_salt, u.wipe_pwd_hash, u.wipe_pwd_salt
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.local_display_name, ucp.full_name, ucp.image, ucp.preferences, u.show_ntfs, u.view_pwd_hash, u.view_pwd_salt
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
-toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences, Bool) :. (Maybe B64UrlByteString, Maybe B64UrlByteString) :. (Maybe B64UrlByteString, Maybe B64UrlByteString) -> User
-toUser ((userId, auId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences, showNtfs) :. viewPwdHash_ :. wipePwdHash_) =
-  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences, showNtfs, viewPwdHash, wipePwdHash}
+toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences, Bool) :. (Maybe B64UrlByteString, Maybe B64UrlByteString) -> User
+toUser ((userId, auId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences, showNtfs) :. (viewPwdHash_, viewPwdSalt_)) =
+  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences, showNtfs, viewPwdHash}
   where
     profile = LocalProfile {profileId, displayName, fullName, image, preferences = userPreferences, localAlias = ""}
     fullPreferences = mergePreferences Nothing userPreferences
-    viewPwdHash = toHash viewPwdHash_
-    wipePwdHash = toHash wipePwdHash_
-    toHash (hash_, salt_) = UserPwdHash <$> hash_ <*> salt_
+    viewPwdHash = UserPwdHash <$> viewPwdHash_ <*> viewPwdSalt_
 
 setActiveUser :: DB.Connection -> UserId -> IO ()
 setActiveUser db userId = do
@@ -591,15 +589,15 @@ deleteUserRecord db User {userId} =
   DB.execute db "DELETE FROM users WHERE user_id = ?" (Only userId)
 
 updateUserPrivacy :: DB.Connection -> User -> IO ()
-updateUserPrivacy db User {userId, showNtfs, viewPwdHash, wipePwdHash} =
+updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
   DB.execute
     db
     [sql|
       UPDATE users
-      SET view_pwd_hash = ?, view_pwd_salt = ?, wipe_pwd_hash = ?, wipe_pwd_salt = ?, show_ntfs = ?
+      SET view_pwd_hash = ?, view_pwd_salt = ?, show_ntfs = ?
       WHERE user_id = ?
     |]
-    (hashSalt viewPwdHash :. hashSalt wipePwdHash :. (showNtfs, userId))
+    (hashSalt viewPwdHash :. (showNtfs, userId))
   where
     hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
 
