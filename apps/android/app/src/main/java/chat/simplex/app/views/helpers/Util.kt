@@ -1,12 +1,15 @@
 package chat.simplex.app.views.helpers
 
+import android.app.Activity
 import android.app.Application
+import android.app.LocaleManager
 import android.content.Context
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
 import android.net.Uri
-import android.os.FileUtils
+import android.os.*
 import android.provider.OpenableColumns
 import android.text.Spanned
 import android.text.SpannedString
@@ -29,8 +32,7 @@ import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
-import chat.simplex.app.model.CIFile
-import chat.simplex.app.model.json
+import chat.simplex.app.model.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -501,3 +503,36 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
     save = { json.encodeToString(it) },
     restore = { json.decodeFromString(it) }
   )
+
+fun saveAppLocale(pref: SharedPreference<String?>, activity: Activity, vararg languageCodes: String) {
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    val localeManager = SimplexApp.context.getSystemService(LocaleManager::class.java)
+    val locales = languageCodes.map { Locale.forLanguageTag(it) }
+    localeManager.applicationLocales = LocaleList(*locales.toTypedArray())
+  } else {
+    pref.set(languageCodes.firstOrNull())
+    if (languageCodes.firstOrNull() == null) {
+      activity.applyLocale(MainActivity.defaultLocale)
+    }
+    activity.recreate()
+  }
+}
+
+fun Activity.applyAppLocale(pref: SharedPreference<String?>) {
+  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+    val lang = pref.get()
+    if (lang == null || lang == Locale.getDefault().language) return
+    applyLocale(Locale.forLanguageTag(lang))
+  }
+}
+
+
+private fun Activity.applyLocale(locale: Locale) {
+  Locale.setDefault(locale)
+  val appConf = Configuration(SimplexApp.context.resources.configuration).apply { setLocale(locale) }
+  val activityConf = Configuration(resources.configuration).apply { setLocale(locale) }
+  @Suppress("DEPRECATION")
+  SimplexApp.context.resources.updateConfiguration(appConf, resources.displayMetrics)
+  @Suppress("DEPRECATION")
+  resources.updateConfiguration(activityConf, resources.displayMetrics)
+}
