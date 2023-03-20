@@ -236,7 +236,7 @@ private fun LangSelector(state: State<String>, onSelected: (String) -> Unit) {
     "it" to "Italiano",
     "nl" to "Nederlands",
     "cs" to "Čeština",
-    "zh" to "Chinese" // only two-letter language code is allowed
+    "zh-CN" to "Chinese"
   )
   val values by remember { mutableStateOf(supportedLanguages.map { it.key to it.value }) }
   ExposedDropDownSettingRow(
