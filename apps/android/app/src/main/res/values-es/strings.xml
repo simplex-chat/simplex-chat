@@ -978,4 +978,5 @@
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos.
 \n
 \nLos servidores <xliff:g id="appName">SimpleX</xliff:g> no pueden ver tu perfil.</string>
+    <string name="language_system">Sistema</string>
 </resources>
