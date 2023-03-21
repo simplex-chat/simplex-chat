@@ -690,9 +690,9 @@
         <target>Gesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Check server address and try again." xml:space="preserve">
+      <trans-unit id="Check server address and try again." xml:space="preserve" approved="no">
         <source>Check server address and try again.</source>
-        <target>Controleer het serveradres en probeer het opnieuw.</target>
+        <target state="translated">Controleer het server adres en probeer het opnieuw.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -1925,9 +1925,9 @@
         <target>Ongeldige verbinding link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid server address!" xml:space="preserve">
+      <trans-unit id="Invalid server address!" xml:space="preserve" approved="no">
         <source>Invalid server address!</source>
-        <target>Ongeldig serveradres!</target>
+        <target state="translated">Ongeldig server adres!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve">
@@ -2075,9 +2075,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Maak een privéverbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
+      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve" approved="no">
         <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
-        <target>Zorg ervoor dat SMP-server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn (%@).</target>
+        <target state="translated">Zorg ervoor dat SMP-server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -2505,9 +2505,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u het kwijtraakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
+      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve" approved="no">
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target>Mogelijk is de certificaatvingerafdruk in het serveradres onjuist</target>
+        <target state="translated">Mogelijk is de certificaat vingerafdruk in het server adres onjuist</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -2520,9 +2520,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Vooraf ingestelde server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preset server address" xml:space="preserve">
+      <trans-unit id="Preset server address" xml:space="preserve" approved="no">
         <source>Preset server address</source>
-        <target>Vooraf ingesteld serveradres</target>
+        <target state="translated">Vooraf ingesteld server adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
@@ -3010,9 +3010,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>SimpleX Vergrendelen ingeschakeld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX contact address" xml:space="preserve">
+      <trans-unit id="SimpleX contact address" xml:space="preserve" approved="no">
         <source>SimpleX contact address</source>
-        <target>SimpleX contactadres</target>
+        <target state="translated">SimpleX contact adres</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve">
@@ -3789,9 +3789,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Uw SMP-servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX contact address" xml:space="preserve">
+      <trans-unit id="Your SimpleX contact address" xml:space="preserve" approved="no">
         <source>Your SimpleX contact address</source>
-        <target>Uw SimpleX contactadres</target>
+        <target state="translated">Uw SimpleX contact adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -3834,9 +3834,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Jouw gesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact address" xml:space="preserve">
+      <trans-unit id="Your contact address" xml:space="preserve" approved="no">
         <source>Your contact address</source>
-        <target>Uw contactadres</target>
+        <target state="translated">Uw contact adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact can scan it from the app." xml:space="preserve">
@@ -3908,9 +3908,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>Uw server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server address" xml:space="preserve">
+      <trans-unit id="Your server address" xml:space="preserve" approved="no">
         <source>Your server address</source>
-        <target>Uw serveradres</target>
+        <target state="translated">Uw server adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
@@ -4188,9 +4188,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>iOS-keychain wordt gebruikt om het wachtwoord veilig op te slaan nadat u de app opnieuw hebt opgestart of het wachtwoord hebt gewijzigd, hiermee kunt u push meldingen ontvangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="incognito via contact address link" xml:space="preserve">
+      <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
         <source>incognito via contact address link</source>
-        <target>incognito via link naar contactadres</target>
+        <target state="translated">incognito via contact adres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve">
@@ -4429,9 +4429,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve">
+      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
         <source>via contact address link</source>
-        <target>via contactadres link</target>
+        <target state="translated">via contact adres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve">
