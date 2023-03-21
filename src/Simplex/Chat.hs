@@ -2185,7 +2185,7 @@ processAgentMsgSndFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      fileId <- withStore $ \db -> getSndFileDbIdByAgentId db user $ AgentSndFileId aFileId
+      fileId <- withStore $ \db -> getSndFileDBId db user $ AgentSndFileId aFileId
       case msg of
         SFPROG _sent _total -> do
           -- update chat item status
@@ -2249,7 +2249,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      fileId <- withStore (`getRcvFileDbIdByAgentId` AgentRcvFileId aFileId)
+      fileId <- withStore (`getRcvFileDBId` AgentRcvFileId aFileId)
       case msg of
         RFPROG _sent _total -> do
           -- update chat item status

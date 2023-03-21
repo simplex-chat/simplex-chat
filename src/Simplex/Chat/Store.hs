@@ -159,8 +159,8 @@ module Simplex.Chat.Store
     createSndFTDescrXFTP,
     updateSndFTDescrXFTP,
     updateSndFTDeliveryXFTP,
-    getSndFileDbIdByAgentId,
-    getRcvFileDbIdByAgentId,
+    getSndFileDBId,
+    getRcvFileDBId,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -2804,13 +2804,13 @@ updateSndFTDeliveryXFTP db SndFileTransfer {connId, fileId, fileDescrId} msgDeli
     "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_descr_id = ?"
     (msgDeliveryId, connId, fileId, fileDescrId)
 
-getSndFileDbIdByAgentId :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
-getSndFileDbIdByAgentId db User {userId} aSndFileId =
+getSndFileDBId :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
+getSndFileDBId db User {userId} aSndFileId =
   ExceptT . firstRow fromOnly (SESndFileNotFoundXFTP aSndFileId) $
     DB.query db "SELECT file_id FROM files WHERE user_id = ? AND agent_snd_file_id = ?" (userId, aSndFileId)
 
-getRcvFileDbIdByAgentId :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO FileTransferId
-getRcvFileDbIdByAgentId db aRcvFileId =
+getRcvFileDBId :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO FileTransferId
+getRcvFileDBId db aRcvFileId =
   ExceptT . firstRow fromOnly (SERcvFileNotFoundXFTP aRcvFileId) $
     DB.query db "SELECT file_id FROM rcv_files WHERE agent_rcv_file_id = ?" (Only aRcvFileId)
 
