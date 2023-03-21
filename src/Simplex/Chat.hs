@@ -3739,7 +3739,7 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInlin
           unless agentRcvFileDeleted $ agentXFTPDeleteRcvFile user aFileId fileId
         _ -> pure ()
       pure fileConnId
-    fileConnId = if isNothing xftpRcvFile || isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
+    fileConnId = if isNothing xftpRcvFile && isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
 
 cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> m [ConnId]
 cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
