@@ -978,4 +978,5 @@
     <string name="observer_cant_send_message_title">您无法发送消息！</string>
     <string name="initial_member_role">初始角色</string>
     <string name="observer_cant_send_message_desc">请联系群组管理员。</string>
+    <string name="language_system">系统</string>
 </resources>
