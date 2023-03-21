@@ -25,6 +25,7 @@
 module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
+import Control.Monad (join)
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
@@ -1596,22 +1597,22 @@ data RcvFileInfo = RcvFileInfo
 
 instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
-liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
-liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
-  RFSAccepted fi -> acId fi
-  RFSConnected fi -> acId fi
+liveRcvFileTransferInfo :: RcvFileTransfer -> Maybe RcvFileInfo
+liveRcvFileTransferInfo RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted fi -> Just fi
+  RFSConnected fi -> Just fi
   _ -> Nothing
+
+liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
+liveRcvFileTransferConnId ft = acId =<< liveRcvFileTransferInfo ft
   where
     acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
     acId _ = Nothing
 
 liveRcvFileTransferPath :: RcvFileTransfer -> Maybe FilePath
-liveRcvFileTransferPath RcvFileTransfer {fileStatus} = case fileStatus of
-  RFSAccepted fi -> fp fi
-  RFSConnected fi -> fp fi
-  _ -> Nothing
+liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
   where
-    fp RcvFileInfo {filePath} = Just filePath
+    fp RcvFileInfo {filePath} = filePath
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
