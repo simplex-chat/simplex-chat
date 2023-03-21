@@ -459,7 +459,7 @@
     <string name="core_version">コアのバージョン: v%s</string>
     <string name="edit_image">画像を編集</string>
     <string name="callstatus_missed">不在着信</string>
-    <string name="connect_calls_via_relay">リレー経由で繋がる。</string>
+    <string name="always_use_relay">リレー経由で繋がる。</string>
     <string name="status_e2e_encrypted">エンドツーエンド暗号化済み</string>
     <string name="chat_database_deleted">チャットのデータベースが削除されました。</string>
     <string name="delete_messages_after">次の期間が経ったら、メッセージを削除:</string>

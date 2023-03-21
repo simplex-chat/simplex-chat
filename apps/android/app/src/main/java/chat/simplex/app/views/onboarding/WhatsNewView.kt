@@ -35,7 +35,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       Icon(
         Icons.Outlined.OpenInNew, stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
-          .clickable { uriHandler.openUri(link) }
+          .clickable { uriHandler.openUriCatching(link) }
       )
     }
 

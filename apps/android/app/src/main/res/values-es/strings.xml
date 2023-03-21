@@ -152,7 +152,7 @@
     <string name="notification_preview_mode_contact">Nombre del contacto</string>
     <string name="copy_verb">Copiar</string>
     <string name="create_your_profile">Crear tu perfil</string>
-    <string name="connect_calls_via_relay">Conectar mediante relay</string>
+    <string name="always_use_relay">Conectar mediante relay</string>
     <string name="set_password_to_export_desc">La base de datos está cifrada con una contraseña aleatoria. Cámbiala antes de exportar.</string>
     <string name="total_files_count_and_size">%d archivo(s) con tamaño total de %s</string>
     <string name="enable_automatic_deletion_question">Activar eliminación automática de mensajes\?</string>
