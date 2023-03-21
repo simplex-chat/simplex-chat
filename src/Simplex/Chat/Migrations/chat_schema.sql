@@ -195,7 +195,8 @@ CREATE TABLE files(
   ci_file_status TEXT,
   file_inline TEXT,
   agent_snd_file_id BLOB NULL,
-  private_snd_file_descr TEXT NULL
+  private_snd_file_descr TEXT NULL,
+  agent_snd_file_deleted INTEGER DEFAULT 0 CHECK(agent_snd_file_deleted NOT NULL)
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -222,7 +223,8 @@ CREATE TABLE rcv_files(
   file_inline TEXT,
   file_descr_id INTEGER NULL
   REFERENCES xftp_file_descriptions ON DELETE SET NULL,
-  agent_rcv_file_id BLOB NULL
+  agent_rcv_file_id BLOB NULL,
+  agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL)
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,

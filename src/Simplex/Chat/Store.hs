@@ -159,8 +159,8 @@ module Simplex.Chat.Store
     createSndFTDescrXFTP,
     updateSndFTDescrXFTP,
     updateSndFTDeliveryXFTP,
-    getAgentSndFileIdXFTP,
-    getAgentRcvFileIdXFTP,
+    getXFTPSndFileDBId,
+    getXFTPRcvFileDBId,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -184,6 +184,7 @@ module Simplex.Chat.Store
     acceptRcvInlineFT,
     startRcvInlineFT,
     xftpAcceptRcvFT,
+    setRcvFTAgentDeleted,
     updateRcvFileStatus,
     createRcvFileChunk,
     updatedRcvFileChunkStored,
@@ -357,6 +358,7 @@ import Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
 import Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
 import Simplex.Chat.Migrations.M20230303_group_link_role
 import Simplex.Chat.Migrations.M20230304_file_description
+import Simplex.Chat.Migrations.M20230321_agent_file_deleted
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -424,7 +426,8 @@ schemaMigrations =
     ("20230129_drop_chat_items_group_idx", m20230129_drop_chat_items_group_idx),
     ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id),
     ("20230303_group_link_role", m20230303_group_link_role),
-    ("20230304_file_description", m20230304_file_description)
+    ("20230304_file_description", m20230304_file_description),
+    ("20230321_agent_file_deleted", m20230321_agent_file_deleted)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -2801,13 +2804,13 @@ updateSndFTDeliveryXFTP db SndFileTransfer {connId, fileId, fileDescrId} msgDeli
     "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_descr_id = ?"
     (msgDeliveryId, connId, fileId, fileDescrId)
 
-getAgentSndFileIdXFTP :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO Int64
-getAgentSndFileIdXFTP db User {userId} aSndFileId =
+getXFTPSndFileDBId :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
+getXFTPSndFileDBId db User {userId} aSndFileId =
   ExceptT . firstRow fromOnly (SESndFileNotFoundXFTP aSndFileId) $
     DB.query db "SELECT file_id FROM files WHERE user_id = ? AND agent_snd_file_id = ?" (userId, aSndFileId)
 
-getAgentRcvFileIdXFTP :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO FileTransferId
-getAgentRcvFileIdXFTP db aRcvFileId =
+getXFTPRcvFileDBId :: DB.Connection -> AgentRcvFileId -> ExceptT StoreError IO FileTransferId
+getXFTPRcvFileDBId db aRcvFileId =
   ExceptT . firstRow fromOnly (SERcvFileNotFoundXFTP aRcvFileId) $
     DB.query db "SELECT file_id FROM rcv_files WHERE agent_rcv_file_id = ?" (Only aRcvFileId)
 
@@ -2956,14 +2959,15 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (userId, contactId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
     insertedRowId db
-  rfd <- mapM (createRcvFD_ db userId currentTs) fileDescr
-  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd
+  rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
+  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd_
+      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
   liftIO $
     DB.execute
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
+  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
 
 createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupMember -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
 createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
@@ -2974,14 +2978,15 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
       "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
     insertedRowId db
-  rfd <- mapM (createRcvFD_ db userId currentTs) fileDescr
-  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd
+  rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
+  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd_
+      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
   liftIO $
     DB.execute
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, rfdId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
+  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 createRcvFD_ :: DB.Connection -> UserId -> UTCTime -> FileDescr -> ExceptT StoreError IO RcvFileDescr
 createRcvFD_ db userId currentTs FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
@@ -3063,7 +3068,7 @@ getRcvFileTransfer db User {userId} fileId = do
         [sql|
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
-            f.file_path, r.file_inline, r.rcv_file_inline, c.connection_id, c.agent_conn_id
+            f.file_path, r.file_inline, r.rcv_file_inline, r.agent_rcv_file_id, r.agent_rcv_file_deleted, c.connection_id, c.agent_conn_id
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN connections c ON r.file_id = c.rcv_file_id
@@ -3072,30 +3077,30 @@ getRcvFileTransfer db User {userId} fileId = do
           WHERE f.user_id = ? AND f.file_id = ?
         |]
         (userId, fileId)
-  rfd <- liftIO $ getRcvFileDescrByFileId_ db fileId
-  rcvFileTransfer rfd rftRow
+  rfd_ <- liftIO $ getRcvFileDescrByFileId_ db fileId
+  rcvFileTransfer rfd_ rftRow
   where
     rcvFileTransfer ::
       Maybe RcvFileDescr ->
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode) :. (Maybe Int64, Maybe AgentConnId) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, Bool) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer rcvFileDescription ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
-      let fileInv = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
-          fileInfo = (filePath_, connId_, agentConnId_)
+    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline, agentRcvFileId, agentRcvFileDeleted) :. (connId_, agentConnId_)) =
       case contactName_ <|> memberName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
         Just name -> do
           case fileStatus' of
-            FSNew -> pure $ ft name fileInv RFSNew
-            FSAccepted -> ft name fileInv . RFSAccepted <$> rfi fileInfo
-            FSConnected -> ft name fileInv . RFSConnected <$> rfi fileInfo
-            FSComplete -> ft name fileInv . RFSComplete <$> rfi fileInfo
-            FSCancelled -> ft name fileInv . RFSCancelled <$> rfi_ fileInfo
+            FSNew -> pure $ ft name RFSNew
+            FSAccepted -> ft name . RFSAccepted <$> rfi
+            FSConnected -> ft name . RFSConnected <$> rfi
+            FSComplete -> ft name . RFSComplete <$> rfi
+            FSCancelled -> ft name . RFSCancelled <$> rfi_
       where
-        ft senderDisplayName fileInvitation fileStatus =
-          RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, rcvFileDescription, senderDisplayName, chunkSize, cancelled, grpMemberId}
-        rfi fileInfo = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_ fileInfo
-        rfi_ = \case
+        ft senderDisplayName fileStatus =
+          let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
+              xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted}) <$> rfd_
+           in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId}
+        rfi = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_
+        rfi_ = case (filePath_, connId_, agentConnId_) of
           (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
@@ -3145,6 +3150,14 @@ acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
     db
     "UPDATE rcv_files SET rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
     (rcvFileInline, FSAccepted, currentTs, fileId)
+
+setRcvFTAgentDeleted :: DB.Connection -> FileTransferId -> IO ()
+setRcvFTAgentDeleted db fileId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE rcv_files SET agent_rcv_file_deleted = 1, updated_at = ? WHERE file_id = ?"
+    (currentTs, fileId)
 
 updateRcvFileStatus :: DB.Connection -> FileTransferId -> FileStatus -> IO ()
 updateRcvFileStatus db fileId status = do

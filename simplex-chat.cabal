@@ -86,6 +86,7 @@ library
       Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
       Simplex.Chat.Migrations.M20230303_group_link_role
       Simplex.Chat.Migrations.M20230304_file_description
+      Simplex.Chat.Migrations.M20230321_agent_file_deleted
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
