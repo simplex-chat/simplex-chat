@@ -3991,9 +3991,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Anrufen…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="cancelled %@" xml:space="preserve">
+      <trans-unit id="cancelled %@" xml:space="preserve" approved="no">
         <source>cancelled %@</source>
-        <target>Beende %@</target>
+        <target state="translated">abgebrochen %@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
@@ -4322,14 +4322,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <note>enabled status
    group pref value</note>
       </trans-unit>
-      <trans-unit id="offered %@" xml:space="preserve">
+      <trans-unit id="offered %@" xml:space="preserve" approved="no">
         <source>offered %@</source>
-        <target>Beginne %@</target>
+        <target state="translated">angeboten %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="offered %@: %@" xml:space="preserve">
+      <trans-unit id="offered %@: %@" xml:space="preserve" approved="no">
         <source>offered %1$@: %2$@</source>
-        <target>Beginne %1$@: %2$@</target>
+        <target state="translated">angeboten %1$@: %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
