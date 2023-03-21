@@ -978,4 +978,5 @@
     <string name="observer_cant_send_message_desc">Veuillez contacter l\'administrateur du groupe.</string>
     <string name="observer_cant_send_message_title">Vous ne pouvez pas envoyer de messages !</string>
     <string name="group_member_role_observer">observateur</string>
+    <string name="language_system">Système</string>
 </resources>
