@@ -146,7 +146,13 @@ private func listUsersResponse(_ r: ChatResponse) throws -> [UserInfo] {
     throw r
 }
 
-func apiSetActiveUser(_ userId: Int64, viewPwd: String?) async throws -> User {
+func apiSetActiveUser(_ userId: Int64, viewPwd: String?) throws -> User {
+    let r = chatSendCmdSync(.apiSetActiveUser(userId: userId, viewPwd: viewPwd))
+    if case let .activeUser(user) = r { return user }
+    throw r
+}
+
+func apiSetActiveUserAsync(_ userId: Int64, viewPwd: String?) async throws -> User {
     let r = await chatSendCmd(.apiSetActiveUser(userId: userId, viewPwd: viewPwd))
     if case let .activeUser(user) = r { return user }
     throw r
@@ -1026,16 +1032,23 @@ func startChat(refreshInvitations: Bool = true) throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
-func changeActiveUser(_ userId: Int64, viewPwd: String?) async {
+func changeActiveUser(_ userId: Int64, viewPwd: String?) {
     do {
-        try await changeActiveUser_(userId, viewPwd: viewPwd)
+        try changeActiveUser_(userId, viewPwd: viewPwd)
     } catch let error {
         logger.error("Unable to set active user: \(responseError(error))")
     }
 }
 
-func changeActiveUser_(_ userId: Int64, viewPwd: String?) async throws {
-    let currentUser = try await apiSetActiveUser(userId, viewPwd: viewPwd)
+private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
+    let m = ChatModel.shared
+    m.currentUser = try apiSetActiveUser(userId, viewPwd: viewPwd)
+    m.users = try listUsers()
+    try getUserChatData()
+}
+
+func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
+    let currentUser = try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
     let users = try await listUsersAsync()
     await MainActor.run {
         let m = ChatModel.shared
@@ -1043,6 +1056,12 @@ func changeActiveUser_(_ userId: Int64, viewPwd: String?) async throws {
         m.users = users
     }
     try await getUserChatDataAsync()
+    await MainActor.run {
+        if var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
+            invitation.user = currentUser
+            activateCall(invitation)
+        }
+    }
 }
 
 func getUserChatData() throws {
@@ -1054,7 +1073,7 @@ func getUserChatData() throws {
     m.chats = chats.map { Chat.init($0) }
 }
 
-func getUserChatDataAsync() async throws {
+private func getUserChatDataAsync() async throws {
     let userAddress = try await apiGetUserAddressAsync()
     let servers = try await getUserSMPServersAsync()
     let chatItemTTL = try await getChatItemTTLAsync()
@@ -1136,18 +1155,18 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChat(contact.activeConn.id)
             }
         case let .receivedContactRequest(user, contactRequest):
-            if !active(user) { return }
-
-            let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
-            if m.hasChat(contactRequest.id) {
-                m.updateChatInfo(cInfo)
-            } else {
-                m.addChat(Chat(
-                    chatInfo: cInfo,
-                    chatItems: []
-                ))
-                NtfManager.shared.notifyContactRequest(user, contactRequest)
+            if active(user) {
+                let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
+                if m.hasChat(contactRequest.id) {
+                    m.updateChatInfo(cInfo)
+                } else {
+                    m.addChat(Chat(
+                        chatInfo: cInfo,
+                        chatItems: []
+                    ))
+                }
             }
+            NtfManager.shared.notifyContactRequest(user, contactRequest)
         case let .contactUpdated(user, toContact):
             if active(user) && m.hasChat(toContact.id) {
                 let cInfo = ChatInfo.direct(contact: toContact)
@@ -1390,7 +1409,7 @@ func refreshCallInvitations() throws {
        let invitation = m.callInvitations.removeValue(forKey: chatId) {
         m.ntfCallInvitationAction = nil
         CallController.shared.callAction(invitation: invitation, action: ntfAction)
-    } else if let invitation = callInvitations.last {
+    } else if let invitation = callInvitations.last(where: { $0.user.showNotifications }) {
         activateCall(invitation)
     }
 }
@@ -1403,6 +1422,7 @@ func justRefreshCallInvitations() throws -> [RcvCallInvitation] {
 }
 
 func activateCall(_ callInvitation: RcvCallInvitation) {
+    if !callInvitation.user.showNotifications { return }
     let m = ChatModel.shared
     CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
         if let error = error {

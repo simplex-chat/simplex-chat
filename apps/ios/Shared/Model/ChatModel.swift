@@ -67,20 +67,28 @@ final class ChatModel: ObservableObject {
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
+    func getUser(_ userId: Int64) -> User? {
+        currentUser?.userId == userId
+        ? currentUser
+        : users.first { $0.user.userId == userId }?.user
+    }
+
+    func getUserIndex(_ user: User) -> Int? {
+        users.firstIndex { $0.user.userId == user.userId }
+    }
+
     func updateUser(_ user: User) {
-        if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
+        if let i = getUserIndex(user) {
             users[i].user = user
         }
-        if let u = currentUser, u.userId == user.userId {
+        if currentUser?.userId == user.userId {
             currentUser = user
         }
     }
 
     func removeUser(_ user: User) {
-        if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
-            if users[i].user.userId != currentUser?.userId {
-                users.remove(at: i)
-            }
+        if let i = getUserIndex(user), users[i].user.userId != currentUser?.userId {
+            users.remove(at: i)
         }
     }
 

@@ -22,12 +22,16 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
 
-    public var showNtfs: Bool? = true
+    public var showNtfs: Bool
     public var viewPwdHash: UserPwdHash?
 
     public var id: Int64 { userId }
 
     public var hidden: Bool { viewPwdHash != nil }
+
+    public var showNotifications: Bool {
+        activeUser || showNtfs
+    }
 
     public static let sampleData = User(
         userId: 1,

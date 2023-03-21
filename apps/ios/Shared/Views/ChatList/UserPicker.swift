@@ -101,7 +101,7 @@ struct UserPicker: View {
             } else {
                 Task {
                     do {
-                        try await changeActiveUser_(user.userId, viewPwd: nil)
+                        try await changeActiveUserAsync_(user.userId, viewPwd: nil)
                         await MainActor.run { userPickerVisible = false }
                     } catch {
                         await MainActor.run {

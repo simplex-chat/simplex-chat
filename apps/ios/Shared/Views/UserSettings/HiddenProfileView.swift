@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct HiddenProfileView: View {
     @State var user: User
+    @Binding var profileHidden: Bool
     @EnvironmentObject private var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var hidePassword = ""
@@ -35,7 +36,7 @@ struct HiddenProfileView: View {
                 PassphraseField(key: $hidePassword, placeholder: "Password to show", valid: true, showStrength: true)
                 PassphraseField(key: $confirmHidePassword, placeholder: "Confirm password", valid: confirmValid)
 
-                settingsRow("lock.rotation") {
+                settingsRow("lock") {
                     Button("Save profile password") {
                         Task {
                             do {
@@ -43,6 +44,9 @@ struct HiddenProfileView: View {
                                 await MainActor.run {
                                     m.updateUser(u)
                                     dismiss()
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        withAnimation { profileHidden = true }
+                                    }
                                 }
                             } catch let error {
                                 saveErrorAlert = true
@@ -75,6 +79,6 @@ struct HiddenProfileView: View {
 
 struct ProfilePrivacyView_Previews: PreviewProvider {
     static var previews: some View {
-        HiddenProfileView(user: User.sampleData)
+        HiddenProfileView(user: User.sampleData, profileHidden: Binding.constant(false))
     }
 }

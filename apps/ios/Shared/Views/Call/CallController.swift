@@ -214,8 +214,10 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
         logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID), privacy: .public)")
         if CallController.useCallKit(), let uuid = invitation.callkitUUID {
-            let update = cxCallUpdate(invitation: invitation)
-            provider.reportNewIncomingCall(with: uuid, update: update, completion: completion)
+            if invitation.callTs.timeIntervalSinceNow >= -180 {
+                let update = cxCallUpdate(invitation: invitation)
+                provider.reportNewIncomingCall(with: uuid, update: update, completion: completion)
+            }
         } else {
             NtfManager.shared.notifyCallInvitation(invitation)
             if invitation.callTs.timeIntervalSinceNow >= -180 {
