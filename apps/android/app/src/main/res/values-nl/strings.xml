@@ -977,4 +977,5 @@
     <string name="group_member_role_observer">waarnemer</string>
     <string name="observer_cant_send_message_title">Je kunt geen berichten versturen!</string>
     <string name="you_are_observer">jij bent waarnemer</string>
+    <string name="language_system">Systeem</string>
 </resources>
