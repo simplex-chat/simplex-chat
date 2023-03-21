@@ -25,7 +25,6 @@
 module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
-import Control.Monad (join)
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
