@@ -172,7 +172,7 @@
     <string name="connect_via_link_or_qr">Maak verbinding via link / QR-code</string>
     <string name="copied">Gekopieerd naar het klembord</string>
     <string name="contribute">Bijdragen</string>
-    <string name="configure_ICE_servers">ICE-servers configureren</string>
+    <string name="configure_ICE_servers">ICE servers configureren</string>
     <string name="network_session_mode_entity">Verbinding</string>
     <string name="core_build_timestamp">Core gebouwd op: %s</string>
     <string name="core_version">Core versie: v%s</string>
@@ -386,7 +386,7 @@
     <string name="file_not_found">Bestand niet gevonden</string>
     <string name="file_saved">Bestand opgeslagen</string>
     <string name="from_gallery_button">Galerij</string>
-    <string name="error_saving_ICE_servers">Fout bij opslaan van ICE-servers</string>
+    <string name="error_saving_ICE_servers">Fout bij opslaan van ICE servers</string>
     <string name="callstate_ended">geëindigd</string>
     <string name="group_members_can_send_disappearing">Groepsleden kunnen verdwijnende berichten sturen.</string>
     <string name="ttl_week">%d week</string>
@@ -398,7 +398,7 @@
     <string name="error_creating_address">Fout bij aanmaken van adres</string>
     <string name="icon_descr_help">help</string>
     <string name="icon_descr_flip_camera">Draai camera</string>
-    <string name="error_saving_smp_servers">Fout bij opslaan van SMP-servers</string>
+    <string name="error_saving_smp_servers">Fout bij opslaan van SMP servers</string>
     <string name="error_setting_network_config">Fout bij updaten van netwerk configuratie</string>
     <string name="failed_to_parse_chat_title">Kan het gesprek niet laden</string>
     <string name="failed_to_parse_chats_title">Kan de gesprekken niet laden</string>
@@ -521,8 +521,8 @@
     <string name="how_to">Hoe</string>
     <string name="how_to_use_your_servers">Hoe u uw servers gebruikt</string>
     <string name="network_and_servers">Netwerk &amp; servers</string>
-    <string name="enter_one_ICE_server_per_line">ICE-servers (één per lijn)</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Zorg ervoor dat WebRTC ICE-server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
+    <string name="enter_one_ICE_server_per_line">ICE servers (één per lijn)</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Zorg ervoor dat WebRTC ICE server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
     <string name="network_disable_socks_info">Als u bevestigt, kunnen de berichten servers uw IP-adres zien en uw provider, met welke servers u verbinding maakt.</string>
     <string name="network_use_onion_hosts_no">Nee</string>
     <string name="immune_to_spam_and_abuse">Immuun voor spam en misbruik</string>
@@ -543,7 +543,7 @@
     <string name="invalid_message_format">ongeldig berichtformaat</string>
     <string name="display_name_invited_to_connect">uitgenodigd om te verbinden</string>
     <string name="live">LIVE</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Zorg ervoor dat SMP-server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Zorg ervoor dat SMP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
     <string name="marked_deleted_description">gemarkeerd als verwijderd</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Controleer of u de juiste link heeft gebruikt of vraag uw contactpersoon om u een andere te sturen.</string>
     <string name="image_descr_profile_image">profielfoto</string>
@@ -629,7 +629,7 @@
     <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Uw contactpersoon kan de QR-code vanuit de app scannen.</string>
     <string name="share_invitation_link">Uitnodiging link delen</string>
     <string name="scan_code">Code scannen</string>
-    <string name="your_contact_address">Uw contactadres</string>
+    <string name="your_contact_address">Uw contact adres</string>
     <string name="your_settings">Uw instellingen</string>
     <string name="share_link">Deel link</string>
     <string name="you_control_your_chat">Jij beheert je gesprek!</string>
@@ -751,8 +751,8 @@
     <string name="icon_descr_video_call">video oproep</string>
     <string name="your_calls">Uw oproepen</string>
     <string name="show_call_on_lock_screen">Toon</string>
-    <string name="webrtc_ice_servers">WebRTC ICE-servers</string>
-    <string name="your_ice_servers">Uw ICE-servers</string>
+    <string name="webrtc_ice_servers">WebRTC ICE servers</string>
+    <string name="your_ice_servers">Uw ICE servers</string>
     <string name="alert_title_skipped_messages">Overgeslagen berichten</string>
     <string name="call_connection_via_relay">via relais</string>
     <string name="icon_descr_video_off">Video uit</string>
@@ -864,9 +864,9 @@
     <string name="smp_servers_use_server_for_new_conn">Gebruik voor nieuwe verbindingen</string>
     <string name="star_on_github">Star on GitHub</string>
     <string name="smp_servers_per_user">De servers voor nieuwe verbindingen van je huidige chat profiel</string>
-    <string name="your_SMP_servers">Uw SMP-servers</string>
-    <string name="saved_ICE_servers_will_be_removed">Opgeslagen WebRTC ICE-servers worden verwijderd.</string>
-    <string name="your_ICE_servers">Uw ICE-servers</string>
+    <string name="your_SMP_servers">Uw SMP servers</string>
+    <string name="saved_ICE_servers_will_be_removed">Opgeslagen WebRTC ICE servers worden verwijderd.</string>
+    <string name="your_ICE_servers">Uw ICE servers</string>
     <string name="save_servers_button">Opslaan</string>
     <string name="network_enable_socks">SOCKS-proxy gebruiken\?</string>
     <string name="network_use_onion_hosts">Gebruik .onion-hosts</string>
