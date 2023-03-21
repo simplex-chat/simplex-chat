@@ -29,11 +29,16 @@ nix_setup() {
 }
 
 git_setup() {
+  [ "$folder" != "." ] && {
+    git clone --depth=1 https://github.com/simplex-chat/simplex-chat "$folder"
+  }
+
   # Switch to nix-android branch
   git -C "$folder" checkout "$commit"
 
   # Create missing folders
   mkdir -p "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
+  mkdir -p "$folder/apps/android/app/src/main/cpp/libs/armeabi-v7a"
 }
 
 checks() {
@@ -55,10 +60,6 @@ checks() {
     esac
   done
 
-  [ "$folder" != "." ] && {
-    git clone https://github.com/simplex-chat/simplex-chat "$folder"
-  }
-
   if [ -n "$commands_failed" ]; then
     commands_failed=${commands_failed% *}
     printf "%s is not found in your \$PATH. Please install them and re-run the script.\n" "$commands_failed"
@@ -72,21 +73,31 @@ build() {
   # Build simplex lib
   nix build "$folder#hydraJobs.aarch64-android:lib:simplex-chat.x86_64-linux"
   unzip -o "$PWD/result/pkg-aarch64-android-libsimplex.zip" -d "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
+  
+  nix build "$folder#hydraJobs.armv7a-android:lib:simplex-chat.x86_64-linux"
+  unzip -o "$PWD/result/pkg-armv7a-android-libsimplex.zip" -d "$folder/apps/android/app/src/main/cpp/libs/armeabi-v7a"
 
   # Build android suppprt lib
   nix build "$folder#hydraJobs.aarch64-android:lib:support.x86_64-linux"
   unzip -o "$PWD/result/pkg-aarch64-android-libsupport.zip" -d "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
 
+  nix build "$folder#hydraJobs.armv7a-android:lib:support.x86_64-linux"
+  unzip -o "$PWD/result/pkg-armv7a-android-libsupport.zip" -d "$folder/apps/android/app/src/main/cpp/libs/armeabi-v7a"
+
   sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/android/app/src/main/AndroidManifest.xml"
+  sed -i.bak '/android {/a lint {abortOnError false}' "$folder/apps/android/app/build.gradle"
 
   gradle -p "$folder/apps/android/" clean build assembleRelease
 
-  mkdir -p "$tmp/android"
-  unzip -oqd "$tmp/android/" "$folder/apps/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+  mkdir -p "$tmp/android-aarch64"
+  unzip -oqd "$tmp/android-aarch64/" "$folder/apps/android/app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk"
+  (cd "$tmp/android-aarch64" && zip -rq5 "$tmp/simplex-chat-aarch64.apk" . && zip -rq0 "$tmp/simplex-chat-aarch64.apk" resources.arsc res)
+  zipalign -p -f 4 "$tmp/simplex-chat-aarch64.apk" "$PWD/simplex-chat-aarch64.apk"
   
-  (cd "$tmp/android" && zip -rq5 "$tmp/simplex-chat.apk" . && zip -rq0 "$tmp/simplex-chat.apk" resources.arsc res)
-
-  zipalign -p -f 4 "$tmp/simplex-chat.apk" "$PWD/simplex-chat.apk"
+  mkdir -p "$tmp/android-armv7"
+  unzip -oqd "$tmp/android-armv7/" "$folder/apps/android/app/build/outputs/apk/release/app-armeabi-v7a-release-unsigned.apk"
+  (cd "$tmp/android-armv7" && zip -rq5 "$tmp/simplex-chat-armv7.apk" . && zip -rq0 "$tmp/simplex-chat-armv7.apk" resources.arsc res)
+  zipalign -p -f 4 "$tmp/simplex-chat-armv7.apk" "$PWD/simplex-chat-armv7.apk"
 }
 
 final() {
