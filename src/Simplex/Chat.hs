@@ -358,10 +358,12 @@ processChatCommand = \case
   UnhideUser -> withUser $ \User {userId} -> processChatCommand $ APIUnhideUser userId Nothing
   MuteUser -> withUser $ \User {userId} -> processChatCommand $ APIMuteUser userId Nothing
   UnmuteUser -> withUser $ \User {userId} -> processChatCommand $ APIUnmuteUser userId Nothing
-  APIDeleteUser userId delSMPQueues -> do
-    user <- checkDeleteChatUser userId
-    withChatLock "deleteUser" . procCmd $ deleteChatUser user delSMPQueues
-  DeleteUser uName delSMPQueues -> withUserName uName (`APIDeleteUser` delSMPQueues)
+  APIDeleteUser userId' delSMPQueues viewPwd_ -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' viewPwd_
+    checkDeleteChatUser user'
+    withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
+  DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
   StartChat subConns enableExpireCIs -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
@@ -1639,15 +1641,13 @@ processChatCommand = \case
       asks currentUser >>= atomically . (`writeTVar` Just user)
       withStore' (`updateUserPrivacy` user)
       pure $ CRUserPrivacy user
-    checkDeleteChatUser :: UserId -> m User
-    checkDeleteChatUser userId = do
-      user <- withStore (`getUser` userId)
+    checkDeleteChatUser :: User -> m ()
+    checkDeleteChatUser user@User {userId} = do
       when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
       users <- withStore' getUsers
-      -- shouldn't happen - last user should be active
-      when (length users == 1) $ throwChatError (CECantDeleteLastUser userId)
+      unless (length users > 1 && (isJust (viewPwdHash user) || length (filter (isNothing . viewPwdHash) users) > 1)) $
+        throwChatError (CECantDeleteLastUser userId)
       setActive ActiveNone
-      pure user
     deleteChatUser :: User -> Bool -> m ChatResponse
     deleteChatUser user delSMPQueues = do
       filesInfo <- withStore' (`getUserFileInfo` user)
@@ -4067,8 +4067,8 @@ chatCommandP =
       "/unhide user" $> UnhideUser,
       "/mute user" $> MuteUser,
       "/unmute user" $> UnmuteUser,
-      "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP),
-      "/delete user " *> (DeleteUser <$> displayName <*> pure True),
+      "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
+      "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
       "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP),
       "/_start" $> StartChat True True,

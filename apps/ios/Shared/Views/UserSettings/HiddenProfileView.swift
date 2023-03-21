@@ -14,6 +14,8 @@ struct HiddenProfileView: View {
     @EnvironmentObject private var m: ChatModel
     @State private var hidePassword = ""
     @State private var confirmHidePassword = ""
+    @State private var saveErrorAlert = false
+    @State private var savePasswordError: String?
 
     var body: some View {
         List {
@@ -34,7 +36,15 @@ struct HiddenProfileView: View {
 
                 settingsRow("lock.rotation") {
                     Button("Save profile password") {
-
+                        Task {
+                            do {
+                                let u = try await apiUnhideUser(user.userId, viewPwd: hidePassword)
+                                await MainActor.run { m.updateUser(u) }
+                            } catch let error {
+                                saveErrorAlert = true
+                                savePasswordError = responseError(error)
+                            }
+                        }
                     }
                 }
                 .disabled(saveDisabled)
@@ -45,6 +55,12 @@ struct HiddenProfileView: View {
                     .font(.body)
                     .padding(.top, 8)
             }
+        }
+        .alert(isPresented: $saveErrorAlert) {
+            Alert(
+                title: Text("Error saving user password"),
+                message: Text(savePasswordError ?? "")
+            )
         }
     }
 

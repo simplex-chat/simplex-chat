@@ -1562,6 +1562,10 @@ testUserPrivacy =
       userVisible alice
       alice ##> "/hide user new_password"
       userHidden alice
+      alice ##> "/_delete user 1 del_smp=on"
+      alice <## "cannot delete last user"
+      alice ##> "/_hide user 1 \"password\""
+      alice <## "cannot hide last visible user"
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       -- change profile privacy for inactive user via API requires correct password
@@ -1582,6 +1586,13 @@ testUserPrivacy =
       showActiveUser alice "alisa"
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
+      alice ##> "/_delete user 2 del_smp=on"
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/_delete user 2 del_smp=on \"wrong_password\""
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/_delete user 2 del_smp=on \"another_password\""
+      alice <## "ok"
+      alice <## "completed deleting user"
   where
     userHidden alice = do
       alice <## "user messages are hidden (use /tail to view)"

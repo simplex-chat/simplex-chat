@@ -27,7 +27,7 @@ struct UserProfilesView: View {
         var id: String {
             switch self {
             case let .deleteUser(index, delSMPQueues): return "deleteUser \(index) \(delSMPQueues)"
-            case let .cantDeleteLastUser: return "cantDeleteLastUser"
+            case .cantDeleteLastUser: return "cantDeleteLastUser"
 //            case let .cantHideLastUser: return "cantHideLastUser"
             case let .activateUserError(err): return "activateUserError \(err)"
             case let .error(title, _): return "error \(title)"
@@ -128,6 +128,10 @@ struct UserProfilesView: View {
         m.users.filter({ u in !u.user.hidden }).count
     }
 
+    private func userViewPassword(_ user: User) -> String {
+        user.activeUser || !user.hidden ? "" : searchTextOrPassword
+    }
+
     private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
         Button(title, role: .destructive) {
             if let i = userToDelete {
@@ -191,7 +195,7 @@ struct UserProfilesView: View {
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if user.hidden {
                 Button("Unhide") {
-                    // api request to unhide
+                    setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: userViewPassword(user)) }
                 }
                 .tint(.green)
             } else {
@@ -203,22 +207,29 @@ struct UserProfilesView: View {
                 Group {
                     if user.showNtfs == true {
                         Button("Mute") {
-                            // api request to mute
+                            setUserPrivacy(user) { try await apiMuteUser(user.userId, viewPwd: userViewPassword(user)) }
                         }
                     } else {
                         Button("Unmute") {
-                            // api request to unmute
+                            setUserPrivacy(user) { try await apiUnmuteUser(user.userId, viewPwd: userViewPassword(user)) }
                         }
                     }
                 }
                 .tint(.accentColor)
             }
         }
-//        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-//            if m.users.count > 1 && (user.hidden || m.users.filter({ u in !u.user.hidden }).count > 1) {
-//
-//            }
-//        }
+    }
+
+    private func setUserPrivacy(_ user: User, _ api: @escaping () async throws -> User) {
+        Task {
+            do {
+                let u = try await api()
+                await MainActor.run { m.updateUser(u) }
+            } catch let error {
+                let a = getErrorAlert(error, "Error updating user privacy")
+                alert = .error(title: a.title, error: a.message)
+            }
+        }
     }
 }
 

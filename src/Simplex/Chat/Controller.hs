@@ -192,8 +192,8 @@ data ChatCommand
   | UnhideUser
   | MuteUser
   | UnmuteUser
-  | APIDeleteUser UserId Bool
-  | DeleteUser UserName Bool
+  | APIDeleteUser UserId Bool (Maybe UserPwd)
+  | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
   | APIActivateChat

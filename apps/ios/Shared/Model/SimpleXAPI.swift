@@ -145,30 +145,30 @@ func apiSetActiveUser(_ userId: Int64, viewPwd: String? = nil) throws -> User {
     throw r
 }
 
-func apiHideUser(_ userId: Int64, viewPwd: String) throws -> User {
-    try setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
+func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
+    try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }
 
-func apiUnhideUser(_ userId: Int64, viewPwd: String?) throws -> User {
-    try setUserPrivacy_(.apiUnhideUser(userId: userId, viewPwd: viewPwd))
+func apiUnhideUser(_ userId: Int64, viewPwd: String?) async throws -> User {
+    try await setUserPrivacy_(.apiUnhideUser(userId: userId, viewPwd: viewPwd))
 }
 
-func apiMuteUser(_ userId: Int64, viewPwd: String?) throws -> User {
-    try setUserPrivacy_(.apiMuteUser(userId: userId, viewPwd: viewPwd))
+func apiMuteUser(_ userId: Int64, viewPwd: String?) async throws -> User {
+    try await setUserPrivacy_(.apiMuteUser(userId: userId, viewPwd: viewPwd))
 }
 
-func apiUnmuteUser(_ userId: Int64, viewPwd: String?) throws -> User {
-    try setUserPrivacy_(.apiUnmuteUser(userId: userId, viewPwd: viewPwd))
+func apiUnmuteUser(_ userId: Int64, viewPwd: String?) async throws -> User {
+    try await setUserPrivacy_(.apiUnmuteUser(userId: userId, viewPwd: viewPwd))
 }
 
-func setUserPrivacy_(_ cmd: ChatCommand) throws -> User {
-    let r = chatSendCmdSync(cmd)
+func setUserPrivacy_(_ cmd: ChatCommand) async throws -> User {
+    let r = await chatSendCmd(cmd)
     if case let .userPrivacy(user) = r { return user }
     throw r
 }
 
-func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool) throws {
-    let r = chatSendCmdSync(.apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues))
+func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String? = nil) throws {
+    let r = chatSendCmdSync(.apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: viewPwd))
     if case .cmdOk = r { return }
     throw r
 }

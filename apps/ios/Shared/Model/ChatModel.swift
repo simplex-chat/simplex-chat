@@ -113,6 +113,15 @@ final class ChatModel: ObservableObject {
         updateChat(.group(groupInfo: groupInfo))
     }
 
+    func updateUser(_ user: User) {
+        if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
+            users[i].user = user
+        }
+        if let u = currentUser, u.userId == user.userId {
+            currentUser = user
+        }
+    }
+
     private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
