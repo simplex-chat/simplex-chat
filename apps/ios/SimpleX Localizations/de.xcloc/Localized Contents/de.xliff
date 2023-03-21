@@ -530,8 +530,9 @@
         <target>Authentifizierung fehlgeschlagen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
+      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
         <source>Authentication is required before the call is connected, but you may miss calls.</source>
+        <target state="translated">Bevor der Anruf verbunden wird, ist eine Authentifizierung erforderlich, aber Sie könnten Anrufe verpassen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
@@ -1914,8 +1915,9 @@
         <target>Sofort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Interface" xml:space="preserve">
+      <trans-unit id="Interface" xml:space="preserve" approved="no">
         <source>Interface</source>
+        <target state="translated">Schnittstelle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
