@@ -306,7 +306,7 @@
     <string name="clear_chat_menu_action">Limpiar</string>
     <string name="app_version_code">Build de la aplicación</string>
     <string name="call_already_ended">¡La llamada ha terminado!</string>
-    <string name="rcv_conn_event_switch_queue_phase_completed">su dirección ha cambiado</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">su dirección ha cambiado para tí</string>
     <string name="icon_descr_cancel_link_preview">cancelar vista previa del enlace</string>
     <string name="call_on_lock_screen">Llamadas en la ventana de bloqueo</string>
     <string name="alert_title_cant_invite_contacts">¡No se puede invitar a los contactos!</string>
@@ -680,7 +680,7 @@
     <string name="store_passphrase_securely_without_recover">Guarda la contraseña de forma segura, NO podrás acceder al chat si la pierdes.</string>
     <string name="save_archive">Guardar archivo</string>
     <string name="restore_database_alert_desc">Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</string>
-    <string name="rcv_group_event_user_deleted">has sido eliminado</string>
+    <string name="rcv_group_event_user_deleted">te ha eliminado</string>
     <string name="receiving_via">Recibiendo mediante</string>
     <string name="network_option_protocol_timeout">Tiempo de espera del protocolo</string>
     <string name="network_option_seconds_label">seg</string>
@@ -698,7 +698,7 @@
     <string name="v4_2_security_assessment">Evaluación de la seguridad</string>
     <string name="receiving_files_not_yet_supported">la recepción de archivos aún no está disponible</string>
     <string name="sending_files_not_yet_supported">el envío de archivos aún no está disponible</string>
-    <string name="call_connection_peer_to_peer">extremo a extremo</string>
+    <string name="call_connection_peer_to_peer">entre particulares</string>
     <string name="icon_descr_call_rejected">Llamada rechazada</string>
     <string name="remove_passphrase">Eliminar</string>
     <string name="remove_passphrase_from_keychain">¿Eliminar contraseña de Keystore\?</string>
@@ -721,7 +721,7 @@
     <string name="save_and_notify_group_members">Guardar y notificar a los miembros del grupo</string>
     <string name="connection_error_auth_desc">A menos que tu contacto haya eliminado la conexión o que este enlace ya se haya utilizado, podría tratarse de un error. Por favor, notifícalo.
 \nPara conectarte, pide a tu contacto que cree otro enlace de conexión y comprueba que tienes buena conexión de red.</string>
-    <string name="periodic_notifications_desc">La aplicación recoge nuevos mensajes periódicamente por lo que utiliza un pequeño porcentaje de la batería al día. La aplicación no hace uso de notificaciones \"push\": los datos de tu dispositivo no se envían a los servidores.</string>
+    <string name="periodic_notifications_desc">La aplicación recoge nuevos mensajes periódicamente por lo que utiliza un pequeño porcentaje de la batería al día. La aplicación no hace uso de notificaciones automáticas: los datos de tu dispositivo no se envían a los servidores.</string>
     <string name="la_notice_title_simplex_lock">Bloqueo SimpleX</string>
     <string name="auth_unlock">Desbloquear</string>
     <string name="this_text_is_available_in_settings">Este texto está disponible en Configuración</string>
@@ -767,7 +767,7 @@
     <string name="enable_automatic_deletion_message">Esta acción no se puede deshacer. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Puede tardar varios minutos.</string>
     <string name="messages_section_description">Esta configuración se aplica a los mensajes en su perfil actual de Chat</string>
     <string name="this_string_is_not_a_connection_link">¡Esta cadena no es un enlace de conexión!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Para preservar tu privacidad, en lugar de notificaciones \"push\" la aplicación cuenta con un <b>servicio en segundo plano<xliff:g id="appName">SimpleX</xliff:g></b>, utiliza un pequeño porcentaje de la batería al día.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Para preservar tu privacidad, en lugar de notificaciones automáticas la aplicación cuenta con un <b>servicio en segundo plano<xliff:g id="appName">SimpleX</xliff:g></b>, utiliza un pequeño porcentaje de la batería al día.</string>
     <string name="icon_descr_settings">Configuración</string>
     <string name="icon_descr_speaker_off">Altavoz apagado</string>
     <string name="add_contact_or_create_group">Inciar chat nuevo</string>
@@ -880,7 +880,7 @@
     <string name="you_rejected_group_invitation">Has rechazado la invitación del grupo.</string>
     <string name="snd_group_event_changed_member_role">has cambiado el rol de %s a %s</string>
     <string name="call_connection_via_relay">mediante servidor de retransmisión</string>
-    <string name="contact_wants_to_connect_with_you">¡quiere conectar contigo!</string>
+    <string name="contact_wants_to_connect_with_you">¡quiere contactar contigo!</string>
     <string name="voice_message">Mensaje de voz</string>
     <string name="waiting_for_image">Esperando imagen</string>
     <string name="webrtc_ice_servers">Servidores WebRTC ICE</string>
