@@ -11,7 +11,7 @@
     <string name="icon_descr_cancel_image_preview">Annuleer afbeeldingsvoorbeeld</string>
     <string name="feature_cancelled_item">geannuleerd %s</string>
     <string name="icon_descr_cancel_live_message">Live bericht annuleren</string>
-    <string name="snd_conn_event_switch_queue_phase_changing">veranderend adres…</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">adres wijzigen…</string>
     <string name="notifications_mode_service">Altijd aan</string>
     <string name="icon_descr_asked_to_receive">Gevraagd om de afbeelding te ontvangen</string>
     <string name="change_verb">Wijziging</string>
@@ -116,7 +116,7 @@
     <string name="cannot_access_keychain">Geen toegang tot Keystore om database wachtwoord op te slaan</string>
     <string name="cannot_receive_file">Kan bestand niet ontvangen</string>
     <string name="change_role">Rol wijzigen</string>
-    <string name="rcv_conn_event_switch_queue_phase_changing">veranderend adres…</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">adres wijzigen…</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">adres voor u gewijzigd</string>
     <string name="rcv_group_event_changed_member_role">veranderde rol van %s naar %s</string>
     <string name="change_member_role_question">Groep rol wijzigen\?</string>
@@ -130,7 +130,7 @@
     <string name="network_session_mode_user">Chat profiel</string>
     <string name="settings_section_title_chats">GESPREKKEN</string>
     <string name="chat_with_developers">Praat met de ontwikkelaars</string>
-    <string name="smp_servers_check_address">Controleer het serveradres en probeer het opnieuw.</string>
+    <string name="smp_servers_check_address">Controleer het server adres en probeer het opnieuw.</string>
     <string name="choose_file">Bestand</string>
     <string name="clear_verb">Wissen</string>
     <string name="v4_4_verify_connection_security_desc">Vergelijk beveiligingscodes met je contacten.</string>
@@ -516,7 +516,7 @@
     <string name="settings_notifications_mode_title">Meldingsservice</string>
     <string name="notifications">Meldingen</string>
     <string name="invalid_contact_link">Ongeldige link!</string>
-    <string name="smp_servers_invalid_address">Ongeldig serveradres!</string>
+    <string name="smp_servers_invalid_address">Ongeldig server adres!</string>
     <string name="install_simplex_chat_for_terminal">Installeer <xliff:g id="appNameFull">SimpleX Chat</xliff:g> voor terminal</string>
     <string name="how_to">Hoe</string>
     <string name="how_to_use_your_servers">Hoe u uw servers gebruikt</string>
@@ -535,7 +535,7 @@
     <string name="rcv_group_event_invited_via_your_group_link">uitgenodigd via je groep link</string>
     <string name="incognito">Incognito</string>
     <string name="icon_descr_call_missed">Gemiste oproep</string>
-    <string name="description_via_contact_address_link_incognito">incognito via link naar contactadres</string>
+    <string name="description_via_contact_address_link_incognito">incognito via contact adres link</string>
     <string name="description_via_group_link_incognito">incognito via groep link</string>
     <string name="description_via_one_time_link_incognito">incognito via eenmalige link</string>
     <string name="invalid_chat">ongeldige gesprek</string>
@@ -550,14 +550,14 @@
     <string name="privacy_redefined">Privacy opnieuw gedefinieerd</string>
     <string name="privacy_and_security">Privacy en beveiliging</string>
     <string name="network_error_desc">Controleer uw netwerkverbinding met <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> en probeer het opnieuw.</string>
-    <string name="error_smp_test_certificate">Mogelijk is de certificaatvingerafdruk in het serveradres onjuist</string>
+    <string name="error_smp_test_certificate">Mogelijk is de certificaat vingerafdruk in het server adres onjuist</string>
     <string name="periodic_notifications">Periodieke meldingen</string>
     <string name="auth_open_chat_console">Chat console openen</string>
     <string name="toast_permission_denied">Geen toestemming!</string>
     <string name="icon_descr_profile_image_placeholder">profielafbeelding tijdelijke aanduiding</string>
     <string name="one_time_link">Eenmalige uitnodiging link</string>
     <string name="paste_button">Plakken</string>
-    <string name="smp_servers_preset_address">Vooraf ingesteld serveradres</string>
+    <string name="smp_servers_preset_address">Vooraf ingesteld server adres</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts worden niet gebruikt.</string>
     <string name="onboarding_notifications_mode_title">Privé meldingen</string>
     <string name="paste_the_link_you_received">Plak de ontvangen link</string>
@@ -710,7 +710,7 @@
     <string name="you_can_also_connect_by_clicking_the_link">U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop <b> Openen in mobiele app </b>.</string>
     <string name="your_profile_will_be_sent">Uw chat profiel wordt naar uw contactpersoon verzonden</string>
     <string name="your_chat_profiles">Uw chat profielen</string>
-    <string name="your_simplex_contact_address">Uw <xliff:g id="appName">SimpleX</xliff:g> contactadres</string>
+    <string name="your_simplex_contact_address">Uw <xliff:g id="appName">SimpleX</xliff:g> contact adres</string>
     <string name="chat_with_the_founder">Stuur vragen en ideeën</string>
     <string name="send_us_an_email">Stuur ons een e-mail</string>
     <string name="chat_lock">SimpleX Vergrendelen</string>
@@ -723,7 +723,7 @@
     <string name="rate_the_app">Beoordeel de app</string>
     <string name="smp_servers_use_server">Gebruik server</string>
     <string name="using_simplex_chat_servers">Gebruik van <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
-    <string name="smp_servers_your_server_address">Uw serveradres</string>
+    <string name="smp_servers_your_server_address">Uw server adres</string>
     <string name="smp_servers_your_server">Uw server</string>
     <string name="network_session_mode_transport_isolation">Transport isolation</string>
     <string name="network_socks_toggle">SOCKS-proxy gebruiken (poort 9050)</string>
@@ -946,7 +946,7 @@
     <string name="sender_cancelled_file_transfer">Afzender heeft bestandsoverdracht geannuleerd.</string>
     <string name="receiving_files_not_yet_supported">het ontvangen van bestanden wordt nog niet ondersteund</string>
     <string name="sending_files_not_yet_supported">het verzenden van bestanden wordt nog niet ondersteund</string>
-    <string name="simplex_link_contact">SimpleX contactadres</string>
+    <string name="simplex_link_contact">SimpleX contact adres</string>
     <string name="simplex_link_group">SimpleX groep link</string>
     <string name="simplex_link_mode">SimpleX links</string>
     <string name="simplex_link_invitation">Eenmalige SimpleX uitnodiging</string>
@@ -954,7 +954,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
     <string name="unknown_message_format">onbekend berichtformaat</string>
     <string name="simplex_link_mode_browser">Via browser</string>
-    <string name="description_via_contact_address_link">via contactadres link</string>
+    <string name="description_via_contact_address_link">via contact adres link</string>
     <string name="description_via_group_link">via groep link</string>
     <string name="description_via_one_time_link">via een eenmalige link</string>
     <string name="simplex_link_connection">via <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
