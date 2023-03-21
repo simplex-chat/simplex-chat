@@ -16,9 +16,11 @@ public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
     case listUsers
-    case apiSetActiveUser(userId: Int64, viewPwd: String)
-    case apiSetUserPrivacy(userId: Int64, viewPwd: String, privacyCfg: UserPrivacyCfg?)
-    case apiWipeUser(userId: Int64, wipePwd: String)
+    case apiSetActiveUser(userId: Int64, viewPwd: String?)
+    case apiHideUser(userId: Int64, viewPwd: String)
+    case apiUnhideUser(userId: Int64, viewPwd: String?)
+    case apiMuteUser(userId: Int64, viewPwd: String?)
+    case apiUnmuteUser(userId: Int64, viewPwd: String?)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool)
     case startChat(subscribe: Bool, expire: Bool)
     case apiStopChat
@@ -105,9 +107,11 @@ public enum ChatCommand {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/create user \(profile.displayName) \(profile.fullName)"
             case .listUsers: return "/users"
-            case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(viewPwd == "" ? "" : " " + encodeJSON(viewPwd))"
-            case let .apiSetUserPrivacy(userId, viewPwd, privacyCfg): return "/_privacy \(userId) \(encodeJSON(viewPwd)) \(encodeJSON(privacyCfg))"
-            case let .apiWipeUser(userId, wipePwd): return "/_wipe user \(userId) \(encodeJSON(wipePwd))"
+            case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
+            case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(viewPwd)"
+            case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId)\(maybePwd(viewPwd))"
+            case let .apiMuteUser(userId, viewPwd): return "/_mute user \(userId)\(maybePwd(viewPwd))"
+            case let .apiUnmuteUser(userId, viewPwd): return "/_unmute user \(userId)\(maybePwd(viewPwd))"
             case let .apiDeleteUser(userId, delSMPQueues): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))"
             case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
@@ -206,8 +210,10 @@ public enum ChatCommand {
             case .createActiveUser: return "createActiveUser"
             case .listUsers: return "listUsers"
             case .apiSetActiveUser: return "apiSetActiveUser"
-            case .apiSetUserPrivacy: return "apiSetUserPrivacy"
-            case .apiWipeUser: return "apiWipeUser"
+            case .apiHideUser: return "apiHideUser"
+            case .apiUnhideUser: return "apiUnhideUser"
+            case .apiMuteUser: return "apiMuteUser"
+            case .apiUnmuteUser: return "apiUnmuteUser"
             case .apiDeleteUser: return "apiDeleteUser"
             case .startChat: return "startChat"
             case .apiStopChat: return "apiStopChat"
@@ -310,6 +316,16 @@ public enum ChatCommand {
         switch self {
         case let .apiStorageEncryption(cfg):
             return .apiStorageEncryption(config: DBEncryptionConfig(currentKey: obfuscate(cfg.currentKey), newKey: obfuscate(cfg.newKey)))
+        case let .apiSetActiveUser(userId, viewPwd):
+            return .apiSetActiveUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiHideUser(userId, viewPwd):
+            return .apiHideUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiUnhideUser(userId, viewPwd):
+            return .apiUnhideUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiMuteUser(userId, viewPwd):
+            return .apiMuteUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiUnmuteUser(userId, viewPwd):
+            return .apiUnmuteUser(userId: userId, viewPwd: obfuscate(viewPwd))
         default: return self
         }
     }
@@ -318,8 +334,20 @@ public enum ChatCommand {
         s == "" ? "" : "***"
     }
 
+    private func obfuscate(_ s: String?) -> String? {
+        if let s = s {
+            return obfuscate(s)
+        } else {
+            return nil
+        }
+    }
+
     private func onOff(_ b: Bool) -> String {
         b ? "on" : "off"
+    }
+
+    private func maybePwd(_ pwd: String?) -> String {
+        pwd == "" ? "" : " " + encodeJSON(pwd)
     }
 }
 

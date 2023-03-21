@@ -709,6 +709,7 @@ data ChatErrorType
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
   | CECantHideLastUser {userId :: UserId}
+  | CECantUnmuteHiddenUser {userId :: UserId}
   | CEEmptyUserPassword {userId :: UserId}
   | CEUserAlreadyHidden {userId :: UserId}
   | CEUserNotHidden {userId :: UserId}

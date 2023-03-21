@@ -1233,6 +1233,7 @@ viewChatError logLevel = \case
     CECantDeleteActiveUser _ -> ["cannot delete active user"]
     CECantDeleteLastUser _ -> ["cannot delete last user"]
     CECantHideLastUser _ -> ["cannot hide last visible user"]
+    CECantUnmuteHiddenUser _ -> ["cannot unmute hidden user"]
     CEEmptyUserPassword _ -> ["cannot set empty password"]
     CEUserAlreadyHidden _ -> ["user is already hidden"]
     CEUserNotHidden _ -> ["user is not hidden"]

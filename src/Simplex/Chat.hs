@@ -309,19 +309,20 @@ processChatCommand = \case
           DefaultAgentServers {smp} <- asks $ defaultServers . config
           pure (smp, [])
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
-  APISetActiveUser userId' viewPwd_ -> withUser $ \User {userId} -> do
-    user <- validateUserPassword userId userId' viewPwd_
+  APISetActiveUser userId' viewPwd_ -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' viewPwd_
     withStore' $ \db -> setActiveUser db userId'
     setActive ActiveNone
-    let user' = user {activeUser = True}
-    asks currentUser >>= atomically . (`writeTVar` Just user')
-    pure $ CRActiveUser user'
+    let user'' = user' {activeUser = True}
+    asks currentUser >>= atomically . (`writeTVar` Just user'')
+    pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
     tryError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \_ -> do
-    user' <- withStore (`getUser` userId')
+    user' <- privateGetUser userId'
     case viewPwdHash user' of
       Just _ -> throwChatError $ CEUserAlreadyHidden userId'
       _ -> do
@@ -329,25 +330,30 @@ processChatCommand = \case
         users <- withStore' getUsers
         unless (length (filter (isNothing . viewPwdHash) users) > 1) $ throwChatError $ CECantHideLastUser userId'
         viewPwdHash' <- hashPassword
-        setUserPrivacy user' {viewPwdHash = viewPwdHash'}
+        setUserPrivacy user' {viewPwdHash = viewPwdHash', showNtfs = False}
         where
           hashPassword = do
             salt <- drgRandomBytes 16
             let hash = B64UrlByteString $ C.sha512Hash $ encodeUtf8 viewPwd <> salt
             pure $ Just UserPwdHash {hash, salt = B64UrlByteString salt}
-  APIUnhideUser userId' viewPwd_ -> withUser $ \User {userId} -> do
-    user' <- withStore (`getUser` userId')
+  APIUnhideUser userId' viewPwd_ -> withUser $ \user -> do
+    user' <- privateGetUser userId'
     case viewPwdHash user' of
       Nothing -> throwChatError $ CEUserNotHidden userId'
       _ -> do
-        user <- validateUserPassword userId userId' viewPwd_
-        setUserPrivacy user {viewPwdHash = Nothing}
-  APIMuteUser userId' viewPwd_ -> withUser $ \User {userId} -> do
-    user <- validateUserPassword userId userId' viewPwd_
-    setUserPrivacy user {showNtfs = False}
-  APIUnmuteUser userId' viewPwd_ -> withUser $ \User {userId} -> do
-    user <- validateUserPassword userId userId' viewPwd_
-    setUserPrivacy user {showNtfs = True}
+        validateUserPassword user user' viewPwd_
+        setUserPrivacy user' {viewPwdHash = Nothing, showNtfs = True}
+  APIMuteUser userId' viewPwd_ -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' viewPwd_
+    setUserPrivacy user' {showNtfs = False}
+  APIUnmuteUser userId' viewPwd_ -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    case viewPwdHash user' of
+      Just _ -> throwChatError $ CECantUnmuteHiddenUser userId'
+      _ -> do
+        validateUserPassword user user' viewPwd_
+        setUserPrivacy user' {showNtfs = True}
   HideUser viewPwd -> withUser $ \User {userId} -> processChatCommand $ APIHideUser userId viewPwd
   UnhideUser -> withUser $ \User {userId} -> processChatCommand $ APIUnhideUser userId Nothing
   MuteUser -> withUser $ \User {userId} -> processChatCommand $ APIMuteUser userId Nothing
@@ -1613,17 +1619,18 @@ processChatCommand = \case
           else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
     drgRandomBytes :: Int -> m ByteString
     drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
-    validateUserPassword :: UserId -> UserId -> Maybe UserPwd -> m User
-    validateUserPassword userId userId' viewPwd_ = do
-      tryError (withStore (`getUser` userId')) >>= \case
+    privateGetUser :: UserId -> m User
+    privateGetUser userId =
+      tryError (withStore (`getUser` userId)) >>= \case
         Left _ -> throwChatError CEUserUnknown
-        Right user'@User {viewPwdHash} -> do
-          forM_ viewPwdHash $ \pwdHash ->
-            let pwdOk = case viewPwd_ of
-                          Nothing -> userId == userId'
-                          Just (UserPwd viewPwd) -> validPassword viewPwd pwdHash
-             in unless pwdOk $ throwChatError CEUserUnknown
-          pure user'
+        Right user -> pure user
+    validateUserPassword :: User -> User -> Maybe UserPwd -> m ()
+    validateUserPassword User {userId} User {userId = userId', viewPwdHash} viewPwd_ =
+      forM_ viewPwdHash $ \pwdHash ->
+        let pwdOk = case viewPwd_ of
+              Nothing -> userId == userId'
+              Just (UserPwd viewPwd) -> validPassword viewPwd pwdHash
+         in unless pwdOk $ throwChatError CEUserUnknown
     validPassword :: Text -> UserPwdHash -> Bool
     validPassword pwd UserPwdHash {hash = B64UrlByteString hash, salt = B64UrlByteString salt} =
       hash == C.sha512Hash (encodeUtf8 pwd <> salt)
@@ -4041,8 +4048,8 @@ withStoreCtx ctx_ action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/mute " *> ((`ShowMessages` False) <$> chatNameP'),
-      "/unmute " *> ((`ShowMessages` True) <$> chatNameP'),
+    [ "/mute " *> ((`ShowMessages` False) <$> chatNameP),
+      "/unmute " *> ((`ShowMessages` True) <$> chatNameP),
       "/create user"
         *> ( do
                sameSmp <- (A.space *> "same_smp=" *> onOffP) <|> pure False
@@ -4053,9 +4060,9 @@ chatCommandP =
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
-      "/_unhide user" *> (APIUnhideUser <$> A.decimal <*> optional (A.space *> jsonP)),
-      "/_mute user" *> (APIMuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
-      "/_unmute user" *> (APIUnmuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_unhide user " *> (APIUnhideUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_mute user " *> (APIMuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_unmute user " *> (APIUnmuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
       "/hide user " *> (HideUser <$> pwdP),
       "/unhide user" $> UnhideUser,
       "/mute user" $> MuteUser,

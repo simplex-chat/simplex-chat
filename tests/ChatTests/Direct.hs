@@ -62,7 +62,7 @@ chatDirectTests = do
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
-    xit "user profile privacy: hide profiles and notificaitons" testUserPrivacy
+    it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -788,13 +788,13 @@ testMuteContact =
       connectUsers alice bob
       alice #> "@bob hello"
       bob <# "alice> hello"
-      bob ##> "/mute alice"
+      bob ##> "/mute @alice"
       bob <## "ok"
       alice #> "@bob hi"
       (bob </)
       bob ##> "/contacts"
       bob <## "alice (Alice) (muted, you can /unmute @alice)"
-      bob ##> "/unmute alice"
+      bob ##> "/unmute @alice"
       bob <## "ok"
       bob ##> "/contacts"
       bob <## "alice (Alice)"
@@ -1516,9 +1516,9 @@ testUserPrivacy =
       bob <# "alisa> hello"
       bob #> "@alisa hey"
       alice <# "bob> hey"
-      -- set profile privacy
-      alice ##> "/hide my_password"
-      privacy alice
+      -- hide user profile
+      alice ##> "/hide user my_password"
+      userHidden alice
       -- shows messages when active
       bob #> "@alisa hello again"
       alice <# "bob> hello again"
@@ -1553,29 +1553,42 @@ testUserPrivacy =
                "bob> hello again",
                "bob> this won't show"
              ]
-      -- change profile privacy
-      alice ##> "/privacy ntf=off view=new_password"
-      privacy alice
+      -- change profile password
+      alice ##> "/unmute user"
+      alice <## "cannot unmute hidden user"
+      alice ##> "/hide user password"
+      alice <## "user is already hidden"
+      alice ##> "/unhide user"
+      userVisible alice
+      alice ##> "/hide user new_password"
+      userHidden alice
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       -- change profile privacy for inactive user via API requires correct password
-      alice ##> "/_privacy 2 {\"currViewPwd\": \"\", \"showNtfs\": false, \"viewPwd\": \"\", \"wipePwd\": \"wipe_it\"}"
+      alice ##> "/_unmute user 2"
+      alice <## "cannot unmute hidden user"
+      alice ##> "/_hide user 2 \"password\""
+      alice <## "user is already hidden"
+      alice ##> "/_unhide user 2"
       alice <## "user does not exist or incorrect password"
-      alice ##> "/_privacy 2 {\"currViewPwd\": \"wrong_password\", \"showNtfs\": false, \"viewPwd\": \"wrong_password\", \"wipePwd\": \"wipe_it\"}"
+      alice ##> "/_unhide user 2 \"wrong_password\""
       alice <## "user does not exist or incorrect password"
-      alice ##> "/_privacy 2 {\"currViewPwd\": \"new_password\", \"showNtfs\": false, \"viewPwd\": \"new_password\", \"wipePwd\": \"wipe_it\"}"
-      alice <## "user messages are hidden (use /tail to view)"
-      alice <## "user profile is hidden"
-      alice <## "profile wipe password is enabled"
+      alice ##> "/_unhide user 2 \"new_password\""
+      userVisible alice
+      alice ##> "/_hide user 2 \"another_password\""
+      userHidden alice
       -- check new password
-      alice ##> "/user alisa new_password"
+      alice ##> "/user alisa another_password"
       showActiveUser alice "alisa"
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
   where
-    privacy alice = do
+    userHidden alice = do
       alice <## "user messages are hidden (use /tail to view)"
       alice <## "user profile is hidden"
+    userVisible alice = do
+      alice <## "user messages are shown"
+      alice <## "user profile is visible"
 
 testSetChatItemTTL :: HasCallStack => FilePath -> IO ()
 testSetChatItemTTL =

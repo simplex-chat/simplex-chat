@@ -19,12 +19,16 @@ struct UserProfilesView: View {
 
     private enum UserProfilesAlert: Identifiable {
         case deleteUser(index: Int, delSMPQueues: Bool)
+        case cantDeleteLastUser
+//        case cantHideLastUser
         case activateUserError(error: String)
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
             case let .deleteUser(index, delSMPQueues): return "deleteUser \(index) \(delSMPQueues)"
+            case let .cantDeleteLastUser: return "cantDeleteLastUser"
+//            case let .cantHideLastUser: return "cantHideLastUser"
             case let .activateUserError(err): return "activateUserError \(err)"
             case let .error(title, _): return "error \(title)"
             }
@@ -50,8 +54,12 @@ struct UserProfilesView: View {
                 }
                 .onDelete { indexSet in
                     if let i = indexSet.first {
-                        showDeleteConfirmation = true
-                        userToDelete = i
+                        if m.users.count > 1 && (m.users[i].user.hidden || visibleUsersCount > 1) {
+                            showDeleteConfirmation = true
+                            userToDelete = i
+                        } else {
+                            alert = .cantDeleteLastUser
+                        }
                     }
                 }
 
@@ -84,6 +92,13 @@ struct UserProfilesView: View {
                     },
                     secondaryButton: .cancel()
                 )
+            case .cantDeleteLastUser:
+                return Alert(
+                    title: Text("Can't delete user profile!"),
+                    message: m.users.count > 1
+                            ? Text("There should be at least one visible user profile.")
+                            : Text("There should be at least use user profile.")
+                )
             case let .activateUserError(error: err):
                 return Alert(
                     title: Text("Error switching profile!"),
@@ -107,6 +122,10 @@ struct UserProfilesView: View {
             }
             return s == "" || u.user.chatViewName.localizedLowercase.contains(lower)
         }
+    }
+
+    private var visibleUsersCount: Int {
+        m.users.filter({ u in !u.user.hidden }).count
     }
 
     private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
@@ -176,21 +195,30 @@ struct UserProfilesView: View {
                 }
                 .tint(.green)
             } else {
-                Button("Hide") {
-                    selectedUser = user
-                }
-            }
-            Group {
-                if user.showNtfs == true {
-                    Button("Mute") {
-                    }
-                } else {
-                    Button("Unmute") {
+                if visibleUsersCount > 1 {
+                    Button("Hide") {
+                        selectedUser = user
                     }
                 }
+                Group {
+                    if user.showNtfs == true {
+                        Button("Mute") {
+                            // api request to mute
+                        }
+                    } else {
+                        Button("Unmute") {
+                            // api request to unmute
+                        }
+                    }
+                }
+                .tint(.accentColor)
             }
-            .tint(.accentColor)
         }
+//        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+//            if m.users.count > 1 && (user.hidden || m.users.filter({ u in !u.user.hidden }).count > 1) {
+//
+//            }
+//        }
     }
 }
 

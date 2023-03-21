@@ -33,8 +33,6 @@ CREATE TABLE users(
   agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
   view_pwd_hash BLOB NULL,
   view_pwd_salt BLOB NULL,
-  wipe_pwd_hash BLOB NULL,
-  wipe_pwd_salt BLOB NULL,
   show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)

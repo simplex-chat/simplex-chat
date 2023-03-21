@@ -139,14 +139,30 @@ func listUsers() throws -> [UserInfo] {
     throw r
 }
 
-func apiSetActiveUser(_ userId: Int64, viewPwd: String = "") throws -> User {
+func apiSetActiveUser(_ userId: Int64, viewPwd: String? = nil) throws -> User {
     let r = chatSendCmdSync(.apiSetActiveUser(userId: userId, viewPwd: viewPwd))
     if case let .activeUser(user) = r { return user }
     throw r
 }
 
-func apiSetUserPrivacy(_ userId: Int64, viewPwd: String, privacyCfg: UserPrivacyCfg?) throws -> User {
-    let r = chatSendCmdSync(.apiSetUserPrivacy(userId: userId, viewPwd: viewPwd, privacyCfg: privacyCfg))
+func apiHideUser(_ userId: Int64, viewPwd: String) throws -> User {
+    try setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
+}
+
+func apiUnhideUser(_ userId: Int64, viewPwd: String?) throws -> User {
+    try setUserPrivacy_(.apiUnhideUser(userId: userId, viewPwd: viewPwd))
+}
+
+func apiMuteUser(_ userId: Int64, viewPwd: String?) throws -> User {
+    try setUserPrivacy_(.apiMuteUser(userId: userId, viewPwd: viewPwd))
+}
+
+func apiUnmuteUser(_ userId: Int64, viewPwd: String?) throws -> User {
+    try setUserPrivacy_(.apiUnmuteUser(userId: userId, viewPwd: viewPwd))
+}
+
+func setUserPrivacy_(_ cmd: ChatCommand) throws -> User {
+    let r = chatSendCmdSync(cmd)
     if case let .userPrivacy(user) = r { return user }
     throw r
 }
@@ -965,10 +981,12 @@ func startChat(refreshInvitations: Bool = true) throws {
 }
 
 func changeActiveUser(_ userId: Int64) {
-    do {
-        try changeActiveUser_(userId)
-    } catch let error {
-        logger.error("Unable to set active user: \(responseError(error))")
+    DispatchQueue.main.async {
+        do {
+            try changeActiveUser_(userId)
+        } catch let error {
+            logger.error("Unable to set active user: \(responseError(error))")
+        }
     }
 }
 
