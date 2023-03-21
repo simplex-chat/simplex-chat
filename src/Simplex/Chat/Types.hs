@@ -1543,10 +1543,10 @@ instance ToJSON InlineFileMode where
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
+    xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
     rcvFileInline :: Maybe InlineFileMode,
-    rcvFileDescription :: Maybe RcvFileDescr,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
@@ -1555,6 +1555,15 @@ data RcvFileTransfer = RcvFileTransfer
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
+
+data XFTPRcvFile = XFTPRcvFile
+  { rcvFileDescription :: RcvFileDescr,
+    agentRcvFileId :: Maybe AgentRcvFileId,
+    agentRcvFileDeleted :: Bool
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON XFTPRcvFile where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RcvFileDescr = RcvFileDescr
   { fileDescrId :: Int64,
@@ -1595,6 +1604,14 @@ liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
   where
     acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
     acId _ = Nothing
+
+liveRcvFileTransferPath :: RcvFileTransfer -> Maybe FilePath
+liveRcvFileTransferPath RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted fi -> fp fi
+  RFSConnected fi -> fp fi
+  _ -> Nothing
+  where
+    fp RcvFileInfo {filePath} = Just filePath
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
@@ -1689,6 +1706,7 @@ instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaul
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
     privateSndFileDescr :: Maybe Text
+    -- TODO agentSndFileDeleted :: Bool
   }
   deriving (Eq, Show, Generic)
 
