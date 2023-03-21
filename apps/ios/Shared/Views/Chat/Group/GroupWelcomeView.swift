@@ -68,6 +68,7 @@ struct GroupWelcomeView: View {
                 var groupProfileUpdated = groupInfo.groupProfile
                 groupProfileUpdated.description = welcome
                 groupInfo = try await apiUpdateGroup(groupId, groupProfileUpdated)
+                m.updateGroup(groupInfo)
                 welcomeText = welcome ?? ""
             } catch let error {
                 logger.error("apiUpdateGroup error: \(responseError(error))")
