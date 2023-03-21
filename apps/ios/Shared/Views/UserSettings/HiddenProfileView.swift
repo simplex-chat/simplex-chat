@@ -38,7 +38,7 @@ struct HiddenProfileView: View {
                     Button("Save profile password") {
                         Task {
                             do {
-                                let u = try await apiUnhideUser(user.userId, viewPwd: hidePassword)
+                                let u = try await apiHideUser(user.userId, viewPwd: hidePassword)
                                 await MainActor.run { m.updateUser(u) }
                             } catch let error {
                                 saveErrorAlert = true
