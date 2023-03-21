@@ -151,6 +151,11 @@ public func chatResponse(_ s: String) -> ChatResponse {
                    let chat = try? parseChatData(jChat) {
                     return .apiChat(user: user, chat: chat)
                 }
+            } else if type == "chatCmdError" {
+                if let jError = jResp["chatCmdError"] as? NSDictionary {
+                    let user: User? = try? decodeObject(jError["user_"] as Any)
+                    return .chatCmdError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                }
             }
         }
         json = prettyJSON(j)
@@ -185,9 +190,13 @@ func prettyJSON(_ obj: Any) -> String? {
 
 public func responseError(_ err: Error) -> String {
     if let r = err as? ChatResponse {
-        return String(describing: r)
+        switch r {
+        case let .chatCmdError(_, chatError): return String(describing: chatError)
+        case let .chatError(_, chatError): return String(describing: chatError)
+        default: return String(describing: r)
+        }
     } else {
-        return err.localizedDescription
+        return String(describing: err)
     }
 }
 

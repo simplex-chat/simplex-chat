@@ -132,15 +132,22 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
 }
 
 func listUsers() throws -> [UserInfo] {
-    let r = chatSendCmdSync(.listUsers)
+    return try listUsersResponse(chatSendCmdSync(.listUsers))
+}
+
+func listUsersAsync() async throws -> [UserInfo] {
+    return try listUsersResponse(await chatSendCmd(.listUsers))
+}
+
+private func listUsersResponse(_ r: ChatResponse) throws -> [UserInfo] {
     if case let .usersList(users) = r {
         return users.sorted { $0.user.chatViewName.compare($1.user.chatViewName) == .orderedAscending }
     }
     throw r
 }
 
-func apiSetActiveUser(_ userId: Int64, viewPwd: String? = nil) throws -> User {
-    let r = chatSendCmdSync(.apiSetActiveUser(userId: userId, viewPwd: viewPwd))
+func apiSetActiveUser(_ userId: Int64, viewPwd: String?) async throws -> User {
+    let r = await chatSendCmd(.apiSetActiveUser(userId: userId, viewPwd: viewPwd))
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -167,8 +174,8 @@ func setUserPrivacy_(_ cmd: ChatCommand) async throws -> User {
     throw r
 }
 
-func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String? = nil) throws {
-    let r = chatSendCmdSync(.apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: viewPwd))
+func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) async throws {
+    let r = await chatSendCmd(.apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: viewPwd))
     if case .cmdOk = r { return }
     throw r
 }
@@ -231,8 +238,16 @@ func apiStorageEncryption(currentKey: String = "", newKey: String = "") async th
 }
 
 func apiGetChats() throws -> [ChatData] {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiGetChats: no current user") }
-    let r = chatSendCmdSync(.apiGetChats(userId: userId))
+    let userId = try currentUserId("apiGetChats")
+    return try apiChatsResponse(chatSendCmdSync(.apiGetChats(userId: userId)))
+}
+
+func apiGetChatsAsync() async throws -> [ChatData] {
+    let userId = try currentUserId("apiGetChats")
+    return try apiChatsResponse(await chatSendCmd(.apiGetChats(userId: userId)))
+}
+
+private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
     if case let .apiChats(_, chats) = r { return chats }
     throw r
 }
@@ -359,19 +374,27 @@ func apiDeleteToken(token: DeviceToken) async throws {
 }
 
 func getUserSMPServers() throws -> ([ServerCfg], [String]) {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("getUserSMPServers: no current user") }
-    let r = chatSendCmdSync(.apiGetUserSMPServers(userId: userId))
+    let userId = try currentUserId("getUserSMPServers")
+    return try userSMPServersResponse(chatSendCmdSync(.apiGetUserSMPServers(userId: userId)))
+}
+
+func getUserSMPServersAsync() async throws -> ([ServerCfg], [String]) {
+    let userId = try currentUserId("getUserSMPServersAsync")
+    return try userSMPServersResponse(await chatSendCmd(.apiGetUserSMPServers(userId: userId)))
+}
+
+private func userSMPServersResponse(_ r: ChatResponse) throws -> ([ServerCfg], [String]) {
     if case let .userSMPServers(_, smpServers, presetServers) = r { return (smpServers, presetServers) }
     throw r
 }
 
 func setUserSMPServers(smpServers: [ServerCfg]) async throws {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("setUserSMPServers: no current user") }
+    let userId = try currentUserId("setUserSMPServers")
     try await sendCommandOkResp(.apiSetUserSMPServers(userId: userId, smpServers: smpServers))
 }
 
 func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("testSMPServer: no current user") }
+    let userId = try currentUserId("testSMPServer")
     let r = await chatSendCmd(.apiTestSMPServer(userId: userId, smpServer: smpServer))
     if case let .smpTestResult(_, testFailure) = r {
         if let t = testFailure {
@@ -383,14 +406,22 @@ func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure>
 }
 
 func getChatItemTTL() throws -> ChatItemTTL {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("getChatItemTTL: no current user") }
-    let r = chatSendCmdSync(.apiGetChatItemTTL(userId: userId))
+    let userId = try currentUserId("getChatItemTTL")
+    return try chatItemTTLResponse(chatSendCmdSync(.apiGetChatItemTTL(userId: userId)))
+}
+
+func getChatItemTTLAsync() async throws -> ChatItemTTL {
+    let userId = try currentUserId("getChatItemTTLAsync")
+    return try chatItemTTLResponse(await chatSendCmd(.apiGetChatItemTTL(userId: userId)))
+}
+
+private func chatItemTTLResponse(_ r: ChatResponse) throws -> ChatItemTTL {
     if case let .chatItemTTL(_, chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
     throw r
 }
 
 func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("setChatItemTTL: no current user") }
+    let userId = try currentUserId("setChatItemTTL")
     try await sendCommandOkResp(.apiSetChatItemTTL(userId: userId, seconds: chatItemTTL.seconds))
 }
 
@@ -561,14 +592,14 @@ func clearChat(_ chat: Chat) async {
 }
 
 func apiListContacts() throws -> [Contact] {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiListContacts: no current user") }
+    let userId = try currentUserId("apiListContacts")
     let r = chatSendCmdSync(.apiListContacts(userId: userId))
     if case let .contactsList(_, contacts) = r { return contacts }
     throw r
 }
 
 func apiUpdateProfile(profile: Profile) async throws -> Profile? {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiUpdateProfile: no current user") }
+    let userId = try currentUserId("apiUpdateProfile")
     let r = await chatSendCmd(.apiUpdateProfile(userId: userId, profile: profile))
     switch r {
     case .userProfileNoChange: return nil
@@ -596,22 +627,30 @@ func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> Pe
 }
 
 func apiCreateUserAddress() async throws -> String {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiCreateUserAddress: no current user") }
+    let userId = try currentUserId("apiCreateUserAddress")
     let r = await chatSendCmd(.apiCreateMyAddress(userId: userId))
     if case let .userContactLinkCreated(_, connReq) = r { return connReq }
     throw r
 }
 
 func apiDeleteUserAddress() async throws {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiDeleteUserAddress: no current user") }
+    let userId = try currentUserId("apiDeleteUserAddress")
     let r = await chatSendCmd(.apiDeleteMyAddress(userId: userId))
     if case .userContactLinkDeleted = r { return }
     throw r
 }
 
 func apiGetUserAddress() throws -> UserContactLink? {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiGetUserAddress: no current user") }
-    let r = chatSendCmdSync(.apiShowMyAddress(userId: userId))
+    let userId = try currentUserId("apiGetUserAddress")
+    return try userAddressResponse(chatSendCmdSync(.apiShowMyAddress(userId: userId)))
+}
+
+func apiGetUserAddressAsync() async throws -> UserContactLink? {
+    let userId = try currentUserId("apiGetUserAddressAsync")
+    return try userAddressResponse(await chatSendCmd(.apiShowMyAddress(userId: userId)))
+}
+
+private func userAddressResponse(_ r: ChatResponse) throws -> UserContactLink? {
     switch r {
     case let .userContactLink(_, contactLink): return contactLink
     case .chatCmdError(_, chatError: .errorStore(storeError: .userContactLinkNotFound)): return nil
@@ -620,7 +659,7 @@ func apiGetUserAddress() throws -> UserContactLink? {
 }
 
 func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContactLink? {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("userAddressAutoAccept: no current user") }
+    let userId = try currentUserId("userAddressAutoAccept")
     let r = await chatSendCmd(.apiAddressAutoAccept(userId: userId, autoAccept: autoAccept))
     switch r {
     case let .userContactLinkUpdated(_, contactLink): return contactLink
@@ -815,7 +854,7 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
 }
 
 func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiNewGroup: no current user") }
+    let userId = try currentUserId("apiNewGroup")
     let r = chatSendCmdSync(.apiNewGroup(userId: userId, groupProfile: p))
     if case let .groupCreated(_, groupInfo) = r { return groupInfo }
     throw r
@@ -931,6 +970,13 @@ func apiGetVersion() throws -> CoreVersionInfo {
     throw r
 }
 
+private func currentUserId(_ funcName: String) throws -> Int64 {
+    if let userId = ChatModel.shared.currentUser?.userId {
+        return userId
+    }
+    throw RuntimeError("\(funcName): no current user")
+}
+
 func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
@@ -980,21 +1026,23 @@ func startChat(refreshInvitations: Bool = true) throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
-func changeActiveUser(_ userId: Int64) {
-    DispatchQueue.main.async {
-        do {
-            try changeActiveUser_(userId)
-        } catch let error {
-            logger.error("Unable to set active user: \(responseError(error))")
-        }
+func changeActiveUser(_ userId: Int64, viewPwd: String?) async {
+    do {
+        try await changeActiveUser_(userId, viewPwd: viewPwd)
+    } catch let error {
+        logger.error("Unable to set active user: \(responseError(error))")
     }
 }
 
-func changeActiveUser_(_ userId: Int64) throws {
-    let m = ChatModel.shared
-    m.currentUser = try apiSetActiveUser(userId)
-    m.users = try listUsers()
-    try getUserChatData()
+func changeActiveUser_(_ userId: Int64, viewPwd: String?) async throws {
+    let currentUser = try await apiSetActiveUser(userId, viewPwd: viewPwd)
+    let users = try await listUsersAsync()
+    await MainActor.run {
+        let m = ChatModel.shared
+        m.currentUser = currentUser
+        m.users = users
+    }
+    try await getUserChatDataAsync()
 }
 
 func getUserChatData() throws {
@@ -1004,6 +1052,20 @@ func getUserChatData() throws {
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
     m.chats = chats.map { Chat.init($0) }
+}
+
+func getUserChatDataAsync() async throws {
+    let userAddress = try await apiGetUserAddressAsync()
+    let servers = try await getUserSMPServersAsync()
+    let chatItemTTL = try await getChatItemTTLAsync()
+    let chats = try await apiGetChatsAsync()
+    await MainActor.run {
+        let m = ChatModel.shared
+        m.userAddress = userAddress
+        (m.userSMPServers, m.presetSMPServers) = servers
+        m.chatItemTTL = chatItemTTL
+        m.chats = chats.map { Chat.init($0) }
+    }
 }
 
 class ChatReceiver {

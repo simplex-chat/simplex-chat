@@ -12,6 +12,7 @@ import SimpleXChat
 struct HiddenProfileView: View {
     @State var user: User
     @EnvironmentObject private var m: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
     @State private var hidePassword = ""
     @State private var confirmHidePassword = ""
     @State private var saveErrorAlert = false
@@ -39,7 +40,10 @@ struct HiddenProfileView: View {
                         Task {
                             do {
                                 let u = try await apiHideUser(user.userId, viewPwd: hidePassword)
-                                await MainActor.run { m.updateUser(u) }
+                                await MainActor.run {
+                                    m.updateUser(u)
+                                    dismiss()
+                                }
                             } catch let error {
                                 saveErrorAlert = true
                                 savePasswordError = responseError(error)

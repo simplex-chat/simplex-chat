@@ -67,6 +67,23 @@ final class ChatModel: ObservableObject {
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
+    func updateUser(_ user: User) {
+        if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
+            users[i].user = user
+        }
+        if let u = currentUser, u.userId == user.userId {
+            currentUser = user
+        }
+    }
+
+    func removeUser(_ user: User) {
+        if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
+            if users[i].user.userId != currentUser?.userId {
+                users.remove(at: i)
+            }
+        }
+    }
+
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil
     }
@@ -111,15 +128,6 @@ final class ChatModel: ObservableObject {
 
     func updateGroup(_ groupInfo: GroupInfo) {
         updateChat(.group(groupInfo: groupInfo))
-    }
-
-    func updateUser(_ user: User) {
-        if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
-            users[i].user = user
-        }
-        if let u = currentUser, u.userId == user.userId {
-            currentUser = user
-        }
     }
 
     private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {

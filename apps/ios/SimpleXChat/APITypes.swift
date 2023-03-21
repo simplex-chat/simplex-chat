@@ -349,7 +349,7 @@ public enum ChatCommand {
     }
 
     private func maybePwd(_ pwd: String?) -> String {
-        pwd == "" ? "" : " " + encodeJSON(pwd)
+        pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
     }
 }
 
@@ -461,8 +461,8 @@ public enum ChatResponse: Decodable, Error {
     case contactConnectionDeleted(user: User, connection: PendingContactConnection)
     case versionInfo(versionInfo: CoreVersionInfo)
     case cmdOk(user: User?)
-    case chatCmdError(user: User?, chatError: ChatError)
-    case chatError(user: User?, chatError: ChatError)
+    case chatCmdError(user_: User?, chatError: ChatError)
+    case chatError(user_: User?, chatError: ChatError)
 
     public var responseType: String {
         get {
@@ -1130,6 +1130,7 @@ public enum ChatError: Decodable {
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
     case errorDatabase(databaseError: DatabaseError)
+    case invalidJSON(json: String)
 }
 
 public enum ChatErrorType: Decodable {

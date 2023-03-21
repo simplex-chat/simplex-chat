@@ -30,8 +30,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                didReceive response: UNNotificationResponse,
-                                withCompletionHandler handler: () -> Void) {
+                                didReceive response: UNNotificationResponse) async {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
         let content = response.notification.request.content
         let chatModel = ChatModel.shared
@@ -39,7 +38,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         if let userId = content.userInfo["userId"] as? Int64,
            userId != chatModel.currentUser?.userId {
-           changeActiveUser(userId)
+            // TODO check that user is not hidden, suppress notification if it is
+            await changeActiveUser(userId, viewPwd: nil)
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
             let chatId = content.userInfo["chatId"] as? String {
@@ -57,7 +57,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         } else {
             chatModel.chatId = content.targetContentIdentifier
         }
-        handler()
     }
 
     private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
@@ -75,10 +74,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 
     // Handle notification when the app is in foreground
     func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                willPresent notification: UNNotification,
-                                withCompletionHandler handler: (UNNotificationPresentationOptions) -> Void) {
+                                willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         logger.debug("NtfManager.userNotificationCenter: willPresent")
-        handler(presentationOptions(notification.request.content))
+        return presentationOptions(notification.request.content)
     }
 
     private func presentationOptions(_ content: UNNotificationContent) -> UNNotificationPresentationOptions {

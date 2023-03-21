@@ -10,7 +10,7 @@ struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
     @State private var showDeleteConfirmation = false
-    @State private var userToDelete: Int?
+    @State private var userToDelete: UserInfo?
     @State private var alert: UserProfilesAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var searchTextOrPassword = ""
@@ -18,7 +18,7 @@ struct UserProfilesView: View {
     @State private var selectedUser: User?
 
     private enum UserProfilesAlert: Identifiable {
-        case deleteUser(index: Int, delSMPQueues: Bool)
+        case deleteUser(userInfo: UserInfo, delSMPQueues: Bool)
         case cantDeleteLastUser
 //        case cantHideLastUser
         case activateUserError(error: String)
@@ -26,7 +26,7 @@ struct UserProfilesView: View {
 
         var id: String {
             switch self {
-            case let .deleteUser(index, delSMPQueues): return "deleteUser \(index) \(delSMPQueues)"
+            case let .deleteUser(userInfo, delSMPQueues): return "deleteUser \(userInfo.user.userId) \(delSMPQueues)"
             case .cantDeleteLastUser: return "cantDeleteLastUser"
 //            case let .cantHideLastUser: return "cantHideLastUser"
             case let .activateUserError(err): return "activateUserError \(err)"
@@ -49,14 +49,15 @@ struct UserProfilesView: View {
     private func userProfilesView() -> some View {
         List {
             Section {
-                ForEach(filteredUsers()) { u in
+                let users = filteredUsers()
+                ForEach(users) { u in
                     userView(u.user)
                 }
                 .onDelete { indexSet in
                     if let i = indexSet.first {
                         if m.users.count > 1 && (m.users[i].user.hidden || visibleUsersCount > 1) {
                             showDeleteConfirmation = true
-                            userToDelete = i
+                            userToDelete = users[i]
                         } else {
                             alert = .cantDeleteLastUser
                         }
@@ -77,18 +78,20 @@ struct UserProfilesView: View {
         .toolbar { EditButton() }
         .navigationTitle("Your chat profiles")
         .searchable(text: $searchTextOrPassword)
+        .autocorrectionDisabled(true)
+        .textInputAutocapitalization(.never)
         .confirmationDialog("Delete chat profile?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
             deleteModeButton("Profile and server connections", true)
             deleteModeButton("Local profile data only", false)
         }
         .alert(item: $alert) { alert in
             switch alert {
-            case let .deleteUser(index, delSMPQueues):
+            case let .deleteUser(userInfo, delSMPQueues):
                 return Alert(
                     title: Text("Delete user profile?"),
                     message: Text("All chats and messages will be deleted - this cannot be undone!"),
                     primaryButton: .destructive(Text("Delete")) {
-                        removeUser(index, delSMPQueues)
+                        Task { await removeUser(userInfo, delSMPQueues) }
                     },
                     secondaryButton: .cancel()
                 )
@@ -118,7 +121,7 @@ struct UserProfilesView: View {
         let lower = s.localizedLowercase
         return m.users.filter { u in
             if let ph = u.user.viewPwdHash {
-                return s != "" // && chatPasswordHash(s, ph.salt) == ph.hash
+                return u.user.activeUser || (s != "" && chatPasswordHash(s, ph.salt) == ph.hash)
             }
             return s == "" || u.user.chatViewName.localizedLowercase.contains(lower)
         }
@@ -128,47 +131,48 @@ struct UserProfilesView: View {
         m.users.filter({ u in !u.user.hidden }).count
     }
 
-    private func userViewPassword(_ user: User) -> String {
-        user.activeUser || !user.hidden ? "" : searchTextOrPassword
+    private func userViewPassword(_ user: User) -> String? {
+        user.activeUser || !user.hidden ? nil : searchTextOrPassword
     }
 
     private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
         Button(title, role: .destructive) {
-            if let i = userToDelete {
-                alert = .deleteUser(index: i, delSMPQueues: delSMPQueues)
+            if let userInfo = userToDelete {
+                alert = .deleteUser(userInfo: userInfo, delSMPQueues: delSMPQueues)
             }
         }
     }
 
-    private func removeUser(_ index: Int, _ delSMPQueues: Bool) {
-        if index >= m.users.count { return }
+    private func removeUser(_ userInfo: UserInfo, _ delSMPQueues: Bool) async {
         do {
-            let u = m.users[index].user
+            let u = userInfo.user
             if u.activeUser {
-                if let newActive = m.users.first(where: { !$0.user.activeUser }) {
-                    try changeActiveUser_(newActive.user.userId)
-                    try deleteUser(u.userId)
+                if let newActive = m.users.first(where: { u in !u.user.activeUser && !u.user.hidden }) {
+                    try await changeActiveUser_(newActive.user.userId, viewPwd: nil)
+                    try await deleteUser(u)
                 }
             } else {
-                try deleteUser(u.userId)
+                try await deleteUser(u)
             }
         } catch let error {
             let a = getErrorAlert(error, "Error deleting user profile")
             alert = .error(title: a.title, error: a.message)
         }
 
-        func deleteUser(_ userId: Int64) throws {
-            try apiDeleteUser(userId, delSMPQueues)
-            m.users.remove(at: index)
+        func deleteUser(_ user: User) async throws {
+            try await apiDeleteUser(user.userId, delSMPQueues, viewPwd: userViewPassword(user))
+            await MainActor.run { withAnimation { m.removeUser(user) } }
         }
     }
 
     private func userView(_ user: User) -> some View {
         Button {
-            do {
-                try changeActiveUser_(user.userId)
-            } catch {
-                alert = .activateUserError(error: responseError(error))
+            Task {
+                do {
+                    try await changeActiveUser_(user.userId, viewPwd: userViewPassword(user))
+                } catch {
+                    await MainActor.run { alert = .activateUserError(error: responseError(error)) }
+                }
             }
         } label: {
             HStack {
@@ -224,7 +228,7 @@ struct UserProfilesView: View {
         Task {
             do {
                 let u = try await api()
-                await MainActor.run { m.updateUser(u) }
+                await MainActor.run { withAnimation { m.updateUser(u) } }
             } catch let error {
                 let a = getErrorAlert(error, "Error updating user privacy")
                 alert = .error(title: a.title, error: a.message)
@@ -233,14 +237,13 @@ struct UserProfilesView: View {
     }
 }
 
-//public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
-//    var cPwd = pwd.cString(using: .utf8)!
-//    var cSalt = salt.cString(using: .utf8)!
-//    let cHash  = chat_password_hash(&cPwd, &cSalt)!
-//    let hash = fromCString(cHash)
-//    free(cHash)
-//    return hash
-//}
+public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
+    var cPwd = pwd.cString(using: .utf8)!
+    var cSalt = salt.cString(using: .utf8)!
+    let cHash  = chat_password_hash(&cPwd, &cSalt)!
+    let hash = fromCString(cHash)
+    return hash
+}
 
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
