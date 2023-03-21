@@ -123,7 +123,7 @@
     <string name="database_encrypted">¡Base de datos cifrada!</string>
     <string name="encrypted_with_random_passphrase">La base de datos está cifrada con una contraseña aleatoria, puedes cambiarla.</string>
     <string name="database_error">Error en base de datos</string>
-    <string name="database_passphrase_is_required">Se requiere la contraseña de la base de datos para abrir el chat.</string>
+    <string name="database_passphrase_is_required">Para abrir la aplicación se requiere la contraseña de la base de datos</string>
     <string name="rcv_group_event_member_connected">conectado</string>
     <string name="button_create_group_link">Crear enlace</string>
     <string name="delete_link_question">¿Eliminar enlace\?</string>
@@ -152,7 +152,7 @@
     <string name="notification_preview_mode_contact">Nombre del contacto</string>
     <string name="copy_verb">Copiar</string>
     <string name="create_your_profile">Crear tu perfil</string>
-    <string name="connect_calls_via_relay">Conectar mediante relay</string>
+    <string name="connect_calls_via_relay">Conectar mediante servidor de retransmisión</string>
     <string name="set_password_to_export_desc">La base de datos está cifrada con una contraseña aleatoria. Cámbiala antes de exportar.</string>
     <string name="total_files_count_and_size">%d archivo(s) con tamaño total de %s</string>
     <string name="enable_automatic_deletion_question">¿Activar eliminación automática de mensajes\?</string>
@@ -279,7 +279,7 @@
     <string name="cannot_receive_file">No se puede recibir el archivo</string>
     <string name="database_initialization_error_title">No se puede iniciar la base de datos</string>
     <string name="clear_chat_question">Limpiar chat\?</string>
-    <string name="network_session_mode_user">Perfil del Chat</string>
+    <string name="network_session_mode_user">Perfil de Chat</string>
     <string name="chat_is_stopped_indication">El chat está detenido</string>
     <string name="rcv_group_event_changed_member_role">rol de %s cambiado a %s</string>
     <string name="change_role">Cambiar rol</string>
@@ -299,7 +299,7 @@
     <string name="change_database_passphrase_question">¿Cambiar contraseña de la base de datos\?</string>
     <string name="cannot_access_keychain">No se puede acceder a Keystore para guardar la base de datos de contraseñas</string>
     <string name="chat_archive_header">Archivo del chat</string>
-    <string name="chat_archive_section">ARCHIVOS DEL CHAT</string>
+    <string name="chat_archive_section">ARCHIVOS DE CHAT</string>
     <string name="cancel_verb">Cancelar</string>
     <string name="icon_descr_cancel_live_message">Cancelar mensaje en directo</string>
     <string name="confirm_verb">Confirmar</string>
@@ -312,8 +312,8 @@
     <string name="alert_title_cant_invite_contacts">¡No se puede invitar a los contactos!</string>
     <string name="chat_console">Consola del chat</string>
     <string name="chat_database_section">BASE DE DATOS DEL CHAT</string>
-    <string name="chat_database_deleted">Base de datos del chat eliminada</string>
-    <string name="chat_database_imported">base de datos del chat importada</string>
+    <string name="chat_database_deleted">Base de datos eliminada</string>
+    <string name="chat_database_imported">Base de datos importada</string>
     <string name="smp_servers_check_address">Comprueba la dirección del servidor e inténtalo de nuevo.</string>
     <string name="confirm_new_passphrase">Confirma la contraseña nueva…</string>
     <string name="network_disable_socks_info">Si confirmas los servidores de mensajería podrán ver tu IP, y tu proveedor de acceso a internet a qué servidores te estás conectando.</string>
@@ -340,7 +340,7 @@
     <string name="one_time_link">Enlace único de invitación</string>
     <string name="smp_servers">Servidores SMP</string>
     <string name="settings_experimental_features">Características experimentales</string>
-    <string name="error_importing_database">Error importando la base de datos de chat</string>
+    <string name="error_importing_database">Error importando la base de datos</string>
     <string name="error_changing_message_deletion">Error cambiando configuración</string>
     <string name="file_with_path">Archivo: %s</string>
     <string name="failed_to_active_user_title">¡Error cambiando perfil!</string>
@@ -366,7 +366,7 @@
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Si no puedes reunirte en persona, <b>muestra el código QR en la videollamada</b>, o comparte el enlace.</string>
     <string name="how_to">Cómo</string>
     <string name="ignore">Ignorar</string>
-    <string name="error_deleting_database">Error eliminando la base de datos de chat</string>
+    <string name="error_deleting_database">Error eliminando la base de datos</string>
     <string name="encrypted_database">Base de datos cifrada</string>
     <string name="error_removing_member">Error eliminando miembro</string>
     <string name="group_members_can_send_voice">Los miembros del grupo pueden mandar mensajes de voz.</string>
@@ -411,7 +411,7 @@
     <string name="callstate_ended">finalizado</string>
     <string name="settings_section_title_help">AYUDA</string>
     <string name="export_database">Exportar base de datos</string>
-    <string name="error_exporting_chat_database">Error exportando la base de datos de chat</string>
+    <string name="error_exporting_chat_database">Error exportando la base de datos</string>
     <string name="error_starting_chat">Error iniciando chat</string>
     <string name="rcv_group_event_invited_via_your_group_link">Invitado mediante tu enlace de grupo</string>
     <string name="error_updating_link_for_group">Error actualizando el enlace de grupo</string>
@@ -452,7 +452,7 @@
     <string name="incognito_info_allows">Permite tener muchas conexiones anónimas sin datos compartidos entre estas en un único perfil de chat.</string>
     <string name="invite_to_group_button">Invitar al grupo</string>
     <string name="to_verify_compare">Para comprobar el cifrado de extremo a extremo con su contacto compare (o escanee) el código en sus dispositivos.</string>
-    <string name="database_is_not_encrypted">Tu base de datos de chat no está cifrada. Establece una contraseña para protegerla.</string>
+    <string name="database_is_not_encrypted">La base de datos no está cifrada. Establece una contraseña para protegerla.</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor SMP tienen el formato correcto, están separadas por líneas y no duplicadas.</string>
     <string name="icon_descr_instant_notifications">Notificación instantánea</string>
     <string name="network_settings_title">Configuración de red</string>
@@ -523,7 +523,7 @@
     <string name="network_use_onion_hosts_required_desc">Se requieren hosts .onion para la conexión</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Se usarán hosts .onion cuando estén disponibles.</string>
     <string name="immune_to_spam_and_abuse">Inmune a spam y abuso</string>
-    <string name="many_people_asked_how_can_it_deliver">Muchos se preguntan: <i>si <xliff:g id="appName">SimpleX</xliff:g> no tiene identificadores de usuario, ¿cómo puede entregar mensajes\?</i></string>
+    <string name="many_people_asked_how_can_it_deliver">Muchos se preguntarán: <i>si <xliff:g id="appName">SimpleX</xliff:g> no tiene identificadores de usuario, ¿cómo puede entregar los mensajes\?</i></string>
     <string name="incoming_video_call">Videollamada entrante</string>
     <string name="snd_group_event_user_left">has salido</string>
     <string name="snd_conn_event_switch_queue_phase_completed">has cambiado la dirección</string>
@@ -547,7 +547,7 @@
     <string name="status_no_e2e_encryption">sin cifrado e2e</string>
     <string name="import_database">Importar base de datos</string>
     <string name="settings_section_title_messages">MENSAJES</string>
-    <string name="import_database_question">¿Importar base de datos de chat\?</string>
+    <string name="import_database_question">¿Importar base de datos\?</string>
     <string name="no_received_app_files">Sin archivos recibidos o enviados</string>
     <string name="messages_section_title">Mensajes</string>
     <string name="new_passphrase">Contraseña nueva…</string>
@@ -569,7 +569,7 @@
     <string name="new_in_version">Nuevo en %s</string>
     <string name="v4_3_improved_privacy_and_security">Seguridad y privacidad mejoradas</string>
     <string name="settings_section_title_incognito">Modo incógnito</string>
-    <string name="new_database_archive">Nuevo archivo de bases de datos</string>
+    <string name="new_database_archive">Nuevo archivo de base de datos</string>
     <string name="old_database_archive">Archivo de base de datos antiguo</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">has cambiado la dirección por %s</string>
     <string name="rcv_group_event_member_left">ha salido</string>
@@ -632,9 +632,9 @@
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
     <string name="rcv_group_event_member_deleted">eliminado <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="send_link_previews">Enviar previsualizaciones de enlaces</string>
-    <string name="send_live_message_desc">Envía un mensaje en vivo: se actualizará para el(los) destinatario(s) a medida que escribe</string>
+    <string name="send_live_message_desc">Envía un mensaje en vivo: se actualizará para el(los) destinatario(s) a medida que se escribe</string>
     <string name="icon_descr_sent_msg_status_send_failed">error de envío</string>
-    <string name="sending_via">Envío mediante</string>
+    <string name="sending_via">Enviando mediante</string>
     <string name="contact_developers">Actualiza la aplicación y ponte en contacto con los desarrolladores.</string>
     <string name="sender_cancelled_file_transfer">El remitente ha cancelado la transferencia de archivos.</string>
     <string name="smp_server_test_secure_queue">Cola segura</string>
@@ -663,7 +663,7 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(escanear o pegar desde el portapapeles)</string>
     <string name="icon_descr_profile_image_placeholder">Espacio reservado para la imagen del perfil</string>
     <string name="image_descr_qr_code">Código QR</string>
-    <string name="chat_with_the_founder">Envía preguntas e ideas</string>
+    <string name="chat_with_the_founder">Envía consultas e ideas</string>
     <string name="smp_servers_preset_address">Dirección del servidor predefinida</string>
     <string name="send_us_an_email">Envíanos un email</string>
     <string name="rate_the_app">Valora la aplicación</string>
@@ -689,7 +689,7 @@
     <string name="only_you_can_send_voice">Sólo tú puedes enviar mensajes de voz.</string>
     <string name="only_your_contact_can_send_voice">Sólo tu contacto puede enviar mensajes de voz.</string>
     <string name="run_chat_section">EJECUTAR CHAT</string>
-    <string name="restart_the_app_to_use_imported_chat_database">Reinicia la aplicación para usar la base de datos de chat importada.</string>
+    <string name="restart_the_app_to_use_imported_chat_database">Reinicia la aplicación para poder usar la base de datos importada.</string>
     <string name="enter_correct_current_passphrase">Introduce la contraseña actual correcta.</string>
     <string name="feature_received_prohibited">recepción prohibida</string>
     <string name="only_you_can_delete_messages">Sólo tú puedes eliminar mensajes de forma irreversible (tu contacto puede marcar para eliminar).</string>
@@ -758,20 +758,20 @@
     <string name="share_invitation_link">Compartir enlace de invitación</string>
     <string name="update_network_session_mode_question">¿Actualizar el modo de aislamiento de transporte\?</string>
     <string name="icon_descr_speaker_on">Altavoz activado</string>
-    <string name="stop_chat_to_enable_database_actions">Detener chat para activar las acciones en la base de datos.</string>
+    <string name="stop_chat_to_enable_database_actions">Detener Chat para habilitar acciones sobre la base de datos.</string>
     <string name="connection_you_accepted_will_be_cancelled">¡La conexión que has aceptado se cancelará!</string>
     <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para obtener más información</string>
     <string name="moderate_message_will_be_marked_warning">El mensaje será marcado como moderado para todos los miembros.</string>
     <string name="next_generation_of_private_messaging">La próxima generación de mensajería privada</string>
     <string name="delete_files_and_media_desc">Esta acción no se puede deshacer. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</string>
     <string name="enable_automatic_deletion_message">Esta acción no se puede deshacer. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Puede tardar varios minutos.</string>
-    <string name="messages_section_description">Esta configuración se aplica a los mensajes en su perfil actual de chat</string>
+    <string name="messages_section_description">Esta configuración se aplica a los mensajes en su perfil actual de Chat</string>
     <string name="this_string_is_not_a_connection_link">¡Esta cadena no es un enlace de conexión!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Para preservar tu privacidad, en lugar de notificaciones \"push\" la aplicación cuenta con un <b>servicio en segundo plano<xliff:g id="appName">SimpleX</xliff:g></b>, utiliza un pequeño porcentaje de la batería al día.</string>
     <string name="icon_descr_settings">Configuración</string>
     <string name="icon_descr_speaker_off">Altavoz apagado</string>
     <string name="add_contact_or_create_group">Inciar chat nuevo</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">Detener chat para exportar, importar o eliminar la base de datos del chat. No podrá recibir ni enviar mensajes mientras el chat esté detenido.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Detener Chat para exportar, importar o eliminar la base de datos del chat. No podrá recibir ni enviar mensajes mientras el chat esté detenido.</string>
     <string name="thank_you_for_installing_simplex">Gracias por instalar <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger la privacidad, en lugar de los identificadores de usuario que utilizan el resto de plataformas, <xliff:g id="appName">SimpleX</xliff:g> dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa SimpleX Lock.
@@ -812,20 +812,20 @@
     <string name="smp_servers_test_server">Probar servidor</string>
     <string name="smp_servers_test_servers">Probar servidores</string>
     <string name="star_on_github">Dar una Estrella en GitHub</string>
-    <string name="smp_servers_per_user">Los servidores para nuevas conexiones de tu perfil de chat actual</string>
+    <string name="smp_servers_per_user">Los servidores para nuevas conexiones de tu perfil de Chat actual</string>
     <string name="network_disable_socks">¿Usar conexión directa a Internet\?</string>
     <string name="update_onion_hosts_settings_question">¿Actualizar la configuración de los hosts .onion\?</string>
     <string name="profile_is_only_shared_with_your_contacts">El perfil sólo se comparte con tus contactos.</string>
     <string name="callstate_starting">inicializando…</string>
     <string name="alert_title_skipped_messages">Mensajes omitidos</string>
     <string name="settings_section_title_settings">CONFIGURACIÓN</string>
-    <string name="stop_chat_question">¿Detener el chat\?</string>
+    <string name="stop_chat_question">¿Detener Chat\?</string>
     <string name="chat_item_ttl_seconds">%s segundo(s)</string>
     <string name="group_invitation_tap_to_join">Pulsa para unirse</string>
     <string name="rcv_group_event_updated_group_profile">perfil de grupo actualizado</string>
     <string name="network_option_tcp_connection_timeout">Tiempo de espera de la conexión TCP agotado</string>
     <string name="theme">Tema</string>
-    <string name="set_group_preferences">Preferencias de grupo</string>
+    <string name="set_group_preferences">Establecer preferencias de grupo</string>
     <string name="settings_section_title_support">SOPORTE SIMPLEX CHAT</string>
     <string name="set_password_to_export">Seleccióna contraseña para exportar</string>
     <string name="update_database">Actualizar</string>
@@ -839,7 +839,7 @@
     <string name="unknown_message_format">formato de mensaje desconocido</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Intentando conectar con el servidor utilizado para recibir mensajes de este contacto (error: <xliff:g id="errorMsg">%1$s</xliff:g> ).</string>
     <string name="error_smp_test_failed_at_step">Prueba fallida en el paso %s.</string>
-    <string name="tap_to_start_new_chat">Pulsa para iniciar nuevo chat</string>
+    <string name="tap_to_start_new_chat">Pulsa para iniciar chat nuevo</string>
     <string name="share_message">Compartir mensaje…</string>
     <string name="share_image">Compartir imagen…</string>
     <string name="show_call_on_lock_screen">Mostrar</string>
@@ -879,7 +879,7 @@
     <string name="your_ICE_servers">Tus servidores ICE</string>
     <string name="you_rejected_group_invitation">Has rechazado la invitación del grupo.</string>
     <string name="snd_group_event_changed_member_role">has cambiado el rol de %s a %s</string>
-    <string name="call_connection_via_relay">mediante relay</string>
+    <string name="call_connection_via_relay">mediante servidor de retransmisión</string>
     <string name="contact_wants_to_connect_with_you">¡quiere conectar contigo!</string>
     <string name="voice_message">Mensaje de voz</string>
     <string name="waiting_for_image">Esperando imagen</string>
@@ -891,10 +891,10 @@
     <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo. Si lo eliminas más tarde tus contactos no se perderán.</string>
     <string name="observer_cant_send_message_title">¡No puedes enviar mensajes!</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Puedes usar marcadores para dar formato a los mensajes:</string>
-    <string name="you_must_use_the_most_recent_version_of_database">Debes usar la versión más reciente de tu base de datos de chat SÓLO en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</string>
+    <string name="you_must_use_the_most_recent_version_of_database">Debes usar la versión más reciente de tu base de datos SÓLO en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Tu contacto debe estar en línea para que se complete la conexión.
 \nPuedes cancelar esta conexión y eliminar el contacto (e intentarlo más tarde con un enlace nuevo).</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Tu base de datos de chat actual será ELIMINADA y SUSTITUIDA por la importada.
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">La base de datos activa será ELIMINADA y SUSTITUIDA por la importada.
 \nEsta acción no se puede deshacer. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</string>
     <string name="incognito_random_profile">Tu perfil aleatorio</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando se acepte tu solicitud de conexión, por favor espere o compruébalo más tarde.</string>
@@ -936,7 +936,7 @@
     <string name="your_ice_servers">Tus servidores ICE</string>
     <string name="your_privacy">Tu privacidad</string>
     <string name="settings_section_title_you">TU</string>
-    <string name="your_chat_database">Tu base de datos de chat</string>
+    <string name="your_chat_database">Base de datos</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puedes iniciar el chat en Configuración / Base de datos o reiniciando la aplicación.</string>
     <string name="you_sent_group_invitation">Has enviado una invitación de grupo</string>
     <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contacto(s) seleccionado(s)</string>
