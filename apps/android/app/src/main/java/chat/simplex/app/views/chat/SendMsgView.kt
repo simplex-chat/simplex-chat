@@ -60,6 +60,8 @@ fun SendMsgView(
   liveMessageAlertShown: SharedPreference<Boolean>,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
+  userIsObserver: Boolean,
+  userCanSend: Boolean,
   allowVoiceToContact: () -> Unit,
   sendMessage: () -> Unit,
   sendLiveMessage: (suspend () -> Unit)? = null,
@@ -73,10 +75,22 @@ fun SendMsgView(
     val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
-    NativeKeyboard(composeState, textStyle, onMessageChange)
+    val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
+    NativeKeyboard(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange)
     // Disable clicks on text field
-    if (cs.preview is ComposePreview.VoicePreview) {
-      Box(Modifier.matchParentSize().clickable(enabled = false, onClick = { }))
+    if (cs.preview is ComposePreview.VoicePreview || !userCanSend) {
+      Box(Modifier
+        .matchParentSize()
+        .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(R.string.observer_cant_send_message_title),
+            text = generalGetString(R.string.observer_cant_send_message_desc)
+          )
+        })
+      )
+    }
+    if (showDeleteTextButton.value) {
+      DeleteTextButton(composeState)
     }
     Box(Modifier.align(Alignment.BottomEnd)) {
       val sendButtonSize = remember { Animatable(36f) }
@@ -95,11 +109,11 @@ fun SendMsgView(
           Row(verticalAlignment = Alignment.CenterVertically) {
             val stopRecOnNextClick = remember { mutableStateOf(false) }
             when {
-              needToAllowVoiceToContact || !allowedVoiceByPrefs -> {
-                DisallowedVoiceButton {
+              needToAllowVoiceToContact || !allowedVoiceByPrefs || !userCanSend -> {
+                DisallowedVoiceButton(userCanSend) {
                   if (needToAllowVoiceToContact) {
                     showNeedToAllowVoiceAlert(allowVoiceToContact)
-                  } else {
+                  } else if (!allowedVoiceByPrefs) {
                     showDisabledVoiceAlert(isDirectChat)
                   }
                 }
@@ -114,7 +128,7 @@ fun SendMsgView(
                 && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
                 && cs.contextItem is ComposeContextItem.NoContextItem) {
               Spacer(Modifier.width(10.dp))
-              StartLiveMessageButton {
+              StartLiveMessageButton(userCanSend) {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
                 }
@@ -168,6 +182,8 @@ fun SendMsgView(
 private fun NativeKeyboard(
   composeState: MutableState<ComposeState>,
   textStyle: MutableState<TextStyle>,
+  showDeleteTextButton: MutableState<Boolean>,
+  userIsObserver: Boolean,
   onMessageChange: (String) -> Unit
 ) {
   val cs = composeState.value
@@ -245,14 +261,32 @@ private fun NativeKeyboard(
       imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
       showKeyboard = false
     }
+    showDeleteTextButton.value = it.lineCount >= 4
   }
   if (composeState.value.preview is ComposePreview.VoicePreview) {
-    Text(
-      generalGetString(R.string.voice_message_send_text),
-      Modifier.padding(padding),
-      color = HighOrLowlight,
-      style = textStyle.value.copy(fontStyle = FontStyle.Italic)
-    )
+    ComposeOverlay(R.string.voice_message_send_text, textStyle, padding)
+  } else if (userIsObserver) {
+    ComposeOverlay(R.string.you_are_observer, textStyle, padding)
+  }
+}
+
+@Composable
+private fun ComposeOverlay(textId: Int, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
+  Text(
+    generalGetString(textId),
+    Modifier.padding(padding),
+    color = HighOrLowlight,
+    style = textStyle.value.copy(fontStyle = FontStyle.Italic)
+  )
+}
+
+@Composable
+private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) {
+  IconButton(
+    { composeState.value = composeState.value.copy(message = "") },
+    Modifier.align(Alignment.TopEnd).size(36.dp)
+  ) {
+    Icon(Icons.Filled.Close, null, Modifier.padding(7.dp).size(36.dp), tint = HighOrLowlight)
   }
 }
 
@@ -306,8 +340,8 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
 }
 
 @Composable
-private fun DisallowedVoiceButton(onClick: () -> Unit) {
-  IconButton(onClick, Modifier.size(36.dp)) {
+private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
+  IconButton(onClick, Modifier.size(36.dp), enabled = enabled) {
     Icon(
       Icons.Outlined.KeyboardVoice,
       stringResource(R.string.icon_descr_record_voice_message),
@@ -438,13 +472,13 @@ private fun SendMsgButton(
 }
 
 @Composable
-private fun StartLiveMessageButton(onClick: () -> Unit) {
+private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
   val interactionSource = remember { MutableInteractionSource() }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .clickable(
         onClick = onClick,
-        enabled = true,
+        enabled = enabled,
         role = Role.Button,
         interactionSource = interactionSource,
         indication = rememberRipple(bounded = false, radius = 24.dp)
@@ -454,7 +488,7 @@ private fun StartLiveMessageButton(onClick: () -> Unit) {
     Icon(
       Icons.Filled.Bolt,
       stringResource(R.string.icon_descr_send_message),
-      tint = MaterialTheme.colors.primary,
+      tint = if (enabled) MaterialTheme.colors.primary else HighOrLowlight,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)
@@ -555,6 +589,8 @@ fun PreviewSendMsgView() {
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
+      userIsObserver = false,
+      userCanSend = true,
       allowVoiceToContact = {},
       sendMessage = {},
       onMessageChange = { _ -> },
@@ -583,6 +619,8 @@ fun PreviewSendMsgViewEditing() {
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
+      userIsObserver = false,
+      userCanSend = true,
       allowVoiceToContact = {},
       sendMessage = {},
       onMessageChange = { _ -> },
@@ -601,7 +639,7 @@ fun PreviewSendMsgViewEditing() {
 fun PreviewSendMsgViewInProgress() {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
-  val composeStateInProgress = ComposeState(preview = ComposePreview.FilePreview("test.txt"), inProgress = true, useLinkPreviews = true)
+  val composeStateInProgress = ComposeState(preview = ComposePreview.FilePreview("test.txt", getAppFileUri("test.txt")), inProgress = true, useLinkPreviews = true)
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },
@@ -611,6 +649,8 @@ fun PreviewSendMsgViewInProgress() {
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
+      userIsObserver = false,
+      userCanSend = true,
       allowVoiceToContact = {},
       sendMessage = {},
       onMessageChange = { _ -> },

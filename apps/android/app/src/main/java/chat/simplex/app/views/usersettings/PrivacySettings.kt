@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.R
@@ -50,8 +49,6 @@ fun PrivacySettingsView(
 
     SectionView(stringResource(R.string.settings_section_title_chats)) {
       SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      SectionDivider()
-      SettingsPreferenceItem(Icons.Outlined.ImageAspectRatio, stringResource(R.string.transfer_images_faster), chatModel.controller.appPrefs.privacyTransferImagesInline)
       SectionDivider()
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SectionDivider()

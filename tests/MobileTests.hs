@@ -2,15 +2,15 @@
 
 module MobileTests where
 
-import ChatClient
-import ChatTests
+import ChatTests.Utils
 import Control.Monad.Except
 import Simplex.Chat.Mobile
 import Simplex.Chat.Store
-import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types (AgentUserId (..), Profile (..))
+import System.FilePath ((</>))
 import Test.Hspec
 
-mobileTests :: Spec
+mobileTests :: SpecWith FilePath
 mobileTests = do
   describe "mobile API" $ do
     it "start new chat without user" testChatApiNoUser
@@ -25,16 +25,16 @@ noActiveUser = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"e
 
 activeUserExists :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUserExists = "{\"resp\":{\"chatCmdError\":{\"chatError\":{\"error\":{\"errorType\":{\"activeUserExists\":{}}}}}}}"
+activeUserExists = "{\"resp\":{\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"error\":{\"errorType\":{\"userExists\":{\"contactName\":\"alice\"}}}}}}}"
 #else
-activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"activeUserExists\"}}}}"
+activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"userExists\",\"contactName\":\"alice\"}}}}"
 #endif
 
 activeUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}}"
+activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}}"
 #else
-activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}"
+activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}"
 #endif
 
 chatStarted :: String
@@ -46,31 +46,34 @@ chatStarted = "{\"resp\":{\"type\":\"chatStarted\"}}"
 
 contactSubSummary :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-contactSubSummary = "{\"resp\":{\"contactSubSummary\":{\"contactSubscriptions\":[]}}}"
+contactSubSummary = "{\"resp\":{\"contactSubSummary\":{" <> userJSON <> ",\"contactSubscriptions\":[]}}}"
 #else
-contactSubSummary = "{\"resp\":{\"type\":\"contactSubSummary\",\"contactSubscriptions\":[]}}"
+contactSubSummary = "{\"resp\":{\"type\":\"contactSubSummary\"," <> userJSON <> ",\"contactSubscriptions\":[]}}"
 #endif
 
 memberSubSummary :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-memberSubSummary = "{\"resp\":{\"memberSubSummary\":{\"memberSubscriptions\":[]}}}"
+memberSubSummary = "{\"resp\":{\"memberSubSummary\":{" <> userJSON <> ",\"memberSubscriptions\":[]}}}"
 #else
-memberSubSummary = "{\"resp\":{\"type\":\"memberSubSummary\",\"memberSubscriptions\":[]}}"
+memberSubSummary = "{\"resp\":{\"type\":\"memberSubSummary\"," <> userJSON <> ",\"memberSubscriptions\":[]}}"
 #endif
 
 userContactSubSummary :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-userContactSubSummary = "{\"resp\":{\"userContactSubSummary\":{\"userContactSubscriptions\":[]}}}"
+userContactSubSummary = "{\"resp\":{\"userContactSubSummary\":{" <> userJSON <> ",\"userContactSubscriptions\":[]}}}"
 #else
-userContactSubSummary = "{\"resp\":{\"type\":\"userContactSubSummary\",\"userContactSubscriptions\":[]}}"
+userContactSubSummary = "{\"resp\":{\"type\":\"userContactSubSummary\"," <> userJSON <> ",\"userContactSubscriptions\":[]}}"
 #endif
 
 pendingSubSummary :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{\"pendingSubscriptions\":[]}}}"
+pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{" <> userJSON <> ",\"pendingSubscriptions\":[]}}}"
 #else
-pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\",\"pendingSubscriptions\":[]}}"
+pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\"," <> userJSON <> ",\"pendingSubscriptions\":[]}}"
 #endif
+
+userJSON :: String
+userJSON = "\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}"
 
 parsedMarkdown :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -79,26 +82,27 @@ parsedMarkdown = "{\"formattedText\":[{\"format\":{\"bold\":{}},\"text\":\"hello
 parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
 #endif
 
-testChatApiNoUser :: IO ()
-testChatApiNoUser = withTmpFiles $ do
-  Right cc <- chatMigrateInit testDBPrefix ""
-  Left (DBMErrorNotADatabase _) <- chatMigrateInit testDBPrefix "myKey"
+testChatApiNoUser :: FilePath -> IO ()
+testChatApiNoUser tmp = do
+  let dbPrefix = tmp </> "1"
+  Right cc <- chatMigrateInit dbPrefix ""
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "myKey"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
   chatSendCmd cc "/_start" `shouldReturn` noActiveUser
-  chatSendCmd cc "/u alice Alice" `shouldReturn` activeUser
+  chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUser
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
 
-testChatApi :: IO ()
-testChatApi = withTmpFiles $ do
-  let dbPrefix = testDBPrefix <> "1"
+testChatApi :: FilePath -> IO ()
+testChatApi tmp = do
+  let dbPrefix = tmp </> "1"
       f = chatStoreFile dbPrefix
   st <- createChatStore f "myKey" True
-  Right _ <- withTransaction st $ \db -> runExceptT $ createUser db aliceProfile {preferences = Nothing} True
+  Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix ""
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey"
   chatSendCmd cc "/u" `shouldReturn` activeUser
-  chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
+  chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` contactSubSummary
   chatRecvMsg cc `shouldReturn` userContactSubSummary

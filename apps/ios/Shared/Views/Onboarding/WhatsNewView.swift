@@ -87,6 +87,46 @@ private let versionDescriptions: [VersionDescription] = [
                 icon: "camera",
                 title: "GIFs and stickers",
                 description: "Send them from gallery or custom keyboards."
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "French interface",
+                description: "Thanks to the users – contribute via Weblate!"
+            )
+        ]
+    ),
+    VersionDescription(
+        version: "v4.5",
+        features: [
+            FeatureDescription(
+                icon: "person.crop.rectangle.stack",
+                title: "Multiple chat profiles",
+                description: "Different names, avatars and transport isolation."
+            ),
+            FeatureDescription(
+                icon: "rectangle.and.pencil.and.ellipsis",
+                title: "Message draft",
+                description: "Preserve the last message draft, with attachments."
+            ),
+            FeatureDescription(
+                icon: "network.badge.shield.half.filled",
+                title: "Transport isolation",
+                description: "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)."
+            ),
+            FeatureDescription(
+                icon: "lock.doc",
+                title: "Private filenames",
+                description: "To protect timezone, image/voice files use UTC."
+            ),
+            FeatureDescription(
+                icon: "battery.25",
+                title: "Reduced battery usage",
+                description: "More improvements are coming soon!"
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "Italian interface",
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!"
             )
         ]
     )
@@ -113,8 +153,7 @@ struct WhatsNewView: View {
     var body: some View {
         VStack {
             TabView(selection: $currentVersion) {
-                ForEach(0..<3) { i in
-                    let v = versionDescriptions[i]
+                ForEach(Array(versionDescriptions.enumerated()), id: \.0) { (i, v) in
                     VStack(alignment: .leading, spacing: 16) {
                         Text("New in \(v.version)")
                             .font(.title)
@@ -147,8 +186,9 @@ struct WhatsNewView: View {
 
     private func featureDescription(_ icon: String, _ title: LocalizedStringKey, _ description: LocalizedStringKey) -> some View {
         VStack(alignment: .leading) {
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 4) {
                 Image(systemName: icon).foregroundColor(.secondary)
+                    .frame(minWidth: 30, alignment: .center)
                 Text(title).font(.title3).bold()
             }
             Text(description)

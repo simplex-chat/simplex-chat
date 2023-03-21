@@ -18,6 +18,7 @@ import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
+import Data.Word (Word8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
 import Foreign.C.String
@@ -29,6 +30,7 @@ import GHC.Generics (Generic)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
+import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types
@@ -62,6 +64,10 @@ foreign export ccall "chat_recv_msg_wait" cChatRecvMsgWait :: StablePtr ChatCont
 foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO CJSONString
 
 foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSONString
+
+foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
+
+foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
@@ -116,18 +122,22 @@ cChatParseMarkdown s = newCAString . chatParseMarkdown =<< peekCAString s
 cChatParseServer :: CString -> IO CJSONString
 cChatParseServer s = newCAString . chatParseServer =<< peekCAString s
 
-mobileChatOpts :: ChatOpts
-mobileChatOpts =
+mobileChatOpts :: String -> String -> ChatOpts
+mobileChatOpts dbFilePrefix dbKey =
   ChatOpts
-    { dbFilePrefix = undefined,
-      dbKey = "",
-      smpServers = [],
-      networkConfig = defaultNetworkConfig,
-      logLevel = CLLImportant,
-      logConnections = False,
-      logServerHosts = True,
-      logAgent = False,
-      tbqSize = 64,
+    { coreOptions =
+        CoreChatOpts
+          { dbFilePrefix,
+            dbKey,
+            smpServers = [],
+            networkConfig = defaultNetworkConfig,
+            logLevel = CLLImportant,
+            logConnections = False,
+            logServerHosts = True,
+            logAgent = Nothing,
+            logFile = Nothing,
+            tbqSize = 1024
+          },
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
@@ -166,7 +176,7 @@ chatMigrateInit dbFilePrefix dbKey = runExceptT $ do
   where
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig mobileChatOpts {dbFilePrefix, dbKey} Nothing
+      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey) Nothing
     migrate createStore dbFile =
       ExceptT $
         (Right <$> createStore dbFile dbKey True)
@@ -203,7 +213,7 @@ chatInitKey :: String -> String -> IO ChatController
 chatInitKey dbFilePrefix dbKey = do
   db@ChatDatabase {chatStore} <- createChatDatabase dbFilePrefix dbKey True
   user_ <- getActiveUser_ chatStore
-  newChatController db user_ defaultMobileConfig mobileChatOpts {dbFilePrefix, dbKey} Nothing
+  newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey) Nothing
 
 chatSendCmd :: ChatController -> String -> IO JSONString
 chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc

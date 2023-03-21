@@ -7,12 +7,16 @@
 
 module Simplex.Chat.Options
   ( ChatOpts (..),
+    CoreChatOpts (..),
+    chatOptsP,
+    coreChatOptsP,
     getChatOpts,
     smpServersP,
     fullNetworkConfig,
   )
 where
 
+import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Numeric.Natural (Natural)
@@ -26,15 +30,7 @@ import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
-  { dbFilePrefix :: String,
-    dbKey :: String,
-    smpServers :: [SMPServerWithAuth],
-    networkConfig :: NetworkConfig,
-    logLevel :: ChatLogLevel,
-    logConnections :: Bool,
-    logServerHosts :: Bool,
-    logAgent :: Bool,
-    tbqSize :: Natural,
+  { coreOptions :: CoreChatOpts,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
@@ -43,8 +39,29 @@ data ChatOpts = ChatOpts
     maintenance :: Bool
   }
 
-chatOpts :: FilePath -> FilePath -> Parser ChatOpts
-chatOpts appDir defaultDbFileName = do
+data CoreChatOpts = CoreChatOpts
+  { dbFilePrefix :: String,
+    dbKey :: String,
+    smpServers :: [SMPServerWithAuth],
+    networkConfig :: NetworkConfig,
+    logLevel :: ChatLogLevel,
+    logConnections :: Bool,
+    logServerHosts :: Bool,
+    logAgent :: Maybe LogLevel,
+    logFile :: Maybe FilePath,
+    tbqSize :: Natural
+  }
+
+agentLogLevel :: ChatLogLevel -> LogLevel
+agentLogLevel = \case
+  CLLDebug -> LogDebug
+  CLLInfo -> LogInfo
+  CLLWarning -> LogWarn
+  CLLError -> LogError
+  CLLImportant -> LogInfo
+
+coreChatOptsP :: FilePath -> FilePath -> Parser CoreChatOpts
+coreChatOptsP appDir defaultDbFileName = do
   dbFilePrefix <-
     strOption
       ( long "database"
@@ -118,6 +135,12 @@ chatOpts appDir defaultDbFileName = do
       ( long "log-agent"
           <> help "Enable logs from SMP agent (also with `-l debug`)"
       )
+  logFile <-
+    optional $
+      strOption
+        ( long "log-file"
+            <> help "Log to specified file / device"
+        )
   tbqSize <-
     option
       auto
@@ -125,9 +148,29 @@ chatOpts appDir defaultDbFileName = do
           <> short 'q'
           <> metavar "SIZE"
           <> help "Internal queue size"
-          <> value 64
+          <> value 1024
           <> showDefault
       )
+  pure
+    CoreChatOpts
+      { dbFilePrefix,
+        dbKey,
+        smpServers,
+        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
+        logLevel,
+        logConnections = logConnections || logLevel <= CLLInfo,
+        logServerHosts = logServerHosts || logLevel <= CLLInfo,
+        logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
+        logFile,
+        tbqSize
+      }
+  where
+    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
+    defaultDbFilePath = combine appDir defaultDbFileName
+
+chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
+chatOptsP appDir defaultDbFileName = do
+  coreOptions <- coreChatOptsP appDir defaultDbFileName
   chatCmd <-
     strOption
       ( long "execute"
@@ -176,15 +219,7 @@ chatOpts appDir defaultDbFileName = do
       )
   pure
     ChatOpts
-      { dbFilePrefix,
-        dbKey,
-        smpServers,
-        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
-        logLevel,
-        logConnections = logConnections || logLevel <= CLLInfo,
-        logServerHosts = logServerHosts || logLevel <= CLLInfo,
-        logAgent = logAgent || logLevel == CLLDebug,
-        tbqSize,
+      { coreOptions,
         chatCmd,
         chatCmdDelay,
         chatServerPort,
@@ -192,9 +227,6 @@ chatOpts appDir defaultDbFileName = do
         allowInstantFiles,
         maintenance
       }
-  where
-    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
-    defaultDbFilePath = combine appDir defaultDbFileName
 
 fullNetworkConfig :: Maybe SocksProxy -> Int -> Bool -> NetworkConfig
 fullNetworkConfig socksProxy tcpTimeout logTLSErrors =
@@ -229,7 +261,7 @@ getChatOpts :: FilePath -> FilePath -> IO ChatOpts
 getChatOpts appDir defaultDbFileName =
   execParser $
     info
-      (helper <*> versionOption <*> chatOpts appDir defaultDbFileName)
+      (helper <*> versionOption <*> chatOptsP appDir defaultDbFileName)
       (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server")
   where
     versionStr = versionString versionNumber

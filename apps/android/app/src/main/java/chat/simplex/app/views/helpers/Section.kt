@@ -1,4 +1,5 @@
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.app.ui.theme.*
@@ -83,13 +85,14 @@ fun SectionItemView(
   click: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
   disabled: Boolean = false,
+  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
-    if (click == null || disabled) modifier.padding(horizontal = DEFAULT_PADDING) else modifier.clickable(onClick = click).padding(horizontal = DEFAULT_PADDING),
+    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
@@ -99,6 +102,7 @@ fun SectionItemView(
 @Composable
 fun SectionItemViewSpaceBetween(
   click: (() -> Unit)? = null,
+  onLongClick: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
   padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
   disabled: Boolean = false,
@@ -108,7 +112,7 @@ fun SectionItemViewSpaceBetween(
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
+    if (click == null || disabled) modifier.padding(padding) else modifier.combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -157,6 +161,11 @@ fun <T> SectionItemWithValue(
 
 @Composable
 fun SectionTextFooter(text: String) {
+  SectionTextFooter(AnnotatedString(text))
+}
+
+@Composable
+fun SectionTextFooter(text: AnnotatedString) {
   Text(
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),

@@ -1,3 +1,5 @@
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/WEBRTC.md), [CZ](/docs/lang/cs/WEBRTC.md) |
+
 # Using custom WebRTC ICE servers in SimpleX Chat
 
 ## Deploy STUN/TURN server
@@ -87,7 +89,7 @@ stun:stun.example.com:5349
 turn:username:password@turn.example.com:5349
 ```
 
-This is it - you now can make audio and video calls via your own server, without sharing any data with our servers (other than the key excange with your contact in E2E encrypted messages).
+This is it - you now can make audio and video calls via your own server, without sharing any data with our servers (other than the key exchange with your contact in E2E encrypted messages).
 
 ## Troubleshoot
 
@@ -116,7 +118,7 @@ This is it - you now can make audio and video calls via your own server, without
   Connection to <your_ip_or_domain> 5349 port [tcp/*] succeeded!
   ```
 
-- **Test STUN/TURN connectivity:**
+- **Test STUN/TURN connectivity**:
 
   1. Go to [IceTest](https://icetest.info/).
 

@@ -22,12 +22,14 @@
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
   <string name="marked_deleted_description">marked deleted</string>
+  <string name="moderated_item_description">moderated by %s</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
   <string name="unknown_message_format">unknown message format</string>
   <string name="invalid_message_format">invalid message format</string>
   <string name="live">LIVE</string>
+  <string name="moderated_description">moderated</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
 
@@ -63,6 +65,10 @@
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
   <string name="contact_developers">Please update the app and contact developers.</string>
+  <string name="failed_to_create_user_title">Error creating profile!</string>
+  <string name="failed_to_create_user_duplicate_title">Duplicate display name!</string>
+  <string name="failed_to_create_user_duplicate_desc">You already have a chat profile with the same display name. Please choose another name.</string>
+  <string name="failed_to_active_user_title">Error switching profile!</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
@@ -96,6 +102,7 @@
   <string name="smp_server_test_secure_queue">Secure queue</string>
   <string name="smp_server_test_delete_queue">Delete queue</string>
   <string name="smp_server_test_disconnect">Disconnect</string>
+  <string name="error_deleting_user">Error deleting user profile</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -176,9 +183,13 @@
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
+  <string name="moderate_verb">Moderate</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="delete_member_message__question">Delete member message?</string>
+  <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
+  <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 
@@ -216,6 +227,9 @@
   <string name="images_limit_desc">Only 10 images can be sent at the same time</string>
   <string name="image_decoding_exception_title">Decoding error</string>
   <string name="image_decoding_exception_desc">The image cannot be decoded. Please, try a different image or contact developers.</string>
+  <string name="you_are_observer">you are observer</string>
+  <string name="observer_cant_send_message_title">You can\'t send messages!</string>
+  <string name="observer_cant_send_message_desc">Please contact group admin.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -414,6 +428,7 @@
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="your_chat_profiles">Your chat profiles</string>
   <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
   <string name="how_to_use_simplex_chat">How to use it</string>
@@ -443,6 +458,7 @@
   <string name="smp_servers_invalid_address">Invalid server address!</string>
   <string name="smp_servers_check_address">Check server address and try again.</string>
   <string name="smp_servers_delete_server">Delete server</string>
+  <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
@@ -478,6 +494,12 @@
   <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts will be used when available.</string>
   <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts will not be used.</string>
   <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts will be required for connection.</string>
+  <string name="network_session_mode_transport_isolation">Transport isolation</string>
+  <string name="network_session_mode_user">Chat profile</string>
+  <string name="network_session_mode_entity">Connection</string>
+  <string name="network_session_mode_user_description">A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.</string>
+  <string name="network_session_mode_entity_description">A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</string>
+  <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="appearance_settings">Appearance</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
@@ -503,7 +525,7 @@
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>
   <string name="full_name__field">"Full name:</string>
-  <string name="your_chat_profile">Your chat profile</string>
+  <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts.\n\n<xliff:g id="appName">SimpleX</xliff:g> servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
   <string name="delete_image">Delete image</string>
@@ -609,13 +631,15 @@
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
   <string name="your_calls">Your calls</string>
-  <string name="connect_calls_via_relay">Connect via relay</string>
+  <string name="always_use_relay">Always use relay</string>
   <string name="call_on_lock_screen">Calls on lock screen:</string>
   <string name="accept_call_on_lock_screen">Accept</string>
   <string name="show_call_on_lock_screen">Show</string>
   <string name="no_call_on_lock_screen">Disable</string>
   <string name="your_ice_servers">Your ICE servers</string>
   <string name="webrtc_ice_servers">WebRTC ICE servers</string>
+  <string name="relay_server_protects_ip">Relay server protects your IP address, but it can observe the duration of the call.</string>
+  <string name="relay_server_if_necessary">Relay server is only used if necessary. Another party can observe your IP address.</string>
 
   <!-- Call Lock Screen -->
   <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
@@ -660,7 +684,6 @@
   <string name="your_privacy">Your privacy</string>
   <string name="protect_app_screen">Protect app screen</string>
   <string name="auto_accept_images">Auto-accept images</string>
-  <string name="transfer_images_faster">Transfer images faster</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="full_backup">App data backup</string>
 
@@ -675,6 +698,7 @@
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
+  <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_messages">MESSAGES</string>
@@ -714,8 +738,9 @@
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
   <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
-  <string name="data_section">DATA</string>
-  <string name="delete_files_and_media">Delete files \&amp; media</string>
+  <string name="files_and_media_section">Files &amp; media</string>
+  <string name="delete_files_and_media_for_all_users">Delete files for all chat profiles</string>
+  <string name="delete_files_and_media_all">Delete all files</string>
   <string name="delete_files_and_media_question">Delete files and media?</string>
   <string name="delete_files_and_media_desc">This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</string>
   <string name="no_received_app_files">No received or sent files</string>
@@ -725,6 +750,8 @@
   <string name="chat_item_ttl_week">1 week</string>
   <string name="chat_item_ttl_month">1 month</string>
   <string name="chat_item_ttl_seconds">%s second(s)</string>
+  <string name="messages_section_title">Messages</string>
+  <string name="messages_section_description">This setting applies to messages in your current chat profile</string>
   <string name="delete_messages_after">Delete messages after</string>
   <string name="enable_automatic_deletion_question">Enable automatic message deletion?</string>
   <string name="enable_automatic_deletion_message">This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</string>
@@ -852,6 +879,7 @@
   <string name="snd_conn_event_switch_queue_phase_changing">changing address…</string>
 
   <!-- GroupMemberRole -->
+  <string name="group_member_role_observer">observer</string>
   <string name="group_member_role_member">member</string>
   <string name="group_member_role_admin">admin</string>
   <string name="group_member_role_owner">owner</string>
@@ -874,6 +902,7 @@
   <!-- AddGroupMembersView.kt -->
   <string name="no_contacts_to_add">No contacts to add</string>
   <string name="new_member_role">New member role</string>
+  <string name="initial_member_role">Initial role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
   <string name="skip_inviting_button">Skip inviting members</string>
@@ -903,6 +932,7 @@
   <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group. You won\'t lose members of the group if you later delete it.</string>
   <string name="all_group_members_will_remain_connected">All group members will remain connected.</string>
   <string name="error_creating_link_for_group">Error creating group link</string>
+  <string name="error_updating_link_for_group">Error updating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
 
@@ -966,6 +996,15 @@
   <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
   <string name="update_network_settings_confirmation">Update</string>
 
+  <!-- UserProfilesView.kt -->
+  <string name="your_chat_profiles_stored_locally">Your chat profiles are stored locally, only on your device</string>
+  <string name="users_add">Add profile</string>
+  <string name="users_delete_question">Delete chat profile?</string>
+  <string name="users_delete_all_chats_deleted">All chats and messages will be deleted - this cannot be undone!</string>
+  <string name="users_delete_profile_for">Delete chat profile for</string>
+  <string name="users_delete_with_connections">Profile and server connections</string>
+  <string name="users_delete_data_only">Local profile data only</string>
+
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>
   <string name="incognito_random_profile">Your random profile</string>
@@ -981,6 +1020,9 @@
   <string name="theme_system">System</string>
   <string name="theme_light">Light</string>
   <string name="theme_dark">Dark</string>
+
+  <!-- Languages -->
+  <string name="language_system">System</string>
 
   <!-- Appearance.kt -->
   <string name="theme">Theme</string>
@@ -1094,4 +1136,18 @@
   <string name="v4_4_live_messages_desc">Recipients see updates as you type them.</string>
   <string name="v4_4_verify_connection_security">Verify connection security</string>
   <string name="v4_4_verify_connection_security_desc">Compare security codes with your contacts.</string>
+  <string name="v4_4_french_interface">French interface</string>
+  <string name="v4_4_french_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v4_5_multiple_chat_profiles">Multiple chat profiles</string>
+  <string name="v4_5_multiple_chat_profiles_descr">Different names, avatars and transport isolation.</string>
+  <string name="v4_5_message_draft">Message draft</string>
+  <string name="v4_5_message_draft_descr">Preserve the last message draft, with attachments.</string>
+  <string name="v4_5_transport_isolation">Transport isolation</string>
+  <string name="v4_5_transport_isolation_descr">By chat profile (default) or by connection (BETA).</string>
+  <string name="v4_5_private_filenames">Private filenames</string>
+  <string name="v4_5_private_filenames_descr">To protect timezone, image/voice files use UTC.</string>
+  <string name="v4_5_reduced_battery_usage">Reduced battery usage</string>
+  <string name="v4_5_reduced_battery_usage_descr">More improvements are coming soon!</string>
+  <string name="v4_5_italian_interface">Italian interface</string>
+  <string name="v4_5_italian_interface_descr">Thanks to the users – contribute via Weblate!</string>
 </resources>

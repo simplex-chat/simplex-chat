@@ -5,7 +5,7 @@ on:
     branches:
       - master
       - stable
-      - sqlcipher
+      - users
     tags:
       - "v*"
   pull_request:
@@ -91,6 +91,10 @@ jobs:
           echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"         >> cabal.project.local
           echo "    flags: +openssl"                                        >> cabal.project.local
 
+      - name: Install pkg-config for Mac
+        if: matrix.os == 'macos-latest'
+        run: brew install pkg-config
+
       - name: Unix prepare cabal.project.local for Ubuntu
         if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-18.04'
         shell: bash
@@ -109,7 +113,7 @@ jobs:
 
       - name: Unix test
         if: matrix.os != 'windows-latest' && matrix.os != 'ubuntu-20.04'
-        timeout-minutes: 10
+        timeout-minutes: 20
         shell: bash
         run: cabal test --test-show-details=direct
 

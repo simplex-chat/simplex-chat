@@ -6,6 +6,7 @@ import android.content.*
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager
 import android.graphics.*
+import android.graphics.ImageDecoder.DecodeException
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Base64
@@ -205,21 +206,22 @@ fun GetImageBottomSheet(
   val processPickedImage = { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
-      val bitmap = ImageDecoder.decodeBitmap(source)
-      imageBitmap.value = uri
-      onImageChange(bitmap)
+      try {
+        val bitmap = ImageDecoder.decodeBitmap(source)
+        imageBitmap.value = uri
+        onImageChange(bitmap)
+      } catch (e: DecodeException) {
+        Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.image_decoding_exception_title),
+          text = generalGetString(R.string.image_decoding_exception_desc)
+        )
+      }
     }
   }
-  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { processPickedImage(it) }
-  val galleryLauncherFallback = rememberGetContentLauncher { processPickedImage(it) }
-  val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
-    if (uri != null) {
-      imageBitmap.value = uri
-      val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
-      val bitmap = ImageDecoder.decodeBitmap(source)
-      onImageChange(bitmap)
-    }
-  }
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery(), processPickedImage)
+  val galleryLauncherFallback = rememberGetContentLauncher(processPickedImage)
+  val cameraLauncher = rememberCameraLauncher(processPickedImage)
   val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
       cameraLauncher.launchWithFallback()

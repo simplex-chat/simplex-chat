@@ -54,6 +54,15 @@ fun NavigationButtonBack(onButtonClicked: () -> Unit) {
 }
 
 @Composable
+fun ShareButton(onButtonClicked: () -> Unit) {
+  IconButton(onButtonClicked) {
+    Icon(
+      Icons.Outlined.Share, stringResource(R.string.share_verb), tint = MaterialTheme.colors.primary
+    )
+  }
+}
+
+@Composable
 fun NavigationButtonMenu(onButtonClicked: () -> Unit) {
   IconButton(onClick = onButtonClicked) {
     Icon(

@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<NewChatSheetState>, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
+fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedViewState>, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
   if (newChatSheetState.collectAsState().value.isVisible()) BackHandler { closeNewChatSheet(true) }
   NewChatSheetLayout(
     newChatSheetState,
@@ -63,7 +63,7 @@ private val icons = listOf(Icons.Outlined.AddLink, Icons.Outlined.QrCode, Icons.
 
 @Composable
 private fun NewChatSheetLayout(
-  newChatSheetState: StateFlow<NewChatSheetState>,
+  newChatSheetState: StateFlow<AnimatedViewState>,
   stopped: Boolean,
   addContact: () -> Unit,
   connectViaLink: () -> Unit,
@@ -216,7 +216,7 @@ fun ActionButton(
 private fun PreviewNewChatSheet() {
   SimpleXTheme {
     NewChatSheetLayout(
-      MutableStateFlow(NewChatSheetState.VISIBLE),
+      MutableStateFlow(AnimatedViewState.VISIBLE),
       stopped = false,
       addContact = {},
       connectViaLink = {},

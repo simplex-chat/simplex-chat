@@ -1,3 +1,4 @@
+| Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md) |
 # SimpleX platform - motivation and comparison
 
 ## Problems
@@ -83,7 +84,7 @@ There are several P2P chat/messaging protocols and implementations that aim to s
 
 5. All known P2P networks are likely to be vulnerable to [Sybil attack][12], because each node is discoverable, and the network operates as a whole. Known measures to reduce the probability of the Sybil attack either require a centralized component or expensive [proof of work][13]. The proposed design, on the opposite, has no server discoverability - servers are not connected, not known to each other and to all clients. The SimpleX network is fragmented and operates as multiple isolated connections. It makes network-wide attacks on SimpleX network impossible - even if some servers are compromised, other parts of the network can operate normally, and affected clients can switch to using other servers without losing contacts or messages.
 
-6. P2P networks are likely to be vulnerable to [DRDoS attack][14]. In the proposed design clients only relay traffic from known trusted connection and cannot be used to reflect and amplify the traffic in the whole network.
+6. P2P networks are likely to be [vulnerable][14] to [DRDoS attack][15]. In the proposed design clients only relay traffic from known trusted connection and cannot be used to reflect and amplify the traffic in the whole network.
 
 [1]: https://en.wikipedia.org/wiki/End-to-end_encryption
 [2]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
@@ -93,3 +94,4 @@ There are several P2P chat/messaging protocols and implementations that aim to s
 [12]: https://en.wikipedia.org/wiki/Sybil_attack
 [13]: https://en.wikipedia.org/wiki/Proof_of_work
 [14]: https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent
+[15]: https://en.wikipedia.org/wiki/Denial-of-service_attack#Reflected_attack

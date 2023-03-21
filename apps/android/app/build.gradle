@@ -5,14 +5,14 @@ plugins {
 }
 
 android {
-    compileSdk 32
+    compileSdk 33
 
     defaultConfig {
         applicationId "chat.simplex.app"
         minSdk 29
-        targetSdk 32
-        versionCode 91
-        versionName "4.4.4"
+        targetSdk 33
+        versionCode 103
+        versionName "4.5.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -76,6 +76,11 @@ android {
         }
         jniLibs.useLegacyPackaging = compression_level != "0"
     }
+    def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
+//    if (isRelease) {
+        // Comma separated list of languages that will be included in the apk
+    android.defaultConfig.resConfigs("en", "cs", "de", "fr", "it", "nl", "ru", "zh-rCN")
+//    }
 }
 
 dependencies {

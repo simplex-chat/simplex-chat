@@ -36,7 +36,7 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
       val uriHandler = LocalUriHandler.current
       Text(
         annotatedStringResource(R.string.read_more_in_github_with_link),
-        modifier = Modifier.padding(bottom = 12.dp).clickable { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat#readme") },
+        modifier = Modifier.padding(bottom = 12.dp).clickable { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat#readme") },
         lineHeight = 22.sp
       )
     } else {

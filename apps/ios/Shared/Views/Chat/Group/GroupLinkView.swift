@@ -12,6 +12,7 @@ import SimpleXChat
 struct GroupLinkView: View {
     var groupId: Int64
     @Binding var groupLink: String?
+    @Binding var groupLinkMemberRole: GroupMemberRole
     @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
 
@@ -33,6 +34,15 @@ struct GroupLinkView: View {
                 Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
                     .padding(.bottom)
                 if let groupLink = groupLink {
+//                    HStack {
+//                        Text("Initial role")
+//                        Picker("Initial role", selection: $groupLinkMemberRole) {
+//                            ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
+//                                Text(role.text)
+//                            }
+//                        }
+//                    }
+//                    .frame(maxWidth: .infinity, alignment: .leading)
                     QRCode(uri: groupLink)
                     HStack {
                         Button {
@@ -85,6 +95,16 @@ struct GroupLinkView: View {
                     return Alert(title: Text(title), message: Text(error))
                 }
             }
+            .onChange(of: groupLinkMemberRole) { _ in
+                Task {
+                    do {
+                        _ = try await apiGroupLinkMemberRole(groupId, memberRole: groupLinkMemberRole)
+                    } catch let error {
+                        let a = getErrorAlert(error, "Error updating group link")
+                        alert = .error(title: a.title, error: a.message)
+                    }
+                }
+            }
             .onAppear {
                 if groupLink == nil && !creatingLink {
                     createGroupLink()
@@ -100,7 +120,7 @@ struct GroupLinkView: View {
                 let link = try await apiCreateGroupLink(groupId)
                 await MainActor.run {
                     creatingLink = false
-                    groupLink = link
+                    (groupLink, groupLinkMemberRole) = link
                 }
             } catch let error {
                 logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
@@ -120,8 +140,8 @@ struct GroupLinkView_Previews: PreviewProvider {
         @State var noGroupLink: String? = nil
 
         return Group {
-            GroupLinkView(groupId: 1, groupLink: $groupLink)
-            GroupLinkView(groupId: 1, groupLink: $noGroupLink)
+            GroupLinkView(groupId: 1, groupLink: $groupLink, groupLinkMemberRole: Binding.constant(.member))
+            GroupLinkView(groupId: 1, groupLink: $noGroupLink, groupLinkMemberRole: Binding.constant(.member))
         }
     }
 }

@@ -174,14 +174,14 @@ fun CIFileView(
 class ChatItemProvider: PreviewParameterProvider<ChatItem> {
   private val sentFile = ChatItem(
     chatDir = CIDirection.DirectSnd(),
-    meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.SndSent(), itemDeleted = false, itemEdited = true, editable = false),
+    meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.SndSent(), itemEdited = true),
     content = CIContent.SndMsgContent(msgContent = MsgContent.MCFile("")),
     quotedItem = null,
     file = CIFile.getSample(fileStatus = CIFileStatus.SndComplete)
   )
   private val fileChatItemWtFile = ChatItem(
     chatDir = CIDirection.DirectRcv(),
-    meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+    meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.RcvRead(), ),
     content = CIContent.RcvMsgContent(msgContent = MsgContent.MCFile("")),
     quotedItem = null,
     file = null

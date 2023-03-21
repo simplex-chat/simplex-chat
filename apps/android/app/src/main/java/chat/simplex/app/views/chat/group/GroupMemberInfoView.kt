@@ -66,11 +66,9 @@ fun GroupMemberInfoView(
         withApi {
           val c = chatModel.controller.apiGetChat(ChatType.Direct, it)
           if (c != null) {
-            // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
-            val newChat = c.copy(serverInfo = Chat.ServerInfo(networkStatus = Chat.NetworkStatus.Connected()))
-            chatModel.addChat(newChat)
+            chatModel.addChat(c)
             chatModel.chatItems.clear()
-            chatModel.chatId.value = newChat.id
+            chatModel.chatId.value = c.id
             closeAll()
           }
         }

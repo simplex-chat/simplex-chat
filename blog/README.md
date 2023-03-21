@@ -1,5 +1,15 @@
 # Blog
 
+Feb 4, 2023 [SimpleX Chat v4.5 released](./20230103-simplex-chat-v4.4-disappearing-messages.md)
+
+- multiple chat profiles.
+- message draft.
+- transport isolation.
+- reduced battery usage.
+- private filenames.
+
+Also, we added [Italian language interface](#french-language-interface), thanks to our users and Weblate!
+
 Jan 3, 2023 [SimpleX Chat v4.4 released](./20230103-simplex-chat-v4.4-disappearing-messages.md)
 
 - disappearing messages.

@@ -1,15 +1,19 @@
 package chat.simplex.app.views.call
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import chat.simplex.app.R
-import chat.simplex.app.SimplexApp
+import androidx.compose.ui.text.toUpperCase
+import chat.simplex.app.*
 import chat.simplex.app.model.Contact
+import chat.simplex.app.model.User
 import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URI
+import java.util.*
+import kotlin.collections.ArrayList
 
 data class Call(
   val contact: Contact,
@@ -61,39 +65,39 @@ enum class CallState {
   }
 }
 
-@Serializable class WVAPICall(val corrId: Int? = null, val command: WCallCommand)
-@Serializable class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand? = null)
+@Serializable data class WVAPICall(val corrId: Int? = null, val command: WCallCommand)
+@Serializable data class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand? = null)
 
 @Serializable
 sealed class WCallCommand {
   @Serializable @SerialName("capabilities") object Capabilities: WCallCommand()
-  @Serializable @SerialName("start") class Start(val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
-  @Serializable @SerialName("offer") class Offer(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
-  @Serializable @SerialName("answer") class Answer (val answer: String, val iceCandidates: String): WCallCommand()
-  @Serializable @SerialName("ice") class Ice(val iceCandidates: String): WCallCommand()
-  @Serializable @SerialName("media") class Media(val media: CallMediaType, val enable: Boolean): WCallCommand()
-  @Serializable @SerialName("camera") class Camera(val camera: VideoCamera): WCallCommand()
+  @Serializable @SerialName("start") data class Start(val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
+  @Serializable @SerialName("offer") data class Offer(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
+  @Serializable @SerialName("answer") data class Answer (val answer: String, val iceCandidates: String): WCallCommand()
+  @Serializable @SerialName("ice") data class Ice(val iceCandidates: String): WCallCommand()
+  @Serializable @SerialName("media") data class Media(val media: CallMediaType, val enable: Boolean): WCallCommand()
+  @Serializable @SerialName("camera") data class Camera(val camera: VideoCamera): WCallCommand()
   @Serializable @SerialName("end") object End: WCallCommand()
 }
 
 @Serializable
 sealed class WCallResponse {
-  @Serializable @SerialName("capabilities") class Capabilities(val capabilities: CallCapabilities): WCallResponse()
-  @Serializable @SerialName("offer") class Offer(val offer: String, val iceCandidates: String, val capabilities: CallCapabilities): WCallResponse()
-  @Serializable @SerialName("answer") class Answer(val answer: String, val iceCandidates: String): WCallResponse()
-  @Serializable @SerialName("ice") class Ice(val iceCandidates: String): WCallResponse()
-  @Serializable @SerialName("connection") class Connection(val state: ConnectionState): WCallResponse()
-  @Serializable @SerialName("connected") class Connected(val connectionInfo: ConnectionInfo): WCallResponse()
+  @Serializable @SerialName("capabilities") data class Capabilities(val capabilities: CallCapabilities): WCallResponse()
+  @Serializable @SerialName("offer") data class Offer(val offer: String, val iceCandidates: String, val capabilities: CallCapabilities): WCallResponse()
+  @Serializable @SerialName("answer") data class Answer(val answer: String, val iceCandidates: String): WCallResponse()
+  @Serializable @SerialName("ice") data class Ice(val iceCandidates: String): WCallResponse()
+  @Serializable @SerialName("connection") data class Connection(val state: ConnectionState): WCallResponse()
+  @Serializable @SerialName("connected") data class Connected(val connectionInfo: ConnectionInfo): WCallResponse()
   @Serializable @SerialName("ended") object Ended: WCallResponse()
   @Serializable @SerialName("ok") object Ok: WCallResponse()
-  @Serializable @SerialName("error") class Error(val message: String): WCallResponse()
+  @Serializable @SerialName("error") data class Error(val message: String): WCallResponse()
 }
 
-@Serializable class WebRTCCallOffer(val callType: CallType, val rtcSession: WebRTCSession)
-@Serializable class WebRTCSession(val rtcSession: String, val rtcIceCandidates: String)
-@Serializable class WebRTCExtraInfo(val rtcIceCandidates: String)
-@Serializable class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
-@Serializable class RcvCallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant) {
+@Serializable data class WebRTCCallOffer(val callType: CallType, val rtcSession: WebRTCSession)
+@Serializable data class WebRTCSession(val rtcSession: String, val rtcIceCandidates: String)
+@Serializable data class WebRTCExtraInfo(val rtcIceCandidates: String)
+@Serializable data class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
+@Serializable data class RcvCallInvitation(val user: User, val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant) {
   val callTypeText: String get() = generalGetString(when(callType.media) {
     CallMediaType.Video -> if (sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
     CallMediaType.Audio -> if (sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
@@ -103,19 +107,32 @@ sealed class WCallResponse {
     CallMediaType.Audio -> R.string.incoming_audio_call
   })
 }
-@Serializable class CallCapabilities(val encryption: Boolean)
-@Serializable class ConnectionInfo(private val localCandidate: RTCIceCandidate?, private val remoteCandidate: RTCIceCandidate?) {
-  val text: String @Composable get() = when {
-    localCandidate?.candidateType == RTCIceCandidateType.Host && remoteCandidate?.candidateType == RTCIceCandidateType.Host ->
-      stringResource(R.string.call_connection_peer_to_peer)
-    localCandidate?.candidateType == RTCIceCandidateType.Relay && remoteCandidate?.candidateType == RTCIceCandidateType.Relay ->
-      stringResource(R.string.call_connection_via_relay)
-    else ->
-      "${localCandidate?.candidateType?.value ?: "unknown"} / ${remoteCandidate?.candidateType?.value ?: "unknown"}"
+@Serializable data class CallCapabilities(val encryption: Boolean)
+@Serializable data class ConnectionInfo(private val localCandidate: RTCIceCandidate?, private val remoteCandidate: RTCIceCandidate?) {
+  val text: String @Composable get() {
+    val local = localCandidate?.candidateType
+    val remote = remoteCandidate?.candidateType
+    return when {
+      local == RTCIceCandidateType.Host && remote == RTCIceCandidateType.Host ->
+        stringResource(R.string.call_connection_peer_to_peer)
+      local == RTCIceCandidateType.Relay && remote == RTCIceCandidateType.Relay ->
+        stringResource(R.string.call_connection_via_relay)
+      else ->
+        "${local?.value ?: "unknown"} / ${remote?.value ?: "unknown"}"
+    }
+  }
+
+  val protocolText: String get() {
+    val local = localCandidate?.protocol?.uppercase(Locale.ROOT) ?: "unknown"
+    val localRelay = localCandidate?.relayProtocol?.uppercase(Locale.ROOT) ?: "unknown"
+    val remote = remoteCandidate?.protocol?.uppercase(Locale.ROOT) ?: "unknown"
+    val localText = if (localRelay == local || localCandidate?.relayProtocol == null) local else "$local ($localRelay)"
+    return if (local == remote) localText else "$localText / $remote"
   }
 }
+
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
-@Serializable class RTCIceCandidate(val candidateType: RTCIceCandidateType?)
+@Serializable data class RTCIceCandidate(val candidateType: RTCIceCandidateType?, val protocol: String?, val relayProtocol: String?)
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer
 @Serializable data class RTCIceServer(val urls: List<String>, val username: String? = null, val credential: String? = null)
 
@@ -150,7 +167,7 @@ enum class VideoCamera {
 }
 
 @Serializable
-class ConnectionState(
+data class ConnectionState(
   val connectionState: String,
   val iceConnectionState: String,
   val iceGatheringState: String,
@@ -158,20 +175,22 @@ class ConnectionState(
 )
 
 // the servers are expected in this format:
-// stun:stun.simplex.im:443
-// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443
+// stun:stun.simplex.im:443?transport=tcp
+// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443?transport=tcp
 fun parseRTCIceServer(str: String): RTCIceServer? {
   var s = replaceScheme(str, "stun:")
   s = replaceScheme(s, "turn:")
+  s = replaceScheme(s, "turns:")
   val u = runCatching { URI(s) }.getOrNull()
   if (u != null) {
     val scheme = u.scheme
     val host = u.host
     val port = u.port
-    if (u.path == "" && (scheme == "stun" || scheme == "turn")) {
+    if (u.path == "" && (scheme == "stun" || scheme == "turn" || scheme == "turns")) {
       val userInfo = u.userInfo?.split(":")
+      val query = if (u.query == null || u.query == "") "" else "?${u.query}"
       return RTCIceServer(
-        urls = listOf("$scheme:$host:$port"),
+        urls = listOf("$scheme:$host:$port$query"),
         username = userInfo?.getOrNull(0),
         credential = userInfo?.getOrNull(1)
       )

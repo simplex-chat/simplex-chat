@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +59,7 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
     StatusIconText(Icons.Filled.Circle, Color.Transparent)
     Spacer(Modifier.width(4.dp))
   }
-  Text(meta.timestampText, color = color, fontSize = 13.sp)
+  Text(meta.timestampText, color = color, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 // the conditions in this function should match CIMetaText

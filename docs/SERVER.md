@@ -1,3 +1,5 @@
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
+
 # Hosting your own SMP Server
 
 ## Overview
@@ -40,7 +42,7 @@ Manual installation requires some preliminary actions:
 
    ```sh
    # For Ubuntu
-   ufw allow 5233
+   ufw allow 5223
    ```
 
 4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
@@ -152,7 +154,7 @@ For example, run:
 sudo su smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
 ```
 
-to initilize your `smp-server` configuration with:
+to initialize your `smp-server` configuration with:
 
 - restoring connections and messages when the server is restarted (`-l` flag),
 - IP address `192.168.1.5`,

@@ -46,9 +46,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
         withApi {
           val newProfile = chatModel.controller.apiUpdateProfile(profile.copy(displayName = displayName, fullName = fullName, image = image))
           if (newProfile != null) {
-            chatModel.currentUser.value?.profile?.profileId?.let {
-              chatModel.updateUserProfile(newProfile.toLocalProfile(it))
-            }
+            chatModel.updateCurrentUser(newProfile)
             profile = newProfile
           }
           editProfile.value = false
@@ -96,7 +94,7 @@ fun UserProfileLayout(
             .padding(horizontal = DEFAULT_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
-          AppBarTitle(stringResource(R.string.your_chat_profile), false)
+          AppBarTitle(stringResource(R.string.your_current_profile), false)
           Text(
             stringResource(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
             Modifier.padding(bottom = 24.dp),

@@ -3,6 +3,7 @@ package chat.simplex.app.views.usersettings
 import SectionDivider
 import SectionItemView
 import SectionSpacer
+import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -76,6 +79,7 @@ fun SMPServersView(m: ChatModel) {
     serversUnchanged = serversUnchanged.value,
     saveDisabled = saveDisabled.value,
     allServersDisabled = allServersDisabled.value,
+    m.currentUser.value,
     addServer = {
       AlertManager.shared.showAlertDialogButtonsColumn(
         title = generalGetString(R.string.smp_servers_add),
@@ -156,6 +160,7 @@ private fun SMPServersLayout(
   serversUnchanged: Boolean,
   saveDisabled: Boolean,
   allServersDisabled: Boolean,
+  currentUser: User?,
   addServer: () -> Unit,
   testServers: () -> Unit,
   resetServers: () -> Unit,
@@ -186,6 +191,17 @@ private fun SMPServersLayout(
         iconColor = if (testing) HighOrLowlight else MaterialTheme.colors.primary
       )
     }
+    SectionTextFooter(
+      remember(currentUser?.displayName) {
+        buildAnnotatedString {
+          append(generalGetString(R.string.smp_servers_per_user) + " ")
+          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append(currentUser?.displayName ?: "")
+          }
+          append(".")
+        }
+      }
+    )
     SectionSpacer()
     SectionView {
       SectionItemView(resetServers, disabled = serversUnchanged) {
@@ -231,7 +247,7 @@ private fun HowToButton() {
   SettingsActionItem(
     Icons.Outlined.OpenInNew,
     stringResource(R.string.how_to_use_your_servers),
-    { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
+    { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary
   )

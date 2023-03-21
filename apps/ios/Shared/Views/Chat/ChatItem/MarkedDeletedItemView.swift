@@ -19,10 +19,11 @@ struct MarkedDeletedItemView: View {
             if showMember, let member = chatItem.memberDisplayName {
                 Text(member).font(.caption).fontWeight(.medium) + Text(": ").font(.caption)
             }
-            Text("marked deleted")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .italic()
+            if case let .moderated(byGroupMember) = chatItem.meta.itemDeleted {
+                markedDeletedText("moderated by \(byGroupMember.chatViewName)")
+            } else {
+                markedDeletedText("marked deleted")
+            }
             CIMetaView(chatItem: chatItem)
                 .padding(.horizontal, 12)
         }
@@ -32,12 +33,20 @@ struct MarkedDeletedItemView: View {
         .cornerRadius(18)
         .textSelection(.disabled)
     }
+
+    func markedDeletedText(_ s: LocalizedStringKey) -> some View {
+        Text(s)
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .italic()
+            .lineLimit(1)
+    }
 }
 
 struct MarkedDeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            MarkedDeletedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, true, false))
+            MarkedDeletedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

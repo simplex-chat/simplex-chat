@@ -7,6 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.util.fastMap
@@ -28,6 +30,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
+import kotlin.math.min
 
 val SentColorLight = Color(0x1E45B8FF)
 val ReceivedColorLight = Color(0x20B1B0B5)
@@ -74,10 +77,7 @@ fun FramedItemView(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
         .fillMaxWidth()
-        .padding(start = 8.dp)
-        .padding(end = 12.dp)
-        .padding(top = 6.dp)
-        .padding(bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
+        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
       if (icon != null) {
@@ -95,6 +95,8 @@ fun FramedItemView(
           }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
       )
     }
   }
@@ -164,8 +166,12 @@ fun FramedItemView(
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
-          if (ci.meta.itemDeleted) {
-            FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+          if (ci.meta.itemDeleted != null) {
+            if (ci.meta.itemDeleted is CIDeleted.Moderated) {
+              FramedItemHeader(String.format(stringResource(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, Icons.Outlined.Flag)
+            } else {
+              FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+            }
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(R.string.live), false)
           }
@@ -241,6 +247,12 @@ fun CIMarkdownText(
 }
 
 const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
+/**
+ * Equal to [androidx.compose.ui.unit.Constraints.MaxFocusMask], which is 0x3FFFF - 1
+ * Other values make a crash `java.lang.IllegalArgumentException: Can't represent a width of 123456 and height of 9909 in Constraints`
+ * See [androidx.compose.ui.unit.Constraints.createConstraints]
+ * */
+const val MAX_SAFE_WIDTH = 0x3FFFF - 1
 
 @Composable
 fun PriorityLayout(
@@ -248,6 +260,17 @@ fun PriorityLayout(
   priorityLayoutId: String,
   content: @Composable () -> Unit
 ) {
+  /**
+  * Limiting max value for height + width in order to not crash the app, see [androidx.compose.ui.unit.Constraints.createConstraints]
+  * */
+  fun maxSafeHeight(width: Int) = when { // width bits + height bits should be <= 31
+    width < 0x1FFF /*MaxNonFocusMask*/ -> 0x3FFFF - 1 /* MaxFocusMask */ // 13 bits width + 18 bits height
+    width < 0x7FFF /*MinNonFocusMask*/ -> 0xFFFF - 1 /* MinFocusMask */ // 15 bits width + 16 bits height
+    width < 0xFFFF /*MinFocusMask*/ -> 0x7FFF - 1 /* MinFocusMask */ // 16 bits width + 15 bits height
+    width < 0x3FFFF /*MaxFocusMask*/ -> 0x1FFF - 1 /* MaxNonFocusMask */ // 18 bits width + 13 bits height
+    else -> 0x1FFF // shouldn't happen since width is limited already
+  }
+
   Layout(
     content = content,
     modifier = modifier
@@ -259,9 +282,11 @@ fun PriorityLayout(
       if (it.layoutId == priorityLayoutId)
         imagePlaceable!!
       else
-        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: constraints.maxWidth)) }
-    // Limit width for every other element to width of important element and height for a sum of all elements
-    layout(imagePlaceable?.measuredWidth ?: placeables.maxOf { it.width }, placeables.sumOf { it.height }) {
+        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: min(MAX_SAFE_WIDTH, constraints.maxWidth))) }
+    // Limit width for every other element to width of important element and height for a sum of all elements.
+    val width = imagePlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH, placeables.maxOf { it.width })
+    val height = minOf(maxSafeHeight(width), placeables.sumOf { it.height })
+    layout(width, height) {
       var y = 0
       placeables.forEach {
         it.place(0, y)

@@ -1,0 +1,64 @@
+{
+    "languages": [
+        {
+            "label": "en",
+            "name": "English",
+            "flag": "/img/flags/en.svg",
+            "enabled": true
+        },
+        {
+            "label": "de",
+            "name": "Deutsch",
+            "flag": "/img/flags/de.svg",
+            "enabled": true
+        },
+        {
+            "label": "fr",
+            "name": "Français",
+            "flag": "/img/flags/fr.svg",
+            "enabled": true
+        },
+        {
+            "label": "cs",
+            "name": "Čeština",
+            "flag": "/img/flags/cs.svg",
+            "enabled": true
+        },
+        {
+            "label": "it",
+            "name": "Italiano",
+            "flag": "/img/flags/it.svg",
+            "enabled": true
+        },
+        {
+            "label": "nl",
+            "name": "Nederlands",
+            "flag": "/img/flags/nl.svg",
+            "enabled": true
+        },
+        {
+            "label": "nb_NO",
+            "name": "Norsk",
+            "flag": "/img/flags/nb_NO.svg",
+            "enabled": false
+        },
+        {
+            "label": "es",
+            "name": "Spanish",
+            "flag": "/img/flags/es.svg",
+            "enabled": false
+        },
+        {
+            "label": "cn",
+            "name": "Chinese",
+            "flag": "/img/flags/cn.svg",
+            "enabled": false
+        },
+        {
+            "label": "ru",
+            "name": "Russian",
+            "flag": "/img/flags/ru.svg",
+            "enabled": false
+        }
+    ]
+}

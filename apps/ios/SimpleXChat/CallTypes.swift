@@ -38,8 +38,8 @@ public struct WebRTCExtraInfo: Codable {
 }
 
 public struct RcvCallInvitation: Decodable {
+    public var user: User
     public var contact: Contact
-    public var callkitUUID: UUID? = UUID()
     public var callType: CallType
     public var sharedKey: String?
     public var callTs: Date
@@ -52,7 +52,14 @@ public struct RcvCallInvitation: Decodable {
         }
     }
 
+    public var callkitUUID: UUID? = UUID()
+
+    private enum CodingKeys: String, CodingKey {
+        case user, contact, callType, sharedKey, callTs
+    }
+
     public static let sampleData = RcvCallInvitation(
+        user: User.sampleData,
         contact: Contact.sampleData,
         callType: CallType(media: .audio, capabilities: CallCapabilities(encryption: false)),
         callTs: .now
@@ -81,6 +88,10 @@ public enum VideoCamera: String, Codable, Equatable {
 
 public struct CallCapabilities: Codable, Equatable {
     public var encryption: Bool
+
+    public init(encryption: Bool) {
+        self.encryption = encryption
+    }
 }
 
 public enum WebRTCCallStatus: String, Encodable {

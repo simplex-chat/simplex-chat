@@ -197,6 +197,12 @@
 "A random profile will be sent to your contact" = "Ein zufälliges Profil wird an Ihren Kontakt gesendet";
 
 /* No comment provided by engineer. */
+"A separate TCP connection will be used **for each chat profile you have in the app**." = "**Für jedes von Ihnen in der App genutzte Chat-Profil** wird eine separate TCP-Verbindung genutzt.";
+
+/* No comment provided by engineer. */
+"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "**Für jeden Kontakt und jedes Gruppenmitglied** wird eine separate TCP-Verbindung genutzt.\n**Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "Über SimpleX";
 
 /* No comment provided by engineer. */
@@ -231,6 +237,9 @@
 "Add preset servers" = "Füge voreingestellte Server hinzu";
 
 /* No comment provided by engineer. */
+"Add profile" = "Profil hinzufügen";
+
+/* No comment provided by engineer. */
 "Add server…" = "Füge Server hinzu…";
 
 /* No comment provided by engineer. */
@@ -247,6 +256,9 @@
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "Erweiterte Netzwerkeinstellungen";
+
+/* No comment provided by engineer. */
+"All chats and messages will be deleted - this cannot be undone!" = "Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Alle Gruppenmitglieder bleiben verbunden.";
@@ -300,10 +312,22 @@
 "always" = "Immer";
 
 /* No comment provided by engineer. */
+"Always use relay" = "Über ein Relais verbinden";
+
+/* No comment provided by engineer. */
 "Answer call" = "Anruf annehmen";
 
 /* No comment provided by engineer. */
+"App build: %@" = "App Build: %@";
+
+/* No comment provided by engineer. */
 "App icon" = "App Icon";
+
+/* No comment provided by engineer. */
+"App version" = "App Version";
+
+/* No comment provided by engineer. */
+"App version: v%@" = "App Version: v%@";
 
 /* No comment provided by engineer. */
 "Appearance" = "Design";
@@ -352,6 +376,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten senden.";
+
+/* No comment provided by engineer. */
+"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Per Chat-Profil (Voreinstellung) oder [per Verbindung](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
 "Call already ended!" = "Anruf ist bereits beendet!";
@@ -510,9 +537,6 @@
 "Connect via one-time link?" = "Über einen Einmal-Link verbinden?";
 
 /* No comment provided by engineer. */
-"Connect via relay" = "Über ein Relais verbinden";
-
-/* No comment provided by engineer. */
 "connected" = "Verbunden";
 
 /* No comment provided by engineer. */
@@ -606,6 +630,12 @@
 "Copy" = "Kopieren";
 
 /* No comment provided by engineer. */
+"Core built at: %@" = "Core übersetzt am: %@";
+
+/* No comment provided by engineer. */
+"Core version: v%@" = "Core Version: v%@";
+
+/* No comment provided by engineer. */
 "Create" = "Erstellen";
 
 /* No comment provided by engineer. */
@@ -643,9 +673,6 @@
 
 /* No comment provided by engineer. */
 "Dark" = "Dunkel";
-
-/* No comment provided by engineer. */
-"Data" = "Daten";
 
 /* No comment provided by engineer. */
 "Database encrypted!" = "Datenbank verschlüsselt!";
@@ -708,6 +735,9 @@
 "Delete after" = "Löschen nach";
 
 /* No comment provided by engineer. */
+"Delete all files" = "Alle Dateien löschen";
+
+/* No comment provided by engineer. */
 "Delete archive" = "Archiv löschen";
 
 /* No comment provided by engineer. */
@@ -732,10 +762,10 @@
 "Delete database" = "Datenbank löschen";
 
 /* No comment provided by engineer. */
-"Delete files & media" = "Dateien & Medien löschen";
+"Delete files and media?" = "Dateien und Medien löschen?";
 
 /* No comment provided by engineer. */
-"Delete files and media?" = "Dateien und Medien löschen?";
+"Delete files for all chat profiles" = "Dateien für alle Chat-Profile löschen";
 
 /* chat feature */
 "Delete for everyone" = "Für Alle löschen";
@@ -757,6 +787,9 @@
 
 /* No comment provided by engineer. */
 "Delete link?" = "Link löschen?";
+
+/* No comment provided by engineer. */
+"Delete member message?" = "Nachricht des Mitglieds löschen?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Die Nachricht löschen?";
@@ -782,6 +815,9 @@
 /* server test step */
 "Delete queue" = "Lösche Warteschlange";
 
+/* No comment provided by engineer. */
+"Delete user profile?" = "Benutzerprofil löschen?";
+
 /* deleted chat item */
 "deleted" = "Gelöscht";
 
@@ -805,6 +841,9 @@
 
 /* No comment provided by engineer. */
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "Die Geräteauthentifizierung ist deaktiviert. Sie können die SimpleX Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.";
+
+/* No comment provided by engineer. */
+"Different names, avatars and transport isolation." = "Unterschiedliche Namen, Avatare und Transport-Isolation.";
 
 /* connection level description */
 "direct" = "direkt";
@@ -841,6 +880,9 @@
 
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "Nutzen Sie SimpleX nicht für Notrufe.";
+
+/* No comment provided by engineer. */
+"Duplicate display name!" = "Doppelter Anzeigename!";
 
 /* integrity error chat item */
 "duplicate message" = "Doppelte Nachricht";
@@ -957,6 +999,9 @@
 "Error creating group link" = "Fehler beim Erzeugen des Gruppen-Links";
 
 /* No comment provided by engineer. */
+"Error creating profile!" = "Fehler beim Erstellen des Profils!";
+
+/* No comment provided by engineer. */
 "Error deleting chat database" = "Fehler beim Löschen der Chat-Datenbank";
 
 /* No comment provided by engineer. */
@@ -976,6 +1021,9 @@
 
 /* No comment provided by engineer. */
 "Error deleting token" = "Fehler beim Löschen des Tokens";
+
+/* No comment provided by engineer. */
+"Error deleting user profile" = "Fehler beim Löschen des Benutzerprofils";
 
 /* No comment provided by engineer. */
 "Error enabling notifications" = "Fehler beim Aktivieren der Benachrichtigungen";
@@ -1020,6 +1068,12 @@
 "Error stopping chat" = "Fehler beim Beenden des Chats";
 
 /* No comment provided by engineer. */
+"Error switching profile!" = "Fehler beim Umschalten des Profils!";
+
+/* No comment provided by engineer. */
+"Error updating group link" = "Fehler beim Aktualisieren des Gruppen-Links";
+
+/* No comment provided by engineer. */
 "Error updating message" = "Fehler beim Aktualisieren der Nachricht";
 
 /* No comment provided by engineer. */
@@ -1059,7 +1113,13 @@
 "File: %@" = "Datei: %@";
 
 /* No comment provided by engineer. */
+"Files & media" = "Dateien & Medien";
+
+/* No comment provided by engineer. */
 "For console" = "Für Konsole";
+
+/* No comment provided by engineer. */
+"French interface" = "Französische Bedienoberfläche";
 
 /* No comment provided by engineer. */
 "Full link" = "Vollständiger Link";
@@ -1165,9 +1225,6 @@
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE-Server (einer pro Zeile)";
-
-/* No comment provided by engineer. */
-"If the video fails to connect, flip the camera to resolve it." = "Wenn der Videoanruf nicht funktioniert, wechseln Sie die Kamera, um das Problem zu lösen.";
 
 /* No comment provided by engineer. */
 "If you can't meet in person, **show QR code in the video call**, or share the link." = "Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs angezeigt werden**, oder der Einladungslink über einen anderen Kanal mit Ihrem Kontakt geteilt werden.";
@@ -1311,6 +1368,9 @@
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Es sieht so aus, dass Sie bereits über diesen Link verbunden sind. Wenn das nicht der Fall, gab es einen Fehler (%@).";
 
 /* No comment provided by engineer. */
+"Italian interface" = "Italienische Bedienoberfläche";
+
+/* No comment provided by engineer. */
 "italic" = "kursiv";
 
 /* No comment provided by engineer. */
@@ -1365,6 +1425,9 @@
 "Local name" = "Lokaler Name";
 
 /* No comment provided by engineer. */
+"Local profile data only" = "Nur lokale Profildaten";
+
+/* No comment provided by engineer. */
 "Make a private connection" = "Stellen Sie eine private Verbindung her";
 
 /* No comment provided by engineer. */
@@ -1415,6 +1478,9 @@
 /* No comment provided by engineer. */
 "Message delivery error" = "Fehler bei der Nachrichtenzustellung";
 
+/* No comment provided by engineer. */
+"Message draft" = "Nachrichtenentwurf";
+
 /* notification */
 "message received" = "Nachricht empfangen";
 
@@ -1439,8 +1505,23 @@
 /* call status */
 "missed call" = "Anruf verpasst";
 
+/* chat item action */
+"Moderate" = "Moderieren";
+
+/* moderated chat item */
+"moderated" = "Moderiert";
+
+/* No comment provided by engineer. */
+"moderated by %@" = "von %@ moderiert";
+
+/* No comment provided by engineer. */
+"More improvements are coming soon!" = "Weitere Verbesserungen sind bald verfügbar!";
+
 /* No comment provided by engineer. */
 "Most likely this contact has deleted the connection with you." = "Dieser Kontakt hat sehr wahrscheinlich die Verbindung mit Ihnen gelöscht.";
+
+/* No comment provided by engineer. */
+"Multiple chat profiles" = "Mehrere Chat-Profile";
 
 /* No comment provided by engineer. */
 "Mute" = "Stummschalten";
@@ -1517,6 +1598,9 @@
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Benachrichtigungen sind deaktiviert!";
 
+/* member role */
+"observer" = "beobachter";
+
 /* enabled status
    group pref value */
 "off" = "Aus";
@@ -1590,6 +1674,9 @@
 /* No comment provided by engineer. */
 "Open Settings" = "Geräte-Einstellungen öffnen";
 
+/* authentication reason */
+"Open user profiles" = "Benutzerprofile öffnen";
+
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.";
 
@@ -1624,6 +1711,9 @@
 "Periodically" = "Periodisch";
 
 /* No comment provided by engineer. */
+"PING count" = "PING Zähler";
+
+/* No comment provided by engineer. */
 "PING interval" = "PING-Intervall";
 
 /* No comment provided by engineer. */
@@ -1637,6 +1727,9 @@
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Bitte überprüfen sie sowohl Ihre, als auch die Präferenzen Ihres Kontakts.";
+
+/* No comment provided by engineer. */
+"Please contact group admin." = "Bitte kontaktieren Sie den Gruppen-Administrator.";
 
 /* No comment provided by engineer. */
 "Please enter correct current passphrase." = "Bitte geben Sie das korrekte, aktuelle Passwort ein.";
@@ -1657,6 +1750,9 @@
 "Possibly, certificate fingerprint in server address is incorrect" = "Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig";
 
 /* No comment provided by engineer. */
+"Preserve the last message draft, with attachments." = "Den letzten Nachrichtenentwurf, auch mit seinen Anhängen, aufbewahren.";
+
+/* No comment provided by engineer. */
 "Preset server" = "Voreingestellter Server";
 
 /* No comment provided by engineer. */
@@ -1667,6 +1763,12 @@
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "Datenschutz neu definiert";
+
+/* No comment provided by engineer. */
+"Private filenames" = "Neutrale Dateinamen";
+
+/* No comment provided by engineer. */
+"Profile and server connections" = "Profil und Serververbindungen";
 
 /* No comment provided by engineer. */
 "Profile image" = "Profilbild";
@@ -1718,6 +1820,9 @@
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Die Empfänger sehen Nachrichtenaktualisierungen, während Sie sie eingeben.";
+
+/* No comment provided by engineer. */
+"Reduced battery usage" = "Reduzierter Batterieverbrauch";
 
 /* reject incoming call via notification */
 "Reject" = "Ablehnen";
@@ -2068,6 +2173,12 @@
 "Thank you for installing SimpleX Chat!" = "Vielen Dank, dass Sie SimpleX Chat installiert haben!";
 
 /* No comment provided by engineer. */
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "Dank der Nutzer - [Tragen Sie per Weblate bei](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!";
+
+/* No comment provided by engineer. */
+"Thanks to the users – contribute via Weblate!" = "Dank der Nutzer - Tragen Sie per Weblate bei!";
+
+/* No comment provided by engineer. */
 "The 1st platform without any user identifiers – private by design." = "Die erste Plattform ohne Benutzerkennungen – Privat per Design.";
 
 /* No comment provided by engineer. */
@@ -2089,7 +2200,10 @@
 "The group is fully decentralized – it is visible only to the members." = "Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.";
 
 /* No comment provided by engineer. */
-"The microphone does not work when the app is in the background." = "Das Mikrofon wird nicht funktionieren, wenn sich die App im Hintergrund befindet.";
+"The message will be deleted for all members." = "Diese Nachricht wird für alle Gruppenmitglieder gelöscht.";
+
+/* No comment provided by engineer. */
+"The message will be marked as moderated for all members." = "Diese Nachricht wird für alle Mitglieder als moderiert gekennzeichnet.";
 
 /* No comment provided by engineer. */
 "The next generation of private messaging" = "Die nächste Generation von privatem Messaging";
@@ -2102,6 +2216,9 @@
 
 /* No comment provided by engineer. */
 "The sender will NOT be notified" = "Der Absender wird NICHT benachrichtigt";
+
+/* No comment provided by engineer. */
+"The servers for new connections of your current chat profile **%@**." = "Server der neuen Verbindungen von Ihrem aktuellen Chat-Profil **%@**.";
 
 /* No comment provided by engineer. */
 "Theme" = "Design";
@@ -2125,6 +2242,9 @@
 "This group no longer exists." = "Diese Gruppe existiert nicht mehr.";
 
 /* No comment provided by engineer. */
+"This setting applies to messages in your current chat profile **%@**." = "Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.";
+
+/* No comment provided by engineer. */
 "To ask any questions and to receive updates:" = "Um Fragen zu stellen und Aktualisierungen zu erhalten:";
 
 /* No comment provided by engineer. */
@@ -2134,10 +2254,10 @@
 "To make a new connection" = "Um eine Verbindung mit einem neuen Kontakt zu erstellen";
 
 /* No comment provided by engineer. */
-"To prevent the call interruption, enable Do Not Disturb mode." = "Aktivieren Sie den \"Nicht stören\" Modus, um Anruf-Unterbrechungen zu vermeiden.";
+"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Zum Schutz Ihrer Privatsphäre verwendet SimpleX an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Zum Schutz Ihrer Privatsphäre verwendet SimpleX an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.";
+"To protect timezone, image/voice files use UTC." = "Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.";
 
 /* No comment provided by engineer. */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Um Ihre Informationen zu schützen, schalten Sie die SimpleX Sperre ein.\nSie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.";
@@ -2152,7 +2272,7 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Um die Ende-zu-Ende-Verschlüsselung mit Ihrem Kontakt zu überprüfen, müssen Sie den Sicherheitscode in Ihren Apps vergleichen oder scannen.";
 
 /* No comment provided by engineer. */
-"Transfer images faster" = "Bilder schneller übertragen";
+"Transport isolation" = "Transport-Isolation";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %@).";
@@ -2211,6 +2331,9 @@
 /* No comment provided by engineer. */
 "Update network settings?" = "Netzwerkeinstellungen aktualisieren?";
 
+/* No comment provided by engineer. */
+"Update transport isolation mode?" = "Transport-Isolations-Modus aktualisieren?";
+
 /* rcv group event chat item */
 "updated group profile" = "Aktualisiertes Gruppenprofil";
 
@@ -2234,6 +2357,9 @@
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Verwenden Sie SimpleX Chat Server?";
+
+/* No comment provided by engineer. */
+"User profile" = "Benutzerprofil";
 
 /* No comment provided by engineer. */
 "Using .onion hosts requires compatible VPN provider." = "Für die Nutzung von .onion-Hosts sind kompatible VPN-Anbieter erforderlich.";
@@ -2344,6 +2470,9 @@
 "You allow" = "Sie erlauben";
 
 /* No comment provided by engineer. */
+"You already have a chat profile with the same display name. Please choose another name." = "Sie haben schon ein Chat-Profil mit dem gleichen Anzeigenamen. Bitte wählen Sie einen anderen Namen aus.";
+
+/* No comment provided by engineer. */
 "You are already connected to %@." = "Sie sind bereits mit %@ verbunden.";
 
 /* No comment provided by engineer. */
@@ -2354,6 +2483,9 @@
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sie sind zu der Gruppe eingeladen";
+
+/* No comment provided by engineer. */
+"you are observer" = "Sie sind Beobachter";
 
 /* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche **In mobiler App öffnen**.";
@@ -2375,6 +2507,9 @@
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:";
+
+/* No comment provided by engineer. */
+"You can't send messages!" = "Sie können keine Nachrichten versenden!";
 
 /* chat item text */
 "you changed address" = "Sie haben die Adresse gewechselt";
@@ -2470,13 +2605,16 @@
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Ihre Chat-Datenbank ist nicht verschlüsselt. Bitte legen Sie ein Passwort fest, um sie zu schützen.";
 
 /* No comment provided by engineer. */
-"Your chat profile" = "Mein Chat-Profil";
-
-/* No comment provided by engineer. */
 "Your chat profile will be sent to group members" = "Ihr Chat-Profil wird an Gruppenmitglieder gesendet";
 
 /* No comment provided by engineer. */
 "Your chat profile will be sent to your contact" = "Ihr Chat-Profil wird an Ihren Kontakt gesendet";
+
+/* No comment provided by engineer. */
+"Your chat profiles" = "Meine Chat-Profile";
+
+/* No comment provided by engineer. */
+"Your chat profiles are stored locally, only on your device." = "Ihre Chat-Profile werden nur lokal auf Ihrem Endgerät gespeichert.";
 
 /* No comment provided by engineer. */
 "Your chats" = "Meine Chats";
@@ -2498,6 +2636,9 @@
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.";
+
+/* No comment provided by engineer. */
+"Your current profile" = "Mein aktuelles Chat-Profil";
 
 /* No comment provided by engineer. */
 "Your ICE servers" = "Ihre ICE-Server";

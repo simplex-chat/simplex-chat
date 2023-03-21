@@ -23,7 +23,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Messages
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
-import Simplex.Messaging.Util (safeDecodeUtf8, whenM)
+import Simplex.Messaging.Util (whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -43,7 +43,8 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand bs) cc
   case r of
-    CRChatCmdError _ -> when (isMessage cmd) $ echo s
+    CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
+    CRChatError _ _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
   printRespToTerminal ct cc False r
   startLiveMessage cmd r
@@ -58,9 +59,9 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       Right SendMessageBroadcast {} -> True
       _ -> False
     startLiveMessage :: Either a ChatCommand -> ChatResponse -> IO ()
-    startLiveMessage (Right (SendLiveMessage chatName msg)) (CRNewChatItem (AChatItem cType SMDSnd _ ChatItem {meta = CIMeta {itemId}})) = do
+    startLiveMessage (Right (SendLiveMessage chatName msg)) (CRNewChatItem _ (AChatItem cType SMDSnd _ ChatItem {meta = CIMeta {itemId}})) = do
       whenM (isNothing <$> readTVarIO liveMessageState) $ do
-        let s = T.unpack $ safeDecodeUtf8 msg
+        let s = T.unpack msg
             int = case cType of SCTGroup -> 5000000; _ -> 3000000 :: Int
         liveThreadId <- mkWeakThreadId =<< runLiveMessage int `forkFinally` const (atomically $ writeTVar liveMessageState Nothing)
         promptThreadId <- mkWeakThreadId =<< forkIO blinkLivePrompt
@@ -109,9 +110,8 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
 
 sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO ChatResponse
 sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
-  let bs = encodeUtf8 $ T.pack sentMsg
-      cmd = UpdateLiveMessage chatName chatItemId live bs
-  either CRChatCmdError id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
+  let cmd = UpdateLiveMessage chatName chatItemId live $ T.pack sentMsg
+  either (CRChatCmdError Nothing) id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do
@@ -237,8 +237,8 @@ updateTermState ac live tw (key, ms) ts@TerminalState {inputString = s, inputPos
       Left _ -> inp
       Right cmd -> case cmd of
         SendMessage {} -> "! " <> inp
-        SendMessageQuote {contactName, message} -> T.unpack $ "! @" <> contactName <> " " <> safeDecodeUtf8 message
-        SendGroupMessageQuote {groupName, message} -> T.unpack $ "! #" <> groupName <> " " <> safeDecodeUtf8 message
+        SendMessageQuote {contactName, message} -> T.unpack $ "! @" <> contactName <> " " <> message
+        SendGroupMessageQuote {groupName, message} -> T.unpack $ "! #" <> groupName <> " " <> message
         _ -> inp
     setPosition p' = ts' (s, p')
     prevWordPos

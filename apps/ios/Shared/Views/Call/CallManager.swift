@@ -12,7 +12,9 @@ import SimpleXChat
 class CallManager {
     func newOutgoingCall(_ contact: Contact, _ media: CallMediaType) -> UUID {
         let uuid = UUID()
-        ChatModel.shared.activeCall = Call(direction: .outgoing, contact: contact, callkitUUID: uuid, callState: .waitCapabilities, localMedia: media)
+        let call = Call(direction: .outgoing, contact: contact, callkitUUID: uuid, callState: .waitCapabilities, localMedia: media)
+        call.speakerEnabled = media == .video
+        ChatModel.shared.activeCall = call
         return uuid
     }
 
@@ -20,7 +22,7 @@ class CallManager {
         let m = ChatModel.shared
         if let call = m.activeCall, call.callkitUUID == callUUID {
             m.showCallView = true
-            m.callCommand = .capabilities(media: call.localMedia, useWorker: true)
+            m.callCommand = .capabilities(media: call.localMedia)
             return true
         }
         return false
@@ -37,7 +39,7 @@ class CallManager {
     func answerIncomingCall(invitation: RcvCallInvitation) {
         let m = ChatModel.shared
         m.callInvitations.removeValue(forKey: invitation.contact.id)
-        m.activeCall = Call(
+        let call = Call(
             direction: .incoming,
             contact: invitation.contact,
             callkitUUID: invitation.callkitUUID,
@@ -45,18 +47,32 @@ class CallManager {
             localMedia: invitation.callType.media,
             sharedKey: invitation.sharedKey
         )
-        m.showCallView = true
+        call.speakerEnabled = invitation.callType.media == .video
         let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
         let iceServers = getIceServers()
         logger.debug("answerIncomingCall useRelay: \(useRelay)")
         logger.debug("answerIncomingCall iceServers: \(String(describing: iceServers))")
-        m.callCommand = .start(
-            media: invitation.callType.media,
-            aesKey: invitation.sharedKey,
-            useWorker: true,
-            iceServers: iceServers,
-            relay: useRelay
-        )
+        // When in active call user wants to accept another call, this can only work after delay (to hide and show activeCallView)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (m.activeCall == nil ? 0 : 1)) {
+            m.activeCall = call
+            m.showCallView = true
+
+            m.callCommand = .start(
+                media: invitation.callType.media,
+                aesKey: invitation.sharedKey,
+                iceServers: iceServers,
+                relay: useRelay
+            )
+        }
+    }
+
+    func enableMedia(media: CallMediaType, enable: Bool, callUUID: UUID) -> Bool {
+        if let call = ChatModel.shared.activeCall, call.callkitUUID == callUUID {
+            let m = ChatModel.shared
+            m.callCommand = .media(media: media, enable: enable)
+            return true
+        }
+        return false
     }
 
     func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {
@@ -79,16 +95,14 @@ class CallManager {
         } else {
             logger.debug("CallManager.endCall: ending call...")
             m.callCommand = .end
+            m.activeCall = nil
             m.showCallView = false
+            completed()
             Task {
                 do {
                     try await apiEndCall(call.contact)
                 } catch {
                     logger.error("CallController.provider apiEndCall error: \(responseError(error))")
-                }
-                DispatchQueue.main.async {
-                    m.activeCall = nil
-                    completed()
                 }
             }
         }

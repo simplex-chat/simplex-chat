@@ -42,12 +42,15 @@ stack.yaml.lock
 
 # Temporary test files
 tests/tmp
+tests/tmp*
 logs/
 
-
+*.devcontainer
 # for website
 website/node_modules/
 website/src/blog/
+website/translations.json
+website/src/_data/supported_languages.json
 website/src/img/images/
 website/src/images/
 # Generated files

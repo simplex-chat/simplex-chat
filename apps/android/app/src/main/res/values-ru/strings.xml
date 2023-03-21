@@ -423,7 +423,7 @@
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">"Полное имя:</string>
-    <string name="your_chat_profile">Ваш профиль</string>
+    <string name="your_current_profile">Ваш активный профиль</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\n\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
@@ -514,13 +514,15 @@
     <!-- Call settings -->
     <string name="settings_audio_video_calls">Аудио- и видеозвонки</string>
     <string name="your_calls">Ваши звонки</string>
-    <string name="connect_calls_via_relay">Соединяться через сервер (relay)</string>
+    <string name="always_use_relay">Всегда соединяться через relay</string>
     <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
     <string name="accept_call_on_lock_screen">Принимать</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
     <string name="your_ice_servers">Ваши ICE серверы</string>
     <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
+    <string name="relay_server_protects_ip">Relay сервер защищает ваш IP адрес, но может отслеживать продолжительность звонка.</string>
+    <string name="relay_server_if_necessary">Relay сервер используется только при необходимости. Другая сторона может видеть ваш IP адрес.</string>
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Откройте <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\nчтобы принять звонок</string>
     <string name="allow_accepting_calls_from_lock_screen">Вы можете разрешить принимать звонки на экране блокировки через Настройки.</string>
@@ -560,7 +562,6 @@
     <string name="your_privacy">Конфиденциальность</string>
     <string name="protect_app_screen">Защитить экран приложения</string>
     <string name="auto_accept_images">Автоприем изображений</string>
-    <string name="transfer_images_faster">Передавать изображения быстрее</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
     <string name="full_backup">Резервная копия данных</string>
     <!-- Settings sections -->
@@ -612,8 +613,8 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Используйте самую последнюю версию архива чата и ТОЛЬКО на одном устройстве, иначе вы можете перестать получать сообщения от некоторых контактов.</string>
     <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с архивом чата.</string>
-    <string name="data_section">ДАННЫЕ</string>
-    <string name="delete_files_and_media">Удалить файлы и медиа</string>
+    <string name="delete_files_and_media_for_all_users">Удалить файлы во всех профилях чата</string>
+    <string name="delete_files_and_media_all">Удалить все файлы</string>
     <string name="delete_files_and_media_question">Удалить файлы и медиа?</string>
     <string name="delete_files_and_media_desc">Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</string>
     <string name="no_received_app_files">Нет полученных или отправленных файлов</string>
@@ -993,4 +994,62 @@
     <string name="feature_offered_item">предложил(a) %s</string>
     <string name="feature_offered_item_with_param">предложил(a) %s: %2s</string>
     <string name="feature_cancelled_item">отменил(a) %s</string>
+    <string name="icon_descr_cancel_live_message">Отменить живое сообщение</string>
+    <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+    <string name="network_option_ping_count">Количество PING</string>
+    <string name="users_delete_with_connections">Профиль и соединения на сервере</string>
+    <string name="app_version_title">Версия приложения</string>
+    <string name="network_session_mode_user">Профиль чата</string>
+    <string name="network_session_mode_entity">Соединение</string>
+    <string name="users_add">Добавить профиль</string>
+    <string name="error_deleting_user">Ошибка удаления профиля пользователя</string>
+    <string name="files_and_media_section">Файлы и медиа</string>
+    <string name="users_delete_data_only">Только локальные данные профиля</string>
+    <string name="messages_section_title">Сообщения</string>
+    <string name="smp_servers_per_user">Серверы для новых соединений вашего текущего профиля чата</string>
+    <string name="your_chat_profiles_stored_locally">Ваши профили чата хранятся локально, только на вашем устройстве</string>
+    <string name="your_chat_profiles">Ваши профили чата</string>
+    <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
+    <string name="app_version_code">Сборка приложения: %s</string>
+    <string name="app_version_name">Версия приложения: v%s</string>
+    <string name="network_session_mode_entity_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>.
+\n<b>Обратите внимание</b>: если у вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.</string>
+    <string name="network_session_mode_user_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого профиля чата, который вы имеете в приложении</b>.</string>
+    <string name="core_build_timestamp">Ядро скомпилировано: %s</string>
+    <string name="core_version">Версия ядра: v%s</string>
+    <string name="users_delete_question">Удалить профиль чата\?</string>
+    <string name="users_delete_profile_for">Удалить профиль чата для</string>
+    <string name="messages_section_description">Эта настройка применяется к сообщениям в вашем текущем профиле чата</string>
+    <string name="network_session_mode_transport_isolation">Отдельные сессии для</string>
+    <string name="update_network_session_mode_question">Обновить режим отдельных сессий\?</string>
+    <string name="failed_to_create_user_duplicate_title">Имя профиля уже используется</string>
+    <string name="failed_to_create_user_title">Ошибка создания профиля!</string>
+    <string name="failed_to_create_user_duplicate_desc">У вас уже есть профиль с таким именем. Пожалуйста, выберите другое имя.</string>
+    <string name="failed_to_active_user_title">Ошибка выбора профиля!</string>
+    <string name="v4_5_transport_isolation_descr">По профилю чата или по соединению (БЕТА)</string>
+    <string name="v4_4_french_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Разные имена, аватары и транспортные сессии.</string>
+    <string name="v4_5_italian_interface">Итальянский интерфейс</string>
+    <string name="v4_5_message_draft">Черновик сообщения</string>
+    <string name="v4_5_multiple_chat_profiles">Много профилей чата</string>
+    <string name="v4_5_message_draft_descr">Сохранить последний черновик, вместе с вложениями.</string>
+    <string name="v4_5_private_filenames">Защищенные имена файлов</string>
+    <string name="v4_5_italian_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="v4_5_private_filenames_descr">Чтобы защитить ваш часовой пояс, файлы картинок и голосовых сообщений используют UTC.</string>
+    <string name="v4_4_french_interface">Французский интерфейс</string>
+    <string name="v4_5_reduced_battery_usage_descr">Дополнительные улучшения скоро!</string>
+    <string name="v4_5_reduced_battery_usage">Уменьшенное потребление батареи</string>
+    <string name="v4_5_transport_isolation">Отдельные транспортные сессии</string>
+    <string name="moderated_description">удалено</string>
+    <string name="moderated_item_description">удалено %s</string>
+    <string name="delete_member_message__question">Удалить сообщение участника\?</string>
+    <string name="moderate_verb">Модерировать</string>
+    <string name="moderate_message_will_be_deleted_warning">Сообщение будет удалено для всех членов группы.</string>
+    <string name="moderate_message_will_be_marked_warning">Сообщение будет помечено как удаленное для всех членов группы.</string>
+    <string name="observer_cant_send_message_desc">Пожалуйста, свяжитесь с админом группы.</string>
+    <string name="observer_cant_send_message_title">Вы не можете отправлять сообщения!</string>
+    <string name="you_are_observer">только чтение сообщений</string>
+    <string name="group_member_role_observer">читатель</string>
+    <string name="initial_member_role">Роль при вступлении</string>
+    <string name="error_updating_link_for_group">Ошибка обновления ссылки группы</string>
 </resources>

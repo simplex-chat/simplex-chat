@@ -15,6 +15,8 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) var presentationMode
     @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
@@ -51,7 +53,7 @@ struct ChatView: View {
             }
             
             Spacer(minLength: 0)
-            
+
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
@@ -62,30 +64,30 @@ struct ChatView: View {
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
         .onAppear {
+            if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+                composeState = draft
+            }
             if chat.chatStats.unreadChat {
                 Task {
                     await markChatUnread(chat, unreadChat: false)
                 }
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    chatModel.chatId = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        if chatModel.chatId == nil {
-                            chatModel.reversedChatItems = []
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 0) {
-                        Image(systemName: "chevron.backward")
-                        Text("Chats")
+        .onChange(of: chatModel.chatId) { _ in
+            if chatModel.chatId == nil { dismiss() }
+        }
+        .onDisappear {
+            if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
+                chatModel.chatId = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    if chatModel.chatId == nil {
+                        chatModel.reversedChatItems = []
                     }
                 }
             }
+        }
+        .toolbar {
             ToolbarItem(placement: .principal) {
                 if case let .direct(contact) = cInfo {
                     Button {
@@ -177,7 +179,7 @@ struct ChatView: View {
             }
         }
     }
-    
+
     private func searchToolbar() -> some View {
         HStack {
             HStack {
@@ -233,7 +235,6 @@ struct ChatView: View {
                                             if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
                                                 Task {
                                                     await apiMarkChatItemRead(cInfo, ci)
-                                                    NtfManager.shared.decNtfBadgeCount()
                                                 }
                                             }
                                         }
@@ -465,8 +466,8 @@ struct ChatView: View {
         
         private func menu(live: Bool) -> [UIAction] {
             var menu: [UIAction] = []
-            if let mc = ci.content.msgContent, !ci.meta.itemDeleted || revealed {
-                if !ci.meta.itemDeleted && !ci.isLiveDummy && !live {
+            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
                     menu.append(replyUIAction())
                 }
                 menu.append(shareUIAction())
@@ -491,8 +492,13 @@ struct ChatView: View {
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
                 }
-            } else if ci.meta.itemDeleted {
-                menu.append(revealUIAction())
+                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
+                    menu.append(moderateUIAction(groupInfo))
+                }
+            } else if ci.meta.itemDeleted != nil {
+                if !ci.isDeletedContent {
+                    menu.append(revealUIAction())
+                }
                 menu.append(deleteUIAction())
             } else if ci.isDeletedContent {
                 menu.append(deleteUIAction())
@@ -594,7 +600,29 @@ struct ChatView: View {
                 deletingItem = ci
             }
         }
-        
+
+        private func moderateUIAction(_ groupInfo: GroupInfo) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Moderate", comment: "chat item action"),
+                image: UIImage(systemName: "flag"),
+                attributes: [.destructive]
+            ) { _ in
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Delete member message?"),
+                    message: Text(
+                                groupInfo.fullGroupPreferences.fullDelete.on
+                                ? "The message will be deleted for all members."
+                                : "The message will be marked as moderated for all members."
+                            ),
+                    primaryButton: .destructive(Text("Delete")) {
+                        deletingItem = ci
+                        deleteMessage(.cidmBroadcast)
+                    },
+                    secondaryButton: .cancel()
+                ))
+            }
+        }
+
         private func revealUIAction() -> UIAction {
             UIAction(
                 title: NSLocalizedString("Reveal", comment: "chat item action"),
@@ -637,12 +665,22 @@ struct ChatView: View {
             logger.debug("ChatView deleteMessage: in Task")
             do {
                 if let di = deletingItem {
-                    let (deletedItem, toItem) = try await apiDeleteChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: di.id,
-                        mode: mode
-                    )
+                    var deletedItem: ChatItem
+                    var toItem: ChatItem?
+                    if let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
+                        (deletedItem, toItem) = try await apiDeleteMemberChatItem(
+                            groupId: groupInfo.apiId,
+                            groupMemberId: groupMember.groupMemberId,
+                            itemId: di.id
+                        )
+                    } else {
+                        (deletedItem, toItem) = try await apiDeleteChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: di.id,
+                            mode: mode
+                        )
+                    }
                     DispatchQueue.main.async {
                         deletingItem = nil
                         if let toItem = toItem {

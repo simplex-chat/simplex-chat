@@ -17,7 +17,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Notification
 import Simplex.Chat.Terminal.Output
-import Simplex.Messaging.Agent.Env.SQLite (InitialAgentServers (..))
+import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
 import System.Exit (exitFailure)
@@ -26,7 +26,7 @@ terminalChatConfig :: ChatConfig
 terminalChatConfig =
   defaultChatConfig
     { defaultServers =
-        InitialAgentServers
+        DefaultAgentServers
           { smp =
               L.fromList
                 [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
@@ -34,6 +34,7 @@ terminalChatConfig =
                   "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
                 ],
             ntf = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"],
+            xftp = defaultXFTPServers,
             netCfg = defaultNetworkConfig
           }
     }

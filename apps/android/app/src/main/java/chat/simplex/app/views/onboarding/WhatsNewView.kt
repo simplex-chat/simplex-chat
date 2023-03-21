@@ -35,7 +35,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       Icon(
         Icons.Outlined.OpenInNew, stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
-          .clickable { uriHandler.openUri(link) }
+          .clickable { uriHandler.openUriCatching(link) }
       )
     }
 
@@ -226,6 +226,48 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = Icons.Outlined.VerifiedUser,
         titleId = R.string.v4_4_verify_connection_security,
         descrId = R.string.v4_4_verify_connection_security_desc
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Translate,
+        titleId = R.string.v4_4_french_interface,
+        descrId = R.string.v4_4_french_interface_descr
+      )
+    )
+  ),
+  VersionDescription(
+    version = "v4.5",
+    features = listOf(
+      FeatureDescription(
+        icon = Icons.Outlined.ManageAccounts,
+        titleId = R.string.v4_5_multiple_chat_profiles,
+        descrId = R.string.v4_5_multiple_chat_profiles_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.EditNote,
+        titleId = R.string.v4_5_message_draft,
+        descrId = R.string.v4_5_message_draft_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.SafetyDivider,
+        titleId = R.string.v4_5_transport_isolation,
+        descrId = R.string.v4_5_transport_isolation_descr,
+        link = "https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation"
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Task,
+        titleId = R.string.v4_5_private_filenames,
+        descrId = R.string.v4_5_private_filenames_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Battery2Bar,
+        titleId = R.string.v4_5_reduced_battery_usage,
+        descrId = R.string.v4_5_reduced_battery_usage_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Translate,
+        titleId = R.string.v4_5_italian_interface,
+        descrId = R.string.v4_5_italian_interface_descr,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
       )
     )
   )

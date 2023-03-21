@@ -109,7 +109,7 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
-private func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
+public func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
     let s = String.init(cString: c)
     free(c)
     return s
@@ -134,6 +134,7 @@ public func chatResponse(_ s: String) -> ChatResponse {
             type = jResp.allKeys[0] as? String
             if type == "apiChats" {
                 if let jApiChats = jResp["apiChats"] as? NSDictionary,
+                   let user: User = try? decodeObject(jApiChats["user"] as Any),
                    let jChats = jApiChats["chats"] as? NSArray {
                     let chats = jChats.map { jChat in
                         if let chatData = try? parseChatData(jChat) {
@@ -141,13 +142,14 @@ public func chatResponse(_ s: String) -> ChatResponse {
                         }
                         return ChatData.invalidJSON(prettyJSON(jChat) ?? "")
                     }
-                    return .apiChats(chats: chats)
+                    return .apiChats(user: user, chats: chats)
                 }
             } else if type == "apiChat" {
                 if let jApiChat = jResp["apiChat"] as? NSDictionary,
+                   let user: User = try? decodeObject(jApiChat["user"] as Any),
                    let jChat = jApiChat["chat"] as? NSDictionary,
                    let chat = try? parseChatData(jChat) {
-                    return .apiChat(chat: chat)
+                    return .apiChat(user: user, chat: chat)
                 }
             }
         }

@@ -17,25 +17,28 @@ struct CIVoiceView: View {
     @State var playbackTime: TimeInterval?
 
     var body: some View {
-        VStack (
-            alignment: chatItem.chatDir.sent ? .trailing : .leading,
-            spacing: 6
-        ) {
-            HStack {
-                if chatItem.chatDir.sent {
-                    playerTime()
-                        .frame(width: 50, alignment: .leading)
-                    player()
-                } else {
-                    player()
-                    playerTime()
-                        .frame(width: 50, alignment: .leading)
+        Group {
+            if chatItem.chatDir.sent {
+                VStack (alignment: .trailing, spacing: 6) {
+                    HStack {
+                        playerTime()
+                        player()
+                    }
+                    .frame(alignment: .trailing)
+                    metaView().padding(.trailing, 10)
+                }
+            } else {
+                VStack (alignment: .leading, spacing: 6) {
+                    HStack {
+                        player()
+                        playerTime()
+                    }
+                    .frame(alignment: .leading)
+                    metaView().padding(.leading, -6)
                 }
             }
-            CIMetaView(chatItem: chatItem)
-                .padding(.leading, chatItem.chatDir.sent ? 0 : 12)
-                .padding(.trailing, chatItem.chatDir.sent ? 12 : 0)
         }
+        .padding([.top, .horizontal], 4)
         .padding(.bottom, 8)
     }
 
@@ -58,6 +61,10 @@ struct CIVoiceView: View {
         )
         .foregroundColor(.secondary)
     }
+
+    private func metaView() -> some View {
+        CIMetaView(chatItem: chatItem)
+    }
 }
 
 struct VoiceMessagePlayerTime: View {
@@ -66,13 +73,16 @@ struct VoiceMessagePlayerTime: View {
     @Binding var playbackTime: TimeInterval?
 
     var body: some View {
-        switch playbackState {
-        case .noPlayback:
-            Text(voiceMessageTime(recordingTime))
-        case .playing:
-            Text(voiceMessageTime_(playbackTime))
-        case .paused:
-            Text(voiceMessageTime_(playbackTime))
+        ZStack(alignment: .leading) {
+            Text(String("66:66")).foregroundColor(.clear)
+            switch playbackState {
+            case .noPlayback:
+                Text(voiceMessageTime(recordingTime))
+            case .playing:
+                Text(voiceMessageTime_(playbackTime))
+            case .paused:
+                Text(voiceMessageTime_(playbackTime))
+            }
         }
     }
 }
@@ -211,14 +221,14 @@ struct CIVoiceView_Previews: PreviewProvider {
     static var previews: some View {
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
+            meta: CIMeta.getSample(1, .now, "", .sndSent, itemEdited: true),
             content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let voiceMessageWtFile = ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "", .rcvRead, false, false, false),
+            meta: CIMeta.getSample(1, .now, "", .rcvRead),
             content: .rcvMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: nil

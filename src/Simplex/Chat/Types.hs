@@ -26,7 +26,7 @@ module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.Types as JT
@@ -48,10 +48,11 @@ import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import GHC.Records.Compat
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
+import Simplex.FileTransfer.Description (FileDigest)
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (SMPServerWithAuth)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 
 class IsContact a where
@@ -80,8 +81,31 @@ instance IsContact Contact where
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
 
+newtype AgentUserId = AgentUserId UserId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentUserId where
+  strEncode (AgentUserId uId) = strEncode uId
+  strDecode s = AgentUserId <$> strDecode s
+  strP = AgentUserId <$> strP
+
+instance FromJSON AgentUserId where
+  parseJSON = strParseJSON "AgentUserId"
+
+instance ToJSON AgentUserId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentUserId where fromField f = AgentUserId <$> fromField f
+
+instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
+
+aUserId :: User -> UserId
+aUserId User {agentUserId = AgentUserId uId} = uId
+
 data User = User
   { userId :: UserId,
+    agentUserId :: AgentUserId,
     userContactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: LocalProfile,
@@ -92,7 +116,15 @@ data User = User
 
 instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
 
-type UserId = ContactId
+data UserInfo = UserInfo
+  { user :: User,
+    unreadCount :: Int
+  }
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON UserInfo where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 type ContactId = Int64
 
@@ -127,9 +159,12 @@ contactConnId = aConnId . contactConn
 contactConnIncognito :: Contact -> Bool
 contactConnIncognito = connIncognito . contactConn
 
+contactDirect :: Contact -> Bool
+contactDirect Contact {activeConn = Connection {connLevel, viaGroupLink}} = connLevel == 0 && not viaGroupLink
+
 directOrUsed :: Contact -> Bool
-directOrUsed Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
-  (connLevel == 0 && not viaGroupLink) || contactUsed
+directOrUsed ct@Contact {contactUsed} =
+  contactDirect ct || contactUsed
 
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
@@ -139,6 +174,8 @@ contactSecurityCode Contact {activeConn} = connectionCode activeConn
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
+    connId :: Int64,
+    agentConnId :: AgentConnId,
     localDisplayName :: ContactName
   }
   deriving (Eq, Show, Generic)
@@ -215,6 +252,8 @@ instance ToJSON ConnReqUriHash where
   toEncoding = strToJEncoding
 
 data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
+
+type UserName = Text
 
 type ContactName = Text
 
@@ -1215,9 +1254,10 @@ fromInvitedBy userCtId = \case
   IBUser -> Just userCtId
 
 data GroupMemberRole
-  = GRAuthor -- can send messages to all group members
-  | GRMember -- + add new members with role Member and below
-  | GRAdmin -- + change member roles (excl. Owners), add Admins, remove members (excl. Owners)
+  = GRObserver -- connects to all group members and receives all messages, can't send messages
+  | GRAuthor -- reserved, unused
+  | GRMember -- + can send messages to all group members
+  | GRAdmin -- + add/remove members, change member role (excl. Owners)
   | GROwner -- + delete and change group information, add/remove/change roles for Owners
   deriving (Eq, Show, Ord)
 
@@ -1231,11 +1271,13 @@ instance StrEncoding GroupMemberRole where
     GRAdmin -> "admin"
     GRMember -> "member"
     GRAuthor -> "author"
+    GRObserver -> "observer"
   strDecode = \case
     "owner" -> Right GROwner
     "admin" -> Right GRAdmin
     "member" -> Right GRMember
     "author" -> Right GRAuthor
+    "observer" -> Right GRObserver
     r -> Left $ "bad GroupMemberRole " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 
@@ -1365,6 +1407,20 @@ memberCurrent m = case memberStatus m of
   GSMemComplete -> True
   GSMemCreator -> True
 
+memberRemoved :: GroupMember -> Bool
+memberRemoved m = case memberStatus m of
+  GSMemRemoved -> True
+  GSMemLeft -> True
+  GSMemGroupDeleted -> True
+  GSMemInvited -> False
+  GSMemIntroduced -> False
+  GSMemIntroInvited -> False
+  GSMemAccepted -> False
+  GSMemAnnounced -> False
+  GSMemConnected -> False
+  GSMemComplete -> False
+  GSMemCreator -> False
+
 instance TextEncoding GroupMemberStatus where
   textDecode = \case
     "removed" -> Just GSMemRemoved
@@ -1416,8 +1472,10 @@ type FileTransferId = Int64
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
+    fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
-    fileInline :: Maybe InlineFileMode
+    fileInline :: Maybe InlineFileMode,
+    fileDescr :: Maybe FileDescr
   }
   deriving (Eq, Show, Generic)
 
@@ -1427,6 +1485,19 @@ instance ToJSON FileInvitation where
 
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data FileDescr
+  = FDText {fileDescrText :: Text}
+  | FDInline {fileDescrSize :: Integer, fileDescrInline :: InlineFileMode}
+  | FDPending
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FileDescr where
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "FD"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "FD"
+
+instance FromJSON FileDescr where
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
 
 data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted
@@ -1458,6 +1529,7 @@ data RcvFileTransfer = RcvFileTransfer
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
     rcvFileInline :: Maybe InlineFileMode,
+    rcvFileDescription :: Maybe RcvFileDescr,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
@@ -1466,6 +1538,16 @@ data RcvFileTransfer = RcvFileTransfer
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
+
+data RcvFileDescr = RcvFileDescr
+  { fileDescrId :: Int64,
+    fileDescrStatus :: RcvFileStatus,
+    fileDescrText :: Text,
+    chunkSize :: Integer
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON RcvFileDescr where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RcvFileStatus
   = RFSNew
@@ -1481,8 +1563,8 @@ instance ToJSON RcvFileStatus where
 
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
-    connId :: Int64,
-    agentConnId :: AgentConnId
+    connId :: Maybe Int64,
+    agentConnId :: Maybe AgentConnId
   }
   deriving (Eq, Show, Generic)
 
@@ -1494,7 +1576,8 @@ liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
   RFSConnected fi -> acId fi
   _ -> Nothing
   where
-    acId RcvFileInfo {agentConnId = AgentConnId cId} = Just cId
+    acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
+    acId _ = Nothing
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
@@ -1827,7 +1910,7 @@ data CommandFunction
   | CFAllowConn
   | CFAcceptContact
   | CFAckMessage
-  | CFDeleteConn
+  | CFDeleteConn -- not used
   deriving (Eq, Show, Generic)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1857,17 +1940,19 @@ instance TextEncoding CommandFunction where
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
-commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
+commandExpectedResponse :: CommandFunction -> APartyCmdTag 'Agent
 commandExpectedResponse = \case
-  CFCreateConnGrpMemInv -> INV_
-  CFCreateConnGrpInv -> INV_
-  CFCreateConnFileInvDirect -> INV_
-  CFCreateConnFileInvGroup -> INV_
-  CFJoinConn -> OK_
-  CFAllowConn -> OK_
-  CFAcceptContact -> OK_
-  CFAckMessage -> OK_
-  CFDeleteConn -> OK_
+  CFCreateConnGrpMemInv -> t INV_
+  CFCreateConnGrpInv -> t INV_
+  CFCreateConnFileInvDirect -> t INV_
+  CFCreateConnFileInvGroup -> t INV_
+  CFJoinConn -> t OK_
+  CFAllowConn -> t OK_
+  CFAcceptContact -> t OK_
+  CFAckMessage -> t OK_
+  CFDeleteConn -> t OK_
+  where
+    t = APCT SAEConn
 
 data CommandData = CommandData
   { cmdId :: CommandId,
@@ -1892,17 +1977,35 @@ encodeJSON = safeDecodeUtf8 . LB.toStrict . J.encode
 decodeJSON :: FromJSON a => Text -> Maybe a
 decodeJSON = J.decode . LB.fromStrict . encodeUtf8
 
-data ServerCfg = ServerCfg
-  { server :: SMPServerWithAuth,
+data ServerCfg p = ServerCfg
+  { server :: ProtoServerWithAuth p,
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool
   }
   deriving (Show, Generic)
 
-instance ToJSON ServerCfg where
+instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
-instance FromJSON ServerCfg where
+instance ProtocolTypeI p => FromJSON (ServerCfg p) where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data AServerCfg = AServerCfg
+  { server :: AProtoServerWithAuth,
+    preset :: Bool,
+    tested :: Maybe Bool,
+    enabled :: Bool
+  }
+
+deriving instance Show AServerCfg
+
+deriving instance Generic AServerCfg
+
+instance ToJSON AServerCfg where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+
+instance FromJSON AServerCfg where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}

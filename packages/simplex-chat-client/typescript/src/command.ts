@@ -450,7 +450,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "showActiveUser":
       return "/u"
     case "createActiveUser":
-      return `/u ${JSON.stringify(cmd.profile)}`
+      return `/create user ${JSON.stringify(cmd.profile)}`
     case "startChat":
       return `/_start subscribe=${cmd.subscribeConnections ? "on" : "off"} expire=${cmd.expireChatItems ? "on" : "off"}`
     case "apiStopChat":

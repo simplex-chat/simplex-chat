@@ -152,7 +152,7 @@ struct DatabaseEncryptionView: View {
                     await operationEnded(.databaseEncrypted)
                 }
             } catch let error {
-                if case .chatCmdError(.errorDatabase(.errorExport(.errorNotADatabase))) = error as? ChatResponse {
+                if case .chatCmdError(_, .errorDatabase(.errorExport(.errorNotADatabase))) = error as? ChatResponse {
                     await operationEnded(.currentPassphraseError)
                 } else {
                     await operationEnded(.error(title: "Error encrypting database", error: "\(responseError(error))"))

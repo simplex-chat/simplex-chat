@@ -9,18 +9,20 @@
 import Foundation
 import SwiftUI
 
-public struct User: Decodable, NamedChat {
-    var userId: Int64
+public struct User: Decodable, NamedChat, Identifiable {
+    public var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
-    var activeUser: Bool
+    public var activeUser: Bool
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
+
+    public var id: Int64 { userId }
 
     public static let sampleData = User(
         userId: 1,
@@ -29,6 +31,23 @@ public struct User: Decodable, NamedChat {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true
+    )
+}
+
+public struct UserInfo: Decodable, Identifiable {
+    public var user: User
+    public var unreadCount: Int
+
+    public init(user: User, unreadCount: Int) {
+        self.user = user
+        self.unreadCount = unreadCount
+    }
+
+    public var id: Int64 { user.userId }
+
+    public static let sampleData = UserInfo(
+        user: User.sampleData,
+        unreadCount: 1
     )
 }
 
@@ -1137,6 +1156,8 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
 public struct ContactRef: Decodable, Equatable {
     var contactId: Int64
+    public var agentConnId: String
+    var connId: Int64
     var localDisplayName: ContactName
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -1148,7 +1169,8 @@ public struct ContactSubStatus: Decodable {
 }
 
 public struct Connection: Decodable {
-    var connId: Int64
+    public var connId: Int64
+    public var agentConnId: String
     var connStatus: ConnStatus
     public var connLevel: Int
     public var viaGroupLink: Bool
@@ -1159,6 +1181,7 @@ public struct Connection: Decodable {
 
     static let sampleData = Connection(
         connId: 1,
+        agentConnId: "abc",
         connStatus: .ready,
         connLevel: 0,
         viaGroupLink: false
@@ -1494,7 +1517,7 @@ public struct GroupMember: Identifiable, Decodable {
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if !canBeRemoved(groupInfo: groupInfo) { return nil }
         let userRole = groupInfo.membership.memberRole
-        return GroupMemberRole.allCases.filter { $0 <= userRole }
+        return GroupMemberRole.allCases.filter { $0 <= userRole && $0 != .observer }
     }
 
     public var memberIncognito: Bool {
@@ -1523,6 +1546,7 @@ public struct GroupMemberRef: Decodable {
 }
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
+    case observer = "observer"
     case member = "member"
     case admin = "admin"
     case owner = "owner"
@@ -1531,6 +1555,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
 
     public var text: String {
         switch self {
+        case .observer: return NSLocalizedString("observer", comment: "member role")
         case .member: return NSLocalizedString("member", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
@@ -1539,9 +1564,10 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
 
     private var comparisonValue: Int {
         switch self {
-        case .member: return 0
-        case .admin: return 1
-        case .owner: return 2
+        case .observer: return 0
+        case .member: return 1
+        case .admin: return 2
+        case .owner: return 3
         }
     }
 
@@ -1696,6 +1722,8 @@ public struct ChatItem: Identifiable, Decodable {
         switch content {
         case .sndDeleted: return true
         case .rcvDeleted: return true
+        case .sndModerated: return true
+        case .rcvModerated: return true
         default: return false
         }
     }
@@ -1739,6 +1767,8 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndGroupFeature: return showNtfDir
         case .rcvChatFeatureRejected: return showNtfDir
         case .rcvGroupFeatureRejected: return showNtfDir
+        case .sndModerated: return true
+        case .rcvModerated: return true
         case .invalidJSON: return false
         }
     }
@@ -1761,10 +1791,21 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> ChatItem {
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
+        switch (chatInfo, chatDir) {
+        case let (.group(groupInfo), .groupRcv(groupMember)):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
+                    ? (groupInfo, groupMember)
+                    : nil
+        default: return nil
+        }
+    }
+
+    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, itemLive, editable),
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, editable: editable),
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
@@ -1774,7 +1815,7 @@ public struct ChatItem: Identifiable, Decodable {
     public static func getVoiceMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "voice.m4a", fileSize: Int64 = 65536, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
         ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(id, .now, text, .rcvRead, false, false, false),
+            meta: CIMeta.getSample(id, .now, text, .rcvRead),
             content: .rcvMsgContent(msgContent: .voice(text: text, duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
@@ -1784,7 +1825,7 @@ public struct ChatItem: Identifiable, Decodable {
     public static func getFileMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "test.txt", fileSize: Int64 = 100, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
         ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(id, .now, text, .rcvRead, false, false, false),
+            meta: CIMeta.getSample(id, .now, text, .rcvRead),
             content: .rcvMsgContent(msgContent: .file(text)),
             quotedItem: nil,
             file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
@@ -1794,7 +1835,7 @@ public struct ChatItem: Identifiable, Decodable {
     public static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
         ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id, ts, text, status, false, false, false),
+            meta: CIMeta.getSample(id, ts, text, status),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
             quotedItem: nil,
             file: nil
@@ -1804,7 +1845,7 @@ public struct ChatItem: Identifiable, Decodable {
     public static func getIntegrityErrorSample (_ status: CIStatus = .rcvRead, fromMsgId: Int64 = 1, toMsgId: Int64 = 2) -> ChatItem {
         ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "1 skipped message", status, false, false, false),
+            meta: CIMeta.getSample(1, .now, "1 skipped message", status),
             content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: fromMsgId, toMsgId: toMsgId)),
             quotedItem: nil,
             file: nil
@@ -1814,7 +1855,7 @@ public struct ChatItem: Identifiable, Decodable {
     public static func getGroupInvitationSample (_ status: CIGroupInvitationStatus = .pending) -> ChatItem {
         ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, false, false, false),
+            meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead),
             content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: status), memberRole: .admin),
             quotedItem: nil,
             file: nil
@@ -1824,7 +1865,7 @@ public struct ChatItem: Identifiable, Decodable {
     public static func getGroupEventSample () -> ChatItem {
         ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, false, false, false),
+            meta: CIMeta.getSample(1, .now, "group event text", .rcvRead),
             content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
             quotedItem: nil,
             file: nil
@@ -1835,7 +1876,7 @@ public struct ChatItem: Identifiable, Decodable {
         let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled, param: nil)
         return ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, content.text, .rcvRead, false, false, false),
+            meta: CIMeta.getSample(1, .now, content.text, .rcvRead),
             content: content,
             quotedItem: nil,
             file: nil
@@ -1852,7 +1893,7 @@ public struct ChatItem: Identifiable, Decodable {
                 itemStatus: .rcvRead,
                 createdAt: .now,
                 updatedAt: .now,
-                itemDeleted: false,
+                itemDeleted: nil,
                 itemEdited: false,
                 itemLive: false,
                 editable: false
@@ -1873,7 +1914,7 @@ public struct ChatItem: Identifiable, Decodable {
                 itemStatus: .rcvRead,
                 createdAt: .now,
                 updatedAt: .now,
-                itemDeleted: false,
+                itemDeleted: nil,
                 itemEdited: false,
                 itemLive: true,
                 editable: false
@@ -1922,7 +1963,7 @@ public struct CIMeta: Decodable {
     public var itemStatus: CIStatus
     var createdAt: Date
     public var updatedAt: Date
-    public var itemDeleted: Bool
+    public var itemDeleted: CIDeleted?
     public var itemEdited: Bool
     public var itemTimed: CITimed?
     public var itemLive: Bool?
@@ -1948,7 +1989,7 @@ public struct CIMeta: Decodable {
         }
     }
 
-    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> CIMeta {
+    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
@@ -1971,7 +2012,7 @@ public struct CIMeta: Decodable {
             itemStatus: .sndNew,
             createdAt: .now,
             updatedAt: .now,
-            itemDeleted: false,
+            itemDeleted: nil,
             itemEdited: false,
             itemLive: false,
             editable: false
@@ -2014,6 +2055,18 @@ public enum CIStatus: Decodable {
     }
 }
 
+public enum CIDeleted: Decodable {
+    case deleted
+    case moderated(byGroupMember: GroupMember)
+
+    var id: String {
+        switch self {
+        case .deleted: return  "deleted"
+        case .moderated: return "moderated"
+        }
+    }
+}
+
 public enum CIDeleteMode: String, Decodable {
     case cidmBroadcast = "broadcast"
     case cidmInternal = "internal"
@@ -2045,6 +2098,8 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupFeature(groupFeature: GroupFeature, preference: GroupPreference, param: Int?)
     case rcvChatFeatureRejected(feature: ChatFeature)
     case rcvGroupFeatureRejected(groupFeature: GroupFeature)
+    case sndModerated
+    case rcvModerated
     case invalidJSON(json: String)
 
     public var text: String {
@@ -2071,6 +2126,8 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndGroupFeature(feature, preference, param): return CIContent.featureText(feature, preference.enable.text, param)
             case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
             case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
+            case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
+            case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             }
         }

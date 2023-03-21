@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.app.Application
 import android.content.Context
 import android.media.*
 import android.media.AudioManager.AudioPlaybackCallback
@@ -14,8 +15,6 @@ import chat.simplex.app.model.ChatItem
 import chat.simplex.app.views.helpers.AudioPlayer.duration
 import kotlinx.coroutines.*
 import java.io.*
-import java.text.SimpleDateFormat
-import java.util.*
 
 interface Recorder {
   fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String
@@ -26,6 +25,7 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
   companion object {
     // Allows to stop the recorder from outside without having the recorder in a variable
     var stopRecording: (() -> Unit)? = null
+    const val extension = "m4a"
   }
   private var recorder: MediaRecorder? = null
   private var progressJob: Job? = null
@@ -50,8 +50,10 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     rec.setAudioEncodingBitRate(16000)
     rec.setMaxDuration(MAX_VOICE_MILLIS_FOR_SENDING)
     rec.setMaxFileSize(recordedBytesLimit)
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val path = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice_${timestamp}.m4a")))
+    val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
+    val fileToSave = File.createTempFile(generateNewFileName(SimplexApp.context, "voice", "${extension}_"), ".tmp", tmpDir)
+    fileToSave.deleteOnExit()
+    val path = fileToSave.absolutePath
     filePath = path
     rec.setOutputFile(path)
     rec.prepare()

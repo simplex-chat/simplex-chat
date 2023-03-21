@@ -21,6 +21,8 @@ struct SimpleXApp: App {
     @State private var userAuthorized: Bool?
     @State private var doAuthenticate = false
     @State private var enteredBackground: TimeInterval? = nil
+    @State private var canConnectCall = false
+    @State private var lastSuccessfulUnlock: TimeInterval? = nil
 
     init() {
         hs_init(0, nil)
@@ -34,44 +36,43 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized)
+            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall, lastSuccessfulUnlock: $lastSuccessfulUnlock)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    if (!chatModel.chatInitialized) {
-                        do {
-                            chatModel.v3DBMigration = v3DBMigrationDefault.get()
-                            try initializeChat(start: chatModel.v3DBMigration.startChat)
-                        } catch let error {
-                            fatalError("Failed to start or load chats: \(responseError(error))")
-                        }
-                    }
+                    initChatAndMigrate()
                 }
                 .onChange(of: scenePhase) { phase in
-                    logger.debug("scenePhase \(String(describing: scenePhase))")
+                    logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                     switch (phase) {
                     case .background:
-                        suspendChat()
-                        BGManager.shared.schedule()
+                        if CallController.useCallKit() && chatModel.activeCall != nil {
+                            CallController.shared.shouldSuspendChat = true
+                        } else {
+                            suspendChat()
+                            BGManager.shared.schedule()
+                        }
                         if userAuthorized == true {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
-                        NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCount())
+                        canConnectCall = false
+                        NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
-                        if chatModel.chatRunning == true {
-                            ChatReceiver.shared.start()
-                        }
+                        CallController.shared.shouldSuspendChat = false
                         let appState = appStateGroupDefault.get()
-                        activateChat()
+                        startChatAndActivate()
                         if appState.inactive && chatModel.chatRunning == true {
                             updateChats()
-                            updateCallInvitations()
+                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                updateCallInvitations()
+                            }
                         }
                         doAuthenticate = authenticationExpired()
+                        canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
                     default:
                         break
                     }
@@ -108,6 +109,14 @@ struct SimpleXApp: App {
             return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
         } else {
             return true
+        }
+    }
+
+    private func unlockedRecently() -> Bool {
+        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
+            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
+        } else {
+            return false
         }
     }
 

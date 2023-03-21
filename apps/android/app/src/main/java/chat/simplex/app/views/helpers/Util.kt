@@ -1,11 +1,16 @@
 package chat.simplex.app.views.helpers
 
+import android.app.Activity
+import android.app.Application
+import android.app.LocaleManager
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
 import android.net.Uri
-import android.os.FileUtils
+import android.os.*
 import android.provider.OpenableColumns
 import android.text.Spanned
 import android.text.SpannedString
@@ -28,8 +33,7 @@ import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
-import chat.simplex.app.model.CIFile
-import chat.simplex.app.model.json
+import chat.simplex.app.model.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -244,6 +248,11 @@ fun getAppFilePath(context: Context, fileName: String): String {
   return "${getAppFilesDirectory(context)}/$fileName"
 }
 
+fun getAppFileUri(fileName: String): Uri {
+  return Uri.parse("${getAppFilesDirectory(SimplexApp.context)}/$fileName")
+}
+
+
 fun getLoadedFilePath(context: Context, file: CIFile?): String? {
   return if (file?.filePath != null && file.loaded) {
     val filePath = getAppFilePath(context, file.filePath)
@@ -331,8 +340,7 @@ fun saveImage(context: Context, image: Bitmap): String? {
   return try {
     val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.$ext")
+    val fileToSave = generateNewFileName(context, "IMG", ext)
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     dataResized.writeTo(output)
@@ -355,8 +363,7 @@ fun saveAnimImage(context: Context, uri: Uri): String? {
     }
     // Just in case the image has a strange extension
     if (ext.length < 3 || ext.length > 4) ext = "gif"
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.$ext")
+    val fileToSave = generateNewFileName(context, "IMG", ext)
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     context.contentResolver.openInputStream(uri)!!.use { input ->
@@ -367,6 +374,24 @@ fun saveAnimImage(context: Context, uri: Uri): String? {
     fileToSave
   } catch (e: Exception) {
     Log.e(chat.simplex.app.TAG, "Util.kt saveAnimImage error: ${e.message}")
+    null
+  }
+}
+
+fun saveTempImageUncompressed(image: Bitmap, asPng: Boolean): File? {
+  return try {
+    val ext = if (asPng) "png" else "jpg"
+    val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
+    return File(tmpDir.absolutePath + File.separator + generateNewFileName(SimplexApp.context, "IMG", ext)).apply {
+      outputStream().use { out ->
+        image.compress(if (asPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
+        out.flush()
+      }
+      deleteOnExit()
+      SimplexApp.context.chatModel.filesToDelete.add(this)
+    }
+  } catch (e: Exception) {
+    Log.e(TAG, "Util.kt saveTempImageUncompressed error: ${e.message}")
     null
   }
 }
@@ -390,15 +415,23 @@ fun saveFileFromUri(context: Context, uri: Uri): String? {
   }
 }
 
+fun generateNewFileName(context: Context, prefix: String, ext: String): String {
+  val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+  sdf.timeZone = TimeZone.getTimeZone("GMT")
+  val timestamp = sdf.format(Date())
+  return uniqueCombine(context, "${prefix}_$timestamp.$ext")
+}
+
 fun uniqueCombine(context: Context, fileName: String): String {
-  fun tryCombine(fileName: String, n: Int): String {
-    val name = File(fileName).nameWithoutExtension
-    val ext = File(fileName).extension
+  val orig = File(fileName)
+  val name = orig.nameWithoutExtension
+  val ext = orig.extension
+  fun tryCombine(n: Int): String {
     val suffix = if (n == 0) "" else "_$n"
     val f = "$name$suffix.$ext"
-    return if (File(getAppFilePath(context, f)).exists()) tryCombine(fileName, n + 1) else f
+    return if (File(getAppFilePath(context, f)).exists()) tryCombine(n + 1) else f
   }
-  return tryCombine(fileName, 0)
+  return tryCombine(0)
 }
 
 fun formatBytes(bytes: Long): String {
@@ -471,3 +504,42 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
     save = { json.encodeToString(it) },
     restore = { json.decodeFromString(it) }
   )
+
+fun saveAppLocale(pref: SharedPreference<String?>, activity: Activity, languageCode: String? = null) {
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    val localeManager = SimplexApp.context.getSystemService(LocaleManager::class.java)
+    localeManager.applicationLocales = LocaleList(Locale.forLanguageTag(languageCode ?: return))
+  } else {
+    pref.set(languageCode)
+    if (languageCode == null) {
+      activity.applyLocale(SimplexApp.context.defaultLocale)
+    }
+    activity.recreate()
+  }
+}
+
+fun Activity.applyAppLocale(pref: SharedPreference<String?>) {
+  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+    val lang = pref.get()
+    if (lang == null || lang == Locale.getDefault().language) return
+    applyLocale(Locale.forLanguageTag(lang))
+  }
+}
+
+private fun Activity.applyLocale(locale: Locale) {
+  Locale.setDefault(locale)
+  val appConf = Configuration(SimplexApp.context.resources.configuration).apply { setLocale(locale) }
+  val activityConf = Configuration(resources.configuration).apply { setLocale(locale) }
+  @Suppress("DEPRECATION")
+  SimplexApp.context.resources.updateConfiguration(appConf, resources.displayMetrics)
+  @Suppress("DEPRECATION")
+  resources.updateConfiguration(activityConf, resources.displayMetrics)
+}
+
+fun UriHandler.openUriCatching(uri: String) {
+  try {
+    openUri(uri)
+  } catch (e: ActivityNotFoundException) {
+    Log.e(TAG, e.stackTraceToString())
+  }
+}

@@ -84,7 +84,7 @@ struct MsgContentView: View {
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, preview: Bool = false) -> Text {
+func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false) -> Text {
     let s = text
     var res: Text
     if let ft = formattedText, ft.count > 0 {
@@ -96,6 +96,10 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
         }
     } else {
         res = Text(s)
+    }
+
+    if let i = icon {
+        res = Text(Image(systemName: i)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ") + res
     }
 
     if let s = sender {

@@ -19,6 +19,7 @@ import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.View
 import System.Console.ANSI.Types
+import System.IO (IOMode (..), hPutStrLn, withFile)
 import System.Mem.Weak (Weak)
 import System.Terminal
 import System.Terminal.Internal (LocalTerminal, Terminal, VirtualTerminal)
@@ -91,17 +92,19 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
+runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = do
   forever $ do
     (_, r) <- atomically $ readTBQueue outputQ
     case r of
-      CRNewChatItem ci -> markChatItemRead ci
-      CRChatItemUpdated ci -> markChatItemRead ci
+      CRNewChatItem _ ci -> markChatItemRead ci
+      CRChatItemUpdated _ ci -> markChatItemRead ci
       _ -> pure ()
+    let printResp = case logFilePath of
+          Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
+          _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    printRespToTerminal ct cc liveItems r
+    responseString cc liveItems r >>= printResp
   where
-    markChatItemRead :: AChatItem -> IO ()
     markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
       case (muted chat item, itemStatus) of
         (False, CISRcvNew) -> do
@@ -109,12 +112,16 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
               chatRef = chatInfoToRef chat
           void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
+    logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
 
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
-printRespToTerminal ct cc liveItems r = do
+printRespToTerminal ct cc liveItems r = responseString cc liveItems r >>= printToTerminal ct
+
+responseString :: ChatController -> Bool -> ChatResponse -> IO [StyledString]
+responseString cc liveItems r = do
   user <- readTVarIO $ currentUser cc
   ts <- getCurrentTime
-  printToTerminal ct $ responseToView user (config cc) liveItems ts r
+  pure $ responseToView user (config cc) liveItems ts r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

@@ -75,7 +75,7 @@ struct CIFeaturePreferenceView_Previews: PreviewProvider {
         let content = CIContent.rcvChatPreference(feature: .timedMessages, allowed: .yes, param: 30)
         let chatItem = ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, content.text, .rcvRead, false, false, false),
+            meta: CIMeta.getSample(1, .now, content.text, .rcvRead),
             content: content,
             quotedItem: nil,
             file: nil

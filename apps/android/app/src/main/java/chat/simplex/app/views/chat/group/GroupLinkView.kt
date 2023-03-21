@@ -1,6 +1,9 @@
 package chat.simplex.app.views.chat.group
 
+import SectionItemView
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -15,22 +18,26 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.GroupInfo
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
 
 @Composable
-fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, onGroupLinkUpdated: (String?) -> Unit) {
+fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, memberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit) {
   var groupLink by rememberSaveable { mutableStateOf(connReqContact) }
+  val groupLinkMemberRole = rememberSaveable { mutableStateOf(memberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
   val cxt = LocalContext.current
   fun createLink() {
     creatingLink = true
     withApi {
-      groupLink = chatModel.controller.apiCreateGroupLink(groupInfo.groupId)
-      onGroupLinkUpdated(groupLink)
+      val link = chatModel.controller.apiCreateGroupLink(groupInfo.groupId)
+      if (link != null) {
+        groupLink = link.first
+        groupLinkMemberRole.value = link.second
+        onGroupLinkUpdated(groupLink to groupLinkMemberRole.value)
+      }
       creatingLink = false
     }
   }
@@ -41,9 +48,24 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
   }
   GroupLinkLayout(
     groupLink = groupLink,
+    groupInfo,
+    groupLinkMemberRole,
     creatingLink,
     createLink = ::createLink,
     share = { shareText(cxt, groupLink ?: return@GroupLinkLayout) },
+    updateLink = {
+      val role = groupLinkMemberRole.value
+      if (role != null) {
+        withBGApi {
+          val link = chatModel.controller.apiGroupLinkMemberRole(groupInfo.groupId, role)
+          if (link != null) {
+            groupLink = link.first
+            groupLinkMemberRole.value = link.second
+            onGroupLinkUpdated(groupLink to groupLinkMemberRole.value)
+          }
+        }
+      }
+    },
     deleteLink = {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(R.string.delete_link_question),
@@ -54,7 +76,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
             val r = chatModel.controller.apiDeleteGroupLink(groupInfo.groupId)
             if (r) {
               groupLink = null
-              onGroupLinkUpdated(null)
+              onGroupLinkUpdated(null to null)
             }
           }
         }
@@ -69,13 +91,18 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
 @Composable
 fun GroupLinkLayout(
   groupLink: String?,
+  groupInfo: GroupInfo,
+  groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
   createLink: () -> Unit,
   share: () -> Unit,
+  updateLink: () -> Unit,
   deleteLink: () -> Unit
 ) {
   Column(
-    Modifier.padding(horizontal = DEFAULT_PADDING),
+    Modifier
+      .verticalScroll(rememberScrollState())
+      .padding(start = DEFAULT_PADDING, bottom = DEFAULT_BOTTOM_PADDING, end = DEFAULT_PADDING),
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.Top
   ) {
@@ -93,7 +120,17 @@ fun GroupLinkLayout(
       if (groupLink == null) {
         SimpleButton(stringResource(R.string.button_create_group_link), icon = Icons.Outlined.AddLink, disabled = creatingLink, click = createLink)
       } else {
-        QRCode(groupLink, Modifier.weight(1f, fill = false).aspectRatio(1f))
+//        SectionItemView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
+//          RoleSelectionRow(groupInfo, groupLinkMemberRole)
+//        }
+        var initialLaunch by remember { mutableStateOf(true) }
+        LaunchedEffect(groupLinkMemberRole.value) {
+          if (!initialLaunch) {
+            updateLink()
+          }
+          initialLaunch = false
+        }
+        QRCode(groupLink, Modifier.aspectRatio(1f))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
@@ -113,6 +150,25 @@ fun GroupLinkLayout(
         }
       }
     }
+  }
+}
+
+@Composable
+private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<GroupMemberRole?>, enabled: Boolean = true) {
+  Row(
+    Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween
+  ) {
+    val values = listOf(GroupMemberRole.Member, GroupMemberRole.Observer).map { it to it.text }
+    ExposedDropDownSettingRow(
+      generalGetString(R.string.initial_member_role),
+      values,
+      selectedRole,
+      icon = null,
+      enabled = rememberUpdatedState(enabled),
+      onSelected = { selectedRole.value = it }
+    )
   }
 }
 

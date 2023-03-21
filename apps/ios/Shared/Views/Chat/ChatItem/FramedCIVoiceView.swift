@@ -47,14 +47,14 @@ struct FramedCIVoiceView_Previews: PreviewProvider {
     static var previews: some View {
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
+            meta: CIMeta.getSample(1, .now, "", .sndSent, itemEdited: true),
             content: .sndMsgContent(msgContent: .voice(text: "Hello there", duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let voiceMessageWithQuote: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
+            meta: CIMeta.getSample(1, .now, "", .sndSent, itemEdited: true),
             content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: CIQuote.getSample(1, .now, "Hi", chatDir: .directRcv),
             file: CIFile.getSample(fileStatus: .sndComplete)
