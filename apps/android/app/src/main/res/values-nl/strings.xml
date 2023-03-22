@@ -980,4 +980,12 @@
     <string name="observer_cant_send_message_title">Je kunt geen berichten versturen!</string>
     <string name="you_are_observer">jij bent waarnemer</string>
     <string name="language_system">Systeem</string>
+    <string name="v4_6_audio_video_calls">Audio en video oproepen</string>
+    <string name="cant_delete_user_profile">Kan gebruikers profiel niet verwijderen!</string>
+    <string name="confirm_password">Bevestig wachtwoord</string>
+    <string name="v4_6_chinese_spanish_interface">Chinese en Spaanse interface</string>
+    <string name="enter_password_to_show">Voer hierboven het wachtwoord in om weer te geven!</string>
+    <string name="error_saving_user_password">Fout bij opslaan gebruikers wachtwoord</string>
+    <string name="button_add_welcome_message">Welkomst bericht toevoegen</string>
+    <string name="dont_show_again">Niet meer weergeven</string>
 </resources>
