@@ -103,6 +103,7 @@
   <string name="smp_server_test_delete_queue">Delete queue</string>
   <string name="smp_server_test_disconnect">Disconnect</string>
   <string name="error_deleting_user">Error deleting user profile</string>
+  <string name="error_updating_user_privacy">Error updating user privacy</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -535,6 +536,16 @@
   <string name="save_and_notify_contacts">Save and notify contacts</string>
   <string name="save_and_notify_group_members">Save and notify group members</string>
   <string name="exit_without_saving">Exit without saving</string>
+
+
+  <!-- HiddenProfileView.kt -->
+  <string name="hide_profile">Hide profile</string>
+  <string name="password_to_show">Password to show</string>
+  <string name="save_profile_password">Save profile password</string>
+  <string name="hidden_profile_password">Hidden profile password</string>
+  <string name="confirm_password">Confirm password</string>
+  <string name="to_reveal_profile_enter_password">To reveal your hidden profile, enter a full password into a search field in "Your chat profiles" page.</string>
+  <string name="error_saving_user_password">Error saving user password</string>
 
   <!-- Welcome Prompts - WelcomeView.kt -->
   <string name="you_control_your_chat">You control your chat!</string>
@@ -1012,6 +1023,20 @@
   <string name="users_delete_profile_for">Delete chat profile for</string>
   <string name="users_delete_with_connections">Profile and server connections</string>
   <string name="users_delete_data_only">Local profile data only</string>
+  <string name="user_hide">Hide</string>
+  <string name="user_unhide">Unhide</string>
+  <string name="user_mute">Mute</string>
+  <string name="user_unmute">Unmute</string>
+  <string name="enter_password_to_show">Enter password above to show!</string>
+  <string name="tap_to_activate_profile">Tap to activate profile.</string>
+  <string name="cant_delete_user_profile">Can\'t delete user profile!</string>
+  <string name="should_be_at_least_one_visible_profile">There should be at least one visible user profile.</string>
+  <string name="should_be_at_least_one_profile">There should be at least one user profile.</string>
+  <string name="make_profile_private">Make profile private!</string>
+  <string name="you_can_hide_or_mute_user_profile">You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled.</string>
+  <string name="dont_show_again">Don\'t show again</string>
+  <string name="muted_when_inactive">Muted when inactive!</string>
+  <string name="you_will_still_receive_calls_and_ntfs">You will still receive calls and notifications from muted profiles when they are active.</string>
 
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>
@@ -1158,4 +1183,16 @@
   <string name="v4_5_reduced_battery_usage_descr">More improvements are coming soon!</string>
   <string name="v4_5_italian_interface">Italian interface</string>
   <string name="v4_5_italian_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v4_6_hidden_chat_profiles">Hidden chat profiles</string>
+  <string name="v4_6_hidden_chat_profiles_descr">Protect your chat profiles with a password!</string>
+  <string name="v4_6_audio_video_calls">Audio and video calls</string>
+  <string name="v4_6_audio_video_calls_descr">Support bluetooth and other improvements.</string>
+  <string name="v4_6_group_moderation">Group moderation</string>
+  <string name="v4_6_group_moderation_descr">Now admins can:\n- delete members\' messages.\n- disable members (\"observer\" role)</string>
+  <string name="v4_6_group_welcome_message">Group welcome message</string>
+  <string name="v4_6_group_welcome_message_descr">Set the message shown to new members!</string>
+  <string name="v4_6_reduced_battery_usage">Further reduced battery usage</string>
+  <string name="v4_6_reduced_battery_usage_descr">More improvements are coming soon!</string>
+  <string name="v4_6_chinese_spanish_interface">Chinese and Spanish interface</string>
+  <string name="v4_6_chinese_spanish_interface_descr">Thanks to the users – contribute via Weblate!</string>
 </resources>

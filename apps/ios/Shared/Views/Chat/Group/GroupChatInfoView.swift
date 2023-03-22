@@ -223,8 +223,8 @@ struct GroupChatInfoView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             groupInfo.groupProfile.description == nil
-                ? Label("Add welcome message", systemImage: "plus.bubble.fill")
-                : Label("Welcome message", systemImage: "plus.bubble.fill")
+                ? Label("Add welcome message", systemImage: "plus.message")
+                : Label("Welcome message", systemImage: "message")
         }
     }
 

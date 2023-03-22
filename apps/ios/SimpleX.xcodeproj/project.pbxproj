@@ -290,6 +290,10 @@
 		5C65DAE529C77136003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		5C65DAE629C771B9003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5C65DAE729C771B9003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		5C65DAEA29CB8867003CEE45 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C65DAEB29CB8867003CEE45 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C65DAEC29CB8908003CEE45 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = "es.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5C65DAED29CB8908003CEE45 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5C65F341297D3F3600B67AF3 /* VersionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionView.swift; sourceTree = "<group>"; };
 		5C6AD81227A834E300348BD7 /* NewChatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatButton.swift; sourceTree = "<group>"; };
 		5C6BA666289BD954009B8ECC /* DismissSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissSheets.swift; sourceTree = "<group>"; };
@@ -947,6 +951,7 @@
 				nl,
 				cs,
 				"zh-Hans",
+				es,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -1210,6 +1215,7 @@
 				5C84FE9429A2179C00D95B1A /* nl */,
 				5C8B41CC29AF44CF00888272 /* cs */,
 				5C65DAE729C771B9003CEE45 /* zh-Hans */,
+				5C65DAED29CB8908003CEE45 /* es */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1225,6 +1231,7 @@
 				5C84FE9229A216C800D95B1A /* nl */,
 				5C8B41CA29AF41BC00888272 /* cs */,
 				5C65DAE529C77136003CEE45 /* zh-Hans */,
+				5C65DAEB29CB8867003CEE45 /* es */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1240,6 +1247,7 @@
 				5C84FE9129A216C800D95B1A /* nl */,
 				5C8B41C929AF41BC00888272 /* cs */,
 				5C65DAE429C77136003CEE45 /* zh-Hans */,
+				5C65DAEA29CB8867003CEE45 /* es */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1254,6 +1262,7 @@
 				5C84FE9329A2179C00D95B1A /* nl */,
 				5C8B41CB29AF44CF00888272 /* cs */,
 				5C65DAE629C771B9003CEE45 /* zh-Hans */,
+				5C65DAEC29CB8908003CEE45 /* es */,
 			);
 			name = "SimpleX--iOS--InfoPlist.strings";
 			sourceTree = "<group>";
