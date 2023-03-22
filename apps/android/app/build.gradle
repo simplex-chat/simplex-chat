@@ -85,7 +85,7 @@ android {
             if (isRelease) {
                 include 'arm64-v8a', 'armeabi-v7a'
             } else {
-                include "$abi_filter"
+                include 'arm64-v8a', 'armeabi-v7a'
                 universalApk false
             }
         }
