@@ -50,6 +50,7 @@ chatFileTests = do
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "file transfer over XFTP" $ do
     it "send and receive file" testXFTPFileTransfer
+    it "continue receiving file after restart" testXFTPFileTransferContinueRcv
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -934,6 +935,39 @@ testXFTPFileTransfer =
       bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testXFTPFileTransferContinueRcv :: HasCallStack => FilePath -> IO ()
+testXFTPFileTransferContinueRcv tmp = do
+  withXFTPServer $ do
+    withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+        connectUsers alice bob
+
+        alice #> "/f @bob ./tests/fixtures/test.pdf"
+        alice <## "use /fc 1 to cancel sending"
+        bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+        bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+        alice <## "completed sending file 1 (test.pdf) to bob"
+
+  -- server is down - file is not received
+  withTestChatCfg tmp cfg "bob" $ \bob -> do
+    bob <## "1 contacts connected (use /cs for the list)"
+    bob ##> "/fr 1 ./tests/tmp"
+    bob <## "started receiving file 1 (test.pdf) from alice"
+    bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+    (bob </)
+
+  withXFTPServer $ do
+    -- server is up - file reception is continued
+    withTestChatCfg tmp cfg "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
