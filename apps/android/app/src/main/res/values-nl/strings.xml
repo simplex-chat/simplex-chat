@@ -1003,4 +1003,7 @@
     <string name="v4_6_group_moderation_descr">Nu kunnen beheerders:
 \n- berichten van leden verwijderen.
 \n- schakel leden uit (\"waarnemer\" rol)</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Bescherm je chat profielen met een wachtwoord!</string>
+    <string name="password_to_show">Wachtwoord om weer te geven</string>
+    <string name="save_and_update_group_profile">Groep profiel opslaan en bijwerken</string>
 </resources>
