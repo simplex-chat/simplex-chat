@@ -130,7 +130,7 @@ struct UserProfilesView: View {
                     title: Text("Can't delete user profile!"),
                     message: m.users.count > 1
                             ? Text("There should be at least one visible user profile.")
-                            : Text("There should be at least use user profile.")
+                            : Text("There should be at least one user profile.")
                 )
             case .hiddenProfilesNotice:
                 return Alert(
