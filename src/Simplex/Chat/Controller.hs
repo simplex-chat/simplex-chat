@@ -196,6 +196,7 @@ data ChatCommand
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
+  | APISetFilePathsConfig FilePathsConfig
   | SetFilesFolder FilePath
   | SetIncognito Bool
   | APIExportArchive ArchiveConfig
@@ -619,6 +620,16 @@ data ComposedMessage = ComposedMessage
 instance ToJSON ComposedMessage where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data FilePathsConfig = FilePathsConfig
+  { appFilesFolder :: FilePath,
+    appTempDirectory :: FilePath
+  }
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON FilePathsConfig where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data XFTPFileConfig = XFTPFileConfig
   { minFileSize :: Integer
