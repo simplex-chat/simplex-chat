@@ -984,8 +984,23 @@
     <string name="cant_delete_user_profile">Kan gebruikers profiel niet verwijderen!</string>
     <string name="confirm_password">Bevestig wachtwoord</string>
     <string name="v4_6_chinese_spanish_interface">Chinese en Spaanse interface</string>
-    <string name="enter_password_to_show">Voer hierboven het wachtwoord in om weer te geven!</string>
+    <string name="enter_password_to_show">Voer hierboven het wachtwoord in om te tonen!</string>
     <string name="error_saving_user_password">Fout bij opslaan gebruikers wachtwoord</string>
     <string name="button_add_welcome_message">Welkomst bericht toevoegen</string>
     <string name="dont_show_again">Niet meer weergeven</string>
+    <string name="v4_6_group_moderation">Groep moderatie</string>
+    <string name="error_updating_user_privacy">Fout bij updaten van gebruiker privacy</string>
+    <string name="v4_6_reduced_battery_usage">Verder verminderd batterij verbruik</string>
+    <string name="v4_6_group_welcome_message">Groep welkomst bericht</string>
+    <string name="v4_6_hidden_chat_profiles">Verborgen chat profielen</string>
+    <string name="hide_profile">Profiel verbergen</string>
+    <string name="user_hide">Verbergen</string>
+    <string name="hidden_profile_password">Verborgen profiel wachtwoord</string>
+    <string name="muted_when_inactive">Gedempt wanneer inactief!</string>
+    <string name="user_mute">Dempen</string>
+    <string name="v4_6_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
+    <string name="make_profile_private">Profiel privé maken!</string>
+    <string name="v4_6_group_moderation_descr">Nu kunnen beheerders:
+\n- berichten van leden verwijderen.
+\n- schakel leden uit (\"waarnemer\" rol)</string>
 </resources>
