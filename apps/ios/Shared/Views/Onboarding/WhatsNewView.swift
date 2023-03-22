@@ -136,7 +136,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "lock",
                 title: "Hidden chat profiles",
-                description: "Protect your chat profiles with a password."
+                description: "Protect your chat profiles with a password!"
             ),
             FeatureDescription(
                 icon: "phone.arrow.up.right",
@@ -149,9 +149,9 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)"
             ),
             FeatureDescription(
-                icon: "message",
+                icon: "plus.message",
                 title: "Group welcome message",
-                description: "Set up message shown to new members."
+                description: "Set the message shown to new members!"
             ),
             FeatureDescription(
                 icon: "battery.50",
