@@ -198,6 +198,7 @@ data ChatCommand
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
+  | APISetXFTPConfig (Maybe XFTPFileConfig)
   | SetIncognito Bool
   | APIExportArchive ArchiveConfig
   | APIImportArchive ArchiveConfig
