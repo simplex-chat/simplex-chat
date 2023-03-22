@@ -538,8 +538,9 @@
         <target>Ověření selhalo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
+      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
         <source>Authentication is required before the call is connected, but you may miss calls.</source>
+        <target state="translated">Před spojením hovoru je vyžadováno ověření, ale můžete zmeškat hovory.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
@@ -1978,8 +1979,9 @@
         <target>Okamžitě</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Interface" xml:space="preserve">
+      <trans-unit id="Interface" xml:space="preserve" approved="no">
         <source>Interface</source>
+        <target state="translated">Rozhranní</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -3089,8 +3091,9 @@ Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</tar
         <target>Zobrazit QR kód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show calls in phone history" xml:space="preserve">
+      <trans-unit id="Show calls in phone history" xml:space="preserve" approved="no">
         <source>Show calls in phone history</source>
+        <target state="translated">Ukaž hovory v historii telefonu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -3502,6 +3505,7 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
         <source>Unknown caller</source>
+        <target state="translated">Neznámý volající</target>
         <note>callkit banner</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -3514,8 +3518,9 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
         <target>Neznámá chyba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
+      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve" approved="no">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
+        <target state="translated">Při nepoužívání rozhraní volání iOS, povolte režim Nerušit, abyste se vyhnuli vyrušování.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
@@ -3595,8 +3600,9 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Použít pro nová připojení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use iOS call interface" xml:space="preserve">
+      <trans-unit id="Use iOS call interface" xml:space="preserve" approved="no">
         <source>Use iOS call interface</source>
+        <target state="translated">Použít rozhraní volání iOS</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -3759,8 +3765,9 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Jste pozváni do skupiny</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
+      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
+        <target state="translated">Můžete přijímat hovory z obrazovky zámku, bez ověření zařízení a aplikace.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">

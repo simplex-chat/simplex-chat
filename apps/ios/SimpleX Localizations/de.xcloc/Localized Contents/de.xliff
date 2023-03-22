@@ -538,8 +538,9 @@
         <target>Authentifizierung fehlgeschlagen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
+      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
         <source>Authentication is required before the call is connected, but you may miss calls.</source>
+        <target state="translated">Bevor der Anruf verbunden wird, ist eine Authentifizierung erforderlich, aber Sie könnten Anrufe verpassen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
@@ -1978,8 +1979,9 @@
         <target>Sofort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Interface" xml:space="preserve">
+      <trans-unit id="Interface" xml:space="preserve" approved="no">
         <source>Interface</source>
+        <target state="translated">Schnittstelle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -3089,8 +3091,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>QR-Code anzeigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show calls in phone history" xml:space="preserve">
+      <trans-unit id="Show calls in phone history" xml:space="preserve" approved="no">
         <source>Show calls in phone history</source>
+        <target state="translated">Anrufliste zeigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -3502,6 +3505,7 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
         <source>Unknown caller</source>
+        <target state="translated">Anrufer unbekannt</target>
         <note>callkit banner</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -3514,8 +3518,9 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Unbekannter Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
+      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve" approved="no">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
+        <target state="translated">Aktivieren Sie den Modus "Bitte nicht stören", um Unterbrechungen zu vermeiden, es sei denn, Sie verwenden die iOS Anrufschnittstelle.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
@@ -3595,8 +3600,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Für neue Verbindungen nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use iOS call interface" xml:space="preserve">
+      <trans-unit id="Use iOS call interface" xml:space="preserve" approved="no">
         <source>Use iOS call interface</source>
+        <target state="translated">Benutzen Sie die iOS Anrufschnittstelle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -3759,8 +3765,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Sie sind zu der Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
+      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
+        <target state="translated">Sie können Anrufe ohne Geräte- und App-Authentifizierung vom Sperrbildschirm aus annehmen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">
@@ -4121,9 +4128,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Anrufen…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="cancelled %@" xml:space="preserve">
+      <trans-unit id="cancelled %@" xml:space="preserve" approved="no">
         <source>cancelled %@</source>
-        <target>Beende %@</target>
+        <target state="translated">abgebrochen %@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
@@ -4441,9 +4448,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Keine E2E-Verschlüsselung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="observer" xml:space="preserve">
+      <trans-unit id="observer" xml:space="preserve" approved="no">
         <source>observer</source>
-        <target>beobachter</target>
+        <target state="translated">Beobachter</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="off" xml:space="preserve">
@@ -4452,14 +4459,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <note>enabled status
    group pref value</note>
       </trans-unit>
-      <trans-unit id="offered %@" xml:space="preserve">
+      <trans-unit id="offered %@" xml:space="preserve" approved="no">
         <source>offered %@</source>
-        <target>Beginne %@</target>
+        <target state="translated">angeboten %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="offered %@: %@" xml:space="preserve">
+      <trans-unit id="offered %@: %@" xml:space="preserve" approved="no">
         <source>offered %1$@: %2$@</source>
-        <target>Beginne %1$@: %2$@</target>
+        <target state="translated">angeboten %1$@: %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">

@@ -980,4 +980,5 @@
     <string name="group_member_role_observer">osservatore</string>
     <string name="observer_cant_send_message_desc">Contatta l\'amministratore del gruppo.</string>
     <string name="observer_cant_send_message_title">Non puoi inviare messaggi!</string>
+    <string name="language_system">Sistema</string>
 </resources>
