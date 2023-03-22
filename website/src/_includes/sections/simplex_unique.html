@@ -15,20 +15,20 @@
 
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
-                                <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#{{ section.id }}</p>
-                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold text-grey-black dark:text-white">{{ section.title | i18n({}, lang ) | safe }}</p>
+                                <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#{{ section.id }}</p>
+                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">{{ section.title | i18n({}, lang ) | safe }}</p>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
                                 {% if section.descBody %}
-                                    <div class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">
+                                    <div class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left md:rtl:text-right">
                                         {% include section.descBody %}
                                     </div>
                                 {% else %}
-                                    <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">{{ section.desc | safe }}</p>
+                                    <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left md:rtl:text-right">{{ section.desc | safe }}</p>
                                 {% endif %}
                                 {% if section.overlayContent %}
-                                    <a href="javascript:void(0)" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">{{ "learn-more" | i18n({}, lang ) | safe }}</a>
+                                    <a href="javascript:void(0)" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">{{ "learn-more" | i18n({}, lang ) | safe }}</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -56,10 +56,15 @@
 
             </div>
 
-            <img class="fixed left-[-3px] top-[52%] swiper-button-prev unique-swiper-button-prev hidden md:inline-block dark:hidden" src="/img/new/arrow-left.svg" alt="">
-            <img class="fixed right-[-6px] top-[52%] swiper-button-next unique-swiper-button-next hidden md:inline-block dark:hidden" src="/img/new/arrow-right.svg" alt="">
-            <img class="fixed left-[-3px] top-[52%] swiper-button-prev unique-swiper-button-prev hidden dark:md:inline-block" src="/img/new/arrow-left-dark.svg" alt="">
-            <img class="fixed right-[-6px] top-[52%] swiper-button-next unique-swiper-button-next hidden dark:md:inline-block" src="/img/new/arrow-right-dark.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-prev unique-swiper-button-prev md:inline-block rtl:!hidden dark:!hidden" src="/img/new/arrow-left.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-next unique-swiper-button-next md:inline-block rtl:!hidden dark:!hidden" src="/img/new/arrow-right.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-prev unique-swiper-button-prev hidden dark:md:inline-block rtl:!hidden" src="/img/new/arrow-left-dark.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-next unique-swiper-button-next hidden dark:md:inline-block rtl:!hidden" src="/img/new/arrow-right-dark.svg" alt="">
+
+            <img class="fixed left-[-3px] top-[52%] swiper-button-next unique-swiper-button-next md:rtl:inline-block ltr:!hidden dark:!hidden" src="/img/new/arrow-left.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-prev unique-swiper-button-prev md:rtl:inline-block ltr:!hidden dark:!hidden" src="/img/new/arrow-right.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-next unique-swiper-button-next hidden md:dark:inline-block ltr:!hidden" src="/img/new/arrow-left-dark.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-prev unique-swiper-button-prev hidden md:dark:inline-block ltr:!hidden" src="/img/new/arrow-right-dark.svg" alt="">
 
             <div class="swiper-pagination simplex-unique-swiper-pagination mt-100"></div>
         </div>

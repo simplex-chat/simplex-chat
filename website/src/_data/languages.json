@@ -4,61 +4,71 @@
             "label": "en",
             "name": "English",
             "flag": "/img/flags/en.svg",
-            "enabled": true
+            "enabled": true,
+            "dir": "ltr"
         },
         {
             "label": "de",
             "name": "Deutsch",
             "flag": "/img/flags/de.svg",
-            "enabled": true
+            "enabled": true,
+            "dir": "ltr"
         },
         {
             "label": "fr",
             "name": "Français",
             "flag": "/img/flags/fr.svg",
-            "enabled": true
+            "enabled": true,
+            "dir": "ltr"
         },
         {
             "label": "cs",
             "name": "Čeština",
             "flag": "/img/flags/cs.svg",
-            "enabled": true
+            "enabled": true,
+            "dir": "ltr"
         },
         {
             "label": "it",
             "name": "Italiano",
             "flag": "/img/flags/it.svg",
-            "enabled": true
+            "enabled": true,
+            "dir": "ltr"
         },
         {
             "label": "nl",
             "name": "Nederlands",
             "flag": "/img/flags/nl.svg",
-            "enabled": true
+            "enabled": true,
+            "dir": "ltr"
         },
         {
             "label": "nb_NO",
             "name": "Norsk",
             "flag": "/img/flags/nb_NO.svg",
-            "enabled": false
+            "enabled": false,
+            "dir": "ltr"
         },
         {
             "label": "es",
             "name": "Spanish",
             "flag": "/img/flags/es.svg",
-            "enabled": false
+            "enabled": false,
+            "dir": "ltr"
         },
         {
             "label": "cn",
             "name": "Chinese",
             "flag": "/img/flags/cn.svg",
-            "enabled": false
+            "enabled": false,
+            "dir": "ltr"
         },
         {
             "label": "ru",
             "name": "Russian",
             "flag": "/img/flags/ru.svg",
-            "enabled": false
+            "enabled": false,
+            "dir": "ltr"
         }
     ]
 }

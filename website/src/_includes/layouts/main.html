@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="{% getlang page.url %}">
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ language.dir }}"
+        {% endif %}
+    {% endfor %}>
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,11 +13,11 @@
         <meta name="description" content="{{ description }}"/>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
         {% if path %}
-            <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ path }}" />
-            <meta property="og:url" content="{% cfg 'siteLocation' %}{{ path }}" />
+        <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ path }}" />
+        <meta property="og:url" content="{% cfg 'siteLocation' %}{{ path }}" />
         {% else %}
-            <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}/" />
-            <meta property="og:url" content="{% cfg 'siteLocation' %}/" />
+        <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}/" />
+        <meta property="og:url" content="{% cfg 'siteLocation' %}/" />
         {% endif %}
         <meta property="og:type" content="website"/>
         <meta property="og:title" content="{{ title }}"/>
@@ -20,7 +25,7 @@
         <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png"/>
         <meta name="twitter:card" content="summary"/>
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
-        
+
         <link rel="stylesheet" href="/css/swiper-bundle.min.css">
         <link href="/css/tailwind.css" rel="stylesheet"/>
         <link rel="stylesheet" href="/css/style.css">

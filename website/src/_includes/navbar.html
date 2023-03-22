@@ -1,12 +1,12 @@
 <header class="">
-    <div class="flex items-center justify-end m-auto px-4 lg:px-7 h-[66px]">
+    <div class="flex items-center flex-row rtl:flex-row-reverse justify-end m-auto px-4 lg:px-7 h-[66px]">
         <a href="{% getlangRoute page.url %}/" class="h-full hidden dark:hidden lg:flex items-center mr-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
         <a href="{% getlangRoute page.url %}/" class="h-full hidden dark:lg:flex items-center mr-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
         <a href="{% getlangRoute page.url %}/" class="dark:hidden lg:hidden mr-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
         <a href="{% getlangRoute page.url %}/" class="hidden dark:inline-block dark:lg:hidden lg:hidden mr-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
         
         <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 lg:top-0 lg:relative" id="menu">
-            <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
+            <div class="flex flex-col lg:flex-row lg:rtl:flex-row-reverse justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
                 <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-5 xl:gap-8">
                     
                     <li class="nav-link relative {% if active_home %}active{% endif %}">
@@ -97,7 +97,7 @@
         {% if 'blog' not in page.url %}
         <div class="nav-link relative">
             <a href="javascript:void(0);" class="flex items-center justify-end ml-8 lg:ml-5 xl:ml-10 h-6 w-8">
-                <img src="/img/flags/{% getlang page.url %}.svg" alt="" srcset="">
+                <img src="/img/flags/{{ page.url | getlang }}.svg" alt="" srcset="">
             </a>
             
             <ul class="flex flex-col items-start gap-2 h-fit absolute top-11 -left-10 bg-white dark:bg-black mt-[10px] py-4 min-w-[170px] rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu overflow-auto">

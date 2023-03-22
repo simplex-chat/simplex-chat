@@ -366,6 +366,14 @@ header nav {
   background-color: #70F0F9;
 }
 
+.swiper-rtl .swiper-button-prev{
+  right: 0 !important;
+}
+
+.swiper-rtl .swiper-button-next{
+  left: 0 !important;
+}
+
 /* What makes simplex private */
 .card{
   cursor: pointer;
@@ -464,6 +472,11 @@ header nav {
   font-weight: 500;
   text-align: left;
 }
+
+[dir="rtl"] #comparison table tbody tr > td:first-child{
+  text-align: right;
+}
+
 @media (min-width: 1024px) {
   #comparison table tbody tr > td:first-child{
     font-size: 18px;
