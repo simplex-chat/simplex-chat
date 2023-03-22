@@ -1501,14 +1501,11 @@ processChatCommand = \case
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
     checkSndFile :: MsgContent -> FilePath -> Integer -> m (Integer, SendFileMode)
     checkSndFile mc f n = do
-      liftIO $ print $ "checkSndFile, f: " <> f
       fsFilePath <- toFSFilePath f
-      liftIO $ print $ "checkSndFile, fsFilePath: " <> fsFilePath
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       ChatConfig {fileChunkSize, inlineFiles} <- asks config
       xftpCfg <- readTVarIO =<< asks userXFTPFileConfig
       fileSize <- getFileSize fsFilePath
-      liftIO $ print $ "checkSndFile, fileSize: " <> show fileSize
       let chunks = - ((- fileSize) `div` fileChunkSize)
           fileInline = inlineFileMode mc inlineFiles chunks n
           fileMode = case xftpCfg of
