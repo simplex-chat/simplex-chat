@@ -12,12 +12,15 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Base64.URL as U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
@@ -64,6 +67,8 @@ foreign export ccall "chat_recv_msg_wait" cChatRecvMsgWait :: StablePtr ChatCont
 foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO CJSONString
 
 foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSONString
+
+foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CString -> IO CString
 
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
@@ -121,6 +126,12 @@ cChatParseMarkdown s = newCAString . chatParseMarkdown =<< peekCAString s
 -- | parse server address - returns ParsedServerAddress JSON
 cChatParseServer :: CString -> IO CJSONString
 cChatParseServer s = newCAString . chatParseServer =<< peekCAString s
+
+cChatPasswordHash :: CString -> CString -> IO CString
+cChatPasswordHash cPwd cSalt = do
+  pwd <- peekCAString cPwd
+  salt <- peekCAString cSalt
+  newCAString $ chatPasswordHash pwd salt
 
 mobileChatOpts :: String -> String -> ChatOpts
 mobileChatOpts dbFilePrefix dbKey =
@@ -240,6 +251,12 @@ chatParseServer = LB.unpack . J.encode . toServerAddress . strDecode . B.pack
       Left e -> ParsedServerAddress Nothing e
     enc :: StrEncoding a => a -> String
     enc = B.unpack . strEncode
+
+chatPasswordHash :: String -> String -> String
+chatPasswordHash pwd salt = either (const "") passwordHash salt'
+  where
+    salt' = U.decode $ B.pack salt
+    passwordHash = B.unpack . U.encode . C.sha512Hash . (encodeUtf8 (T.pack pwd) <>)
 
 data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
   deriving (Generic)
