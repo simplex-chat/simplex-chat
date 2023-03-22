@@ -1,4 +1,4 @@
-| 21.03.2023 | FR, [EN](/docs/ANDROID.md), [CZ](/docs/lang/cs/ANDROID.md) |
+| 22.03.2023 | FR, [EN](/docs/ANDROID.md), [CZ](/docs/lang/cs/ANDROID.md) |
 
 # Accès aux fichiers dans l'application Android
 
@@ -9,20 +9,20 @@ SimpleX utilise des bases de données et stocke ses préférences dans le réper
 - les préférences de l'utilisateur.
 
 
-If you want to view what's stored inside SimpleX data directory you need to have:
-- Unix-based operating system (or [MinGW](https://www.mingw-w64.org/downloads/) on Windows)
-- ADB (Android Debug Bridge) tool installed on a computer ([download it here](https://developer.android.com/studio/releases/platform-tools) and install)
-- your device connected via USB or Wi-Fi to the computer.
+Si vous voulez voir ce qui est stocké dans le répertoire de données de SimpleX, vous devez avoir :
+- Un système d'exploitation Unix (ou [MinGW](https://www.mingw-w64.org/downloads/) sous Windows)
+- l'outil ADB (Android Debug Bridge) installé sur un ordinateur ([téléchargez-le ici](https://developer.android.com/studio/releases/platform-tools) et installez-le)
+- votre appareil connecté via USB ou Wi-Fi à l'ordinateur.
 
-## The process:
-- open SimpleX, go to `Database passphrase & export`, enable `App data backup`. This will make other steps working
-- _optional_: if you want to view database contents, change database passphrase from random to yours. To do this, stop a chat in `Database passphrase & export` screen, open `Database passphrase`, enter new passphrase and confirm it, then update it. Do not forget it, otherwise you'll lose all your data in case passphrase will be asked again later
-- open a terminal emulator (Windows CMD/Powershell will not work) and change directory to the one you want to use for storing the backup:
+## La procédure :
+- Ouvrez SimpleX, allez dans `Phrase secrète et exportation de la base de données`, activez `Sauvegarde des données de l'app`. Cela permettra aux autres étapes de fonctionner
+- optionnel_ : si vous voulez voir le contenu de la base de données, changez la phrase secrète de la base de données aléatoire pour la vôtre. Pour ce faire, arrêtez le chat dans le menu "Phrase secrète et exportation de la base de données", ouvrez "Phrase secrète de la base de données", entrez la nouvelle phrase secrète et confirmez-la, puis mettez-la à jour. Ne l'oubliez pas, sinon vous perdrez toutes vos données au cas où la phrase d'authentification vous serait redemandée plus tard.
+- ouvrez un émulateur de terminal (Windows CMD/Powershell ne fonctionnera pas) et changez de répertoire pour celui que vous voulez utiliser pour stocker la sauvegarde :
 
 ```bash
-cd /tmp  # just an example
+cd /tmp  # juste un exemple
 ```
-Then run the following:
+Exécutez ensuite la méthode suivante :
 ```bash
 adb -d backup -f chat.ab -noapk chat.simplex.app && 
 tail -n +5 chat.ab > chat.dat && 
@@ -30,12 +30,12 @@ printf "\x1f\x8b\x08\x00\x00\x00\x00\x00" | cat - chat.dat > chat.gz &&
 tar -xvzf chat.gz
 ```
 
-Now unlock the device and confirm a backup operation without using a password for encryption, otherwise the commands will not work.
+Déverrouillez maintenant l'appareil et confirmez une opération de sauvegarde sans utiliser de mot de passe pour le chiffrement, sinon les commandes ne fonctionneront pas.
 
-After that the backup should be ended. If you see an error saying `tar: Error is not recoverable: exiting now` but before that you have printed some file names, don't worry, it's ok.
+Ensuite, la sauvegarde doit être terminée. Si vous voyez une erreur disant `tar : Error is not recoverable : exiting now` mais qu'avant cela vous avez enregistré quelques noms de fichiers, ne vous inquiétez pas, tout va bien.
 
-Now the backed-up files will be inside `./apps/chat.simplex.app/`.
+Maintenant les fichiers sauvegardés seront dans `./apps/chat.simplex.app/`.
 
-Please, note, that if you use a modern version of SimpleX, the databases will be encrypted, and you'll not be able to view contents of them without using `sqlcipher` application and without knowing decryption passphrase (you need to change it to yours from randomly generated in the app firstly).
+Veuillez noter que si vous utilisez une version récente de SimpleX, les bases de données seront chiffrées, et vous ne pourrez pas en voir le contenu sans utiliser l'application `sqlcipher` et sans connaître la phrase secrète de déchiffrement (vous devez d'abord la changer pour la vôtre à partir de celle qui est générée aléatoirement dans l'application).
 
-Please, follow [SQL.md](./SQL.md) guide for more info of how to decrypt your databases and to make queries to them.
+Veuillez suivre le guide [SQL.md](/SQL.md) pour plus d'informations sur la manière de déchiffrer vos bases de données et d'y effectuer des requêtes.
