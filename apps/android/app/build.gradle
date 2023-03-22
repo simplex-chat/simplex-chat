@@ -11,8 +11,8 @@ android {
         applicationId "chat.simplex.app"
         minSdk 26
         targetSdk 33
-        versionCode 103
-        versionName "4.5.4"
+        versionCode 104
+        versionName "4.6-beta.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -205,8 +205,8 @@ tasks.register("compressApk") {
 
         if (project.properties['android.injected.signing.key.alias'] != null && buildType == 'release') {
             new File(outputDir, "app-release.apk").renameTo(new File(outputDir, "simplex.apk"))
-            new File(outputDir, "app-armeabi-v7a-release.apk").renameTo(new File(outputDir, "simplex-armeabi-v7a.apk"))
-            new File(outputDir, "app-arm64-v8a-release.apk").renameTo(new File(outputDir, "simplex-arm64-v8a.apk"))
+            new File(outputDir, "app-armeabi-v7a-release.apk").renameTo(new File(outputDir, "simplex-armv7a.apk"))
+            new File(outputDir, "app-arm64-v8a-release.apk").renameTo(new File(outputDir, "simplex.apk"))
         }
 
         // View all gradle properties set
