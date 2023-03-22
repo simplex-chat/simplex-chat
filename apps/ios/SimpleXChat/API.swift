@@ -191,13 +191,18 @@ func prettyJSON(_ obj: Any) -> String? {
 public func responseError(_ err: Error) -> String {
     if let r = err as? ChatResponse {
         switch r {
-        case let .chatCmdError(_, chatError): return String(describing: chatError)
-        case let .chatError(_, chatError): return String(describing: chatError)
+        case let .chatCmdError(_, chatError): return chatErrorString(chatError)
+        case let .chatError(_, chatError): return chatErrorString(chatError)
         default: return String(describing: r)
         }
     } else {
         return String(describing: err)
     }
+}
+
+func chatErrorString(_ err: ChatError) -> String {
+    if case let .invalidJSON(json) = err { return json }
+    return String(describing: err)
 }
 
 public enum DBMigrationResult: Decodable, Equatable {

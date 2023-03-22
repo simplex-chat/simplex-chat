@@ -10,14 +10,13 @@ struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = false
+    @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
     @State private var showDeleteConfirmation = false
     @State private var userToDelete: UserInfo?
     @State private var alert: UserProfilesAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var searchTextOrPassword = ""
-    @State private var showProfilePassword = false
     @State private var selectedUser: User?
     @State private var profileHidden = false
 
@@ -145,7 +144,7 @@ struct UserProfilesView: View {
             case .muteProfileAlert:
                 return Alert(
                     title: Text("Muted when inactive!"),
-                    message: Text("You would still receive calls and notifications from muted profiles when they are active."),
+                    message: Text("You will still receive calls and notifications from muted profiles when they are active."),
                     primaryButton: .default(Text("Don't show again")) {
                         showMuteProfileAlert = false
                     },
@@ -166,10 +165,13 @@ struct UserProfilesView: View {
         let s = searchTextOrPassword.trimmingCharacters(in: .whitespaces)
         let lower = s.localizedLowercase
         return m.users.filter { u in
-            if let ph = u.user.viewPwdHash {
-                return u.user.activeUser || (s != "" && chatPasswordHash(s, ph.salt) == ph.hash)
+            if (u.user.activeUser || u.user.viewPwdHash == nil) && (s == "" || u.user.chatViewName.localizedLowercase.contains(lower)) {
+                return true
             }
-            return s == "" || u.user.chatViewName.localizedLowercase.contains(lower)
+            if let ph = u.user.viewPwdHash {
+                return s != "" && chatPasswordHash(s, ph.salt) == ph.hash
+            }
+            return false
         }
     }
 

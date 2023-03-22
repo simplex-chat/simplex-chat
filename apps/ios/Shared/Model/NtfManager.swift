@@ -31,7 +31,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
-                                withCompletionHandler handler: @escaping () -> Void) {
+                                withCompletionHandler handler: () -> Void) {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
         let content = response.notification.request.content
         let chatModel = ChatModel.shared
@@ -39,7 +39,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         if let userId = content.userInfo["userId"] as? Int64,
            userId != chatModel.currentUser?.userId {
-            // TODO check that user is not hidden, suppress notification if it is
             changeActiveUser(userId, viewPwd: nil)
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,

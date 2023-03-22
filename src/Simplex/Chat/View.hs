@@ -1232,7 +1232,7 @@ viewChatError logLevel = \case
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]
     CECantDeleteActiveUser _ -> ["cannot delete active user"]
     CECantDeleteLastUser _ -> ["cannot delete last user"]
-    CECantHideLastUser _ -> ["cannot hide last visible user"]
+    CECantHideLastUser _ -> ["cannot hide the only not hidden user"]
     CECantUnmuteHiddenUser _ -> ["cannot unmute hidden user"]
     CEEmptyUserPassword _ -> ["cannot set empty password"]
     CEUserAlreadyHidden _ -> ["user is already hidden"]
