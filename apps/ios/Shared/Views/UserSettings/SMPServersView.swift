@@ -12,6 +12,7 @@ import SimpleXChat
 private let howToUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md")!
 
 struct SMPServersView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
     @State private var servers = ChatModel.shared.userSMPServers ?? []
@@ -20,6 +21,7 @@ struct SMPServersView: View {
     @State private var showScanSMPServer = false
     @State private var testing = false
     @State private var alert: SMPServerAlert? = nil
+    @State private var showSaveDialog = false
 
     var body: some View {
         ZStack {
@@ -86,6 +88,20 @@ struct SMPServersView: View {
         }
         .sheet(isPresented: $showScanSMPServer) {
             ScanSMPServer(servers: $servers)
+        }
+        .modifier(BackButton {
+            if saveDisabled {
+                dismiss()
+            } else {
+                showSaveDialog = true
+            }
+        })
+        .confirmationDialog("Save servers?", isPresented: $showSaveDialog) {
+            Button("Save") {
+                saveSMPServers()
+                dismiss()
+            }
+            Button("Exit without saving") { dismiss() }
         }
         .alert(item: $alert) { a in
             switch a {
