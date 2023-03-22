@@ -225,7 +225,9 @@ startChatController subConns enableExpireCIs = do
       pure a1
     startXFTP = do
       tmp <- readTVarIO =<< asks tempDirectory
-      void $ runExceptT $ withAgent $ \a -> xftpStartWorkers a tmp
+      runExceptT (withAgent $ \a -> xftpStartWorkers a tmp) >>= \case
+        Left e -> liftIO $ print $ "Error starting XFTP workers: " <> show e
+        Right _ -> pure ()
     startCleanupManager = do
       cleanupAsync <- asks cleanupManagerAsync
       readTVarIO cleanupAsync >>= \case
