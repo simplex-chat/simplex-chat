@@ -1158,4 +1158,16 @@
   <string name="v4_5_reduced_battery_usage_descr">More improvements are coming soon!</string>
   <string name="v4_5_italian_interface">Italian interface</string>
   <string name="v4_5_italian_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v4_6_hidden_chat_profiles">Hidden chat profiles</string>
+  <string name="v4_6_hidden_chat_profiles_descr">Protect your chat profiles with a password!</string>
+  <string name="v4_6_audio_video_calls">Audio and video calls</string>
+  <string name="v4_6_audio_video_calls_descr">Support bluetooth and other improvements.</string>
+  <string name="v4_6_group_moderation">Group moderation</string>
+  <string name="v4_6_group_moderation_descr">Now admins can:\n- delete members\' messages.\n- disable members (\"observer\" role)</string>
+  <string name="v4_6_group_welcome_message">Group welcome message</string>
+  <string name="v4_6_group_welcome_message_descr">Set the message shown to new members!</string>
+  <string name="v4_6_reduced_battery_usage">Further reduced battery usage</string>
+  <string name="v4_6_reduced_battery_usage_descr">More improvements are coming soon!</string>
+  <string name="v4_6_chinese_spanish_interface">Chinese and Spanish interface</string>
+  <string name="v4_6_chinese_spanish_interface_descr">Thanks to the users – contribute via Weblate!</string>
 </resources>
