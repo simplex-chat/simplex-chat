@@ -31,8 +31,8 @@ CREATE TABLE users(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
-  view_pwd_hash BLOB NULL,
-  view_pwd_salt BLOB NULL,
+  view_pwd_hash BLOB,
+  view_pwd_salt BLOB,
   show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)

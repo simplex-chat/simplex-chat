@@ -1565,7 +1565,7 @@ testUserPrivacy =
       alice ##> "/_delete user 1 del_smp=on"
       alice <## "cannot delete last user"
       alice ##> "/_hide user 1 \"password\""
-      alice <## "cannot hide last visible user"
+      alice <## "cannot hide the only not hidden user"
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       -- change profile privacy for inactive user via API requires correct password

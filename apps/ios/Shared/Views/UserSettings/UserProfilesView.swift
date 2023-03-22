@@ -57,7 +57,7 @@ struct UserProfilesView: View {
                 Button {
                     withAnimation { profileHidden = false }
                 } label: {
-                    Label("Enter password above to show!", systemImage: "exclamationmark.shield")
+                    Label("Enter password above to show!", systemImage: "lock.open")
                 }
             }
             Section {
