@@ -312,6 +312,9 @@
 "always" = "一直";
 
 /* No comment provided by engineer. */
+"Always use relay" = "一直使用中继";
+
+/* No comment provided by engineer. */
 "Answer call" = "接听来电";
 
 /* No comment provided by engineer. */
@@ -340,6 +343,9 @@
 
 /* No comment provided by engineer. */
 "Authentication failed" = "认证失败";
+
+/* No comment provided by engineer. */
+"Authentication is required before the call is connected, but you may miss calls." = "通话接通前需要进行认证，但您可能会错过来电。";
 
 /* No comment provided by engineer. */
 "Authentication unavailable" = "认证不可用";
@@ -1301,6 +1307,9 @@
 /* No comment provided by engineer. */
 "Instantly" = "即时";
 
+/* No comment provided by engineer. */
+"Interface" = "界面";
+
 /* invalid chat data */
 "invalid chat" = "无效聊天";
 
@@ -1503,10 +1512,10 @@
 "missed call" = "未接来电";
 
 /* chat item action */
-"Moderate" = "审核";
+"Moderate" = "管理员移除";
 
 /* moderated chat item */
-"moderated" = "已审核";
+"moderated" = "已被管理员移除";
 
 /* No comment provided by engineer. */
 "moderated by %@" = "由 %@ 审核";
@@ -1903,7 +1912,7 @@
 "Role" = "角色";
 
 /* No comment provided by engineer. */
-"Run chat" = "开始聊天";
+"Run chat" = "运行聊天程序";
 
 /* chat item action */
 "Save" = "保存";
@@ -1960,7 +1969,7 @@
 "secret" = "秘密";
 
 /* server test step */
-"Secure queue" = "安全队列";
+"Secure queue" = "保护队列";
 
 /* No comment provided by engineer. */
 "Security assessment" = "安全评估";
@@ -2050,6 +2059,9 @@
 "Share one-time invitation link" = "分享一次性邀请链接";
 
 /* No comment provided by engineer. */
+"Show calls in phone history" = "在电话历史记录中显示通话";
+
+/* No comment provided by engineer. */
 "Show preview" = "显示预览";
 
 /* No comment provided by engineer. */
@@ -2113,7 +2125,7 @@
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。";
 
 /* No comment provided by engineer. */
-"Stop chat?" = "停止聊天？";
+"Stop chat?" = "停止聊天程序？";
 
 /* authentication reason */
 "Stop SimpleX" = "停止 SimpleX";
@@ -2298,11 +2310,17 @@
 /* connection info */
 "unknown" = "未知";
 
+/* callkit banner */
+"Unknown caller" = "未知来电者";
+
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "未知数据库错误：%@";
 
 /* No comment provided by engineer. */
 "Unknown error" = "未知错误";
+
+/* No comment provided by engineer. */
+"Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "除非您使用 iOS 通话界面，否则请启用请勿打扰模式以避免打扰。";
 
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。\n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。";
@@ -2348,6 +2366,9 @@
 
 /* No comment provided by engineer. */
 "Use for new connections" = "用于新连接";
+
+/* No comment provided by engineer. */
+"Use iOS call interface" = "使用 iOS 通话界面";
 
 /* No comment provided by engineer. */
 "Use server" = "使用服务器";
@@ -2485,6 +2506,9 @@
 "you are observer" = "您是观察者";
 
 /* No comment provided by engineer. */
+"You can accept calls from lock screen, without device and app authentication." = "您可以从锁屏上接听电话，无需设备和应用程序的认证。";
+
+/* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "您也可以通过点击链接进行连接。如果在浏览器中打开，请点击“在移动应用程序中打开”按钮。";
 
 /* notification body */
@@ -2609,9 +2633,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "您的聊天资料";
-
-/* No comment provided by engineer. */
-"Your chat profiles are stored locally, only on your device." = "您的聊天资料存储在本地，只在您的设备上。";
 
 /* No comment provided by engineer. */
 "Your chats" = "您的聊天";

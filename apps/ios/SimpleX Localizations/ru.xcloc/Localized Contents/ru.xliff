@@ -3362,12 +3362,12 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Тема</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
-        <source>There should be at least one visible user profile.</source>
+      <trans-unit id="There should be at least one user profile." xml:space="preserve">
+        <source>There should be at least one user profile.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least use user profile." xml:space="preserve">
-        <source>There should be at least use user profile.</source>
+      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
+        <source>There should be at least one visible user profile.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
