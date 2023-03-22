@@ -45,6 +45,7 @@ struct GroupChatInfoView: View {
                 Section {
                     if groupInfo.canEdit {
                         editGroupButton()
+                        addOrEditWelcomeMessage()
                     }
                     groupPreferencesButton($groupInfo)
                 } header: {
@@ -212,6 +213,18 @@ struct GroupChatInfoView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
+        }
+    }
+
+    private func addOrEditWelcomeMessage() -> some View {
+        NavigationLink {
+            GroupWelcomeView(groupId: groupInfo.groupId, groupInfo: $groupInfo)
+            .navigationTitle("Welcome message")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            groupInfo.groupProfile.description == nil
+                ? Label("Add welcome message", systemImage: "plus.message")
+                : Label("Welcome message", systemImage: "message")
         }
     }
 

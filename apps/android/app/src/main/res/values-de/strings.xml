@@ -513,13 +513,15 @@
     <!-- Call settings -->
     <string name="settings_audio_video_calls">Audio- &amp; Videoanrufe</string>
     <string name="your_calls">Ihre Anrufe</string>
-    <string name="connect_calls_via_relay">Über ein Relais verbinden</string>
+    <string name="always_use_relay">Über ein Relais verbinden</string>
     <string name="call_on_lock_screen">Anrufe auf Sperrbildschirm:</string>
     <string name="accept_call_on_lock_screen">Akzeptieren</string>
     <string name="show_call_on_lock_screen">Anzeigen</string>
     <string name="no_call_on_lock_screen">Deaktivieren</string>
     <string name="your_ice_servers">Ihre ICE-Server</string>
     <string name="webrtc_ice_servers">WebRTC ICE-Server</string>
+    <string name="relay_server_protects_ip">Relais-Server schützen Ihre IP-Adresse, aber sie können die Anrufdauer erfassen.</string>
+    <string name="relay_server_if_necessary">Relais-Server werden nur genutzt, wenn sie benötigt werden. Ihre IP-Adresse kann von Anderen erfasst werden.</string>
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Öffnen Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g>, um den Anruf anzunehmen.</string>
     <string name="allow_accepting_calls_from_lock_screen">Aktivieren Sie Anrufe vom Sperrbildschirm über die Einstellungen.</string>
@@ -1050,6 +1052,7 @@
     <string name="initial_member_role">Anfängliche Rolle</string>
     <string name="delete_member_message__question">Nachricht des Mitglieds löschen\?</string>
     <string name="error_updating_link_for_group">Fehler beim Aktualisieren des Gruppen-Links</string>
-    <string name="observer_cant_send_message_desc">Bitte kontaktieren Sie den Gruppen-Administrator</string>
+    <string name="observer_cant_send_message_desc">Bitte kontaktieren Sie den Gruppen-Administrator.</string>
     <string name="moderate_message_will_be_deleted_warning">Diese Nachricht wird für alle Gruppenmitglieder gelöscht.</string>
+    <string name="language_system">System</string>
 </resources>

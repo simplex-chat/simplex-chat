@@ -941,7 +941,7 @@
     <string name="icon_descr_call_pending_sent">待確認通話</string>
     <string name="your_privacy">你的私隱</string>
     <string name="your_calls">你的通話</string>
-    <string name="connect_calls_via_relay">經由分程傳遞連接</string>
+    <string name="always_use_relay">經由分程傳遞連接</string>
     <string name="call_on_lock_screen">在上鎖畫面顯示來電通知：</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 你錯過了多個訊息</string>
     <string name="integrity_msg_bad_hash">錯誤訊息雜湊值</string>
@@ -982,4 +982,5 @@
     <string name="error_updating_link_for_group">更新群組鏈接時出錯</string>
     <string name="observer_cant_send_message_desc">請聯繫群管理員。</string>
     <string name="initial_member_role">初始角色</string>
+    <string name="language_system">系統</string>
 </resources>

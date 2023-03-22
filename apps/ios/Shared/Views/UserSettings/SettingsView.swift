@@ -40,6 +40,8 @@ let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
+let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
+let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 
 let appDefaults: [String: Any] = [
@@ -62,7 +64,9 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
     DEFAULT_CONNECT_VIA_LINK_TAB: "scan",
-    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false
+    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
+    DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
+    DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
 ]
 
 enum SimpleXLinkMode: String, Identifiable {

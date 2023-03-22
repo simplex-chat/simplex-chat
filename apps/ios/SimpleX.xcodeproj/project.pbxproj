@@ -13,6 +13,7 @@
 		1841594C978674A7B42EF0C0 /* AnimatedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841511920742C6E152E469F /* AnimatedImageView.swift */; };
 		18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */; };
 		18415C6C56DBCEC2CBBD2F11 /* WebRTCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415323A4082FC92887F906 /* WebRTCClient.swift */; };
+		18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841516F0CE5992B0EDFB377 /* GroupWelcomeView.swift */; };
 		3C71477A281C0F6800CB4D4B /* www in Resources */ = {isa = PBXBuildFile; fileRef = 3C714779281C0F6800CB4D4B /* www */; };
 		3C8C548928133C84000A3EC7 /* PasteToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */; };
 		3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */; };
@@ -108,6 +109,7 @@
 		5CBD285C29575B8E00EC2CF4 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD285B29575B8E00EC2CF4 /* WhatsNewView.swift */; };
 		5CBE6C12294487F7002D9531 /* VerifyCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBE6C11294487F7002D9531 /* VerifyCodeView.swift */; };
 		5CBE6C142944CC12002D9531 /* ScanCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBE6C132944CC12002D9531 /* ScanCodeView.swift */; };
+		5CC036E029C488D500C0EF20 /* HiddenProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */; };
 		5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */; };
 		5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */; };
 		5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FA2809BF11000C35E3 /* Localizable.strings */; };
@@ -231,6 +233,7 @@
 
 /* Begin PBXFileReference section */
 		1841511920742C6E152E469F /* AnimatedImageView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnimatedImageView.swift; sourceTree = "<group>"; };
+		1841516F0CE5992B0EDFB377 /* GroupWelcomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GroupWelcomeView.swift; sourceTree = "<group>"; };
 		18415323A4082FC92887F906 /* WebRTCClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebRTCClient.swift; sourceTree = "<group>"; };
 		18415835CBD939A9ABDC108A /* UserPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserPicker.swift; sourceTree = "<group>"; };
 		18415845648CA4F5A8BCA272 /* UserProfilesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserProfilesView.swift; sourceTree = "<group>"; };
@@ -283,6 +286,14 @@
 		5C65DADC29C63220003CEE45 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		5C65DADD29C63220003CEE45 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5C65DADE29C63220003CEE45 /* libHSsimplex-chat-4.5.4.2-5MLmlDLq8qj6EDk0bEtsDu-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.5.4.2-5MLmlDLq8qj6EDk0bEtsDu-ghc8.10.7.a"; sourceTree = "<group>"; };
+		5C65DAE429C77136003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		5C65DAE529C77136003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		5C65DAE629C771B9003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5C65DAE729C771B9003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		5C65DAEA29CB8867003CEE45 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C65DAEB29CB8867003CEE45 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C65DAEC29CB8908003CEE45 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = "es.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5C65DAED29CB8908003CEE45 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5C65F341297D3F3600B67AF3 /* VersionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionView.swift; sourceTree = "<group>"; };
 		5C6AD81227A834E300348BD7 /* NewChatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatButton.swift; sourceTree = "<group>"; };
 		5C6BA666289BD954009B8ECC /* DismissSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissSheets.swift; sourceTree = "<group>"; };
@@ -355,6 +366,7 @@
 		5CBD285B29575B8E00EC2CF4 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		5CBE6C11294487F7002D9531 /* VerifyCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyCodeView.swift; sourceTree = "<group>"; };
 		5CBE6C132944CC12002D9531 /* ScanCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCodeView.swift; sourceTree = "<group>"; };
+		5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HiddenProfileView.swift; sourceTree = "<group>"; };
 		5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCode.swift; sourceTree = "<group>"; };
 		5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		5CC2C0FB2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -669,6 +681,7 @@
 				5CB924E327A8683A00ACCCDD /* UserAddress.swift */,
 				5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */,
 				5CB924E027A867BA00ACCCDD /* UserProfile.swift */,
+				5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */,
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
 				5C93292E29239A170090FFF9 /* SMPServersView.swift */,
 				5C93293029239BED0090FFF9 /* SMPServerView.swift */,
@@ -792,6 +805,7 @@
 				647F090D288EA27B00644C40 /* GroupMemberInfoView.swift */,
 				5C9C2DA42894777E00CC63B1 /* GroupProfileView.swift */,
 				6448BBB528FA9D56000D2AB9 /* GroupLinkView.swift */,
+				1841516F0CE5992B0EDFB377 /* GroupWelcomeView.swift */,
 			);
 			path = Group;
 			sourceTree = "<group>";
@@ -936,6 +950,8 @@
 				it,
 				nl,
 				cs,
+				"zh-Hans",
+				es,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -1020,6 +1036,7 @@
 				5C029EAA283942EA004A9677 /* CallController.swift in Sources */,
 				5CCA7DF32905735700C8FEBA /* AcceptRequestsView.swift in Sources */,
 				5CBE6C142944CC12002D9531 /* ScanCodeView.swift in Sources */,
+				5CC036E029C488D500C0EF20 /* HiddenProfileView.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
 				5CFA59C42860BC6200863A68 /* MigrateToAppGroupView.swift in Sources */,
 				648010AB281ADD15009009B9 /* CIFileView.swift in Sources */,
@@ -1121,6 +1138,7 @@
 				1841560FD1CD447955474C1D /* UserProfilesView.swift in Sources */,
 				18415C6C56DBCEC2CBBD2F11 /* WebRTCClient.swift in Sources */,
 				184152CEF68D2336FC2EBCB0 /* CallViewRenderers.swift in Sources */,
+				18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1196,6 +1214,8 @@
 				5CA85D0D297219EF0095AF72 /* it */,
 				5C84FE9429A2179C00D95B1A /* nl */,
 				5C8B41CC29AF44CF00888272 /* cs */,
+				5C65DAE729C771B9003CEE45 /* zh-Hans */,
+				5C65DAED29CB8908003CEE45 /* es */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1210,6 +1230,8 @@
 				5CA85D0B297218AA0095AF72 /* it */,
 				5C84FE9229A216C800D95B1A /* nl */,
 				5C8B41CA29AF41BC00888272 /* cs */,
+				5C65DAE529C77136003CEE45 /* zh-Hans */,
+				5C65DAEB29CB8867003CEE45 /* es */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1224,6 +1246,8 @@
 				5CA85D0A297218AA0095AF72 /* it */,
 				5C84FE9129A216C800D95B1A /* nl */,
 				5C8B41C929AF41BC00888272 /* cs */,
+				5C65DAE429C77136003CEE45 /* zh-Hans */,
+				5C65DAEA29CB8867003CEE45 /* es */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1237,6 +1261,8 @@
 				5CA85D0C297219EF0095AF72 /* it */,
 				5C84FE9329A2179C00D95B1A /* nl */,
 				5C8B41CB29AF44CF00888272 /* cs */,
+				5C65DAE629C771B9003CEE45 /* zh-Hans */,
+				5C65DAEC29CB8908003CEE45 /* es */,
 			);
 			name = "SimpleX--iOS--InfoPlist.strings";
 			sourceTree = "<group>";
@@ -1572,6 +1598,10 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Libraries",
+				);
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Libraries/ios",
@@ -1617,6 +1647,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Libraries",
 				);
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
 					"$(inherited)",

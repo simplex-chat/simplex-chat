@@ -345,6 +345,9 @@
 "Authentication failed" = "Authentifizierung fehlgeschlagen";
 
 /* No comment provided by engineer. */
+"Authentication is required before the call is connected, but you may miss calls." = "Bevor der Anruf verbunden wird, ist eine Authentifizierung erforderlich, aber Sie könnten Anrufe verpassen.";
+
+/* No comment provided by engineer. */
 "Authentication unavailable" = "Authentifizierung nicht verfügbar";
 
 /* No comment provided by engineer. */
@@ -405,7 +408,7 @@
 "Cancel" = "Abbrechen";
 
 /* feature offered item */
-"cancelled %@" = "Beende %@";
+"cancelled %@" = "abgebrochen %@";
 
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Die App kann nicht auf den Schlüsselbund zugreifen, um das Datenbank-Passwort zu speichern";
@@ -1304,6 +1307,9 @@
 /* No comment provided by engineer. */
 "Instantly" = "Sofort";
 
+/* No comment provided by engineer. */
+"Interface" = "Schnittstelle";
+
 /* invalid chat data */
 "invalid chat" = "Ungültiger Chat";
 
@@ -1599,7 +1605,7 @@
 "Notifications are disabled!" = "Benachrichtigungen sind deaktiviert!";
 
 /* member role */
-"observer" = "beobachter";
+"observer" = "Beobachter";
 
 /* enabled status
    group pref value */
@@ -1609,10 +1615,10 @@
 "Off (Local)" = "Aus (Lokal)";
 
 /* feature offered item */
-"offered %@" = "Beginne %@";
+"offered %@" = "angeboten %@";
 
 /* feature offered item */
-"offered %@: %@" = "Beginne %1$@: %2$@";
+"offered %@: %@" = "angeboten %1$@: %2$@";
 
 /* No comment provided by engineer. */
 "Ok" = "Ok";
@@ -2053,6 +2059,9 @@
 "Share one-time invitation link" = "Einmal-Einladungslink teilen";
 
 /* No comment provided by engineer. */
+"Show calls in phone history" = "Anrufliste zeigen";
+
+/* No comment provided by engineer. */
 "Show preview" = "Vorschau anzeigen";
 
 /* No comment provided by engineer. */
@@ -2301,11 +2310,17 @@
 /* connection info */
 "unknown" = "Unbekannt";
 
+/* callkit banner */
+"Unknown caller" = "Anrufer unbekannt";
+
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Unbekannter Datenbankfehler: %@";
 
 /* No comment provided by engineer. */
 "Unknown error" = "Unbekannter Fehler";
+
+/* No comment provided by engineer. */
+"Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Aktivieren Sie den Modus \"Bitte nicht stören\", um Unterbrechungen zu vermeiden, es sei denn, Sie verwenden die iOS Anrufschnittstelle.";
 
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.";
@@ -2351,6 +2366,9 @@
 
 /* No comment provided by engineer. */
 "Use for new connections" = "Für neue Verbindungen nutzen";
+
+/* No comment provided by engineer. */
+"Use iOS call interface" = "Benutzen Sie die iOS Anrufschnittstelle";
 
 /* No comment provided by engineer. */
 "Use server" = "Server nutzen";
@@ -2488,6 +2506,9 @@
 "you are observer" = "Sie sind Beobachter";
 
 /* No comment provided by engineer. */
+"You can accept calls from lock screen, without device and app authentication." = "Sie können Anrufe ohne Geräte- und App-Authentifizierung vom Sperrbildschirm aus annehmen.";
+
+/* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche **In mobiler App öffnen**.";
 
 /* notification body */
@@ -2612,9 +2633,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Meine Chat-Profile";
-
-/* No comment provided by engineer. */
-"Your chat profiles are stored locally, only on your device." = "Ihre Chat-Profile werden nur lokal auf Ihrem Endgerät gespeichert.";
 
 /* No comment provided by engineer. */
 "Your chats" = "Meine Chats";
