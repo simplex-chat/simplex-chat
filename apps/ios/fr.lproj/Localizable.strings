@@ -345,6 +345,9 @@
 "Authentication failed" = "Échec de l'authentification";
 
 /* No comment provided by engineer. */
+"Authentication is required before the call is connected, but you may miss calls." = "L'authentification est requise avant que l'appel ne soit connecté, mais vous risquez de manquer des appels.";
+
+/* No comment provided by engineer. */
 "Authentication unavailable" = "Authentification indisponible";
 
 /* No comment provided by engineer. */
@@ -1304,6 +1307,9 @@
 /* No comment provided by engineer. */
 "Instantly" = "Instantané";
 
+/* No comment provided by engineer. */
+"Interface" = "Interface";
+
 /* invalid chat data */
 "invalid chat" = "chat invalide";
 
@@ -2053,6 +2059,9 @@
 "Share one-time invitation link" = "Partager un lien d'invitation unique";
 
 /* No comment provided by engineer. */
+"Show calls in phone history" = "Afficher les appels dans l'historique du téléphone";
+
+/* No comment provided by engineer. */
 "Show preview" = "Montrer l'aperçu";
 
 /* No comment provided by engineer. */
@@ -2301,11 +2310,17 @@
 /* connection info */
 "unknown" = "inconnu";
 
+/* callkit banner */
+"Unknown caller" = "Appel inconnu";
+
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Erreur inconnue de la base de données : %@";
 
 /* No comment provided by engineer. */
 "Unknown error" = "Erreur inconnue";
+
+/* No comment provided by engineer. */
+"Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "À moins que vous utilisiez l'interface d'appel d'iOS, activez le mode \"Ne pas déranger\" pour éviter les interruptions.";
 
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "A moins que votre contact ait supprimé la connexion ou que ce lien ait déjà été utilisé, il peut s'agir d'un bug - veuillez le signaler.\nPour vous connecter, veuillez demander à votre contact de créer un autre lien de connexion et vérifiez que vous disposez d'une connexion réseau stable.";
@@ -2351,6 +2366,9 @@
 
 /* No comment provided by engineer. */
 "Use for new connections" = "Utiliser pour les nouvelles connexions";
+
+/* No comment provided by engineer. */
+"Use iOS call interface" = "Utiliser l'interface d'appel d'iOS";
 
 /* No comment provided by engineer. */
 "Use server" = "Utiliser ce serveur";
@@ -2488,6 +2506,9 @@
 "you are observer" = "vous êtes observateur";
 
 /* No comment provided by engineer. */
+"You can accept calls from lock screen, without device and app authentication." = "Vous pouvez accepter des appels à partir de l'écran de verrouillage, sans authentification de l'appareil ou de l'application.";
+
+/* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Vous pouvez également vous connecter en cliquant sur le lien. S'il s'ouvre dans le navigateur, cliquez sur le bouton **Open in mobile app**.";
 
 /* notification body */
@@ -2612,9 +2633,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Vos profils de chat";
-
-/* No comment provided by engineer. */
-"Your chat profiles are stored locally, only on your device." = "Vos profils de chat sont stockés localement, uniquement sur votre appareil.";
 
 /* No comment provided by engineer. */
 "Your chats" = "Vos chats";
