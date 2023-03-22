@@ -48,7 +48,7 @@ chatFileTests = do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
-  fdescribe "file transfer over XFTP" $ do
+  describe "file transfer over XFTP" $ do
     it "send and receive file" testXFTPFileTransfer
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     it "continue receiving file after restart" testXFTPContinueRcv
