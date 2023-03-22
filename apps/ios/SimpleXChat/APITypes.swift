@@ -692,14 +692,6 @@ public enum ChatResponse: Decodable, Error {
     }
 }
 
-public struct UserPrivacyCfg: Encodable {
-    var currViewPwd: String
-    var showNtfs: Bool
-    var forceIncognito: Bool
-    var viewPwd: String
-    var wipePwd: String
-}
-
 public enum ChatPagination {
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)

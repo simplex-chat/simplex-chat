@@ -10,7 +10,6 @@ import SwiftUI
 import SimpleXChat
 
 struct PrivacySettings: View {
-    @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
