@@ -78,7 +78,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import System.Exit (exitFailure, exitSuccess)
-import System.FilePath (combine, splitExtensions, takeFileName)
+import System.FilePath (combine, splitExtensions, takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
@@ -219,9 +219,15 @@ startChatController subConns enableExpireCIs = do
           then Just <$> async (subscribeUsers users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
+      startXFTP
       startCleanupManager
       when enableExpireCIs $ startExpireCIs users
       pure a1
+    startXFTP = do
+      tmp <- readTVarIO =<< asks tempDirectory
+      runExceptT (withAgent $ \a -> xftpStartWorkers a tmp) >>= \case
+        Left e -> liftIO $ print $ "Error starting XFTP workers: " <> show e
+        Right _ -> pure ()
     startCleanupManager = do
       cleanupAsync <- asks cleanupManagerAsync
       readTVarIO cleanupAsync >>= \case
@@ -355,6 +361,11 @@ processChatCommand = \case
     withAgent (`suspendAgent` t)
     ok_
   ResubscribeAllConnections -> withStore' getUsers >>= subscribeUsers >> ok_
+  -- has to be called before StartChat
+  SetTempFolder tf -> do
+    createDirectoryIfMissing True tf
+    asks tempDirectory >>= atomically . (`writeTVar` Just tf)
+    ok_
   SetFilesFolder ff -> do
     createDirectoryIfMissing True ff
     asks filesFolder >>= atomically . (`writeTVar` Just ff)
@@ -535,8 +546,8 @@ processChatCommand = \case
         let fileName = takeFileName file
             fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
             fInv = xftpFileInvitation fileName fileSize fileDescr
-        tmp <- readTVarIO =<< asks tempDirectory
-        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) file n tmp
+        fsFilePath <- toFSFilePath file
+        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) fsFilePath n
         -- TODO CRSndFileStart event for XFTP
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv $ AgentSndFileId aFileId
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
@@ -1758,7 +1769,7 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 -- used during file transfer for actual operations with file system
 toFSFilePath :: ChatMonad m => FilePath -> m FilePath
 toFSFilePath f =
-  maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
+  maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m AChatItem
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
@@ -1822,8 +1833,7 @@ receiveViaCompleteFD :: ChatMonad m => User -> FileTransferId -> RcvFileDescr ->
 receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} =
   when fileDescrComplete $ do
     rd <- parseRcvFileDescription fileDescrText
-    tmp <- readTVarIO =<< asks tempDirectory
-    aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd tmp
+    aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd
     startReceivingFile user fileId
     withStore' $ \db -> updateRcvFileAgentId db fileId (AgentRcvFileId aFileId)
 
@@ -2260,7 +2270,8 @@ processAgentMsgRcvFile _corrId aFileId msg =
           case liveRcvFileTransferPath ft of
             Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
             Just targetPath -> do
-              renameFile xftpPath targetPath
+              fsTargetPath <- toFSFilePath targetPath
+              renameFile xftpPath fsTargetPath
               ci <- withStore $ \db -> do
                 liftIO $ do
                   updateRcvFileStatus db fileId FSComplete
@@ -4202,6 +4213,7 @@ chatCommandP =
       "/_app activate" $> APIActivateChat,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
+      "/_temp_folder " *> (SetTempFolder <$> filePath),
       "/_files_folder " *> (SetFilesFolder <$> filePath),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/_db import " *> (APIImportArchive <$> jsonP),

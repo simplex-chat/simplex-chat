@@ -320,7 +320,7 @@ xftpServerConfig =
   XFTPServerConfig
     { xftpPort = xftpTestPort,
       fileIdSize = 16,
-      storeLogFile = Nothing,
+      storeLogFile = Just "tests/tmp/xftp-server-store.log",
       filesPath = xftpServerFiles,
       fileSizeQuota = Nothing,
       allowedChunkSizes = [kb 128, kb 256, mb 1, mb 4],

@@ -196,6 +196,7 @@ data ChatCommand
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
+  | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | SetIncognito Bool
   | APIExportArchive ArchiveConfig
