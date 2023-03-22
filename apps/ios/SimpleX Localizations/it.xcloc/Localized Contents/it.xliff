@@ -538,9 +538,9 @@
         <target>Autenticazione fallita</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
+      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
         <source>Authentication is required before the call is connected, but you may miss calls.</source>
-        <target state="translated">L'autenticazione è necessaria prima che la chiamata sia connessa, ma potresti perdere le chiamate.</target>
+        <target>L'autenticazione è necessaria prima che la chiamata sia connessa, ma potresti perdere le chiamate.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
@@ -1979,9 +1979,9 @@
         <target>Istantaneamente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Interface" xml:space="preserve" approved="no">
+      <trans-unit id="Interface" xml:space="preserve">
         <source>Interface</source>
-        <target state="translated">Interfaccia</target>
+        <target>Interfaccia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -3091,9 +3091,9 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Mostra codice QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show calls in phone history" xml:space="preserve" approved="no">
+      <trans-unit id="Show calls in phone history" xml:space="preserve">
         <source>Show calls in phone history</source>
-        <target state="translated">Mostra le chiamate nella cronologia del telefono</target>
+        <target>Mostra le chiamate nella cronologia del telefono</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -3505,7 +3505,7 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
         <source>Unknown caller</source>
-        <target state="translated">Chiamante sconosciuto</target>
+        <target>Chiamante sconosciuto</target>
         <note>callkit banner</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -3518,9 +3518,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Errore sconosciuto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve" approved="no">
+      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
-        <target state="translated">A meno che non utilizzi l'interfaccia di chiamata iOS, attiva la modalità Non disturbare per evitare interruzioni.</target>
+        <target>A meno che non utilizzi l'interfaccia di chiamata iOS, attiva la modalità Non disturbare per evitare interruzioni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
@@ -3600,9 +3600,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Usa per connessioni nuove</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use iOS call interface" xml:space="preserve" approved="no">
+      <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
-        <target state="translated">Usa interfaccia di chiamata iOS</target>
+        <target>Usa interfaccia di chiamata iOS</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -3765,9 +3765,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Sei stato/a invitato/a al gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
+      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
-        <target state="translated">Puoi accettare chiamate dalla schermata di blocco, senza l'autenticazione del dispositivo e dell'app.</target>
+        <target>Puoi accettare chiamate dalla schermata di blocco, senza l'autenticazione del dispositivo e dell'app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">

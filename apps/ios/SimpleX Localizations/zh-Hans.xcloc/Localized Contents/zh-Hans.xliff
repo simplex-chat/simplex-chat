@@ -486,6 +486,7 @@
       </trans-unit>
       <trans-unit id="Always use relay" xml:space="preserve">
         <source>Always use relay</source>
+        <target>一直使用中继</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve">
@@ -539,6 +540,7 @@
       </trans-unit>
       <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
         <source>Authentication is required before the call is connected, but you may miss calls.</source>
+        <target>通话接通前需要进行认证，但您可能会错过来电。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
@@ -1979,6 +1981,7 @@
       </trans-unit>
       <trans-unit id="Interface" xml:space="preserve">
         <source>Interface</source>
+        <target>界面</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -2242,7 +2245,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
         <source>Moderate</source>
-        <target>审核</target>
+        <target>管理员移除</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
@@ -3090,6 +3093,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Show calls in phone history" xml:space="preserve">
         <source>Show calls in phone history</source>
+        <target>在电话历史记录中显示通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -3501,6 +3505,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
         <source>Unknown caller</source>
+        <target>未知来电者</target>
         <note>callkit banner</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -3515,6 +3520,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
+        <target>除非您使用 iOS 通话界面，否则请启用请勿打扰模式以避免打扰。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
@@ -3596,6 +3602,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
+        <target>使用 iOS 通话界面</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -3760,6 +3767,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
+        <target>您可以从锁屏上接听电话，无需设备和应用程序的认证。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">
@@ -4412,7 +4420,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="moderated" xml:space="preserve">
         <source>moderated</source>
-        <target>已审核</target>
+        <target>已被管理员移除</target>
         <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="moderated by %@" xml:space="preserve">
@@ -4655,203 +4663,6 @@ SimpleX 服务器无法看到您的资料。</target>
         <source>\~strike~</source>
         <target>\~删去~</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Interface" xml:space="preserve" approved="no">
-        <source>Interface</source>
-        <target state="translated">界面</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Use iOS call interface" xml:space="preserve" approved="no">
-        <source>Use iOS call interface</source>
-        <target state="translated">使用 iOS 通话界面</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
-        <source>You can accept calls from lock screen, without device and app authentication.</source>
-        <target state="translated">您可以从锁屏上接听电话，无需设备和应用程序的认证。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve" approved="no">
-        <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
-        <target state="translated">除非您使用 iOS 通话界面，否则请启用请勿打扰模式以避免打扰。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Always use relay" xml:space="preserve" approved="no">
-        <source>Always use relay</source>
-        <target state="translated">一直使用中继</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
-        <source>Authentication is required before the call is connected, but you may miss calls.</source>
-        <target state="translated">通话接通前需要进行认证，但您可能会错过来电。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unknown caller" xml:space="preserve" approved="no">
-        <source>Unknown caller</source>
-        <target state="translated">未知来电者</target>
-        <note>callkit banner</note>
-      </trans-unit>
-      <trans-unit id="Show calls in phone history" xml:space="preserve">
-        <source>Show calls in phone history</source>
-        <target>在电话历史记录中显示通话</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="More improvements are coming soon!" xml:space="preserve" approved="no">
-        <source>More improvements are coming soon!</source>
-        <target state="translated">更多改进即将推出！</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="App version: v%@" xml:space="preserve" approved="no">
-        <source>App version: v%@</source>
-        <target state="translated">应用程序版本：v%@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="App build: %@" xml:space="preserve" approved="no">
-        <source>App build: %@</source>
-        <target state="translated">应用程序构建：%@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve" approved="no">
-        <source>A separate TCP connection will be used **for each contact and group member**.
-**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
-        <target state="translated">每个联系人和群成员将使用一个独立的 TCP 连接。
-请注意：如果您有许多连接，将会消耗更多的电量和流量，并且某些连接可能会失败。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Open user profiles" xml:space="preserve" approved="no">
-        <source>Open user profiles</source>
-        <target state="translated">打开用户个人资料</target>
-        <note>authentication reason</note>
-      </trans-unit>
-      <trans-unit id="Reduced battery usage" xml:space="preserve" approved="no">
-        <source>Reduced battery usage</source>
-        <target state="translated">减少电池使用量</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve" approved="no">
-        <source>Preserve the last message draft, with attachments.</source>
-        <target state="translated">保留最后的消息草稿及其附件。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Private filenames" xml:space="preserve" approved="no">
-        <source>Private filenames</source>
-        <target state="translated">私密文件名</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Transport isolation" xml:space="preserve" approved="no">
-        <source>Transport isolation</source>
-        <target state="translated">传输隔离</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Thanks to the users – contribute via Weblate!" xml:space="preserve" approved="no">
-        <source>Thanks to the users – contribute via Weblate!</source>
-        <target state="translated">感谢用户——通过 Weblate 做出贡献！</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve" approved="no">
-        <source>To protect timezone, image/voice files use UTC.</source>
-        <target state="translated">为了保护时区，图像/语音文件使用 UTC。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" xml:space="preserve" approved="no">
-        <source>Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!</source>
-        <target state="translated">感谢用户——[通过 Weblate 贡献](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)！</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Update transport isolation mode?" xml:space="preserve" approved="no">
-        <source>Update transport isolation mode?</source>
-        <target state="translated">更新传输隔离模式？</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="moderated" xml:space="preserve" approved="no">
-        <source>moderated</source>
-        <target state="translated">已被管理员移除</target>
-        <note>moderated chat item</note>
-      </trans-unit>
-      <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
-        <source>Delete member message?</source>
-        <target state="translated">删除成员消息？</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error updating group link" xml:space="preserve" approved="no">
-        <source>Error updating group link</source>
-        <target state="translated">更新群组链接错误</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Please contact group admin." xml:space="preserve" approved="no">
-        <source>Please contact group admin.</source>
-        <target state="translated">请联系群组管理员。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="The message will be deleted for all members." xml:space="preserve" approved="no">
-        <source>The message will be deleted for all members.</source>
-        <target state="translated">将为所有成员删除该消息。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can't send messages!" xml:space="preserve" approved="no">
-        <source>You can't send messages!</source>
-        <target state="translated">您无法发送消息！</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="moderated by %@" xml:space="preserve" approved="no">
-        <source>moderated by %@</source>
-        <target state="translated">由 %@ 审核</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="observer" xml:space="preserve" approved="no">
-        <source>observer</source>
-        <target state="translated">观察者</target>
-        <note>member role</note>
-      </trans-unit>
-      <trans-unit id="you are observer" xml:space="preserve" approved="no">
-        <source>you are observer</source>
-        <target state="translated">您是观察者</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Moderate" xml:space="preserve" approved="no">
-        <source>Moderate</source>
-        <target state="translated">管理员移除</target>
-        <note>chat item action</note>
-      </trans-unit>
-      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve" approved="no">
-        <source>The message will be marked as moderated for all members.</source>
-        <target state="translated">该消息将对所有成员显示为已审核。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Interface" xml:space="preserve" approved="no">
-        <source>Interface</source>
-        <target state="translated">界面</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Use iOS call interface" xml:space="preserve" approved="no">
-        <source>Use iOS call interface</source>
-        <target state="translated">使用 iOS 通话界面</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
-        <source>You can accept calls from lock screen, without device and app authentication.</source>
-        <target state="translated">您可以从锁屏上接听电话，无需设备和应用程序的认证。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve" approved="no">
-        <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
-        <target state="translated">除非您使用 iOS 通话界面，否则请启用请勿打扰模式以避免打扰。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Always use relay" xml:space="preserve" approved="no">
-        <source>Always use relay</source>
-        <target state="translated">一直使用中继</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
-        <source>Authentication is required before the call is connected, but you may miss calls.</source>
-        <target state="translated">通话接通前需要进行认证，但您可能会错过来电。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unknown caller" xml:space="preserve" approved="no">
-        <source>Unknown caller</source>
-        <target state="translated">未知来电者</target>
-        <note>callkit banner</note>
       </trans-unit>
     </body>
   </file>

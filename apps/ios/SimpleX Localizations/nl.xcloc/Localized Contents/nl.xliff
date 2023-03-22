@@ -538,9 +538,9 @@
         <target>Verificatie mislukt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
+      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
         <source>Authentication is required before the call is connected, but you may miss calls.</source>
-        <target state="translated">Verificatie is vereist voordat het gesprek wordt verbonden, maar u kunt gesprekken missen.</target>
+        <target>Verificatie is vereist voordat het gesprek wordt verbonden, maar u kunt gesprekken missen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
@@ -702,9 +702,9 @@
         <target>Gesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Check server address and try again." xml:space="preserve" approved="no">
+      <trans-unit id="Check server address and try again." xml:space="preserve">
         <source>Check server address and try again.</source>
-        <target state="translated">Controleer het server adres en probeer het opnieuw.</target>
+        <target>Controleer het server adres en probeer het opnieuw.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
@@ -751,9 +751,9 @@
         <target>Vergelijk beveiligingscodes met je contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure ICE servers" xml:space="preserve" approved="no">
+      <trans-unit id="Configure ICE servers" xml:space="preserve">
         <source>Configure ICE servers</source>
-        <target state="translated">ICE servers configureren</target>
+        <target>ICE servers configureren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -1541,14 +1541,14 @@
         <target>Fout bij verwijderen van gebruiker</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving ICE servers" xml:space="preserve" approved="no">
+      <trans-unit id="Error saving ICE servers" xml:space="preserve">
         <source>Error saving ICE servers</source>
-        <target state="translated">Fout bij opslaan van ICE servers</target>
+        <target>Fout bij opslaan van ICE servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving SMP servers" xml:space="preserve" approved="no">
+      <trans-unit id="Error saving SMP servers" xml:space="preserve">
         <source>Error saving SMP servers</source>
-        <target state="translated">Fout bij opslaan van SMP servers</target>
+        <target>Fout bij opslaan van SMP servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve">
@@ -1862,9 +1862,9 @@
         <target>Hoe u uw servers gebruikt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="ICE servers (one per line)" xml:space="preserve" approved="no">
+      <trans-unit id="ICE servers (one per line)" xml:space="preserve">
         <source>ICE servers (one per line)</source>
-        <target state="translated">ICE servers (één per lijn)</target>
+        <target>ICE servers (één per lijn)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
@@ -1979,9 +1979,9 @@
         <target>Meteen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Interface" xml:space="preserve" approved="no">
+      <trans-unit id="Interface" xml:space="preserve">
         <source>Interface</source>
-        <target state="translated">Interface</target>
+        <target>Interface</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -1989,9 +1989,9 @@
         <target>Ongeldige verbinding link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid server address!" xml:space="preserve" approved="no">
+      <trans-unit id="Invalid server address!" xml:space="preserve">
         <source>Invalid server address!</source>
-        <target state="translated">Ongeldig server adres!</target>
+        <target>Ongeldig server adres!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve">
@@ -2145,12 +2145,12 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
         <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
-        <target state="translated">Zorg ervoor dat SMP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn (%@).</target>
+        <target>Zorg ervoor dat SMP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve" approved="no">
+      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
         <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
-        <target state="translated">Zorg ervoor dat WebRTC ICE server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</target>
+        <target>Zorg ervoor dat WebRTC ICE server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
@@ -2587,9 +2587,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u het kwijtraakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve" approved="no">
+      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target state="translated">Mogelijk is de certificaat vingerafdruk in het server adres onjuist</target>
+        <target>Mogelijk is de certificaat vingerafdruk in het server adres onjuist</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -2602,9 +2602,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Vooraf ingestelde server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preset server address" xml:space="preserve" approved="no">
+      <trans-unit id="Preset server address" xml:space="preserve">
         <source>Preset server address</source>
-        <target state="translated">Vooraf ingesteld server adres</target>
+        <target>Vooraf ingesteld server adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
@@ -2904,7 +2904,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
         <source>Saved WebRTC ICE servers will be removed</source>
-        <target state="translated">Opgeslagen WebRTC ICE servers worden verwijderd</target>
+        <target>Opgeslagen WebRTC ICE servers worden verwijderd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan QR code" xml:space="preserve">
@@ -3091,9 +3091,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Toon QR-code</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show calls in phone history" xml:space="preserve" approved="no">
+      <trans-unit id="Show calls in phone history" xml:space="preserve">
         <source>Show calls in phone history</source>
-        <target state="translated">Toon oproepen in de telefoongeschiedenis</target>
+        <target>Toon oproepen in de telefoongeschiedenis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -3116,9 +3116,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>SimpleX Vergrendelen ingeschakeld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX contact address" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX contact address" xml:space="preserve">
         <source>SimpleX contact address</source>
-        <target state="translated">SimpleX contact adres</target>
+        <target>SimpleX contact adres</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve">
@@ -3290,9 +3290,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Dank aan de gebruikers – draag bij via Weblate!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve" approved="no">
+      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
         <source>The 1st platform without any user identifiers – private by design.</source>
-        <target state="translated">Het eerste platform zonder gebruikers ID's, privé door ontwerp.</target>
+        <target>Het eerste platform zonder gebruikers ID's, privé door ontwerp.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -3505,7 +3505,7 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
         <source>Unknown caller</source>
-        <target state="translated">Onbekende beller</target>
+        <target>Onbekende beller</target>
         <note>callkit banner</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -3518,9 +3518,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Onbekende fout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve" approved="no">
+      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
-        <target state="translated">Schakel de modus Niet storen in om onderbrekingen te voorkomen, tenzij u de iOS-oproepinterface gebruikt.</target>
+        <target>Schakel de modus Niet storen in om onderbrekingen te voorkomen, tenzij u de iOS-oproepinterface gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
@@ -3585,9 +3585,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Gebruik .onion-hosts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve" approved="no">
+      <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
         <source>Use SimpleX Chat servers?</source>
-        <target state="translated">SimpleX Chat servers gebruiken?</target>
+        <target>SimpleX Chat servers gebruiken?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -3600,9 +3600,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Gebruik voor nieuwe verbindingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use iOS call interface" xml:space="preserve" approved="no">
+      <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
-        <target state="translated">De iOS-oproepinterface gebruiken</target>
+        <target>De iOS-oproepinterface gebruiken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -3620,9 +3620,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Het gebruik van .onion-hosts vereist een compatibele VPN-provider.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve" approved="no">
+      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
         <source>Using SimpleX Chat servers.</source>
-        <target state="translated">SimpleX Chat servers gebruiken.</target>
+        <target>SimpleX Chat servers gebruiken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify connection security" xml:space="preserve">
@@ -3685,9 +3685,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Wachten op afbeelding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="WebRTC ICE servers" xml:space="preserve" approved="no">
+      <trans-unit id="WebRTC ICE servers" xml:space="preserve">
         <source>WebRTC ICE servers</source>
-        <target state="translated">WebRTC ICE servers</target>
+        <target>WebRTC ICE servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve">
@@ -3765,9 +3765,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Je bent uitgenodigd voor de groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
+      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
-        <target state="translated">U kunt oproepen van het vergrendelingsscherm accepteren, zonder apparaat- en app-verificatie.</target>
+        <target>U kunt oproepen van het vergrendelingsscherm accepteren, zonder apparaat- en app-verificatie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">
@@ -3815,9 +3815,9 @@ SimpleX Lock must be enabled.</source>
         <target>Je kunt geen berichten versturen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve" approved="no">
+      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
         <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
-        <target state="translated">U bepaalt via welke server(s) de berichten **ontvangen**, uw contacten de servers die u gebruikt om ze berichten te sturen.</target>
+        <target>U bepaalt via welke server(s) de berichten **ontvangen**, uw contacten de servers die u gebruikt om ze berichten te sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
@@ -3914,19 +3914,19 @@ SimpleX Lock must be enabled.</source>
         <target>Je gebruikt een incognito profiel voor deze groep. Om te voorkomen dat je je hoofdprofiel deelt, is het niet toegestaan om contacten uit te nodigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your ICE servers" xml:space="preserve" approved="no">
+      <trans-unit id="Your ICE servers" xml:space="preserve">
         <source>Your ICE servers</source>
-        <target state="translated">Uw ICE servers</target>
+        <target>Uw ICE servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SMP servers" xml:space="preserve" approved="no">
+      <trans-unit id="Your SMP servers" xml:space="preserve">
         <source>Your SMP servers</source>
-        <target state="translated">Uw SMP servers</target>
+        <target>Uw SMP servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX contact address" xml:space="preserve" approved="no">
+      <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
-        <target state="translated">Uw SimpleX contact adres</target>
+        <target>Uw SimpleX contact adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -3964,9 +3964,9 @@ SimpleX Lock must be enabled.</source>
         <target>Jouw gesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact address" xml:space="preserve" approved="no">
+      <trans-unit id="Your contact address" xml:space="preserve">
         <source>Your contact address</source>
-        <target state="translated">Uw contact adres</target>
+        <target>Uw contact adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact can scan it from the app." xml:space="preserve">
@@ -4011,10 +4011,10 @@ U kunt deze verbinding verbreken en het contact verwijderen (en later proberen m
         <target>Uw privacy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve" approved="no">
+      <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts.
 SimpleX servers cannot see your profile.</source>
-        <target state="translated">Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten.
+        <target>Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten.
 SimpleX servers kunnen uw profiel niet zien.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4038,9 +4038,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>Uw server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server address" xml:space="preserve" approved="no">
+      <trans-unit id="Your server address" xml:space="preserve">
         <source>Your server address</source>
-        <target state="translated">Uw server adres</target>
+        <target>Uw server adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
@@ -4318,9 +4318,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>iOS-keychain wordt gebruikt om het wachtwoord veilig op te slaan nadat u de app opnieuw hebt opgestart of het wachtwoord hebt gewijzigd, hiermee kunt u push meldingen ontvangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
+      <trans-unit id="incognito via contact address link" xml:space="preserve">
         <source>incognito via contact address link</source>
-        <target state="translated">incognito via contact adres link</target>
+        <target>incognito via contact adres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve">
@@ -4559,9 +4559,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
+      <trans-unit id="via contact address link" xml:space="preserve">
         <source>via contact address link</source>
-        <target state="translated">via contact adres link</target>
+        <target>via contact adres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve">
