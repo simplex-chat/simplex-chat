@@ -362,15 +362,9 @@ processChatCommand = \case
     ok_
   ResubscribeAllConnections -> withStore' getUsers >>= subscribeUsers >> ok_
   -- has to be called before StartChat
-  APISetFilePathsConfig cfg -> do
-    let FilePathsConfig {appFilesFolder, appTempDirectory} = cfg
-    createDirectoryIfMissing True appFilesFolder
-    createDirectoryIfMissing True appTempDirectory
-    ff <- asks filesFolder
-    td <- asks tempDirectory
-    atomically $ do
-      writeTVar ff $ Just appFilesFolder
-      writeTVar td $ Just appTempDirectory
+  SetTempFolder tf -> do
+    createDirectoryIfMissing True tf
+    asks tempDirectory >>= atomically . (`writeTVar` Just tf)
     ok_
   SetFilesFolder ff -> do
     createDirectoryIfMissing True ff
@@ -4219,7 +4213,7 @@ chatCommandP =
       "/_app activate" $> APIActivateChat,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
-      "/_file_paths " *> (APISetFilePathsConfig <$> jsonP),
+      "/_temp_folder " *> (SetTempFolder <$> filePath),
       "/_files_folder " *> (SetFilesFolder <$> filePath),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/_db import " *> (APIImportArchive <$> jsonP),
