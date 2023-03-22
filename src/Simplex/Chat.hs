@@ -59,7 +59,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (diffInMicros, diffInSeconds)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.FileTransfer.Description (ValidFileDescription)
+import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..))
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
@@ -369,6 +369,9 @@ processChatCommand = \case
   SetFilesFolder ff -> do
     createDirectoryIfMissing True ff
     asks filesFolder >>= atomically . (`writeTVar` Just ff)
+    ok_
+  APISetXFTPConfig cfg -> do
+    asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
     ok_
   SetIncognito onOff -> do
     asks incognitoMode >>= atomically . (`writeTVar` onOff)
@@ -4215,6 +4218,8 @@ chatCommandP =
       "/_resubscribe all" $> ResubscribeAllConnections,
       "/_temp_folder " *> (SetTempFolder <$> filePath),
       "/_files_folder " *> (SetFilesFolder <$> filePath),
+      "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
+      "/xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
@@ -4474,6 +4479,17 @@ chatCommandP =
       logErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout logErrors
+    xftpCfgP = do
+      minFileSize <- "minFileSize=" *> fileSizeP
+      pure $ XFTPFileConfig {minFileSize}
+    -- TODO move to Utils in simplexmq
+    fileSizeP =
+      A.choice
+        [ gb <$> A.decimal <* "gb",
+          mb <$> A.decimal <* "mb",
+          kb <$> A.decimal <* "kb",
+          A.decimal
+        ]
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if null s then Left "empty key" else Right k
     autoAcceptP =
