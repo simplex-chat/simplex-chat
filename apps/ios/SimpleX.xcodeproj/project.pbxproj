@@ -109,6 +109,7 @@
 		5CBD285C29575B8E00EC2CF4 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD285B29575B8E00EC2CF4 /* WhatsNewView.swift */; };
 		5CBE6C12294487F7002D9531 /* VerifyCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBE6C11294487F7002D9531 /* VerifyCodeView.swift */; };
 		5CBE6C142944CC12002D9531 /* ScanCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBE6C132944CC12002D9531 /* ScanCodeView.swift */; };
+		5CC036E029C488D500C0EF20 /* HiddenProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */; };
 		5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */; };
 		5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */; };
 		5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FA2809BF11000C35E3 /* Localizable.strings */; };
@@ -361,6 +362,7 @@
 		5CBD285B29575B8E00EC2CF4 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		5CBE6C11294487F7002D9531 /* VerifyCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyCodeView.swift; sourceTree = "<group>"; };
 		5CBE6C132944CC12002D9531 /* ScanCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCodeView.swift; sourceTree = "<group>"; };
+		5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HiddenProfileView.swift; sourceTree = "<group>"; };
 		5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCode.swift; sourceTree = "<group>"; };
 		5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		5CC2C0FB2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -675,6 +677,7 @@
 				5CB924E327A8683A00ACCCDD /* UserAddress.swift */,
 				5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */,
 				5CB924E027A867BA00ACCCDD /* UserProfile.swift */,
+				5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */,
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
 				5C93292E29239A170090FFF9 /* SMPServersView.swift */,
 				5C93293029239BED0090FFF9 /* SMPServerView.swift */,
@@ -1028,6 +1031,7 @@
 				5C029EAA283942EA004A9677 /* CallController.swift in Sources */,
 				5CCA7DF32905735700C8FEBA /* AcceptRequestsView.swift in Sources */,
 				5CBE6C142944CC12002D9531 /* ScanCodeView.swift in Sources */,
+				5CC036E029C488D500C0EF20 /* HiddenProfileView.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
 				5CFA59C42860BC6200863A68 /* MigrateToAppGroupView.swift in Sources */,
 				648010AB281ADD15009009B9 /* CIFileView.swift in Sources */,
@@ -1585,6 +1589,10 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Libraries",
+				);
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Libraries/ios",
@@ -1630,6 +1638,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Libraries",
 				);
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
 					"$(inherited)",

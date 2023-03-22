@@ -29,7 +29,9 @@ struct UserPicker: View {
             VStack(spacing: 0) {
                 ScrollView {
                     ScrollViewReader { sp in
-                        let users = m.users.sorted { u, _ in u.user.activeUser }
+                        let users = m.users
+                                    .filter({ u in u.user.activeUser || !u.user.hidden })
+                                    .sorted { u, _ in u.user.activeUser }
                         VStack(spacing: 0) {
                             ForEach(users) { u in
                                 userView(u)
@@ -97,14 +99,18 @@ struct UserPicker: View {
                     userPickerVisible.toggle()
                 }
             } else {
-                do {
-                    try changeActiveUser_(user.userId)
-                    userPickerVisible = false
-                } catch {
-                    AlertManager.shared.showAlertMsg(
-                        title: "Error switching profile!",
-                        message: "Error: \(responseError(error))"
-                    )
+                Task {
+                    do {
+                        try await changeActiveUserAsync_(user.userId, viewPwd: nil)
+                        await MainActor.run { userPickerVisible = false }
+                    } catch {
+                        await MainActor.run {
+                            AlertManager.shared.showAlertMsg(
+                                title: "Error switching profile!",
+                                message: "Error: \(responseError(error))"
+                            )
+                        }
+                    }
                 }
             }
         }, label: {
