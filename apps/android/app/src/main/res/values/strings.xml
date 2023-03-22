@@ -1033,7 +1033,7 @@
   <string name="should_be_at_least_one_visible_profile">There should be at least one visible user profile.</string>
   <string name="should_be_at_least_one_profile">There should be at least one user profile.</string>
   <string name="make_profile_private">Make profile private!</string>
-  <string name="you_can_hide_or_mute_user_profile">You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled.</string>
+  <string name="you_can_hide_or_mute_user_profile">You can hide or mute a user profile - hold it for the menu.\nSimpleX Lock must be enabled.</string>
   <string name="dont_show_again">Don\'t show again</string>
   <string name="muted_when_inactive">Muted when inactive!</string>
   <string name="you_will_still_receive_calls_and_ntfs">You will still receive calls and notifications from muted profiles when they are active.</string>
