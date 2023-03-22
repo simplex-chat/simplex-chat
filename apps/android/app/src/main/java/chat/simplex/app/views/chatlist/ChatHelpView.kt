@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.annotatedStringResource
+import chat.simplex.app.views.helpers.openUriCatching
 import chat.simplex.app.views.usersettings.MarkdownHelpView
 import chat.simplex.app.views.usersettings.simplexTeamUri
 
@@ -36,7 +37,7 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
     Text(
       annotatedStringResource(R.string.you_can_connect_to_simplex_chat_founder),
       modifier = Modifier.clickable(onClick = {
-        uriHandler.openUri(simplexTeamUri)
+        uriHandler.openUriCatching(simplexTeamUri)
       }),
       lineHeight = 22.sp
     )

@@ -110,11 +110,38 @@ data User = User
     localDisplayName :: ContactName,
     profile :: LocalProfile,
     fullPreferences :: FullPreferences,
-    activeUser :: Bool
+    activeUser :: Bool,
+    viewPwdHash :: Maybe UserPwdHash,
+    showNtfs :: Bool
   }
   deriving (Show, Generic, FromJSON)
 
-instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON User where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+
+newtype B64UrlByteString = B64UrlByteString ByteString
+  deriving (Eq, Show)
+
+instance FromField B64UrlByteString where fromField f = B64UrlByteString <$> fromField f
+
+instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField m
+
+instance StrEncoding B64UrlByteString where
+  strEncode (B64UrlByteString m) = strEncode m
+  strP = B64UrlByteString <$> strP
+
+instance FromJSON B64UrlByteString where
+  parseJSON = strParseJSON "B64UrlByteString"
+
+instance ToJSON B64UrlByteString where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+data UserPwdHash = UserPwdHash {hash :: B64UrlByteString, salt :: B64UrlByteString}
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON UserPwdHash where toEncoding = J.genericToEncoding J.defaultOptions
 
 data UserInfo = UserInfo
   { user :: User,

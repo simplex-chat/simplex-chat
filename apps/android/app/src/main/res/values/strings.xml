@@ -459,6 +459,7 @@
   <string name="smp_servers_check_address">Check server address and try again.</string>
   <string name="smp_servers_delete_server">Delete server</string>
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
+  <string name="smp_save_servers_question">Save servers?</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
@@ -631,13 +632,15 @@
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
   <string name="your_calls">Your calls</string>
-  <string name="connect_calls_via_relay">Connect via relay</string>
+  <string name="always_use_relay">Always use relay</string>
   <string name="call_on_lock_screen">Calls on lock screen:</string>
   <string name="accept_call_on_lock_screen">Accept</string>
   <string name="show_call_on_lock_screen">Show</string>
   <string name="no_call_on_lock_screen">Disable</string>
   <string name="your_ice_servers">Your ICE servers</string>
   <string name="webrtc_ice_servers">WebRTC ICE servers</string>
+  <string name="relay_server_protects_ip">Relay server protects your IP address, but it can observe the duration of the call.</string>
+  <string name="relay_server_if_necessary">Relay server is only used if necessary. Another party can observe your IP address.</string>
 
   <!-- Call Lock Screen -->
   <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
@@ -696,6 +699,7 @@
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
+  <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
   <string name="settings_section_title_messages">MESSAGES</string>
@@ -921,6 +925,8 @@
   <string name="delete_group_for_self_cannot_undo_warning">Group will be deleted for you - this cannot be undone!</string>
   <string name="button_leave_group">Leave group</string>
   <string name="button_edit_group_profile">Edit group profile</string>
+  <string name="button_add_welcome_message">Add welcome message</string>
+  <string name="button_welcome_message">Welcome message</string>
   <string name="group_link">Group link</string>
   <string name="create_group_link">Create group link</string>
   <string name="button_create_group_link">Create link</string>
@@ -957,6 +963,11 @@
   <string name="info_row_connection">Connection</string>
   <string name="conn_level_desc_direct">direct</string>
   <string name="conn_level_desc_indirect">indirect (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+
+  <!-- GroupWelcomeView.kt -->
+  <string name="group_welcome_title">Welcome message</string>
+  <string name="save_welcome_message_question">Save welcome message?</string>
+  <string name="save_and_update_group_profile">Save and update group profile</string>
 
   <!-- ConnectionStats -->
   <string name="conn_stats_section_title_servers">SERVERS</string>
@@ -1017,6 +1028,9 @@
   <string name="theme_system">System</string>
   <string name="theme_light">Light</string>
   <string name="theme_dark">Dark</string>
+
+  <!-- Languages -->
+  <string name="language_system">System</string>
 
   <!-- Appearance.kt -->
   <string name="theme">Theme</string>
@@ -1144,4 +1158,16 @@
   <string name="v4_5_reduced_battery_usage_descr">More improvements are coming soon!</string>
   <string name="v4_5_italian_interface">Italian interface</string>
   <string name="v4_5_italian_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v4_6_hidden_chat_profiles">Hidden chat profiles</string>
+  <string name="v4_6_hidden_chat_profiles_descr">Protect your chat profiles with a password!</string>
+  <string name="v4_6_audio_video_calls">Audio and video calls</string>
+  <string name="v4_6_audio_video_calls_descr">Support bluetooth and other improvements.</string>
+  <string name="v4_6_group_moderation">Group moderation</string>
+  <string name="v4_6_group_moderation_descr">Now admins can:\n- delete members\' messages.\n- disable members (\"observer\" role)</string>
+  <string name="v4_6_group_welcome_message">Group welcome message</string>
+  <string name="v4_6_group_welcome_message_descr">Set the message shown to new members!</string>
+  <string name="v4_6_reduced_battery_usage">Further reduced battery usage</string>
+  <string name="v4_6_reduced_battery_usage_descr">More improvements are coming soon!</string>
+  <string name="v4_6_chinese_spanish_interface">Chinese and Spanish interface</string>
+  <string name="v4_6_chinese_spanish_interface_descr">Thanks to the users – contribute via Weblate!</string>
 </resources>

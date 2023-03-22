@@ -385,6 +385,10 @@
         <target>Добавить на другое устройство</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add welcome message" xml:space="preserve">
+        <source>Add welcome message</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
         <target>Админы могут создать ссылки для вступления в группу.</target>
@@ -525,6 +529,10 @@
         <target>Аудио- и видеозвонки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Audio and video calls" xml:space="preserve">
+        <source>Audio and video calls</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
         <source>Authentication failed</source>
         <target>Ошибка аутентификации</target>
@@ -587,6 +595,10 @@
       <trans-unit id="Calls" xml:space="preserve">
         <source>Calls</source>
         <target>Звонки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Can't delete user profile!" xml:space="preserve">
+        <source>Can't delete user profile!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -694,6 +706,10 @@
         <target>Проверьте адрес сервера и попробуйте снова.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
+        <source>Chinese and Spanish interface</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
         <source>Choose file</source>
         <target>Выбрать файл</target>
@@ -747,6 +763,10 @@
       <trans-unit id="Confirm new passphrase…" xml:space="preserve">
         <source>Confirm new passphrase…</source>
         <target>Подтвердите новый пароль…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm password" xml:space="preserve">
+        <source>Confirm password</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -1277,6 +1297,10 @@
         <target>Отложить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Don't show again" xml:space="preserve">
+        <source>Don't show again</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
         <source>Duplicate display name!</source>
         <target>Имя профиля уже используется!</target>
@@ -1375,6 +1399,10 @@
       <trans-unit id="Enter passphrase…" xml:space="preserve">
         <source>Enter passphrase…</source>
         <target>Введите пароль…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enter password above to show!" xml:space="preserve">
+        <source>Enter password above to show!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter server manually" xml:space="preserve">
@@ -1532,6 +1560,10 @@
         <target>Ошибка сохранения пароля в Keychain</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving user password" xml:space="preserve">
+        <source>Error saving user password</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
         <source>Error sending message</source>
         <target>Ошибка при отправке сообщения</target>
@@ -1565,6 +1597,10 @@
       <trans-unit id="Error updating settings" xml:space="preserve">
         <source>Error updating settings</source>
         <target>Ошибка при сохранении настроек сети</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error updating user privacy" xml:space="preserve">
+        <source>Error updating user privacy</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
@@ -1652,6 +1688,14 @@
         <target>Полное имя:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve">
+        <source>Fully re-implemented - work in background!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Further reduced battery usage" xml:space="preserve">
+        <source>Further reduced battery usage</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="GIFs and stickers" xml:space="preserve">
         <source>GIFs and stickers</source>
         <target>ГИФ файлы и стикеры</target>
@@ -1727,6 +1771,10 @@
         <target>Групповое сообщение:</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Group moderation" xml:space="preserve">
+        <source>Group moderation</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group preferences" xml:space="preserve">
         <source>Group preferences</source>
         <target>Предпочтения группы</target>
@@ -1740,6 +1788,10 @@
       <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve">
         <source>Group profile is stored on members' devices, not on the servers.</source>
         <target>Профиль группы хранится на устройствах членов, а не на серверах.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group welcome message" xml:space="preserve">
+        <source>Group welcome message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
@@ -1762,6 +1814,14 @@
         <target>Скрытое</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Hidden chat profiles" xml:space="preserve">
+        <source>Hidden chat profiles</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Hidden profile password" xml:space="preserve">
+        <source>Hidden profile password</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Hide" xml:space="preserve">
         <source>Hide</source>
         <target>Спрятать</target>
@@ -1770,6 +1830,10 @@
       <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
         <source>Hide app screen in the recent apps.</source>
         <target>Скрыть экран приложения.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Hide profile" xml:space="preserve">
+        <source>Hide profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -2073,6 +2137,10 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Добавьте контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Make profile private!" xml:space="preserve">
+        <source>Make profile private!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
         <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
         <target>Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется (%@).</target>
@@ -2198,6 +2266,10 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Без звука</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Muted when inactive!" xml:space="preserve">
+        <source>Muted when inactive!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Name" xml:space="preserve">
         <source>Name</source>
         <target>Имя</target>
@@ -2296,6 +2368,12 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
         <source>Notifications are disabled!</source>
         <target>Уведомления выключены</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
+        <source>Now admins can:
+- delete members' messages.
+- disable members ("observer" role)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve">
@@ -2421,6 +2499,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <target>Интервал PING</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Password to show" xml:space="preserve">
+        <source>Password to show</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste" xml:space="preserve">
@@ -2571,6 +2653,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Protect app screen" xml:space="preserve">
         <source>Protect app screen</source>
         <target>Защитить экран приложения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
+        <source>Protect your chat profiles with a password!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -2768,6 +2854,10 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Сохранить и уведомить членов группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Save and update group profile" xml:space="preserve">
+        <source>Save and update group profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Save archive" xml:space="preserve">
         <source>Save archive</source>
         <target>Сохранить архив</target>
@@ -2793,9 +2883,21 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Сохранить предпочтения?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Save profile password" xml:space="preserve">
+        <source>Save profile password</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve">
         <source>Save servers</source>
         <target>Сохранить серверы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save servers?" xml:space="preserve">
+        <source>Save servers?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save welcome message?" xml:space="preserve">
+        <source>Save welcome message?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
@@ -2946,6 +3048,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
         <source>Set passphrase to export</source>
         <target>Установите пароль</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Set the message shown to new members!" xml:space="preserve">
+        <source>Set the message shown to new members!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
@@ -3127,6 +3233,10 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Нажмите кнопку </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap to activate profile." xml:space="preserve">
+        <source>Tap to activate profile.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
         <source>Tap to join</source>
         <target>Нажмите, чтобы вступить</target>
@@ -3252,6 +3362,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Тема</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
+        <source>There should be at least one visible user profile.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="There should be at least use user profile." xml:space="preserve">
+        <source>There should be at least use user profile.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
         <target>Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</target>
@@ -3319,6 +3437,10 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Для записи голосового сообщения, пожалуйста разрешите доступ к микрофону.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
+        <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.</target>
@@ -3372,6 +3494,10 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="Unexpected migration state" xml:space="preserve">
         <source>Unexpected migration state</source>
         <target>Неожиданная ошибка при перемещении данных чата</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unhide" xml:space="preserve">
+        <source>Unhide</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
@@ -3642,6 +3768,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Вы также можете соединиться, открыв ссылку. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
+        <source>You can hide or mute a user profile - swipe it to the right.
+SimpleX Lock must be enabled.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
         <target>Вы теперь можете отправлять сообщения %@</target>
@@ -3757,6 +3888,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>Вы вступите в группу, на которую ссылается эта ссылка, и соединитесь с её членами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
+        <source>You will still receive calls and notifications from muted profiles when they are active.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
         <source>You will stop receiving messages from this group. Chat history will be preserved.</source>
         <target>Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</target>
@@ -3815,11 +3950,6 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Ваши профили чата</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chat profiles are stored locally, only on your device." xml:space="preserve">
-        <source>Your chat profiles are stored locally, only on your device.</source>
-        <target>Ваши профили чата хранятся локально, только на вашем устройстве.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve">

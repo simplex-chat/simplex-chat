@@ -514,13 +514,15 @@
     <!-- Call settings -->
     <string name="settings_audio_video_calls">Аудио- и видеозвонки</string>
     <string name="your_calls">Ваши звонки</string>
-    <string name="connect_calls_via_relay">Соединяться через сервер (relay)</string>
+    <string name="always_use_relay">Всегда соединяться через relay</string>
     <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
     <string name="accept_call_on_lock_screen">Принимать</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
     <string name="your_ice_servers">Ваши ICE серверы</string>
     <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
+    <string name="relay_server_protects_ip">Relay сервер защищает ваш IP адрес, но может отслеживать продолжительность звонка.</string>
+    <string name="relay_server_if_necessary">Relay сервер используется только при необходимости. Другая сторона может видеть ваш IP адрес.</string>
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Откройте <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\nчтобы принять звонок</string>
     <string name="allow_accepting_calls_from_lock_screen">Вы можете разрешить принимать звонки на экране блокировки через Настройки.</string>
