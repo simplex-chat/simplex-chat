@@ -491,7 +491,7 @@
 \nWe zullen serverredundantie toevoegen om verloren berichten te voorkomen.</string>
     <string name="joining_group">Deel nemen aan groep</string>
     <string name="leave_group_button">Verlaten</string>
-    <string name="group_member_role_member">gebruiker</string>
+    <string name="group_member_role_member">Gebruiker</string>
     <string name="image_descr_link_preview">link voorbeeld afbeelding</string>
     <string name="member_info_section_title_member">GEBRUIKER</string>
     <string name="settings_section_title_messages">BERICHTEN</string>
@@ -576,7 +576,7 @@
     <string name="feature_offered_item_with_param">voorgesteld %s: %2s</string>
     <string name="old_database_archive">Oud database archief</string>
     <string name="enter_correct_current_passphrase">Voer het juiste huidige wachtwoord in.</string>
-    <string name="group_member_role_owner">eigenaar</string>
+    <string name="group_member_role_owner">Eigenaar</string>
     <string name="network_option_ping_count">PING telling</string>
     <string name="network_option_ping_interval">PING interval</string>
     <string name="v4_5_message_draft_descr">Bewaar het laatste berichtconcept, met bijlagen.</string>
@@ -729,7 +729,7 @@
     <string name="network_socks_toggle">SOCKS-proxy gebruiken (poort 9050)</string>
     <string name="save_preferences_question">Voorkeuren opslaan\?</string>
     <string name="save_and_notify_contact">Opslaan en Contact melden</string>
-    <string name="section_title_welcome_message">WELKOMS BERICHT</string>
+    <string name="section_title_welcome_message">WELKOMST BERICHT</string>
     <string name="your_current_profile">Je huidige profiel</string>
     <string name="save_and_notify_contacts">Opslaan en Contacten melden</string>
     <string name="save_and_notify_group_members">Opslaan en Groepsleden melden</string>
@@ -883,7 +883,7 @@
     <string name="prohibit_direct_messages">Verbied het sturen van directe berichten naar leden.</string>
     <string name="prohibit_sending_voice">Verbieden het verzenden van spraak berichten.</string>
     <string name="v4_2_security_assessment_desc">De beveiliging van SimpleX Chat is gecontroleerd door Trail of Bits.</string>
-    <string name="v4_2_auto_accept_contact_requests_desc">Met optioneel welkomstbericht.</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">Met optioneel welkomst bericht.</string>
     <string name="v4_3_voice_messages">Spraak berichten</string>
     <string name="v4_3_irreversible_message_deletion_desc">Uw contacten kunnen volledige verwijdering van berichten toestaan.</string>
     <string name="you_have_to_enter_passphrase_every_time">U moet elke keer dat de app start het wachtwoord invoeren, deze wordt niet op het apparaat opgeslagen.</string>
@@ -976,7 +976,7 @@
     <string name="observer_cant_send_message_desc">Neem contact op met de groep beheerder.</string>
     <string name="error_updating_link_for_group">Fout bij bijwerken van groep link</string>
     <string name="initial_member_role">Initiële rol</string>
-    <string name="group_member_role_observer">waarnemer</string>
+    <string name="group_member_role_observer">Waarnemer</string>
     <string name="observer_cant_send_message_title">Je kunt geen berichten versturen!</string>
     <string name="you_are_observer">jij bent waarnemer</string>
     <string name="language_system">Systeem</string>
