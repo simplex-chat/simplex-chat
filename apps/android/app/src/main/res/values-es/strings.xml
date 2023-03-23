@@ -979,4 +979,6 @@
 \n
 \nLos servidores <xliff:g id="appName">SimpleX</xliff:g> no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
+    <string name="button_add_welcome_message">Añadir mensaje de bienvenida</string>
+    <string name="v4_6_audio_video_calls">Llamadas y videollamadas</string>
 </resources>
