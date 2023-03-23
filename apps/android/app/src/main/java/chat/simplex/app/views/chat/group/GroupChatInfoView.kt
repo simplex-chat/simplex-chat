@@ -82,6 +82,9 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
       editGroupProfile = {
         ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
       },
+      addOrEditWelcomeMessage = {
+        ModalManager.shared.showCustomModal { close -> GroupWelcomeView(chatModel, groupInfo, close) }
+      },
       openPreferences = {
         ModalManager.shared.showCustomModal { close ->
           GroupPreferencesView(
@@ -147,6 +150,7 @@ fun GroupChatInfoLayout(
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
+  addOrEditWelcomeMessage: () -> Unit,
   openPreferences: () -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
@@ -170,6 +174,8 @@ fun GroupChatInfoLayout(
     SectionView {
       if (groupInfo.canEdit) {
         SectionItemView(editGroupProfile) { EditGroupProfileButton() }
+        SectionDivider()
+        SectionItemView(addOrEditWelcomeMessage) { AddOrEditWelcomeMessage(groupInfo.groupProfile.description) }
         SectionDivider()
       }
       GroupPreferencesButton(openPreferences)
@@ -388,6 +394,28 @@ fun EditGroupProfileButton() {
 }
 
 @Composable
+private fun AddOrEditWelcomeMessage(welcomeMessage: String?) {
+  val text = if (welcomeMessage == null) {
+    stringResource(R.string.button_add_welcome_message)
+  } else {
+    stringResource(R.string.button_welcome_message)
+  }
+  Row(
+    Modifier
+      .fillMaxSize(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.MapsUgc,
+      text,
+      tint = HighOrLowlight
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(text)
+  }
+}
+
+@Composable
 private fun LeaveGroupButton() {
   Row(
     Modifier.fillMaxSize(),
@@ -432,7 +460,7 @@ fun PreviewGroupChatInfoLayout() {
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       groupLink = null,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
     )
   }
 }

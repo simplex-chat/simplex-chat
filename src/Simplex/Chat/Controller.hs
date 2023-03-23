@@ -19,7 +19,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -176,7 +176,7 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -187,10 +187,18 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile Bool
   | ListUsers
-  | APISetActiveUser UserId
-  | SetActiveUser UserName
-  | APIDeleteUser UserId Bool
-  | DeleteUser UserName Bool
+  | APISetActiveUser UserId (Maybe UserPwd)
+  | SetActiveUser UserName (Maybe UserPwd)
+  | APIHideUser UserId UserPwd
+  | APIUnhideUser UserId (Maybe UserPwd)
+  | APIMuteUser UserId (Maybe UserPwd)
+  | APIUnmuteUser UserId (Maybe UserPwd)
+  | HideUser UserPwd
+  | UnhideUser
+  | MuteUser
+  | UnmuteUser
+  | APIDeleteUser UserId Bool (Maybe UserPwd)
+  | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
   | APIActivateChat
@@ -201,6 +209,7 @@ data ChatCommand
   | APISetXFTPConfig (Maybe XFTPFileConfig)
   | SetIncognito Bool
   | APIExportArchive ArchiveConfig
+  | ExportArchive
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
@@ -412,6 +421,7 @@ data ChatResponse
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
+  | CRUserPrivacy {user :: User}
   | CRVersionInfo {versionInfo :: CoreVersionInfo}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation {user :: User}
@@ -534,6 +544,16 @@ logResponseToFile = \case
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+newtype UserPwd = UserPwd {unUserPwd :: Text}
+  deriving (Eq, Show)
+
+instance FromJSON UserPwd where
+  parseJSON v = UserPwd <$> parseJSON v
+
+instance ToJSON UserPwd where
+  toJSON (UserPwd p) = toJSON p
+  toEncoding (UserPwd p) = toEncoding p
 
 newtype AgentQueueId = AgentQueueId QueueId
   deriving (Eq, Show)
@@ -715,11 +735,17 @@ data ChatErrorType
   | CENoConnectionUser {agentConnId :: AgentConnId}
   | CENoSndFileUser {agentSndFileId :: AgentSndFileId}
   | CENoRcvFileUser {agentRcvFileId :: AgentRcvFileId}
+  | CEUserUnknown
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
+  | CECantHideLastUser {userId :: UserId}
+  | CECantUnmuteHiddenUser {userId :: UserId}
+  | CEEmptyUserPassword {userId :: UserId}
+  | CEUserAlreadyHidden {userId :: UserId}
+  | CEUserNotHidden {userId :: UserId}
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged
@@ -797,7 +823,9 @@ instance ToJSON SQLiteError where
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
-type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
+type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
+
+type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError

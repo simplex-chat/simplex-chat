@@ -129,6 +129,41 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!"
             )
         ]
+    ),
+    VersionDescription(
+        version: "v4.6",
+        features: [
+            FeatureDescription(
+                icon: "lock",
+                title: "Hidden chat profiles",
+                description: "Protect your chat profiles with a password!"
+            ),
+            FeatureDescription(
+                icon: "phone.arrow.up.right",
+                title: "Audio and video calls",
+                description: "Fully re-implemented - work in background!"
+            ),
+            FeatureDescription(
+                icon: "flag",
+                title: "Group moderation",
+                description: "Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)"
+            ),
+            FeatureDescription(
+                icon: "plus.message",
+                title: "Group welcome message",
+                description: "Set the message shown to new members!"
+            ),
+            FeatureDescription(
+                icon: "battery.50",
+                title: "Further reduced battery usage",
+                description: "More improvements are coming soon!"
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "Chinese and Spanish interface",
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!"
+            ),
+        ]
     )
 ]
 
@@ -182,6 +217,9 @@ struct WhatsNewView: View {
             pagination()
         }
         .padding()
+        .onChange(of: currentVersion) { _ in
+            currentVersionNav = currentVersion
+        }
     }
 
     private func featureDescription(_ icon: String, _ title: LocalizedStringKey, _ description: LocalizedStringKey) -> some View {

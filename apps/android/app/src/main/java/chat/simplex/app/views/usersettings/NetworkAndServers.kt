@@ -25,6 +25,7 @@ fun NetworkAndServersView(
   chatModel: ChatModel,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
@@ -44,6 +45,7 @@ fun NetworkAndServersView(
     sessionMode = sessionMode,
     showModal = showModal,
     showSettingsModal = showSettingsModal,
+    showCustomModal = showCustomModal,
     toggleSocksProxy = { enable ->
       if (enable) {
         AlertManager.shared.showAlertMsg(
@@ -138,6 +140,7 @@ fun NetworkAndServersView(
   sessionMode: MutableState<TransportSessionMode>,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   toggleSocksProxy: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
@@ -149,7 +152,7 @@ fun NetworkAndServersView(
   ) {
     AppBarTitle(stringResource(R.string.network_and_servers))
     SectionView(generalGetString(R.string.settings_section_title_messages)) {
-      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showSettingsModal { SMPServersView(it) })
+      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showCustomModal { m, close -> SMPServersView(m, close) })
       SectionDivider()
       SectionItemView {
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
@@ -297,6 +300,7 @@ fun PreviewNetworkAndServersLayout() {
       networkUseSocksProxy = remember { mutableStateOf(true) },
       showModal = { {} },
       showSettingsModal = { {} },
+      showCustomModal = { {} },
       toggleSocksProxy = {},
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       sessionMode = remember { mutableStateOf(TransportSessionMode.User) },

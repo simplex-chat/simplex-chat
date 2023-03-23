@@ -22,6 +22,7 @@ let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_NOTIFICATION_ALERT_SHOWN = "notificationAlertShown"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
+let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
@@ -39,6 +40,8 @@ let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
+let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
+let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 
 let appDefaults: [String: Any] = [
@@ -47,6 +50,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PERFORM_LA: false,
     DEFAULT_NOTIFICATION_ALERT_SHOWN: false,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
+    DEFAULT_CALL_KIT_CALLS_IN_RECENTS: false,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: "description",
@@ -60,7 +64,9 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
     DEFAULT_CONNECT_VIA_LINK_TAB: "scan",
-    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false
+    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
+    DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
+    DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
 ]
 
 enum SimpleXLinkMode: String, Identifiable {

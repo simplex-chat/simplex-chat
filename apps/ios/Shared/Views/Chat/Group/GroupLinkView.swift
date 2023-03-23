@@ -34,15 +34,15 @@ struct GroupLinkView: View {
                 Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
                     .padding(.bottom)
                 if let groupLink = groupLink {
-//                    HStack {
-//                        Text("Initial role")
-//                        Picker("Initial role", selection: $groupLinkMemberRole) {
-//                            ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
-//                                Text(role.text)
-//                            }
-//                        }
-//                    }
-//                    .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack {
+                        Text("Initial role")
+                        Picker("Initial role", selection: $groupLinkMemberRole) {
+                            ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
+                                Text(role.text)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     QRCode(uri: groupLink)
                     HStack {
                         Button {

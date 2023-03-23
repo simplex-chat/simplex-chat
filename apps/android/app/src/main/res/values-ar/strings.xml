@@ -1,2 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="accept_contact_button">اقبل</string>
+    <string name="about_simplex_chat">عن <xliff:g id="appNameFull"> ٍSimpleX </xliff:g></string>
+    <string name="a_plus_b">a + b</string>
+    <string name="accept">اقبل</string>
+    <string name="chat_item_ttl_week">اسبوع 1</string>
+    <string name="chat_item_ttl_month">شهر 1</string>
+    <string name="color_primary">لون تمييزي</string>
+    <string name="chat_item_ttl_day">يوم 1</string>
+    <string name="accept_feature">اقبل</string>
+    <string name="about_simplex">عن SimpleX</string>
+    <string name="above_then_preposition_continuation">أعلاه ، ثم:</string>
+    <string name="accept_call_on_lock_screen">اقبل</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
+    <string name="alert_message_no_group">هذه المجموعة لم تعد موجودة.</string>
+    <string name="this_QR_code_is_not_a_link">رمز QR هذا ليس رابطًا!</string>
+    <string name="next_generation_of_private_messaging">الجيل القادم من الرسائل الخاصة</string>
+    <string name="delete_files_and_media_desc">لا يمكن التراجع عن هذا الإجراء - سيتم حذف جميع الملفات والوسائط المستلمة والمرسلة. ستبقى الصور منخفضة الدقة.</string>
+    <string name="enable_automatic_deletion_message">لا يمكن التراجع عن هذا الإجراء - سيتم حذف الرسائل المرسلة والمستلمة قبل التحديد. قد تأخذ عدة دقائق.</string>
+    <string name="messages_section_description">ينطبق هذا الإعداد على الرسائل الموجودة في ملف تعريف الدردشة الحالي الخاص بك</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">منصة الرسائل والتطبيقات تحمي خصوصيتك وأمنك.</string>
+    <string name="profile_is_only_shared_with_your_contacts">يتم مشاركة ملف التعريف مع جهات الاتصال الخاصة بك فقط.</string>
+    <string name="member_role_will_be_changed_with_notification">سيتم تغيير الدور إلى \"%s\". سيتم إبلاغ كل فرد في المجموعة.</string>
+    <string name="member_role_will_be_changed_with_invitation">سيتم تغيير الدور إلى \"%s\". سيتلقى العضو دعوة جديدة.</string>
+    <string name="smp_servers_per_user">خوادم الاتصالات الجديدة لملف تعريف الدردشة الحالي الخاص بك</string>
+    <string name="switch_receiving_address_desc">هذه الميزة تجريبية! ستعمل فقط إذا كان لدى العميل الآخر الإصدار 4.2 مثبتًا. يجب أن ترى الرسالة في المحادثة بمجرد اكتمال تغيير العنوان - يرجى التحقق من أنه لا يزال بإمكانك تلقي الرسائل من جهة الاتصال هذه (أو عضو المجموعة).</string>
+    <string name="this_link_is_not_a_valid_connection_link">هذا الارتباط ليس ارتباط اتصال صالح!</string>
+</resources>

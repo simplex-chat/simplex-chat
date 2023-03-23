@@ -598,12 +598,14 @@
     <string name="incoming_audio_call">Appel audio entrant</string>
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> veut se connecter à vous via</string>
     <string name="your_calls">Vos appels</string>
-    <string name="connect_calls_via_relay">Se connecter via relais</string>
+    <string name="always_use_relay">Se connecter via relais</string>
     <string name="call_on_lock_screen">Appels en écran verrouillé :</string>
     <string name="show_call_on_lock_screen">Montrer</string>
     <string name="no_call_on_lock_screen">Désactiver</string>
     <string name="your_ice_servers">Vos serveurs ICE</string>
     <string name="webrtc_ice_servers">Serveurs WebRTC ICE</string>
+    <string name="relay_server_protects_ip">Le serveur relais protège votre adresse IP, mais il peut observer la durée de l\'appel.</string>
+    <string name="relay_server_if_necessary">Le serveur relais n\'est utilisé que si nécessaire. Un tiers peut observer votre adresse IP.</string>
     <string name="open_simplex_chat_to_accept_call">Ouvrez <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pour décrocher</string>
     <string name="status_no_e2e_encryption">sans chiffrement de bout en bout</string>
     <string name="status_contact_has_e2e_encryption">Ce contact a le chiffrement de bout en bout</string>
@@ -967,4 +969,16 @@
     <string name="v4_5_transport_isolation">Isolation du transport</string>
     <string name="v4_5_multiple_chat_profiles_descr">Différents noms, avatars et mode d\'isolation de transport.</string>
     <string name="moderated_description">modéré</string>
+    <string name="moderated_item_description">modéré par %s</string>
+    <string name="delete_member_message__question">Supprimer le message de ce membre \?</string>
+    <string name="moderate_verb">Modéré</string>
+    <string name="moderate_message_will_be_deleted_warning">Le message sera supprimé pour tous les membres.</string>
+    <string name="moderate_message_will_be_marked_warning">Le message sera marqué comme modéré pour tous les membres.</string>
+    <string name="you_are_observer">vous êtes observateur</string>
+    <string name="error_updating_link_for_group">Erreur lors de la mise à jour du lien de groupe</string>
+    <string name="initial_member_role">Rôle initial</string>
+    <string name="observer_cant_send_message_desc">Veuillez contacter l\'administrateur du groupe.</string>
+    <string name="observer_cant_send_message_title">Vous ne pouvez pas envoyer de messages !</string>
+    <string name="group_member_role_observer">observateur</string>
+    <string name="language_system">Système</string>
 </resources>

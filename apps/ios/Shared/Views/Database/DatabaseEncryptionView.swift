@@ -73,11 +73,11 @@ struct DatabaseEncryptionView: View {
                 }
 
                 if !initialRandomDBPassphrase && m.chatDbEncrypted == true {
-                    DatabaseKeyField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
+                    PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
                 }
 
-                DatabaseKeyField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey), showStrength: true)
-                DatabaseKeyField(key: $confirmNewKey, placeholder: "Confirm new passphrase…", valid: confirmNewKey == "" || newKey == confirmNewKey)
+                PassphraseField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey), showStrength: true)
+                PassphraseField(key: $confirmNewKey, placeholder: "Confirm new passphrase…", valid: confirmNewKey == "" || newKey == confirmNewKey)
 
                 settingsRow("lock.rotation") {
                     Button("Update database passphrase") {
@@ -255,7 +255,7 @@ struct DatabaseEncryptionView: View {
 }
 
 
-struct DatabaseKeyField: View {
+struct PassphraseField: View {
     @Binding var key: String
     var placeholder: LocalizedStringKey
     var valid: Bool

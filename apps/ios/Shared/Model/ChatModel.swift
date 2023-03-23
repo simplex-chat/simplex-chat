@@ -9,7 +9,6 @@
 import Foundation
 import Combine
 import SwiftUI
-import WebKit
 import SimpleXChat
 
 final class ChatModel: ObservableObject {
@@ -59,7 +58,6 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
-    var callWebView: WKWebView?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -68,6 +66,31 @@ final class ChatModel: ObservableObject {
     static let shared = ChatModel()
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
+
+    func getUser(_ userId: Int64) -> User? {
+        currentUser?.userId == userId
+        ? currentUser
+        : users.first { $0.user.userId == userId }?.user
+    }
+
+    func getUserIndex(_ user: User) -> Int? {
+        users.firstIndex { $0.user.userId == user.userId }
+    }
+
+    func updateUser(_ user: User) {
+        if let i = getUserIndex(user) {
+            users[i].user = user
+        }
+        if currentUser?.userId == user.userId {
+            currentUser = user
+        }
+    }
+
+    func removeUser(_ user: User) {
+        if let i = getUserIndex(user), users[i].user.userId != currentUser?.userId {
+            users.remove(at: i)
+        }
+    }
 
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil

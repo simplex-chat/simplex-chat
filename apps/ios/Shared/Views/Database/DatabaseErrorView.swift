@@ -66,7 +66,7 @@ struct DatabaseErrorView: View {
     }
 
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
-        DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: onSubmit)
+        PassphraseField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: onSubmit)
     }
 
     private func saveAndOpenButton() -> some View {

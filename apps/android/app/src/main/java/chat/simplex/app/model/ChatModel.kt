@@ -950,7 +950,7 @@ data class GroupMember (
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (!canBeRemoved(groupInfo)) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.values().filter { it <= userRole && it != GroupMemberRole.Observer }
+      GroupMemberRole.values().filter { it <= userRole }
     }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
