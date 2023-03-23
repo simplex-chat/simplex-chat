@@ -275,6 +275,7 @@ module Simplex.Chat.Store
 where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent.STM (stateTVar)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad.Except
