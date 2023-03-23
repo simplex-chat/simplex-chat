@@ -263,7 +263,6 @@ struct SettingsView: View {
                         Toggle("Developer tools", isOn: $developerTools)
                     }
                     if developerTools {
-
                         NavigationLink {
                             TerminalView()
                         } label: {
