@@ -158,6 +158,10 @@ public func removeLegacyDatabaseAndFiles() -> Bool {
     return r1 && r2
 }
 
+public func getTempFilesDirectory() -> URL {
+    getAppDirectory().appendingPathComponent("temp_files", isDirectory: true)
+}
+
 public func getAppFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
