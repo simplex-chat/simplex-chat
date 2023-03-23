@@ -1208,9 +1208,9 @@
         <target>Wachtrij verwijderen</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete user profile?" xml:space="preserve">
+      <trans-unit id="Delete user profile?" xml:space="preserve" approved="no">
         <source>Delete user profile?</source>
-        <target>Gebruikersprofiel verwijderen?</target>
+        <target state="translated">Gebruiker profiel verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1508,9 +1508,9 @@
         <target>Fout bij verwijderen token</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting user profile" xml:space="preserve">
+      <trans-unit id="Error deleting user profile" xml:space="preserve" approved="no">
         <source>Error deleting user profile</source>
-        <target>Fout bij het verwijderen van gebruikers profiel</target>
+        <target state="translated">Fout bij het verwijderen van gebruiker profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
@@ -1570,7 +1570,7 @@
       </trans-unit>
       <trans-unit id="Error saving user password" xml:space="preserve" approved="no">
         <source>Error saving user password</source>
-        <target state="translated">Fout bij opslaan gebruikers wachtwoord</target>
+        <target state="translated">Fout bij opslaan gebruiker wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -2439,9 +2439,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Onion hosts worden niet gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
+      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve" approved="no">
         <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
-        <target>Alleen client apparaten slaan gebruikersprofielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.</target>
+        <target state="translated">Alleen client apparaten slaan gebruiker profielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
@@ -2499,9 +2499,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Chat console openen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open user profiles" xml:space="preserve">
+      <trans-unit id="Open user profiles" xml:space="preserve" approved="no">
         <source>Open user profiles</source>
-        <target>Gebruikersprofielen openen</target>
+        <target state="translated">Gebruiker profielen openen</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
@@ -3396,12 +3396,12 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="There should be at least one user profile." xml:space="preserve" approved="no">
         <source>There should be at least one user profile.</source>
-        <target state="translated">Er moet ten minste één gebruikers profiel zijn.</target>
+        <target state="translated">Er moet ten minste één gebruiker profiel zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="There should be at least one visible user profile." xml:space="preserve" approved="no">
         <source>There should be at least one visible user profile.</source>
-        <target state="translated">Er moet ten minste één zichtbaar gebruikers profiel zijn.</target>
+        <target state="translated">Er moet ten minste één zichtbaar gebruiker profiel zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -3643,9 +3643,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Gebruik server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
+      <trans-unit id="User profile" xml:space="preserve" approved="no">
         <source>User profile</source>
-        <target>Gebruikersprofiel</target>
+        <target state="translated">Gebruiker profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
@@ -3728,9 +3728,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Welkom %@!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message" xml:space="preserve">
+      <trans-unit id="Welcome message" xml:space="preserve" approved="no">
         <source>Welcome message</source>
-        <target>Welkoms bericht</target>
+        <target state="translated">Welkomst bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -3748,9 +3748,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="With optional welcome message." xml:space="preserve">
+      <trans-unit id="With optional welcome message." xml:space="preserve" approved="no">
         <source>With optional welcome message.</source>
-        <target>Met optioneel welkomstbericht.</target>
+        <target state="translated">Met optioneel welkomst bericht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -3811,7 +3811,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve" approved="no">
         <source>You can hide or mute a user profile - swipe it to the right.
 SimpleX Lock must be enabled.</source>
-        <target state="translated">U kunt een gebruikersprofiel verbergen of dempen - veeg het naar rechts.
+        <target state="translated">U kunt een gebruiker profiel verbergen of dempen - veeg het naar rechts.
 SimpleX Lock moet ingeschakeld zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4484,9 +4484,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>geen e2e versleuteling</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="observer" xml:space="preserve">
+      <trans-unit id="observer" xml:space="preserve" approved="no">
         <source>observer</source>
-        <target>waarnemer</target>
+        <target state="translated">Waarnemer</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="off" xml:space="preserve">
@@ -4515,9 +4515,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>of praat met de ontwikkelaars</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="owner" xml:space="preserve">
+      <trans-unit id="owner" xml:space="preserve" approved="no">
         <source>owner</source>
-        <target>eigenaar</target>
+        <target state="translated">Eigenaar</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="peer-to-peer" xml:space="preserve">
