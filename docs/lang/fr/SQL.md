@@ -1,4 +1,4 @@
-| 21.03.2023 | FR, [EN](/docs/SQL.md), [CZ](/docs/lang/cs/SQL.md) |
+| 31.01.2023 | FR, [EN](/docs/SQL.md), [CZ](/docs/lang/cs/SQL.md) |
 
 # Accès aux messages de la base de données
 

@@ -1,4 +1,4 @@
-| 21.03.2023 | FR, [EN](/docs/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md) |
+| 07.02.2023 | FR, [EN](/docs/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md) |
 
 # Plateforme SimpleX - motivation et comparaison
 

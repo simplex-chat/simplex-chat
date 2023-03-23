@@ -1,3 +1,5 @@
+| 07.02.2023 | EN, [CZ](/docs/lang/cs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md) |
+
 # Accessing files in Android app
 
 SimpleX uses databases and stores its preferences inside private data directory in Android. The directory contains:

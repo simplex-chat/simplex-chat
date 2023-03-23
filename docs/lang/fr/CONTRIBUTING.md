@@ -1,4 +1,4 @@
-| 21.03.2023 | FR, [EN](/docs/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md) |
+| 31.01.2023 | FR, [EN](/docs/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md) |
 
 # Guide pour contribuer
 

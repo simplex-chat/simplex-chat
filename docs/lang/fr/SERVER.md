@@ -1,4 +1,4 @@
-| 21.03.2023 | FR, [EN](/docs/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
+| 31.01.2023 | FR, [EN](/docs/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
 
 # Héberger votre propre serveur SMP
 
