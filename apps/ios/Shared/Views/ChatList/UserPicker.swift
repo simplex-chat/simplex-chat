@@ -126,7 +126,9 @@ struct UserPicker: View {
                 if user.activeUser {
                     Image(systemName: "checkmark")
                 } else if u.unreadCount > 0 {
-                    unreadCounter(u.unreadCount)
+                    unreadCounter(u.unreadCount, color: user.showNtfs ? .accentColor : .secondary)
+                } else if !user.showNtfs {
+                    Image(systemName: "speaker.slash")
                 }
             }
             .padding(.trailing)
@@ -152,13 +154,13 @@ struct UserPicker: View {
     }
 }
 
-func unreadCounter(_ unread: Int) -> some View {
+private func unreadCounter(_ unread: Int, color: Color) -> some View {
     unreadCountText(unread)
     .font(.caption)
     .foregroundColor(.white)
     .padding(.horizontal, 4)
     .frame(minWidth: 18, minHeight: 18)
-    .background(Color.accentColor)
+    .background(color)
     .cornerRadius(10)
 }
 
