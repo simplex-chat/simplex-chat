@@ -2237,16 +2237,30 @@ public struct CIFile: Decodable {
     }
 }
 
-public enum CIFileStatus: String, Decodable {
-    case sndStored = "snd_stored"
-    case sndTransfer = "snd_transfer"
-    case sndComplete = "snd_complete"
-    case sndCancelled = "snd_cancelled"
-    case rcvInvitation = "rcv_invitation"
-    case rcvAccepted = "rcv_accepted"
-    case rcvTransfer = "rcv_transfer"
-    case rcvComplete = "rcv_complete"
-    case rcvCancelled = "rcv_cancelled"
+public enum CIFileStatus: Decodable {
+    case sndStored
+    case sndTransfer(sndProgress: Int, sndTotal: Int)
+    case sndComplete
+    case sndCancelled
+    case rcvInvitation
+    case rcvAccepted
+    case rcvTransfer(rcvProgress: Int, rcvTotal: Int)
+    case rcvComplete
+    case rcvCancelled
+
+    var id: String {
+        switch self {
+        case .sndStored: return "sndStored"
+        case .sndTransfer: return "sndTransfer"
+        case .sndComplete: return "sndComplete"
+        case .sndCancelled: return "sndCancelled"
+        case .rcvInvitation: return "rcvInvitation"
+        case .rcvAccepted: return "rcvAccepted"
+        case .rcvTransfer: return "rcvTransfer"
+        case .rcvComplete: return "rcvComplete"
+        case .rcvCancelled: return "rcvCancelled"
+        }
+    }
 }
 
 public enum MsgContent {
