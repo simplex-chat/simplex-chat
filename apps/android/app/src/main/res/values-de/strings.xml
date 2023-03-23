@@ -1055,4 +1055,10 @@
     <string name="observer_cant_send_message_desc">Bitte kontaktieren Sie den Gruppen-Administrator.</string>
     <string name="moderate_message_will_be_deleted_warning">Diese Nachricht wird für alle Gruppenmitglieder gelöscht.</string>
     <string name="language_system">System</string>
+    <string name="confirm_password">Bestätigen Sie das Passwort</string>
+    <string name="cant_delete_user_profile">Das Benutzerprofil kann nicht gelöscht werden!</string>
+    <string name="dont_show_again">Nicht nochmals anzeigen</string>
+    <string name="v4_6_chinese_spanish_interface">Chinesisches und spanisches Interface</string>
+    <string name="v4_6_audio_video_calls">Audio- und Videoanrufe</string>
+    <string name="button_add_welcome_message">Fügen Sie eine Willkommensnachricht hinzu</string>
 </resources>
