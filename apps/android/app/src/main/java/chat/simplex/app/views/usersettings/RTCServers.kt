@@ -198,7 +198,7 @@ private fun howToButton() {
   val uriHandler = LocalUriHandler.current
   Row(
     verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier.clickable { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/WEBRTC.md#configure-mobile-apps") }
+    modifier = Modifier.clickable { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/WEBRTC.md#configure-mobile-apps") }
   ) {
     Text(stringResource(R.string.how_to), color = MaterialTheme.colors.primary)
     Icon(

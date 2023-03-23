@@ -1,4 +1,4 @@
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/WEBRTC.md) |
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/WEBRTC.md), [CZ](/docs/lang/cs/WEBRTC.md) |
 
 # Using custom WebRTC ICE servers in SimpleX Chat
 

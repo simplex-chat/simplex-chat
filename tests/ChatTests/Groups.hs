@@ -47,6 +47,7 @@ chatGroupTests = do
     it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
     it "group link member role" testGroupLinkMemberRole
+    it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup
@@ -1916,3 +1917,72 @@ testGroupLinkMemberRole =
       concurrently_
         (alice <# "#team bob> hey now")
         (cath <# "#team bob> hey now")
+
+testGroupLinkLeaveDelete :: HasCallStack => FilePath -> IO ()
+testGroupLinkLeaveDelete =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers cath bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages",
+                   EndsWith "invited to group #team via your group link",
+                   EndsWith "joined the group"
+                 ],
+          bob
+            <### [ "alice_1 (Alice): contact is connected",
+                   "contact alice_1 is merged into alice",
+                   "use @alice <message> to send messages",
+                   "#team: you joined the group"
+                 ]
+        ]
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice
+            <### [ "cath (Catherine): contact is connected",
+                   "cath invited to group #team via your group link",
+                   "#team: cath joined the group"
+                 ],
+          cath
+            <### [ "alice (Alice): contact is connected",
+                   "#team: you joined the group",
+                   "#team: member bob_1 (Bob) is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages"
+                 ],
+          bob
+            <### [ "#team: alice added cath_1 (Catherine) to the group (connecting...)",
+                   "#team: new member cath_1 is connected",
+                   "contact cath_1 is merged into cath",
+                   "use @cath <message> to send messages"
+                 ]
+        ]
+      bob ##> "/l team"
+      concurrentlyN_
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
+          alice <## "#team: bob left the group",
+          cath <## "#team: bob left the group"
+        ]
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      bob <## "cath (Catherine)"
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      bob <## "cath (Catherine)"

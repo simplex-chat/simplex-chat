@@ -40,7 +40,6 @@ public struct WebRTCExtraInfo: Codable {
 public struct RcvCallInvitation: Decodable {
     public var user: User
     public var contact: Contact
-    public var callkitUUID: UUID? = UUID()
     public var callType: CallType
     public var sharedKey: String?
     public var callTs: Date
@@ -51,6 +50,12 @@ public struct RcvCallInvitation: Decodable {
             case .audio: return sharedKey == nil ? "audio call (not e2e encrypted)" : "**e2e encrypted** audio call"
             }
         }
+    }
+
+    public var callkitUUID: UUID? = UUID()
+
+    private enum CodingKeys: String, CodingKey {
+        case user, contact, callType, sharedKey, callTs
     }
 
     public static let sampleData = RcvCallInvitation(

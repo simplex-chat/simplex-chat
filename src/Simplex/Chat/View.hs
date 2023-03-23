@@ -99,6 +99,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
     HSMessages -> messagesHelpInfo
     HSMarkdown -> markdownInfo
     HSSettings -> settingsInfo
+    HSDatabase -> databaseHelpInfo
   CRWelcome user -> chatWelcome user
   CRContactsList u cs -> ttyUser u $ viewContactsList cs
   CRUserContactLink u UserContactLink {connReqContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept
@@ -115,6 +116,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
   CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
+  CRUserPrivacy u -> ttyUserPrefix u $ viewUserPrivacy u
   CRVersionInfo info -> viewVersionInfo logLevel info
   CRInvitation u cReq -> ttyUser u $ viewConnReqInvitation cReq
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
@@ -228,12 +230,16 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRAgentConnDeleted acId -> ["completed deleting connection, agent connection id: " <> sShow acId | logLevel <= CLLInfo]
   CRAgentUserDeleted auId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow auId else ""]
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
-  CRChatCmdError u e -> ttyUser' u $ viewChatError logLevel e
+  CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel e
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
-    ttyUser _ [] = []
-    ttyUser User {userId, localDisplayName = u} ss = prependFirst userPrefix ss
+    ttyUser user@User {showNtfs, activeUser} ss
+      | showNtfs || activeUser = ttyUserPrefix user ss
+      | otherwise = []
+    ttyUserPrefix :: User -> [StyledString] -> [StyledString]
+    ttyUserPrefix _ [] = []
+    ttyUserPrefix User {userId, localDisplayName = u} ss = prependFirst userPrefix ss
       where
         userPrefix = case user_ of
           Just User {userId = activeUserId} -> if userId /= activeUserId then prefix else ""
@@ -241,6 +247,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
         prefix = "[user: " <> highlight u <> "] "
     ttyUser' :: Maybe User -> [StyledString] -> [StyledString]
     ttyUser' = maybe id ttyUser
+    ttyUserPrefix' :: Maybe User -> [StyledString] -> [StyledString]
+    ttyUserPrefix' = maybe id ttyUserPrefix
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
       where
@@ -292,14 +300,19 @@ chatItemDeletedText ci membership_ = deletedStateToText <$> chatItemDeletedState
       _ -> ""
 
 viewUsersList :: [UserInfo] -> [StyledString]
-viewUsersList = map userInfo . sortOn ldn
+viewUsersList = mapMaybe userInfo . sortOn ldn
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
-    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName}, activeUser} count) =
-      ttyFullName n fullName <> active <> unread
+    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName}, activeUser, showNtfs, viewPwdHash} count)
+      | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName <> infoStr
+      | otherwise = Nothing
       where
-        active = if activeUser then highlight' " (active)" else ""
-        unread = if count /= 0 then plain $ " (unread: " <> show count <> ")" else ""
+        infoStr = if null info then "" else " (" <> mconcat (intersperse ", " info) <> ")"
+        info =
+          [highlight' "active" | activeUser]
+            <> [highlight' "hidden" | isJust viewPwdHash]
+            <> ["muted" | not showNtfs]
+            <> [plain ("unread: " <> show count) | count /= 0]
 
 muted :: ChatInfo c -> ChatItem c d -> Bool
 muted chat ChatItem {chatDir} = case (chat, chatDir) of
@@ -719,6 +732,12 @@ viewUserProfile Profile {displayName, fullName} =
   [ "user profile: " <> ttyFullName displayName fullName,
     "use " <> highlight' "/p <display name> [<full name>]" <> " to change it",
     "(the updated profile will be sent to all your contacts)"
+  ]
+
+viewUserPrivacy :: User -> [StyledString]
+viewUserPrivacy User {showNtfs, viewPwdHash} =
+  [ "user messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
+    "user profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
 -- TODO make more generic messages or split
@@ -1209,9 +1228,15 @@ viewChatError logLevel = \case
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
     CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
+    CEUserUnknown -> ["user does not exist or incorrect password"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]
     CECantDeleteActiveUser _ -> ["cannot delete active user"]
     CECantDeleteLastUser _ -> ["cannot delete last user"]
+    CECantHideLastUser _ -> ["cannot hide the only not hidden user"]
+    CECantUnmuteHiddenUser _ -> ["cannot unmute hidden user"]
+    CEEmptyUserPassword _ -> ["cannot set empty password"]
+    CEUserAlreadyHidden _ -> ["user is already hidden"]
+    CEUserNotHidden _ -> ["user is not hidden"]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
