@@ -22,7 +22,16 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
 
+    public var showNtfs: Bool
+    public var viewPwdHash: UserPwdHash?
+
     public var id: Int64 { userId }
+
+    public var hidden: Bool { viewPwdHash != nil }
+
+    public var showNotifications: Bool {
+        activeUser || showNtfs
+    }
 
     public static let sampleData = User(
         userId: 1,
@@ -30,8 +39,14 @@ public struct User: Decodable, NamedChat, Identifiable {
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
-        activeUser: true
+        activeUser: true,
+        showNtfs: true
     )
+}
+
+public struct UserPwdHash: Decodable {
+    public var hash: String
+    public var salt: String
 }
 
 public struct UserInfo: Decodable, Identifiable {
@@ -1517,7 +1532,7 @@ public struct GroupMember: Identifiable, Decodable {
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if !canBeRemoved(groupInfo: groupInfo) { return nil }
         let userRole = groupInfo.membership.memberRole
-        return GroupMemberRole.allCases.filter { $0 <= userRole && $0 != .observer }
+        return GroupMemberRole.allCases.filter { $0 <= userRole }
     }
 
     public var memberIncognito: Bool {

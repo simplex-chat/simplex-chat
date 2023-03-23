@@ -345,6 +345,9 @@
 "Authentication failed" = "Ověření selhalo";
 
 /* No comment provided by engineer. */
+"Authentication is required before the call is connected, but you may miss calls." = "Před spojením hovoru je vyžadováno ověření, ale můžete zmeškat hovory.";
+
+/* No comment provided by engineer. */
 "Authentication unavailable" = "Ověřování není k dispozici";
 
 /* No comment provided by engineer. */
@@ -1304,6 +1307,9 @@
 /* No comment provided by engineer. */
 "Instantly" = "Okamžitě";
 
+/* No comment provided by engineer. */
+"Interface" = "Rozhranní";
+
 /* invalid chat data */
 "invalid chat" = "neplatný chat";
 
@@ -2053,6 +2059,9 @@
 "Share one-time invitation link" = "Jednorázový zvací odkaz";
 
 /* No comment provided by engineer. */
+"Show calls in phone history" = "Ukaž hovory v historii telefonu";
+
+/* No comment provided by engineer. */
 "Show preview" = "Zobrazení náhledu";
 
 /* No comment provided by engineer. */
@@ -2301,11 +2310,17 @@
 /* connection info */
 "unknown" = "neznámý";
 
+/* callkit banner */
+"Unknown caller" = "Neznámý volající";
+
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Neznámá chyba databáze: %@";
 
 /* No comment provided by engineer. */
 "Unknown error" = "Neznámá chyba";
+
+/* No comment provided by engineer. */
+"Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Při nepoužívání rozhraní volání iOS, povolte režim Nerušit, abyste se vyhnuli vyrušování.";
 
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji.\nChcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.";
@@ -2351,6 +2366,9 @@
 
 /* No comment provided by engineer. */
 "Use for new connections" = "Použít pro nová připojení";
+
+/* No comment provided by engineer. */
+"Use iOS call interface" = "Použít rozhraní volání iOS";
 
 /* No comment provided by engineer. */
 "Use server" = "Použít server";
@@ -2488,6 +2506,9 @@
 "you are observer" = "jste pozorovatel";
 
 /* No comment provided by engineer. */
+"You can accept calls from lock screen, without device and app authentication." = "Můžete přijímat hovory z obrazovky zámku, bez ověření zařízení a aplikace.";
+
+/* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Můžete se také připojit kliknutím na odkaz. Pokud se otevře v prohlížeči, klikněte na tlačítko **Otevřít v mobilní aplikaci**.";
 
 /* notification body */
@@ -2612,9 +2633,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Vaše chat profily";
-
-/* No comment provided by engineer. */
-"Your chat profiles are stored locally, only on your device." = "Vaše chat profily jsou uloženy lokálně, pouze ve vašem zařízení.";
 
 /* No comment provided by engineer. */
 "Your chats" = "Vaše konverzace";

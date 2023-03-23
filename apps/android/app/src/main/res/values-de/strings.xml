@@ -1052,6 +1052,7 @@
     <string name="initial_member_role">Anfängliche Rolle</string>
     <string name="delete_member_message__question">Nachricht des Mitglieds löschen\?</string>
     <string name="error_updating_link_for_group">Fehler beim Aktualisieren des Gruppen-Links</string>
-    <string name="observer_cant_send_message_desc">Bitte kontaktieren Sie den Gruppen-Administrator</string>
+    <string name="observer_cant_send_message_desc">Bitte kontaktieren Sie den Gruppen-Administrator.</string>
     <string name="moderate_message_will_be_deleted_warning">Diese Nachricht wird für alle Gruppenmitglieder gelöscht.</string>
+    <string name="language_system">System</string>
 </resources>

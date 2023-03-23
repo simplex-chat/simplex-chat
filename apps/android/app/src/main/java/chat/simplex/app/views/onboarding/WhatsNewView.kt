@@ -270,8 +270,45 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
       )
     )
-  )
+  ),
+  VersionDescription(
+    version = "v4.6",
+    features = listOf(
+      FeatureDescription(
+        icon = Icons.Outlined.Lock,
+        titleId = R.string.v4_6_hidden_chat_profiles,
+        descrId = R.string.v4_6_hidden_chat_profiles_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Flag,
+        titleId = R.string.v4_6_group_moderation,
+        descrId = R.string.v4_6_group_moderation_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.MapsUgc,
+        titleId = R.string.v4_6_group_welcome_message,
+        descrId = R.string.v4_6_group_welcome_message_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Call,
+        titleId = R.string.v4_6_audio_video_calls,
+        descrId = R.string.v4_6_audio_video_calls_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Battery3Bar,
+        titleId = R.string.v4_6_reduced_battery_usage,
+        descrId = R.string.v4_6_reduced_battery_usage_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Translate,
+        titleId = R.string.v4_6_chinese_spanish_interface,
+        descrId = R.string.v4_6_chinese_spanish_interface_descr,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
+      )
+    )
+  ),
 )
+
 private val lastVersion = versionDescriptions.last().version
 
 fun setLastVersionDefault(m: ChatModel) {

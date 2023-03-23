@@ -16,7 +16,7 @@ let logger = Logger()
 
 let suspendingDelay: UInt64 = 2_000_000_000
 
-typealias NtfStream = AsyncStream<UNMutableNotificationContent>
+typealias NtfStream = AsyncStream<NSENotification>
 
 actor PendingNtfs {
     static let shared = PendingNtfs()
@@ -33,13 +33,13 @@ actor PendingNtfs {
         }
     }
 
-    func readStream(_ id: String, for nse: NotificationService, msgCount: Int = 1) async {
+    func readStream(_ id: String, for nse: NotificationService, msgCount: Int = 1, showNotifications: Bool) async {
         logger.debug("PendingNtfs.readStream: \(id, privacy: .public) \(msgCount, privacy: .public)")
         if let s = ntfStreams[id] {
             logger.debug("PendingNtfs.readStream: has stream")
             var rcvCount = max(1, msgCount)
             for await ntf in s {
-                nse.setBestAttemptNtf(ntf)
+                nse.setBestAttemptNtf(showNotifications ? ntf : .empty)
                 rcvCount -= 1
                 if rcvCount == 0 || ntf.categoryIdentifier == ntfCategoryCallInvitation { break }
             }
@@ -47,7 +47,7 @@ actor PendingNtfs {
         }
     }
 
-    func writeStream(_ id: String, _ ntf: UNMutableNotificationContent) {
+    func writeStream(_ id: String, _ ntf: NSENotification) {
         logger.debug("PendingNtfs.writeStream: \(id, privacy: .public)")
         if let cont = ntfConts[id] {
             logger.debug("PendingNtfs.writeStream: writing ntf")
@@ -56,16 +56,30 @@ actor PendingNtfs {
     }
 }
 
+enum NSENotification {
+    case nse(notification: UNMutableNotificationContent)
+    case callkit(invitation: RcvCallInvitation)
+    case empty
 
+    var categoryIdentifier: String? {
+        switch self {
+        case let .nse(ntf): return ntf.categoryIdentifier
+        case .callkit: return ntfCategoryCallInvitation
+        case .empty: return nil
+        }
+    }
+}
 
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
-    var bestAttemptNtf: UNMutableNotificationContent?
+    var bestAttemptNtf: NSENotification?
     var badgeCount: Int = 0
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        setBestAttemptNtf(request.content.mutableCopy() as? UNMutableNotificationContent)
+        if let ntf = request.content.mutableCopy() as? UNMutableNotificationContent {
+            setBestAttemptNtf(ntf)
+        }
         self.contentHandler = contentHandler
         registerGroupDefaults()
         let appState = appStateGroupDefault.get()
@@ -112,12 +126,16 @@ class NotificationService: UNNotificationServiceExtension {
                let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
-                    setBestAttemptNtf(createConnectionEventNtf(ntfMsgInfo.user, connEntity))
+                    setBestAttemptNtf(
+                        ntfMsgInfo.user.showNotifications
+                        ? .nse(notification: createConnectionEventNtf(ntfMsgInfo.user, connEntity))
+                        : .empty
+                    )
                     if let id = connEntity.id {
                         Task {
                             logger.debug("NotificationService: receiveNtfMessages: in Task, connEntity id \(id, privacy: .public)")
                             await PendingNtfs.shared.createStream(id)
-                            await PendingNtfs.shared.readStream(id, for: self, msgCount: ntfMsgInfo.ntfMessages.count)
+                            await PendingNtfs.shared.readStream(id, for: self, msgCount: ntfMsgInfo.ntfMessages.count, showNotifications: ntfMsgInfo.user.showNotifications)
                             deliverBestAttemptNtf()
                         }
                     }
@@ -140,16 +158,40 @@ class NotificationService: UNNotificationServiceExtension {
         ntfBadgeCountGroupDefault.set(badgeCount)
     }
 
-    func setBestAttemptNtf(_ ntf: UNMutableNotificationContent?) {
+    func setBestAttemptNtf(_ ntf: UNMutableNotificationContent) {
+        setBestAttemptNtf(.nse(notification: ntf))
+    }
+
+    func setBestAttemptNtf(_ ntf: NSENotification) {
         logger.debug("NotificationService.setBestAttemptNtf")
-        bestAttemptNtf = ntf
-        bestAttemptNtf?.badge = badgeCount as NSNumber
+        if case let .nse(notification) = ntf {
+            notification.badge = badgeCount as NSNumber
+            bestAttemptNtf = .nse(notification: notification)
+        } else {
+            bestAttemptNtf = ntf
+        }
     }
 
     private func deliverBestAttemptNtf() {
         logger.debug("NotificationService.deliverBestAttemptNtf")
-        if let handler = contentHandler, let content = bestAttemptNtf {
-            handler(content)
+        if let handler = contentHandler, let ntf = bestAttemptNtf {
+            switch ntf {
+            case let .nse(content): handler(content)
+            case let .callkit(invitation):
+                CXProvider.reportNewIncomingVoIPPushPayload([
+                    "displayName": invitation.contact.displayName,
+                    "contactId": invitation.contact.id,
+                    "media": invitation.callType.media.rawValue
+                ]) { error in
+                    if error == nil {
+                        handler(UNMutableNotificationContent())
+                    } else {
+                        logger.debug("reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
+                        handler(createCallInvitationNtf(invitation))
+                    }
+                }
+            case .empty: handler(UNMutableNotificationContent())
+            }
             bestAttemptNtf = nil
         }
     }
@@ -211,15 +253,15 @@ func chatRecvMsg() async -> ChatResponse? {
 private let isInChina = SKStorefront().countryCode == "CHN"
 private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
-func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
+func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
     logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
     switch res {
     case let .contactConnected(user, contact, _):
-        return (contact.id, createContactConnectedNtf(user, contact))
+        return (contact.id, .nse(notification: createContactConnectedNtf(user, contact)))
 //        case let .contactConnecting(contact):
 //            TODO profile update
     case let .receivedContactRequest(user, contactRequest):
-        return (UserContact(contactRequest: contactRequest).id, createContactRequestNtf(user, contactRequest))
+        return (UserContact(contactRequest: contactRequest).id, .nse(notification: createContactRequestNtf(user, contactRequest)))
     case let .newChatItem(user, aChatItem):
         let cInfo = aChatItem.chatInfo
         var cItem = aChatItem.chatItem
@@ -240,23 +282,13 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
                 cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
             }
          }
-        return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(user, cInfo, cItem)) : nil
+        return cItem.showMutableNotification ? (aChatItem.chatId, .nse(notification: createMessageReceivedNtf(user, cInfo, cItem))) : nil
     case let .callInvitation(invitation):
         // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
-        if useCallKit() {
-            do {
-                try await CXProvider.reportNewIncomingVoIPPushPayload([
-                    "displayName": invitation.contact.displayName,
-                    "contactId": invitation.contact.id,
-                    "media": invitation.callType.media.rawValue
-                ])
-                logger.debug("reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
-                return (invitation.contact.id, (UNNotificationContent().mutableCopy() as! UNMutableNotificationContent))
-            } catch let error {
-                logger.error("reportNewIncomingVoIPPushPayload error \(String(describing: error), privacy: .public)")
-            }
-        }
-        return (invitation.contact.id, createCallInvitationNtf(invitation))
+        return (
+            invitation.contact.id,
+            useCallKit() ? .callkit(invitation: invitation) : .nse(notification: createCallInvitationNtf(invitation))
+        )
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
         return nil
