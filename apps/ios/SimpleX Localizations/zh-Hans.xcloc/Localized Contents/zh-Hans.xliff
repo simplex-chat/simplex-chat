@@ -3330,9 +3330,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>将为所有成员删除该消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve">
+      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve" approved="no">
         <source>The message will be marked as moderated for all members.</source>
-        <target>该消息将对所有成员显示为已审核。</target>
+        <target state="translated">该消息将对所有成员标记为已被管理员移除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
