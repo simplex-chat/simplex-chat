@@ -151,23 +151,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Row(
-      Modifier
-        .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
-        .padding(vertical = 8.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      ProfileImage(
-        image = u.image,
-        size = 54.dp
-      )
-      Text(
-        u.displayName,
-        modifier = Modifier
-          .padding(start = 8.dp, end = 8.dp),
-        fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
-      )
-    }
+    UserProfileRow(u)
     if (u.activeUser) {
         Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
@@ -193,6 +177,27 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
     }  else {
       Box(Modifier.size(20.dp))
     }
+  }
+}
+
+@Composable
+fun UserProfileRow(u: User) {
+  Row(
+    Modifier
+      .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
+      .padding(vertical = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    ProfileImage(
+      image = u.image,
+      size = 54.dp
+    )
+    Text(
+      u.displayName,
+      modifier = Modifier
+        .padding(start = 8.dp, end = 8.dp),
+      fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
+    )
   }
 }
 

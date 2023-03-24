@@ -9,20 +9,21 @@ import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
-import chat.simplex.app.ui.theme.DEFAULT_BOTTOM_PADDING
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.chatlist.UserProfileRow
 import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
-import kotlinx.coroutines.flow.*
 
 @Composable
 fun HiddenProfileView(
@@ -61,12 +62,9 @@ private fun HiddenProfileLayout(
       .padding(bottom = DEFAULT_BOTTOM_PADDING),
   ) {
     AppBarTitle(stringResource(R.string.hide_profile))
-    SectionView {
-      Row {
-        ProfilePreview(user)
-      }
+    SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+      UserProfileRow(user)
     }
-
     SectionSpacer()
 
     val hidePassword = rememberSaveable { mutableStateOf("") }
@@ -82,7 +80,7 @@ private fun HiddenProfileLayout(
         PassphraseField(confirmHidePassword, stringResource(R.string.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
       }
       SectionDivider()
-      SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled) {
+      SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {
         Text(generalGetString(R.string.save_profile_password), color = if (saveDisabled) HighOrLowlight else MaterialTheme.colors.primary)
       }
     }

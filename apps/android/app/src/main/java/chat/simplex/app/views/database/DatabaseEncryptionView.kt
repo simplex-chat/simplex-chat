@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
@@ -25,8 +26,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
@@ -162,6 +162,8 @@ fun DatabaseEncryptionLayout(
       }
 
       if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
+        SectionDivider()
+
         PassphraseField(
           currentKey,
           generalGetString(R.string.current_passphrase),
@@ -170,6 +172,8 @@ fun DatabaseEncryptionLayout(
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
         )
       }
+
+      SectionDivider()
 
       PassphraseField(
         newKey,
@@ -202,6 +206,8 @@ fun DatabaseEncryptionLayout(
           !validKey(newKey.value) ||
           progressIndicator.value
 
+      SectionDivider()
+
       PassphraseField(
         confirmNewKey,
         generalGetString(R.string.confirm_new_passphrase),
@@ -213,7 +219,9 @@ fun DatabaseEncryptionLayout(
         }),
       )
 
-      SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled) {
+      SectionDivider()
+
+      SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
         Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
       }
     }
@@ -286,9 +294,10 @@ fun SavePassphraseSetting(
   initialRandomDBPassphrase: Boolean,
   storedKey: Boolean,
   progressIndicator: Boolean,
+  minHeight: Dp = TextFieldDefaults.MinHeight,
   onCheckedChange: (Boolean) -> Unit,
 ) {
-  SectionItemView {
+  SectionItemView(minHeight = minHeight) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
         if (storedKey) Icons.Filled.VpnKey else Icons.Filled.VpnKeyOff,

@@ -104,7 +104,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       setUserPrivacy(m) { m.controller.apiUnmuteUser(user.userId, userViewPassword(user, searchTextOrPassword.value)) }
     },
     showHiddenProfile = { user ->
-      ModalManager.shared.showModalCloseable { close ->
+      ModalManager.shared.showModalCloseable(true) { close ->
         HiddenProfileView(m, user) {
           profileHidden.value = true
           withBGApi {
