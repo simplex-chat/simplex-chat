@@ -17,7 +17,7 @@ public let MAX_IMAGE_SIZE: Int64 = 236700
 public let MAX_IMAGE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
 //public let MAX_FILE_SIZE_SMP: Int64 = 8000000 // TODO distinguish between XFTP and SMP files
-public let MAX_FILE_SIZE: Int64 = 1_000_000_000 // roughly 1 gb, exact xftp CLI limit is 1_073_741_824
+public let MAX_FILE_SIZE: Int64 = 1_073_741_824
 
 public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(30)
 

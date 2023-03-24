@@ -61,9 +61,8 @@ struct CIFileView: View {
             case .rcvComplete: return true
             case .rcvCancelled: return false
             }
-        } else {
-            return false
         }
+        return false
     }
 
     func fileSizeValid() -> Bool {

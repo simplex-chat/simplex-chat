@@ -2251,12 +2251,12 @@ public enum CIFileStatus: Decodable {
     var id: String {
         switch self {
         case .sndStored: return "sndStored"
-        case .sndTransfer: return "sndTransfer"
+        case let .sndTransfer(sndProgress, sndTotal): return "sndTransfer \(sndProgress) \(sndTotal)"
         case .sndComplete: return "sndComplete"
         case .sndCancelled: return "sndCancelled"
         case .rcvInvitation: return "rcvInvitation"
         case .rcvAccepted: return "rcvAccepted"
-        case .rcvTransfer: return "rcvTransfer"
+        case let .rcvTransfer(rcvProgress, rcvTotal): return "rcvTransfer \(rcvProgress) \(rcvTotal)"
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
         }
