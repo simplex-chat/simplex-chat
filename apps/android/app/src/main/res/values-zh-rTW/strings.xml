@@ -983,8 +983,7 @@
     <string name="observer_cant_send_message_desc">請聯繫群管理員。</string>
     <string name="initial_member_role">初始角色</string>
     <string name="language_system">系統</string>
-    <string name="you_can_hide_or_mute_user_profile">您可以隱藏或靜音用戶配置文件 - 按住它以顯示菜單。
-\n必須啟用 SimpleX Lock。</string>
+    <string name="you_can_hide_or_mute_user_profile">您可以隱藏或靜音用戶配置文件 - 按住它以顯示菜單。</string>
     <string name="smp_save_servers_question">保存服務器？</string>
     <string name="confirm_password">確認密碼</string>
     <string name="hidden_profile_password">隱藏的個人資料密碼</string>
