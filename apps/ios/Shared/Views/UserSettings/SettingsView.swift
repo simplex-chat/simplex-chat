@@ -277,12 +277,12 @@ struct SettingsView: View {
                                 .padding(.leading, indent)
                         }
                     }
-//                    NavigationLink {
-//                        ExperimentalFeaturesView()
-//                            .navigationTitle("Experimental features")
-//                    } label: {
-//                        settingsRow("gauge") { Text("Experimental features") }
-//                    }
+                    NavigationLink {
+                        ExperimentalFeaturesView()
+                            .navigationTitle("Experimental features")
+                    } label: {
+                        settingsRow("gauge") { Text("Experimental features") }
+                    }
                     NavigationLink {
                         VersionView()
                             .navigationBarTitle("App version")
