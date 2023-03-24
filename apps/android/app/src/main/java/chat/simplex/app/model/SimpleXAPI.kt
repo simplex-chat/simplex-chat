@@ -133,6 +133,8 @@ class AppPreferences(val context: Context) {
   val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
   val connectViaLinkTab = mkStrPreference(SHARED_PREFS_CONNECT_VIA_LINK_TAB, ConnectViaLinkTab.SCAN.name)
   val liveMessageAlertShown = mkBoolPreference(SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN, false)
+  val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
+  val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
 
   val storeDBPassphrase = mkBoolPreference(SHARED_PREFS_STORE_DB_PASSPHRASE, true)
@@ -233,6 +235,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_INCOGNITO = "Incognito"
     private const val SHARED_PREFS_CONNECT_VIA_LINK_TAB = "ConnectViaLinkTab"
     private const val SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN = "LiveMessageAlertShown"
+    private const val SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE = "ShowHiddenProfilesNotice"
+    private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"
     private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"
     private const val SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE = "InitialRandomDBPassphrase"
     private const val SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE = "EncryptedDBPassphrase"
@@ -259,6 +263,12 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       kotlin.runCatching { NotificationPreviewMode.valueOf(appPrefs.notificationPreviewMode.get()!!) }.getOrDefault(NotificationPreviewMode.default)
     chatModel.performLA.value = appPrefs.performLA.get()
     chatModel.incognito.value = appPrefs.incognito.get()
+  }
+
+  private fun currentUserId(funcName: String): Long {
+    val error = "$funcName: no current user"
+    Log.e(TAG, error)
+    return chatModel.currentUser.value?.userId ?: throw Exception(error)
   }
 
   suspend fun startChat(user: User) {
@@ -292,21 +302,26 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun changeActiveUser(toUserId: Long) {
+  suspend fun changeActiveUser(toUserId: Long, viewPwd: String?) {
     try {
-      changeActiveUser_(toUserId)
+      changeActiveUser_(toUserId, viewPwd)
     } catch (e: Exception) {
       Log.e(TAG, "Unable to set active user: ${e.stackTraceToString()}")
       AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_active_user_title), e.stackTraceToString())
     }
   }
 
-  suspend fun changeActiveUser_(toUserId: Long) {
-    chatModel.currentUser.value = apiSetActiveUser(toUserId)
+  suspend fun changeActiveUser_(toUserId: Long, viewPwd: String?) {
+    val currentUser = apiSetActiveUser(toUserId, viewPwd)
+    chatModel.currentUser.value = currentUser
     val users = listUsers()
     chatModel.users.clear()
     chatModel.users.addAll(users)
     getUserChatData()
+    val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
+    if (invitation != null) {
+      chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
+    }
   }
 
   suspend fun getUserChatData() {
@@ -403,15 +418,33 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     throw Exception("failed to list users ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiSetActiveUser(userId: Long): User {
-    val r = sendCmd(CC.ApiSetActiveUser(userId))
+  suspend fun apiSetActiveUser(userId: Long, viewPwd: String?): User {
+    val r = sendCmd(CC.ApiSetActiveUser(userId, viewPwd))
     if (r is CR.ActiveUser) return r.user
     Log.d(TAG, "apiSetActiveUser: ${r.responseType} ${r.details}")
     throw Exception("failed to set the user as active ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiDeleteUser(userId: Long, delSMPQueues: Boolean) {
-    val r = sendCmd(CC.ApiDeleteUser(userId, delSMPQueues))
+  suspend fun apiHideUser(userId: Long, viewPwd: String): User =
+    setUserPrivacy(CC.ApiHideUser(userId, viewPwd))
+
+  suspend fun apiUnhideUser(userId: Long, viewPwd: String?): User =
+    setUserPrivacy(CC.ApiUnhideUser(userId, viewPwd))
+
+  suspend fun apiMuteUser(userId: Long, viewPwd: String?): User =
+    setUserPrivacy(CC.ApiMuteUser(userId, viewPwd))
+
+  suspend fun apiUnmuteUser(userId: Long, viewPwd: String?): User =
+    setUserPrivacy(CC.ApiUnmuteUser(userId, viewPwd))
+
+  private suspend fun setUserPrivacy(cmd: CC): User {
+    val r = sendCmd(cmd)
+    if (r is CR.UserPrivacy) return r.user
+    else throw Exception("Failed to change user privacy: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiDeleteUser(userId: Long, delSMPQueues: Boolean, viewPwd: String?) {
+    val r = sendCmd(CC.ApiDeleteUser(userId, delSMPQueues, viewPwd))
     if (r is CR.CmdOk) return
     Log.d(TAG, "apiDeleteUser: ${r.responseType} ${r.details}")
     throw Exception("failed to delete the user ${r.responseType} ${r.details}")
@@ -472,10 +505,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun apiGetChats(): List<Chat> {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiGetChats: no current user")
-      return emptyList()
-    }
+    val userId = kotlin.runCatching { currentUserId("apiGetChats") }.getOrElse { return emptyList() }
     val r = sendCmd(CC.ApiGetChats(userId))
     if (r is CR.ApiChats) return r.chats
     Log.e(TAG, "failed getting the list of chats: ${r.responseType} ${r.details}")
@@ -527,10 +557,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   private suspend fun getUserSMPServers(): Pair<List<ServerCfg>, List<String>>? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "getUserSMPServers: no current user")
-      return null
-    }
+    val userId = kotlin.runCatching { currentUserId("getUserSMPServers") }.getOrElse { return null }
     val r = sendCmd(CC.APIGetUserSMPServers(userId))
     if (r is CR.UserSMPServers) return r.smpServers to r.presetSMPServers
     Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
@@ -538,10 +565,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun setUserSMPServers(smpServers: List<ServerCfg>): Boolean {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "setUserSMPServers: no current user")
-      return false
-    }
+    val userId = kotlin.runCatching { currentUserId("setUserSMPServers") }.getOrElse { return false }
     val r = sendCmd(CC.APISetUserSMPServers(userId, smpServers))
     return when (r) {
       is CR.CmdOk -> true
@@ -557,7 +581,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun testSMPServer(smpServer: String): SMPTestFailure? {
-    val userId = chatModel.currentUser.value?.userId ?: run { throw Exception("testSMPServer: no current user") }
+    val userId = currentUserId("testSMPServer")
     val r = sendCmd(CC.APITestSMPServer(userId, smpServer))
     return when (r) {
       is CR.SmpTestResult -> r.smpTestFailure
@@ -569,14 +593,14 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun getChatItemTTL(): ChatItemTTL {
-    val userId = chatModel.currentUser.value?.userId ?: run { throw Exception("getChatItemTTL: no current user") }
+    val userId = currentUserId("getChatItemTTL")
     val r = sendCmd(CC.APIGetChatItemTTL(userId))
     if (r is CR.ChatItemTTL) return ChatItemTTL.fromSeconds(r.chatItemTTL)
     throw Exception("failed to get chat item TTL: ${r.responseType} ${r.details}")
   }
 
   suspend fun setChatItemTTL(chatItemTTL: ChatItemTTL) {
-    val userId = chatModel.currentUser.value?.userId ?: run { throw Exception("setChatItemTTL: no current user") }
+    val userId = currentUserId("setChatItemTTL")
     val r = sendCmd(CC.APISetChatItemTTL(userId, chatItemTTL.seconds))
     if (r is CR.CmdOk) return
     throw Exception("failed to set chat item TTL: ${r.responseType} ${r.details}")
@@ -760,10 +784,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun apiListContacts(): List<Contact>? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiListContacts: no current user")
-      return null
-    }
+    val userId = kotlin.runCatching { currentUserId("apiListContacts") }.getOrElse { return null }
     val r = sendCmd(CC.ApiListContacts(userId))
     if (r is CR.ContactsList) return r.contacts
     Log.e(TAG, "apiListContacts bad response: ${r.responseType} ${r.details}")
@@ -771,10 +792,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun apiUpdateProfile(profile: Profile): Profile? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiUpdateProfile: no current user")
-      return null
-    }
+    val userId = kotlin.runCatching { currentUserId("apiUpdateProfile") }.getOrElse { return null }
     val r = sendCmd(CC.ApiUpdateProfile(userId, profile))
     if (r is CR.UserProfileNoChange) return profile
     if (r is CR.UserProfileUpdated) return r.toProfile
@@ -804,10 +822,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun apiCreateUserAddress(): String? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiCreateUserAddress: no current user")
-      return null
-    }
+    val userId = kotlin.runCatching { currentUserId("apiCreateUserAddress") }.getOrElse { return null }
     val r = sendCmd(CC.ApiCreateMyAddress(userId))
     return when (r) {
       is CR.UserContactLinkCreated -> r.connReqContact
@@ -821,10 +836,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun apiDeleteUserAddress(): Boolean {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiDeleteUserAddress: no current user")
-      return false
-    }
+    val userId = kotlin.runCatching { currentUserId("apiDeleteUserAddress") }.getOrElse { return false }
     val r = sendCmd(CC.ApiDeleteMyAddress(userId))
     if (r is CR.UserContactLinkDeleted) return true
     Log.e(TAG, "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
@@ -832,10 +844,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   private suspend fun apiGetUserAddress(): UserContactLinkRec? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiGetUserAddress: no current user")
-      return null
-    }
+    val userId = kotlin.runCatching { currentUserId("apiGetUserAddress") }.getOrElse { return null }
     val r = sendCmd(CC.ApiShowMyAddress(userId))
     if (r is CR.UserContactLink) return r.contactLink
     if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore
@@ -847,10 +856,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun userAddressAutoAccept(autoAccept: AutoAccept?): UserContactLinkRec? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "userAddressAutoAccept: no current user")
-      return null
-    }
+    val userId = kotlin.runCatching { currentUserId("userAddressAutoAccept") }.getOrElse { return null }
     val r = sendCmd(CC.ApiAddressAutoAccept(userId, autoAccept))
     if (r is CR.UserContactLinkUpdated) return r.contactLink
     if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore
@@ -970,10 +976,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun apiNewGroup(p: GroupProfile): GroupInfo? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiNewGroup: no current user")
-      return null
-    }
+    val userId = kotlin.runCatching { currentUserId("apiNewGroup") }.getOrElse { return null }
     val r = sendCmd(CC.ApiNewGroup(userId, p))
     if (r is CR.GroupCreated) return r.groupInfo
     Log.e(TAG, "apiNewGroup bad response: ${r.responseType} ${r.details}")
@@ -1206,7 +1209,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val contactRequest = r.contactRequest
         val cInfo = ChatInfo.ContactRequest(contactRequest)
         if (active(r.user)) {
-          chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+          if (chatModel.hasChat(contactRequest.id)) {
+            chatModel.updateChatInfo(cInfo)
+          } else {
+            chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+          }
         }
         ntfManager.notifyContactRequestReceived(r.user, cInfo)
       }
@@ -1292,7 +1299,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
         if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
           ntfManager.cancelNotificationsForChat(cInfo.id)
-          ntfManager.notifyMessageReceived(
+          ntfManager.displayNotification(
             r.user,
             cInfo.id,
             cInfo.displayName,
@@ -1387,8 +1394,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           removeFile(appContext, fileName)
         }
       }
-      is CR.CallInvitation ->
+      is CR.CallInvitation -> {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation)
+      }
       is CR.CallOffer -> {
         // TODO askConfirmation?
         // TODO check encryption is compatible
@@ -1754,8 +1762,12 @@ sealed class CC {
   class ShowActiveUser: CC()
   class CreateActiveUser(val profile: Profile): CC()
   class ListUsers: CC()
-  class ApiSetActiveUser(val userId: Long): CC()
-  class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean): CC()
+  class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
+  class ApiHideUser(val userId: Long, val viewPwd: String): CC()
+  class ApiUnhideUser(val userId: Long, val viewPwd: String?): CC()
+  class ApiMuteUser(val userId: Long, val viewPwd: String?): CC()
+  class ApiUnmuteUser(val userId: Long, val viewPwd: String?): CC()
+  class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val expire: Boolean): CC()
   class ApiStopChat: CC()
   class SetFilesFolder(val filesFolder: String): CC()
@@ -1831,8 +1843,12 @@ sealed class CC {
     is ShowActiveUser -> "/u"
     is CreateActiveUser -> "/create user ${profile.displayName} ${profile.fullName}"
     is ListUsers -> "/users"
-    is ApiSetActiveUser -> "/_user $userId"
-    is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}"
+    is ApiSetActiveUser -> "/_user $userId${maybePwd(viewPwd)}"
+    is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
+    is ApiUnhideUser -> "/_unhide user $userId${maybePwd(viewPwd)}"
+    is ApiMuteUser -> "/_mute user $userId${maybePwd(viewPwd)}"
+    is ApiUnmuteUser -> "/_unmute user $userId${maybePwd(viewPwd)}"
+    is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
     is SetFilesFolder -> "/_files_folder $filesFolder"
@@ -1910,6 +1926,10 @@ sealed class CC {
     is CreateActiveUser -> "createActiveUser"
     is ListUsers -> "listUsers"
     is ApiSetActiveUser -> "apiSetActiveUser"
+    is ApiHideUser -> "apiHideUser"
+    is ApiUnhideUser -> "apiUnhideUser"
+    is ApiMuteUser -> "apiMuteUser"
+    is ApiUnmuteUser -> "apiUnmuteUser"
     is ApiDeleteUser -> "apiDeleteUser"
     is StartChat -> "startChat"
     is ApiStopChat -> "apiStopChat"
@@ -1992,12 +2012,27 @@ sealed class CC {
   val obfuscated: CC
     get() = when (this) {
       is ApiStorageEncryption -> ApiStorageEncryption(DBEncryptionConfig(obfuscate(config.currentKey), obfuscate(config.newKey)))
+      is ApiSetActiveUser -> ApiSetActiveUser(userId, obfuscateOrNull(viewPwd))
+      is ApiHideUser -> ApiHideUser(userId, obfuscate(viewPwd))
+      is ApiUnhideUser -> ApiUnhideUser(userId, obfuscateOrNull(viewPwd))
+      is ApiMuteUser -> ApiMuteUser(userId, obfuscateOrNull(viewPwd))
+      is ApiUnmuteUser -> ApiUnmuteUser(userId, obfuscateOrNull(viewPwd))
+      is ApiDeleteUser -> ApiDeleteUser(userId, delSMPQueues, obfuscateOrNull(viewPwd))
       else -> this
     }
 
   private fun obfuscate(s: String): String = if (s.isEmpty()) "" else "***"
 
+  private fun obfuscateOrNull(s: String?): String? =
+    if (s != null) {
+      obfuscate(s)
+    } else {
+      null
+    }
+
   private fun onOff(b: Boolean): String = if (b) "on" else "off"
+
+  private fun maybePwd(pwd: String?): String = if (pwd == "" || pwd == null) "" else " " + json.encodeToString(pwd)
 
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
@@ -2851,6 +2886,13 @@ class APIResponse(val resp: CR, val corr: String? = null) {
                 resp = CR.ApiChat(user, chat),
                 corr = data["corr"]?.toString()
               )
+            } else if (type == "chatCmdError") {
+              val userObject = resp["user_"]?.jsonObject
+              val user = runCatching<User?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
+              return APIResponse(
+                resp = CR.ChatCmdError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatCmdError"]))),
+                corr = data["corr"]?.toString()
+              )
             }
           } catch (e: Exception) {
             Log.e(TAG, "Error while parsing chat(s): " + e.stackTraceToString())
@@ -2907,6 +2949,7 @@ sealed class CR {
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: User, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile): CR()
+  @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: User, val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: User, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val user: User, val fromContact: Contact, val toContact: Contact): CR()
@@ -2980,8 +3023,8 @@ sealed class CR {
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: User?): CR()
-  @Serializable @SerialName("chatCmdError") class ChatCmdError(val user: User?, val chatError: ChatError): CR()
-  @Serializable @SerialName("chatError") class ChatRespError(val user: User?, val chatError: ChatError): CR()
+  @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: User?, val chatError: ChatError): CR()
+  @Serializable @SerialName("chatError") class ChatRespError(val user_: User?, val chatError: ChatError): CR()
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
 
@@ -3010,6 +3053,7 @@ sealed class CR {
     is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
+    is UserPrivacy -> "userPrivacy"
     is ContactAliasUpdated -> "contactAliasUpdated"
     is ConnectionAliasUpdated -> "connectionAliasUpdated"
     is ContactPrefsUpdated -> "contactPrefsUpdated"
@@ -3111,6 +3155,7 @@ sealed class CR {
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
     is UserProfileNoChange -> withUser(user, noDetails())
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
+    is UserPrivacy -> withUser(user, "")
     is ContactAliasUpdated -> withUser(user, json.encodeToString(toContact))
     is ConnectionAliasUpdated -> withUser(user, json.encodeToString(toConnection))
     is ContactPrefsUpdated -> withUser(user, "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}")
@@ -3181,8 +3226,8 @@ sealed class CR {
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
     is VersionInfo -> json.encodeToString(versionInfo)
     is CmdOk -> withUser(user, noDetails())
-    is ChatCmdError -> withUser(user, chatError.string)
-    is ChatRespError -> withUser(user, chatError.string)
+    is ChatCmdError -> withUser(user_, chatError.string)
+    is ChatRespError -> withUser(user_, chatError.string)
     is Response -> json
     is Invalid -> str
   }
@@ -3254,11 +3299,13 @@ sealed class ChatError {
     is ChatErrorAgent -> "agent ${agentError.string}"
     is ChatErrorStore -> "store ${storeError.string}"
     is ChatErrorDatabase -> "database ${databaseError.string}"
+    is ChatErrorInvalidJSON -> "invalid json ${json}"
   }
   @Serializable @SerialName("error") class ChatErrorChat(val errorType: ChatErrorType): ChatError()
   @Serializable @SerialName("errorAgent") class ChatErrorAgent(val agentError: AgentErrorType): ChatError()
   @Serializable @SerialName("errorStore") class ChatErrorStore(val storeError: StoreError): ChatError()
   @Serializable @SerialName("errorDatabase") class ChatErrorDatabase(val databaseError: DatabaseError): ChatError()
+  @Serializable @SerialName("invalidJSON") class ChatErrorInvalidJSON(val json: String): ChatError()
 }
 
 @Serializable

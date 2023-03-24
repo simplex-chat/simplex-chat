@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="allow_voice_messages_only_if">Povolte hlasové zprávy, pouze pokud je váš kontakt povolí.</string>
+    <string name="allow_voice_messages_only_if">Povolit hlasové zprávy, pokud je váš kontakt povolí.</string>
     <string name="allow_to_send_disappearing">Mizící zprávy povoleny.</string>
     <string name="allow_to_send_voice">Hlasové zprávy povoleny.</string>
     <string name="v4_2_group_links_desc">Správci mohou vytvářet odkazy pro připojení ke skupinám.</string>
@@ -48,7 +48,7 @@
     <string name="conn_stats_section_title_servers">SERVERY</string>
     <string name="receiving_via">Příjímáno přez</string>
     <string name="create_secret_group_title">Vytvoření tajné skupiny</string>
-    <string name="group_display_name_field">Zobrazení názvu skupiny:</string>
+    <string name="group_display_name_field">Zobrazený název skupiny:</string>
     <string name="group_full_name_field">Úplný název skupiny:</string>
     <string name="group_main_profile_sent">Váš chat profil bude zaslán členům skupiny</string>
     <string name="group_profile_is_stored_on_members_devices">Profil skupiny je uložen v zařízeních členů, nikoli na serverech.</string>
@@ -906,7 +906,7 @@
     <string name="theme_light">Světlé</string>
     <string name="theme_dark">Tmavé</string>
     <string name="theme">Téma</string>
-    <string name="chat_preferences_contact_allows">Kontakt povolen</string>
+    <string name="chat_preferences_contact_allows">Kontakt povolil</string>
     <string name="chat_preferences_on">zapnuto</string>
     <string name="chat_preferences_off">vypnuto</string>
     <string name="chat_preferences">Chat předvolby</string>
@@ -981,4 +981,41 @@
     <string name="error_updating_link_for_group">Chyba aktualizace odkazu skupiny</string>
     <string name="initial_member_role">Počáteční role</string>
     <string name="language_system">Systém</string>
+    <string name="smp_save_servers_question">Uložit servery\?</string>
+    <string name="dont_show_again">Znovu neukazuj</string>
+    <string name="cant_delete_user_profile">Nemohu smazat uživatelský profil!</string>
+    <string name="button_add_welcome_message">Přidat uvítací zprávu</string>
+    <string name="v4_6_chinese_spanish_interface">Čínské a Španělské rozhranní</string>
+    <string name="v4_6_audio_video_calls">Hlasové a video hovory</string>
+    <string name="confirm_password">Potvrdit heslo</string>
+    <string name="enter_password_to_show">Pro zobrazení zadejte heslo výše!</string>
+    <string name="v4_6_reduced_battery_usage">Další snížení spotřeby baterie</string>
+    <string name="error_saving_user_password">Chyba ukládání hesla uživatele</string>
+    <string name="error_updating_user_privacy">Chyba aktualizace soukromí uživatele</string>
+    <string name="v4_6_group_moderation">Správa skupin</string>
+    <string name="v4_6_group_welcome_message">Uvítací zpráva skupin</string>
+    <string name="v4_6_hidden_chat_profiles">Skryté chat profily</string>
+    <string name="hidden_profile_password">Hesla skrytých profilů</string>
+    <string name="user_hide">Skrýt</string>
+    <string name="hide_profile">Skrýt profil</string>
+    <string name="make_profile_private">Změnit profil na soukromý!</string>
+    <string name="v4_6_reduced_battery_usage_descr">Další vylepšení již brzy!</string>
+    <string name="v4_6_group_moderation_descr">Nyní mohou správci:
+\n- mazat zprávy členů.
+\n- zakázat členy (role \"pozorovatel\")</string>
+    <string name="save_profile_password">Uložit heslo profilu</string>
+    <string name="user_mute">Ztlumit</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Chraňte své chat profily heslem!</string>
+    <string name="save_and_update_group_profile">Uložit a aktualizovat profil skupiny</string>
+    <string name="muted_when_inactive">Ztlumit při neaktivitě!</string>
+    <string name="password_to_show">Heslo k zobrazení</string>
+    <string name="save_welcome_message_question">Uložit uvítací zprávu\?</string>
+    <string name="v4_6_group_welcome_message_descr">Nastavte zprávu zobrazenou novým členům!</string>
+    <string name="v4_6_audio_video_calls_descr">Podpora bluetooth a další vylepšení.</string>
+    <string name="tap_to_activate_profile">Klepnutím aktivujete profil.</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Díky uživatelům - překládejte prostřednictvím Weblate!</string>
+    <string name="should_be_at_least_one_profile">Měl by tam být alespoň jeden uživatelský profil.</string>
+    <string name="button_welcome_message">Uvítací zpráva</string>
+    <string name="group_welcome_title">Uvítací zpráva</string>
+    <string name="user_unmute">Zrušit ztlumení</string>
 </resources>

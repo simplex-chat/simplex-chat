@@ -1067,7 +1067,7 @@
     <string name="save_and_update_group_profile">Сохранить сообщение и обновить группу</string>
     <string name="muted_when_inactive">Без звука, когда не активный!</string>
     <string name="cant_delete_user_profile">Нельзя удалить профиль пользователя!</string>
-    <string name="enter_password_to_show">Введите пароль выше, чтобы раскрыть!</string>
+    <string name="enter_password_to_show">Введите пароль в поиске!</string>
     <string name="save_profile_password">Сохранить пароль профиля</string>
     <string name="v4_6_chinese_spanish_interface">Китайский и Испанский интерфейс</string>
     <string name="dont_show_again">Не показывать</string>
@@ -1094,6 +1094,5 @@
     <string name="tap_to_activate_profile">Нажмите, чтобы сделать профиль активным.</string>
     <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
     <string name="you_will_still_receive_calls_and_ntfs">Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
-    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть профиль или выключить уведомления - подержите, чтобы увидеть меню.
-\nБлокировка SimpleX должна быть включена.</string>
+    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть профиль или выключить уведомления - подержите, чтобы увидеть меню.</string>
 </resources>
