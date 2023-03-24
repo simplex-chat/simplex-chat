@@ -209,7 +209,7 @@
 "About SimpleX Chat" = "Over SimpleX Chat";
 
 /* No comment provided by engineer. */
-"above, then choose:" = "hierboven, kies dan:";
+"above, then choose:" = "hier boven, kies dan:";
 
 /* No comment provided by engineer. */
 "Accent color" = "Accent kleur";
@@ -247,6 +247,9 @@
 
 /* No comment provided by engineer. */
 "Add to another device" = "Toevoegen aan een ander apparaat";
+
+/* No comment provided by engineer. */
+"Add welcome message" = "Welkomst bericht toevoegen";
 
 /* member role */
 "admin" = "Beheerder";
@@ -339,6 +342,9 @@
 "Audio & video calls" = "Audio en video gesprekken";
 
 /* No comment provided by engineer. */
+"Audio and video calls" = "Audio en video oproepen";
+
+/* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "audio oproep (niet e2e versleuteld)";
 
 /* No comment provided by engineer. */
@@ -397,6 +403,9 @@
 
 /* No comment provided by engineer. */
 "Calls" = "Oproepen";
+
+/* No comment provided by engineer. */
+"Can't delete user profile!" = "Kan gebruikers profiel niet verwijderen!";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Kan contact niet uitnodigen!";
@@ -480,6 +489,9 @@
 "Check server address and try again." = "Controleer het server adres en probeer het opnieuw.";
 
 /* No comment provided by engineer. */
+"Chinese and Spanish interface" = "Chinese en Spaanse interface";
+
+/* No comment provided by engineer. */
 "Choose file" = "Kies bestand";
 
 /* No comment provided by engineer. */
@@ -517,6 +529,9 @@
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Bevestig nieuw wachtwoord…";
+
+/* No comment provided by engineer. */
+"Confirm password" = "Bevestig wachtwoord";
 
 /* server test step */
 "Connect" = "Verbind";
@@ -819,7 +834,7 @@
 "Delete queue" = "Wachtrij verwijderen";
 
 /* No comment provided by engineer. */
-"Delete user profile?" = "Gebruikersprofiel verwijderen?";
+"Delete user profile?" = "Gebruikers profiel verwijderen?";
 
 /* deleted chat item */
 "deleted" = "verwijderd";
@@ -883,6 +898,9 @@
 
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "Gebruik SimpleX NIET voor noodoproepen.";
+
+/* No comment provided by engineer. */
+"Don't show again" = "Niet meer weergeven";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "Dubbele weergavenaam!";
@@ -964,6 +982,9 @@
 
 /* No comment provided by engineer. */
 "Enter passphrase…" = "Voer wachtwoord in…";
+
+/* No comment provided by engineer. */
+"Enter password above to show!" = "Voer hier boven het wachtwoord in om weer te geven!";
 
 /* No comment provided by engineer. */
 "Enter server manually" = "Voer de server handmatig in";
@@ -1062,6 +1083,9 @@
 "Error saving SMP servers" = "Fout bij opslaan van SMP servers";
 
 /* No comment provided by engineer. */
+"Error saving user password" = "Fout bij opslaan gebruikers wachtwoord";
+
+/* No comment provided by engineer. */
 "Error sending message" = "Fout bij verzenden van bericht";
 
 /* No comment provided by engineer. */
@@ -1081,6 +1105,9 @@
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Fout bij bijwerken van instellingen";
+
+/* No comment provided by engineer. */
+"Error updating user privacy" = "Fout bij updaten van gebruikers privacy";
 
 /* No comment provided by engineer. */
 "Error: %@" = "Fout: %@";
@@ -1134,6 +1161,12 @@
 "Full name:" = "Volledige naam:";
 
 /* No comment provided by engineer. */
+"Fully re-implemented - work in background!" = "Volledig opnieuw geïmplementeerd - werk op de achtergrond!";
+
+/* No comment provided by engineer. */
+"Further reduced battery usage" = "Verder verminderd batterij verbruik";
+
+/* No comment provided by engineer. */
 "GIFs and stickers" = "GIF's en stickers";
 
 /* No comment provided by engineer. */
@@ -1182,6 +1215,9 @@
 "Group message:" = "Groep bericht:";
 
 /* No comment provided by engineer. */
+"Group moderation" = "Groep moderatie";
+
+/* No comment provided by engineer. */
 "Group preferences" = "Groep voorkeuren";
 
 /* No comment provided by engineer. */
@@ -1192,6 +1228,9 @@
 
 /* snd group event chat item */
 "group profile updated" = "groep profiel bijgewerkt";
+
+/* No comment provided by engineer. */
+"Group welcome message" = "Groep welkomst bericht";
 
 /* No comment provided by engineer. */
 "Group will be deleted for all members - this cannot be undone!" = "Groep wordt verwijderd voor alle leden, dit kan niet ongedaan worden gemaakt!";
@@ -1205,11 +1244,20 @@
 /* No comment provided by engineer. */
 "Hidden" = "Verborgen";
 
+/* No comment provided by engineer. */
+"Hidden chat profiles" = "Verborgen chat profielen";
+
+/* No comment provided by engineer. */
+"Hidden profile password" = "Verborgen profiel wachtwoord";
+
 /* chat item action */
 "Hide" = "Verbergen";
 
 /* No comment provided by engineer. */
 "Hide app screen in the recent apps." = "App scherm verbergen in de recente apps.";
+
+/* No comment provided by engineer. */
+"Hide profile" = "Profiel verbergen";
 
 /* No comment provided by engineer. */
 "How it works" = "Hoe het werkt";
@@ -1437,6 +1485,9 @@
 "Make a private connection" = "Maak een privéverbinding";
 
 /* No comment provided by engineer. */
+"Make profile private!" = "Profiel privé maken!";
+
+/* No comment provided by engineer. */
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Zorg ervoor dat SMP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn (%@).";
 
 /* No comment provided by engineer. */
@@ -1533,6 +1584,9 @@
 "Mute" = "Dempen";
 
 /* No comment provided by engineer. */
+"Muted when inactive!" = "Gedempt wanneer inactief!";
+
+/* No comment provided by engineer. */
 "Name" = "Naam";
 
 /* No comment provided by engineer. */
@@ -1604,8 +1658,11 @@
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Meldingen zijn uitgeschakeld!";
 
+/* No comment provided by engineer. */
+"Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)" = "Nu kunnen beheerders: \n- berichten van leden verwijderen.\n- schakel leden uit (\"waarnemer\" rol)";
+
 /* member role */
-"observer" = "waarnemer";
+"observer" = "Waarnemer";
 
 /* enabled status
    group pref value */
@@ -1645,7 +1702,7 @@
 "Onion hosts will not be used." = "Onion hosts worden niet gebruikt.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Alleen client apparaten slaan gebruikersprofielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.";
+"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Alleen client apparaten slaan gebruikers profielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.";
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Alleen groep eigenaren kunnen groep voorkeuren wijzigen.";
@@ -1681,7 +1738,7 @@
 "Open Settings" = "Open instellingen";
 
 /* authentication reason */
-"Open user profiles" = "Gebruikersprofielen openen";
+"Open user profiles" = "Gebruikers profielen openen";
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Open-source protocol en code. Iedereen kan de servers draaien.";
@@ -1693,7 +1750,10 @@
 "or chat with the developers" = "of praat met de ontwikkelaars";
 
 /* member role */
-"owner" = "eigenaar";
+"owner" = "Eigenaar";
+
+/* No comment provided by engineer. */
+"Password to show" = "Wachtwoord om weer te geven";
 
 /* No comment provided by engineer. */
 "Paste" = "Plakken";
@@ -1793,6 +1853,9 @@
 
 /* No comment provided by engineer. */
 "Protect app screen" = "App scherm verbergen";
+
+/* No comment provided by engineer. */
+"Protect your chat profiles with a password!" = "Bescherm je chat profielen met een wachtwoord!";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protocol timeout";
@@ -1927,6 +1990,9 @@
 "Save and notify group members" = "Opslaan en Groep leden melden";
 
 /* No comment provided by engineer. */
+"Save and update group profile" = "Groep profiel opslaan en bijwerken";
+
+/* No comment provided by engineer. */
 "Save archive" = "Bewaar archief";
 
 /* No comment provided by engineer. */
@@ -1942,7 +2008,16 @@
 "Save preferences?" = "Voorkeuren opslaan?";
 
 /* No comment provided by engineer. */
+"Save profile password" = "Bewaar profiel wachtwoord";
+
+/* No comment provided by engineer. */
 "Save servers" = "Bewaar servers";
+
+/* No comment provided by engineer. */
+"Save servers?" = "Servers opslaan?";
+
+/* No comment provided by engineer. */
+"Save welcome message?" = "Welkomst bericht opslaan?";
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Opgeslagen WebRTC ICE servers worden verwijderd";
@@ -2039,6 +2114,9 @@
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Wachtwoord instellen om te exporteren";
+
+/* No comment provided by engineer. */
+"Set the message shown to new members!" = "Stel het getoonde bericht in voor nieuwe leden!";
 
 /* No comment provided by engineer. */
 "Set timeouts for proxy/VPN" = "Stel timeouts in voor proxy/VPN";
@@ -2146,6 +2224,9 @@
 "Tap button " = "Tik op de knop ";
 
 /* No comment provided by engineer. */
+"Tap to activate profile." = "Tik om profiel te activeren.";
+
+/* No comment provided by engineer. */
 "Tap to join" = "Tik om mee te doen";
 
 /* No comment provided by engineer. */
@@ -2233,6 +2314,12 @@
 "Theme" = "Thema";
 
 /* No comment provided by engineer. */
+"There should be at least one user profile." = "Er moet ten minste één gebruikers profiel zijn.";
+
+/* No comment provided by engineer. */
+"There should be at least one visible user profile." = "Er moet ten minste één zichtbaar gebruikers profiel zijn.";
+
+/* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Deze actie kan niet ongedaan worden gemaakt, alle ontvangen en verzonden bestanden en media worden verwijderd. Foto's met een lage resolutie blijven behouden.";
 
 /* No comment provided by engineer. */
@@ -2275,6 +2362,9 @@
 "To record voice message please grant permission to use Microphone." = "Geef toestemming om de microfoon te gebruiken om een spraakbericht op te nemen.";
 
 /* No comment provided by engineer. */
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoek veld in op de pagina **Uw chat profielen**.";
+
+/* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Om directe push meldingen te ondersteunen, moet de chat database worden gemigreerd.";
 
 /* No comment provided by engineer. */
@@ -2306,6 +2396,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Onverwachte migratiestatus";
+
+/* No comment provided by engineer. */
+"Unhide" = "zichtbaar maken";
 
 /* connection info */
 "unknown" = "onbekend";
@@ -2377,7 +2470,7 @@
 "Use SimpleX Chat servers?" = "SimpleX Chat servers gebruiken?";
 
 /* No comment provided by engineer. */
-"User profile" = "Gebruikersprofiel";
+"User profile" = "Gebruikers profiel";
 
 /* No comment provided by engineer. */
 "Using .onion hosts requires compatible VPN provider." = "Het gebruik van .onion-hosts vereist een compatibele VPN-provider.";
@@ -2455,7 +2548,7 @@
 "Welcome %@!" = "Welkom %@!";
 
 /* No comment provided by engineer. */
-"Welcome message" = "Welkoms bericht";
+"Welcome message" = "Welkomst bericht";
 
 /* No comment provided by engineer. */
 "What's new" = "Wat is er nieuw";
@@ -2467,7 +2560,7 @@
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.";
 
 /* No comment provided by engineer. */
-"With optional welcome message." = "Met optioneel welkomstbericht.";
+"With optional welcome message." = "Met optioneel welkomst bericht.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Verkeerd wachtwoord voor de database";
@@ -2510,6 +2603,9 @@
 
 /* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop **Openen in mobiele app**.";
+
+/* No comment provided by engineer. */
+"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "U kunt een gebruikers profiel verbergen of dempen - veeg het naar rechts.\nSimpleX Lock moet ingeschakeld zijn.";
 
 /* notification body */
 "You can now send messages to %@" = "Je kunt nu berichten sturen naar %@";
@@ -2603,6 +2699,9 @@
 
 /* No comment provided by engineer. */
 "You will join a group this link refers to and connect to its group members." = "U wordt lid van een groep waarnaar deze link verwijst en maakt verbinding met de groepsleden.";
+
+/* No comment provided by engineer. */
+"You will still receive calls and notifications from muted profiles when they are active." = "U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.";
 
 /* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Je ontvangt geen berichten meer van deze groep. Je gesprek geschiedenis blijft behouden.";

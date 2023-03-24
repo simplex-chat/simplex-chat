@@ -385,9 +385,9 @@
         <target>Ajouter à un autre appareil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
+      <trans-unit id="Add welcome message" xml:space="preserve">
         <source>Add welcome message</source>
-        <target state="translated">Ajouter un message d'accueil</target>
+        <target>Ajouter un message d'accueil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -530,9 +530,9 @@
         <target>Appels audio et vidéo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio and video calls" xml:space="preserve" approved="no">
+      <trans-unit id="Audio and video calls" xml:space="preserve">
         <source>Audio and video calls</source>
-        <target state="translated">Appels audio et vidéo</target>
+        <target>Appels audio et vidéo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
@@ -600,9 +600,9 @@
         <target>Appels</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't delete user profile!" xml:space="preserve" approved="no">
+      <trans-unit id="Can't delete user profile!" xml:space="preserve">
         <source>Can't delete user profile!</source>
-        <target state="translated">Impossible de supprimer le profil d'utilisateur !</target>
+        <target>Impossible de supprimer le profil d'utilisateur !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -710,9 +710,9 @@
         <target>Vérifiez l'adresse du serveur et réessayez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chinese and Spanish interface" xml:space="preserve" approved="no">
+      <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
         <source>Chinese and Spanish interface</source>
-        <target state="translated">Interface en chinois et en espagnol</target>
+        <target>Interface en chinois et en espagnol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -770,9 +770,9 @@
         <target>Confirmer la nouvelle phrase secrète…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm password" xml:space="preserve" approved="no">
+      <trans-unit id="Confirm password" xml:space="preserve">
         <source>Confirm password</source>
-        <target state="translated">Confirmer le mot de passe</target>
+        <target>Confirmer le mot de passe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -1303,9 +1303,9 @@
         <target>Faites-le plus tard</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't show again" xml:space="preserve" approved="no">
+      <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
-        <target state="translated">Ne plus afficher</target>
+        <target>Ne plus afficher</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
@@ -1408,9 +1408,9 @@
         <target>Entrez la phrase secrète…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter password above to show!" xml:space="preserve" approved="no">
+      <trans-unit id="Enter password above to show!" xml:space="preserve">
         <source>Enter password above to show!</source>
-        <target state="translated">Entrez le mot de passe ci-dessus pour continuer !</target>
+        <target>Entrez le mot de passe ci-dessus pour continuer !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter server manually" xml:space="preserve">
@@ -1568,9 +1568,9 @@
         <target>Erreur lors de l'enregistrement de la phrase de passe dans la keychain</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving user password" xml:space="preserve" approved="no">
+      <trans-unit id="Error saving user password" xml:space="preserve">
         <source>Error saving user password</source>
-        <target state="translated">Erreur d'enregistrement du mot de passe de l'utilisateur</target>
+        <target>Erreur d'enregistrement du mot de passe de l'utilisateur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -1608,9 +1608,9 @@
         <target>Erreur lors de la mise à jour des paramètres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error updating user privacy" xml:space="preserve" approved="no">
+      <trans-unit id="Error updating user privacy" xml:space="preserve">
         <source>Error updating user privacy</source>
-        <target state="translated">Erreur de mise à jour de la confidentialité de l'utilisateur</target>
+        <target>Erreur de mise à jour de la confidentialité de l'utilisateur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
@@ -1698,14 +1698,14 @@
         <target>Nom complet :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve" approved="no">
+      <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve">
         <source>Fully re-implemented - work in background!</source>
-        <target state="translated">Entièrement réimplémenté - fonctionne en arrière-plan !</target>
+        <target>Entièrement réimplémenté - fonctionne en arrière-plan !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Further reduced battery usage" xml:space="preserve" approved="no">
+      <trans-unit id="Further reduced battery usage" xml:space="preserve">
         <source>Further reduced battery usage</source>
-        <target state="translated">Réduction accrue de l'utilisation de la batterie</target>
+        <target>Réduction accrue de l'utilisation de la batterie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="GIFs and stickers" xml:space="preserve">
@@ -1783,9 +1783,9 @@
         <target>Message du groupe :</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Group moderation" xml:space="preserve" approved="no">
+      <trans-unit id="Group moderation" xml:space="preserve">
         <source>Group moderation</source>
-        <target state="translated">Modération de groupe</target>
+        <target>Modération de groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group preferences" xml:space="preserve">
@@ -1803,9 +1803,9 @@
         <target>Le profil du groupe est stocké sur les appareils des membres, pas sur les serveurs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group welcome message" xml:space="preserve" approved="no">
+      <trans-unit id="Group welcome message" xml:space="preserve">
         <source>Group welcome message</source>
-        <target state="translated">Message d'accueil du groupe</target>
+        <target>Message d'accueil du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
@@ -1828,14 +1828,14 @@
         <target>Caché</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hidden chat profiles" xml:space="preserve" approved="no">
+      <trans-unit id="Hidden chat profiles" xml:space="preserve">
         <source>Hidden chat profiles</source>
-        <target state="translated">Profils de chat cachés</target>
+        <target>Profils de chat cachés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hidden profile password" xml:space="preserve" approved="no">
+      <trans-unit id="Hidden profile password" xml:space="preserve">
         <source>Hidden profile password</source>
-        <target state="translated">Mot de passe de profil caché</target>
+        <target>Mot de passe de profil caché</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hide" xml:space="preserve">
@@ -1848,9 +1848,9 @@
         <target>Masquer l'écran de l'app dans les apps récentes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide profile" xml:space="preserve" approved="no">
+      <trans-unit id="Hide profile" xml:space="preserve">
         <source>Hide profile</source>
-        <target state="translated">Masquer le profil</target>
+        <target>Masquer le profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -1976,6 +1976,10 @@
       <trans-unit id="Incorrect security code!" xml:space="preserve">
         <source>Incorrect security code!</source>
         <target>Code de sécurité incorrect !</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Initial role" xml:space="preserve">
+        <source>Initial role</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -2155,9 +2159,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Établir une connexion privée</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make profile private!" xml:space="preserve" approved="no">
+      <trans-unit id="Make profile private!" xml:space="preserve">
         <source>Make profile private!</source>
-        <target state="translated">Rendre le profil privé !</target>
+        <target>Rendre le profil privé !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
@@ -2285,9 +2289,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Muet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Muted when inactive!" xml:space="preserve" approved="no">
+      <trans-unit id="Muted when inactive!" xml:space="preserve">
         <source>Muted when inactive!</source>
-        <target state="translated">Mute en cas d'inactivité !</target>
+        <target>Mute en cas d'inactivité !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Name" xml:space="preserve">
@@ -2390,11 +2394,11 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Les notifications sont désactivées !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve" approved="no">
+      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
         <source>Now admins can:
 - delete members' messages.
 - disable members ("observer" role)</source>
-        <target state="translated">Désormais, les administrateurs peuvent :
+        <target>Désormais, les administrateurs peuvent :
 - supprimer les messages des membres.
 - désactiver des membres (rôle "observateur")</target>
         <note>No comment provided by engineer.</note>
@@ -2524,9 +2528,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Intervalle de PING</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Password to show" xml:space="preserve" approved="no">
+      <trans-unit id="Password to show" xml:space="preserve">
         <source>Password to show</source>
-        <target state="translated">Mot de passe à afficher</target>
+        <target>Mot de passe à afficher</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste" xml:space="preserve">
@@ -2679,9 +2683,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Protéger l'écran de l'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve" approved="no">
+      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
         <source>Protect your chat profiles with a password!</source>
-        <target state="translated">Protégez vos profils de chat par un mot de passe !</target>
+        <target>Protégez vos profils de chat par un mot de passe !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -2879,9 +2883,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Sauvegarder et en informer les membres du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and update group profile" xml:space="preserve" approved="no">
+      <trans-unit id="Save and update group profile" xml:space="preserve">
         <source>Save and update group profile</source>
-        <target state="translated">Sauvegarder et mettre à jour le profil du groupe</target>
+        <target>Sauvegarder et mettre à jour le profil du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save archive" xml:space="preserve">
@@ -2909,9 +2913,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Sauvegarder les préférences ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save profile password" xml:space="preserve" approved="no">
+      <trans-unit id="Save profile password" xml:space="preserve">
         <source>Save profile password</source>
-        <target state="translated">Enregistrer le mot de passe du profil</target>
+        <target>Enregistrer le mot de passe du profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve">
@@ -2919,14 +2923,14 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Sauvegarder les serveurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers?" xml:space="preserve" approved="no">
+      <trans-unit id="Save servers?" xml:space="preserve">
         <source>Save servers?</source>
-        <target state="translated">Sauvegarder les serveurs ?</target>
+        <target>Sauvegarder les serveurs ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save welcome message?" xml:space="preserve" approved="no">
+      <trans-unit id="Save welcome message?" xml:space="preserve">
         <source>Save welcome message?</source>
-        <target state="translated">Sauvegarder le message d'accueil ?</target>
+        <target>Sauvegarder le message d'accueil ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
@@ -3079,9 +3083,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Définir la phrase secrète pour l'export</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set the message shown to new members!" xml:space="preserve" approved="no">
+      <trans-unit id="Set the message shown to new members!" xml:space="preserve">
         <source>Set the message shown to new members!</source>
-        <target state="translated">Choisissez un message à l'attention des nouveaux membres !</target>
+        <target>Choisissez un message à l'attention des nouveaux membres !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
@@ -3264,9 +3268,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Appuyez sur le bouton </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to activate profile." xml:space="preserve" approved="no">
+      <trans-unit id="Tap to activate profile." xml:space="preserve">
         <source>Tap to activate profile.</source>
-        <target state="translated">Appuyez pour activer le profil.</target>
+        <target>Appuyez pour activer le profil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
@@ -3394,14 +3398,14 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Thème</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one user profile." xml:space="preserve" approved="no">
+      <trans-unit id="There should be at least one user profile." xml:space="preserve">
         <source>There should be at least one user profile.</source>
-        <target state="translated">Il doit y avoir au moins un profil d'utilisateur.</target>
+        <target>Il doit y avoir au moins un profil d'utilisateur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one visible user profile." xml:space="preserve" approved="no">
+      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
         <source>There should be at least one visible user profile.</source>
-        <target state="translated">Il doit y avoir au moins un profil d'utilisateur visible.</target>
+        <target>Il doit y avoir au moins un profil d'utilisateur visible.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -3471,9 +3475,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Pour enregistrer un message vocal, veuillez accorder la permission d'utiliser le microphone.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve" approved="no">
+      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
-        <target state="translated">Pour révéler votre profil caché, entrez un mot de passe complet dans le champ de recherche de la page **Vos profils de chat**.</target>
+        <target>Pour révéler votre profil caché, entrez un mot de passe complet dans le champ de recherche de la page **Vos profils de chat**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -3531,9 +3535,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>État de la migration inattendu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide" xml:space="preserve" approved="no">
+      <trans-unit id="Unhide" xml:space="preserve">
         <source>Unhide</source>
-        <target state="translated">Dévoiler</target>
+        <target>Dévoiler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
@@ -3808,10 +3812,10 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Vous pouvez également vous connecter en cliquant sur le lien. S'il s'ouvre dans le navigateur, cliquez sur le bouton **Open in mobile app**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve" approved="no">
+      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
         <source>You can hide or mute a user profile - swipe it to the right.
 SimpleX Lock must be enabled.</source>
-        <target state="translated">Vous pouvez masquer ou mettre en sourdine un profil d'utilisateur - faites-le glisser vers la droite.
+        <target>Vous pouvez masquer ou mettre en sourdine un profil d'utilisateur - faites-le glisser vers la droite.
 SimpleX Lock doit être activé.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3930,9 +3934,9 @@ SimpleX Lock doit être activé.</target>
         <target>Vous allez rejoindre le groupe correspondant à ce lien et être mis en relation avec les autres membres du groupe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve" approved="no">
+      <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
         <source>You will still receive calls and notifications from muted profiles when they are active.</source>
-        <target state="translated">Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu'ils sont actifs.</target>
+        <target>Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu'ils sont actifs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
