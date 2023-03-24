@@ -1326,7 +1326,7 @@ data class ChatItem (
       text: String = "",
       fileName: String = "test.txt",
       fileSize: Long = 100,
-      fileStatus: CIFileStatus = CIFileStatus.RcvComplete()
+      fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ) =
       ChatItem(
         chatDir = CIDirection.DirectRcv(),
@@ -1691,7 +1691,7 @@ class CIFile(
       fileName: String = "test.txt",
       fileSize: Long = 100,
       filePath: String? = "test.txt",
-      fileStatus: CIFileStatus = CIFileStatus.RcvComplete()
+      fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ): CIFile =
       CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus)
   }
@@ -1699,15 +1699,15 @@ class CIFile(
 
 @Serializable
 sealed class CIFileStatus {
-  @Serializable @SerialName("sndStored") class SndStored: CIFileStatus()
+  @Serializable @SerialName("sndStored") object SndStored: CIFileStatus()
   @Serializable @SerialName("sndTransfer") class SndTransfer(val sndProgress: Int, val sndTotal: Int): CIFileStatus()
-  @Serializable @SerialName("sndComplete") class SndComplete: CIFileStatus()
-  @Serializable @SerialName("sndCancelled") class SndCancelled: CIFileStatus()
-  @Serializable @SerialName("rcvInvitation") class RcvInvitation: CIFileStatus()
-  @Serializable @SerialName("rcvAccepted") class RcvAccepted: CIFileStatus()
+  @Serializable @SerialName("sndComplete") object SndComplete: CIFileStatus()
+  @Serializable @SerialName("sndCancelled") object SndCancelled: CIFileStatus()
+  @Serializable @SerialName("rcvInvitation") object RcvInvitation: CIFileStatus()
+  @Serializable @SerialName("rcvAccepted") object RcvAccepted: CIFileStatus()
   @Serializable @SerialName("rcvTransfer") class RcvTransfer(val rcvProgress: Int, val rcvTotal: Int): CIFileStatus()
-  @Serializable @SerialName("rcvComplete") class RcvComplete: CIFileStatus()
-  @Serializable @SerialName("rcvCancelled") class RcvCancelled: CIFileStatus()
+  @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
+  @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")

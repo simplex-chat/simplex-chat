@@ -173,7 +173,7 @@ fun CIImageView(
       imageView(base64ToBitmap(image), onClick = {
         if (file != null) {
           when (file.fileStatus) {
-            CIFileStatus.RcvInvitation() ->
+            CIFileStatus.RcvInvitation ->
               if (fileSizeValid()) {
                 receiveFile(file.fileId)
               } else {
@@ -182,14 +182,14 @@ fun CIImageView(
                   String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(MAX_FILE_SIZE))
                 )
               }
-            CIFileStatus.RcvAccepted() ->
+            CIFileStatus.RcvAccepted ->
               AlertManager.shared.showAlertMsg(
                 generalGetString(R.string.waiting_for_image),
                 generalGetString(R.string.image_will_be_received_when_contact_is_online)
               )
             CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
-            CIFileStatus.RcvComplete() -> {} // ?
-            CIFileStatus.RcvCancelled() -> {} // TODO
+            CIFileStatus.RcvComplete -> {} // ?
+            CIFileStatus.RcvCancelled -> {} // TODO
             else -> {}
           }
         }
