@@ -989,7 +989,7 @@
     <string name="relay_server_if_necessary">El relay sólo se usa en caso de necesidad. Un tercero podría ver tu IP.</string>
     <string name="relay_server_protects_ip">El servidor relay protege tu IP pero puede ver la duración de la llamada.</string>
     <string name="cant_delete_user_profile">¡No se puede eliminar el perfil!</string>
-    <string name="enter_password_to_show">¡Introduce la contraseña arriba para mostrar!</string>
+    <string name="enter_password_to_show">Introduce la contraseña</string>
     <string name="user_hide">Ocultar</string>
     <string name="user_mute">Silenciar</string>
     <string name="save_and_update_group_profile">Guardar y actualizar perfil del grupo</string>
@@ -1017,8 +1017,7 @@
     <string name="hidden_profile_password">Contraseña de perfil oculto</string>
     <string name="save_welcome_message_question">¿Guardar mensaje de bienvenida\?</string>
     <string name="user_unmute">Activar audio</string>
-    <string name="you_can_hide_or_mute_user_profile">Puedes ocultar o silenciar un perfil de usuario: mantenlo pulsado para que aparezca el menú.
-\nSimpleX Lock debe estar activado.</string>
+    <string name="you_can_hide_or_mute_user_profile">Puedes ocultar o silenciar un perfil. Mantenlo pulsado para abrir el menú.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Seguirás recibiendo llamadas y notificaciones de los perfiles silenciados cuando estén activos.</string>
     <string name="v4_6_group_moderation_descr">Ahora los administradores pueden
 \n- borrar mensajes de los miembros.
