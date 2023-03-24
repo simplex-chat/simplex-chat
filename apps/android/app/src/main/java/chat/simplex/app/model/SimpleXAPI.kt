@@ -2038,14 +2038,6 @@ sealed class CC {
   }
 }
 
-data class UserPrivacyCfg(
-  val currViewPwd: String,
-  val showNtfs: Boolean,
-  val forceIncognito: Boolean,
-  val viewPwd: String,
-  val wipePwd: String,
-)
-
 sealed class ChatPagination {
   class Last(val count: Int): ChatPagination()
   class After(val chatItemId: Long, val count: Int): ChatPagination()
