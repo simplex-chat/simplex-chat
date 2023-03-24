@@ -55,33 +55,33 @@ fun CIImageView(
         contentAlignment = Alignment.Center
       ) {
         when (file.fileStatus) {
-          CIFileStatus.SndTransfer ->
+          is CIFileStatus.SndTransfer ->
             CircularProgressIndicator(
               Modifier.size(16.dp),
               color = Color.White,
               strokeWidth = 2.dp
             )
-          CIFileStatus.SndComplete ->
+          is CIFileStatus.SndComplete ->
             Icon(
               Icons.Filled.Check,
               stringResource(R.string.icon_descr_image_snd_complete),
               Modifier.fillMaxSize(),
               tint = Color.White
             )
-          CIFileStatus.RcvAccepted ->
+          is CIFileStatus.RcvAccepted ->
             Icon(
               Icons.Outlined.MoreHoriz,
               stringResource(R.string.icon_descr_waiting_for_image),
               Modifier.fillMaxSize(),
               tint = Color.White
             )
-          CIFileStatus.RcvTransfer ->
+          is CIFileStatus.RcvTransfer ->
             CircularProgressIndicator(
               Modifier.size(16.dp),
               color = Color.White,
               strokeWidth = 2.dp
             )
-          CIFileStatus.RcvInvitation ->
+          is CIFileStatus.RcvInvitation ->
             Icon(
               Icons.Outlined.ArrowDownward,
               stringResource(R.string.icon_descr_asked_to_receive),
@@ -173,7 +173,7 @@ fun CIImageView(
       imageView(base64ToBitmap(image), onClick = {
         if (file != null) {
           when (file.fileStatus) {
-            CIFileStatus.RcvInvitation ->
+            CIFileStatus.RcvInvitation() ->
               if (fileSizeValid()) {
                 receiveFile(file.fileId)
               } else {
@@ -182,14 +182,14 @@ fun CIImageView(
                   String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(MAX_FILE_SIZE))
                 )
               }
-            CIFileStatus.RcvAccepted ->
+            CIFileStatus.RcvAccepted() ->
               AlertManager.shared.showAlertMsg(
                 generalGetString(R.string.waiting_for_image),
                 generalGetString(R.string.image_will_be_received_when_contact_is_online)
               )
-            CIFileStatus.RcvTransfer -> {} // ?
-            CIFileStatus.RcvComplete -> {} // ?
-            CIFileStatus.RcvCancelled -> {} // TODO
+            CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
+            CIFileStatus.RcvComplete() -> {} // ?
+            CIFileStatus.RcvCancelled() -> {} // TODO
             else -> {}
           }
         }

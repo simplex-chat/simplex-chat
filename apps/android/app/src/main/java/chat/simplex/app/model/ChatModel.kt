@@ -1326,7 +1326,7 @@ data class ChatItem (
       text: String = "",
       fileName: String = "test.txt",
       fileSize: Long = 100,
-      fileStatus: CIFileStatus = CIFileStatus.RcvComplete
+      fileStatus: CIFileStatus = CIFileStatus.RcvComplete()
     ) =
       ChatItem(
         chatDir = CIDirection.DirectRcv(),
@@ -1674,15 +1674,15 @@ class CIFile(
   val fileStatus: CIFileStatus
 ) {
   val loaded: Boolean = when (fileStatus) {
-    CIFileStatus.SndStored -> true
-    CIFileStatus.SndTransfer -> true
-    CIFileStatus.SndComplete -> true
-    CIFileStatus.SndCancelled -> true
-    CIFileStatus.RcvInvitation -> false
-    CIFileStatus.RcvAccepted -> false
-    CIFileStatus.RcvTransfer -> false
-    CIFileStatus.RcvCancelled -> false
-    CIFileStatus.RcvComplete -> true
+    is CIFileStatus.SndStored -> true
+    is CIFileStatus.SndTransfer -> true
+    is CIFileStatus.SndComplete -> true
+    is CIFileStatus.SndCancelled -> true
+    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvAccepted -> false
+    is CIFileStatus.RcvTransfer -> false
+    is CIFileStatus.RcvCancelled -> false
+    is CIFileStatus.RcvComplete -> true
   }
 
   companion object {
@@ -1691,23 +1691,23 @@ class CIFile(
       fileName: String = "test.txt",
       fileSize: Long = 100,
       filePath: String? = "test.txt",
-      fileStatus: CIFileStatus = CIFileStatus.RcvComplete
+      fileStatus: CIFileStatus = CIFileStatus.RcvComplete()
     ): CIFile =
       CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus)
   }
 }
 
 @Serializable
-enum class CIFileStatus {
-  @SerialName("snd_stored") SndStored,
-  @SerialName("snd_transfer") SndTransfer,
-  @SerialName("snd_complete") SndComplete,
-  @SerialName("snd_cancelled") SndCancelled,
-  @SerialName("rcv_invitation") RcvInvitation,
-  @SerialName("rcv_accepted") RcvAccepted,
-  @SerialName("rcv_transfer") RcvTransfer,
-  @SerialName("rcv_complete") RcvComplete,
-  @SerialName("rcv_cancelled") RcvCancelled;
+sealed class CIFileStatus {
+  @Serializable @SerialName("sndStored") class SndStored: CIFileStatus()
+  @Serializable @SerialName("sndTransfer") class SndTransfer(val sndProgress: Int, val sndTotal: Int): CIFileStatus()
+  @Serializable @SerialName("sndComplete") class SndComplete: CIFileStatus()
+  @Serializable @SerialName("sndCancelled") class SndCancelled: CIFileStatus()
+  @Serializable @SerialName("rcvInvitation") class RcvInvitation: CIFileStatus()
+  @Serializable @SerialName("rcvAccepted") class RcvAccepted: CIFileStatus()
+  @Serializable @SerialName("rcvTransfer") class RcvTransfer(val rcvProgress: Int, val rcvTotal: Int): CIFileStatus()
+  @Serializable @SerialName("rcvComplete") class RcvComplete: CIFileStatus()
+  @Serializable @SerialName("rcvCancelled") class RcvCancelled: CIFileStatus()
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")

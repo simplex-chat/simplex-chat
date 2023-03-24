@@ -234,10 +234,15 @@ const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE
 const val MAX_VOICE_SIZE_FOR_SENDING: Long = 94680 // 6 chunks * 15780 bytes per chunk
 const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 43_000
 
-const val MAX_FILE_SIZE: Long = 8000000
+//const val MAX_FILE_SIZE: Long = 8000000 // TODO distinguish between XFTP and SMP files
+const val MAX_FILE_SIZE: Long = 1_073_741_824
 
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()
+}
+
+fun getTempFilesDirectory(context: Context): String {
+  return "${getFilesDirectory(context)}/temp_files"
 }
 
 fun getAppFilesDirectory(context: Context): String {

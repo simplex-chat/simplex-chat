@@ -198,8 +198,8 @@ fun SettingsLayout(
           InstallTerminalAppItem(uriHandler)
           SectionDivider()
         }
-//        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it, enableCalls) })
-//        SectionDivider()
+        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it) })
+        SectionDivider()
         AppVersionItem(showVersion)
       }
     }

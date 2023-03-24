@@ -716,6 +716,7 @@
   <string name="settings_section_title_messages">MESSAGES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
+  <string name="settings_send_files_via_xftp">Send files via XFTP</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
