@@ -3266,7 +3266,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Tap to activate profile." xml:space="preserve" approved="no">
         <source>Tap to activate profile.</source>
-        <target state="translated">点击以激活配置文件。</target>
+        <target state="translated">点击以激活个人资料。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
@@ -3396,12 +3396,12 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="There should be at least one user profile." xml:space="preserve" approved="no">
         <source>There should be at least one user profile.</source>
-        <target state="translated">应该至少有一个用户配置文件。</target>
+        <target state="translated">应该至少有一个用户资料。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="There should be at least one visible user profile." xml:space="preserve" approved="no">
         <source>There should be at least one visible user profile.</source>
-        <target state="translated">应该至少有一个可见的用户配置文件。</target>
+        <target state="translated">应该至少有一个可见的用户资料。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -3811,7 +3811,7 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve" approved="no">
         <source>You can hide or mute a user profile - swipe it to the right.
 SimpleX Lock must be enabled.</source>
-        <target state="translated">您可以隐藏或静音用户个人资料 - 将其向右滑动。
+        <target state="translated">您可以隐藏或静音用户个人资料——只需向右滑动。
 必须启用 SimpleX Lock。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
