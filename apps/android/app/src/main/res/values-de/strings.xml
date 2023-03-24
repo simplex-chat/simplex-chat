@@ -1095,7 +1095,6 @@
     <string name="save_and_update_group_profile">Sichern und aktualisieren des Gruppen-Profils</string>
     <string name="you_will_still_receive_calls_and_ntfs">Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.</string>
     <string name="group_welcome_title">Begrüßungsmeldung</string>
-    <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten - für das Menü gedrückt halten.
-\nDafür muss die SimpleX Sperre aktiviert sein.</string>
+    <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten - für das Menü gedrückt halten.</string>
     <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
 </resources>
