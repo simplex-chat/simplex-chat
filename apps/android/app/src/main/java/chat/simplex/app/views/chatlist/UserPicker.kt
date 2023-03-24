@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.shadow
@@ -154,7 +154,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
     if (u.activeUser) {
         Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
-        Icon(Icons.Filled.Lock, null, Modifier.size(20.dp), tint = HighOrLowlight)
+        Icon(Icons.Outlined.Lock, null, Modifier.size(20.dp), tint = HighOrLowlight)
     } else if (unreadCount > 0) {
       Row {
         Text(
@@ -172,7 +172,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
         Spacer(Modifier.width(2.dp))
       }
     } else if (!u.showNtfs) {
-      Icon(Icons.Filled.VolumeOff, null, Modifier.size(20.dp), tint = HighOrLowlight)
+      Icon(Icons.Outlined.NotificationsOff, null, Modifier.size(20.dp), tint = HighOrLowlight)
     }  else {
       Box(Modifier.size(20.dp))
     }

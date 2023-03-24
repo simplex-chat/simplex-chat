@@ -204,24 +204,24 @@ private fun UserView(
       Modifier.width(220.dp)
     ) {
       if (user.hidden) {
-        ItemAction(stringResource(R.string.user_unhide), Icons.Outlined.Delete, color = SimplexGreen, onClick = {
+        ItemAction(stringResource(R.string.user_unhide), Icons.Outlined.LockOpen, onClick = {
           showDropdownMenu = false
           unhideUser(user)
         })
       } else {
         if (visibleUsersCount > 1) {
-          ItemAction(stringResource(R.string.user_hide), Icons.Outlined.VisibilityOff, color = HighOrLowlight, onClick = {
+          ItemAction(stringResource(R.string.user_hide), Icons.Outlined.Lock, onClick = {
             showDropdownMenu = false
             showHiddenProfile(user)
           })
         }
         if (user.showNtfs) {
-          ItemAction(stringResource(R.string.user_mute), Icons.Outlined.NotificationsOff, color = MaterialTheme.colors.primary, onClick = {
+          ItemAction(stringResource(R.string.user_mute), Icons.Outlined.Notifications, onClick = {
             showDropdownMenu = false
             muteUser(user)
           })
         } else {
-          ItemAction(stringResource(R.string.user_unmute), Icons.Outlined.Visibility, color = MaterialTheme.colors.primary, onClick = {
+          ItemAction(stringResource(R.string.user_unmute), Icons.Outlined.NotificationsOff, onClick = {
             showDropdownMenu = false
             unmuteUser(user)
           })
