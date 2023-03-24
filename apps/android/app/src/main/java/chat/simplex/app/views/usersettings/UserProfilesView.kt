@@ -172,11 +172,11 @@ private fun UserProfilesView(
         AlertManager.shared.showAlertDialog(
           title = generalGetString(R.string.make_profile_private),
           text = generalGetString(R.string.you_can_hide_or_mute_user_profile),
-          confirmText = generalGetString(R.string.dont_show_again),
-          onConfirm = {
+          confirmText = generalGetString(R.string.ok),
+          dismissText = generalGetString(R.string.dont_show_again),
+          onDismiss = {
             showHiddenProfilesNotice.set(false)
           },
-          dismissText = generalGetString(R.string.ok)
         )
       }
     }
@@ -206,40 +206,34 @@ private fun UserView(
       onDismissRequest = { showDropdownMenu = false },
       Modifier.width(220.dp)
     ) {
-      ItemAction(stringResource(R.string.delete_verb), Icons.Outlined.Delete, color = Color.Red, onClick = {
-        removeUser(user)
-        showDropdownMenu = false
-      }
-      )
-
       if (user.hidden) {
         ItemAction(stringResource(R.string.user_unhide), Icons.Outlined.Delete, color = SimplexGreen, onClick = {
           showDropdownMenu = false
           unhideUser(user)
-        }
-        )
+        })
       } else {
         if (visibleUsersCount > 1 && prefPerformLA) {
           ItemAction(stringResource(R.string.user_hide), Icons.Outlined.VisibilityOff, color = HighOrLowlight, onClick = {
             showDropdownMenu = false
             showHiddenProfile(user)
-          }
-          )
+          })
         }
         if (user.showNtfs) {
           ItemAction(stringResource(R.string.user_mute), Icons.Outlined.NotificationsOff, color = MaterialTheme.colors.primary, onClick = {
             showDropdownMenu = false
             muteUser(user)
-          }
-          )
+          })
         } else {
           ItemAction(stringResource(R.string.user_unmute), Icons.Outlined.Visibility, color = MaterialTheme.colors.primary, onClick = {
             showDropdownMenu = false
             unmuteUser(user)
-          }
-          )
+          })
         }
       }
+      ItemAction(stringResource(R.string.delete_verb), Icons.Outlined.Delete, color = Color.Red, onClick = {
+        removeUser(user)
+        showDropdownMenu = false
+      })
     }
   }
 }
@@ -305,10 +299,10 @@ private fun showMuteProfileAlert(showMuteProfileAlert: SharedPreference<Boolean>
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.muted_when_inactive),
     text = generalGetString(R.string.you_will_still_receive_calls_and_ntfs),
-    confirmText = generalGetString(R.string.dont_show_again),
-    onConfirm = {
+    confirmText = generalGetString(R.string.ok),
+    dismissText = generalGetString(R.string.dont_show_again),
+    onDismiss = {
       showMuteProfileAlert.set(false)
     },
-    dismissText = generalGetString(R.string.ok)
   )
 }
