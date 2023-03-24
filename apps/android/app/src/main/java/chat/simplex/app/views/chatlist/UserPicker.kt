@@ -9,11 +9,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -36,7 +37,13 @@ import kotlin.math.roundToInt
 fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, switchingUsers: MutableState<Boolean>, openSettings: () -> Unit) {
   val scope = rememberCoroutineScope()
   var newChat by remember { mutableStateOf(userPickerState.value) }
-  val users by remember { derivedStateOf { chatModel.users.sortedByDescending { it.user.activeUser } } }
+  val users by remember {
+    derivedStateOf {
+      chatModel.users
+        .filter { u -> u.user.activeUser || !u.user.hidden }
+        .sortedByDescending { it.user.activeUser }
+    }
+  }
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
   LaunchedEffect(Unit) {
     launch {
@@ -110,7 +117,7 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
                   delay(500)
                   switchingUsers.value = true
                 }
-                chatModel.controller.changeActiveUser(u.user.userId)
+                chatModel.controller.changeActiveUser(u.user.userId, null)
                 job.cancel()
                 switchingUsers.value = false
               }
@@ -162,15 +169,17 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
       )
     }
     if (u.activeUser) {
-      Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    } else if (u.hidden) {
+        Icon(Icons.Filled.Lock, null, Modifier.size(20.dp), tint = HighOrLowlight)
     } else if (unreadCount > 0) {
       Row {
         Text(
           unreadCountStr(unreadCount),
-          color = MaterialTheme.colors.onPrimary,
+          color = Color.White,
           fontSize = 11.sp,
           modifier = Modifier
-            .background(MaterialTheme.colors.primary, shape = CircleShape)
+            .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape)
             .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
             .padding(horizontal = 3.dp)
             .padding(vertical = 1.dp),
@@ -179,7 +188,9 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
         )
         Spacer(Modifier.width(2.dp))
       }
-    } else {
+    } else if (!u.showNtfs) {
+      Icon(Icons.Filled.VolumeOff, null, Modifier.size(20.dp), tint = HighOrLowlight)
+    }  else {
       Box(Modifier.size(20.dp))
     }
   }

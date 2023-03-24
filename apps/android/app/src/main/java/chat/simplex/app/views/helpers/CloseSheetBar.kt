@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,7 +23,11 @@ fun CloseSheetBar(close: () -> Unit, endButtons: @Composable RowScope.() -> Unit
       Modifier
         .padding(top = 4.dp), // Like in DefaultAppBar
       content = {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+          Modifier.fillMaxWidth().height(TextFieldDefaults.MinHeight),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
           NavigationButtonBack(close)
           Row {
             endButtons()

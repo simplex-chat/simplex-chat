@@ -1016,7 +1016,6 @@
   <string name="update_network_settings_confirmation">Update</string>
 
   <!-- UserProfilesView.kt -->
-  <string name="your_chat_profiles_stored_locally">Your chat profiles are stored locally, only on your device</string>
   <string name="users_add">Add profile</string>
   <string name="users_delete_question">Delete chat profile?</string>
   <string name="users_delete_all_chats_deleted">All chats and messages will be deleted - this cannot be undone!</string>

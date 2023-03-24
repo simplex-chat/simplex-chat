@@ -395,6 +395,10 @@ fun MainPage(
 
 fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
   val userId = getUserIdFromIntent(intent)
+  if (userId != null && chatModel.getUser(userId)?.showNotifications == false) {
+    // Inactive user with disabled notifications
+    return
+  }
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
       val chatId = intent.getStringExtra("chatId")
@@ -402,7 +406,7 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       if (chatId != null) {
         withBGApi {
           if (userId != null && userId != chatModel.currentUser.value?.userId) {
-            chatModel.controller.changeActiveUser(userId)
+            chatModel.controller.changeActiveUser(userId, null)
           }
           val cInfo = chatModel.getChat(chatId)?.chatInfo
           chatModel.clearOverlays.value = true
@@ -414,7 +418,7 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
       withBGApi {
         if (userId != null && userId != chatModel.currentUser.value?.userId) {
-          chatModel.controller.changeActiveUser(userId)
+          chatModel.controller.changeActiveUser(userId, null)
         }
         chatModel.chatId.value = null
         chatModel.clearOverlays.value = true

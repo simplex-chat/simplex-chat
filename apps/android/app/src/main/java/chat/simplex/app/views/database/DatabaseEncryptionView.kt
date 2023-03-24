@@ -161,7 +161,7 @@ fun DatabaseEncryptionLayout(
       }
 
       if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
-        DatabaseKeyField(
+        PassphraseField(
           currentKey,
           generalGetString(R.string.current_passphrase),
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
@@ -170,7 +170,7 @@ fun DatabaseEncryptionLayout(
         )
       }
 
-      DatabaseKeyField(
+      PassphraseField(
         newKey,
         generalGetString(R.string.new_passphrase),
         modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
@@ -201,7 +201,7 @@ fun DatabaseEncryptionLayout(
           !validKey(newKey.value) ||
           progressIndicator.value
 
-      DatabaseKeyField(
+      PassphraseField(
         confirmNewKey,
         generalGetString(R.string.confirm_new_passphrase),
         modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
@@ -349,7 +349,7 @@ private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun DatabaseKeyField(
+fun PassphraseField(
   key: MutableState<String>,
   placeholder: String,
   modifier: Modifier = Modifier,
