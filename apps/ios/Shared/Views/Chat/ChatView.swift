@@ -667,7 +667,8 @@ struct ChatView: View {
                 if let di = deletingItem {
                     var deletedItem: ChatItem
                     var toItem: ChatItem?
-                    if let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
+                    if case .cidmBroadcast = mode,
+                       let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
                         (deletedItem, toItem) = try await apiDeleteMemberChatItem(
                             groupId: groupInfo.apiId,
                             groupMemberId: groupMember.groupMemberId,

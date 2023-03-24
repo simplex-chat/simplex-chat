@@ -39,9 +39,8 @@ import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
   companion object {
@@ -109,8 +108,8 @@ class MainActivity: FragmentActivity() {
     processExternalIntent(intent, vm.chatModel)
   }
 
-  override fun onStart() {
-    super.onStart()
+  override fun onResume() {
+    super.onResume()
     val enteredBackgroundVal = enteredBackground.value
     if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30_000) {
       runAuthenticate()
@@ -160,25 +159,31 @@ class MainActivity: FragmentActivity() {
     } else {
       userAuthorized.value = false
       ModalManager.shared.closeModals()
-      authenticate(
-        generalGetString(R.string.auth_unlock),
-        generalGetString(R.string.auth_log_in_using_credential),
-        this@MainActivity,
-        completed = { laResult ->
-          when (laResult) {
-            LAResult.Success ->
-              userAuthorized.value = true
-            is LAResult.Error, LAResult.Failed ->
-              laFailed.value = true
-            LAResult.Unavailable -> {
-              userAuthorized.value = true
-              m.performLA.value = false
-              m.controller.appPrefs.performLA.set(false)
-              laUnavailableTurningOffAlert()
+      // To make Main thread free in order to allow to Compose to show blank view that hiding content underneath of it faster on slow devices
+      CoroutineScope(Dispatchers.Default).launch {
+        delay(50)
+        withContext(Dispatchers.Main) {
+          authenticate(
+            generalGetString(R.string.auth_unlock),
+            generalGetString(R.string.auth_log_in_using_credential),
+            this@MainActivity,
+            completed = { laResult ->
+              when (laResult) {
+                LAResult.Success ->
+                  userAuthorized.value = true
+                is LAResult.Error, LAResult.Failed ->
+                  laFailed.value = true
+                LAResult.Unavailable -> {
+                  userAuthorized.value = true
+                  m.performLA.value = false
+                  m.controller.appPrefs.performLA.set(false)
+                  laUnavailableTurningOffAlert()
+                }
+              }
             }
-          }
+          )
         }
-      )
+      }
     }
   }
 
@@ -261,14 +266,6 @@ fun MainPage(
   setPerformLA: (Boolean) -> Unit,
   showLANotice: () -> Unit
 ) {
-  // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
-  var chatsAccessAuthorized by rememberSaveable { mutableStateOf(false) }
-  LaunchedEffect(userAuthorized.value) {
-    if (chatModel.controller.appPrefs.performLA.get()) {
-      delay(500L)
-    }
-    chatsAccessAuthorized = userAuthorized.value == true
-  }
   var showChatDatabaseError by rememberSaveable {
     mutableStateOf(chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null)
   }
@@ -327,7 +324,7 @@ fun MainPage(
         }
       }
       onboarding == null || userCreated == null -> SplashView()
-      !chatsAccessAuthorized -> {
+      userAuthorized.value != true -> {
         if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
           authView()
         } else {
