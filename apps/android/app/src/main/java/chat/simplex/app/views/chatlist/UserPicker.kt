@@ -111,7 +111,6 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
           }) {
             userPickerState.value = AnimatedViewState.HIDING
             if (!u.user.activeUser) {
-              chatModel.chats.clear()
               scope.launch {
                 val job = launch {
                   delay(500)
