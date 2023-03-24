@@ -989,7 +989,7 @@
     <string name="button_add_welcome_message">Welkomst bericht toevoegen</string>
     <string name="dont_show_again">Niet meer weergeven</string>
     <string name="v4_6_group_moderation">Groep moderatie</string>
-    <string name="error_updating_user_privacy">Fout bij updaten van gebruiker privacy</string>
+    <string name="error_updating_user_privacy">Fout bij updaten van gebruikers privacy</string>
     <string name="v4_6_reduced_battery_usage">Verder verminderd batterij verbruik</string>
     <string name="v4_6_group_welcome_message">Groep welkomst bericht</string>
     <string name="v4_6_hidden_chat_profiles">Verborgen chat profielen</string>
@@ -1019,7 +1019,7 @@
     <string name="user_unhide">zichtbaar maken</string>
     <string name="user_unmute">Dempen opheffen</string>
     <string name="group_welcome_title">Welkomst bericht</string>
-    <string name="should_be_at_least_one_visible_profile">Er moet ten minste één zichtbaar gebruikers profiel zijn.</string>
+    <string name="should_be_at_least_one_visible_profile">"Er moet ten minste één zichtbaar gebruikers  profiel zijn."</string>
     <string name="to_reveal_profile_enter_password">Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoekveld in op de pagina Uw chat profielen.</string>
     <string name="button_welcome_message">Welkomst bericht</string>
     <string name="you_will_still_receive_calls_and_ntfs">U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.</string>
