@@ -41,7 +41,6 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     searchTextOrPassword = searchTextOrPassword,
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
-    prefPerformLA = m.controller.appPrefs.performLA.state.value,
     addUser = {
       ModalManager.shared.showModalCloseable { close ->
         CreateProfile(m, close)
@@ -94,15 +93,15 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     unhideUser = { user ->
-      setUserPrivacy(m, user) { m.controller.apiUnhideUser(user.userId, userViewPassword(user, searchTextOrPassword.value)) }
+      setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, userViewPassword(user, searchTextOrPassword.value)) }
     },
     muteUser = { user ->
-      setUserPrivacy(m, user, onSuccess = { if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert) }) {
+      setUserPrivacy(m, onSuccess = { if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert) }) {
         m.controller.apiMuteUser(user.userId, userViewPassword(user, searchTextOrPassword.value))
       }
     },
     unmuteUser = { user ->
-      setUserPrivacy(m, user) { m.controller.apiUnmuteUser(user.userId, userViewPassword(user, searchTextOrPassword.value)) }
+      setUserPrivacy(m) { m.controller.apiUnmuteUser(user.userId, userViewPassword(user, searchTextOrPassword.value)) }
     },
     showHiddenProfile = { user ->
       ModalManager.shared.showModalCloseable { close ->
@@ -127,7 +126,6 @@ private fun UserProfilesView(
   profileHidden: MutableState<Boolean>,
   visibleUsersCount: Int,
   showHiddenProfilesNotice: SharedPreference<Boolean>,
-  prefPerformLA: Boolean,
   addUser: () -> Unit,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
@@ -142,7 +140,6 @@ private fun UserProfilesView(
       .verticalScroll(rememberScrollState())
       .padding(bottom = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(R.string.your_chat_profiles))
     if (profileHidden.value) {
       SectionView {
         SettingsActionItem(Icons.Outlined.LockOpen, stringResource(R.string.enter_password_to_show), click = {
@@ -152,10 +149,11 @@ private fun UserProfilesView(
       }
       SectionSpacer()
     }
+    AppBarTitle(stringResource(R.string.your_chat_profiles))
 
     SectionView {
       for (user in filteredUsers) {
-        UserView(user, users, visibleUsersCount, prefPerformLA, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
+        UserView(user, users, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
         SectionDivider()
       }
       if (searchTextOrPassword.value.isEmpty()) {
@@ -188,7 +186,6 @@ private fun UserView(
   user: User,
   users: List<User>,
   visibleUsersCount: Int,
-  prefPerformLA: Boolean,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
   unhideUser: (User) -> Unit,
@@ -212,7 +209,7 @@ private fun UserView(
           unhideUser(user)
         })
       } else {
-        if (visibleUsersCount > 1 && prefPerformLA) {
+        if (visibleUsersCount > 1) {
           ItemAction(stringResource(R.string.user_hide), Icons.Outlined.VisibilityOff, color = HighOrLowlight, onClick = {
             showDropdownMenu = false
             showHiddenProfile(user)
@@ -281,7 +278,7 @@ private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues
   }
 }
 
-private fun setUserPrivacy(m: ChatModel, user: User, onSuccess: (() -> Unit)? = null, api: suspend () -> User) {
+private fun setUserPrivacy(m: ChatModel, onSuccess: (() -> Unit)? = null, api: suspend () -> User) {
   withBGApi {
     try {
       m.updateUser(api())

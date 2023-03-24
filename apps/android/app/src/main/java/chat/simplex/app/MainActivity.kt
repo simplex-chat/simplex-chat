@@ -395,10 +395,6 @@ fun MainPage(
 
 fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
   val userId = getUserIdFromIntent(intent)
-  if (userId != null && chatModel.getUser(userId)?.showNotifications == false) {
-    // Inactive user with disabled notifications
-    return
-  }
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
       val chatId = intent.getStringExtra("chatId")

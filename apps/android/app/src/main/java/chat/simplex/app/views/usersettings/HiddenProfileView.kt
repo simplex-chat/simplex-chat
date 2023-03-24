@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
@@ -21,6 +22,7 @@ import chat.simplex.app.ui.theme.DEFAULT_BOTTOM_PADDING
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.flow.*
 
 @Composable
 fun HiddenProfileView(
@@ -67,17 +69,17 @@ private fun HiddenProfileLayout(
 
     SectionSpacer()
 
-    val hidePassword = remember { mutableStateOf("") }
-    val confirmHidePassword = remember { mutableStateOf("") }
-    val confirmValid = confirmHidePassword.value == "" || hidePassword.value == confirmHidePassword.value
-    val saveDisabled = hidePassword.value == "" || confirmHidePassword.value == "" || !confirmValid
+    val hidePassword = rememberSaveable { mutableStateOf("") }
+    val confirmHidePassword = rememberSaveable { mutableStateOf("") }
+    val confirmValid by remember { derivedStateOf { confirmHidePassword.value == "" || hidePassword.value == confirmHidePassword.value } }
+    val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || confirmHidePassword.value == "" || !confirmValid } }
     SectionView(stringResource(R.string.hidden_profile_password).uppercase()) {
       SectionItemView {
         PassphraseField(hidePassword, generalGetString(R.string.password_to_show), isValid = { true }, showStrength = true)
       }
       SectionDivider()
       SectionItemView {
-        PassphraseField(confirmHidePassword, stringResource(R.string.confirm_password), isValid = { confirmValid })
+        PassphraseField(confirmHidePassword, stringResource(R.string.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
       }
       SectionDivider()
       SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled) {
