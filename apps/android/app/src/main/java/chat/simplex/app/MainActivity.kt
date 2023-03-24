@@ -402,7 +402,7 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       if (chatId != null) {
         withBGApi {
           if (userId != null && userId != chatModel.currentUser.value?.userId) {
-            chatModel.controller.changeActiveUser(userId)
+            chatModel.controller.changeActiveUser(userId, null)
           }
           val cInfo = chatModel.getChat(chatId)?.chatInfo
           chatModel.clearOverlays.value = true
@@ -414,7 +414,7 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
       withBGApi {
         if (userId != null && userId != chatModel.currentUser.value?.userId) {
-          chatModel.controller.changeActiveUser(userId)
+          chatModel.controller.changeActiveUser(userId, null)
         }
         chatModel.chatId.value = null
         chatModel.clearOverlays.value = true
