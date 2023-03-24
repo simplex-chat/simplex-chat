@@ -1299,7 +1299,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
         if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
           ntfManager.cancelNotificationsForChat(cInfo.id)
-          ntfManager.notifyMessageReceived(
+          ntfManager.displayNotification(
             r.user,
             cInfo.id,
             cInfo.displayName,
