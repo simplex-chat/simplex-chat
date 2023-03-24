@@ -312,11 +312,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun changeActiveUser_(toUserId: Long, viewPwd: String?) {
-    chatModel.currentUser.value = apiSetActiveUser(toUserId, viewPwd)
+    val currentUser = apiSetActiveUser(toUserId, viewPwd)
+    chatModel.currentUser.value = currentUser
     val users = listUsers()
     chatModel.users.clear()
     chatModel.users.addAll(users)
     getUserChatData()
+    val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
+    if (invitation != null) {
+      chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
+    }
   }
 
   suspend fun getUserChatData() {
@@ -1390,9 +1395,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       }
       is CR.CallInvitation -> {
-        if (r.callInvitation.user.showNotifications) {
-          chatModel.callManager.reportNewIncomingCall(r.callInvitation)
-        }
+        chatModel.callManager.reportNewIncomingCall(r.callInvitation)
       }
       is CR.CallOffer -> {
         // TODO askConfirmation?

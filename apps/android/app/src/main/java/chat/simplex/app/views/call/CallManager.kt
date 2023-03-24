@@ -13,12 +13,14 @@ class CallManager(val chatModel: ChatModel) {
     Log.d(TAG, "CallManager.reportNewIncomingCall")
     with (chatModel) {
       callInvitations[invitation.contact.id] = invitation
-      if (Clock.System.now() - invitation.callTs <= 3.minutes) {
-        activeCallInvitation.value = invitation
-        controller.ntfManager.notifyCallInvitation(invitation)
-      } else {
-        val contact = invitation.contact
-        controller.ntfManager.notifyMessageReceived(user = invitation.user, chatId = contact.id, displayName = contact.displayName, msgText = invitation.callTypeText)
+      if (invitation.user.showNotifications) {
+        if (Clock.System.now() - invitation.callTs <= 3.minutes) {
+          activeCallInvitation.value = invitation
+          controller.ntfManager.notifyCallInvitation(invitation)
+        } else {
+          val contact = invitation.contact
+          controller.ntfManager.notifyMessageReceived(user = invitation.user, chatId = contact.id, displayName = contact.displayName, msgText = invitation.callTypeText)
+        }
       }
     }
   }
