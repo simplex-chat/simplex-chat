@@ -1962,6 +1962,10 @@
         <target>Nesprávný bezpečnostní kód!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Initial role" xml:space="preserve">
+        <source>Initial role</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
         <source>Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)</source>
         <target>Nainstalujte [SimpleX Chat pro terminál](https://github.com/simplex-chat/simplex-chat)</target>
