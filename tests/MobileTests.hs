@@ -7,6 +7,7 @@ import Control.Monad.Except
 import Simplex.Chat.Mobile
 import Simplex.Chat.Store
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import System.FilePath ((</>))
 import Test.Hspec
 
@@ -85,8 +86,8 @@ parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\
 testChatApiNoUser :: FilePath -> IO ()
 testChatApiNoUser tmp = do
   let dbPrefix = tmp </> "1"
-  Right cc <- chatMigrateInit dbPrefix ""
-  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "myKey"
+  Right cc <- chatMigrateInit dbPrefix "" "yesUp"
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "myKey" "yesUp"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
   chatSendCmd cc "/_start" `shouldReturn` noActiveUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUser
@@ -96,11 +97,11 @@ testChatApi :: FilePath -> IO ()
 testChatApi tmp = do
   let dbPrefix = tmp </> "1"
       f = chatStoreFile dbPrefix
-  st <- createChatStore f "myKey" True
+  Right st <- createChatStore f "myKey" MCYesUp
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
-  Right cc <- chatMigrateInit dbPrefix "myKey"
-  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix ""
-  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey"
+  Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted

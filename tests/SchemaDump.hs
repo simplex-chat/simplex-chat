@@ -6,6 +6,7 @@ import ChatClient (withTmpFiles)
 import Control.DeepSeq
 import Control.Monad (void)
 import Simplex.Chat.Store (createChatStore)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import System.Process (readCreateProcess, shell)
 import Test.Hspec
 
@@ -21,7 +22,7 @@ schemaDumpTest =
 
 testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do
-  void $ createChatStore testDB "" False
+  Right _ <- createChatStore testDB "" MCError
   void $ readCreateProcess (shell $ "touch " <> schema) ""
   savedSchema <- readFile schema
   savedSchema `deepseq` pure ()
