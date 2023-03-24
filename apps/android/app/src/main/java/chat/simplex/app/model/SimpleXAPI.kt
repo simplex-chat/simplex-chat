@@ -452,7 +452,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun apiSetXFTPConfig(cfg: XFTPFileConfig?) {
-    Log.e(TAG, "##################### $cfg")
     val r = sendCmd(CC.ApiSetXFTPConfig(cfg))
     if (r is CR.CmdOk) return
     throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
