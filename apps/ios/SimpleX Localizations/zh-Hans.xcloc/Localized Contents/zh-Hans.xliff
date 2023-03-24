@@ -385,8 +385,9 @@
         <target>添加另一设备</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add welcome message" xml:space="preserve">
+      <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
         <source>Add welcome message</source>
+        <target state="translated">添加欢迎信息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -529,8 +530,9 @@
         <target>语音和视频通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio and video calls" xml:space="preserve">
+      <trans-unit id="Audio and video calls" xml:space="preserve" approved="no">
         <source>Audio and video calls</source>
+        <target state="translated">音视频通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
@@ -598,8 +600,9 @@
         <target>通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't delete user profile!" xml:space="preserve">
+      <trans-unit id="Can't delete user profile!" xml:space="preserve" approved="no">
         <source>Can't delete user profile!</source>
+        <target state="translated">无法删除用户个人资料！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -707,8 +710,9 @@
         <target>检查服务器地址并再试一次。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
+      <trans-unit id="Chinese and Spanish interface" xml:space="preserve" approved="no">
         <source>Chinese and Spanish interface</source>
+        <target state="translated">中文和西班牙文界面</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -766,8 +770,9 @@
         <target>确认新密码……</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm password" xml:space="preserve">
+      <trans-unit id="Confirm password" xml:space="preserve" approved="no">
         <source>Confirm password</source>
+        <target state="translated">确认密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -1298,8 +1303,9 @@
         <target>稍后再做</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't show again" xml:space="preserve">
+      <trans-unit id="Don't show again" xml:space="preserve" approved="no">
         <source>Don't show again</source>
+        <target state="translated">不再显示</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
@@ -1402,8 +1408,9 @@
         <target>输入密码……</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter password above to show!" xml:space="preserve">
+      <trans-unit id="Enter password above to show!" xml:space="preserve" approved="no">
         <source>Enter password above to show!</source>
+        <target state="translated">在上面输入密码以显示！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter server manually" xml:space="preserve">
@@ -1561,8 +1568,9 @@
         <target>保存密码到钥匙串错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving user password" xml:space="preserve">
+      <trans-unit id="Error saving user password" xml:space="preserve" approved="no">
         <source>Error saving user password</source>
+        <target state="translated">保存用户密码时出错</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -1600,8 +1608,9 @@
         <target>更新设置错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error updating user privacy" xml:space="preserve">
+      <trans-unit id="Error updating user privacy" xml:space="preserve" approved="no">
         <source>Error updating user privacy</source>
+        <target state="translated">更新用户隐私时出错</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
@@ -1689,12 +1698,14 @@
         <target>全名：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve">
+      <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve" approved="no">
         <source>Fully re-implemented - work in background!</source>
+        <target state="translated">完全重新实现 - 在后台工作！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Further reduced battery usage" xml:space="preserve">
+      <trans-unit id="Further reduced battery usage" xml:space="preserve" approved="no">
         <source>Further reduced battery usage</source>
+        <target state="translated">进一步减少电池使用</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="GIFs and stickers" xml:space="preserve">
@@ -1772,8 +1783,9 @@
         <target>群组消息：</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Group moderation" xml:space="preserve">
+      <trans-unit id="Group moderation" xml:space="preserve" approved="no">
         <source>Group moderation</source>
+        <target state="translated">小组审核</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group preferences" xml:space="preserve">
@@ -1791,8 +1803,9 @@
         <target>群组资料存储在成员的设备上，而不是服务器上。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group welcome message" xml:space="preserve">
+      <trans-unit id="Group welcome message" xml:space="preserve" approved="no">
         <source>Group welcome message</source>
+        <target state="translated">群欢迎词</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
@@ -1815,12 +1828,14 @@
         <target>已隐藏</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hidden chat profiles" xml:space="preserve">
+      <trans-unit id="Hidden chat profiles" xml:space="preserve" approved="no">
         <source>Hidden chat profiles</source>
+        <target state="translated">隐藏的聊天资料</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hidden profile password" xml:space="preserve">
+      <trans-unit id="Hidden profile password" xml:space="preserve" approved="no">
         <source>Hidden profile password</source>
+        <target state="translated">隐藏的个人资料密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hide" xml:space="preserve">
@@ -1833,8 +1848,9 @@
         <target>在最近的应用程序中隐藏应用程序屏幕。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide profile" xml:space="preserve">
+      <trans-unit id="Hide profile" xml:space="preserve" approved="no">
         <source>Hide profile</source>
+        <target state="translated">隐藏个人资料</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -2139,8 +2155,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>建立私密连接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make profile private!" xml:space="preserve">
+      <trans-unit id="Make profile private!" xml:space="preserve" approved="no">
         <source>Make profile private!</source>
+        <target state="translated">将个人资料设为私密！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
@@ -2268,8 +2285,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>静音</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Muted when inactive!" xml:space="preserve">
+      <trans-unit id="Muted when inactive!" xml:space="preserve" approved="no">
         <source>Muted when inactive!</source>
+        <target state="translated">不活动时静音！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Name" xml:space="preserve">
@@ -2372,10 +2390,13 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>通知被禁用！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
+      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve" approved="no">
         <source>Now admins can:
 - delete members' messages.
 - disable members ("observer" role)</source>
+        <target state="translated">现在管理员可以：
+- 删除成员的消息。
+- 禁用成员（“观察员”角色）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve">
@@ -2503,8 +2524,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>PING 间隔</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Password to show" xml:space="preserve">
+      <trans-unit id="Password to show" xml:space="preserve" approved="no">
         <source>Password to show</source>
+        <target state="translated">显示密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste" xml:space="preserve">
@@ -2657,8 +2679,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>保护应用程序屏幕</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
+      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve" approved="no">
         <source>Protect your chat profiles with a password!</source>
+        <target state="translated">使用密码保护您的聊天资料！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -2856,8 +2879,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>保存并通知群组成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and update group profile" xml:space="preserve">
+      <trans-unit id="Save and update group profile" xml:space="preserve" approved="no">
         <source>Save and update group profile</source>
+        <target state="translated">保存和更新组配置文件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save archive" xml:space="preserve">
@@ -2885,8 +2909,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>保存偏好设置？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save profile password" xml:space="preserve">
+      <trans-unit id="Save profile password" xml:space="preserve" approved="no">
         <source>Save profile password</source>
+        <target state="translated">保存个人资料密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve">
@@ -2894,12 +2919,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>保存服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers?" xml:space="preserve">
+      <trans-unit id="Save servers?" xml:space="preserve" approved="no">
         <source>Save servers?</source>
+        <target state="translated">保存服务器？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save welcome message?" xml:space="preserve">
+      <trans-unit id="Save welcome message?" xml:space="preserve" approved="no">
         <source>Save welcome message?</source>
+        <target state="translated">保存欢迎信息？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
@@ -3052,8 +3079,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>设置密码来导出</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set the message shown to new members!" xml:space="preserve">
+      <trans-unit id="Set the message shown to new members!" xml:space="preserve" approved="no">
         <source>Set the message shown to new members!</source>
+        <target state="translated">设置向新成员显示的消息！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
@@ -3236,8 +3264,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>点击按钮 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to activate profile." xml:space="preserve">
+      <trans-unit id="Tap to activate profile." xml:space="preserve" approved="no">
         <source>Tap to activate profile.</source>
+        <target state="translated">点击以激活配置文件。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
@@ -3365,12 +3394,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>主题</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one user profile." xml:space="preserve">
+      <trans-unit id="There should be at least one user profile." xml:space="preserve" approved="no">
         <source>There should be at least one user profile.</source>
+        <target state="translated">应该至少有一个用户配置文件。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
+      <trans-unit id="There should be at least one visible user profile." xml:space="preserve" approved="no">
         <source>There should be at least one visible user profile.</source>
+        <target state="translated">应该至少有一个可见的用户配置文件。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -3440,8 +3471,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>请授权使用麦克风以录制语音消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
+      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve" approved="no">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
+        <target state="translated">要显示您的隐藏个人资料，请在**您的聊天个人资料**页面的搜索字段中输入完整密码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -3499,8 +3531,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>未预料的迁移状态</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide" xml:space="preserve">
+      <trans-unit id="Unhide" xml:space="preserve" approved="no">
         <source>Unhide</source>
+        <target state="translated">取消隐藏</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
@@ -3775,9 +3808,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>您也可以通过点击链接进行连接。如果在浏览器中打开，请点击“在移动应用程序中打开”按钮。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
+      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve" approved="no">
         <source>You can hide or mute a user profile - swipe it to the right.
 SimpleX Lock must be enabled.</source>
+        <target state="translated">您可以隐藏或静音用户个人资料 - 将其向右滑动。
+必须启用 SimpleX Lock。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -3895,8 +3930,9 @@ SimpleX Lock must be enabled.</source>
         <target>您将加入此链接指向的群组并连接到其群组成员。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
+      <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve" approved="no">
         <source>You will still receive calls and notifications from muted profiles when they are active.</source>
+        <target state="translated">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
