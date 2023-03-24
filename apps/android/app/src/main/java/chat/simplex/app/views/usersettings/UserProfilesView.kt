@@ -109,7 +109,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
         HiddenProfileView(m, user) {
           profileHidden.value = true
           withBGApi {
-            delay(15_000)
+            delay(10_000)
             profileHidden.value = false
           }
           close()
