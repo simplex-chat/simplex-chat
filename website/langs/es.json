@@ -36,10 +36,10 @@
     "simplex-private-card-4-point-1": "Para proteger tu dirección IP puedes acceder a los servidores a través de la red Tor u otra red de transporte superpuesta.",
     "simplex-private-card-5-point-2": "Esto hace que mensajes de distintos tamaños parezcan iguales a los ojos de los servidores y observadores de la red.",
     "simplex-private-card-6-point-1": "Muchas plataformas de comunicación son vulnerables a ataques MITM por parte de servidores o proveedores de red.",
-    "simplex-private-card-7-point-1": "Para garantizar la integridad, los mensajes se numeran secuencialmente e incluyen el hash del mensaje anterior.",
-    "simplex-private-card-7-point-2": "Si se añade, elimina o modifica algún mensaje, se avisará al destinatario.",
+    "simplex-private-card-7-point-1": "Para garantizar la integridad los mensajes se numeran secuencialmente e incluyen el hash del mensaje anterior.",
+    "simplex-private-card-7-point-2": "Si se añade, elimina o modifica algún mensaje, se alerta al destinatario.",
     "simplex-private-card-8-point-1": "Los servidores de SimpleX actúan como nodos de mezcla de baja latencia &mdash; los mensajes entrantes y salientes tienen un orden diferente.",
-    "simplex-private-card-9-point-1": "Cada cola de mensajes pasa mensajes en una dirección, con diferentes direcciones de envío y recepción.",
+    "simplex-private-card-9-point-1": "Cada cola de mensajes transmite las distintas direcciones de envío y recepción en un solo sentido.",
     "simplex-explained": "Simplex explicado",
     "simplex-explained-tab-1-p-1": "Puedes crear contactos y grupos, y mantener conversaciones bidireccionales como en cualquier aplicación de mensajería.",
     "simplex-explained-tab-1-p-2": "¿Cómo puede funcionar con colas unidireccionales y sin identificadores de usuario?",
@@ -68,5 +68,6 @@
     "simplex-private-card-3-point-2": "La huella digital del servidor y la vinculación de canales evitan los ataques MITM (ataque de intermediario) y de repetición.",
     "simplex-private-card-3-point-3": "La reanudación de la conexión está deshabilitada para evitar ataques de sesión.",
     "simplex-private-card-5-point-1": "SimpleX utiliza relleno de contenido en cada capa de cifrado para frustrar los ataques al tamaño de los mensajes.",
-    "simplex-private-card-6-point-2": "Para evitarlo, las aplicaciones SimpleX pasan claves de un solo uso out-of-band, cuando compartes una dirección como un enlace o un código QR."
+    "simplex-private-card-6-point-2": "Para evitarlo las aplicaciones SimpleX pasan claves de un solo uso fuera de banda cuando compartes un enlace de dirección o un código QR.",
+    "simplex-private-card-9-point-2": "Esto reduce los vectores de ataque, en comparación con los agentes de mensajes tradicionales, y los metadatos disponibles."
 }
