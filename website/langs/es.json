@@ -69,5 +69,5 @@
     "simplex-private-card-3-point-3": "La reanudación de la conexión está deshabilitada para evitar ataques de sesión.",
     "simplex-private-card-5-point-1": "SimpleX utiliza relleno de contenido en cada capa de cifrado para frustrar los ataques al tamaño de los mensajes.",
     "simplex-private-card-6-point-2": "Para evitarlo las aplicaciones SimpleX pasan claves de un solo uso fuera de banda cuando compartes un enlace de dirección o un código QR.",
-    "simplex-private-card-9-point-2": "Esto reduce los vectores de ataque, en comparación con los agentes de mensajes tradicionales, y los metadatos disponibles."
+    "simplex-private-card-9-point-2": "Reduce los vectores de ataque, en comparación con los corredores de mensajes tradicionales, y los metadatos disponibles."
 }
