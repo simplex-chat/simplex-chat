@@ -45,7 +45,7 @@
     "simplex-explained-tab-1-p-2": "¿Cómo puede funcionar con colas unidireccionales y sin identificadores de usuario?",
     "simplex-explained-tab-2-p-1": "Por cada conexión se usan dos colas de mensajes separadas para que el envío y recepción sean a través de servidores diferentes.",
     "chat-bot-example": "Ejemplo de bot de Chat",
-    "chat-protocol": "Protocolo del chat",
+    "chat-protocol": "Protocolo Chat",
     "terminal-cli": "CLI de la terminal",
     "hero-subheader": "El primer mensajero<br>sin ID de usuario",
     "feature-2-title": "Cifrado E2E<br>de imágenes y archivos",
