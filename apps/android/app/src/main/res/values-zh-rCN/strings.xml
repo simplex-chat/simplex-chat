@@ -1002,7 +1002,7 @@
     <string name="error_updating_user_privacy">更新用户隐私错误</string>
     <string name="cant_delete_user_profile">无法删除用户资料！</string>
     <string name="error_saving_user_password">保存用户密码错误</string>
-    <string name="enter_password_to_show">在上面输入密码以显示！</string>
+    <string name="enter_password_to_show">在搜索中输入密码</string>
     <string name="v4_6_group_welcome_message">群组欢迎消息</string>
     <string name="v4_6_group_moderation">群组管理员移除</string>
     <string name="hidden_profile_password">已隐藏个人资料密码</string>
