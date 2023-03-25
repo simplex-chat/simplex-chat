@@ -204,7 +204,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           val groupMember = toModerate?.second
           val deletedChatItem: ChatItem?
           val toChatItem: ChatItem?
-          if (groupInfo != null && groupMember != null) {
+          if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
             val r = chatModel.controller.apiDeleteMemberChatItem(
               groupId = groupInfo.groupId,
               groupMemberId = groupMember.groupMemberId,

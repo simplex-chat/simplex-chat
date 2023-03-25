@@ -248,6 +248,9 @@
 /* No comment provided by engineer. */
 "Add to another device" = "Einem anderen Gerät hinzufügen";
 
+/* No comment provided by engineer. */
+"Add welcome message" = "Fügen Sie eine Begrüßungsmeldung hinzu";
+
 /* member role */
 "admin" = "Admin";
 
@@ -339,6 +342,9 @@
 "Audio & video calls" = "Audio- & Videoanrufe";
 
 /* No comment provided by engineer. */
+"Audio and video calls" = "Audio- und Videoanrufe";
+
+/* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "Audioanruf (nicht E2E verschlüsselt)";
 
 /* No comment provided by engineer. */
@@ -397,6 +403,9 @@
 
 /* No comment provided by engineer. */
 "Calls" = "Anrufe";
+
+/* No comment provided by engineer. */
+"Can't delete user profile!" = "Das Benutzerprofil kann nicht gelöscht werden!";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Kontakt kann nicht eingeladen werden!";
@@ -480,6 +489,9 @@
 "Check server address and try again." = "Überprüfen Sie die Serveradresse und versuchen Sie es nochmal.";
 
 /* No comment provided by engineer. */
+"Chinese and Spanish interface" = "Chinesische und spanische Bedienoberfläche";
+
+/* No comment provided by engineer. */
 "Choose file" = "Datei auswählen";
 
 /* No comment provided by engineer. */
@@ -517,6 +529,9 @@
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Neues Passwort bestätigen…";
+
+/* No comment provided by engineer. */
+"Confirm password" = "Bestätigen Sie das Passwort";
 
 /* server test step */
 "Connect" = "Verbinden";
@@ -885,6 +900,9 @@
 "Do NOT use SimpleX for emergency calls." = "Nutzen Sie SimpleX nicht für Notrufe.";
 
 /* No comment provided by engineer. */
+"Don't show again" = "Nicht nochmals anzeigen";
+
+/* No comment provided by engineer. */
 "Duplicate display name!" = "Doppelter Anzeigename!";
 
 /* integrity error chat item */
@@ -964,6 +982,9 @@
 
 /* No comment provided by engineer. */
 "Enter passphrase…" = "Passwort eingeben…";
+
+/* No comment provided by engineer. */
+"Enter password above to show!" = "Geben Sie oben das Passwort für die Anzeige an!";
 
 /* No comment provided by engineer. */
 "Enter server manually" = "Geben Sie den Server manuell ein";
@@ -1062,6 +1083,9 @@
 "Error saving SMP servers" = "Fehler beim Speichern der SMP-Server";
 
 /* No comment provided by engineer. */
+"Error saving user password" = "Fehler beim Speichern des Benutzer-Passworts";
+
+/* No comment provided by engineer. */
 "Error sending message" = "Fehler beim Senden der Nachricht";
 
 /* No comment provided by engineer. */
@@ -1081,6 +1105,9 @@
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Fehler beim Aktualisieren der Einstellungen";
+
+/* No comment provided by engineer. */
+"Error updating user privacy" = "Fehler beim Aktualisieren der Benutzer-Privatsphäre";
 
 /* No comment provided by engineer. */
 "Error: %@" = "Fehler: %@";
@@ -1134,6 +1161,12 @@
 "Full name:" = "Vollständiger Name:";
 
 /* No comment provided by engineer. */
+"Fully re-implemented - work in background!" = "Komplett neu umgesetzt - arbeitet nun im Hintergrund!";
+
+/* No comment provided by engineer. */
+"Further reduced battery usage" = "Weiter reduzierter Batterieverbrauch";
+
+/* No comment provided by engineer. */
 "GIFs and stickers" = "GIFs und Sticker";
 
 /* No comment provided by engineer. */
@@ -1182,6 +1215,9 @@
 "Group message:" = "Grppennachricht:";
 
 /* No comment provided by engineer. */
+"Group moderation" = "Gruppenmoderation";
+
+/* No comment provided by engineer. */
 "Group preferences" = "Gruppenpräferenzen";
 
 /* No comment provided by engineer. */
@@ -1192,6 +1228,9 @@
 
 /* snd group event chat item */
 "group profile updated" = "Gruppenprofil aktualisiert";
+
+/* No comment provided by engineer. */
+"Group welcome message" = "Gruppen-Begrüßungsmeldung";
 
 /* No comment provided by engineer. */
 "Group will be deleted for all members - this cannot be undone!" = "Die Gruppe wird für alle Mitglieder gelöscht - dies kann nicht rückgängig gemacht werden!";
@@ -1205,11 +1244,20 @@
 /* No comment provided by engineer. */
 "Hidden" = "Verborgen";
 
+/* No comment provided by engineer. */
+"Hidden chat profiles" = "Verborgene Chat-Profile";
+
+/* No comment provided by engineer. */
+"Hidden profile password" = "Verborgenes Profil-Passwort";
+
 /* chat item action */
 "Hide" = "Verbergen";
 
 /* No comment provided by engineer. */
 "Hide app screen in the recent apps." = "App-Bildschirm in aktuellen Anwendungen verbergen.";
+
+/* No comment provided by engineer. */
+"Hide profile" = "Verberge das Profil";
 
 /* No comment provided by engineer. */
 "How it works" = "Wie es funktioniert";
@@ -1297,6 +1345,9 @@
 
 /* connection level description */
 "indirect (%d)" = "indirekt (%d)";
+
+/* No comment provided by engineer. */
+"Initial role" = "Anfängliche Rolle";
 
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Installieren Sie [SimpleX Chat als Terminalanwendung](https://github.com/simplex-chat/simplex-chat)";
@@ -1437,6 +1488,9 @@
 "Make a private connection" = "Stellen Sie eine private Verbindung her";
 
 /* No comment provided by engineer. */
+"Make profile private!" = "Erzeugen Sie ein privates Profil!";
+
+/* No comment provided by engineer. */
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Stellen Sie sicher, dass die SMP-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind (%@).";
 
 /* No comment provided by engineer. */
@@ -1533,6 +1587,9 @@
 "Mute" = "Stummschalten";
 
 /* No comment provided by engineer. */
+"Muted when inactive!" = "Bei Inaktivität stummgeschaltet!";
+
+/* No comment provided by engineer. */
 "Name" = "Name";
 
 /* No comment provided by engineer. */
@@ -1603,6 +1660,9 @@
 
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Benachrichtigungen sind deaktiviert!";
+
+/* No comment provided by engineer. */
+"Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)" = "Administratoren können nun\n- Nachrichten von Gruppenmitgliedern löschen\n- Gruppenmitglieder deaktivieren (\"Beobachter\"-Rolle)";
 
 /* member role */
 "observer" = "Beobachter";
@@ -1694,6 +1754,9 @@
 
 /* member role */
 "owner" = "Eigentümer";
+
+/* No comment provided by engineer. */
+"Password to show" = "Passwort anzeigen";
 
 /* No comment provided by engineer. */
 "Paste" = "Einfügen";
@@ -1793,6 +1856,9 @@
 
 /* No comment provided by engineer. */
 "Protect app screen" = "App-Bildschirm schützen";
+
+/* No comment provided by engineer. */
+"Protect your chat profiles with a password!" = "Schützen Sie Ihre Chat-Profile mit einem Passwort!";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protokollzeitüberschreitung";
@@ -1927,6 +1993,9 @@
 "Save and notify group members" = "Speichern und Gruppenmitglieder benachrichtigen";
 
 /* No comment provided by engineer. */
+"Save and update group profile" = "Sichern und aktualisieren des Gruppen-Profils";
+
+/* No comment provided by engineer. */
 "Save archive" = "Archiv speichern";
 
 /* No comment provided by engineer. */
@@ -1942,7 +2011,16 @@
 "Save preferences?" = "Präferenzen speichern?";
 
 /* No comment provided by engineer. */
+"Save profile password" = "Profil-Passwort speichern";
+
+/* No comment provided by engineer. */
 "Save servers" = "Alle Server speichern";
+
+/* No comment provided by engineer. */
+"Save servers?" = "Alle Server speichern?";
+
+/* No comment provided by engineer. */
+"Save welcome message?" = "Begrüßungsmeldung speichern?";
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Gespeicherte WebRTC ICE-Server werden entfernt";
@@ -2039,6 +2117,9 @@
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Passwort für den Export festlegen";
+
+/* No comment provided by engineer. */
+"Set the message shown to new members!" = "Legen Sie die Nachricht fest, die neuen Mitgliedern angezeigt werden soll!";
 
 /* No comment provided by engineer. */
 "Set timeouts for proxy/VPN" = "Zeitüberschreitungen für Proxy/VPN einstellen";
@@ -2146,6 +2227,9 @@
 "Tap button " = "Schaltfläche antippen ";
 
 /* No comment provided by engineer. */
+"Tap to activate profile." = "Tippen Sie, um das Profil zu aktivieren.";
+
+/* No comment provided by engineer. */
 "Tap to join" = "Zum Beitreten tippen";
 
 /* No comment provided by engineer. */
@@ -2233,6 +2317,12 @@
 "Theme" = "Design";
 
 /* No comment provided by engineer. */
+"There should be at least one user profile." = "Es muss mindestens ein Benutzer-Profil vorhanden sein.";
+
+/* No comment provided by engineer. */
+"There should be at least one visible user profile." = "Es muss mindestens ein sichtbares Benutzer-Profil vorhanden sein.";
+
+/* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
 
 /* No comment provided by engineer. */
@@ -2275,6 +2365,9 @@
 "To record voice message please grant permission to use Microphone." = "Bitte erlauben Sie die Nutzung des Mikrofons, um Sprachnachrichten aufnehmen zu können.";
 
 /* No comment provided by engineer. */
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite **Meine Chat-Profile** ein, um Ihr verborgenes Profil zu sehen.";
+
+/* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.";
 
 /* No comment provided by engineer. */
@@ -2306,6 +2399,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Unerwarteter Migrationsstatus";
+
+/* No comment provided by engineer. */
+"Unhide" = "Verbergen aufheben";
 
 /* connection info */
 "unknown" = "Unbekannt";
@@ -2511,6 +2607,9 @@
 /* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche **In mobiler App öffnen**.";
 
+/* No comment provided by engineer. */
+"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "Sie können ein Benutzerprofil verbergen oder stummschalten - wischen Sie es nach rechts.\nDafür muss die SimpleX Sperre aktiviert sein.";
+
 /* notification body */
 "You can now send messages to %@" = "Sie können nun Nachrichten an %@ versenden";
 
@@ -2603,6 +2702,9 @@
 
 /* No comment provided by engineer. */
 "You will join a group this link refers to and connect to its group members." = "Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht und sich mit deren Gruppenmitgliedern verbinden.";
+
+/* No comment provided by engineer. */
+"You will still receive calls and notifications from muted profiles when they are active." = "Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.";
 
 /* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.";

@@ -981,4 +981,46 @@
     <string name="observer_cant_send_message_desc">Contatta l\'amministratore del gruppo.</string>
     <string name="observer_cant_send_message_title">Non puoi inviare messaggi!</string>
     <string name="language_system">Sistema</string>
+    <string name="button_add_welcome_message">Aggiungi messaggio di benvenuto</string>
+    <string name="button_welcome_message">Messaggio di benvenuto</string>
+    <string name="save_welcome_message_question">Salvare il messaggio di benvenuto\?</string>
+    <string name="group_welcome_title">Messaggio di benvenuto</string>
+    <string name="save_and_update_group_profile">Salva e aggiorna il profilo del gruppo</string>
+    <string name="enter_password_to_show">Inserisci la password sopra per mostrare!</string>
+    <string name="user_mute">Silenzia</string>
+    <string name="tap_to_activate_profile">Tocca per attivare il profilo.</string>
+    <string name="user_unhide">Svela</string>
+    <string name="make_profile_private">Rendi privato il profilo!</string>
+    <string name="should_be_at_least_one_profile">Deve esserci almeno un profilo utente.</string>
+    <string name="should_be_at_least_one_visible_profile">Deve esserci almeno un profilo utente visibile.</string>
+    <string name="you_can_hide_or_mute_user_profile">Puoi nascondere o silenziare un profilo utente - tienilo premuto per il menu.</string>
+    <string name="dont_show_again">Non mostrare più</string>
+    <string name="muted_when_inactive">Silenzioso quando inattivo!</string>
+    <string name="you_will_still_receive_calls_and_ntfs">Continuerai a ricevere chiamate e notifiche da profili silenziati quando sono attivi.</string>
+    <string name="v4_6_audio_video_calls">Chiamate audio e video</string>
+    <string name="v4_6_group_moderation">Moderazione del gruppo</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Proteggi i tuoi profili di chat con una password!</string>
+    <string name="v4_6_audio_video_calls_descr">Supporto a bluetooth e altri miglioramenti.</string>
+    <string name="v4_6_group_welcome_message">Messaggio di benvenuto del gruppo</string>
+    <string name="v4_6_reduced_battery_usage_descr">Altri miglioramenti sono in arrivo!</string>
+    <string name="v4_6_chinese_spanish_interface">Interfaccia cinese e spagnola</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
+    <string name="hidden_profile_password">Password del profilo nascosta</string>
+    <string name="save_profile_password">Salva la password del profilo</string>
+    <string name="to_reveal_profile_enter_password">Per rivelare il tuo profilo nascosto, inserisci una password completa in un campo di ricerca nella pagina \"I tuoi profili di chat\".</string>
+    <string name="password_to_show">Password per mostrare</string>
+    <string name="v4_6_group_moderation_descr">Ora gli amministratori possono:
+\n- eliminare i messaggi dei membri.
+\n- disattivare i membri (ruolo \"osservatore\")</string>
+    <string name="cant_delete_user_profile">Impossibile eliminare il profilo utente!</string>
+    <string name="hide_profile">Nascondi il profilo</string>
+    <string name="confirm_password">Conferma password</string>
+    <string name="error_updating_user_privacy">Errore nell\'aggiornamento della privacy dell\'utente</string>
+    <string name="smp_save_servers_question">Salvare i server\?</string>
+    <string name="error_saving_user_password">Errore nel salvataggio della password utente</string>
+    <string name="v4_6_reduced_battery_usage">Ulteriore riduzione del consumo della batteria</string>
+    <string name="v4_6_hidden_chat_profiles">Profili di chat nascosti</string>
+    <string name="user_hide">Nascondi</string>
+    <string name="v4_6_group_welcome_message_descr">Imposta il messaggio mostrato ai nuovi membri!</string>
+    <string name="user_unmute">Riattiva audio</string>
 </resources>
