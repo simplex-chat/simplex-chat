@@ -74,19 +74,24 @@ android {
         jniLibs.useLegacyPackaging = compression_level != "0"
     }
     def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
+    def isBundle = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("bundle") }) != null
 //    if (isRelease) {
         // Comma separated list of languages that will be included in the apk
     android.defaultConfig.resConfigs("en", "cs", "de", "es", "fr", "it", "nl", "ru", "zh-rCN")
 //    }
-    splits {
-        abi {
-            enable true
-            reset()
-            if (isRelease) {
-                include 'arm64-v8a', 'armeabi-v7a'
-            } else {
-                include 'arm64-v8a', 'armeabi-v7a'
-                universalApk false
+    if (isBundle) {
+        defaultConfig.ndk.abiFilters 'arm64-v8a', 'armeabi-v7a'
+    } else {
+        splits {
+            abi {
+                enable true
+                reset()
+                if (isRelease) {
+                    include 'arm64-v8a', 'armeabi-v7a'
+                } else {
+                    include 'arm64-v8a', 'armeabi-v7a'
+                    universalApk false
+                }
             }
         }
     }
