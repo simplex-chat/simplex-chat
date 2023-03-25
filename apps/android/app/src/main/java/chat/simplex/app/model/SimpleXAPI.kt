@@ -318,7 +318,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun changeActiveUser_(toUserId: Long, viewPwd: String?) {
     val currentUser = apiSetActiveUser(toUserId, viewPwd)
     chatModel.currentUser.value = currentUser
-    Log.e(TAG, "currentUser ${currentUser?.userId}")
     val users = listUsers()
     chatModel.users.clear()
     chatModel.users.addAll(users)

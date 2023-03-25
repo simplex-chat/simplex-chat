@@ -65,19 +65,11 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       showSettingsModalWithSearch = { modalView ->
         ModalManager.shared.showCustomModal { close ->
           val search = rememberSaveable { mutableStateOf("") }
-          var showSearch by rememberSaveable { mutableStateOf(false) }
           ModalView(
-            { if (showSearch) { showSearch = false } else close() },
+            { close() },
             if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight,
             endButtons = {
-              if (!showSearch) {
-                IconButton({ showSearch = true }) {
-                  Icon(Icons.Outlined.Search, stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
-                }
-              } else {
-                BackHandler { showSearch = false }
-                SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go)) { search.value = it }
-              }
+              SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), alwaysVisible = true) { search.value = it }
             },
             content = { modalView(chatModel, search) })
         }
