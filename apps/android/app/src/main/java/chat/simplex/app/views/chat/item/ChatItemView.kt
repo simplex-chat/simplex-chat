@@ -1,5 +1,7 @@
 package chat.simplex.app.views.chat.item
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +27,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.ComposeContextItem
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.datetime.Clock
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
@@ -131,9 +134,16 @@ fun ChatItemView(
           if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
+              val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
               ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
                 when (cItem.content.msgContent) {
-                  is MsgContent.MCImage -> saveImage(context, cItem.file)
+                  is MsgContent.MCImage -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.hasPermission) {
+                      saveImage(context, cItem.file)
+                    } else {
+                      writePermissionState.launchPermissionRequest()
+                    }
+                  }
                   is MsgContent.MCFile -> saveFileLauncher.launch(cItem.file?.fileName)
                   is MsgContent.MCVoice -> saveFileLauncher.launch(cItem.file?.fileName)
                   else -> {}
