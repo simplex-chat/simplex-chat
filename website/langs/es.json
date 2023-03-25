@@ -1,10 +1,10 @@
 {
     "reference": "Referencia",
-    "why-simplex": "Por que Simplex",
+    "why-simplex": "Por qué Simplex",
     "simplex-privacy": "Privacidad de SimpleX",
     "simplex-explained-tab-1-text": "1. Lo que experimentan los usuarios",
     "simplex-explained-tab-2-text": "2. ¿Cómo funciona?",
-    "simplex-network": "La red Simplex",
+    "simplex-network": "Red Simplex",
     "simplex-explained-tab-3-text": "3. Qué ven los servidores",
     "simplex-explained-tab-2-p-2": "Los servidores solo pasan mensajes de una manera, sin tener la imagen completa de la conversación o las conexiones del usuario.",
     "simplex-explained-tab-3-p-2": "Los usuarios pueden mejorar aún más la privacidad de los metadatos utilizando Tor para acceder a los servidores, evitando la correlación por dirección IP.",
@@ -39,5 +39,6 @@
     "simplex-private-card-7-point-1": "Para garantizar la integridad, los mensajes se numeran secuencialmente e incluyen el hash del mensaje anterior.",
     "simplex-private-card-7-point-2": "Si se añade, elimina o modifica algún mensaje, se avisará al destinatario.",
     "simplex-private-card-8-point-1": "Los servidores de SimpleX actúan como nodos de mezcla de baja latencia &mdash; los mensajes entrantes y salientes tienen un orden diferente.",
-    "simplex-private-card-9-point-1": "Cada cola de mensajes pasa mensajes en una dirección, con diferentes direcciones de envío y recepción."
+    "simplex-private-card-9-point-1": "Cada cola de mensajes pasa mensajes en una dirección, con diferentes direcciones de envío y recepción.",
+    "simplex-explained": "Simplex explicado"
 }
