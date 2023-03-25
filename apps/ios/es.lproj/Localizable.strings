@@ -1347,6 +1347,9 @@
 "indirect (%d)" = "indirecto (%d)";
 
 /* No comment provided by engineer. */
+"Initial role" = "Rol inicial";
+
+/* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Instalar [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */

@@ -1978,9 +1978,9 @@
         <target>Falscher Sicherheitscode!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Initial role" xml:space="preserve" approved="no">
+      <trans-unit id="Initial role" xml:space="preserve">
         <source>Initial role</source>
-        <target state="translated">Anfängliche Rolle</target>
+        <target>Anfängliche Rolle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
