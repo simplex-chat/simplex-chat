@@ -2,8 +2,8 @@
     "reference": "Referencia",
     "why-simplex": "Por qué Simplex",
     "simplex-privacy": "Privacidad de SimpleX",
-    "simplex-explained-tab-1-text": "1. Lo que experimentan los usuarios",
-    "simplex-explained-tab-2-text": "2. ¿Cómo funciona?",
+    "simplex-explained-tab-1-text": "1. Experiencia del usuario",
+    "simplex-explained-tab-2-text": "2. Cómo funciona",
     "simplex-network": "Red Simplex",
     "simplex-explained-tab-3-text": "3. Qué ven los servidores",
     "simplex-explained-tab-2-p-2": "Los servidores solo pasan mensajes de una manera, sin tener la imagen completa de la conversación o las conexiones del usuario.",
@@ -40,5 +40,5 @@
     "simplex-private-card-7-point-2": "Si se añade, elimina o modifica algún mensaje, se avisará al destinatario.",
     "simplex-private-card-8-point-1": "Los servidores de SimpleX actúan como nodos de mezcla de baja latencia &mdash; los mensajes entrantes y salientes tienen un orden diferente.",
     "simplex-private-card-9-point-1": "Cada cola de mensajes pasa mensajes en una dirección, con diferentes direcciones de envío y recepción.",
-    "simplex-explained": "Explicación de Simplex"
+    "simplex-explained": "Simplex explicado"
 }
