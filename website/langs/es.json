@@ -40,5 +40,5 @@
     "simplex-private-card-7-point-2": "Si se añade, elimina o modifica algún mensaje, se avisará al destinatario.",
     "simplex-private-card-8-point-1": "Los servidores de SimpleX actúan como nodos de mezcla de baja latencia &mdash; los mensajes entrantes y salientes tienen un orden diferente.",
     "simplex-private-card-9-point-1": "Cada cola de mensajes pasa mensajes en una dirección, con diferentes direcciones de envío y recepción.",
-    "simplex-explained": "Simplex explicado"
+    "simplex-explained": "Explicación de Simplex"
 }
