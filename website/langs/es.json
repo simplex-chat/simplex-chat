@@ -31,9 +31,9 @@
     "hero-p-1": "Otras aplicaciones tienen ID de usuario: Signal, Matrix, Session, Briar, Jami, Cwtch, etc.<br> SimpleX no los tiene, <strong>ni siquiera números aleatorios</strong>.<br> Esto mejora radicalmente su privacidad.",
     "hero-2-header-desc": "El video muestra cómo te conectas con tu amigo a través de su código QR de un solo uso, en persona o a través de un enlace de video. También puedes conectarte compartiendo un enlace de invitación.",
     "feature-7-title": "Base de datos portable cifrada &mdash; transfiere tu perfil a otro dispositivo",
-    "simplex-private-card-4-point-2": "Para usar SimpleX a través de Tor, instale <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot app</a> y active el proxy SOCKS5 (o VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">en iOS</a>).",
+    "simplex-private-card-4-point-2": "Para usar SimpleX a través de Tor, instala <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot app</a> y activa el proxy SOCKS5 (o VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">en iOS</a>).",
     "simplex-private-card-3-point-1": "Para las conexiones cliente-servidor sólo se usa TLS 1.2/1.3 con algoritmos robustos.",
-    "simplex-private-card-4-point-1": "Para proteger su dirección IP, puede acceder a los servidores a través de Tor u otra red de transporte superpuesta.",
+    "simplex-private-card-4-point-1": "Para proteger tu dirección IP puedes acceder a los servidores a través de la red Tor u otra red de transporte superpuesta.",
     "simplex-private-card-5-point-2": "Esto hace que mensajes de distintos tamaños parezcan iguales a los ojos de los servidores y observadores de la red.",
     "simplex-private-card-6-point-1": "Muchas plataformas de comunicación son vulnerables a ataques MITM por parte de servidores o proveedores de red.",
     "simplex-private-card-7-point-1": "Para garantizar la integridad, los mensajes se numeran secuencialmente e incluyen el hash del mensaje anterior.",
@@ -65,7 +65,7 @@
     "simplex-private-card-1-point-1": "Protocolo de doble contraseña &mdash;Mensajería OTR (Off-the-Record) con perfecto secreto hacia adelante (PFS) y recuperación de intrusión.",
     "simplex-private-card-1-point-2": "NaCL cryptobox en cada cola para evitar la correlación de tráfico entre colas de mensajes si la TLS se ve comprometida.",
     "simplex-private-card-2-point-1": "Capa adicional de cifrado del servidor para la entrega al destinatario que evita la correlación entre el tráfico de recepción y envío del servidor si la TLS se ve comprometida.",
-    "simplex-private-card-3-point-2": "La huella digital del servidor y la vinculación de canales evitan los ataques MITM y de repetición.",
+    "simplex-private-card-3-point-2": "La huella digital del servidor y la vinculación de canales evitan los ataques MITM (ataque de intermediario) y de repetición.",
     "simplex-private-card-3-point-3": "La reanudación de la conexión está deshabilitada para evitar ataques de sesión.",
     "simplex-private-card-5-point-1": "SimpleX utiliza relleno de contenido en cada capa de cifrado para frustrar los ataques al tamaño de los mensajes."
 }
