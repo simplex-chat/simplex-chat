@@ -248,6 +248,9 @@
 /* No comment provided by engineer. */
 "Add to another device" = "Přidat do jiného zařízení";
 
+/* No comment provided by engineer. */
+"Add welcome message" = "Přidat uvítací zprávu";
+
 /* member role */
 "admin" = "správce";
 
@@ -339,6 +342,9 @@
 "Audio & video calls" = "Audio a video hovory";
 
 /* No comment provided by engineer. */
+"Audio and video calls" = "Hlasové a video hovory";
+
+/* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "zvukový hovor (nešifrovaný e2e)";
 
 /* No comment provided by engineer. */
@@ -397,6 +403,9 @@
 
 /* No comment provided by engineer. */
 "Calls" = "Hovory";
+
+/* No comment provided by engineer. */
+"Can't delete user profile!" = "Nemohu smazat uživatelský profil!";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Nelze pozvat kontakt!";
@@ -480,6 +489,9 @@
 "Check server address and try again." = "Zkontrolujte adresu serveru a zkuste to znovu.";
 
 /* No comment provided by engineer. */
+"Chinese and Spanish interface" = "Čínské a Španělské rozhranní";
+
+/* No comment provided by engineer. */
 "Choose file" = "Vybrat soubor";
 
 /* No comment provided by engineer. */
@@ -517,6 +529,9 @@
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Potvrdit novou heslovou frázi…";
+
+/* No comment provided by engineer. */
+"Confirm password" = "Potvrdit heslo";
 
 /* server test step */
 "Connect" = "Připojit";
@@ -885,6 +900,9 @@
 "Do NOT use SimpleX for emergency calls." = "NEpoužívejte SimpleX pro tísňová volání.";
 
 /* No comment provided by engineer. */
+"Don't show again" = "Znovu neukazuj";
+
+/* No comment provided by engineer. */
 "Duplicate display name!" = "Duplicitní zobrazované jméno!";
 
 /* integrity error chat item */
@@ -1062,6 +1080,9 @@
 "Error saving SMP servers" = "Chyba při ukládání serverů SMP";
 
 /* No comment provided by engineer. */
+"Error saving user password" = "Chyba ukládání hesla uživatele";
+
+/* No comment provided by engineer. */
 "Error sending message" = "Chyba při odesílání zprávy";
 
 /* No comment provided by engineer. */
@@ -1081,6 +1102,9 @@
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Chyba při aktualizaci nastavení";
+
+/* No comment provided by engineer. */
+"Error updating user privacy" = "Chyba aktualizace soukromí uživatele";
 
 /* No comment provided by engineer. */
 "Error: %@" = "Chyba: %@";
@@ -1134,6 +1158,9 @@
 "Full name:" = "Celé jméno:";
 
 /* No comment provided by engineer. */
+"Further reduced battery usage" = "Další snížení spotřeby baterie";
+
+/* No comment provided by engineer. */
 "GIFs and stickers" = "GIFy a nálepky";
 
 /* No comment provided by engineer. */
@@ -1182,6 +1209,9 @@
 "Group message:" = "Skupinová zpráva:";
 
 /* No comment provided by engineer. */
+"Group moderation" = "Správa skupin";
+
+/* No comment provided by engineer. */
 "Group preferences" = "Předvolby skupiny";
 
 /* No comment provided by engineer. */
@@ -1192,6 +1222,9 @@
 
 /* snd group event chat item */
 "group profile updated" = "profil skupiny aktualizován";
+
+/* No comment provided by engineer. */
+"Group welcome message" = "Uvítací zpráva skupin";
 
 /* No comment provided by engineer. */
 "Group will be deleted for all members - this cannot be undone!" = "Skupina bude smazána pro všechny členy - nelze to vzít zpět!";
@@ -1205,11 +1238,20 @@
 /* No comment provided by engineer. */
 "Hidden" = "Skryté";
 
+/* No comment provided by engineer. */
+"Hidden chat profiles" = "Skryté chat profily";
+
+/* No comment provided by engineer. */
+"Hidden profile password" = "Hesla skrytých profilů";
+
 /* chat item action */
 "Hide" = "Skrýt";
 
 /* No comment provided by engineer. */
 "Hide app screen in the recent apps." = "Skrytí obrazovky aplikace v posledních aplikacích.";
+
+/* No comment provided by engineer. */
+"Hide profile" = "Skrýt profil";
 
 /* No comment provided by engineer. */
 "How it works" = "Jak to funguje";
@@ -1297,6 +1339,9 @@
 
 /* connection level description */
 "indirect (%d)" = "nepřímé (%d)";
+
+/* No comment provided by engineer. */
+"Initial role" = "Počáteční role";
 
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Nainstalujte [SimpleX Chat pro terminál](https://github.com/simplex-chat/simplex-chat)";
@@ -1437,6 +1482,9 @@
 "Make a private connection" = "Vytvořte si soukromé připojení";
 
 /* No comment provided by engineer. */
+"Make profile private!" = "Změnit profil na soukromý!";
+
+/* No comment provided by engineer. */
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Ujistěte se, že adresy SMP serverů jsou ve správném formátu, oddělené řádky a nejsou duplicitní (%@).";
 
 /* No comment provided by engineer. */
@@ -1533,6 +1581,9 @@
 "Mute" = "Ztlumit";
 
 /* No comment provided by engineer. */
+"Muted when inactive!" = "Ztlumit při neaktivitě!";
+
+/* No comment provided by engineer. */
 "Name" = "Jméno";
 
 /* No comment provided by engineer. */
@@ -1603,6 +1654,9 @@
 
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Oznámení jsou zakázána!";
+
+/* No comment provided by engineer. */
+"Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)" = "Nyní mohou správci:\n- mazat zprávy členů.\n- zakázat členy (role \"pozorovatel\")";
 
 /* member role */
 "observer" = "pozorovatel";
@@ -1694,6 +1748,9 @@
 
 /* member role */
 "owner" = "vlastník";
+
+/* No comment provided by engineer. */
+"Password to show" = "Heslo k zobrazení";
 
 /* No comment provided by engineer. */
 "Paste" = "Vložit";
@@ -1793,6 +1850,9 @@
 
 /* No comment provided by engineer. */
 "Protect app screen" = "Ochrana obrazovky aplikace";
+
+/* No comment provided by engineer. */
+"Protect your chat profiles with a password!" = "Chraňte své chat profily heslem!";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Časový limit protokolu";
@@ -1927,6 +1987,9 @@
 "Save and notify group members" = "Uložit a upozornit členy skupiny";
 
 /* No comment provided by engineer. */
+"Save and update group profile" = "Uložit a aktualizovat profil skupiny";
+
+/* No comment provided by engineer. */
 "Save archive" = "Uložit archiv";
 
 /* No comment provided by engineer. */
@@ -1942,7 +2005,16 @@
 "Save preferences?" = "Uložit předvolby?";
 
 /* No comment provided by engineer. */
+"Save profile password" = "Uložit heslo profilu";
+
+/* No comment provided by engineer. */
 "Save servers" = "Uložit servery";
+
+/* No comment provided by engineer. */
+"Save servers?" = "Uložit servery?";
+
+/* No comment provided by engineer. */
+"Save welcome message?" = "Uložit uvítací zprávu?";
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Uložené servery WebRTC ICE budou odstraněny";
@@ -2039,6 +2111,9 @@
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Nastavení přístupové fráze pro export";
+
+/* No comment provided by engineer. */
+"Set the message shown to new members!" = "Nastavte zprávu zobrazenou novým členům!";
 
 /* No comment provided by engineer. */
 "Set timeouts for proxy/VPN" = "Nastavit časové limity pro proxy/VPN";
@@ -2146,6 +2221,9 @@
 "Tap button " = "Klepněte na tlačítko ";
 
 /* No comment provided by engineer. */
+"Tap to activate profile." = "Klepnutím aktivujete profil.";
+
+/* No comment provided by engineer. */
 "Tap to join" = "Klepnutím se připojíte";
 
 /* No comment provided by engineer. */
@@ -2231,6 +2309,9 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Téma";
+
+/* No comment provided by engineer. */
+"There should be at least one user profile." = "Měl by tam být alespoň jeden uživatelský profil.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Tuto akci nelze vrátit zpět - všechny přijaté a odeslané soubory a média budou smazány. Obrázky s nízkým rozlišením zůstanou zachovány.";

@@ -26,7 +26,7 @@
 ": " = ": ";
 
 /* No comment provided by engineer. */
-"!1 colored!" = "!1 色！";
+"!1 colored!" = "!1 种彩色!";
 
 /* No comment provided by engineer. */
 "." = ".";
@@ -41,7 +41,7 @@
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[贡献](https://github.com/simplex-chat/simplex-chat#contribute)";
 
 /* No comment provided by engineer. */
-"[Send us email](mailto:chat@simplex.chat)" = "[发送邮件至](mailto:chat@simplex.chat)";
+"[Send us email](mailto:chat@simplex.chat)" = "[给我们发电邮](mailto:chat@simplex.chat)";
 
 /* No comment provided by engineer. */
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[在 GitHub 上加星](https://github.com/simplex-chat/simplex-chat)";
@@ -363,7 +363,7 @@
 "Auto-accept images" = "自动接受图片";
 
 /* No comment provided by engineer. */
-"Automatically" = "自动地";
+"Automatically" = "自动";
 
 /* No comment provided by engineer. */
 "Back" = "返回";
@@ -390,7 +390,7 @@
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "通过聊天资料（默认）或者[通过连接](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)。";
 
 /* No comment provided by engineer. */
-"Call already ended!" = "通话已经结束！";
+"Call already ended!" = "通话已结束！";
 
 /* call status */
 "call error" = "通话错误";
@@ -510,7 +510,7 @@
 "Clear verification" = "清除验证";
 
 /* No comment provided by engineer. */
-"colored" = "有色";
+"colored" = "彩色";
 
 /* No comment provided by engineer. */
 "Colors" = "颜色";
@@ -1242,7 +1242,7 @@
 "Help" = "帮助";
 
 /* No comment provided by engineer. */
-"Hidden" = "已隐藏";
+"Hidden" = "隐藏";
 
 /* No comment provided by engineer. */
 "Hidden chat profiles" = "隐藏的聊天资料";
@@ -1345,6 +1345,9 @@
 
 /* connection level description */
 "indirect (%d)" = "间接（%d）";
+
+/* No comment provided by engineer. */
+"Initial role" = "初始角色";
 
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "安装[用于终端的 SimpleX Chat](https://github.com/simplex-chat/simplex-chat)";
@@ -1554,7 +1557,7 @@
 "Migration error:" = "迁移错误：";
 
 /* No comment provided by engineer. */
-"Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "迁移失败。点击下面的 **Skip** 继续使用当前数据库。请通过聊天或电子邮件 [chat@simplex.chat](mailto:chat@simplex.chat) 将问题报告给应用程序开发人员。";
+"Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "迁移失败。点击下面的 **Skip** 继续使用当前数据库。请通过通过聊天或电邮 [chat@simplex.chat](mailto:chat@simplex.chat) 将问题报告给应用程序开发人员。";
 
 /* No comment provided by engineer. */
 "Migration is completed" = "迁移完成";
@@ -1669,7 +1672,7 @@
 "off" = "关闭";
 
 /* No comment provided by engineer. */
-"Off (Local)" = "关闭 (本地)";
+"Off (Local)" = "关闭（本地）";
 
 /* feature offered item */
 "offered %@" = "已提供 %@";
@@ -1687,7 +1690,7 @@
 "Old database archive" = "旧数据库存档";
 
 /* group pref value */
-"on" = "在";
+"on" = "开启";
 
 /* No comment provided by engineer. */
 "One-time invitation link" = "一次性邀请链接";
@@ -1750,7 +1753,7 @@
 "or chat with the developers" = "或与开发者聊天";
 
 /* member role */
-"owner" = "所有者";
+"owner" = "群主";
 
 /* No comment provided by engineer. */
 "Password to show" = "显示密码";
@@ -1774,7 +1777,7 @@
 "People can connect to you only via the links you share." = "人们只能通过您共享的链接与您建立联系。";
 
 /* No comment provided by engineer. */
-"Periodically" = "定期地";
+"Periodically" = "定期";
 
 /* No comment provided by engineer. */
 "PING count" = "PING 次数";
@@ -1936,7 +1939,7 @@
 "Reply" = "回复";
 
 /* No comment provided by engineer. */
-"Required" = "必要";
+"Required" = "必须";
 
 /* No comment provided by engineer. */
 "Reset" = "重置";
@@ -2362,7 +2365,7 @@
 "To record voice message please grant permission to use Microphone." = "请授权使用麦克风以录制语音消息。";
 
 /* No comment provided by engineer. */
-"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "要显示您的隐藏个人资料，请在**您的聊天个人资料**页面的搜索字段中输入完整密码。";
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "要显示您的隐藏的个人资料，请在**您的聊天个人资料**页面的搜索字段中输入完整密码。";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "为了支持即时推送通知，聊天数据库必须被迁移。";
@@ -2380,7 +2383,7 @@
 "Trying to connect to the server used to receive messages from this contact." = "正在尝试连接到用于从该联系人接收消息的服务器。";
 
 /* No comment provided by engineer. */
-"Turn off" = "关掉";
+"Turn off" = "关闭";
 
 /* No comment provided by engineer. */
 "Turn off notifications?" = "关闭通知？";

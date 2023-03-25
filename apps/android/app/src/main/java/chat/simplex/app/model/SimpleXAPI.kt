@@ -266,9 +266,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   private fun currentUserId(funcName: String): Long {
-    val error = "$funcName: no current user"
-    Log.e(TAG, error)
-    return chatModel.currentUser.value?.userId ?: throw Exception(error)
+    val userId = chatModel.currentUser.value?.userId
+    if (userId == null) {
+      val error = "$funcName: no current user"
+      Log.e(TAG, error)
+      throw Exception(error)
+    }
+    return userId
   }
 
   suspend fun startChat(user: User) {
@@ -2890,7 +2894,7 @@ class APIResponse(val resp: CR, val corr: String? = null) {
               val userObject = resp["user_"]?.jsonObject
               val user = runCatching<User?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
               return APIResponse(
-                resp = CR.ChatCmdError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatCmdError"]))),
+                resp = CR.ChatCmdError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))),
                 corr = data["corr"]?.toString()
               )
             }
