@@ -64,5 +64,6 @@
     "simplex-private-9-title": "Colas de mensajes<br>unidireccionales",
     "simplex-private-card-1-point-1": "Protocolo de doble contraseña &mdash;Mensajería OTR (Off-the-Record) con perfecto secreto hacia adelante (PFS) y recuperación de intrusión.",
     "simplex-private-card-1-point-2": "NaCL cryptobox en cada cola para evitar la correlación de tráfico entre colas de mensajes si la TLS se ve comprometida.",
-    "simplex-private-card-2-point-1": "Capa adicional de cifrado del servidor para la entrega al destinatario que evita la correlación entre el tráfico de recepción y envío del servidor si la TLS se ve comprometida."
+    "simplex-private-card-2-point-1": "Capa adicional de cifrado del servidor para la entrega al destinatario que evita la correlación entre el tráfico de recepción y envío del servidor si la TLS se ve comprometida.",
+    "simplex-private-card-3-point-2": "La huella digital del servidor y la vinculación de canales evitan los ataques MITM y de repetición."
 }
