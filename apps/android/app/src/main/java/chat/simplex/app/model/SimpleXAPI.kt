@@ -2894,7 +2894,7 @@ class APIResponse(val resp: CR, val corr: String? = null) {
               val userObject = resp["user_"]?.jsonObject
               val user = runCatching<User?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
               return APIResponse(
-                resp = CR.ChatCmdError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatCmdError"]))),
+                resp = CR.ChatCmdError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))),
                 corr = data["corr"]?.toString()
               )
             }
