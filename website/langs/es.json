@@ -58,5 +58,8 @@
     "feature-4-title": "Mensajes de voz cifrados E2E",
     "feature-5-title": "Mensajes temporales",
     "simplex-private-6-title": "Intercambio de claves<br>fuera de banda",
-    "simplex-private-5-title": "Múltiples capas<br>de contenido acolchado"
+    "simplex-private-5-title": "Múltiples capas<br>de contenido acolchado",
+    "simplex-private-8-title": "Mezcla de mensajes<br>para reducir la correlación",
+    "simplex-private-10-title": "Identificadores por pares anónimos temporales",
+    "simplex-private-9-title": "Colas de mensajes<br>unidireccionales"
 }
