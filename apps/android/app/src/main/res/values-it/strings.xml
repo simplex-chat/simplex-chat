@@ -993,8 +993,7 @@
     <string name="make_profile_private">Rendi privato il profilo!</string>
     <string name="should_be_at_least_one_profile">Deve esserci almeno un profilo utente.</string>
     <string name="should_be_at_least_one_visible_profile">Deve esserci almeno un profilo utente visibile.</string>
-    <string name="you_can_hide_or_mute_user_profile">Puoi nascondere o silenziare un profilo utente - tienilo premuto per il menu.
-\nSimpleX Lock deve essere attivato.</string>
+    <string name="you_can_hide_or_mute_user_profile">Puoi nascondere o silenziare un profilo utente - tienilo premuto per il menu.</string>
     <string name="dont_show_again">Non mostrare più</string>
     <string name="muted_when_inactive">Silenzioso quando inattivo!</string>
     <string name="you_will_still_receive_calls_and_ntfs">Continuerai a ricevere chiamate e notifiche da profili silenziati quando sono attivi.</string>
