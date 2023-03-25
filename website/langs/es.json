@@ -44,7 +44,7 @@
     "simplex-explained-tab-1-p-1": "Puedes crear contactos y grupos, y mantener conversaciones bidireccionales como en cualquier aplicación de mensajería.",
     "simplex-explained-tab-1-p-2": "¿Cómo puede funcionar con colas unidireccionales y sin identificadores de usuario?",
     "simplex-explained-tab-2-p-1": "Por cada conexión se usan dos colas de mensajes separadas para que el envío y recepción sean a través de servidores diferentes.",
-    "chat-bot-example": "Ejemplo de un chatbot",
+    "chat-bot-example": "Ejemplo de bot de Chat",
     "chat-protocol": "Protocolo Chat",
     "terminal-cli": "Terminal CLI",
     "hero-subheader": "El primer mensajero<br>sin ID de usuario",
