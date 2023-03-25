@@ -984,7 +984,7 @@
     <string name="cant_delete_user_profile">Kan gebruikers profiel niet verwijderen!</string>
     <string name="confirm_password">Bevestig wachtwoord</string>
     <string name="v4_6_chinese_spanish_interface">Chinese en Spaanse interface</string>
-    <string name="enter_password_to_show">Voer hier boven het wachtwoord in om weer te geven!</string>
+    <string name="enter_password_to_show">Voer wachtwoord in bij zoeken</string>
     <string name="error_saving_user_password">Fout bij opslaan gebruikers wachtwoord</string>
     <string name="button_add_welcome_message">Welkomst bericht toevoegen</string>
     <string name="dont_show_again">Niet meer weergeven</string>
