@@ -92,7 +92,7 @@ fun ActiveCallView(chatModel: ChatModel) {
     am.registerAudioDeviceCallback(audioCallback, null)
     val pm = (SimplexApp.context.getSystemService(Context.POWER_SERVICE) as PowerManager)
     val proximityLock = if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
-      pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "proximityLock")
+      pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, SimplexApp.context.packageName + ":proximityLock")
     } else {
       null
     }

@@ -30,6 +30,7 @@ extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
 extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
 extern char *chat_parse_server(const char *str);
+extern char *chat_password_hash(const char *pwd, const char *salt);
 
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_app_SimplexAppKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey) {
@@ -83,5 +84,15 @@ Java_chat_simplex_app_SimplexAppKt_chatParseServer(JNIEnv *env, __unused jclass 
     const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
     jstring res = (*env)->NewStringUTF(env, chat_parse_server(_str));
     (*env)->ReleaseStringUTFChars(env, str, _str);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_app_SimplexAppKt_chatPasswordHash(JNIEnv *env, __unused jclass clazz, jstring pwd, jstring salt) {
+    const char *_pwd = (*env)->GetStringUTFChars(env, pwd, JNI_FALSE);
+    const char *_salt = (*env)->GetStringUTFChars(env, salt, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_password_hash(_pwd, _salt));
+    (*env)->ReleaseStringUTFChars(env, pwd, _pwd);
+    (*env)->ReleaseStringUTFChars(env, salt, _salt);
     return res;
 }

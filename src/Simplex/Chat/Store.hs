@@ -39,6 +39,7 @@ module Simplex.Chat.Store
     getUserByContactRequestId,
     getUserFileInfo,
     deleteUserRecord,
+    updateUserPrivacy,
     createDirectConnection,
     createConnReqConnection,
     getProfileById,
@@ -277,6 +278,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -345,6 +347,7 @@ import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
 import Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
 import Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
 import Simplex.Chat.Migrations.M20230303_group_link_role
+import Simplex.Chat.Migrations.M20230317_hidden_profiles
 -- import Simplex.Chat.Migrations.M20230304_file_description
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -412,7 +415,8 @@ schemaMigrations =
     ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers),
     ("20230129_drop_chat_items_group_idx", m20230129_drop_chat_items_group_idx),
     ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id),
-    ("20230303_group_link_role", m20230303_group_link_role)
+    ("20230303_group_link_role", m20230303_group_link_role),
+    ("20230317_hidden_profiles", m20230317_hidden_profiles)
     -- ("20230304_file_description", m20230304_file_description)
   ]
 
@@ -449,8 +453,8 @@ createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, pr
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, created_at, updated_at) VALUES (?,?,?,0,?,?)"
-      (auId, displayName, activeUser, currentTs, currentTs)
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, created_at, updated_at) VALUES (?,?,?,0,?,?,?)"
+      (auId, displayName, activeUser, True, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -467,7 +471,7 @@ createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, pr
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences, True) :. (Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -505,16 +509,19 @@ getUsers db =
 userQuery :: Query
 userQuery =
   [sql|
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.local_display_name, ucp.full_name, ucp.image, ucp.preferences
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.local_display_name, ucp.full_name, ucp.image, ucp.preferences, u.show_ntfs, u.view_pwd_hash, u.view_pwd_salt
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
-toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences) -> User
-toUser (userId, auId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences) =
-  let profile = LocalProfile {profileId, displayName, fullName, image, preferences = userPreferences, localAlias = ""}
-   in User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences = mergePreferences Nothing userPreferences}
+toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences, Bool) :. (Maybe B64UrlByteString, Maybe B64UrlByteString) -> User
+toUser ((userId, auId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences, showNtfs) :. (viewPwdHash_, viewPwdSalt_)) =
+  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences, showNtfs, viewPwdHash}
+  where
+    profile = LocalProfile {profileId, displayName, fullName, image, preferences = userPreferences, localAlias = ""}
+    fullPreferences = mergePreferences Nothing userPreferences
+    viewPwdHash = UserPwdHash <$> viewPwdHash_ <*> viewPwdSalt_
 
 setActiveUser :: DB.Connection -> UserId -> IO ()
 setActiveUser db userId = do
@@ -580,6 +587,19 @@ toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, file
 deleteUserRecord :: DB.Connection -> User -> IO ()
 deleteUserRecord db User {userId} =
   DB.execute db "DELETE FROM users WHERE user_id = ?" (Only userId)
+
+updateUserPrivacy :: DB.Connection -> User -> IO ()
+updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
+  DB.execute
+    db
+    [sql|
+      UPDATE users
+      SET view_pwd_hash = ?, view_pwd_salt = ?, show_ntfs = ?
+      WHERE user_id = ?
+    |]
+    (hashSalt viewPwdHash :. (showNtfs, userId))
+  where
+    hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId = do

@@ -120,9 +120,9 @@ fun GroupLinkLayout(
       if (groupLink == null) {
         SimpleButton(stringResource(R.string.button_create_group_link), icon = Icons.Outlined.AddLink, disabled = creatingLink, click = createLink)
       } else {
-//        SectionItemView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
-//          RoleSelectionRow(groupInfo, groupLinkMemberRole)
-//        }
+        SectionItemView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
+          RoleSelectionRow(groupInfo, groupLinkMemberRole)
+        }
         var initialLaunch by remember { mutableStateOf(true) }
         LaunchedEffect(groupLinkMemberRole.value) {
           if (!initialLaunch) {

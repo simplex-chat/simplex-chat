@@ -2,7 +2,7 @@ package chat.simplex.app.views.helpers
 
 import android.app.Activity
 import android.app.Application
-import android.app.LocaleManager
+//import android.app.LocaleManager
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.res.Configuration
@@ -506,24 +506,24 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
   )
 
 fun saveAppLocale(pref: SharedPreference<String?>, activity: Activity, languageCode: String? = null) {
-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-    val localeManager = SimplexApp.context.getSystemService(LocaleManager::class.java)
-    localeManager.applicationLocales = LocaleList(Locale.forLanguageTag(languageCode ?: return))
-  } else {
+//  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//    val localeManager = SimplexApp.context.getSystemService(LocaleManager::class.java)
+//    localeManager.applicationLocales = LocaleList(Locale.forLanguageTag(languageCode ?: return))
+//  } else {
     pref.set(languageCode)
     if (languageCode == null) {
       activity.applyLocale(SimplexApp.context.defaultLocale)
     }
     activity.recreate()
-  }
+//  }
 }
 
 fun Activity.applyAppLocale(pref: SharedPreference<String?>) {
-  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+//  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
     val lang = pref.get()
     if (lang == null || lang == Locale.getDefault().language) return
     applyLocale(Locale.forLanguageTag(lang))
-  }
+//  }
 }
 
 private fun Activity.applyLocale(locale: Locale) {

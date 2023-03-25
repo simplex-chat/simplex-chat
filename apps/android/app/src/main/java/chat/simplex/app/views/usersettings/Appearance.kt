@@ -97,14 +97,14 @@ fun AppearanceView(m: ChatModel) {
     AppBarTitle(stringResource(R.string.appearance_settings))
     SectionView(stringResource(R.string.settings_section_title_language), padding = PaddingValues()) {
       val context = LocalContext.current
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        SectionItemWithValue(
-          generalGetString(R.string.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
-          remember { mutableStateOf("system") },
-          listOf(ValueTitleDesc("system", generalGetString(R.string.change_verb), "")),
-          onSelected = { openSystemLangPicker(context as? Activity ?: return@SectionItemWithValue) }
-        )
-      } else {
+//      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//        SectionItemWithValue(
+//          generalGetString(R.string.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
+//          remember { mutableStateOf("system") },
+//          listOf(ValueTitleDesc("system", generalGetString(R.string.change_verb), "")),
+//          onSelected = { openSystemLangPicker(context as? Activity ?: return@SectionItemWithValue) }
+//        )
+//      } else {
         val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
         SectionItemView {
           LangSelector(state) {
@@ -122,7 +122,7 @@ fun AppearanceView(m: ChatModel) {
             }
           }
         }
-      }
+//      }
     }
     SectionSpacer()
 
@@ -232,6 +232,7 @@ private fun LangSelector(state: State<String>, onSelected: (String) -> Unit) {
     "en" to "English",
     "cs" to "Čeština",
     "de" to "Deutsch",
+    "es" to "Español",
     "fr" to "Français",
     "it" to "Italiano",
     "nl" to "Nederlands",
@@ -263,9 +264,9 @@ private fun ThemeSelector(state: State<DefaultTheme>, onSelected: (DefaultTheme)
   )
 }
 
-private fun openSystemLangPicker(activity: Activity) {
-  activity.startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:" + SimplexApp.context.packageName)))
-}
+//private fun openSystemLangPicker(activity: Activity) {
+//  activity.startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:" + SimplexApp.context.packageName)))
+//}
 
 private fun findEnabledIcon(): AppIcon = AppIcon.values().first { icon ->
   SimplexApp.context.packageManager.getComponentEnabledSetting(

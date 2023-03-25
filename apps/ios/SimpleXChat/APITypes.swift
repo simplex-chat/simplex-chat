@@ -16,8 +16,12 @@ public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
     case listUsers
-    case apiSetActiveUser(userId: Int64)
-    case apiDeleteUser(userId: Int64, delSMPQueues: Bool)
+    case apiSetActiveUser(userId: Int64, viewPwd: String?)
+    case apiHideUser(userId: Int64, viewPwd: String)
+    case apiUnhideUser(userId: Int64, viewPwd: String?)
+    case apiMuteUser(userId: Int64, viewPwd: String?)
+    case apiUnmuteUser(userId: Int64, viewPwd: String?)
+    case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
     case startChat(subscribe: Bool, expire: Bool)
     case apiStopChat
     case apiActivateChat
@@ -103,8 +107,12 @@ public enum ChatCommand {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/create user \(profile.displayName) \(profile.fullName)"
             case .listUsers: return "/users"
-            case let .apiSetActiveUser(userId): return "/_user \(userId)"
-            case let .apiDeleteUser(userId, delSMPQueues): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))"
+            case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
+            case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
+            case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId)\(maybePwd(viewPwd))"
+            case let .apiMuteUser(userId, viewPwd): return "/_mute user \(userId)\(maybePwd(viewPwd))"
+            case let .apiUnmuteUser(userId, viewPwd): return "/_unmute user \(userId)\(maybePwd(viewPwd))"
+            case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
             case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
@@ -202,6 +210,10 @@ public enum ChatCommand {
             case .createActiveUser: return "createActiveUser"
             case .listUsers: return "listUsers"
             case .apiSetActiveUser: return "apiSetActiveUser"
+            case .apiHideUser: return "apiHideUser"
+            case .apiUnhideUser: return "apiUnhideUser"
+            case .apiMuteUser: return "apiMuteUser"
+            case .apiUnmuteUser: return "apiUnmuteUser"
             case .apiDeleteUser: return "apiDeleteUser"
             case .startChat: return "startChat"
             case .apiStopChat: return "apiStopChat"
@@ -304,6 +316,18 @@ public enum ChatCommand {
         switch self {
         case let .apiStorageEncryption(cfg):
             return .apiStorageEncryption(config: DBEncryptionConfig(currentKey: obfuscate(cfg.currentKey), newKey: obfuscate(cfg.newKey)))
+        case let .apiSetActiveUser(userId, viewPwd):
+            return .apiSetActiveUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiHideUser(userId, viewPwd):
+            return .apiHideUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiUnhideUser(userId, viewPwd):
+            return .apiUnhideUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiMuteUser(userId, viewPwd):
+            return .apiMuteUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiUnmuteUser(userId, viewPwd):
+            return .apiUnmuteUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiDeleteUser(userId, delSMPQueues, viewPwd):
+            return .apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: obfuscate(viewPwd))
         default: return self
         }
     }
@@ -312,8 +336,20 @@ public enum ChatCommand {
         s == "" ? "" : "***"
     }
 
+    private func obfuscate(_ s: String?) -> String? {
+        if let s = s {
+            return obfuscate(s)
+        } else {
+            return nil
+        }
+    }
+
     private func onOff(_ b: Bool) -> String {
         b ? "on" : "off"
+    }
+
+    private func maybePwd(_ pwd: String?) -> String {
+        pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
     }
 }
 
@@ -348,6 +384,7 @@ public enum ChatResponse: Decodable, Error {
     case chatCleared(user: User, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile)
+    case userPrivacy(user: User)
     case contactAliasUpdated(user: User, toContact: Contact)
     case connectionAliasUpdated(user: User, toConnection: PendingContactConnection)
     case contactPrefsUpdated(user: User, fromContact: Contact, toContact: Contact)
@@ -424,8 +461,8 @@ public enum ChatResponse: Decodable, Error {
     case contactConnectionDeleted(user: User, connection: PendingContactConnection)
     case versionInfo(versionInfo: CoreVersionInfo)
     case cmdOk(user: User?)
-    case chatCmdError(user: User?, chatError: ChatError)
-    case chatError(user: User?, chatError: ChatError)
+    case chatCmdError(user_: User?, chatError: ChatError)
+    case chatError(user_: User?, chatError: ChatError)
 
     public var responseType: String {
         get {
@@ -456,6 +493,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
+            case .userPrivacy: return "userPrivacy"
             case .contactAliasUpdated: return "contactAliasUpdated"
             case .connectionAliasUpdated: return "connectionAliasUpdated"
             case .contactPrefsUpdated: return "contactPrefsUpdated"
@@ -564,6 +602,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(u, _, toProfile): return withUser(u, String(describing: toProfile))
+            case let .userPrivacy(u): return withUser(u, "")
             case let .contactAliasUpdated(u, toContact): return withUser(u, String(describing: toContact))
             case let .connectionAliasUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .contactPrefsUpdated(u, fromContact, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))")
@@ -1083,6 +1122,7 @@ public enum ChatError: Decodable {
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
     case errorDatabase(databaseError: DatabaseError)
+    case invalidJSON(json: String)
 }
 
 public enum ChatErrorType: Decodable {
