@@ -32,7 +32,7 @@
     "hero-2-header-desc": "El video muestra cómo te conectas con tu amigo a través de su código QR de un solo uso, en persona o a través de un enlace de video. También puedes conectarte compartiendo un enlace de invitación.",
     "feature-7-title": "Base de datos portable cifrada &mdash; transfiere tu perfil a otro dispositivo",
     "simplex-private-card-4-point-2": "Para usar SimpleX a través de Tor, instale <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot app</a> y active el proxy SOCKS5 (o VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">en iOS</a>).",
-    "simplex-private-card-3-point-1": "Para las conexiones cliente-servidor sólo se utiliza TLS 1.2/1.3 con algoritmos robustos.",
+    "simplex-private-card-3-point-1": "Para las conexiones cliente-servidor sólo se usa TLS 1.2/1.3 con algoritmos robustos.",
     "simplex-private-card-4-point-1": "Para proteger su dirección IP, puede acceder a los servidores a través de Tor u otra red de transporte superpuesta.",
     "simplex-private-card-5-point-2": "Esto hace que mensajes de distintos tamaños parezcan iguales a los ojos de los servidores y observadores de la red.",
     "simplex-private-card-6-point-1": "Muchas plataformas de comunicación son vulnerables a ataques MITM por parte de servidores o proveedores de red.",
@@ -61,5 +61,8 @@
     "simplex-private-5-title": "Múltiples capas<br>de contenido acolchado",
     "simplex-private-8-title": "Mezcla de mensajes<br>para reducir la correlación",
     "simplex-private-10-title": "Identificadores por pares anónimos temporales",
-    "simplex-private-9-title": "Colas de mensajes<br>unidireccionales"
+    "simplex-private-9-title": "Colas de mensajes<br>unidireccionales",
+    "simplex-private-card-1-point-1": "Protocolo de doble contraseña &mdash;Mensajería OTR (Off-the-Record) con perfecto secreto hacia adelante (PFS) y recuperación de intrusión.",
+    "simplex-private-card-1-point-2": "NaCL cryptobox en cada cola para evitar la correlación de tráfico entre colas de mensajes si la TLS se ve comprometida.",
+    "simplex-private-card-2-point-1": "Capa adicional de cifrado del servidor para la entrega al destinatario que evita la correlación entre el tráfico de recepción y envío del servidor si la TLS se ve comprometida."
 }
