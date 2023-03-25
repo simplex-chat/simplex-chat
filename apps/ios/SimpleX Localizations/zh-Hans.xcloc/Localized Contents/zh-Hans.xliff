@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
         <source>!1 colored!</source>
-        <target>!1 色！</target>
+        <target>!1 种彩色!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve">
@@ -562,7 +562,7 @@
       </trans-unit>
       <trans-unit id="Automatically" xml:space="preserve">
         <source>Automatically</source>
-        <target>自动地</target>
+        <target>自动</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
@@ -592,7 +592,7 @@
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
         <source>Call already ended!</source>
-        <target>通话已经结束！</target>
+        <target>通话已结束！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Calls" xml:space="preserve">
@@ -1825,7 +1825,7 @@
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
         <source>Hidden</source>
-        <target>已隐藏</target>
+        <target>隐藏</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden chat profiles" xml:space="preserve">
@@ -1980,6 +1980,7 @@
       </trans-unit>
       <trans-unit id="Initial role" xml:space="preserve">
         <source>Initial role</source>
+        <target>初始角色</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -2256,7 +2257,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." xml:space="preserve">
         <source>Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat).</source>
-        <target>迁移失败。点击下面的 **Skip** 继续使用当前数据库。请通过聊天或电子邮件 [chat@simplex.chat](mailto:chat@simplex.chat) 将问题报告给应用程序开发人员。</target>
+        <target>迁移失败。点击下面的 **Skip** 继续使用当前数据库。请通过通过聊天或电邮 [chat@simplex.chat](mailto:chat@simplex.chat) 将问题报告给应用程序开发人员。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration is completed" xml:space="preserve">
@@ -2405,7 +2406,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve">
         <source>Off (Local)</source>
-        <target>关闭 (本地)</target>
+        <target>关闭（本地）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
@@ -2560,7 +2561,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Periodically" xml:space="preserve">
         <source>Periodically</source>
-        <target>定期地</target>
+        <target>定期</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -2790,7 +2791,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Required" xml:space="preserve">
         <source>Required</source>
-        <target>必要</target>
+        <target>必须</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset" xml:space="preserve">
@@ -3477,7 +3478,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
-        <target>要显示您的隐藏个人资料，请在**您的聊天个人资料**页面的搜索字段中输入完整密码。</target>
+        <target>要显示您的隐藏的个人资料，请在**您的聊天个人资料**页面的搜索字段中输入完整密码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -3507,7 +3508,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Turn off" xml:space="preserve">
         <source>Turn off</source>
-        <target>关掉</target>
+        <target>关闭</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Turn off notifications?" xml:space="preserve">
@@ -4095,7 +4096,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
-        <target>[发送邮件至](mailto:chat@simplex.chat)</target>
+        <target>[给我们发电邮](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -4200,7 +4201,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
-        <target>有色</target>
+        <target>彩色</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="complete" xml:space="preserve">
@@ -4511,7 +4512,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
         <source>on</source>
-        <target>在</target>
+        <target>开启</target>
         <note>group pref value</note>
       </trans-unit>
       <trans-unit id="or chat with the developers" xml:space="preserve">
@@ -4521,7 +4522,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="owner" xml:space="preserve">
         <source>owner</source>
-        <target>所有者</target>
+        <target>群主</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="peer-to-peer" xml:space="preserve">
