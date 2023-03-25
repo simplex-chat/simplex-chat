@@ -48,7 +48,7 @@
     "chat-protocol": "Protocolo Chat",
     "terminal-cli": "Terminal CLI",
     "hero-subheader": "La primera aplicación de mensajería<br>sin ID de usuario",
-    "feature-2-title": "<br>Imágenes y archivos con cifrado E2E",
+    "feature-2-title": "Cifrado E2E<br>de imágenes y archivos",
     "feature-8-title": "Modo Incógnito &mdash;<br>único de SimpleX Chat",
     "simplex-private-1-title": "2 capas de<br>cifrado de extremo a extremo",
     "simplex-private-2-title": "Capa adicional de<br>cifrado del servidor",
