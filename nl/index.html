@@ -369,10 +369,10 @@ window.addEventListener('scroll',changeHeaderBg);
     Om berichten te bezorgen, gebruikt SimpleX in plaats van gebruikers ID's die door alle andere platforms worden gebruikt, tijdelijke anonieme paarsgewijze identifiers van berichten wachtrijen, gescheiden voor elk van uw verbindingen &mdash; er zijn geen identificatiegegevens op lange termijn.
 </p>
 <p>
-    U definieert welke server(s) u wilt gebruiken om de berichten te ontvangen, uw contacten &mdash; de servers die u gebruikt om de berichten naar hen te verzenden. Elk gesprek gebruikt waarschijnlijk twee verschillende servers.
+    U definieert welke server(s) u wilt gebruiken om de berichten te ontvangen. Uw contacten de servers die u gebruikt om de berichten naar hen te verzenden. Elk gesprek gebruikt waarschijnlijk twee verschillende servers.
 </p>
 <p>
-    Dit ontwerp voorkomt het lekken van eventuele gebruikersgegevens. metadata op applicatie niveau. Om de privacy verder te verbeteren en uw IP-adres te beschermen, kunt u via Tor verbinding maken met berichten servers.
+    Dit ontwerp voorkomt het lekken van eventuele gebruikersgegevens en metadata op applicatie niveau. Om de privacy verder te verbeteren en uw IP-adres te beschermen kunt u via Tor verbinding maken met berichten servers.
 </p>
 <p>
     Alleen client apparaten slaan gebruikers profielen, contacten en groepen op; de berichten worden verzonden met 2-laags end-to-end versleuteling.
@@ -553,7 +553,7 @@ window.addEventListener('scroll',changeHeaderBg);
     Nog niet zo lang geleden zagen we dat de grote verkiezingen werden gemanipuleerd door <a href='https://en.wikipedia.org/wiki/Facebook–Cambridge_Analytica_data_scandal' target='_blank'>een gerenommeerd adviesbureau</a> dat onze sociale grafieken gebruikte om ons beeld van de echte wereld te vervormen en onze stemmen te manipuleren.
 </p>
 <p>
-    Om objectief te zijn en onafhankelijke beslissingen te kunnen nemen, moet u de controle hebben over uw informatie ruimte. Het is alleen mogelijk als u een privé communicatieplatform gebruikt dat geen toegang heeft tot uw sociale grafiek.
+    Om objectief te zijn en onafhankelijke beslissingen te kunnen nemen, moet u de controle hebben over uw informatie. Het is alleen mogelijk als u een privé communicatieplatform gebruikt dat geen toegang heeft tot uw sociale grafiek.
 </p>
 <p>
     SimpleX is het eerste platform dat standaard geen gebruikers ID's heeft, waardoor uw verbindingsgrafiek beter wordt beschermd dan welk alternatief dan ook.
@@ -1253,7 +1253,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Optionele<br>toegang via Tor</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Om uw IP-adres te beschermen, kunt u via Tor of een ander transport overlay netwerk toegang krijgen tot de servers.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Om uw IP-adres te beschermen kunt u via Tor of een ander transport overlay netwerk toegang krijgen tot de servers.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Installeer de <a href="https://guardianproject.info/apps/org.torproject.android/" target="_blank">Orbot-app </a> en schakel de SOCKS5-proxy in (of VPN <a href="https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone" target="_blank"> op iOS </a>) om SimpleX via Tor te gebruiken.</p>
                             
@@ -1273,7 +1273,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Elke berichten wachtrij geeft berichten in één richting door, met verschillende verzend en ontvangst adressen.</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Het vermindert de aanvals mogenlijkheden, in vergelijking met traditionele berichten diensten, en de beschikbare metadata.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Het vermindert de aanvals mogenlijkheden, in vergelijking met traditionele berichten diensten en de beschikbare metadata.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Tik om te sluiten</p>
@@ -1324,7 +1324,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
                     <p class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">In tegenstelling tot P2P netwerken</p>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
-                        Alle berichten worden verzonden via de servers, die beide zorgen voor een betere metadata privacy en een betrouwbare asynchrone bezorging van berichten, terwijl er veel worden vermeden <a href="javascript:void(0)" data-show-overlay="comparison-with-p2p-protocols" class="open-overlay-btn">problemen van P2P netwerken</a>.
+                        Alle berichten worden verzonden via servers, die zorgen voor een betere metadata privacy en een betrouwbare asynchrone bezorging van berichten, terwijl er veel word vermeden <a href="javascript:void(0)" data-show-overlay="comparison-with-p2p-protocols" class="open-overlay-btn">van problemen met P2P netwerken</a>.
                         
     
     <div id="comparison-with-p2p-protocols" data-scroll-to="network" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
@@ -1342,7 +1342,7 @@ window.addEventListener('scroll',changeHeaderBg);
         P2P netwerken vertrouwen op een variant van <a href='https://en.wikipedia.org/wiki/Distributed_hash_table'>DHT</a> om berichten te routeren. DHT ontwerpen moeten een balans vinden tussen leveringsgarantie en latentie. SimpleX heeft zowel een betere leveringsgarantie als een lagere latentie dan P2P, omdat het bericht redundant via meerdere servers parallel kan worden doorgegeven, met behulp van de servers die door de ontvanger zijn gekozen. In P2P netwerken wordt het bericht achtereenvolgens door <em>O(log N)</em>-knooppunten geleid, met behulp van door het algoritme gekozen knooppunten.
     </li>
     <li>
-        SimpleX ontwerp heeft, in tegenstelling tot de meeste P2P netwerken, geen globale gebruikers ID's van welke soort dan ook, zelfs niet tijdelijk, en gebruikt alleen tijdelijke paarsgewijze ID's, wat een betere anonimiteit en metadata bescherming biedt.
+        SimpleX ontwerp heeft, in tegenstelling tot de meeste P2P netwerken, geen globale gebruikers ID's van welke soort dan ook, zelfs niet tijdelijk en gebruikt alleen tijdelijke paarsgewijze ID's wat een betere anonimiteit en metadata bescherming biedt.
     </li>
     <li>
         P2P lost het probleem <a href='https://en.wikipedia.org/wiki/Man-in-the-middle_attack'>MITM-aanval</a> niet op en de meeste bestaande implementaties gebruiken geen out-of-band berichten voor de initiële sleuteluitwisseling. SimpleX gebruikt out-of-band berichten of, in sommige gevallen, reeds bestaande veilige en vertrouwde verbindingen voor de eerste sleuteluitwisseling.
