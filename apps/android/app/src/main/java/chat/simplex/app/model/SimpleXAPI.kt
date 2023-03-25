@@ -266,9 +266,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   private fun currentUserId(funcName: String): Long {
-    val error = "$funcName: no current user"
-    Log.e(TAG, error)
-    return chatModel.currentUser.value?.userId ?: throw Exception(error)
+    val userId = chatModel.currentUser.value?.userId
+    if (userId == null) {
+      val error = "$funcName: no current user"
+      Log.e(TAG, error)
+      throw Exception(error)
+    }
+    return userId
   }
 
   suspend fun startChat(user: User) {
@@ -314,6 +318,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun changeActiveUser_(toUserId: Long, viewPwd: String?) {
     val currentUser = apiSetActiveUser(toUserId, viewPwd)
     chatModel.currentUser.value = currentUser
+    Log.e(TAG, "currentUser ${currentUser?.userId}")
     val users = listUsers()
     chatModel.users.clear()
     chatModel.users.addAll(users)

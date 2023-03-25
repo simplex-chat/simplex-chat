@@ -267,7 +267,7 @@ private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues
         val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
         if (newActive != null) {
           m.controller.changeActiveUser_(newActive.userId, null)
-          deleteUser(user)
+          deleteUser(user.copy(activeUser = false))
         }
       } else {
         deleteUser(user)
