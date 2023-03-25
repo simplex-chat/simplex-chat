@@ -64,8 +64,8 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
       showSettingsModalWithSearch = { modalView ->
         ModalManager.shared.showCustomModal { close ->
-          val search = mutableStateOf("")
-          var showSearch by remember { mutableStateOf(false) }
+          val search = rememberSaveable { mutableStateOf("") }
+          var showSearch by rememberSaveable { mutableStateOf(false) }
           ModalView(
             { if (showSearch) { showSearch = false } else close() },
             if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight,
