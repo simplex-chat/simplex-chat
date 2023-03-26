@@ -172,8 +172,8 @@ data DBMigrationResult
   = DBMOk
   | DBMInvalidConfirmation
   | DBMErrorNotADatabase {dbFile :: String}
-  | DBMError {dbFile :: String, migrationError :: String}
-  | DBMConfirmOrError {dbFile :: String, migrationResult :: MigrationError}
+  | DBMErrorMigration {dbFile :: String, migrationError :: MigrationError}
+  | DBMErrorSQL {dbFile :: String, migrationSQLError :: String}
   deriving (Show, Generic)
 
 instance ToJSON DBMigrationResult where
@@ -192,14 +192,14 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
       newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey) Nothing
     migrate createStore dbFile confirmMigrations =
       ExceptT $
-        (first (DBMConfirmOrError dbFile) <$> createStore dbFile dbKey confirmMigrations)
+        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey confirmMigrations)
           `catch` (pure . checkDBError)
             `catchAll` (pure . dbError)
       where
         checkDBError e = case sqlError e of
           DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase dbFile
           _ -> dbError e
-        dbError e = Left . DBMError dbFile $ show e
+        dbError e = Left . DBMErrorSQL dbFile $ show e
 
 -- TODO remove
 -- chatMigrateDB :: String -> String -> IO DBMigrationResult
