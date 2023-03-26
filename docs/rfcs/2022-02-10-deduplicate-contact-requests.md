@@ -1,3 +1,10 @@
+---
+layout: layouts/doc.html
+title: Deduplicate contact requests
+permalink: "/docs/rfcs/2022-02-10-deduplicate-contact-requests.html"
+supportedLangsForDoc:
+    - en
+---
 # Deduplicate contact requests
 
 1. add nullable fields `via_contact_uri_hash` and `xcontact_id` to `connections`

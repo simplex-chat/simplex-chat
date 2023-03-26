@@ -1,3 +1,12 @@
+---
+layout: layouts/doc.html
+title: Accessing files in Android app
+permalink: "/docs/ANDROID.html"
+supportedLangsForDoc:
+    - en
+    - cs
+---
+
 | Updated 07.02.2023 | Languages: EN, [CZ](/docs/lang/cs/ANDROID.md) |
 
 # Accessing files in Android app

@@ -1,3 +1,12 @@
+---
+layout: layouts/doc.html
+title: Platforma SimpleX
+permalink: "/docs/lang/cs/SIMPLEX.html"
+supportedLangsForDoc:
+    - en
+    - cs
+    - fr
+---
 | Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/SIMPLEX.md), [FR](/docs/lang/fr/SIMPLEX.md) |
 
 # Platforma SimpleX - motivace a srovnání

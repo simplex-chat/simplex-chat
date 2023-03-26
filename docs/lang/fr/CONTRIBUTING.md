@@ -1,3 +1,12 @@
+---
+layout: layouts/doc.html
+title: Guide pour contribuer
+permalink: "/docs/lang/fr/CONTRIBUTING.html"
+supportedLangsForDoc:
+    - en
+    - cs
+    - fr
+---
 | Updated 31.01.2023 | Languages: [EN](/docs/CONTRIBUTING.md), FR |
 
 # Guide pour contribuer

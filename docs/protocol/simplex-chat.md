@@ -1,3 +1,10 @@
+---
+layout: layouts/doc.html
+title: SimpleX Chat Protocol
+permalink: "/docs/protocol/simplex-chat.html"
+supportedLangsForDoc:
+    - en
+---
 DRAFT Revision 0.1, 2022-08-08
 
 Evgeny Poberezkin

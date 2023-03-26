@@ -1,3 +1,12 @@
+---
+layout: layouts/doc.html
+title: Utilisation de serveurs WebRTC ICE personnalisés dans SimpleX Chat
+permalink: "/docs/lang/fr/WEBRTC.html"
+supportedLangsForDoc:
+    - en
+    - cs
+    - fr
+---
 | Updated 31.01.2023 | Languages: [EN](/docs/WEBRTC.md), FR |
 
 # Utilisation de serveurs WebRTC ICE personnalisés dans SimpleX Chat

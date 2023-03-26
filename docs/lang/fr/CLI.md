@@ -1,3 +1,12 @@
+---
+layout: layouts/doc.html
+title: Application de terminal
+permalink: "/docs/lang/fr/CLI.html"
+supportedLangsForDoc:
+    - en
+    - cs
+    - fr
+---
 | Updated 07.02.2023 | Languages: [EN](/docs/CLI.md), FR |
 
 # Application de terminal (console) SimpleX Chat pour Linux/MacOS/Windows

@@ -1,3 +1,12 @@
+---
+layout: layouts/doc.html
+title: Accès à l'historique des messages via des requêtes SQL
+permalink: "/docs/lang/fr/SQL.html"
+supportedLangsForDoc:
+    - en
+    - cs
+    - fr
+---
 | Updated 31.01.2023 | Languages: [EN](/docs/SQL.md), FR |
 
 # Accès à l'historique des messages via des requêtes SQL

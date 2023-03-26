@@ -1,3 +1,12 @@
+---
+layout: layouts/doc.html
+title: Plateforme SimpleX
+permalink: "/docs/lang/fr/SIMPLEX.html"
+supportedLangsForDoc:
+    - en
+    - cs
+    - fr
+---
 | Updated 07.02.2023 | Languages: [EN](/docs/SIMPLEX.md), FR |
 
 # Plateforme SimpleX - motivation et comparaison

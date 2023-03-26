@@ -1,3 +1,13 @@
+---
+layout: layouts/doc.html
+title: Accessing messages in the database
+permalink: "/docs/SQL.html"
+supportedLangsForDoc:
+    - en
+    - cs
+    - fr
+---
+
 | Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SQL.md), [CZ](/docs/lang/cs/SQL.md) |
 
 # Accessing messages in the database

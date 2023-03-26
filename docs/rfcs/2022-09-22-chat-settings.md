@@ -1,3 +1,10 @@
+---
+layout: layouts/doc.html
+title: Chat settings
+permalink: "/docs/rfcs/2022-09-22-chat-settings.html"
+supportedLangsForDoc:
+    - en
+---
 # Chat settings
 
 Scope: this doc covers permissions and configuration that is specific for one contact or group, and should or should not be taken into account when sending messages.

@@ -1,3 +1,10 @@
+---
+layout: layouts/doc.html
+title: Video Calls
+permalink: "/docs/rfcs/2022-04-20-video-calls.html"
+supportedLangsForDoc:
+    - en
+---
 # Adding Audio/Video Call Functionality to SimpleX Apps
 
 To extend the functionality of the SimpleX mobile apps in pursuit of supporting all kinds of communication, we seek to add the ability for already connected users to call each other with audio and optionally video.

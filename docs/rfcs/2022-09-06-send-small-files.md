@@ -1,3 +1,10 @@
+---
+layout: layouts/doc.html
+title: Send small files
+permalink: "/docs/rfcs/2022-09-06-send-small-files.html"
+supportedLangsForDoc:
+    - en
+---
 # Sending small files
 
 ## Problem

@@ -1,3 +1,12 @@
+---
+layout: layouts/doc.html
+title: Contributing translations to SimpleX Chat
+permalink: "/docs/TRANSLATIONS.html"
+supportedLangsForDoc:
+    - en
+    - cs
+---
+
 | Updated 07.02.2023 | Languages: EN, [CZ](/docs/lang/cs/TRANSLATIONS.md) |
 
 # Contributing translations to SimpleX Chat

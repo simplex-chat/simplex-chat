@@ -1,3 +1,10 @@
+---
+layout: layouts/doc.html
+title: Mobile app
+permalink: "/docs/rfcs/2022-01-26-mobile-app.html"
+supportedLangsForDoc:
+    - en
+---
 # Porting SimpleX Chat to mobile
 
 ## Background and motivation

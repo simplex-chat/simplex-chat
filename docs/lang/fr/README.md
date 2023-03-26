@@ -1,3 +1,13 @@
+---
+layout: layouts/doc.html
+title: Simplex Docs
+permalink: "/docs/lang/fr/"
+active_docs: true
+supportedLangsForDoc:
+    - en
+    - cs
+    - fr
+---
 | Updated 07.02.2023 | Languages: [EN](/README.md), FR |
 
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
@@ -10,15 +20,15 @@
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 [![Follow on Mastodon](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)](https://mastodon.social/@simplex)
 
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
-[![Android app](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
+[![Android app](https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
 
 - 🖲 Protège vos messages et vos métadonnées - avec qui vous parlez et quand.
 - 🔐 Chiffrement de bout en bout à double ratchet, avec couche de chiffrement supplémentaire.
@@ -106,7 +116,7 @@ Vous devez partager un lien ou scanner un code QR (en personne ou pendant un app
 
 Le canal par lequel vous partagez le lien n'a pas besoin d'être sécurisé - il suffit que vous puissiez confirmer qui vous a envoyé le message et que votre connexion SimpleX soit établie.
 
-<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Établir une connexion privée" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Appel vidéo" height="360">
+<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/app1.png" alt="Établir une connexion privée" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/arrow.png" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/arrow.png" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/app3.png" alt="Appel vidéo" height="360">
 
 ## ⚡ Installation rapide d'une application pour terminal
 
@@ -319,12 +329,12 @@ Veuillez traiter toute découverte d'une éventuelle attaque par corrélation de
 
 [AGPL v3](/LICENSE)
 
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
-[![Android app](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
+[![Android app](https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)

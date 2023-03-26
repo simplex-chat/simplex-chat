@@ -1,3 +1,10 @@
+---
+layout: layouts/doc.html
+title: Group contacts management
+permalink: "/docs/rfcs/2022-10-19-group-contacts-management.html"
+supportedLangsForDoc:
+    - en
+---
 # Group contacts management
 
 ## Problem

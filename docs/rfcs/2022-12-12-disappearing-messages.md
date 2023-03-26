@@ -1,3 +1,10 @@
+---
+layout: layouts/doc.html
+title: Disappearing messages
+permalink: "/docs/rfcs/2022-12-12-disappearing-messags.html"
+supportedLangsForDoc:
+    - en
+---
 # Disappearing messages
 
 - ability to turn on/off disappearing messages feature per conversation, specify ttl
