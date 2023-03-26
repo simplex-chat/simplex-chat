@@ -22,26 +22,26 @@
             {% include "navbar.html" %}
         </section>
 
-        <section id="doc" class="bg-white dark:bg-[#17203D] px-4 lg:px-7 mt-[66px]">
-            <div class="py-6 ">
-                <main class="flex">
-                    <aside class="sidebar">
+        <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
+            <div>
+                <main>
+                    <aside class="sidebar px-4 py-4 lg:px-7">
                         <ul>
                             {% for doc in collections.docs %}
                                 {% if doc.lang == page.url | getlang %}
                                     {% if doc.menu != 'root' %}
-                                        <p class="mt-4 font-bold">{{ doc.menu }}</p>
+                                        <p class="">{{ doc.menu | capitalize }}</p>
                                         <ul>
                                             {% for submenu in doc.data %}
                                                 <li>
-                                                    <a href="{{ submenu.url | url }}">{{ submenu.title }}</a>
+                                                    <a class="{{ "active" if page.url == submenu.url | url else '' }}" href="{{ submenu.url | url }}">{{ submenu.title }}</a>
                                                 </li>
                                             {% endfor %}
                                         </ul>
                                     {% else %}
                                         {% for submenu in doc.data %}
                                             <li>
-                                                <a href="{{ submenu.url | url }}">{{ submenu.title }}</a>
+                                                <a class="{{ "active" if page.url == submenu.url | url else '' }}" href="{{ submenu.url | url }}">{{ submenu.title }}</a>
                                             </li>
                                         {% endfor %}
                                     {% endif %}
@@ -49,8 +49,29 @@
                             {% endfor %}
                         </ul>
                     </aside>
-                    <article class="content">
-                        <div class="max-w-4xl mx-auto">{{ content | safe }}</div>
+                    <article class="content px-4 lg:px-7 ">
+                        <div class="flex items-center justify-between sticky top-[66px] bg-white dark:bg-[#17203D] z-[49] !py-2 lg:hidden">
+                            <button class="menu flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="menu-icon h-4 w-4 fill-[rgb(60,60,60)] dark:fill-white">
+                                    <path d="M17,11H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h14c0.6,0,1,0.4,1,1S17.6,11,17,11z"></path>
+                                    <path d="M21,7H3C2.4,7,2,6.6,2,6s0.4-1,1-1h18c0.6,0,1,0.4,1,1S21.6,7,21,7z"></path>
+                                    <path d="M21,15H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h18c0.6,0,1,0.4,1,1S21.6,15,21,15z"></path>
+                                    <path d="M17,19H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h14c0.6,0,1,0.4,1,1S17.6,19,17,19z"></path>
+                                </svg>
+                                <span class="!text-[rgb(60,60,60)] dark:!text-white">Menu</span>
+                            </button>
+                            <div>
+
+                                {% set lang = page.url | getlang %}
+                                <a href="/docs/{{ "" if lang == "en" else "lang/"~lang }}" class="flex items-center gap-2 !no-underline !text-[rgb(60,60,60)] dark:!text-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="icon h-4 w-4 rotate-180 fill-[rgb(60,60,60)] dark:fill-white">
+                                        <path d="M9,19c-0.3,0-0.5-0.1-0.7-0.3c-0.4-0.4-0.4-1,0-1.4l5.3-5.3L8.3,6.7c-0.4-0.4-0.4-1,0-1.4s1-0.4,1.4,0l6,6c0.4,0.4,0.4,1,0,1.4l-6,6C9.5,18.9,9.3,19,9,19z"></path>
+                                    </svg>
+                                    <span class="">Back to docs</span>
+                                </a>
+                            </div>
+                        </div>
+                        <div>{{ content | safe }}</div>
                     </article>
                 </main>
             </div>
@@ -66,11 +87,24 @@
                     img.style.height = `${img.getAttribute('height')}px`
                 })
 
-                const allParagraphs = document.querySelectorAll("p");
+                const allParagraphs = document.querySelectorAll("p")
                 allParagraphs.forEach((paragraph) => {
                     if (paragraph.querySelector("img")) {
                         paragraph.style.display = "flex"
                     }
+                })
+
+                const docMain = document.querySelector('#doc main')
+                const menuBtn = document.querySelector('#doc main button.menu')
+                docMain.addEventListener('click', () => {
+                    docMain.classList.remove("overlay")
+                    document.body.classList.remove('lock-scroll')
+                })
+                
+                menuBtn.addEventListener('click', (e) => {
+                    docMain.classList.add("overlay")
+                    document.body.classList.add('lock-scroll')
+                    e.stopPropagation()
                 })
             })
         </script>

@@ -29,11 +29,6 @@ html {
   color: white;
 }
 
-#doc article>div {
-  padding: 16px 32px 32px 32px;
-}
-
-
 #doc h1 {
   font-size: 32px;
   font-weight: 700;
@@ -46,7 +41,7 @@ html {
   text-fill-color: transparent;
 
   position: relative;
-  margin: 24px 0px 16px;
+  margin: 0px 0px 16px;
   padding: 0px 0px 9.6px;
 }
 
@@ -206,4 +201,117 @@ html {
 .dark #doc table th {
   color: white;
   background-color: transparent !important;
+}
+
+/* Responsiveness */
+#doc main {
+  display: flex;
+}
+
+#doc main aside {
+  width: 320px;
+  height: calc(100vh - 66px);
+  position: sticky;
+  top: 66px;
+  overflow-y: auto;
+  background-color: #fff;
+}
+
+.dark #doc main aside {
+  background-color: #17203D;
+}
+
+#doc main aside ul {
+  margin: 0;
+  padding: 0;
+}
+
+#doc main aside ul li {
+  list-style: none;
+  margin: 0;
+}
+
+#doc main aside ul li a {
+  font-size: 14px;
+  display: block;
+  color: rgb(60, 60, 60);
+  text-decoration: none;
+}
+
+#doc main aside ul li a:hover {
+  color: #000;
+}
+
+.dark #doc main aside ul li a:hover {
+  color: #fff;
+}
+
+#doc main aside ul li a.active {
+  color: #0053D0;
+}
+
+.dark #doc main aside ul li a.active {
+  color: #70F0F9;
+}
+
+#doc main aside p {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: .8px;
+  margin-top: 1.2rem;
+  margin-bottom: .4rem;
+}
+
+#doc main article {
+  width: calc(100vw - 320px);
+}
+
+@media (max-width: 1024px) {
+  #doc main aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    transition: all ease .3s;
+    transform: translateX(-100%);
+  }
+
+  #doc main.overlay aside {
+    transform: translateX(0);
+  }
+
+  #doc main.overlay::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #F3F6F7;
+    opacity: 0.9;
+    z-index: 99;
+  }
+
+  .dark #doc main.overlay::after {
+    background-color: #0C0B13;
+  }
+
+  #doc main article {
+    width: 100%;
+  }
+}
+
+#doc article>div {
+  max-width: 870px;
+  margin: 0 auto;
+  padding: 16px 32px 32px 32px;
+}
+
+@media (max-width: 1024px) {
+  #doc article>div {
+    max-width: 600px;
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
