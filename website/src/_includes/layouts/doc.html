@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="{{ page.url | getlang }}">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ title }}</title>
+        <meta name="Content-Type" content="text/html;charset=utf-8"/>
+
+        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+        <link href="/css/tailwind.css" rel="stylesheet"/>
+        <link href="/css/style.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="/css/doc.css"/>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+        <script src="/js/flag-anchor.js"></script>
+    </head>
+
+    <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+        <section class="w-full bg-transparent fixed top-0 z-50">
+            {% include "navbar.html" %}
+        </section>
+
+        <section id="doc" class="bg-white dark:bg-[#17203D] px-4 lg:px-7 mt-[66px]">
+            <div class="py-6 ">
+                <main class="flex">
+                    <aside class="sidebar">
+                        <ul>
+                            {% for doc in collections.docs %}
+                                {% if doc.lang == page.url | getlang %}
+                                    {% if doc.menu != 'root' %}
+                                        <p class="mt-4 font-bold">{{ doc.menu }}</p>
+                                        <ul>
+                                            {% for submenu in doc.data %}
+                                                <li>
+                                                    <a href="{{ submenu.url | url }}">{{ submenu.title }}</a>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        {% for submenu in doc.data %}
+                                            <li>
+                                                <a href="{{ submenu.url | url }}">{{ submenu.title }}</a>
+                                            </li>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </aside>
+                    <article class="content">
+                        <div class="max-w-4xl mx-auto">{{ content | safe }}</div>
+                    </article>
+                </main>
+            </div>
+        </section>
+
+        {% include "footer.html" %}
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const imgs = document.querySelectorAll('p img')
+                imgs.forEach(img => {
+                    console.log(img.height)
+                    img.style.height = `${img.getAttribute('height')}px`
+                })
+
+                const allParagraphs = document.querySelectorAll("p");
+                allParagraphs.forEach((paragraph) => {
+                    if (paragraph.querySelector("img")) {
+                        paragraph.style.display = "flex"
+                    }
+                })
+            })
+        </script>
+    </body>
+
+</html>

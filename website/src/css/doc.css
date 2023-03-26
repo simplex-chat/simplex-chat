@@ -1,0 +1,209 @@
+html {
+  scroll-behavior: smooth;
+}
+
+#doc {
+  font-size: 16px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+#doc code,
+#doc kbd,
+#doc pre,
+#doc samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 1em;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#doc p {
+  margin: 0 0 16px;
+  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.dark #doc p {
+  color: white;
+}
+
+#doc article>div {
+  padding: 16px 32px 32px 32px;
+}
+
+
+#doc h1 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: -webkit-linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  background: linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+
+  position: relative;
+  margin: 24px 0px 16px;
+  padding: 0px 0px 9.6px;
+}
+
+#doc h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #3F484B;
+  position: relative;
+  margin: 24px 0px 16px;
+  padding: 0 0 7.2px;
+}
+
+#doc h3 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #606C71;
+  margin: 24px 0px 16px;
+}
+
+#doc h1::after,
+#doc h2::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0px;
+  width: 100%;
+  height: 1px;
+  background-color: rgb(216, 222, 228);
+}
+
+.dark #doc h1::after,
+.dark #doc h2::after {
+  background-color: transparent;
+}
+
+.dark #doc h1 {
+  background: -webkit-linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  background: linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.dark #doc h2,
+.dark #doc h3,
+.dark #doc h4 {
+  color: white;
+}
+
+#doc img {
+  max-width: 100%;
+}
+
+#doc article ul {
+  overflow-x: auto;
+}
+
+#doc ul,
+#doc ol {
+  list-style-position: inside;
+  overflow: auto;
+  margin: 1rem 0;
+  padding-left: 1rem;
+}
+
+#doc ul li,
+#doc ol li {
+  margin-right: 0;
+  margin-left: 0;
+  -webkit-margin-start: 1.1rem;
+  color: #000;
+}
+
+.dark #doc ul li,
+.dark #doc ol li {
+  color: #fff;
+}
+
+#doc ul li::marker,
+#doc ol li::marker {
+  color: black;
+}
+
+.dark #doc ul li::marker,
+.dark #doc ol li::marker {
+  color: white;
+}
+
+#doc ul li a,
+#doc ol li a {
+  line-height: 30px;
+}
+
+#doc ul li {
+  list-style: disc;
+}
+
+#doc ol li {
+  list-style: decimal;
+}
+
+#doc a {
+  color: #0053D0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.dark #doc a {
+  color: #70F0F9;
+}
+
+#doc pre {
+  overflow: auto;
+}
+
+.dark #doc pre {
+  color: white;
+}
+
+#doc table {
+  display: block;
+  border-collapse: collapse;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  margin-bottom: 1rem;
+  border: 1px solid #e1e4e8;
+}
+
+#doc table th,
+#doc table td {
+  border: 1px solid #e1e4e8;
+  padding: 6px 13px;
+}
+
+#doc table td a {
+  display: inline-block;
+}
+
+#doc table th {
+  font-weight: 600;
+  background-color: #f6f8fa;
+  text-align: left;
+}
+
+#doc table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+#doc table tbody tr:nth-child(even) {
+  background-color: #fafbfc;
+}
+
+.dark #doc table tr,
+.dark #doc table th {
+  color: white;
+  background-color: transparent !important;
+}

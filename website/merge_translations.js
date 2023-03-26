@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const matter = require('gray-matter');
 
 let supportedLangs = []
 const translationsDirectoryPath = path.resolve(__dirname, "langs")
@@ -27,9 +28,14 @@ for (const key in enStrings) {
     translations[key] = langStrings
 }
 
+// Read the README Markdown file
+const README_FilePath = path.resolve(__dirname, "../README.md")
+const README_File = fs.readFileSync(README_FilePath, 'utf-8');
+const supportedLangsForDocs = matter(README_File).data.supportedLangsForDoc;
+
 saveFile("translations.json", translations)
 // the list in the supported_languages.json file is used as the reference list for displaying available languages on the frontend
-saveFile("src/_data/supported_languages.json", {"langs": supportedLangs})
+saveFile("src/_data/supported_languages.json", {"langs": supportedLangs, "langsForDocs": supportedLangsForDocs})
 
 function saveFile(relPath, data) {
     filePath = path.resolve(__dirname, relPath)
