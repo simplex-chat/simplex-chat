@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct CallSettings: View {
     @AppStorage(DEFAULT_WEBRTC_POLICY_RELAY) private var webrtcPolicyRelay = true
-    @AppStorage(GROUP_DEFAULT_CALL_KIT_ENABLED, store: UserDefaults(suiteName: APP_GROUP_NAME)!) private var callKitEnabled = true
+    @AppStorage(GROUP_DEFAULT_CALL_KIT_ENABLED, store: groupDefaults) private var callKitEnabled = true
     @AppStorage(DEFAULT_CALL_KIT_CALLS_IN_RECENTS) private var callKitCallsInRecents = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     private let allowChangingCallsHistory = false

@@ -1388,7 +1388,7 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) "" -- $(simplexmqCommitQ)
+  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks

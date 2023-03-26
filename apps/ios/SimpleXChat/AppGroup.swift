@@ -29,6 +29,7 @@ let GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT = "networkTCPKeepCnt"
 let GROUP_DEFAULT_INCOGNITO = "incognito"
 let GROUP_DEFAULT_STORE_DB_PASSPHRASE = "storeDBPassphrase"
 let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
+public let GROUP_DEFAULT_CONFIRM_DB_UPGRADES = "confirmDBUpgrades"
 public let GROUP_DEFAULT_CALL_KIT_ENABLED = "callKitEnabled"
 
 public let APP_GROUP_NAME = "group.chat.simplex.app"
@@ -52,6 +53,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
         GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
         GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
+        GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
         GROUP_DEFAULT_CALL_KIT_ENABLED: true
     ])
 }
@@ -120,6 +122,8 @@ public let networkSessionModeGroupDefault = EnumDefault<TransportSessionMode>(
 public let storeDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_STORE_DB_PASSPHRASE)
 
 public let initialRandomDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE)
+
+public let confirmDBUpgradesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CONFIRM_DB_UPGRADES)
 
 public let callKitEnabledGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CALL_KIT_ENABLED)
 

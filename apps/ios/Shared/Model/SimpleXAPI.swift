@@ -983,10 +983,10 @@ private func currentUserId(_ funcName: String) throws -> Int64 {
     throw RuntimeError("\(funcName): no current user")
 }
 
-func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true) throws {
+func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
-    (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey)
+    (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if encryptionStartedDefault.get() {

@@ -203,7 +203,7 @@ var networkConfig: NetCfg = getNetCfg()
 func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
     if chatStarted { return .ok }
-    let (_, dbStatus) = chatMigrateInit()
+    let (_, dbStatus) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation())
     if dbStatus != .ok {
         resetChatCtrl()
         return dbStatus

@@ -555,3 +555,4 @@ CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
 CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON chat_items(
   item_deleted_by_group_member_id
 );
+CREATE TABLE test1(id1 integer primary key);
