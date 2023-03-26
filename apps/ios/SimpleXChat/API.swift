@@ -235,7 +235,7 @@ public enum MigrationError: Decodable, Equatable {
 
 public struct UpMigration: Decodable, Equatable {
     public var upName: String
-    public var hasDownMigration: Bool
+//    public var withDown: Bool
 }
 
 public enum MTRError: Decodable, Equatable {
