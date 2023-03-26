@@ -31,6 +31,7 @@ for file in langs/*.json; do
   fi
 done
 
+npm install
 node merge_translations.js
 
 # creating folders for each language for internationalization
@@ -43,7 +44,6 @@ for lang in "${langs[@]}"; do
   echo "done $lang copying"
 done
 
-npm install
 npm run build
 
 for lang in "${langs[@]}"; do
