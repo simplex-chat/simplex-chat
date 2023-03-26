@@ -7,11 +7,10 @@ import android.Manifest
 import android.app.Activity
 import android.content.*
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
-import android.graphics.ImageDecoder.DecodeException
+import android.graphics.*
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
@@ -36,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toFile
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -186,10 +186,11 @@ fun ComposeView(
   val textStyle = remember { mutableStateOf(smallFont) }
   val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
     if (uri != null) {
-      val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
-      val bitmap = ImageDecoder.decodeBitmap(source)
-      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview), listOf(UploadContent.SimpleImage(uri))))
+      val bitmap: Bitmap? = getBitmapFromUri(uri)
+      if (bitmap != null) {
+        val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+        composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview), listOf(UploadContent.SimpleImage(uri))))
+      }
     }
   }
   val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
@@ -203,19 +204,12 @@ fun ComposeView(
     val content = ArrayList<UploadContent>()
     val imagesPreview = ArrayList<String>()
     uris.forEach { uri ->
-      val source = ImageDecoder.createSource(context.contentResolver, uri)
-      val drawable = try {
-        ImageDecoder.decodeDrawable(source)
-      } catch (e: DecodeException) {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(R.string.image_decoding_exception_title),
-          text = generalGetString(R.string.image_decoding_exception_desc)
-        )
-        Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
-        null
-      }
-      var bitmap: Bitmap? = if (drawable != null) ImageDecoder.decodeBitmap(source) else null
-      if (drawable is AnimatedImageDrawable) {
+      val drawable = getDrawableFromUri(uri)
+      var bitmap: Bitmap? = if (drawable != null) getBitmapFromUri(uri) else null
+      val isAnimNewApi = Build.VERSION.SDK_INT >= 28 && drawable is AnimatedImageDrawable
+      val isAnimOldApi = Build.VERSION.SDK_INT < 28 &&
+          (getFileName(SimplexApp.context, uri)?.endsWith(".gif") == true || getFileName(SimplexApp.context, uri)?.endsWith(".webp") == true)
+      if (isAnimNewApi || isAnimOldApi) {
         // It's a gif or webp
         val fileSize = getFileSize(context, uri)
         if (fileSize != null && fileSize <= MAX_FILE_SIZE) {

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="chat_item_ttl_month">1 mėnuo</string>
+    <string name="chat_item_ttl_week">1 savaitė</string>
+    <string name="about_simplex_chat">Apie <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="chat_item_ttl_day">1 diena</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="about_simplex">Apie SimpleX</string>
+    <string name="smp_servers_add">Pridėti serverį…</string>
+    <string name="v4_3_improved_server_configuration_desc">Pridėti serverius skenuojant QR kodus.</string>
+    <string name="appearance_settings">Išvaizda</string>
+    <string name="app_version_title">Programėlės versija</string>
+    <string name="app_version_name">Programėlės versija: v%s</string>
+    <string name="app_version_code">Programėlės darinys: %s</string>
+    <string name="accept_automatically">Automatiškai</string>
+    <string name="callstatus_calling">skambinama…</string>
+    <string name="callstatus_error">skambučio klaida</string>
+    <string name="call_already_ended">Skambutis jau baigtas!</string>
+    <string name="answer_call">Atsiliepti</string>
+    <string name="icon_descr_call_ended">Skambutis baigtas</string>
+    <string name="settings_section_title_calls">SKAMBUČIAI</string>
+    <string name="allow_your_contacts_irreversibly_delete">Leisti jūsų adresatams negrįžtamai ištrinti išsiųstas žinutes.</string>
+    <string name="back">Atgal</string>
+    <string name="settings_section_title_icon">PROGRAMĖLĖS PIKTOGRAMA</string>
+    <string name="incognito_random_profile_from_contact_description">Adresatui, iš kurio gavote šią nuorodą, bus išsiųstas atsitiktinis profilis</string>
+    <string name="chat_preferences_always">visada</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Leisti jūsų adresatams siųsti balso žinutes.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Leisti negrįžtamą žinučių ištrynimą tik tuo atveju, jei jūsų adresatas jums tai leidžia.</string>
+    <string name="allow_voice_messages_only_if">Leisti balso žinutes tik tuo atveju, jei jūsų adresatas jas leidžia.</string>
+    <string name="allow_verb">Leisti</string>
+    <string name="allow_voice_messages_question">Leisti balso žinutes\?</string>
+    <string name="bold">pusjuodis</string>
+    <string name="callstatus_ended">skambutis baigtas <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="icon_descr_audio_call">garso skambutis</string>
+    <string name="settings_audio_video_calls">Garso ir vaizdo skambučiai</string>
+    <string name="integrity_msg_bad_hash">bloga žinutės maiša</string>
+    <string name="integrity_msg_bad_id">blogas žinutės ID</string>
+    <string name="incognito_random_profile_description">Jūsų adresatui bus išsiųstas atsitiktinis profilis</string>
+    <string name="allow_disappearing_messages_only_if">Leisti išnykstančias žinutes tik tuo atveju, jei jūsų adresatas jas leidžia.</string>
+    <string name="clear_chat_warning">Visos žinutės bus ištrintos – to neįmanoma bus atšaukti! Žinutės bus ištrintos TIK jums.</string>
+    <string name="allow_to_delete_messages">Leisti negrįžtamai ištrinti išsiųstas žinutes.</string>
+    <string name="allow_to_send_disappearing">Leisti siųsti išnykstančias žinutes.</string>
+    <string name="allow_to_send_voice">Leisti siųsti balso žinutes.</string>
+    <string name="allow_direct_messages">Leisti siųsti tiesiogines žinutes nariams.</string>
+    <string name="v4_6_audio_video_calls">Garso ir vaizdo skambučiai</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Leisti jūsų adresatams siųsti išnykstančias žinutes.</string>
+    <string name="auth_unavailable">Tapatybės nustatymas neprieinamas</string>
+    <string name="impossible_to_recover_passphrase"><b>Turėkite omenyje</b>: jeigu prarasite slaptafrazę, NEBEGALĖSITE jos atkurti ar pakeisti.</string>
+    <string name="cancel_verb">Atsisakyti</string>
+</resources>

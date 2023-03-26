@@ -166,7 +166,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = GroupMemberRole.values().filter { it <= groupInfo.membership.memberRole && it != GroupMemberRole.Observer }.map { it to it.text }
+    val values = GroupMemberRole.values().filter { it <= groupInfo.membership.memberRole }.map { it to it.text }
     ExposedDropDownSettingRow(
       generalGetString(R.string.new_member_role),
       values,
