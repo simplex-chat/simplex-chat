@@ -50,15 +50,6 @@ import System.Timeout (timeout)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
--- TODO remove
--- foreign export ccall "chat_migrate_db" cChatMigrateDB :: CString -> CString -> IO CJSONString
-
--- chat_init is deprecated
--- foreign export ccall "chat_init" cChatInit :: CString -> IO (StablePtr ChatController)
-
--- TODO remove
--- foreign export ccall "chat_init_key" cChatInitKey :: CString -> CString -> IO (StablePtr ChatController)
-
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
 foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
@@ -86,25 +77,6 @@ cChatMigrateInit fp key conf ctrl = do
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCAString . LB.unpack $ J.encode r
-
--- | check and migrate the database
--- This function validates that the encryption is correct and runs migrations - it should be called before cChatInitKey
--- TODO remove
--- cChatMigrateDB :: CString -> CString -> IO CJSONString
--- cChatMigrateDB fp key =
---   ((,) <$> peekCAString fp <*> peekCAString key) >>= uncurry chatMigrateDB >>= newCAString . LB.unpack . J.encode
-
--- | initialize chat controller (deprecated)
--- The active user has to be created and the chat has to be started before most commands can be used.
--- cChatInit :: CString -> IO (StablePtr ChatController)
--- cChatInit fp = peekCAString fp >>= chatInit >>= newStablePtr
-
--- | initialize chat controller with encrypted database
--- The active user has to be created and the chat has to be started before most commands can be used.
--- TODO remove
--- cChatInitKey :: CString -> CString -> IO (StablePtr ChatController)
--- cChatInitKey fp key =
---   ((,) <$> peekCAString fp <*> peekCAString key) >>= uncurry chatInitKey >>= newStablePtr
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
@@ -200,33 +172,6 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
           DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase dbFile
           _ -> dbError e
         dbError e = Left . DBMErrorSQL dbFile $ show e
-
--- TODO remove
--- chatMigrateDB :: String -> String -> IO DBMigrationResult
--- chatMigrateDB dbFilePrefix dbKey =
---   migrate createChatStore (chatStoreFile dbFilePrefix) >>= \case
---     DBMOk -> migrate createAgentStore (agentStoreFile dbFilePrefix)
---     e -> pure e
---   where
---     migrate createStore dbFile =
---       ((createStore dbFile dbKey True >>= closeSQLiteStore) $> DBMOk)
---         `catch` (pure . checkDBError)
---           `catchAll` (pure . dbError)
---       where
---         checkDBError e = case sqlError e of
---           DB.ErrorNotADatabase -> DBMErrorNotADatabase dbFile
---           _ -> dbError e
---         dbError e = DBMError dbFile $ show e
-
--- chatInit :: String -> IO ChatController
--- chatInit = (`chatInitKey` "")
-
--- TODO remove
--- chatInitKey :: String -> String -> IO ChatController
--- chatInitKey dbFilePrefix dbKey = do
---   db@ChatDatabase {chatStore} <- createChatDatabase dbFilePrefix dbKey True
---   user_ <- getActiveUser_ chatStore
---   newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey) Nothing
 
 chatSendCmd :: ChatController -> String -> IO JSONString
 chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc
