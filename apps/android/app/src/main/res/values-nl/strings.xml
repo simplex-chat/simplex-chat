@@ -577,7 +577,7 @@
     <string name="old_database_archive">Oud database archief</string>
     <string name="enter_correct_current_passphrase">Voer het juiste huidige wachtwoord in.</string>
     <string name="group_member_role_owner">Eigenaar</string>
-    <string name="network_option_ping_count">PING telling</string>
+    <string name="network_option_ping_count">PING count</string>
     <string name="network_option_ping_interval">PING interval</string>
     <string name="v4_5_message_draft_descr">Bewaar het laatste berichtconcept, met bijlagen.</string>
     <string name="v4_5_private_filenames">Privé bestandsnamen</string>
