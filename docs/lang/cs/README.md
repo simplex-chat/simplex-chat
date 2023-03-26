@@ -126,7 +126,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/inst
 
 Po instalaci chatovacího klienta jednoduše spusťte `simplex-chat` z terminálu.
 
-![simplex-chat](./images/connection.gif)
+![simplex-chat](/images/connection.gif)
 
 Více informací o [instalaci a používání terminálové aplikace](./docs/CLI.md).
 
