@@ -2,7 +2,7 @@
 <html lang="{{ page.url | getlang }}"
     {% for language in languages.languages %}
         {% if language.label == page.url | getlang %}
-            dir="{{ language.dir }}"
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
         {% endif %}
     {% endfor %}>
     <head>

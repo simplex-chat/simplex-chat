@@ -313,6 +313,14 @@ header nav {
   display: none !important;
 }
 
+@media (max-width: 767px) {
+  .swiper-button-next, .swiper-button-prev {
+    opacity: 0;
+    pointer-events: none;
+    display: none !important;
+  }
+}
+
 .swiper-pagination-bullet {
   height: 14.31px;
   width: 14.31px;
