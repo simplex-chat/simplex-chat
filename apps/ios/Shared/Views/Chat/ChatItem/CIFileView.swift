@@ -160,7 +160,6 @@ struct CIFileView: View {
                 style: StrokeStyle(lineWidth: 3)
             )
             .rotationEffect(.degrees(-90))
-            .animation(.linear, value: progress)
             .frame(width: 30, height: 30)
     }
 }
