@@ -819,7 +819,7 @@
     <string name="button_send_direct_message">Invia messaggio diretto</string>
     <string name="skip_inviting_button">Salta l\'invito di membri</string>
     <string name="switch_verb">Cambia</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contatto/i selezionato/i</string>
+    <string name="num_contacts_selected">%d contatto/i selezionato/i</string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBRI</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puoi condividere un link o un codice QR: chiunque potrà unirsi al gruppo. Non perderai i membri del gruppo se in seguito lo elimini.</string>
     <string name="invite_prohibited_description">Stai tentando di invitare un contatto con cui hai condiviso un profilo in incognito nel gruppo in cui stai usando il tuo profilo principale</string>
@@ -948,7 +948,6 @@
     <string name="delete_files_and_media_for_all_users">Elimina i file per tutti i profili di chat</string>
     <string name="failed_to_active_user_title">Errore nel cambio di profilo!</string>
     <string name="failed_to_create_user_title">Errore nella creazione del profilo!</string>
-    <string name="your_chat_profiles_stored_locally">I tuoi profili di chat sono memorizzati localmente, solo sul tuo dispositivo</string>
     <string name="error_deleting_user">Errore nell\'eliminazione del profilo utente</string>
     <string name="users_delete_with_connections">Profilo e connessioni al server</string>
     <string name="your_chat_profiles">I tuoi profili di chat</string>

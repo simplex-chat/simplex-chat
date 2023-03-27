@@ -108,7 +108,6 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @Binding var showSettings: Bool
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var settingsSheet: SettingsSheet?
 
     var body: some View {
@@ -259,23 +258,11 @@ struct SettingsView: View {
                 }
 
                 Section("Develop") {
-                    settingsRow("chevron.left.forwardslash.chevron.right") {
-                        Toggle("Developer tools", isOn: $developerTools)
-                    }
-                    if developerTools {
-                        NavigationLink {
-                            TerminalView()
-                        } label: {
-                            settingsRow("terminal") { Text("Chat console") }
-                        }
-                        ZStack(alignment: .leading) {
-                            Image(colorScheme == .dark ? "github_light" : "github")
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                                .opacity(0.5)
-                            Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
-                                .padding(.leading, indent)
-                        }
+                    NavigationLink {
+                        DeveloperView()
+                            .navigationTitle("Developer tools")
+                    } label: {
+                        settingsRow("chevron.left.forwardslash.chevron.right") { Text("Developer tools") }
                     }
 //                    NavigationLink {
 //                        ExperimentalFeaturesView()

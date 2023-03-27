@@ -28,6 +28,7 @@ import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
@@ -118,13 +119,13 @@ testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
-  db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix = do
-  db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
   Just user <- find activeUser <$> withTransaction chatStore getUsers
   startTestChat_ db cfg opts user
 

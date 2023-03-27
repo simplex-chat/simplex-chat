@@ -61,10 +61,11 @@ import Simplex.Chat.Util (diffInMicros, diffInSeconds)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (dbNew), execSQL)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration)
+import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
@@ -92,11 +93,9 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            tbqSize = 1024,
-            database = AgentDBFile {dbFile = "simplex_v1_agent", dbKey = ""},
-            yesToMigrations = False
+            tbqSize = 1024
           },
-      yesToMigrations = False,
+      confirmMigrations = MCConsole,
       defaultServers =
         DefaultAgentServers
           { smp = _defaultSMPServers,
@@ -134,10 +133,10 @@ fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEA
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-createChatDatabase :: FilePath -> String -> Bool -> IO ChatDatabase
-createChatDatabase filePrefix key yesToMigrations = do
-  chatStore <- createChatStore (chatStoreFile filePrefix) key yesToMigrations
-  agentStore <- createAgentStore (agentStoreFile filePrefix) key yesToMigrations
+createChatDatabase :: FilePath -> String -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
+createChatDatabase filePrefix key confirmMigrations = runExceptT $ do
+  chatStore <- ExceptT $ createChatStore (chatStoreFile filePrefix) key confirmMigrations
+  agentStore <- ExceptT $ createAgentStore (agentStoreFile filePrefix) key confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
@@ -148,9 +147,10 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
-  smpAgent <- getSMPAgentClient aCfg {tbqSize, database = AgentDB agentStore} =<< agentServers config
+  servers <- agentServers config
+  smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
   agentAsync <- newTVarIO Nothing
-  idsDrg <- newTVarIO =<< drgNew
+  idsDrg <- newTVarIO =<< liftIO drgNew
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
@@ -1389,7 +1389,11 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
+  ShowVersion -> do
+    let versionInfo = coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
+    chatMigrations <- map upMigration <$> withStore' Migrations.getCurrent
+    agentMigrations <- withAgent getAgentMigrations
+    pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks

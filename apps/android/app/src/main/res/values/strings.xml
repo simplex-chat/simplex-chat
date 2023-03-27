@@ -921,7 +921,7 @@
   <string name="select_contacts">Select contacts</string>
   <string name="icon_descr_contact_checked">Contact checked</string>
   <string name="clear_contacts_selection_button">Clear</string>
-  <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(s) selected</string>
+  <string name="num_contacts_selected">%d contact(s) selected</string>
   <string name="no_contacts_selected">No contacts selected</string>
   <string name="invite_prohibited">Can\'t invite contact!</string>
   <string name="invite_prohibited_description">You\'re trying to invite contact with whom you\'ve shared an incognito profile to the group in which you\'re using your main profile</string>
