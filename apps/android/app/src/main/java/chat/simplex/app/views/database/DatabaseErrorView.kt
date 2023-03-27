@@ -4,6 +4,7 @@ import SectionSpacer
 import SectionView
 import android.content.Context
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -47,33 +48,42 @@ fun DatabaseErrorView(
     appPreferences.initialRandomDBPassphrase.set(false)
     runChat(dbKey.value, chatDbStatus, progressIndicator, appPreferences)
   }
-  val title = when (chatDbStatus.value) {
-    is DBMigrationResult.OK -> ""
-    is DBMigrationResult.ErrorNotADatabase -> if (useKeychain && !storedDBKey.isNullOrEmpty())
-      generalGetString(R.string.wrong_passphrase)
-    else
-      generalGetString(R.string.encrypted_database)
-    is DBMigrationResult.Error -> generalGetString(R.string.database_error)
-    is DBMigrationResult.ErrorKeychain -> generalGetString(R.string.keychain_error)
-    is DBMigrationResult.Unknown -> generalGetString(R.string.database_error)
-    null -> "" // should never be here
-  }
+//  val status = chatDbStatus.value
+//  val title = when (status) {
+//    is DBMigrationResult.OK -> ""
+//    is DBMigrationResult.ErrorNotADatabase -> if (useKeychain && !storedDBKey.isNullOrEmpty())
+//      generalGetString(R.string.wrong_passphrase)
+//    else
+//      generalGetString(R.string.encrypted_database)
+//    is DBMigrationResult.ErrorMigration -> when (status.migrationError) {
+//      is MigrationError.Upgrade -> generalGetString(R.string.database_upgrade)
+//      is MigrationError.Downgrade -> generalGetString(R.string.database_downgrade)
+//      is MigrationError.Error -> generalGetString(R.string.incompatible_database_version)
+//    }
+//    is DBMigrationResult.ErrorSQL -> generalGetString(R.string.database_error)
+//    is DBMigrationResult.ErrorKeychain -> generalGetString(R.string.keychain_error)
+    // this can only happen if incorrect parameter is passed
+//    is DBMigrationResult.InvalidConfirmation -> "Invalid migration confirmation"
+//    is DBMigrationResult.Unknown -> generalGetString(R.string.database_error)
+//    null -> "" // should never be here
+//  }
 
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.Center,
   ) {
-    Text(
-      title,
-      Modifier.padding(start = 16.dp, top = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
-    SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
-      val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
-      when (val status = chatDbStatus.value) {
-        is DBMigrationResult.ErrorNotADatabase -> {
-          if (useKeychain && !storedDBKey.isNullOrEmpty()) {
+//    Text(
+//      title,
+//      Modifier.padding(start = 16.dp, top = 16.dp, bottom = 24.dp),
+//      style = MaterialTheme.typography.h1
+//    )
+//    SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
+    val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
+    when (val status = chatDbStatus.value) {
+      is DBMigrationResult.ErrorNotADatabase ->
+        if (useKeychain && !storedDBKey.isNullOrEmpty()) {
+          DatabaseErrorDetails(R.string.wrong_passphrase) {
             Text(generalGetString(R.string.passphrase_is_different))
             DatabaseKeyField(dbKey, buttonEnabled) {
               saveAndRunChatOnClick()
@@ -81,7 +91,9 @@ fun DatabaseErrorView(
             SaveAndOpenButton(buttonEnabled, saveAndRunChatOnClick)
             SectionSpacer()
             Text(String.format(generalGetString(R.string.file_with_path), status.dbFile))
-          } else {
+          }
+        } else {
+          DatabaseErrorDetails(R.string.encrypted_database) {
             Text(generalGetString(R.string.database_passphrase_is_required))
             DatabaseKeyField(dbKey, buttonEnabled) {
               if (useKeychain) saveAndRunChatOnClick() else runChat(dbKey.value, chatDbStatus, progressIndicator, appPreferences)
@@ -93,36 +105,55 @@ fun DatabaseErrorView(
             }
           }
         }
-        is DBMigrationResult.Error -> {
+      is DBMigrationResult.ErrorMigration -> when (status.migrationError) {
+        is MigrationError.Upgrade ->
+          DatabaseErrorDetails(R.string.database_upgrade) {
+
+          }
+        is MigrationError.Downgrade ->
+          DatabaseErrorDetails(R.string.database_downgrade) {
+
+          }
+        is MigrationError.Error ->
+          DatabaseErrorDetails(R.string.incompatible_database_version) {
+
+          }
+      }
+      is DBMigrationResult.ErrorSQL ->
+        DatabaseErrorDetails(R.string.database_error) {
           Text(String.format(generalGetString(R.string.file_with_path), status.dbFile))
-          Text(String.format(generalGetString(R.string.error_with_info), status.migrationError))
+          Text(String.format(generalGetString(R.string.error_with_info), status.migrationSQLError))
         }
-        is DBMigrationResult.ErrorKeychain -> {
+      is DBMigrationResult.ErrorKeychain ->
+        DatabaseErrorDetails(R.string.keychain_error) {
           Text(generalGetString(R.string.cannot_access_keychain))
         }
-        is DBMigrationResult.Unknown -> {
+      is DBMigrationResult.InvalidConfirmation ->
+        DatabaseErrorDetails(R.string.invalid_migration_confirmation) {
+          // this can only happen if incorrect parameter is passed
+        }
+      is DBMigrationResult.Unknown ->
+        DatabaseErrorDetails(R.string.database_error) {
           Text(String.format(generalGetString(R.string.unknown_database_error_with_info), status.json))
         }
-        is DBMigrationResult.OK -> {
-        }
-        null -> {
-        }
-      }
-      if (restoreDbFromBackup.value) {
-        SectionSpacer()
-        Text(generalGetString(R.string.database_backup_can_be_restored))
-        Spacer(Modifier.size(16.dp))
-        RestoreDbButton {
-          AlertManager.shared.showAlertDialog(
-            title = generalGetString(R.string.restore_database_alert_title),
-            text = generalGetString(R.string.restore_database_alert_desc),
-            confirmText = generalGetString(R.string.restore_database_alert_confirm),
-            onConfirm = { restoreDb(restoreDbFromBackup, appPreferences, context) },
-            destructive = true,
-          )
-        }
+      is DBMigrationResult.OK -> {}
+      null -> {}
+    }
+    if (restoreDbFromBackup.value) {
+      SectionSpacer()
+      Text(generalGetString(R.string.database_backup_can_be_restored))
+      Spacer(Modifier.size(16.dp))
+      RestoreDbButton {
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(R.string.restore_database_alert_title),
+          text = generalGetString(R.string.restore_database_alert_desc),
+          confirmText = generalGetString(R.string.restore_database_alert_confirm),
+          onConfirm = { restoreDb(restoreDbFromBackup, appPreferences, context) },
+          destructive = true,
+        )
       }
     }
+//    }
   }
   if (progressIndicator.value) {
     Box(
@@ -138,6 +169,16 @@ fun DatabaseErrorView(
       )
     }
   }
+}
+
+@Composable
+private fun DatabaseErrorDetails(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) {
+  Text(
+    generalGetString(title),
+    Modifier.padding(start = 16.dp, top = 16.dp, bottom = 24.dp),
+    style = MaterialTheme.typography.h1
+  )
+  SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), content)
 }
 
 private fun runChat(
@@ -166,8 +207,8 @@ private fun runChat(
     is DBMigrationResult.ErrorNotADatabase -> {
       AlertManager.shared.showAlertMsg(generalGetString(R.string.wrong_passphrase_title), generalGetString(R.string.enter_correct_passphrase))
     }
-    is DBMigrationResult.Error -> {
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.database_error), status.migrationError)
+    is DBMigrationResult.ErrorSQL -> {
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.database_error), status.migrationSQLError)
     }
     is DBMigrationResult.ErrorKeychain -> {
       AlertManager.shared.showAlertMsg(generalGetString(R.string.keychain_error))

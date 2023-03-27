@@ -57,7 +57,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       chatModel.chatDbEncrypted.value == true,
       chatModel.incognito,
       chatModel.controller.appPrefs.incognito,
-      developerTools = chatModel.controller.appPrefs.developerTools,
       user.displayName,
       setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
@@ -126,7 +125,6 @@ fun SettingsLayout(
   encrypted: Boolean,
   incognito: MutableState<Boolean>,
   incognitoPref: SharedPreference<Boolean>,
-  developerTools: SharedPreference<Boolean>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -207,17 +205,7 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_develop)) {
-        val devTools = remember { mutableStateOf(developerTools.get()) }
-        SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools, devTools)
-        SectionDivider()
-        if (devTools.value) {
-          ChatConsoleItem { withAuth(showCustomModal { it, close -> TerminalView(it, close) }) }
-          SectionDivider()
-          InstallTerminalAppItem(uriHandler)
-          SectionDivider()
-        }
-//        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it, enableCalls) })
-//        SectionDivider()
+        SettingsActionItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) })
         AppVersionItem(showVersion)
       }
     }
@@ -370,7 +358,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable private fun ChatConsoleItem(showTerminal: () -> Unit) {
+@Composable fun ChatConsoleItem(showTerminal: () -> Unit) {
   SectionItemView(showTerminal) {
     Icon(
       painter = painterResource(id = R.drawable.ic_outline_terminal),
@@ -382,7 +370,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable private fun InstallTerminalAppItem(uriHandler: UriHandler) {
+@Composable fun InstallTerminalAppItem(uriHandler: UriHandler) {
   SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
@@ -544,7 +532,6 @@ fun PreviewSettingsLayout() {
       encrypted = false,
       incognito = remember { mutableStateOf(false) },
       incognitoPref = SharedPreference({ false }, {}),
-      developerTools = SharedPreference({ false }, {}),
       userDisplayName = "Alice",
       setPerformLA = {},
       showModal = { {} },
