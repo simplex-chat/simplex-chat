@@ -37,3 +37,20 @@ CREATE INDEX idx_rcv_files_file_descr_id ON rcv_files(file_descr_id);
 
 ALTER TABLE rcv_files ADD COLUMN agent_rcv_file_id BLOB NULL;
 |]
+
+down_m20230318_file_description :: Query
+down_m20230318_file_description =
+  [sql|
+ALTER TABLE rcv_files DROP COLUMN agent_rcv_file_id;
+
+DROP INDEX idx_rcv_files_file_descr_id;
+ALTER TABLE rcv_files DROP COLUMN file_descr_id;
+
+DROP INDEX idx_snd_files_file_descr_id;
+ALTER TABLE snd_files DROP COLUMN file_descr_id;
+
+ALTER TABLE files DROP COLUMN private_snd_file_descr;
+ALTER TABLE files DROP COLUMN agent_snd_file_id;
+
+DROP TABLE xftp_file_descriptions;
+|]

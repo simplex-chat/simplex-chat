@@ -18,3 +18,11 @@ UPDATE rcv_files SET agent_rcv_file_deleted = 0;
 
 PRAGMA ignore_check_constraints=OFF;
 |]
+
+down_m20230321_agent_file_deleted :: Query
+down_m20230321_agent_file_deleted =
+  [sql|
+ALTER TABLE rcv_files DROP COLUMN agent_rcv_file_deleted;
+
+ALTER TABLE files DROP COLUMN agent_snd_file_deleted;
+|]

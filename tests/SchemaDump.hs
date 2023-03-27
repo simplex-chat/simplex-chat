@@ -13,7 +13,7 @@ import qualified Simplex.Chat.Store as Store
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore, createSQLiteStore, withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..), MigrationsToRun (..), toDownMigration)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Util (ifM)
+import Simplex.Messaging.Util (ifM, whenM)
 import System.Directory (doesFileExist, removeFile)
 import System.Process (readCreateProcess, shell)
 import Test.Hspec
@@ -47,7 +47,7 @@ testSchemaMigrations = withTmpFiles $ do
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
   closeSQLiteStore st
   removeFile testDB
-  removeFile testSchema
+  whenM (doesFileExist testSchema) $ removeFile testSchema
   where
     testDownMigration st m = do
       putStrLn $ "down migration " <> name m

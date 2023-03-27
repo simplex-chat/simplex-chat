@@ -431,8 +431,8 @@ schemaMigrations =
     ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id, Nothing),
     ("20230303_group_link_role", m20230303_group_link_role, Nothing),
     ("20230317_hidden_profiles", m20230317_hidden_profiles, Just down_m20230317_hidden_profiles),
-    ("20230318_file_description", m20230318_file_description, Nothing),
-    ("20230321_agent_file_deleted", m20230321_agent_file_deleted, Nothing)
+    ("20230318_file_description", m20230318_file_description, Just down_m20230318_file_description),
+    ("20230321_agent_file_deleted", m20230321_agent_file_deleted, Just down_m20230321_agent_file_deleted)
   ]
 
 -- | The list of migrations in ascending order by date
