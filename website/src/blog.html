@@ -38,6 +38,7 @@ active_blog: true
         <p class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</p>
 
         {% for blog in collections.blogs %}
+        {% if not(blog.data.draft) %}
             <article class="w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#11182F] mb-8">
                 <div class="min-h-[200px] h-[inherit] self-stretch md:w-[168px] bg-[#D9E7ED] dark:bg-[#17203D] flex items-center justify-center flex-[1] relative">
                     <div class="min-h-[inherit] h-full w-full flex items-end px-4 pt-4 justify-center relative">
@@ -72,6 +73,7 @@ active_blog: true
                     <a class="block text-primary-light dark:text-[#70F0F9] text-base font-medium tracking-[0.03em] mt-auto" href="{{ blog.url }}">Read More</a>
                 </div>
             </article>
+        {% endif %}
         {% endfor %}
     </div>
 </section>
