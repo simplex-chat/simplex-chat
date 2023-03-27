@@ -210,9 +210,9 @@ private fun VoiceMsgIndicator(
       PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
     }
   } else {
-    if (file?.fileStatus == CIFileStatus.RcvInvitation
-      || file?.fileStatus == CIFileStatus.RcvTransfer
-      || file?.fileStatus == CIFileStatus.RcvAccepted
+    if (file?.fileStatus is CIFileStatus.RcvInvitation
+      || file?.fileStatus is CIFileStatus.RcvTransfer
+      || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {
       Box(
         Modifier

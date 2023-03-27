@@ -72,7 +72,7 @@ fun CIFileView(
   fun fileAction() {
     if (file != null) {
       when (file.fileStatus) {
-        CIFileStatus.RcvInvitation -> {
+        is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
             receiveFile(file.fileId)
           } else {
@@ -82,12 +82,12 @@ fun CIFileView(
             )
           }
         }
-        CIFileStatus.RcvAccepted ->
+        is CIFileStatus.RcvAccepted ->
           AlertManager.shared.showAlertMsg(
             generalGetString(R.string.waiting_for_file),
             String.format(generalGetString(R.string.file_will_be_received_when_contact_is_online), MAX_FILE_SIZE)
           )
-        CIFileStatus.RcvComplete -> {
+        is CIFileStatus.RcvComplete -> {
           val filePath = getLoadedFilePath(context, file)
           if (filePath != null) {
             saveFileLauncher.launch(file.fileName)
@@ -120,19 +120,19 @@ fun CIFileView(
     ) {
       if (file != null) {
         when (file.fileStatus) {
-          CIFileStatus.SndStored -> fileIcon()
-          CIFileStatus.SndTransfer -> progressIndicator()
-          CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
-          CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
-          CIFileStatus.RcvInvitation ->
+          is CIFileStatus.SndStored -> fileIcon()
+          is CIFileStatus.SndTransfer -> progressIndicator()
+          is CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
+          is CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          is CIFileStatus.RcvInvitation ->
             if (fileSizeValid())
               fileIcon(innerIcon = Icons.Outlined.ArrowDownward, color = MaterialTheme.colors.primary)
             else
               fileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
-          CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
-          CIFileStatus.RcvTransfer -> progressIndicator()
-          CIFileStatus.RcvComplete -> fileIcon()
-          CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
+          is CIFileStatus.RcvTransfer -> progressIndicator()
+          is CIFileStatus.RcvComplete -> fileIcon()
+          is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
         }
       } else {
         fileIcon()
@@ -191,7 +191,7 @@ class ChatItemProvider: PreviewParameterProvider<ChatItem> {
     ChatItem.getFileMsgContentSample(),
     ChatItem.getFileMsgContentSample(fileName = "some_long_file_name_here", fileStatus = CIFileStatus.RcvInvitation),
     ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvAccepted),
-    ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvTransfer),
+    ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10)),
     ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvCancelled),
     ChatItem.getFileMsgContentSample(fileSize = 1_000_000_000, fileStatus = CIFileStatus.RcvInvitation),
     ChatItem.getFileMsgContentSample(text = "Hello there", fileStatus = CIFileStatus.RcvInvitation),

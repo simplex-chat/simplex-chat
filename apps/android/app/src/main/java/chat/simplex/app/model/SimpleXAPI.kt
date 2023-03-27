@@ -148,6 +148,8 @@ class AppPreferences(val context: Context) {
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
 
+  val xftpSendEnabled = mkBoolPreference(SHARED_PREFS_XFTP_SEND_ENABLED, false)
+
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
       get = fun() = sharedPreferences.getInt(prefName, default),
@@ -245,6 +247,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
+    private const val SHARED_PREFS_XFTP_SEND_ENABLED = "XFTPSendEnabled"
   }
 }
 
@@ -280,6 +283,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     try {
       if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
+      apiSetTempFolder(getTempFilesDirectory(appContext))
+      apiSetFilesFolder(getAppFilesDirectory(appContext))
+      apiSetXFTPConfig(getXFTPCfg())
       val justStarted = apiStartChat()
       val users = listUsers()
       chatModel.users.clear()
@@ -287,7 +293,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       if (justStarted) {
         chatModel.currentUser.value = user
         chatModel.userCreated.value = true
-        apiSetFilesFolder(getAppFilesDirectory(appContext))
         apiSetIncognito(chatModel.incognito.value)
         getUserChatData()
         chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
@@ -471,10 +476,22 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  private suspend fun apiSetTempFolder(tempFolder: String) {
+    val r = sendCmd(CC.SetTempFolder(tempFolder))
+    if (r is CR.CmdOk) return
+    throw Error("failed to set temp folder: ${r.responseType} ${r.details}")
+  }
+
   private suspend fun apiSetFilesFolder(filesFolder: String) {
     val r = sendCmd(CC.SetFilesFolder(filesFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetXFTPConfig(cfg: XFTPFileConfig?) {
+    val r = sendCmd(CC.ApiSetXFTPConfig(cfg))
+    if (r is CR.CmdOk) return
+    throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetIncognito(incognito: Boolean) {
@@ -1695,6 +1712,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  fun getXFTPCfg(): XFTPFileConfig? {
+    val prefXFTPSendEnabled = appPrefs.xftpSendEnabled.get()
+    return if (prefXFTPSendEnabled) XFTPFileConfig(minFileSize = 0) else null
+  }
+
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
     val socksProxy = if (useSocksProxy) ":9050" else null
@@ -1774,7 +1796,9 @@ sealed class CC {
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val expire: Boolean): CC()
   class ApiStopChat: CC()
+  class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
+  class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
   class SetIncognito(val incognito: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
@@ -1855,7 +1879,9 @@ sealed class CC {
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
+    is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
+    is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
     is SetIncognito -> "/incognito ${onOff(incognito)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
@@ -1937,7 +1963,9 @@ sealed class CC {
     is ApiDeleteUser -> "apiDeleteUser"
     is StartChat -> "startChat"
     is ApiStopChat -> "apiStopChat"
+    is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
+    is ApiSetXFTPConfig -> "apiSetXFTPConfig"
     is SetIncognito -> "setIncognito"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
@@ -2065,6 +2093,9 @@ sealed class ChatPagination {
 
 @Serializable
 class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgContent: MsgContent)
+
+@Serializable
+class XFTPFileConfig(val minFileSize: Long)
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)

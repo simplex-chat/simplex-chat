@@ -31,6 +31,7 @@ let GROUP_DEFAULT_STORE_DB_PASSPHRASE = "storeDBPassphrase"
 let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
 public let GROUP_DEFAULT_CONFIRM_DB_UPGRADES = "confirmDBUpgrades"
 public let GROUP_DEFAULT_CALL_KIT_ENABLED = "callKitEnabled"
+public let GROUP_DEFAULT_XFTP_SEND_ENABLED = "xftpSendEnabled"
 
 public let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -54,7 +55,8 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
         GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
         GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
-        GROUP_DEFAULT_CALL_KIT_ENABLED: true
+        GROUP_DEFAULT_CALL_KIT_ENABLED: true,
+        GROUP_DEFAULT_XFTP_SEND_ENABLED: false,
     ])
 }
 
@@ -127,6 +129,8 @@ public let confirmDBUpgradesGroupDefault = BoolDefault(defaults: groupDefaults, 
 
 public let callKitEnabledGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CALL_KIT_ENABLED)
 
+public let xftpSendEnabledGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_XFTP_SEND_ENABLED)
+
 public class DateDefault {
     var defaults: UserDefaults
     var key: String
@@ -197,6 +201,11 @@ public class Default<T> {
         defaults.set(value, forKey: key)
         defaults.synchronize()
     }
+}
+
+public func getXFTPCfg() -> XFTPFileConfig? {
+    let xftpSendEnabled = xftpSendEnabledGroupDefault.get()
+    return xftpSendEnabled ? XFTPFileConfig(minFileSize: 0) : nil
 }
 
 public func getNetCfg() -> NetCfg {
