@@ -1321,6 +1321,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .rcvFileProgressXFTP(user, aChatItem, _, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileStart(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileComplete(user, aChatItem, _):
@@ -1332,6 +1334,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
+        case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)

@@ -48,7 +48,7 @@ struct CIFileView: View {
         .disabled(!itemInteractive)
     }
 
-    var itemInteractive: Bool {
+    private var itemInteractive: Bool {
         if let file = file {
             switch (file.fileStatus) {
             case .sndStored: return false
@@ -65,14 +65,14 @@ struct CIFileView: View {
         return false
     }
 
-    func fileSizeValid() -> Bool {
+    private func fileSizeValid() -> Bool {
         if let file = file {
             return file.fileSize <= MAX_FILE_SIZE
         }
         return false
     }
 
-    func fileAction() {
+    private func fileAction() {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
@@ -107,11 +107,12 @@ struct CIFileView: View {
         }
     }
 
-    @ViewBuilder func fileIndicator() -> some View {
+    @ViewBuilder private func fileIndicator() -> some View {
         if let file = file {
             switch file.fileStatus {
             case .sndStored: fileIcon("doc.fill")
-            case .sndTransfer: ProgressView().frame(width: 30, height: 30)
+            // case .sndTransfer: ProgressView().frame(width: 30, height: 30) // TODO use for SMP files
+            case let .sndTransfer(sndProgress, sndTotal): progressCircle(sndProgress, sndTotal)
             case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)
             case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvInvitation:
@@ -121,7 +122,8 @@ struct CIFileView: View {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 }
             case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
-            case .rcvTransfer: ProgressView().frame(width: 30, height: 30)
+            // case .rcvTransfer: ProgressView().frame(width: 30, height: 30) // TODO use for SMP files
+            case let .rcvTransfer(rcvProgress, rcvTotal): progressCircle(rcvProgress, rcvTotal)
             case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             }
@@ -130,7 +132,7 @@ struct CIFileView: View {
         }
     }
 
-    func fileIcon(_ icon: String, color: Color = Color(uiColor: .tertiaryLabel), innerIcon: String? = nil, innerIconSize: CGFloat? = nil) -> some View {
+    private func fileIcon(_ icon: String, color: Color = Color(uiColor: .tertiaryLabel), innerIcon: String? = nil, innerIconSize: CGFloat? = nil) -> some View {
         ZStack(alignment: .center) {
             Image(systemName: icon)
                 .resizable()
@@ -148,6 +150,18 @@ struct CIFileView: View {
                     .padding(.top, 12)
             }
         }
+    }
+
+    private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
+        Circle()
+            .trim(from: 0, to: Double(progress) / Double(total))
+            .stroke(
+                Color.accentColor,
+                style: StrokeStyle(lineWidth: 3)
+            )
+            .rotationEffect(.degrees(-90))
+            .animation(.linear, value: progress)
+            .frame(width: 30, height: 30)
     }
 }
 

@@ -2239,12 +2239,12 @@ public struct CIFile: Decodable {
 
 public enum CIFileStatus: Decodable {
     case sndStored
-    case sndTransfer(sndProgress: Int, sndTotal: Int)
+    case sndTransfer(sndProgress: Int64, sndTotal: Int64)
     case sndComplete
     case sndCancelled
     case rcvInvitation
     case rcvAccepted
-    case rcvTransfer(rcvProgress: Int, rcvTotal: Int)
+    case rcvTransfer(rcvProgress: Int64, rcvTotal: Int64)
     case rcvComplete
     case rcvCancelled
 
