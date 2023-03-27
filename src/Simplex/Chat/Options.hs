@@ -25,7 +25,7 @@ import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, ver
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (SMPServerWithAuth)
+import Simplex.Messaging.Protocol (SMPServerWithAuth, XFTPServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
 import System.FilePath (combine)
 
@@ -43,6 +43,7 @@ data CoreChatOpts = CoreChatOpts
   { dbFilePrefix :: String,
     dbKey :: String,
     smpServers :: [SMPServerWithAuth],
+    xftpServers :: [XFTPServerWithAuth],
     networkConfig :: NetworkConfig,
     logLevel :: ChatLogLevel,
     logConnections :: Bool,
@@ -86,6 +87,14 @@ coreChatOptsP appDir defaultDbFileName = do
           <> short 's'
           <> metavar "SERVER"
           <> help "Semicolon-separated list of SMP server(s) to use (each server can have more than one hostname)"
+          <> value []
+      )
+  xftpServers <-
+    option
+      parseXFTPServers
+      ( long "xftp-server"
+          <> metavar "SERVER"
+          <> help "Semicolon-separated list of XFTP server(s) to use (each server can have more than one hostname)"
           <> value []
       )
   socksProxy <-
@@ -156,6 +165,7 @@ coreChatOptsP appDir defaultDbFileName = do
       { dbFilePrefix,
         dbKey,
         smpServers,
+        xftpServers,
         networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
@@ -236,6 +246,9 @@ fullNetworkConfig socksProxy tcpTimeout logTLSErrors =
 parseSMPServers :: ReadM [SMPServerWithAuth]
 parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
 
+parseXFTPServers :: ReadM [XFTPServerWithAuth]
+parseXFTPServers = eitherReader $ parseAll xftpServersP . B.pack
+
 parseSocksProxy :: ReadM (Maybe SocksProxy)
 parseSocksProxy = eitherReader $ parseAll strP . B.pack
 
@@ -247,6 +260,9 @@ serverPortP = Just . B.unpack <$> A.takeWhile A.isDigit
 
 smpServersP :: A.Parser [SMPServerWithAuth]
 smpServersP = strP `A.sepBy1` A.char ';'
+
+xftpServersP :: A.Parser [XFTPServerWithAuth]
+xftpServersP = strP `A.sepBy1` A.char ';'
 
 parseLogLevel :: ReadM ChatLogLevel
 parseLogLevel = eitherReader $ \case

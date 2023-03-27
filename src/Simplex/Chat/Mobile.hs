@@ -115,6 +115,7 @@ mobileChatOpts dbFilePrefix dbKey =
           { dbFilePrefix,
             dbKey,
             smpServers = [],
+            xftpServers = [],
             networkConfig = defaultNetworkConfig,
             logLevel = CLLImportant,
             logConnections = False,
