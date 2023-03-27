@@ -525,9 +525,9 @@
         <target>Adjuntar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio &amp; video calls" xml:space="preserve">
+      <trans-unit id="Audio &amp; video calls" xml:space="preserve" approved="no">
         <source>Audio &amp; video calls</source>
-        <target>Llamadas de audio y vídeo</target>
+        <target state="translated">Llamadas y videollamadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio and video calls" xml:space="preserve">
@@ -690,14 +690,14 @@
         <target>El chat está en ejecución</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped" xml:space="preserve">
+      <trans-unit id="Chat is stopped" xml:space="preserve" approved="no">
         <source>Chat is stopped</source>
-        <target>El chat está detenido</target>
+        <target state="translated">Chat está detenido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat preferences" xml:space="preserve">
+      <trans-unit id="Chat preferences" xml:space="preserve" approved="no">
         <source>Chat preferences</source>
-        <target>Preferencias de chat</target>
+        <target state="translated">Preferencias de Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1014,9 +1014,10 @@
         <target>Contraseña de la base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase &amp; export" xml:space="preserve">
+      <trans-unit id="Database passphrase &amp; export" xml:space="preserve" approved="no">
         <source>Database passphrase &amp; export</source>
-        <target>Contraseña y exportar la base de datos</target>
+        <target state="translated">Base de datos
+y frase de contraseña</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
@@ -1073,9 +1074,9 @@
         <target>¿Eliminar la dirección?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete after" xml:space="preserve">
+      <trans-unit id="Delete after" xml:space="preserve" approved="no">
         <source>Delete after</source>
-        <target>Eliminar después</target>
+        <target state="translated">Eliminar después de</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete all files" xml:space="preserve">
@@ -1123,9 +1124,9 @@
         <target>Eliminar archivos y multimedia?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete files for all chat profiles" xml:space="preserve">
+      <trans-unit id="Delete files for all chat profiles" xml:space="preserve" approved="no">
         <source>Delete files for all chat profiles</source>
-        <target>Eliminar archivos para todos los perfiles de chat</target>
+        <target state="translated">Eliminar archivos para todos los perfiles Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete for everyone" xml:space="preserve">
@@ -1178,9 +1179,9 @@
         <target>Eliminar mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete messages after" xml:space="preserve">
+      <trans-unit id="Delete messages after" xml:space="preserve" approved="no">
         <source>Delete messages after</source>
-        <target>Eliminar mensaje después</target>
+        <target state="translated">Eliminar después de</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete old database" xml:space="preserve">
@@ -1253,9 +1254,9 @@
         <target>Mensajes directos</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve" approved="no">
         <source>Direct messages between members are prohibited in this group.</source>
-        <target>Los mensajes directos entre miembros del grupo están prohibidos.</target>
+        <target state="translated">Los mensajes directos entre miembros del grupo no están permitidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1268,14 +1269,14 @@
         <target>Mensajes temporales</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Disappearing messages are prohibited in this chat.</source>
-        <target>Los mensajes temporales están prohibidos en este chat.</target>
+        <target state="translated">Los mensajes temporales no están permitidos en este chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve" approved="no">
         <source>Disappearing messages are prohibited in this group.</source>
-        <target>Los mensajes temporales están prohibidos en este grupo.</target>
+        <target state="translated">Los mensajes temporales no están permitidos en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -1583,9 +1584,9 @@
         <target>Error iniciando chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error stopping chat" xml:space="preserve">
+      <trans-unit id="Error stopping chat" xml:space="preserve" approved="no">
         <source>Error stopping chat</source>
-        <target>Error deteniendo el chat</target>
+        <target state="translated">Error deteniendo Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
@@ -1788,9 +1789,9 @@
         <target>Moderación de grupos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group preferences" xml:space="preserve">
+      <trans-unit id="Group preferences" xml:space="preserve" approved="no">
         <source>Group preferences</source>
-        <target>Preferencias del grupo</target>
+        <target state="translated">Preferencias de grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile" xml:space="preserve">
@@ -2030,19 +2031,19 @@
         <target>Invitar al grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion" xml:space="preserve">
+      <trans-unit id="Irreversible message deletion" xml:space="preserve" approved="no">
         <source>Irreversible message deletion</source>
-        <target>Eliminación del mensaje irreversible</target>
+        <target state="translated">Eliminación irreversible del mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Irreversible message deletion is prohibited in this chat." xml:space="preserve" approved="no">
         <source>Irreversible message deletion is prohibited in this chat.</source>
-        <target>La eliminación irreversible de mensajes está prohibida en este chat.</target>
+        <target state="translated">La eliminación irreversible de mensajes no está permitida en este chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
+      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve" approved="no">
         <source>Irreversible message deletion is prohibited in this group.</source>
-        <target>La eliminación irreversible de mensajes está prohibida en este grupo.</target>
+        <target state="translated">La eliminación irreversible de mensajes no está permitida en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
@@ -2195,9 +2196,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Marcar como verificado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Markdown in messages" xml:space="preserve">
+      <trans-unit id="Markdown in messages" xml:space="preserve" approved="no">
         <source>Markdown in messages</source>
-        <target>Marcadores en mensajes</target>
+        <target state="translated">Sintaxis markdown en mensajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Max 30 seconds, received instantly." xml:space="preserve">
@@ -2449,9 +2450,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes enviados con **cifrado de extremo a extremo de 2 capas**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
+      <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
-        <target>Sólo los propietarios del grupo pueden cambiar las preferencias de grupo.</target>
+        <target state="translated">Sólo los propietarios del grupo pueden modificar las preferencias de grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
@@ -2684,9 +2685,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Proteger la pantalla de la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
+      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve" approved="no">
         <source>Protect your chat profiles with a password!</source>
-        <target>¡Proteje los perfiles de Chat con contraseña!</target>
+        <target state="translated">¡Protege tus perfiles Chat con contraseña!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -3069,9 +3070,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Establecer 1 día</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set contact name…" xml:space="preserve">
+      <trans-unit id="Set contact name…" xml:space="preserve" approved="no">
         <source>Set contact name…</source>
-        <target>Introduce el nombre del contacto…</target>
+        <target state="translated">Escribe el nombre del contacto…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set group preferences" xml:space="preserve">
@@ -3079,9 +3080,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Establecer preferencias de grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passphrase to export" xml:space="preserve">
+      <trans-unit id="Set passphrase to export" xml:space="preserve" approved="no">
         <source>Set passphrase to export</source>
-        <target>Seleccióna contraseña para exportar</target>
+        <target state="translated">Escribe la contraseña para exportar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
@@ -3214,14 +3215,14 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Detener SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
+      <trans-unit id="Stop chat to enable database actions" xml:space="preserve" approved="no">
         <source>Stop chat to enable database actions</source>
-        <target>Detener Chat para habilitar acciones sobre la base de datos</target>
+        <target state="translated">Detén Chat para habilitar las acciones sobre la base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
+      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
-        <target>Detener Chat para exportar, importar o eliminar la base de datos del chat. No podrá recibir ni enviar mensajes mientras el chat esté detenido.</target>
+        <target state="translated">Detén Chat para poder exportar, importar o eliminar la base de datos. No puedes recibir ni enviar mensajes mientras Chat esté detenido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat?" xml:space="preserve">
@@ -3409,9 +3410,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Debe haber al menos un perfil de usuario visible.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve" approved="no">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target>Esta acción no se puede deshacer. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</target>
+        <target state="translated">Esta acción no se puede deshacer. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
@@ -3434,9 +3435,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Este grupo ya no existe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
-        <target>Esta configuración se aplica a los mensajes en su perfil actual de Chat **%@**.</target>
+        <target state="translated">Esta configuración se aplica a los mensajes en su perfil actual **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
@@ -3694,14 +3695,14 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>Mensajes de voz</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Voice messages are prohibited in this chat.</source>
-        <target>Los mensajes de voz están prohibidos en este chat.</target>
+        <target state="translated">Los mensajes de voz no están permitidos en este chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve" approved="no">
         <source>Voice messages are prohibited in this group.</source>
-        <target>Los mensajes de voz están prohibidos en este grupo.</target>
+        <target state="translated">Los mensajes de voz no están permitidos en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
@@ -3846,9 +3847,9 @@ SimpleX Lock debe estar activado.</target>
         <target>Puede iniciar Chat a través de la Configuración / base de datos de la aplicación o reiniciando la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
+      <trans-unit id="You can use markdown to format messages:" xml:space="preserve" approved="no">
         <source>You can use markdown to format messages:</source>
-        <target>Puedes usar marcadores para dar formato a los mensajes:</target>
+        <target state="translated">Puedes usar sintaxis markdown para dar formato a los mensajes:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
@@ -3891,9 +3892,9 @@ SimpleX Lock debe estar activado.</target>
         <target>Te has unido a este grupo. Conectando con miembro del grupo invitado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
+      <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve" approved="no">
         <source>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</source>
-        <target>Debes usar la versión más reciente de tu base de datos SÓLO en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</target>
+        <target state="translated">Debes usar la versión más reciente de tu base de datos ÚNICAMENTE en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve">
@@ -3976,9 +3977,9 @@ SimpleX Lock debe estar activado.</target>
         <target>Tus llamadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat database" xml:space="preserve">
+      <trans-unit id="Your chat database" xml:space="preserve" approved="no">
         <source>Your chat database</source>
-        <target>Base de datos</target>
+        <target state="translated">Base de datos Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
@@ -3986,19 +3987,19 @@ SimpleX Lock debe estar activado.</target>
         <target>La base de datos no está cifrada - establece una contraseña para cifrarla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat profile will be sent to group members" xml:space="preserve">
+      <trans-unit id="Your chat profile will be sent to group members" xml:space="preserve" approved="no">
         <source>Your chat profile will be sent to group members</source>
-        <target>Tu perfil de chat se enviará a los miembros del grupo</target>
+        <target state="translated">Tu perfil Chat será enviado a los miembros del grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat profile will be sent to your contact" xml:space="preserve">
+      <trans-unit id="Your chat profile will be sent to your contact" xml:space="preserve" approved="no">
         <source>Your chat profile will be sent to your contact</source>
-        <target>Tu perfil de chat se enviará a tu contacto</target>
+        <target state="translated">Tu perfil Chat será enviado a tu contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat profiles" xml:space="preserve">
+      <trans-unit id="Your chat profiles" xml:space="preserve" approved="no">
         <source>Your chat profiles</source>
-        <target>Tus perfiles de chat</target>
+        <target state="translated">Tus perfiles Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve">
