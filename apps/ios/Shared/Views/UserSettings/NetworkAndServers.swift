@@ -52,6 +52,7 @@ struct NetworkAndServers: View {
                         Picker("Transport isolation", selection: $sessionMode) {
                             ForEach(TransportSessionMode.values, id: \.self) { Text($0.text) }
                         }
+                        .frame(height: 36)
                     }
 
                     NavigationLink {
