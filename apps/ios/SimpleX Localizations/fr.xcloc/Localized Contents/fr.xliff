@@ -1408,9 +1408,9 @@
         <target>Entrez la phrase secrète…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter password above to show!" xml:space="preserve">
+      <trans-unit id="Enter password above to show!" xml:space="preserve" approved="no">
         <source>Enter password above to show!</source>
-        <target>Entrez le mot de passe ci-dessus pour continuer !</target>
+        <target state="translated">Entrez ci-dessus le mot de passe pour afficher le profil !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter server manually" xml:space="preserve">
@@ -2160,9 +2160,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Établir une connexion privée</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make profile private!" xml:space="preserve">
+      <trans-unit id="Make profile private!" xml:space="preserve" approved="no">
         <source>Make profile private!</source>
-        <target>Rendre le profil privé !</target>
+        <target state="translated">Rendre un profil privé !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
@@ -2529,9 +2529,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Intervalle de PING</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Password to show" xml:space="preserve">
+      <trans-unit id="Password to show" xml:space="preserve" approved="no">
         <source>Password to show</source>
-        <target>Mot de passe à afficher</target>
+        <target state="translated">Mot de passe à entrer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste" xml:space="preserve">
@@ -3476,9 +3476,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Pour enregistrer un message vocal, veuillez accorder la permission d'utiliser le microphone.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
+      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve" approved="no">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
-        <target>Pour révéler votre profil caché, entrez un mot de passe complet dans le champ de recherche de la page **Vos profils de chat**.</target>
+        <target state="translated">Pour révéler votre profil caché, entrez le mot de passe dans le champ de recherche de la page **Vos profils de chat**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
