@@ -4,7 +4,8 @@
             "label": "en",
             "name": "English",
             "flag": "/img/flags/en.svg",
-            "enabled": true
+            "enabled": true,
+            "rtl": true
         },
         {
             "label": "de",
