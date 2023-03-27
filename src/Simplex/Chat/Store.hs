@@ -23,6 +23,7 @@ module Simplex.Chat.Store
     UserContactLink (..),
     AutoAccept (..),
     createChatStore,
+    migrations, -- used in tests
     chatStoreFile,
     agentStoreFile,
     createUserRecord,
@@ -347,7 +348,6 @@ import Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
 import Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
 import Simplex.Chat.Migrations.M20230303_group_link_role
 import Simplex.Chat.Migrations.M20230317_hidden_profiles
-import Simplex.Chat.Migrations.M20230325_test_1
 -- import Simplex.Chat.Migrations.M20230304_file_description
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -416,8 +416,7 @@ schemaMigrations =
     ("20230129_drop_chat_items_group_idx", m20230129_drop_chat_items_group_idx, Nothing),
     ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id, Nothing),
     ("20230303_group_link_role", m20230303_group_link_role, Nothing),
-    ("20230317_hidden_profiles", m20230317_hidden_profiles, Nothing),
-    ("20230325_test_1", m20230325_test_1, Just down_m20230325_test_1)
+    ("20230317_hidden_profiles", m20230317_hidden_profiles, Just down_m20230317_hidden_profiles)
     -- ("20230304_file_description", m20230304_file_description)
   ]
 

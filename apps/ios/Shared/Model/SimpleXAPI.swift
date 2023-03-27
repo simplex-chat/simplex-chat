@@ -972,7 +972,7 @@ func apiGetGroupLink(_ groupId: Int64) throws -> (String, GroupMemberRole)? {
 
 func apiGetVersion() throws -> CoreVersionInfo {
     let r = chatSendCmdSync(.showVersion)
-    if case let .versionInfo(info) = r { return info }
+    if case let .versionInfo(info, _, _) = r { return info }
     throw r
 }
 
