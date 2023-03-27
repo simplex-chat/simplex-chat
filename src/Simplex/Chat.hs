@@ -2274,10 +2274,13 @@ processAgentMsgSndFile _corrId aFileId msg =
     process user = do
       fileId <- withStore $ \db -> getXFTPSndFileDBId db user $ AgentSndFileId aFileId
       case msg of
-        SFPROG _sent _total -> do
-          -- update chat item status
-          -- send status to view
-          pure ()
+        SFPROG sndProgress sndTotal -> do
+          let status = CIFSSndTransfer {sndProgress, sndTotal}
+          (ci, ft) <- withStore $ \db -> do
+            liftIO $ updateCIFileStatus db user fileId status
+            ft <- getFileTransferMeta db user fileId
+            (,ft) <$> getChatItemByFileId db user fileId
+          toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
         SFDONE _sndDescr rfds -> do
           ci@(AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
             withStore $ \db -> getChatItemByFileId db user fileId
@@ -2338,10 +2341,12 @@ processAgentMsgRcvFile _corrId aFileId msg =
     process user = do
       fileId <- withStore (`getXFTPRcvFileDBId` AgentRcvFileId aFileId)
       case msg of
-        RFPROG _sent _total -> do
-          -- update chat item status
-          -- send status to view
-          pure ()
+        RFPROG rcvProgress rcvTotal -> do
+          let status = CIFSRcvTransfer {rcvProgress, rcvTotal}
+          ci <- withStore $ \db -> do
+            liftIO $ updateCIFileStatus db user fileId status
+            getChatItemByFileId db user fileId
+          toView $ CRRcvFileProgressXFTP user ci rcvProgress rcvTotal
         RFDONE xftpPath -> do
           ft <- withStore $ \db -> getRcvFileTransfer db user fileId
           case liveRcvFileTransferPath ft of

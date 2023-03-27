@@ -419,12 +419,12 @@ instance MsgDirectionI d => ToJSON (CIFile d) where
 
 data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
-  CIFSSndTransfer :: {sndProgress :: Int, sndTotal :: Int} -> CIFileStatus 'MDSnd
+  CIFSSndTransfer :: {sndProgress :: Int64, sndTotal :: Int64} -> CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
   CIFSSndComplete :: CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
   CIFSRcvAccepted :: CIFileStatus 'MDRcv
-  CIFSRcvTransfer :: {rcvProgress :: Int, rcvTotal :: Int} -> CIFileStatus 'MDRcv
+  CIFSRcvTransfer :: {rcvProgress :: Int64, rcvTotal :: Int64} -> CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
 
@@ -484,18 +484,18 @@ instance StrEncoding ACIFileStatus where
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
       _ -> fail "bad file status"
     where
-      progress :: (Int -> Int -> a) -> A.Parser a
+      progress :: (Int64 -> Int64 -> a) -> A.Parser a
       progress f = f <$> num <*> num <|> pure (f 0 1)
       num = A.space *> A.decimal
 
 data JSONCIFileStatus
   = JCIFSSndStored
-  | JCIFSSndTransfer {sndProgress :: Int, sndTotal :: Int}
+  | JCIFSSndTransfer {sndProgress :: Int64, sndTotal :: Int64}
   | JCIFSSndCancelled
   | JCIFSSndComplete
   | JCIFSRcvInvitation
   | JCIFSRcvAccepted
-  | JCIFSRcvTransfer {rcvProgress :: Int, rcvTotal :: Int}
+  | JCIFSRcvTransfer {rcvProgress :: Int64, rcvTotal :: Int64}
   | JCIFSRcvComplete
   | JCIFSRcvCancelled
   deriving (Generic)
