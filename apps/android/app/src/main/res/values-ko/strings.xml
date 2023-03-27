@@ -36,7 +36,7 @@
     <string name="copied">클립보드로 복사됨</string>
     <string name="create_group">비밀 그룹 생성</string>
     <string name="accept_contact_button">수락</string>
-    <string name="clear_chat_warning">모든 메시지가 삭제됩니다. 취소할 수 없습니다! 메시지는 나에게서만 삭제됩니다.</string>
+    <string name="clear_chat_warning">모든 메시지가 삭제됩니다. 이를 되돌릴 수 없습니다! 메시지는 나에게서만 삭제됩니다.</string>
     <string name="clear_verb">지우기</string>
     <string name="clear_chat_menu_action">지우기</string>
     <string name="clear_chat_button">채팅 지우기</string>
@@ -60,7 +60,7 @@
     <string name="accept_automatically">자동</string>
     <string name="contact_requests">연락 요청</string>
     <string name="core_version">코어 버전 : v%s</string>
-    <string name="callstatus_accepted">통화 수락됨</string>
+    <string name="callstatus_accepted">전화 수락 완료</string>
     <string name="bold">굵게</string>
     <string name="callstatus_in_progress">전화 연결 중</string>
     <string name="colored">색깔</string>
@@ -139,23 +139,23 @@
     <string name="create_address">주소 생성</string>
     <string name="chat_item_ttl_day">1일</string>
     <string name="about_simplex_chat"><xliff:g id="appNameFull">SimpleX</xliff:g>에 대하여</string>
-    <string name="color_primary">강조</string>
+    <string name="color_primary">강조 색상</string>
     <string name="accept_call_on_lock_screen">응답</string>
-    <string name="accept_connection_request__question">연결 요청 수락</string>
-    <string name="accept_feature">확인</string>
+    <string name="accept_connection_request__question">연결 요청을 수락하겠습니까\?</string>
+    <string name="accept_feature">수락</string>
     <string name="network_enable_socks_info">SOCKS 프록시(포트 9050)를 통해 서버에 액세스하시겠습니까\? 이 옵션을 활성화하기 전에 프록시를 시작해야 합니다.</string>
-    <string name="smp_servers_add_to_another_device">다른 기기 추가</string>
-    <string name="v4_3_improved_server_configuration_desc">서버 추가 (QR 코드)</string>
+    <string name="smp_servers_add_to_another_device">다른 기기에 추가</string>
+    <string name="v4_3_improved_server_configuration_desc">QR 코드 스캔을 통한 서버 추가</string>
     <string name="button_add_welcome_message">환영 메시지 추가</string>
     <string name="group_member_role_admin">관리자</string>
     <string name="v4_2_group_links_desc">관리자는 그룹 가입을 위한 링크를 만들 수 있습니다.</string>
     <string name="allow_to_send_disappearing">자동 삭제 메시지 허용하기.</string>
-    <string name="users_delete_all_chats_deleted">모든 채팅과 메시지가 삭제됩니다. 취소할 수 없습니다!</string>
+    <string name="users_delete_all_chats_deleted">모든 채팅과 메시지가 삭제됩니다. 이를 되돌릴 수 없습니다!</string>
     <string name="allow_to_send_voice">음성 메시지 허용하기.</string>
     <string name="allow_voice_messages_question">음성 메시지를 허용하겠습니까\?</string>
-    <string name="allow_disappearing_messages_only_if">상대도 허용하는 경우에만 메시지가 자동 삭제됩니다.</string>
+    <string name="allow_disappearing_messages_only_if">연락처도 허용하는 경우에만 사라지는 메시지가 허용됩니다.</string>
     <string name="allow_direct_messages">그룹 멤버에게 1:1 채팅 허용하기.</string>
-    <string name="all_group_members_will_remain_connected">모든 그룹 멤버는 이후에도 연결 상태가 유지됩니다.</string>
+    <string name="all_group_members_will_remain_connected">모든 그룹 멤버는 계속 연결 상태가 유지됩니다.</string>
     <string name="allow_irreversible_message_deletion_only_if">상대도 허용한 경우에만 모든 대화 상대에게서 메시지 영구 삭제가 가능합니다.</string>
     <string name="all_your_contacts_will_remain_connected">모든 대화 상대의 연결 상태는 유지됩니다.</string>
     <string name="notifications_mode_service">항상 켜짐</string>
@@ -210,4 +210,8 @@
     <string name="archive_created_on_ts"><xliff:g id="archive_ts">%1$s</xliff:g>에 생성 완료</string>
     <string name="create_one_time_link">일회용 초대 링크 생성</string>
     <string name="create_secret_group_title">비밀 그룹 생성</string>
+    <string name="accept_contact_incognito_button">익명 수락</string>
+    <string name="chat_item_ttl_month">1개월</string>
+    <string name="chat_item_ttl_week">1주</string>
+    <string name="a_plus_b">a + b</string>
 </resources>
