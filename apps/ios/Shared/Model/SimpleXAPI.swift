@@ -215,8 +215,20 @@ func apiSuspendChat(timeoutMicroseconds: Int) {
     logger.error("apiSuspendChat error: \(String(describing: r))")
 }
 
+func apiSetTempFolder(tempFolder: String) throws {
+    let r = chatSendCmdSync(.setTempFolder(tempFolder: tempFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiSetFilesFolder(filesFolder: String) throws {
     let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
+    let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg))
     if case .cmdOk = r { return }
     throw r
 }
@@ -992,7 +1004,9 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
     }
+    try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+    try setXFTPConfig(getXFTPCfg())
     try apiSetIncognito(incognito: incognitoGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
@@ -1307,6 +1321,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .rcvFileProgressXFTP(user, aChatItem, _, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileStart(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileComplete(user, aChatItem, _):
@@ -1318,6 +1334,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
+        case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)

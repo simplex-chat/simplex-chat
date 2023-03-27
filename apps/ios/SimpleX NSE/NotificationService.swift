@@ -199,6 +199,7 @@ class NotificationService: UNNotificationServiceExtension {
 
 var chatStarted = false
 var networkConfig: NetCfg = getNetCfg()
+var xftpConfig: XFTPFileConfig? = getXFTPCfg()
 
 func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
@@ -212,10 +213,12 @@ func startChat() -> DBMigrationResult? {
         logger.debug("active user \(String(describing: user))")
         do {
             try setNetworkConfig(networkConfig)
+            try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
+            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+            try setXFTPConfig(xftpConfig)
             let justStarted = try apiStartChat()
             chatStarted = true
             if justStarted {
-                try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
                 try apiSetIncognito(incognito: incognitoGroupDefault.get())
                 chatLastStartGroupDefault.set(Date.now)
                 Task { await receiveMessages() }
@@ -329,8 +332,20 @@ func apiStartChat() throws -> Bool {
     }
 }
 
+func apiSetTempFolder(tempFolder: String) throws {
+    let r = sendSimpleXCmd(.setTempFolder(tempFolder: tempFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiSetFilesFolder(filesFolder: String) throws {
     let r = sendSimpleXCmd(.setFilesFolder(filesFolder: filesFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
+    let r = sendSimpleXCmd(.apiSetXFTPConfig(config: cfg))
     if case .cmdOk = r { return }
     throw r
 }
