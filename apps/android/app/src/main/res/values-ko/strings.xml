@@ -139,7 +139,6 @@
     <string name="create_address">주소 생성</string>
     <string name="chat_item_ttl_day">1일</string>
     <string name="about_simplex_chat"><xliff:g id="appNameFull">SimpleX</xliff:g>에 대하여</string>
-    <string name="above_then_preposition_continuation"></string>
     <string name="color_primary">강조</string>
     <string name="accept_call_on_lock_screen">응답</string>
     <string name="accept_connection_request__question">연결 요청 수락</string>
