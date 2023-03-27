@@ -30,7 +30,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Bool
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Box(Modifier.fillMaxWidth().weight(1f)) {
+      Box(Modifier.weight(1f, false)) {
         if (ci.meta.itemDeleted is CIDeleted.Moderated) {
           MarkedDeletedText(String.format(generalGetString(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName))
         } else {
