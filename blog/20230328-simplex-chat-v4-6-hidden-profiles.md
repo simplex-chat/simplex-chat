@@ -21,7 +21,7 @@ permalink: "/blog/20230328-simplex-chat-v4-6-hidden-profiles.html"
 - [reduced battery usage](#reduced-battery-usage).
 - [SMP server monitoring: status bot and page](#smp-server-monitoring)
 
-Also, we added [Chinese and Spanish interface languages](#italian-interface), thanks to the users' community and Weblate!
+Also, we added [Chinese and Spanish interface languages](#chinese-and-spanish-interface---you-can-choose-the-language-via-the-app), thanks to the users' community and Weblate!
 
 ### ARMv7a (32 bit) and Android 8+ support!
 
@@ -39,7 +39,7 @@ Many users asked to allow setting the app password or PIN independently from the
 
 So instead of having an app password, that reduces convenience and doesn't improve security too much, we did what we think could be better. You can now create hidden chat profiles, that are not visible anywhere in the app, and do not show any notifications, until you enter a correct passphrase. If multiple profiles are hidden with the same passphrase they will all show in the list when you enter it.
 
-It's important to remember that these hidden profiles are still stored locally on your device, so if somebody has access to your chat database (they need to know database passphrase, that is independent from device PIN or profile passphrases) or to chat console in the app, they will be able to access these profiles data and reset their passwords. We are considering how chat console can be better protected - e.g., by requiring a separate password or an by providing an option to remove it from the UI permanently - tell us what you think.
+It's important to remember that these hidden profiles are still stored locally on your device, so if somebody has access to your chat database (they need to know database passphrase, that is independent from device PIN or profile passphrases) or to chat console in the app, they will be able to access these profiles data and reset their passwords. We are considering how chat console can be better protected - e.g., by requiring a separate password or by providing an option to remove it from the UI permanently - tell us what you think.
 
 ### Community moderation
 
@@ -71,7 +71,7 @@ We know that battery usage of SimpleX Chat is suboptimal, and we are committed t
 
 One of the big issues, particularly in large groups, was inefficient retry strategy for sending messages in cases when the receiving message queue (mailbox) was out of capacity.
 
-This version increases the maximum retry period for "out-of-capacity" scenario to 1 hour, and also preserves this retry period in the database. So, if previously before the message expired in 48 hours there were up to ~2800 delivery attempts and up to ~45Mb wasted traffic per message (depending on how frequently the app was restarted), now there will be only ~50 retries, resulting in not more than 0.8Mb of traffic - up to 56x traffic reduction when sending messages to the large groups.
+This version increases the maximum retry period for "out-of-capacity" scenario to 1 hour, and also preserves this retry period in the database. So, if previously before the message expired in 48 hours there were up to ~2800 delivery attempts and up to ~45Mb wasted traffic per recipient (depending on how frequently the app was restarted), now there will be only ~50 retries, resulting in not more than 0.8Mb of traffic - up to 56x traffic reduction when sending messages to the large groups.
 
 This issue might not have affected you at all, and also solving it won't reduce overall traffic/battery usage by that factor - there are other inefficiences we will be addressing. But if you actively sent messages to large groups you should observe a substantial reduction of battery and traffic consumption.
 
