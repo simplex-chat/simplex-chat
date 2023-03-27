@@ -59,7 +59,6 @@
 		5C65DAF629CBA429003CEE45 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAF129CBA429003CEE45 /* libgmpxx.a */; };
 		5C65DAF729CBA429003CEE45 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAF229CBA429003CEE45 /* libffi.a */; };
 		5C65DAF929D0CC20003CEE45 /* DeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C65DAF829D0CC20003CEE45 /* DeveloperView.swift */; };
-		5C65DAFB29D0D2BC003CEE45 /* PickerCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C65DAFA29D0D2BC003CEE45 /* PickerCompat.swift */; };
 		5C65F343297D45E100B67AF3 /* VersionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C65F341297D3F3600B67AF3 /* VersionView.swift */; };
 		5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
 		5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6BA666289BD954009B8ECC /* DismissSheets.swift */; };
@@ -297,7 +296,6 @@
 		5C65DAF129CBA429003CEE45 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5C65DAF229CBA429003CEE45 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5C65DAF829D0CC20003CEE45 /* DeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperView.swift; sourceTree = "<group>"; };
-		5C65DAFA29D0D2BC003CEE45 /* PickerCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickerCompat.swift; sourceTree = "<group>"; };
 		5C65F341297D3F3600B67AF3 /* VersionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionView.swift; sourceTree = "<group>"; };
 		5C6AD81227A834E300348BD7 /* NewChatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatButton.swift; sourceTree = "<group>"; };
 		5C6BA666289BD954009B8ECC /* DismissSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissSheets.swift; sourceTree = "<group>"; };
@@ -586,7 +584,6 @@
 				5CA7DFC229302AF000F7FDDE /* AppSheet.swift */,
 				18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */,
 				5CCB939B297EFCB100399E78 /* NavStackCompat.swift */,
-				5C65DAFA29D0D2BC003CEE45 /* PickerCompat.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1130,7 +1127,6 @@
 				5C93293F2928E0FD0090FFF9 /* AudioRecPlay.swift in Sources */,
 				5C029EA82837DBB3004A9677 /* CICallItemView.swift in Sources */,
 				5CE4407227ADB1D0007B033A /* Emoji.swift in Sources */,
-				5C65DAFB29D0D2BC003CEE45 /* PickerCompat.swift in Sources */,
 				5C3F1D5A2844B4DE00EC8A82 /* ExperimentalFeaturesView.swift in Sources */,
 				5CB2085328DB7CAF00D024EC /* ConnectViaLinkView.swift in Sources */,
 				5C9CC7A928C532AB00BEF955 /* DatabaseErrorView.swift in Sources */,
