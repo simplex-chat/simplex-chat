@@ -767,7 +767,7 @@
     <string name="select_contacts">Выберите контакты</string>
     <string name="icon_descr_contact_checked">Контакт выбран</string>
     <string name="clear_contacts_selection_button">Очистить</string>
-    <string name="num_contacts_selected">Выбрано контактов: <xliff:g id="num_contacts">%1$s</xliff:g></string>
+    <string name="num_contacts_selected">Выбрано контактов: %d</string>
     <string name="no_contacts_selected">Контакты не выбраны</string>
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
     <string name="invite_prohibited_description">Вы пытаетесь пригласить инкогнито контакт в группу, где вы используете свой основной профиль</string>
@@ -1007,7 +1007,6 @@
     <string name="users_delete_data_only">Только локальные данные профиля</string>
     <string name="messages_section_title">Сообщения</string>
     <string name="smp_servers_per_user">Серверы для новых соединений вашего текущего профиля чата</string>
-    <string name="your_chat_profiles_stored_locally">Ваши профили чата хранятся локально, только на вашем устройстве</string>
     <string name="your_chat_profiles">Ваши профили чата</string>
     <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
