@@ -23,6 +23,7 @@ module Simplex.Chat.Store
     UserContactLink (..),
     AutoAccept (..),
     createChatStore,
+    migrations, -- used in tests
     chatStoreFile,
     agentStoreFile,
     createUserRecord,
@@ -286,10 +287,9 @@ import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (rights)
-import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (sortBy, sortOn)
+import Data.List (sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
@@ -367,7 +367,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..), UserId)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, MigrationError, SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
@@ -376,72 +376,72 @@ import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
 
-schemaMigrations :: [(String, Query)]
+schemaMigrations :: [(String, Query, Maybe Query)]
 schemaMigrations =
-  [ ("20220101_initial", m20220101_initial),
-    ("20220122_v1_1", m20220122_v1_1),
-    ("20220205_chat_item_status", m20220205_chat_item_status),
-    ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests),
-    ("20220224_messages_fks", m20220224_messages_fks),
-    ("20220301_smp_servers", m20220301_smp_servers),
-    ("20220302_profile_images", m20220302_profile_images),
-    ("20220304_msg_quotes", m20220304_msg_quotes),
-    ("20220321_chat_item_edited", m20220321_chat_item_edited),
-    ("20220404_files_status_fields", m20220404_files_status_fields),
-    ("20220514_profiles_user_id", m20220514_profiles_user_id),
-    ("20220626_auto_reply", m20220626_auto_reply),
-    ("20220702_calls", m20220702_calls),
-    ("20220715_groups_chat_item_id", m20220715_groups_chat_item_id),
-    ("20220811_chat_items_indices", m20220811_chat_items_indices),
-    ("20220812_incognito_profiles", m20220812_incognito_profiles),
-    ("20220818_chat_notifications", m20220818_chat_notifications),
-    ("20220822_groups_host_conn_custom_user_profile_id", m20220822_groups_host_conn_custom_user_profile_id),
-    ("20220823_delete_broken_group_event_chat_items", m20220823_delete_broken_group_event_chat_items),
-    ("20220824_profiles_local_alias", m20220824_profiles_local_alias),
-    ("20220909_commands", m20220909_commands),
-    ("20220926_connection_alias", m20220926_connection_alias),
-    ("20220928_settings", m20220928_settings),
-    ("20221001_shared_msg_id_indices", m20221001_shared_msg_id_indices),
-    ("20221003_delete_broken_integrity_error_chat_items", m20221003_delete_broken_integrity_error_chat_items),
-    ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id),
-    ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id),
-    ("20221012_inline_files", m20221012_inline_files),
-    ("20221019_unread_chat", m20221019_unread_chat),
-    ("20221021_auto_accept__group_links", m20221021_auto_accept__group_links),
-    ("20221024_contact_used", m20221024_contact_used),
-    ("20221025_chat_settings", m20221025_chat_settings),
-    ("20221029_group_link_id", m20221029_group_link_id),
-    ("20221112_server_password", m20221112_server_password),
-    ("20221115_server_cfg", m20221115_server_cfg),
-    ("20221129_delete_group_feature_items", m20221129_delete_group_feature_items),
-    ("20221130_delete_item_deleted", m20221130_delete_item_deleted),
-    ("20221209_verified_connection", m20221209_verified_connection),
-    ("20221210_idxs", m20221210_idxs),
-    ("20221211_group_description", m20221211_group_description),
-    ("20221212_chat_items_timed", m20221212_chat_items_timed),
-    ("20221214_live_message", m20221214_live_message),
-    ("20221222_chat_ts", m20221222_chat_ts),
-    ("20221223_idx_chat_items_item_status", m20221223_idx_chat_items_item_status),
-    ("20221230_idxs", m20221230_idxs),
-    ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter),
-    ("20230111_users_agent_user_id", m20230111_users_agent_user_id),
-    ("20230117_fkey_indexes", m20230117_fkey_indexes),
-    ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers),
-    ("20230129_drop_chat_items_group_idx", m20230129_drop_chat_items_group_idx),
-    ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id),
-    ("20230303_group_link_role", m20230303_group_link_role),
-    ("20230317_hidden_profiles", m20230317_hidden_profiles),
-    ("20230318_file_description", m20230318_file_description),
-    ("20230321_agent_file_deleted", m20230321_agent_file_deleted)
+  [ ("20220101_initial", m20220101_initial, Nothing),
+    ("20220122_v1_1", m20220122_v1_1, Nothing),
+    ("20220205_chat_item_status", m20220205_chat_item_status, Nothing),
+    ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests, Nothing),
+    ("20220224_messages_fks", m20220224_messages_fks, Nothing),
+    ("20220301_smp_servers", m20220301_smp_servers, Nothing),
+    ("20220302_profile_images", m20220302_profile_images, Nothing),
+    ("20220304_msg_quotes", m20220304_msg_quotes, Nothing),
+    ("20220321_chat_item_edited", m20220321_chat_item_edited, Nothing),
+    ("20220404_files_status_fields", m20220404_files_status_fields, Nothing),
+    ("20220514_profiles_user_id", m20220514_profiles_user_id, Nothing),
+    ("20220626_auto_reply", m20220626_auto_reply, Nothing),
+    ("20220702_calls", m20220702_calls, Nothing),
+    ("20220715_groups_chat_item_id", m20220715_groups_chat_item_id, Nothing),
+    ("20220811_chat_items_indices", m20220811_chat_items_indices, Nothing),
+    ("20220812_incognito_profiles", m20220812_incognito_profiles, Nothing),
+    ("20220818_chat_notifications", m20220818_chat_notifications, Nothing),
+    ("20220822_groups_host_conn_custom_user_profile_id", m20220822_groups_host_conn_custom_user_profile_id, Nothing),
+    ("20220823_delete_broken_group_event_chat_items", m20220823_delete_broken_group_event_chat_items, Nothing),
+    ("20220824_profiles_local_alias", m20220824_profiles_local_alias, Nothing),
+    ("20220909_commands", m20220909_commands, Nothing),
+    ("20220926_connection_alias", m20220926_connection_alias, Nothing),
+    ("20220928_settings", m20220928_settings, Nothing),
+    ("20221001_shared_msg_id_indices", m20221001_shared_msg_id_indices, Nothing),
+    ("20221003_delete_broken_integrity_error_chat_items", m20221003_delete_broken_integrity_error_chat_items, Nothing),
+    ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id, Nothing),
+    ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id, Nothing),
+    ("20221012_inline_files", m20221012_inline_files, Nothing),
+    ("20221019_unread_chat", m20221019_unread_chat, Nothing),
+    ("20221021_auto_accept__group_links", m20221021_auto_accept__group_links, Nothing),
+    ("20221024_contact_used", m20221024_contact_used, Nothing),
+    ("20221025_chat_settings", m20221025_chat_settings, Nothing),
+    ("20221029_group_link_id", m20221029_group_link_id, Nothing),
+    ("20221112_server_password", m20221112_server_password, Nothing),
+    ("20221115_server_cfg", m20221115_server_cfg, Nothing),
+    ("20221129_delete_group_feature_items", m20221129_delete_group_feature_items, Nothing),
+    ("20221130_delete_item_deleted", m20221130_delete_item_deleted, Nothing),
+    ("20221209_verified_connection", m20221209_verified_connection, Nothing),
+    ("20221210_idxs", m20221210_idxs, Nothing),
+    ("20221211_group_description", m20221211_group_description, Nothing),
+    ("20221212_chat_items_timed", m20221212_chat_items_timed, Nothing),
+    ("20221214_live_message", m20221214_live_message, Nothing),
+    ("20221222_chat_ts", m20221222_chat_ts, Nothing),
+    ("20221223_idx_chat_items_item_status", m20221223_idx_chat_items_item_status, Nothing),
+    ("20221230_idxs", m20221230_idxs, Nothing),
+    ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter, Nothing),
+    ("20230111_users_agent_user_id", m20230111_users_agent_user_id, Nothing),
+    ("20230117_fkey_indexes", m20230117_fkey_indexes, Nothing),
+    ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers, Nothing),
+    ("20230129_drop_chat_items_group_idx", m20230129_drop_chat_items_group_idx, Nothing),
+    ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id, Nothing),
+    ("20230303_group_link_role", m20230303_group_link_role, Nothing),
+    ("20230317_hidden_profiles", m20230317_hidden_profiles, Just down_m20230317_hidden_profiles),
+    ("20230318_file_description", m20230318_file_description, Nothing),
+    ("20230321_agent_file_deleted", m20230321_agent_file_deleted, Nothing)
   ]
 
 -- | The list of migrations in ascending order by date
 migrations :: [Migration]
-migrations = sortBy (compare `on` name) $ map migration schemaMigrations
+migrations = sortOn name $ map migration schemaMigrations
   where
-    migration (name, query) = Migration {name = name, up = fromQuery query}
+    migration (name, up, down) = Migration {name, up = fromQuery up, down = fromQuery <$> down}
 
-createChatStore :: FilePath -> String -> Bool -> IO SQLiteStore
+createChatStore :: FilePath -> String -> MigrationConfirmation -> IO (Either MigrationError SQLiteStore)
 createChatStore dbFilePath dbKey = createSQLiteStore dbFilePath dbKey migrations
 
 chatStoreFile :: FilePath -> FilePath

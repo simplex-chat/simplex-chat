@@ -94,6 +94,32 @@ class ChatModel(val controller: ChatController) {
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
 
+  fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
+    currentUser.value
+  } else {
+    users.firstOrNull { it.user.userId == userId }?.user
+  }
+
+  private fun getUserIndex(user: User): Int =
+    users.indexOfFirst { it.user.userId == user.userId }
+
+  fun updateUser(user: User) {
+    val i = getUserIndex(user)
+    if (i != -1) {
+      users[i] = users[i].copy(user = user)
+    }
+    if (currentUser.value?.userId == user.userId) {
+      currentUser.value = user
+    }
+  }
+
+  fun removeUser(user: User) {
+    val i = getUserIndex(user)
+    if (i != -1 && users[i].user.userId != currentUser.value?.userId) {
+      users.removeAt(i)
+    }
+  }
+
   fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
@@ -422,12 +448,18 @@ data class User(
   val localDisplayName: String,
   val profile: LocalProfile,
   val fullPreferences: FullChatPreferences,
-  val activeUser: Boolean
+  val activeUser: Boolean,
+  val showNtfs: Boolean,
+  val viewPwdHash: UserPwdHash?
 ): NamedChat {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
   override val image: String? get() = profile.image
   override val localAlias: String = ""
+
+  val hidden: Boolean = viewPwdHash != null
+
+  val showNotifications: Boolean = activeUser || showNtfs
 
   companion object {
     val sampleData = User(
@@ -436,10 +468,18 @@ data class User(
       localDisplayName = "alice",
       profile = LocalProfile.sampleData,
       fullPreferences = FullChatPreferences.sampleData,
-      activeUser = true
+      activeUser = true,
+      showNtfs = true,
+      viewPwdHash = null,
     )
   }
 }
+
+@Serializable
+data class UserPwdHash(
+  val hash: String,
+  val salt: String
+)
 
 @Serializable
 data class UserInfo(

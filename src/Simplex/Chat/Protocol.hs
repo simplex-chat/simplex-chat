@@ -445,7 +445,7 @@ instance ToJSON MsgContent where
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
     MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
-    MCVideo {text, image, duration} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image, "duration" .= duration]
+    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
   toEncoding = \case
@@ -453,7 +453,7 @@ instance ToJSON MsgContent where
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
     MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
-    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image <> "duration" .= duration
+    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
 

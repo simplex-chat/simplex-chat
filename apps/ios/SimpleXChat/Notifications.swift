@@ -127,12 +127,16 @@ public func createErrorNtf(_ dbStatus: DBMigrationResult) -> UNMutableNotificati
     switch dbStatus {
     case .errorNotADatabase:
         title = NSLocalizedString("Encrypted message: no passphrase", comment: "notification")
-    case .error:
+    case .errorMigration:
+        title = NSLocalizedString("Encrypted message: database migration error", comment: "notification")
+    case .errorSQL:
         title = NSLocalizedString("Encrypted message: database error", comment: "notification")
     case .errorKeychain:
         title = NSLocalizedString("Encrypted message: keychain error", comment: "notification")
     case .unknown:
         title = NSLocalizedString("Encrypted message: unexpected error", comment: "notification")
+    case .invalidConfirmation:
+        title = NSLocalizedString("Encrypted message or another event", comment: "notification")
     case .ok:
         title = NSLocalizedString("Encrypted message or another event", comment: "notification")
     }

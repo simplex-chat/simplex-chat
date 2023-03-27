@@ -9,6 +9,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.*
 import android.provider.OpenableColumns
@@ -33,10 +34,12 @@ import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import org.apache.commons.io.IOUtils
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -327,6 +330,14 @@ fun getFileName(context: Context, uri: Uri): String? {
   }
 }
 
+fun getAppFilePath(context: Context, uri: Uri): String? {
+  return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+    cursor.moveToFirst()
+    getAppFilePath(context, cursor.getString(nameIndex))
+  }
+}
+
 fun getFileSize(context: Context, uri: Uri): Long? {
   return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
     val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
@@ -335,9 +346,48 @@ fun getFileSize(context: Context, uri: Uri): Long? {
   }
 }
 
+fun getBitmapFromUri(uri: Uri, withAlertOnException: Boolean = true): Bitmap? {
+  return if (Build.VERSION.SDK_INT >= 28) {
+    val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+    try {
+      ImageDecoder.decodeBitmap(source)
+    } catch (e: android.graphics.ImageDecoder.DecodeException) {
+      Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
+      if (withAlertOnException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.image_decoding_exception_title),
+          text = generalGetString(R.string.image_decoding_exception_desc)
+        )
+      }
+      null
+    }
+  } else {
+    BitmapFactory.decodeFile(getAppFilePath(SimplexApp.context, uri))
+  }
+}
+
+fun getDrawableFromUri(uri: Uri, withAlertOnException: Boolean = true): Drawable? {
+  return if (Build.VERSION.SDK_INT >= 28) {
+    val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+    try {
+      ImageDecoder.decodeDrawable(source)
+    } catch (e: android.graphics.ImageDecoder.DecodeException) {
+      if (withAlertOnException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.image_decoding_exception_title),
+          text = generalGetString(R.string.image_decoding_exception_desc)
+        )
+      }
+      Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
+      null
+    }
+  } else {
+    Drawable.createFromPath(getAppFilePath(SimplexApp.context, uri))
+  }
+}
+
 fun saveImage(context: Context, uri: Uri): String? {
-  val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
-  val bitmap = ImageDecoder.decodeBitmap(source)
+  val bitmap = getBitmapFromUri(uri) ?: return null
   return saveImage(context, bitmap)
 }
 
@@ -408,7 +458,7 @@ fun saveFileFromUri(context: Context, uri: Uri): String? {
     if (inputStream != null && fileToSave != null) {
       val destFileName = uniqueCombine(context, fileToSave)
       val destFile = File(getAppFilePath(context, destFileName))
-      FileUtils.copy(inputStream, FileOutputStream(destFile))
+      IOUtils.copy(inputStream, FileOutputStream(destFile))
       destFileName
     } else {
       Log.e(chat.simplex.app.TAG, "Util.kt saveFileFromUri null inputStream")

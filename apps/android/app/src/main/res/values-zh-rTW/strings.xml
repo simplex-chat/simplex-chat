@@ -765,7 +765,6 @@
     <string name="network_options_save">儲存</string>
     <string name="update_network_settings_question">更新網路設定？</string>
     <string name="update_network_settings_confirmation">更新</string>
-    <string name="your_chat_profiles_stored_locally">你的個人檔案只會儲存於你的本機裝置內。</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">更新設定會將客戶端重新連接到所有的伺服器。</string>
     <string name="users_delete_question">刪除個人檔案？</string>
     <string name="users_delete_profile_for">刪除個人檔案</string>
@@ -927,7 +926,7 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">你將停止接收來自此群組的訊息。群組內的記錄會保留。</string>
     <string name="you_rejected_group_invitation">你已拒絕加入群組</string>
     <string name="group_member_status_announced">連線中（宣布階段）</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> 已選擇多個聊絡人</string>
+    <string name="num_contacts_selected">%d 已選擇多個聊絡人</string>
     <string name="your_ice_servers">你的 ICE 伺服器</string>
     <string name="webrtc_ice_servers">WebRTC ICE 伺服器</string>
     <string name="update_database">更新</string>
@@ -983,4 +982,48 @@
     <string name="observer_cant_send_message_desc">請聯繫群管理員。</string>
     <string name="initial_member_role">初始角色</string>
     <string name="language_system">系統</string>
+    <string name="you_can_hide_or_mute_user_profile">您可以隱藏或靜音用戶配置文件 - 按住它以顯示菜單。</string>
+    <string name="smp_save_servers_question">保存服務器？</string>
+    <string name="confirm_password">確認密碼</string>
+    <string name="hidden_profile_password">隱藏的個人資料密碼</string>
+    <string name="hide_profile">隱藏個人資料</string>
+    <string name="password_to_show">顯示密碼</string>
+    <string name="save_profile_password">保存個人資料密碼</string>
+    <string name="to_reveal_profile_enter_password">要顯示您的隱藏個人資料，請在您的聊天個人資料頁面的搜索字段中輸入完整密碼。</string>
+    <string name="button_welcome_message">歡迎信息</string>
+    <string name="save_and_update_group_profile">保存和更新組配置文件</string>
+    <string name="save_welcome_message_question">保存歡迎信息？</string>
+    <string name="cant_delete_user_profile">無法刪除用戶個人資料！</string>
+    <string name="user_hide">隱藏</string>
+    <string name="make_profile_private">將個人資料設為私密！</string>
+    <string name="v4_6_audio_video_calls">音視頻通話</string>
+    <string name="v4_6_chinese_spanish_interface">中文和西班牙文界面</string>
+    <string name="v4_6_reduced_battery_usage">進一步減少電池使用</string>
+    <string name="v4_6_group_moderation">小組審核</string>
+    <string name="v4_6_reduced_battery_usage_descr">更多改進即將推出！</string>
+    <string name="v4_6_group_moderation_descr">現在管理員可以：
+\n- 刪除成員的消息。
+\n- 禁用成員（“觀察員”角色）</string>
+    <string name="v4_6_hidden_chat_profiles_descr">使用密碼保護您的聊天資料！</string>
+    <string name="relay_server_protects_ip">中繼服務器保護您的 IP 地址，但它可以觀察通話的持續時間。</string>
+    <string name="button_add_welcome_message">添加歡迎信息</string>
+    <string name="error_saving_user_password">保存用戶密碼時出錯</string>
+    <string name="error_updating_user_privacy">更新用戶隱私時出錯</string>
+    <string name="relay_server_if_necessary">中繼服務器僅在必要時使用。 另一方可以觀察到您的 IP 地址。</string>
+    <string name="enter_password_to_show">在上面輸入密碼以顯示！</string>
+    <string name="v4_6_group_welcome_message">群组欢迎信息</string>
+    <string name="v4_6_hidden_chat_profiles">隱藏的聊天資料</string>
+    <string name="dont_show_again">不再顯示</string>
+    <string name="user_mute">靜音</string>
+    <string name="muted_when_inactive">Muted when inactive!</string>
+    <string name="v4_6_group_welcome_message_descr">設置向新成員顯示的消息！</string>
+    <string name="tap_to_activate_profile">點擊以激活配置文件。</string>
+    <string name="v4_6_audio_video_calls_descr">支持藍牙和其他改進。</string>
+    <string name="should_be_at_least_one_visible_profile">應該至少有一個可見的用戶配置文件。</string>
+    <string name="group_welcome_title">歡迎信息</string>
+    <string name="v4_6_chinese_spanish_interface_descr">感謝用戶——通過 Weblate 做出貢獻！</string>
+    <string name="should_be_at_least_one_profile">應該至少有一個用戶配置文件。</string>
+    <string name="user_unmute">取消靜音</string>
+    <string name="you_will_still_receive_calls_and_ntfs">當靜音配置文件處於活動狀態時，您仍會收到來自靜音配置文件的電話和通知。</string>
+    <string name="user_unhide">取消隱藏</string>
 </resources>

@@ -117,7 +117,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
   CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
   CRUserPrivacy u -> ttyUserPrefix u $ viewUserPrivacy u
-  CRVersionInfo info -> viewVersionInfo logLevel info
+  CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq -> ttyUser u $ viewConnReqInvitation cReq
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView

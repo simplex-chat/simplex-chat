@@ -206,7 +206,7 @@ private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPref
 
 @Composable
 private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onClick: (() -> Unit)? = null) {
-  DatabaseKeyField(
+  PassphraseField(
     text,
     generalGetString(R.string.enter_passphrase),
     isValid = ::validKey,

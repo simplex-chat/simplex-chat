@@ -112,7 +112,7 @@
     <string name="integrity_msg_bad_hash">错误消息散列</string>
     <string name="integrity_msg_bad_id">错误消息 ID</string>
     <string name="settings_audio_video_calls">语音和视频通话</string>
-    <string name="accept_automatically">自动地</string>
+    <string name="accept_automatically">自动</string>
     <string name="turning_off_service_and_periodic">激活电池优化，关闭了后台服务和新消息的定期请求。您可以通过设置重新启用它们。</string>
     <string name="notifications_mode_service_desc">后台服务一直在运行——一旦有消息，就会显示通知。</string>
     <string name="icon_descr_audio_off">关闭音频</string>
@@ -132,7 +132,7 @@
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b> 可以通过设置禁用它 </b> - 应用程序运行时仍会显示通知。</string>
     <string name="onboarding_notifications_mode_service_desc"><b> 使用更多电池 </b>！后台服务一直在运行——一旦收到消息，就会显示通知。</string>
     <string name="impossible_to_recover_passphrase"><b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。</string>
-    <string name="call_already_ended">通话已经结束！</string>
+    <string name="call_already_ended">通话已结束！</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>扫描二维码</b> ：与向您展示二维码的联系人联系。</string>
     <string name="alert_title_cant_invite_contacts">无法邀请联系人！</string>
     <string name="invite_prohibited">无法邀请联系人！</string>
@@ -234,7 +234,7 @@
     <string name="clear_chat_question">清除聊天记录？</string>
     <string name="chat_with_developers">与开发者聊天</string>
     <string name="clear_contacts_selection_button">清除</string>
-    <string name="colored">有色</string>
+    <string name="colored">彩色</string>
     <string name="callstate_connected">已连接</string>
     <string name="connect_button">连接</string>
     <string name="connect_via_link_verb">连接</string>
@@ -266,7 +266,7 @@
     <string name="error_deleting_pending_contact_connection">删除待定的联系人连接错误</string>
     <string name="error_receiving_file">接收文件错误</string>
     <string name="failed_to_active_user_title">切换资料错误！</string>
-    <string name="notification_preview_mode_hidden">已隐藏</string>
+    <string name="notification_preview_mode_hidden">隐藏</string>
     <string name="edit_verb">编辑</string>
     <string name="notification_display_mode_hidden_desc">隐藏联系人和消息</string>
     <string name="icon_descr_edited">已编辑</string>
@@ -510,7 +510,7 @@
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">只有客户端设备存储用户配置文件、联系人、群组和使用 <b>双层端到端加密 </b> 发送的消息。</string>
     <string name="video_call_no_encryption">视频通话（非端到端加密）</string>
     <string name="onboarding_notifications_mode_periodic">定期</string>
-    <string name="onboarding_notifications_mode_title">私人通知</string>
+    <string name="onboarding_notifications_mode_title">私密通知</string>
     <string name="onboarding_notifications_mode_off">应用程序运行时</string>
     <string name="status_no_e2e_encryption">无端到端加密</string>
     <string name="show_call_on_lock_screen">显示</string>
@@ -592,7 +592,6 @@
     <string name="your_chat_profiles">您的聊天资料</string>
     <string name="icon_descr_call_missed">未接来电</string>
     <string name="icon_descr_call_pending_sent">待定来电</string>
-    <string name="your_chat_profiles_stored_locally">您的聊天资料存储在本地，仅存储在您的设备上</string>
     <string name="connection_error_auth_desc">除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。
 \n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。</string>
     <string name="you_are_already_connected_to_vName_via_this_link">您已经连接到 <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>。</string>
@@ -628,7 +627,7 @@
 \n<xliff:g id="appName">SimpleX</xliff:g> 服务器无法看见您的资料。</string>
     <string name="your_profile_is_stored_on_your_device">您的资料、联系人和发送的消息存储在您的设备上。</string>
     <string name="profile_is_only_shared_with_your_contacts">该资料仅与您的联系人共享。</string>
-    <string name="chat_preferences_on">在</string>
+    <string name="chat_preferences_on">开启</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">此操作无法撤消——您的个人资料、联系人、消息和文件将不可撤回地丢失。</string>
     <string name="messages_section_description">此设置适用于您当前聊天资料中的消息</string>
     <string name="database_restore_error">恢复数据库错误</string>
@@ -715,7 +714,7 @@
     <string name="is_verified">%s 已验证</string>
     <string name="smp_servers_use_server_for_new_conn">用于新连接</string>
     <string name="network_disable_socks">使用直接互联网连接？</string>
-    <string name="network_use_onion_hosts_required">必要</string>
+    <string name="network_use_onion_hosts_required">必须</string>
     <string name="save_and_notify_contact">保存并通知联系人</string>
     <string name="save_and_notify_contacts">保存并通知联系人</string>
     <string name="read_more_in_github">在我们的 GitHub 仓库中阅读更多内容。</string>
@@ -843,7 +842,7 @@
     <string name="group_invitation_tap_to_join">点击加入</string>
     <string name="stop_chat_confirmation">停止</string>
     <string name="restart_the_app_to_use_imported_chat_database">重新启动应用程序以使用导入的聊天数据库。</string>
-    <string name="group_member_role_owner">所有者</string>
+    <string name="group_member_role_owner">群主</string>
     <string name="group_member_status_removed">已删除</string>
     <string name="role_in_group">角色</string>
     <string name="network_option_seconds_label">秒</string>
@@ -956,7 +955,7 @@
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">你加入了这个群组。连接到邀请组成员。</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">您更改了 %s 的地址</string>
     <string name="snd_group_event_user_left">您已离开</string>
-    <string name="num_contacts_selected"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 已选择联系人</string>
+    <string name="num_contacts_selected">%d 已选择联系人</string>
     <string name="chat_preferences_you_allow">您允许</string>
     <string name="v4_2_auto_accept_contact_requests_desc">带有可选的欢迎消息。</string>
     <string name="ttl_m">%dm</string>
@@ -972,7 +971,7 @@
     <string name="moderated_item_description">由 %s 审核</string>
     <string name="moderate_verb">管理员移除</string>
     <string name="moderate_message_will_be_deleted_warning">将为所有成员删除该消息。</string>
-    <string name="moderate_message_will_be_marked_warning">该消息将对所有成员显示为已审核。</string>
+    <string name="moderate_message_will_be_marked_warning">该消息将对所有成员标记为已被管理员移除。</string>
     <string name="delete_member_message__question">删除成员消息？</string>
     <string name="group_member_role_observer">观察者</string>
     <string name="you_are_observer">您是观察者</string>
@@ -981,4 +980,46 @@
     <string name="initial_member_role">初始角色</string>
     <string name="observer_cant_send_message_desc">请联系群组管理员。</string>
     <string name="language_system">系统</string>
+    <string name="password_to_show">用于显示的密码</string>
+    <string name="save_profile_password">保存个人资料密码</string>
+    <string name="button_add_welcome_message">添加欢迎消息</string>
+    <string name="user_hide">隐藏</string>
+    <string name="make_profile_private">将个人资料设置为私密！</string>
+    <string name="user_mute">静音</string>
+    <string name="save_and_update_group_profile">保存并更新组配置文件</string>
+    <string name="dont_show_again">不再显示</string>
+    <string name="muted_when_inactive">不活跃时静音！</string>
+    <string name="v4_6_audio_video_calls">语音和视频通话</string>
+    <string name="v4_6_chinese_spanish_interface">中文和西班牙文界面</string>
+    <string name="v4_6_reduced_battery_usage">进一步减少电池使用</string>
+    <string name="v4_6_reduced_battery_usage_descr">更多改进即将推出！</string>
+    <string name="v4_6_group_moderation_descr">现在管理员可以：
+\n- 删除成员的消息。
+\n- 禁用成员（“观察员”角色）</string>
+    <string name="v4_6_hidden_chat_profiles_descr">使用密码保护您的聊天资料！</string>
+    <string name="confirm_password">确认密码</string>
+    <string name="error_updating_user_privacy">更新用户隐私错误</string>
+    <string name="cant_delete_user_profile">无法删除用户资料！</string>
+    <string name="error_saving_user_password">保存用户密码错误</string>
+    <string name="enter_password_to_show">在搜索中输入密码</string>
+    <string name="v4_6_group_welcome_message">群组欢迎消息</string>
+    <string name="v4_6_group_moderation">群组管理员移除</string>
+    <string name="hidden_profile_password">隐藏的个人资料密码</string>
+    <string name="v4_6_hidden_chat_profiles">隐藏的聊天资料</string>
+    <string name="hide_profile">隐藏个人资料</string>
+    <string name="smp_save_servers_question">保存服务器？</string>
+    <string name="to_reveal_profile_enter_password">要显示您的隐藏的个人资料，请在您的聊天个人资料页面的搜索字段中输入完整密码。</string>
+    <string name="save_welcome_message_question">保存欢迎信息？</string>
+    <string name="tap_to_activate_profile">点击以激活个人资料。</string>
+    <string name="should_be_at_least_one_profile">应该至少有一个用户资料。</string>
+    <string name="user_unhide">解除隐藏</string>
+    <string name="v4_6_group_welcome_message_descr">设置向新成员显示的消息！</string>
+    <string name="v4_6_audio_video_calls_descr">支持蓝牙和其他改进。</string>
+    <string name="v4_6_chinese_spanish_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
+    <string name="should_be_at_least_one_visible_profile">应该至少有一个可见的用户资料。</string>
+    <string name="user_unmute">解除静音</string>
+    <string name="button_welcome_message">欢迎信息</string>
+    <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
+    <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
+    <string name="group_welcome_title">欢迎信息</string>
 </resources>

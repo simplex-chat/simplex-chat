@@ -1,8 +1,7 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.res.Configuration
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -31,10 +30,12 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Bool
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      if (ci.meta.itemDeleted is CIDeleted.Moderated) {
-        MarkedDeletedText(String.format(generalGetString(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName))
-      } else {
-        MarkedDeletedText(generalGetString(R.string.marked_deleted_description))
+      Box(Modifier.weight(1f, false)) {
+        if (ci.meta.itemDeleted is CIDeleted.Moderated) {
+          MarkedDeletedText(String.format(generalGetString(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName))
+        } else {
+          MarkedDeletedText(generalGetString(R.string.marked_deleted_description))
+        }
       }
       CIMetaView(ci, timedMessagesTTL)
     }

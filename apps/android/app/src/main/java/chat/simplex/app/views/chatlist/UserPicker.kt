@@ -9,11 +9,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -33,10 +34,24 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, switchingUsers: MutableState<Boolean>, openSettings: () -> Unit) {
+fun UserPicker(
+  chatModel: ChatModel,
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  switchingUsers: MutableState<Boolean>,
+  showSettings: Boolean = true,
+  showCancel: Boolean = false,
+  cancelClicked: () -> Unit = {},
+  settingsClicked: () -> Unit = {},
+) {
   val scope = rememberCoroutineScope()
   var newChat by remember { mutableStateOf(userPickerState.value) }
-  val users by remember { derivedStateOf { chatModel.users.sortedByDescending { it.user.activeUser } } }
+  val users by remember {
+    derivedStateOf {
+      chatModel.users
+        .filter { u -> u.user.activeUser || !u.user.hidden }
+        .sortedByDescending { it.user.activeUser }
+    }
+  }
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
   LaunchedEffect(Unit) {
     launch {
@@ -94,23 +109,22 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
         .shadow(8.dp, MaterialTheme.shapes.medium, clip = false)
-        .background(MaterialTheme.colors.background, MaterialTheme.shapes.medium)
+        .background(if (isInDarkTheme()) MaterialTheme.colors.background.darker(-0.7f) else MaterialTheme.colors.background, MaterialTheme.shapes.medium)
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         users.forEach { u ->
           UserProfilePickerItem(u.user, u.unreadCount, openSettings = {
-            openSettings()
+            settingsClicked()
             userPickerState.value = AnimatedViewState.GONE
           }) {
             userPickerState.value = AnimatedViewState.HIDING
             if (!u.user.activeUser) {
-              chatModel.chats.clear()
               scope.launch {
                 val job = launch {
                   delay(500)
                   switchingUsers.value = true
                 }
-                chatModel.controller.changeActiveUser(u.user.userId)
+                chatModel.controller.changeActiveUser(u.user.userId, null)
                 job.cancel()
                 switchingUsers.value = false
               }
@@ -120,9 +134,17 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
           if (u.user.activeUser) Divider(Modifier.requiredHeight(0.5.dp))
         }
       }
-      SettingsPickerItem {
-        openSettings()
-        userPickerState.value = AnimatedViewState.GONE
+      if (showSettings) {
+        SettingsPickerItem {
+          settingsClicked()
+          userPickerState.value = AnimatedViewState.GONE
+        }
+      }
+      if (showCancel) {
+        CancelPickerItem {
+          cancelClicked()
+          userPickerState.value = AnimatedViewState.GONE
+        }
       }
     }
   }
@@ -144,33 +166,19 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Row(
-      Modifier
-        .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
-        .padding(vertical = 8.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      ProfileImage(
-        image = u.image,
-        size = 54.dp
-      )
-      Text(
-        u.displayName,
-        modifier = Modifier
-          .padding(start = 8.dp, end = 8.dp),
-        fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
-      )
-    }
+    UserProfileRow(u)
     if (u.activeUser) {
-      Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    } else if (u.hidden) {
+        Icon(Icons.Outlined.Lock, null, Modifier.size(20.dp), tint = HighOrLowlight)
     } else if (unreadCount > 0) {
       Row {
         Text(
           unreadCountStr(unreadCount),
-          color = MaterialTheme.colors.onPrimary,
+          color = Color.White,
           fontSize = 11.sp,
           modifier = Modifier
-            .background(MaterialTheme.colors.primary, shape = CircleShape)
+            .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape)
             .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
             .padding(horizontal = 3.dp)
             .padding(vertical = 1.dp),
@@ -179,9 +187,32 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
         )
         Spacer(Modifier.width(2.dp))
       }
-    } else {
+    } else if (!u.showNtfs) {
+      Icon(Icons.Outlined.NotificationsOff, null, Modifier.size(20.dp), tint = HighOrLowlight)
+    }  else {
       Box(Modifier.size(20.dp))
     }
+  }
+}
+
+@Composable
+fun UserProfileRow(u: User) {
+  Row(
+    Modifier
+      .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
+      .padding(vertical = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    ProfileImage(
+      image = u.image,
+      size = 54.dp
+    )
+    Text(
+      u.displayName,
+      modifier = Modifier
+        .padding(start = 8.dp, end = 8.dp),
+      fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
+    )
   }
 }
 
@@ -194,5 +225,17 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
       color = MaterialTheme.colors.onBackground,
     )
     Icon(Icons.Outlined.Settings, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+  }
+}
+
+@Composable
+private fun CancelPickerItem(onClick: () -> Unit) {
+  SectionItemViewSpaceBetween(onClick, minHeight = 68.dp) {
+    val text = generalGetString(R.string.cancel_verb)
+    Text(
+      text,
+      color = MaterialTheme.colors.onBackground,
+    )
+    Icon(Icons.Outlined.Close, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
   }
 }

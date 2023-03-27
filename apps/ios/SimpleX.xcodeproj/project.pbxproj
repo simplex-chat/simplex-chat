@@ -58,6 +58,7 @@
 		5C65DAF529CBA429003CEE45 /* libHSsimplex-chat-4.6.0.0-KxI2qGrpKDHEZQGy0eoUXU.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAF029CBA429003CEE45 /* libHSsimplex-chat-4.6.0.0-KxI2qGrpKDHEZQGy0eoUXU.a */; };
 		5C65DAF629CBA429003CEE45 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAF129CBA429003CEE45 /* libgmpxx.a */; };
 		5C65DAF729CBA429003CEE45 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C65DAF229CBA429003CEE45 /* libffi.a */; };
+		5C65DAF929D0CC20003CEE45 /* DeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C65DAF829D0CC20003CEE45 /* DeveloperView.swift */; };
 		5C65F343297D45E100B67AF3 /* VersionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C65F341297D3F3600B67AF3 /* VersionView.swift */; };
 		5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
 		5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6BA666289BD954009B8ECC /* DismissSheets.swift */; };
@@ -294,6 +295,7 @@
 		5C65DAF029CBA429003CEE45 /* libHSsimplex-chat-4.6.0.0-KxI2qGrpKDHEZQGy0eoUXU.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.6.0.0-KxI2qGrpKDHEZQGy0eoUXU.a"; sourceTree = "<group>"; };
 		5C65DAF129CBA429003CEE45 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5C65DAF229CBA429003CEE45 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		5C65DAF829D0CC20003CEE45 /* DeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperView.swift; sourceTree = "<group>"; };
 		5C65F341297D3F3600B67AF3 /* VersionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionView.swift; sourceTree = "<group>"; };
 		5C6AD81227A834E300348BD7 /* NewChatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatButton.swift; sourceTree = "<group>"; };
 		5C6BA666289BD954009B8ECC /* DismissSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissSheets.swift; sourceTree = "<group>"; };
@@ -691,6 +693,7 @@
 				64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */,
 				18415845648CA4F5A8BCA272 /* UserProfilesView.swift */,
 				5C65F341297D3F3600B67AF3 /* VersionView.swift */,
+				5C65DAF829D0CC20003CEE45 /* DeveloperView.swift */,
 			);
 			path = UserSettings;
 			sourceTree = "<group>";
@@ -1022,6 +1025,7 @@
 				5C93292F29239A170090FFF9 /* SMPServersView.swift in Sources */,
 				5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */,
 				5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */,
+				5C65DAF929D0CC20003CEE45 /* DeveloperView.swift in Sources */,
 				5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */,
 				5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */,
 				5CB0BA9A2827FD8800B3292C /* HowItWorks.swift in Sources */,
@@ -1396,7 +1400,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 132;
+				CURRENT_PROJECT_VERSION = 134;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -1438,7 +1442,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 132;
+				CURRENT_PROJECT_VERSION = 134;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -1518,7 +1522,7 @@
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 132;
+				CURRENT_PROJECT_VERSION = 134;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1550,7 +1554,7 @@
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 132;
+				CURRENT_PROJECT_VERSION = 134;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;

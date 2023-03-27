@@ -387,6 +387,7 @@
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve">
         <source>Add welcome message</source>
+        <target>Welkomst bericht toevoegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -531,6 +532,7 @@
       </trans-unit>
       <trans-unit id="Audio and video calls" xml:space="preserve">
         <source>Audio and video calls</source>
+        <target>Audio en video oproepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
@@ -600,6 +602,7 @@
       </trans-unit>
       <trans-unit id="Can't delete user profile!" xml:space="preserve">
         <source>Can't delete user profile!</source>
+        <target>Kan gebruikers profiel niet verwijderen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -709,6 +712,7 @@
       </trans-unit>
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
         <source>Chinese and Spanish interface</source>
+        <target>Chinese en Spaanse interface</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -768,6 +772,7 @@
       </trans-unit>
       <trans-unit id="Confirm password" xml:space="preserve">
         <source>Confirm password</source>
+        <target>Bevestig wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -1205,7 +1210,7 @@
       </trans-unit>
       <trans-unit id="Delete user profile?" xml:space="preserve">
         <source>Delete user profile?</source>
-        <target>Gebruikersprofiel verwijderen?</target>
+        <target>Gebruikers profiel verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1300,6 +1305,7 @@
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
+        <target>Niet meer weergeven</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
@@ -1404,6 +1410,7 @@
       </trans-unit>
       <trans-unit id="Enter password above to show!" xml:space="preserve">
         <source>Enter password above to show!</source>
+        <target>Voer hier boven het wachtwoord in om weer te geven!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter server manually" xml:space="preserve">
@@ -1563,6 +1570,7 @@
       </trans-unit>
       <trans-unit id="Error saving user password" xml:space="preserve">
         <source>Error saving user password</source>
+        <target>Fout bij opslaan gebruikers wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -1602,6 +1610,7 @@
       </trans-unit>
       <trans-unit id="Error updating user privacy" xml:space="preserve">
         <source>Error updating user privacy</source>
+        <target>Fout bij updaten van gebruikers privacy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
@@ -1691,10 +1700,12 @@
       </trans-unit>
       <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve">
         <source>Fully re-implemented - work in background!</source>
+        <target>Volledig opnieuw geïmplementeerd - werk op de achtergrond!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Further reduced battery usage" xml:space="preserve">
         <source>Further reduced battery usage</source>
+        <target>Verder verminderd batterij verbruik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="GIFs and stickers" xml:space="preserve">
@@ -1774,6 +1785,7 @@
       </trans-unit>
       <trans-unit id="Group moderation" xml:space="preserve">
         <source>Group moderation</source>
+        <target>Groep moderatie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group preferences" xml:space="preserve">
@@ -1793,6 +1805,7 @@
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
         <source>Group welcome message</source>
+        <target>Groep welkomst bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
@@ -1817,10 +1830,12 @@
       </trans-unit>
       <trans-unit id="Hidden chat profiles" xml:space="preserve">
         <source>Hidden chat profiles</source>
+        <target>Verborgen chat profielen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden profile password" xml:space="preserve">
         <source>Hidden profile password</source>
+        <target>Verborgen profiel wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hide" xml:space="preserve">
@@ -1835,6 +1850,7 @@
       </trans-unit>
       <trans-unit id="Hide profile" xml:space="preserve">
         <source>Hide profile</source>
+        <target>Profiel verbergen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -1960,6 +1976,11 @@
       <trans-unit id="Incorrect security code!" xml:space="preserve">
         <source>Incorrect security code!</source>
         <target>Onjuiste beveiligingscode!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Initial role" xml:space="preserve">
+        <source>Initial role</source>
+        <target>Initiële rol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -2141,6 +2162,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Make profile private!" xml:space="preserve">
         <source>Make profile private!</source>
+        <target>Profiel privé maken!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
@@ -2270,6 +2292,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Muted when inactive!" xml:space="preserve">
         <source>Muted when inactive!</source>
+        <target>Gedempt wanneer inactief!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Name" xml:space="preserve">
@@ -2376,6 +2399,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <source>Now admins can:
 - delete members' messages.
 - disable members ("observer" role)</source>
+        <target>Nu kunnen beheerders: 
+- berichten van leden verwijderen.
+- schakel leden uit ("waarnemer" rol)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve">
@@ -2420,7 +2446,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
         <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
-        <target>Alleen client apparaten slaan gebruikersprofielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.</target>
+        <target>Alleen client apparaten slaan gebruikers profielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
@@ -2480,7 +2506,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Open user profiles" xml:space="preserve">
         <source>Open user profiles</source>
-        <target>Gebruikersprofielen openen</target>
+        <target>Gebruikers profielen openen</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
@@ -2505,6 +2531,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
         <source>Password to show</source>
+        <target>Wachtwoord om weer te geven</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste" xml:space="preserve">
@@ -2659,6 +2686,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
         <source>Protect your chat profiles with a password!</source>
+        <target>Bescherm je chat profielen met een wachtwoord!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -2858,6 +2886,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Save and update group profile" xml:space="preserve">
         <source>Save and update group profile</source>
+        <target>Groep profiel opslaan en bijwerken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save archive" xml:space="preserve">
@@ -2887,6 +2916,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Save profile password" xml:space="preserve">
         <source>Save profile password</source>
+        <target>Bewaar profiel wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve">
@@ -2896,10 +2926,12 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Save servers?" xml:space="preserve">
         <source>Save servers?</source>
+        <target>Servers opslaan?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save welcome message?" xml:space="preserve">
         <source>Save welcome message?</source>
+        <target>Welkomst bericht opslaan?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
@@ -3054,6 +3086,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
         <source>Set the message shown to new members!</source>
+        <target>Stel het getoonde bericht in voor nieuwe leden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
@@ -3238,6 +3271,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Tap to activate profile." xml:space="preserve">
         <source>Tap to activate profile.</source>
+        <target>Tik om profiel te activeren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
@@ -3367,10 +3401,12 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="There should be at least one user profile." xml:space="preserve">
         <source>There should be at least one user profile.</source>
+        <target>Er moet ten minste één gebruikers profiel zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
         <source>There should be at least one visible user profile.</source>
+        <target>Er moet ten minste één zichtbaar gebruikers profiel zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -3442,6 +3478,7 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
+        <target>Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoek veld in op de pagina **Uw chat profielen**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -3501,6 +3538,7 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
         <source>Unhide</source>
+        <target>zichtbaar maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
@@ -3612,7 +3650,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
         <source>User profile</source>
-        <target>Gebruikersprofiel</target>
+        <target>Gebruikers profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
@@ -3697,7 +3735,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="Welcome message" xml:space="preserve">
         <source>Welcome message</source>
-        <target>Welkoms bericht</target>
+        <target>Welkomst bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -3717,7 +3755,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="With optional welcome message." xml:space="preserve">
         <source>With optional welcome message.</source>
-        <target>Met optioneel welkomstbericht.</target>
+        <target>Met optioneel welkomst bericht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -3778,6 +3816,8 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
         <source>You can hide or mute a user profile - swipe it to the right.
 SimpleX Lock must be enabled.</source>
+        <target>U kunt een gebruikers profiel verbergen of dempen - veeg het naar rechts.
+SimpleX Lock moet ingeschakeld zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -3897,6 +3937,7 @@ SimpleX Lock must be enabled.</source>
       </trans-unit>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
         <source>You will still receive calls and notifications from muted profiles when they are active.</source>
+        <target>U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
@@ -4075,7 +4116,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="above, then choose:" xml:space="preserve">
         <source>above, then choose:</source>
-        <target>hierboven, kies dan:</target>
+        <target>hier boven, kies dan:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve">
@@ -4450,7 +4491,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
         <source>observer</source>
-        <target>waarnemer</target>
+        <target>Waarnemer</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="off" xml:space="preserve">
@@ -4481,7 +4522,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="owner" xml:space="preserve">
         <source>owner</source>
-        <target>eigenaar</target>
+        <target>Eigenaar</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="peer-to-peer" xml:space="preserve">

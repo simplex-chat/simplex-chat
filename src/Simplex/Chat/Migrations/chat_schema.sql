@@ -1,6 +1,7 @@
 CREATE TABLE migrations(
   name TEXT NOT NULL,
   ts TEXT NOT NULL,
+  down TEXT,
   PRIMARY KEY(name)
 );
 CREATE TABLE contact_profiles(
