@@ -22,10 +22,7 @@ fun DeveloperView(
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   withAuth: (block: () -> Unit) -> Unit
 ) {
-  Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start
-  ) {
+  Column(Modifier.fillMaxWidth()) {
     val developerTools = m.controller.appPrefs.developerTools
     val confirmDBUpgrades = m.controller.appPrefs.confirmDBUpgrades
     val uriHandler = LocalUriHandler.current
@@ -40,7 +37,6 @@ fun DeveloperView(
       SettingsPreferenceItem(Icons.Outlined.DriveFolderUpload, stringResource(R.string.confirm_database_upgrades), confirmDBUpgrades, confirm)
       SectionDivider()
       InstallTerminalAppItem(uriHandler)
-      SectionDivider()
     }
   }
 }

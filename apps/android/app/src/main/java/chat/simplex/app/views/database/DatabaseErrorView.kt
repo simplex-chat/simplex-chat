@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.AppPreferences
-import chat.simplex.app.model.DBEncryptionConfig
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.AppVersionText
@@ -69,12 +68,12 @@ fun DatabaseErrorView(
   }
 
   @Composable
-  fun fileNameText(dbFile: String) {
+  fun FileNameText(dbFile: String) {
     Text(String.format(generalGetString(R.string.file_with_path), dbFile.split("/").lastOrNull() ?: dbFile))
   }
 
   @Composable
-  fun migrationsText(ms: List<String>) {
+  fun MigrationsText(ms: List<String>) {
     Text(String.format(generalGetString(R.string.database_migrations), ms.joinToString(", ")))
   }
 
@@ -94,7 +93,7 @@ fun DatabaseErrorView(
             }
             SaveAndOpenButton(buttonEnabled, ::saveAndRunChatOnClick)
             SectionSpacer()
-            fileNameText(status.dbFile)
+            FileNameText(status.dbFile)
           }
         } else {
           DatabaseErrorDetails(R.string.encrypted_database) {
@@ -115,8 +114,8 @@ fun DatabaseErrorView(
               Text(generalGetString(R.string.upgrade_and_open_chat))
             }
             Spacer(Modifier.height(20.dp))
-            fileNameText(status.dbFile)
-            migrationsText(err.upMigrations.map { it.upName })
+            FileNameText(status.dbFile)
+            MigrationsText(err.upMigrations.map { it.upName })
             AppVersionText()
           }
         is MigrationError.Downgrade ->
@@ -126,19 +125,19 @@ fun DatabaseErrorView(
             }
             Spacer(Modifier.height(20.dp))
             Text(generalGetString(R.string.database_downgrade_warning), fontWeight = FontWeight.Bold)
-            fileNameText(status.dbFile)
-            migrationsText(err.downMigrations)
+            FileNameText(status.dbFile)
+            MigrationsText(err.downMigrations)
             AppVersionText()
           }
         is MigrationError.Error ->
           DatabaseErrorDetails(R.string.incompatible_database_version) {
-            fileNameText(status.dbFile)
+            FileNameText(status.dbFile)
             Text(String.format(generalGetString(R.string.error_with_info), mtrErrorDescription(err.mtrError)))
           }
       }
       is DBMigrationResult.ErrorSQL ->
         DatabaseErrorDetails(R.string.database_error) {
-          fileNameText(status.dbFile)
+          FileNameText(status.dbFile)
           Text(String.format(generalGetString(R.string.error_with_info), status.migrationSQLError))
         }
       is DBMigrationResult.ErrorKeychain ->
