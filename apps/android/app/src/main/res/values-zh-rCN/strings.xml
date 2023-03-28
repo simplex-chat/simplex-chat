@@ -1022,4 +1022,5 @@
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
     <string name="group_welcome_title">欢迎信息</string>
+    <string name="settings_send_files_via_xftp">通过 XFTP 发送文件</string>
 </resources>
