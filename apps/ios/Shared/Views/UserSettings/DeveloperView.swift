@@ -18,17 +18,6 @@ struct DeveloperView: View {
         VStack {
             List {
                 Section {
-                    NavigationLink {
-                        TerminalView()
-                    } label: {
-                        settingsRow("terminal") { Text("Chat console") }
-                    }
-                    settingsRow("chevron.left.forwardslash.chevron.right") {
-                        Toggle("Show developer options", isOn: $developerTools)
-                    }
-                    settingsRow("internaldrive") {
-                        Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
-                    }
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
@@ -37,6 +26,19 @@ struct DeveloperView: View {
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, 36)
                     }
+                    NavigationLink {
+                        TerminalView()
+                    } label: {
+                        settingsRow("terminal") { Text("Chat console") }
+                    }
+                    settingsRow("internaldrive") {
+                        Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
+                    }
+                    settingsRow("chevron.left.forwardslash.chevron.right") {
+                        Toggle("Show developer options", isOn: $developerTools)
+                    }
+                } footer: {
+                    (developerTools ? Text("Show: ") : Text("Hide: ")) + Text("Database IDs and Trasport isolation option")
                 }
             }
         }
