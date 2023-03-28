@@ -6,8 +6,7 @@
     <string name="onboarding_notifications_mode_off_desc"><b>Mejor para la batería</b>. Recibirás notificaciones sólo cuando la aplicación se esté ejecutando, el servicio NO se usará en segundo plano.</string>
     <string name="onboarding_notifications_mode_periodic_desc"><b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes nuevos cada 10 minutos. Puedes perderte llamadas y mensajes urgentes.</string>
     <string name="accept_call_on_lock_screen">Aceptar</string>
-    <string name="full_backup">Copia de seguridad de los
-\ndatos de la aplicación</string>
+    <string name="full_backup">Copia de seguridad de los datos de la aplicación</string>
     <string name="chat_item_ttl_day">un dia</string>
     <string name="chat_item_ttl_month">un mes</string>
     <string name="chat_item_ttl_week">una semana</string>
@@ -330,7 +329,7 @@
     <string name="group_invitation_expired">Invitación de grupo caducada</string>
     <string name="alert_message_group_invitation_expired">La invitación al grupo ya no es válida, ha sido eliminada por el remitente.</string>
     <string name="delete_group_for_self_cannot_undo_warning">El grupo se eliminará para tí. ¡No puede deshacerse!</string>
-    <string name="how_to_use_markdown">Cómo usar el marcador</string>
+    <string name="how_to_use_markdown">Cómo usar sintaxis markdown</string>
     <string name="description_via_one_time_link_incognito">Incógnito mediante enlace de un uso</string>
     <string name="simplex_link_contact">Dirección de contacto SimpleX</string>
     <string name="error_saving_smp_servers">Error guardando servidores SMP</string>
@@ -408,7 +407,7 @@
     <string name="v4_4_french_interface">Interfaz en francés</string>
     <string name="image_descr">Imagen</string>
     <string name="file_not_found">Archivo no encontrado</string>
-    <string name="how_to_use_simplex_chat">Cómo usar</string>
+    <string name="how_to_use_simplex_chat">Guia de uso</string>
     <string name="full_name_optional__prompt">Nombre completo (opcional)</string>
     <string name="callstate_ended">finalizado</string>
     <string name="settings_section_title_help">AYUDA</string>
@@ -494,7 +493,7 @@
     <string name="mark_unread">Marcar como no leído</string>
     <string name="invalid_QR_code">Código QR inválido</string>
     <string name="incorrect_code">¡Código de seguridad incorrecto!</string>
-    <string name="markdown_in_messages">Marcadores en mensajes</string>
+    <string name="markdown_in_messages">Sintaxis markdown en mensajes</string>
     <string name="network_use_onion_hosts_no">No</string>
     <string name="callstatus_missed">llamada perdida</string>
     <string name="import_database_confirmation">Importar</string>
@@ -540,7 +539,7 @@
     <string name="no_details">sin detalles</string>
     <string name="ok">OK</string>
     <string name="only_stored_on_members_devices">(sólo almacenado por miembros del grupo)</string>
-    <string name="markdown_help">Ayuda marcadores</string>
+    <string name="markdown_help">Ayuda sintaxis markdown</string>
     <string name="network_and_servers">Redes y servidores</string>
     <string name="network_use_onion_hosts_prefer_desc">Se usarán hosts .onion cuando estén disponibles.</string>
     <string name="italic">cursiva</string>
@@ -637,7 +636,7 @@
     <string name="send_live_message_desc">Envía un mensaje en vivo: se actualizará para el(los) destinatario(s) a medida que se escribe</string>
     <string name="icon_descr_sent_msg_status_send_failed">error de envío</string>
     <string name="sending_via">Enviando mediante</string>
-    <string name="contact_developers">Actualiza la aplicación y ponte en contacto con los desarrolladores.</string>
+    <string name="contact_developers">Por favor, actualiza la aplicación y ponte en contacto con los desarrolladores.</string>
     <string name="sender_cancelled_file_transfer">El remitente ha cancelado la transferencia de archivos.</string>
     <string name="smp_server_test_secure_queue">Cola segura</string>
     <string name="enter_passphrase_notification_title">Se necesita contraseña</string>
@@ -665,7 +664,7 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(escanear o pegar desde el portapapeles)</string>
     <string name="icon_descr_profile_image_placeholder">Espacio reservado para la imagen del perfil</string>
     <string name="image_descr_qr_code">Código QR</string>
-    <string name="chat_with_the_founder">Envía consultas e ideas</string>
+    <string name="chat_with_the_founder">Consultas y sugerencias</string>
     <string name="smp_servers_preset_address">Dirección del servidor predefinida</string>
     <string name="send_us_an_email">Contacta por email</string>
     <string name="rate_the_app">Valora la aplicación</string>
@@ -707,7 +706,7 @@
     <string name="open_chat">Abrir chat</string>
     <string name="restore_database">Restaurar copia de seguridad de la base de datos</string>
     <string name="save_passphrase_and_open_chat">Guardar contraseña y abrir el chat</string>
-    <string name="restore_passphrase_not_found_desc">La contraseña no se ha encontrado en Keystore, introdúzcala manualmente. Esto puede haber ocurrido si has restaurado los datos de la aplicación con una herramienta de copia de seguridad. Si no es así, ponte en contacto con los desarrolladores.</string>
+    <string name="restore_passphrase_not_found_desc">La contraseña no se ha encontrado en Keystore, introdúzcala manualmente. Esto puede haber ocurrido si has restaurado los datos de la aplicación con una herramienta de copia de seguridad. Si no es así, por favor ponte en contacto con los desarrolladores.</string>
     <string name="remove_member_confirmation">Eliminar</string>
     <string name="button_remove_member">Eliminar miembro</string>
     <string name="button_send_direct_message">Enviar mensaje directo</string>
@@ -794,7 +793,7 @@
     <string name="moderate_message_will_be_deleted_warning">El mensaje se eliminará para todos los miembros.</string>
     <string name="share_file">Compartir archivo…</string>
     <string name="images_limit_title">¡Demasiadas imágenes!</string>
-    <string name="image_decoding_exception_desc">La imagen no se puede decodificar. Pruebe otra imagen o pónte en contacto con los desarrolladores.</string>
+    <string name="image_decoding_exception_desc">La imagen no se puede decodificar. Pruebe con otra imagen o contacta con los desarrolladores.</string>
     <string name="network_enable_socks">¿Usa proxy SOCKS\?</string>
     <string name="network_use_onion_hosts">Usar hosts .onion</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
@@ -889,10 +888,10 @@
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> quiere conectarse contigo mediante</string>
     <string name="failed_to_create_user_duplicate_desc">Tienes un perfil de chat con el mismo nombre mostrado. Debes elegir otro nombre.</string>
     <string name="you_can_also_connect_by_clicking_the_link">También puedes conectarte haciendo clic en el enlace. Si se abre en el navegador, haz clic en <b>Abrir en aplicación móvil</b>.</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0088ff">conectar con los desarrolladores de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para hacer cualquier pregunta y recibir actualizaciones</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0088ff">ponerte en contacto con los desarrolladores de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para consultas y para recibir actualizaciones</font>.</string>
     <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo. Si lo eliminas más tarde tus contactos no se perderán.</string>
     <string name="observer_cant_send_message_title">¡No puedes enviar mensajes!</string>
-    <string name="you_can_use_markdown_to_format_messages__prompt">Puedes usar marcadores para dar formato a los mensajes:</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">Puedes usar la sintaxis markdown para dar formato a los mensajes:</string>
     <string name="you_must_use_the_most_recent_version_of_database">Debes usar la versión más reciente de tu base de datos ÚNICAMENTE en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Tu contacto debe estar en línea para que se complete la conexión.
 \nPuedes cancelar esta conexión y eliminar el contacto (e intentarlo más tarde con un enlace nuevo).</string>
@@ -1025,4 +1024,15 @@
 \n- desactivar el rol a miembros (a rol \"observador\")</string>
     <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página Tus perfiles Chat.</string>
     <string name="settings_send_files_via_xftp">Enviar archivos mediante XFTP</string>
+    <string name="database_upgrade">Actualización de la base de datos</string>
+    <string name="database_downgrade">Degradación de la base de datos</string>
+    <string name="invalid_migration_confirmation">Confirmación de migración no válida</string>
+    <string name="upgrade_and_open_chat">Actualizar y abrir Chat</string>
+    <string name="database_migrations">Migraciones: %s</string>
+    <string name="mtr_error_different">migración diferente en la aplicación/base de datos: %s / %s</string>
+    <string name="downgrade_and_open_chat">Degradar y abrir Chat</string>
+    <string name="database_downgrade_warning">Atención: ¡puedes perder algunos datos!</string>
+    <string name="incompatible_database_version">Versión de base de datos incompatible</string>
+    <string name="confirm_database_upgrades">Confirmar actualizaciones de la bases de datos</string>
+    <string name="mtr_error_no_down_migration">la versión de la base de datos es más reciente que la aplicación, pero no hay migración hacia abajo para: %s</string>
 </resources>
