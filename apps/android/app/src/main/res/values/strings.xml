@@ -824,6 +824,17 @@
   <string name="restore_database_alert_confirm">Restore</string>
   <string name="database_restore_error">Restore database error</string>
   <string name="restore_passphrase_not_found_desc">Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please, contact developers.</string>
+  <string name="database_upgrade">Database upgrade</string>
+  <string name="database_downgrade">Database downgrade</string>
+  <string name="incompatible_database_version">Incompatible database version</string>
+  <string name="confirm_database_upgrades">Confirm database upgrades</string>
+  <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
+  <string name="upgrade_and_open_chat">Upgrade and open chat</string>
+  <string name="downgrade_and_open_chat">Downgrade and open chat</string>
+  <string name="mtr_error_no_down_migration">database version is newer than the app, but no down migration for: %s</string>
+  <string name="mtr_error_different">different migration in the app/database: %s / %s</string>
+  <string name="database_migrations">Migrations: %s</string>
+  <string name="database_downgrade_warning">Warning: you may lose some data!</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>

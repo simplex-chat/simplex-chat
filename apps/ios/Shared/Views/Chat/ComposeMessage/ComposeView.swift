@@ -229,6 +229,8 @@ struct ComposeView: View {
     @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
+    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: groupDefaults) private var xftpSendEnabled = false
+
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
@@ -394,10 +396,10 @@ struct ComposeView: View {
                     }
                     fileURL.stopAccessingSecurityScopedResource()
                     if let fileSize = fileSize,
-                        fileSize <= MAX_FILE_SIZE {
+                        fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: MAX_FILE_SIZE)
+                        let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: maxFileSize, countStyle: .binary)
                         AlertManager.shared.showAlertMsg(
                             title: "Large file!",
                             message: "Currently maximum supported file size is \(prettyMaxFileSize)."
@@ -445,6 +447,11 @@ struct ComposeView: View {
                 voiceMessageRecordingTime = TimeInterval(duration)
             }
         }
+    }
+
+    private var maxFileSize: Int64 {
+        let fileProtocol: FileProtocol = xftpSendEnabled ? .xftp : .smp
+        return getMaxFileSize(fileProtocol)
     }
 
     private func sendLiveMessage() async {
