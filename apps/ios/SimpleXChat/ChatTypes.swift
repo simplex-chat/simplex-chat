@@ -2221,13 +2221,6 @@ public struct CIFile: Decodable {
         CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus, fileProtocol: .xftp)
     }
 
-    public var isXFTP: Bool {
-        switch self.fileProtocol {
-        case .xftp: return true
-        default: return false
-        }
-    }
-
     public var isSMP: Bool {
         switch self.fileProtocol {
         case .smp: return true
