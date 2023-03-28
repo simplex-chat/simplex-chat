@@ -1869,9 +1869,9 @@ y frase de contraseña</target>
         <target>Cómo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to use it" xml:space="preserve">
+      <trans-unit id="How to use it" xml:space="preserve" approved="no">
         <source>How to use it</source>
-        <target>Cómo usar</target>
+        <target state="translated">Guia de uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use your servers" xml:space="preserve">
@@ -2256,9 +2256,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Error de migración:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." xml:space="preserve">
+      <trans-unit id="Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." xml:space="preserve" approved="no">
         <source>Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat).</source>
-        <target>Error de migración. A continuación pulsa **Omitir** para seguir usando la base de datos actual. Informa del problema a los desarrolladores de la aplicación a través de SimpleX o por correo electrónico a [chat@simplex.chat](mailto:chat@simplex.chat).</target>
+        <target state="translated">Error de migración. A continuación pulsa **Omitir** para seguir usando la base de datos actual. Por favor, informa a los desarrolladores de la aplicación a través de SimpleX o por correo electrónico a [chat@simplex.chat](mailto:chat@simplex.chat).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration is completed" xml:space="preserve">
@@ -3015,9 +3015,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Enviar notificaciones:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send questions and ideas" xml:space="preserve">
+      <trans-unit id="Send questions and ideas" xml:space="preserve" approved="no">
         <source>Send questions and ideas</source>
-        <target>Envía preguntas e ideas</target>
+        <target state="translated">Consultas y sugerencias</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -4517,9 +4517,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>Activado</target>
         <note>group pref value</note>
       </trans-unit>
-      <trans-unit id="or chat with the developers" xml:space="preserve">
+      <trans-unit id="or chat with the developers" xml:space="preserve" approved="no">
         <source>or chat with the developers</source>
-        <target>o habla con los desarrolladores</target>
+        <target state="translated">o contacta mediante Chat con los desarrolladores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="owner" xml:space="preserve">
