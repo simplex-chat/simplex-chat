@@ -57,7 +57,7 @@ struct DeveloperView: View {
                     Text("Experimental")
                 } footer: {
                     if xftpSendEnabled {
-                        Text("v4.6.1+ required to receive via XFTP.")
+                        Text("v4.6.1+ is required to receive via XFTP.")
                     }
                 }
             }
