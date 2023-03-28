@@ -50,6 +50,7 @@ chatFileTests = do
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "file transfer over XFTP" $ do
     it "send and receive file" testXFTPFileTransfer
+    it "send and receive file in group" testXFTPGroupFileTransfer
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     it "continue receiving file after restart" testXFTPContinueRcv
@@ -940,6 +941,47 @@ testXFTPFileTransfer =
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testXFTPGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testXFTPGroupFileTransfer =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    withXFTPServer $ do
+      createGroup3 "team" alice bob cath
+
+      alice #> "/f #team ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+      -- alice <## "completed sending file 1 (test.pdf) to bob" -- TODO "completed uploading" ?
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob
+        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from alice to ./tests/tmp/test_1.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      cath <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest1 <- B.readFile "./tests/tmp/test.pdf"
+      dest2 <- B.readFile "./tests/tmp/test_1.pdf"
+      dest1 `shouldBe` src
+      dest2 `shouldBe` src
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
