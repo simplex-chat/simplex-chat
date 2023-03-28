@@ -399,7 +399,7 @@ struct ComposeView: View {
                         fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
+                        let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: maxFileSize, countStyle: .binary)
                         AlertManager.shared.showAlertMsg(
                             title: "Large file!",
                             message: "Currently maximum supported file size is \(prettyMaxFileSize)."

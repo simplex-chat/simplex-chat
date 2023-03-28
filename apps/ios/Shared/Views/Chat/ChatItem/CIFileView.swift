@@ -24,7 +24,7 @@ struct CIFileView: View {
                     .padding(.top, 5)
                     .padding(.bottom, 3)
                 if let file = file {
-                    let prettyFileSize = ByteCountFormatter().string(fromByteCount: file.fileSize)
+                    let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(file.fileName)
                             .lineLimit(1)
@@ -85,7 +85,7 @@ struct CIFileView: View {
                         }
                     }
                 } else {
-                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: getMaxFileSize(file.fileProtocol))
+                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol), countStyle: .binary)
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
                         message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
@@ -137,11 +137,12 @@ struct CIFileView: View {
                 }
             case let .rcvTransfer(rcvProgress, rcvTotal):
                 switch file.fileProtocol {
-                case .xftp: if rcvProgress < rcvTotal {
-                    progressCircle(rcvProgress, rcvTotal)
-                } else {
-                    progressView() // decrypting
-                }
+                case .xftp:
+                    if rcvProgress < rcvTotal {
+                        progressCircle(rcvProgress, rcvTotal)
+                    } else {
+                        progressView() // decrypting
+                    }
                 case .smp:
                     progressView()
                 }
