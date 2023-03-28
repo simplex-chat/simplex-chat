@@ -16,6 +16,7 @@ module Simplex.Chat.Messages where
 import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Encoding as JE
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -409,13 +410,34 @@ data CIFile (d :: MsgDirection) = CIFile
     fileName :: String,
     fileSize :: Integer,
     filePath :: Maybe FilePath, -- local file path
-    fileStatus :: CIFileStatus d
+    fileStatus :: CIFileStatus d,
+    fileProtocol :: FileProtocol
   }
   deriving (Show, Generic)
 
 instance MsgDirectionI d => ToJSON (CIFile d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data FileProtocol = FPSMP | FPXFTP
+  deriving (Eq, Show, Ord)
+
+instance FromField FileProtocol where fromField = fromTextField_ textDecode
+
+instance ToField FileProtocol where toField = toField . textEncode
+
+instance ToJSON FileProtocol where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance TextEncoding FileProtocol where
+  textDecode = \case
+    "smp" -> Just FPSMP
+    "xftp" -> Just FPXFTP
+    _ -> Nothing
+  textEncode = \case
+    FPSMP -> "smp"
+    FPXFTP -> "xftp"
 
 data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
