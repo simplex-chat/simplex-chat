@@ -66,8 +66,39 @@ object DatabaseUtils {
 @Serializable
 sealed class DBMigrationResult {
   @Serializable @SerialName("ok") object OK: DBMigrationResult()
+  @Serializable @SerialName("invalidConfirmation") object InvalidConfirmation: DBMigrationResult()
   @Serializable @SerialName("errorNotADatabase") class ErrorNotADatabase(val dbFile: String): DBMigrationResult()
-  @Serializable @SerialName("error") class Error(val dbFile: String, val migrationError: String): DBMigrationResult()
+  @Serializable @SerialName("errorMigration") class ErrorMigration(val dbFile: String, val migrationError: MigrationError): DBMigrationResult()
+  @Serializable @SerialName("errorSQL") class ErrorSQL(val dbFile: String, val migrationSQLError: String): DBMigrationResult()
   @Serializable @SerialName("errorKeychain") object ErrorKeychain: DBMigrationResult()
   @Serializable @SerialName("unknown") class Unknown(val json: String): DBMigrationResult()
+}
+
+
+enum class MigrationConfirmation(val value: String) {
+  YesUp("yesUp"),
+  YesUpDown ("yesUpDown"),
+  Error("error")
+}
+
+fun defaultMigrationConfirmation(appPrefs: AppPreferences): MigrationConfirmation =
+  if (appPrefs.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
+
+@Serializable
+sealed class MigrationError {
+  @Serializable @SerialName("upgrade") class Upgrade(val upMigrations: List<UpMigration>): MigrationError()
+  @Serializable @SerialName("downgrade") class Downgrade(val downMigrations: List<String>): MigrationError()
+  @Serializable @SerialName("migrationError") class Error(val mtrError: MTRError): MigrationError()
+}
+
+@Serializable
+data class UpMigration(
+  val upName: String,
+  // val withDown: Boolean
+)
+
+@Serializable
+sealed class MTRError {
+  @Serializable @SerialName("noDown") class NoDown(val dbMigrations: List<String>): MTRError()
+  @Serializable @SerialName("different") class Different(val appMigration: String, val dbMigration: String): MTRError()
 }
