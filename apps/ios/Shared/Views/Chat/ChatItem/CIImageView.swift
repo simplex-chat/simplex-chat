@@ -89,17 +89,12 @@ struct CIImageView: View {
                     .foregroundColor(.white)
                     .padding(13)
             case .rcvAccepted:
-                switch file.fileProtocol {
-                case .xftp:
-                    progressView()
-                case .smp:
-                    Image(systemName: "ellipsis")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 14, height: 14)
-                        .foregroundColor(.white)
-                        .padding(11)
-                }
+                Image(systemName: "ellipsis")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 14, height: 14)
+                    .foregroundColor(.white)
+                    .padding(11)
             case .rcvTransfer:
                 progressView()
             default: EmptyView()

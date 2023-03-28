@@ -13,7 +13,7 @@ struct CIFileView: View {
     @Environment(\.colorScheme) var colorScheme
     let file: CIFile?
     let edited: Bool
-    
+
     var body: some View {
         let metaReserve = edited
         ? "                         "
@@ -47,7 +47,7 @@ struct CIFileView: View {
         }
         .disabled(!itemInteractive)
     }
-    
+
     private var itemInteractive: Bool {
         if let file = file {
             switch (file.fileStatus) {
@@ -64,7 +64,7 @@ struct CIFileView: View {
         }
         return false
     }
-    
+
     private func fileSizeValid() -> Bool {
         if let file = file {
             return file.fileSize <= getMaxFileSize(file.fileProtocol)
@@ -115,10 +115,8 @@ struct CIFileView: View {
             case .sndStored: fileIcon("doc.fill")
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
-                case .xftp:
-                    progressCircle(sndProgress, sndTotal)
-                case .smp:
-                    progressView()
+                case .xftp: progressCircle(sndProgress, sndTotal)
+                case .smp: progressView()
                 }
             case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)
             case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
@@ -128,22 +126,11 @@ struct CIFileView: View {
                 } else {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 }
-            case .rcvAccepted:
-                switch file.fileProtocol {
-                case .xftp:
-                    progressView() // it may be better to show ellipsis and alert "waiting for file description from contact"
-                case .smp:
-                    fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
-                }
+            case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
             case let .rcvTransfer(rcvProgress, rcvTotal):
-                switch file.fileProtocol {
-                case .xftp:
-                    if rcvProgress < rcvTotal {
-                        progressCircle(rcvProgress, rcvTotal)
-                    } else {
-                        progressView() // decrypting
-                    }
-                case .smp:
+                if file.fileProtocol == .xftp && rcvProgress < rcvTotal {
+                    progressCircle(rcvProgress, rcvTotal)
+                } else {
                     progressView()
                 }
             case .rcvComplete: fileIcon("doc.fill")
