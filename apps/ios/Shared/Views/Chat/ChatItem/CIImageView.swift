@@ -41,10 +41,12 @@ struct CIImageView: View {
                                     // TODO image accepted alert?
                                 }
                             case .rcvAccepted:
-                                AlertManager.shared.showAlertMsg(
-                                    title: "Waiting for image",
-                                    message: "Image will be received when your contact is online, please wait or check later!"
-                                )
+                                if file.isSMP {
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "Waiting for image",
+                                        message: "Image will be received when your contact is online, please wait or check later!"
+                                    )
+                                }
                             case .rcvTransfer: () // ?
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
@@ -78,11 +80,7 @@ struct CIImageView: View {
         if let file = chatItem.file {
             switch file.fileStatus {
             case .sndTransfer:
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .frame(width: 20, height: 20)
-                    .tint(.white)
-                    .padding(8)
+                progressView()
             case .sndComplete:
                 Image(systemName: "checkmark")
                     .resizable()
@@ -98,13 +96,17 @@ struct CIImageView: View {
                     .foregroundColor(.white)
                     .padding(11)
             case .rcvTransfer:
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .frame(width: 20, height: 20)
-                    .tint(.white)
-                    .padding(8)
+                progressView()
             default: EmptyView()
             }
         }
+    }
+
+    private func progressView() -> some View {
+        ProgressView()
+            .progressViewStyle(.circular)
+            .frame(width: 20, height: 20)
+            .tint(.white)
+            .padding(8)
     }
 }

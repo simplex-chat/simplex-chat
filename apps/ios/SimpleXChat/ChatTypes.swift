@@ -2215,9 +2215,17 @@ public struct CIFile: Decodable {
     public var fileSize: Int64
     public var filePath: String?
     public var fileStatus: CIFileStatus
+    public var fileProtocol: FileProtocol
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
-        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
+        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus, fileProtocol: .xftp)
+    }
+
+    public var isSMP: Bool {
+        switch self.fileProtocol {
+        case .smp: return true
+        default: return false
+        }
     }
 
     public var loaded: Bool {
@@ -2235,6 +2243,11 @@ public struct CIFile: Decodable {
             }
         }
     }
+}
+
+public enum FileProtocol: String, Decodable {
+    case smp = "smp"
+    case xftp = "xftp"
 }
 
 public enum CIFileStatus: Decodable {
