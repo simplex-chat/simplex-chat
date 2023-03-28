@@ -1096,4 +1096,5 @@
     <string name="group_welcome_title">Begrüßungsmeldung</string>
     <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten - für das Menü gedrückt halten.</string>
     <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
+    <string name="settings_send_files_via_xftp">Dateien per XFTP versenden</string>
 </resources>
