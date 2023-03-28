@@ -363,6 +363,7 @@ import Simplex.Chat.Migrations.M20230303_group_link_role
 import Simplex.Chat.Migrations.M20230317_hidden_profiles
 import Simplex.Chat.Migrations.M20230318_file_description
 import Simplex.Chat.Migrations.M20230321_agent_file_deleted
+import Simplex.Chat.Migrations.M20230328_files_protocol
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -432,7 +433,8 @@ schemaMigrations =
     ("20230303_group_link_role", m20230303_group_link_role, Nothing),
     ("20230317_hidden_profiles", m20230317_hidden_profiles, Just down_m20230317_hidden_profiles),
     ("20230318_file_description", m20230318_file_description, Just down_m20230318_file_description),
-    ("20230321_agent_file_deleted", m20230321_agent_file_deleted, Just down_m20230321_agent_file_deleted)
+    ("20230321_agent_file_deleted", m20230321_agent_file_deleted, Just down_m20230321_agent_file_deleted),
+    ("20230328_files_protocol", m20230328_files_protocol, Just down_m20230328_files_protocol)
   ]
 
 -- | The list of migrations in ascending order by date

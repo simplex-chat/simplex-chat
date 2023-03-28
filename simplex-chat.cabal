@@ -88,6 +88,7 @@ library
       Simplex.Chat.Migrations.M20230317_hidden_profiles
       Simplex.Chat.Migrations.M20230318_file_description
       Simplex.Chat.Migrations.M20230321_agent_file_deleted
+      Simplex.Chat.Migrations.M20230328_files_protocol
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options

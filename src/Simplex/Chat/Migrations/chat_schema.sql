@@ -200,7 +200,8 @@ CREATE TABLE files(
   file_inline TEXT,
   agent_snd_file_id BLOB NULL,
   private_snd_file_descr TEXT NULL,
-  agent_snd_file_deleted INTEGER DEFAULT 0 CHECK(agent_snd_file_deleted NOT NULL)
+  agent_snd_file_deleted INTEGER DEFAULT 0 CHECK(agent_snd_file_deleted NOT NULL),
+  protocol TEXT NOT NULL DEFAULT 'smp'
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
