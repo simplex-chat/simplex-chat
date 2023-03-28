@@ -386,9 +386,11 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable private fun AppVersionItem(showVersion: () -> Unit) {
-  SectionItemView(showVersion) {
-    Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-  }
+  SectionItemView(showVersion) { AppVersionText() }
+}
+
+@Composable fun AppVersionText() {
+  Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
 }
 
 @Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary, stopped: Boolean = false) {

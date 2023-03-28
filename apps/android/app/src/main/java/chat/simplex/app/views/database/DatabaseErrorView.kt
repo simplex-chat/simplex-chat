@@ -23,6 +23,7 @@ import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.model.DBEncryptionConfig
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.AppVersionText
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
@@ -44,7 +45,8 @@ fun DatabaseErrorView(
   val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences, context)) }
 
   fun callRunChat(confirmMigrations: MigrationConfirmation? = null) {
-    runChat(dbKey.value, confirmMigrations, chatDbStatus, progressIndicator, appPreferences)
+    val useKey = if (useKeychain) null else dbKey.value
+    runChat(useKey, confirmMigrations, chatDbStatus, progressIndicator, appPreferences)
   }
 
   fun saveAndRunChatOnClick() {
@@ -60,7 +62,7 @@ fun DatabaseErrorView(
   fun DatabaseErrorDetails(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) {
     Text(
       generalGetString(title),
-      Modifier.padding(start = 16.dp, top = 16.dp, bottom = 24.dp),
+      Modifier.padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
       style = MaterialTheme.typography.h1
     )
     SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), content)
@@ -68,7 +70,7 @@ fun DatabaseErrorView(
 
   @Composable
   fun fileNameText(dbFile: String) {
-    Text(String.format(generalGetString(R.string.file_with_path), dbFile))
+    Text(String.format(generalGetString(R.string.file_with_path), dbFile.split("/").lastOrNull() ?: dbFile))
   }
 
   @Composable
@@ -101,7 +103,7 @@ fun DatabaseErrorView(
               DatabaseKeyField(dbKey, buttonEnabled, ::saveAndRunChatOnClick)
               SaveAndOpenButton(buttonEnabled, ::saveAndRunChatOnClick)
             } else {
-              DatabaseKeyField(dbKey, buttonEnabled, { callRunChat() })
+              DatabaseKeyField(dbKey, buttonEnabled) { callRunChat() }
               OpenChatButton(buttonEnabled) { callRunChat() }
             }
           }
@@ -109,20 +111,24 @@ fun DatabaseErrorView(
       is DBMigrationResult.ErrorMigration -> when (val err = status.migrationError) {
         is MigrationError.Upgrade ->
           DatabaseErrorDetails(R.string.database_upgrade) {
-            TextButton({ callRunChat(MigrationConfirmation.YesUp) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
+            TextButton({ callRunChat(confirmMigrations = MigrationConfirmation.YesUp) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
               Text(generalGetString(R.string.upgrade_and_open_chat))
             }
+            Spacer(Modifier.height(20.dp))
             fileNameText(status.dbFile)
             migrationsText(err.upMigrations.map { it.upName })
+            AppVersionText()
           }
         is MigrationError.Downgrade ->
           DatabaseErrorDetails(R.string.database_downgrade) {
-            Text(generalGetString(R.string.database_downgrade_warning), fontWeight = FontWeight.Bold)
-            TextButton({ callRunChat(MigrationConfirmation.YesUpDown) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
+            TextButton({ callRunChat(confirmMigrations = MigrationConfirmation.YesUpDown) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
               Text(generalGetString(R.string.downgrade_and_open_chat))
             }
+            Spacer(Modifier.height(20.dp))
+            Text(generalGetString(R.string.database_downgrade_warning), fontWeight = FontWeight.Bold)
             fileNameText(status.dbFile)
             migrationsText(err.downMigrations)
+            AppVersionText()
           }
         is MigrationError.Error ->
           DatabaseErrorDetails(R.string.incompatible_database_version) {
@@ -182,7 +188,7 @@ fun DatabaseErrorView(
 }
 
 private fun runChat(
-  dbKey: String,
+  dbKey: String? = null,
   confirmMigrations: MigrationConfirmation? = null,
   chatDbStatus: State<DBMigrationResult?>,
   progressIndicator: MutableState<Boolean>,
