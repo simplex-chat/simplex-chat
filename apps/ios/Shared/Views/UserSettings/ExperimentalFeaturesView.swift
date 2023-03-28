@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ExperimentalFeaturesView: View {
-    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: UserDefaults(suiteName: APP_GROUP_NAME)!) private var xftpSendEnabled = false
+    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: groupDefaults) private var xftpSendEnabled = false
 
     var body: some View {
         List {

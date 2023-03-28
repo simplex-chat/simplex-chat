@@ -13,7 +13,7 @@ struct CIFileView: View {
     @Environment(\.colorScheme) var colorScheme
     let file: CIFile?
     let edited: Bool
-
+    
     var body: some View {
         let metaReserve = edited
         ? "                         "
@@ -47,7 +47,7 @@ struct CIFileView: View {
         }
         .disabled(!itemInteractive)
     }
-
+    
     private var itemInteractive: Bool {
         if let file = file {
             switch (file.fileStatus) {
@@ -56,7 +56,7 @@ struct CIFileView: View {
             case .sndComplete: return false
             case .sndCancelled: return false
             case .rcvInvitation: return true
-            case .rcvAccepted: return true
+            case .rcvAccepted: return file.isSMP
             case .rcvTransfer: return false
             case .rcvComplete: return true
             case .rcvCancelled: return false
@@ -64,10 +64,10 @@ struct CIFileView: View {
         }
         return false
     }
-
+    
     private func fileSizeValid() -> Bool {
         if let file = file {
-            return file.fileSize <= MAX_FILE_SIZE
+            return file.fileSize <= getMaxFileSize(file.fileProtocol)
         }
         return false
     }
@@ -85,17 +85,19 @@ struct CIFileView: View {
                         }
                     }
                 } else {
-                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: MAX_FILE_SIZE)
+                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: getMaxFileSize(file.fileProtocol))
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
                         message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
                     )
                 }
             case .rcvAccepted:
-                AlertManager.shared.showAlertMsg(
-                    title: "Waiting for file",
-                    message: "File will be received when your contact is online, please wait or check later!"
-                )
+                if file.isSMP {
+                    AlertManager.shared.showAlertMsg(
+                        title: "Waiting for file",
+                        message: "File will be received when your contact is online, please wait or check later!"
+                    )
+                }
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let filePath = getLoadedFilePath(file) {
@@ -111,8 +113,13 @@ struct CIFileView: View {
         if let file = file {
             switch file.fileStatus {
             case .sndStored: fileIcon("doc.fill")
-            // case .sndTransfer: ProgressView().frame(width: 30, height: 30) // TODO use for SMP files
-            case let .sndTransfer(sndProgress, sndTotal): progressCircle(sndProgress, sndTotal)
+            case let .sndTransfer(sndProgress, sndTotal):
+                switch file.fileProtocol {
+                case .xftp:
+                    progressCircle(sndProgress, sndTotal)
+                case .smp:
+                    progressView()
+                }
             case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)
             case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvInvitation:
@@ -121,9 +128,23 @@ struct CIFileView: View {
                 } else {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 }
-            case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
-            // case .rcvTransfer: ProgressView().frame(width: 30, height: 30) // TODO use for SMP files
-            case let .rcvTransfer(rcvProgress, rcvTotal): progressCircle(rcvProgress, rcvTotal)
+            case .rcvAccepted:
+                switch file.fileProtocol {
+                case .xftp:
+                    progressView() // it may be better to show ellipsis and alert "waiting for file description from contact"
+                case .smp:
+                    fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
+                }
+            case let .rcvTransfer(rcvProgress, rcvTotal):
+                switch file.fileProtocol {
+                case .xftp: if rcvProgress < rcvTotal {
+                    progressCircle(rcvProgress, rcvTotal)
+                } else {
+                    progressView() // decrypting
+                }
+                case .smp:
+                    progressView()
+                }
             case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             }
@@ -150,6 +171,10 @@ struct CIFileView: View {
                     .padding(.top, 12)
             }
         }
+    }
+
+    private func progressView() -> some View {
+        ProgressView().frame(width: 30, height: 30)
     }
 
     private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
