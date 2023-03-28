@@ -1022,4 +1022,5 @@
     <string name="group_welcome_title">Message d\'accueil</string>
     <string name="you_can_hide_or_mute_user_profile">Vous pouvez masquer ou mettre en sourdine un profil d\'utilisateur - maintenez-le enfoncé pour accéder au menu.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu\'ils sont actifs.</string>
+    <string name="settings_send_files_via_xftp">Envoi de fichiers via XFTP</string>
 </resources>
