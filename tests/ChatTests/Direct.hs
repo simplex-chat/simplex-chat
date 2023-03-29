@@ -1578,10 +1578,13 @@ testUserPrivacy =
       alice ##> "/_unhide user 2 \"wrong_password\""
       alice <## "user does not exist or incorrect password"
       alice ##> "/_unhide user 2 \"new_password\""
-      userVisible alice
+      alice <## "user alisa:"
+      alice <## "messages are shown"
+      alice <## "profile is visible"
       alice ##> "/_hide user 2 \"another_password\""
-      userHidden alice
-      -- check new password
+      alice <## "user alisa:"
+      alice <## "messages are hidden (use /tail to view)"
+      alice <## "profile is hidden"
       alice ##> "/user alisa another_password"
       showActiveUser alice "alisa"
       alice ##> "/user alice"
@@ -1595,11 +1598,13 @@ testUserPrivacy =
       alice <## "completed deleting user"
   where
     userHidden alice = do
-      alice <## "user messages are hidden (use /tail to view)"
-      alice <## "user profile is hidden"
+      alice <## "current user alisa:"
+      alice <## "messages are hidden (use /tail to view)"
+      alice <## "profile is hidden"
     userVisible alice = do
-      alice <## "user messages are shown"
-      alice <## "user profile is visible"
+      alice <## "current user alisa:"
+      alice <## "messages are shown"
+      alice <## "profile is visible"
 
 testSetChatItemTTL :: HasCallStack => FilePath -> IO ()
 testSetChatItemTTL =
