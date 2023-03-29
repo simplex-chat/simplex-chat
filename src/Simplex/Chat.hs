@@ -335,7 +335,7 @@ processChatCommand = \case
     tryError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
-  APIHideUser userId' (UserPwd viewPwd) -> withUser $ \_ -> do
+  APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
       Just _ -> throwChatError $ CEUserAlreadyHidden userId'
@@ -344,34 +344,26 @@ processChatCommand = \case
         users <- withStore' getUsers
         unless (length (filter (isNothing . viewPwdHash) users) > 1) $ throwChatError $ CECantHideLastUser userId'
         viewPwdHash' <- hashPassword
-        setUserPrivacy user' {viewPwdHash = viewPwdHash', showNtfs = False}
+        setUserPrivacy user user' {viewPwdHash = viewPwdHash', showNtfs = False}
         where
           hashPassword = do
             salt <- drgRandomBytes 16
             let hash = B64UrlByteString $ C.sha512Hash $ encodeUtf8 viewPwd <> salt
             pure $ Just UserPwdHash {hash, salt = B64UrlByteString salt}
-  APIUnhideUser userId' viewPwd_ -> withUser $ \user -> do
+  APIUnhideUser userId' viewPwd@(UserPwd pwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
       Nothing -> throwChatError $ CEUserNotHidden userId'
       _ -> do
-        validateUserPassword user user' viewPwd_
-        setUserPrivacy user' {viewPwdHash = Nothing, showNtfs = True}
-  APIMuteUser userId' viewPwd_ -> withUser $ \user -> do
-    user' <- privateGetUser userId'
-    validateUserPassword user user' viewPwd_
-    setUserPrivacy user' {showNtfs = False}
-  APIUnmuteUser userId' viewPwd_ -> withUser $ \user -> do
-    user' <- privateGetUser userId'
-    case viewPwdHash user' of
-      Just _ -> throwChatError $ CECantUnmuteHiddenUser userId'
-      _ -> do
-        validateUserPassword user user' viewPwd_
-        setUserPrivacy user' {showNtfs = True}
+        when (T.null pwd) $ throwChatError $ CEEmptyUserPassword userId'
+        validateUserPassword user user' $ Just viewPwd
+        setUserPrivacy user user' {viewPwdHash = Nothing, showNtfs = True}
+  APIMuteUser userId' -> setUserNotifications userId' False
+  APIUnmuteUser userId' -> setUserNotifications userId' True
   HideUser viewPwd -> withUser $ \User {userId} -> processChatCommand $ APIHideUser userId viewPwd
-  UnhideUser -> withUser $ \User {userId} -> processChatCommand $ APIUnhideUser userId Nothing
-  MuteUser -> withUser $ \User {userId} -> processChatCommand $ APIMuteUser userId Nothing
-  UnmuteUser -> withUser $ \User {userId} -> processChatCommand $ APIUnmuteUser userId Nothing
+  UnhideUser viewPwd -> withUser $ \User {userId} -> processChatCommand $ APIUnhideUser userId viewPwd
+  MuteUser -> withUser $ \User {userId} -> processChatCommand $ APIMuteUser userId
+  UnmuteUser -> withUser $ \User {userId} -> processChatCommand $ APIUnmuteUser userId
   APIDeleteUser userId' delSMPQueues viewPwd_ -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' viewPwd_
@@ -1706,11 +1698,21 @@ processChatCommand = \case
     validPassword :: Text -> UserPwdHash -> Bool
     validPassword pwd UserPwdHash {hash = B64UrlByteString hash, salt = B64UrlByteString salt} =
       hash == C.sha512Hash (encodeUtf8 pwd <> salt)
-    setUserPrivacy :: User -> m ChatResponse
-    setUserPrivacy user = do
-      asks currentUser >>= atomically . (`writeTVar` Just user)
-      withStore' (`updateUserPrivacy` user)
-      pure $ CRUserPrivacy user
+    setUserNotifications :: UserId -> Bool -> m ChatResponse
+    setUserNotifications userId' showNtfs = withUser $ \user -> do
+      user' <- privateGetUser userId'
+      case viewPwdHash user' of
+        Just _ -> throwChatError $ CEHiddenUserAlwaysMuted userId'
+        _ -> setUserPrivacy user user' {showNtfs}
+    setUserPrivacy :: User -> User -> m ChatResponse
+    setUserPrivacy user@User {userId} user'@User {userId = userId'}
+      | userId == userId' = do
+        asks currentUser >>= atomically . (`writeTVar` Just user')
+        withStore' (`updateUserPrivacy` user')
+        pure $ CRUserPrivacy {user = user', updatedUser = user'}
+      | otherwise = do
+        withStore' (`updateUserPrivacy` user')
+        pure $ CRUserPrivacy {user, updatedUser = user'}
     checkDeleteChatUser :: User -> m ()
     checkDeleteChatUser user@User {userId} = do
       when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
@@ -4319,11 +4321,11 @@ chatCommandP =
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
-      "/_unhide user " *> (APIUnhideUser <$> A.decimal <*> optional (A.space *> jsonP)),
-      "/_mute user " *> (APIMuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
-      "/_unmute user " *> (APIUnmuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
+      "/_mute user " *> (APIMuteUser <$> A.decimal),
+      "/_unmute user " *> (APIUnmuteUser <$> A.decimal),
       "/hide user " *> (HideUser <$> pwdP),
-      "/unhide user" $> UnhideUser,
+      "/unhide user " *> (UnhideUser <$> pwdP),
       "/mute user" $> MuteUser,
       "/unmute user" $> UnmuteUser,
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),

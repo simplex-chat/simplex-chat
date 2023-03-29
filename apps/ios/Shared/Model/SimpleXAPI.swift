@@ -162,16 +162,16 @@ func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }
 
-func apiUnhideUser(_ userId: Int64, viewPwd: String?) async throws -> User {
+func apiUnhideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiUnhideUser(userId: userId, viewPwd: viewPwd))
 }
 
-func apiMuteUser(_ userId: Int64, viewPwd: String?) async throws -> User {
-    try await setUserPrivacy_(.apiMuteUser(userId: userId, viewPwd: viewPwd))
+func apiMuteUser(_ userId: Int64) async throws -> User {
+    try await setUserPrivacy_(.apiMuteUser(userId: userId))
 }
 
-func apiUnmuteUser(_ userId: Int64, viewPwd: String?) async throws -> User {
-    try await setUserPrivacy_(.apiUnmuteUser(userId: userId, viewPwd: viewPwd))
+func apiUnmuteUser(_ userId: Int64) async throws -> User {
+    try await setUserPrivacy_(.apiUnmuteUser(userId: userId))
 }
 
 func setUserPrivacy_(_ cmd: ChatCommand) async throws -> User {
