@@ -123,7 +123,7 @@ fun CIFileView(
   fun progressCircle(progress: Long, total: Long) {
     val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
     val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
-    val strokeColor = MaterialTheme.colors.primary
+    val strokeColor = if (isInDarkTheme()) FileDark else FileLight
     Surface(
       Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
       color = Color.Transparent,

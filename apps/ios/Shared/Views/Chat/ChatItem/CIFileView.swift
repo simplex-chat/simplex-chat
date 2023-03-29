@@ -179,7 +179,7 @@ struct CIFileView: View {
         Circle()
             .trim(from: 0, to: Double(progress) / Double(total))
             .stroke(
-                Color.accentColor,
+                Color(uiColor: .tertiaryLabel),
                 style: StrokeStyle(lineWidth: 3)
             )
             .rotationEffect(.degrees(-90))
