@@ -137,8 +137,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRRcvFileProgressXFTP _ _ _ _ -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRSndGroupFileCancelled u _ ftm fts -> ttyUser u $ viewSndGroupFileCancelled ftm fts
-  CRRcvFileCancelled u ft -> ttyUser u $ receivingFile_ "cancelled" ft
+  CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
+  CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
   CRUserProfileUpdated u p p' -> ttyUser u $ viewUserProfileUpdated p p'
   CRContactPrefsUpdated {user = u, fromContact, toContact} -> ttyUser u $ viewUserContactPrefsUpdated u fromContact toContact
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
@@ -148,10 +148,9 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
   CRRcvFileStart u ci -> ttyUser u $ receivingFile_' "started" ci
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' "completed" ci
-  CRRcvFileSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
+  CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
   CRSndFileStartXFTP _ _ _ -> []
   CRSndFileProgressXFTP _ _ _ _ _ -> []
   CRSndFileCompleteXFTP _ _ _ -> []
@@ -1054,8 +1053,8 @@ viewRcvFileSndCancelled :: RcvFileTransfer -> [StyledString]
 viewRcvFileSndCancelled ft@RcvFileTransfer {senderDisplayName = c} =
   [ttyContact c <> " cancelled sending " <> rcvFile ft]
 
-viewSndGroupFileCancelled :: FileTransferMeta -> [SndFileTransfer] -> [StyledString]
-viewSndGroupFileCancelled FileTransferMeta {fileId, fileName} fts =
+viewSndFileCancelled :: FileTransferMeta -> [SndFileTransfer] -> [StyledString]
+viewSndFileCancelled FileTransferMeta {fileId, fileName} fts =
   case filter (\SndFileTransfer {fileStatus = s} -> s /= FSCancelled && s /= FSComplete) fts of
     [] -> ["cancelled sending " <> fileTransferStr fileId fileName]
     ts -> ["cancelled sending " <> fileTransferStr fileId fileName <> " to " <> listRecipients ts]
@@ -1274,6 +1273,7 @@ viewChatError logLevel = \case
     CEFileNotFound f -> ["file not found: " <> plain f]
     CEFileAlreadyReceiving f -> ["file is already being received: " <> plain f]
     CEFileCancelled f -> ["file cancelled: " <> plain f]
+    CEFileAlreadyCancelled fileId -> ["file already cancelled: " <> sShow fileId]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
     CEFileRead f e -> ["cannot read file " <> plain f, sShow e]
     CEFileWrite f e -> ["cannot write file " <> plain f, sShow e]
