@@ -1035,4 +1035,7 @@
     <string name="incompatible_database_version">Versión de base de datos incompatible</string>
     <string name="confirm_database_upgrades">Confirmar actualizaciones de la bases de datos</string>
     <string name="mtr_error_no_down_migration">la versión de la base de datos es más reciente que la aplicación, pero no hay migración hacia abajo para: %s</string>
+    <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
+    <string name="developer_options">ID de base de datos y opción de aislamiento de transporte.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">El archivo se recibirá cuando tu contacto termine de subirlo.</string>
 </resources>
