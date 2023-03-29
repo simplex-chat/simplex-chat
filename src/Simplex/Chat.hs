@@ -1406,7 +1406,7 @@ processChatCommand = \case
                   void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
                 _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
               ci <- withStore $ \db -> getChatItemByFileId db user fileId
-              pure $ CRSndGroupFileCancelled user ci ftm fts
+              pure $ CRSndFileCancelled user ci ftm fts
         FTRcv ftr@RcvFileTransfer {cancelled} -> do
           if cancelled
             then throwChatError $ CEFileAlreadyCancelled fileId
