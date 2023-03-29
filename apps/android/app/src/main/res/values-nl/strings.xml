@@ -1033,4 +1033,12 @@
     <string name="confirm_database_upgrades">Bevestig database upgrades</string>
     <string name="mtr_error_no_down_migration">database versie is nieuwer dan de app, maar geen down migratie voor: %s</string>
     <string name="incompatible_database_version">Incompatibele database versie</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">De afbeelding wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</string>
+    <string name="show_dev_options">Toon:</string>
+    <string name="developer_options">Database ID\'s en Transport isolatie optie.</string>
+    <string name="hide_dev_options">Verbergen:</string>
+    <string name="show_developer_options">Ontwikkelaars opties tonen</string>
+    <string name="settings_section_title_experimenta">EXPERIMENTEEL</string>
+    <string name="xftp_requires_v461">v4.6.1+ is vereist om te ontvangen via XFTP.</string>
 </resources>
