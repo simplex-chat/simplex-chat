@@ -176,7 +176,7 @@ func apiUnmuteUser(_ userId: Int64) async throws -> User {
 
 func setUserPrivacy_(_ cmd: ChatCommand) async throws -> User {
     let r = await chatSendCmd(cmd)
-    if case let .userPrivacy(user) = r { return user }
+    if case let .userPrivacy(_, updatedUser) = r { return updatedUser }
     throw r
 }
 

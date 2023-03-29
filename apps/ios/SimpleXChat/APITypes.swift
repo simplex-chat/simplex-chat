@@ -389,7 +389,7 @@ public enum ChatResponse: Decodable, Error {
     case chatCleared(user: User, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile)
-    case userPrivacy(user: User)
+    case userPrivacy(user: User, updatedUser: User)
     case contactAliasUpdated(user: User, toContact: Contact)
     case connectionAliasUpdated(user: User, toConnection: PendingContactConnection)
     case contactPrefsUpdated(user: User, fromContact: Contact, toContact: Contact)
@@ -611,7 +611,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(u, _, toProfile): return withUser(u, String(describing: toProfile))
-            case let .userPrivacy(u): return withUser(u, "")
+            case let .userPrivacy(u, updatedUser): return withUser(u, String(describing: updatedUser))
             case let .contactAliasUpdated(u, toContact): return withUser(u, String(describing: toContact))
             case let .connectionAliasUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .contactPrefsUpdated(u, fromContact, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))")
