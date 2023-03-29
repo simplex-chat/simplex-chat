@@ -237,8 +237,9 @@ const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE
 const val MAX_VOICE_SIZE_FOR_SENDING: Long = 94680 // 6 chunks * 15780 bytes per chunk
 const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 43_000
 
-//const val MAX_FILE_SIZE_SMP: Long = 8000000 // TODO distinguish between XFTP and SMP files
-const val MAX_FILE_SIZE: Long = 1_073_741_824
+const val MAX_FILE_SIZE_SMP: Long = 8000000
+
+const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824
 
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()
@@ -494,9 +495,9 @@ fun formatBytes(bytes: Long): String {
     return "0 bytes"
   }
   val bytesDouble = bytes.toDouble()
-  val k = 1000.toDouble()
+  val k = 1024.toDouble()
   val units = arrayOf("bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-  val i = kotlin.math.floor(log2(bytesDouble) / log2(k))
+  val i = floor(log2(bytesDouble) / log2(k))
   val size = bytesDouble / k.pow(i)
   val unit = units[i.toInt()]
 
@@ -539,6 +540,13 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
     Log.e(TAG, "Util directoryFileCountAndSize error: ${e.stackTraceToString()}")
   }
   return fileCount to bytes
+}
+
+fun getMaxFileSize(fileProtocol: FileProtocol): Long {
+  return when (fileProtocol) {
+    FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
+    FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+  }
 }
 
 fun Color.darker(factor: Float = 0.1f): Color =

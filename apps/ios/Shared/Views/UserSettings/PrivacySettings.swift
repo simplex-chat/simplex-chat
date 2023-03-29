@@ -12,7 +12,6 @@ import SimpleXChat
 struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
 

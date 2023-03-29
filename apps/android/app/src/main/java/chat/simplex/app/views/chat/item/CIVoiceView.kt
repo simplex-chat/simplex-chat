@@ -228,7 +228,7 @@ private fun VoiceMsgIndicator(
   }
 }
 
-private fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = drawWithCache {
+fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = drawWithCache {
   val brush = Brush.linearGradient(
     0f to Color.Transparent,
     0f to color,

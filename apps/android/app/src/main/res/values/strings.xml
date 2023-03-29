@@ -238,6 +238,7 @@
   <string name="icon_descr_asked_to_receive">Asked to receive the image</string>
   <string name="icon_descr_image_snd_complete">Image sent</string>
   <string name="waiting_for_image">Waiting for image</string>
+  <string name="image_will_be_received_when_contact_completes_uploading">Image will be received when your contact completes uploading it.</string>
   <string name="image_will_be_received_when_contact_is_online">Image will be received when your contact is online, please wait or check later!</string>
   <string name="image_saved">Image saved to Gallery</string>
 
@@ -247,6 +248,7 @@
   <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
   <string name="maximum_supported_file_size">Currently maximum supported file size is <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
   <string name="waiting_for_file">Waiting for file</string>
+  <string name="file_will_be_received_when_contact_completes_uploading">File will be received when your contact completes uploading it.</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
   <string name="file_saved">File saved</string>
   <string name="file_not_found">File not found</string>
@@ -509,6 +511,10 @@
   <string name="core_version">Core version: v%s</string>
   <string name="core_build_timestamp">Core built at: %s</string>
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+  <string name="show_dev_options">Show:</string>
+  <string name="hide_dev_options">Hide:</string>
+  <string name="show_developer_options">Show developer options</string>
+  <string name="developer_options">Database IDs and Transport isolation option.</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -716,7 +722,9 @@
   <string name="settings_section_title_messages">MESSAGES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
+  <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
   <string name="settings_send_files_via_xftp">Send files via XFTP</string>
+  <string name="xftp_requires_v461">v4.6.1+ is required to receive via XFTP.</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>

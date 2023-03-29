@@ -1390,8 +1390,9 @@ processChatCommand = \case
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
-        FTSnd ftm@FileTransferMeta {cancelled} fts -> do
-          unless cancelled $ do
+        FTSnd ftm@FileTransferMeta {cancelled} fts
+          | cancelled -> throwChatError $ CEFileAlreadyCancelled fileId
+          | otherwise -> do
             fileAgentConnIds <- cancelSndFile user ftm fts True
             deleteAgentConnectionsAsync user fileAgentConnIds
             sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
@@ -1403,12 +1404,14 @@ processChatCommand = \case
                 Group gInfo ms <- withStore $ \db -> getGroup db user groupId
                 void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
               _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
-          ci <- withStore $ \db -> getChatItemByFileId db user fileId
-          pure $ CRSndGroupFileCancelled user ci ftm fts
-        FTRcv ftr@RcvFileTransfer {cancelled} -> do
-          unless cancelled $
+            ci <- withStore $ \db -> getChatItemByFileId db user fileId
+            pure $ CRSndFileCancelled user ci ftm fts
+        FTRcv ftr@RcvFileTransfer {cancelled}
+          | cancelled -> throwChatError $ CEFileAlreadyCancelled fileId
+          | otherwise -> do
             cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
-          pure $ CRRcvFileCancelled user ftr
+            ci <- withStore $ \db -> getChatItemByFileId db user fileId
+            pure $ CRRcvFileCancelled user ci ftr
   FileStatus fileId -> withUser $ \user -> do
     fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
     pure $ CRFileTransferStatus user fileStatus
@@ -2819,7 +2822,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       FileChunkCancel ->
         unless cancelled $ do
           cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
-          toView $ CRRcvFileSndCancelled user ft
+          ci <- withStore $ \db -> getChatItemByFileId db user fileId
+          toView $ CRRcvFileSndCancelled user ci ft
       FileChunk {chunkNo, chunkBytes = chunk} -> do
         case integrity of
           MsgOk -> pure ()
@@ -3238,7 +3242,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
       unless cancelled $ do
         cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
-        toView $ CRRcvFileSndCancelled user ft
+        ci <- withStore $ \db -> getChatItemByFileId db user fileId
+        toView $ CRRcvFileSndCancelled user ci ft
 
     xFileAcptInv :: Contact -> SharedMsgId -> Maybe ConnReqInvitation -> String -> MsgMeta -> m ()
     xFileAcptInv ct sharedMsgId fileConnReq_ fName msgMeta = do
@@ -3314,7 +3319,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
               unless cancelled $ do
                 cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
-                toView $ CRRcvFileSndCancelled user ft
+                ci <- withStore $ \db -> getChatItemByFileId db user fileId
+                toView $ CRRcvFileSndCancelled user ci ft
             else messageError "x.file.cancel: group member attempted to cancel file of another member" -- shouldn't happen now that query includes group member id
         (SMDSnd, _) -> messageError "x.file.cancel: group member attempted invalid file cancel"
 
