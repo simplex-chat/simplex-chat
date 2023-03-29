@@ -445,11 +445,11 @@ data ChatResponse
   | CRRcvFileStart {user :: User, chatItem :: AChatItem}
   | CRRcvFileProgressXFTP {user :: User, chatItem :: AChatItem, receivedSize :: Int64, totalSize :: Int64}
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
-  | CRRcvFileCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer} -- not used
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
@@ -771,6 +771,7 @@ data ChatErrorType
   | CEFileNotFound {message :: String}
   | CEFileAlreadyReceiving {message :: String}
   | CEFileCancelled {message :: String}
+  | CEFileAlreadyCancelled {fileId :: FileTransferId}
   | CEFileAlreadyExists {filePath :: FilePath}
   | CEFileRead {filePath :: FilePath, message :: String}
   | CEFileWrite {filePath :: FilePath, message :: String}
