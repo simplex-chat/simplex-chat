@@ -1034,4 +1034,12 @@
     <string name="incompatible_database_version">Nekompatibilní verze databáze</string>
     <string name="invalid_migration_confirmation">Neplatné potvrzení migrace</string>
     <string name="upgrade_and_open_chat">Zvýšit a otevřít chat</string>
+    <string name="hide_dev_options">Skrýt:</string>
+    <string name="show_developer_options">Zobrazit možnosti vývojáře</string>
+    <string name="settings_section_title_experimenta">POKUSNÝ</string>
+    <string name="xftp_requires_v461">Pro příjem přes XFTP je vyžadována verze 4.6.1+.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">Obrázek bude přijat, až kontakt dokončí jeho nahrání.</string>
+    <string name="show_dev_options">Zobrazit:</string>
+    <string name="developer_options">ID databáze a možnost Izolace přenosu.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Soubor bude přijat, jakmile váš kontakt dokončí nahrávání.</string>
 </resources>
