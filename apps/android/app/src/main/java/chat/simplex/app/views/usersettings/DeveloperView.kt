@@ -39,7 +39,7 @@ fun DeveloperView(
       SettingsPreferenceItem(Icons.Outlined.Code, stringResource(R.string.show_developer_options), developerTools, devTools)
     }
     SectionTextFooter(
-      generalGetString(if (devTools.value) R.string.show_dev_options else R.string.hide_dev_options) +
+      generalGetString(if (devTools.value) R.string.show_dev_options else R.string.hide_dev_options) + " " +
         generalGetString(R.string.developer_options)
     )
     SectionSpacer()

@@ -39,7 +39,7 @@ struct DeveloperView: View {
                         Toggle("Show developer options", isOn: $developerTools)
                     }
                 } footer: {
-                    (developerTools ? Text("Show: ") : Text("Hide: ")) + Text("Database IDs and Transport isolation option.")
+                    (developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option.")
                 }
 
                 Section {

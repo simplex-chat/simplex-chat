@@ -509,8 +509,8 @@
   <string name="core_version">Core version: v%s</string>
   <string name="core_build_timestamp">Core built at: %s</string>
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-  <string name="show_dev_options">Show:\ </string>
-  <string name="hide_dev_options">Hide:\ </string>
+  <string name="show_dev_options">Show:</string>
+  <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
 
