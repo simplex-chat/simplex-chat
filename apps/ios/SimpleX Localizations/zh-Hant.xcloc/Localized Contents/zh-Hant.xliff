@@ -32,12 +32,14 @@
         <target state="translated"> (</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" (can be copied)" xml:space="preserve">
+      <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
         <source> (can be copied)</source>
+        <target state="translated"> (可以複製)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="!1 colored!" xml:space="preserve">
+      <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
         <source>!1 colored!</source>
+        <target state="translated">!1 顏色!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve">
