@@ -1038,4 +1038,9 @@
     <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
     <string name="developer_options">ID de base de datos y opción de aislamiento de transporte.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">El archivo se recibirá cuando tu contacto termine de subirlo.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">La imagen se recibirá cuando tu contacto termine de subirla.</string>
+    <string name="xftp_requires_v461">Se requiere v4.6.1+ para recibir vía XFTP.</string>
+    <string name="show_developer_options">Mostrar opciones de desarrollador</string>
+    <string name="hide_dev_options">Ocultar:</string>
+    <string name="show_dev_options">Mostrar:</string>
 </resources>
