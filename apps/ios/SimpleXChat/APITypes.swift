@@ -18,9 +18,9 @@ public enum ChatCommand {
     case listUsers
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
     case apiHideUser(userId: Int64, viewPwd: String)
-    case apiUnhideUser(userId: Int64, viewPwd: String?)
-    case apiMuteUser(userId: Int64, viewPwd: String?)
-    case apiUnmuteUser(userId: Int64, viewPwd: String?)
+    case apiUnhideUser(userId: Int64, viewPwd: String)
+    case apiMuteUser(userId: Int64)
+    case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
     case startChat(subscribe: Bool, expire: Bool)
     case apiStopChat
@@ -111,9 +111,9 @@ public enum ChatCommand {
             case .listUsers: return "/users"
             case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
-            case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId)\(maybePwd(viewPwd))"
-            case let .apiMuteUser(userId, viewPwd): return "/_mute user \(userId)\(maybePwd(viewPwd))"
-            case let .apiUnmuteUser(userId, viewPwd): return "/_unmute user \(userId)\(maybePwd(viewPwd))"
+            case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
+            case let .apiMuteUser(userId): return "/_mute user \(userId)"
+            case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
             case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
@@ -332,10 +332,6 @@ public enum ChatCommand {
             return .apiHideUser(userId: userId, viewPwd: obfuscate(viewPwd))
         case let .apiUnhideUser(userId, viewPwd):
             return .apiUnhideUser(userId: userId, viewPwd: obfuscate(viewPwd))
-        case let .apiMuteUser(userId, viewPwd):
-            return .apiMuteUser(userId: userId, viewPwd: obfuscate(viewPwd))
-        case let .apiUnmuteUser(userId, viewPwd):
-            return .apiUnmuteUser(userId: userId, viewPwd: obfuscate(viewPwd))
         case let .apiDeleteUser(userId, delSMPQueues, viewPwd):
             return .apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: obfuscate(viewPwd))
         default: return self
@@ -349,9 +345,8 @@ public enum ChatCommand {
     private func obfuscate(_ s: String?) -> String? {
         if let s = s {
             return obfuscate(s)
-        } else {
-            return nil
         }
+        return nil
     }
 
     private func onOff(_ b: Bool) -> String {

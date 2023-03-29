@@ -1555,10 +1555,12 @@ testUserPrivacy =
              ]
       -- change profile password
       alice ##> "/unmute user"
-      alice <## "cannot unmute hidden user"
+      alice <## "hidden user always muted when inactive"
       alice ##> "/hide user password"
       alice <## "user is already hidden"
-      alice ##> "/unhide user"
+      alice ##> "/unhide user wrong_password"
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/unhide user my_password"
       userVisible alice "current "
       alice ##> "/hide user new_password"
       userHidden alice "current "
@@ -1570,11 +1572,9 @@ testUserPrivacy =
       showActiveUser alice "alice (Alice)"
       -- change profile privacy for inactive user via API requires correct password
       alice ##> "/_unmute user 2"
-      alice <## "cannot unmute hidden user"
+      alice <## "hidden user always muted when inactive"
       alice ##> "/_hide user 2 \"password\""
       alice <## "user is already hidden"
-      alice ##> "/_unhide user 2"
-      alice <## "user does not exist or incorrect password"
       alice ##> "/_unhide user 2 \"wrong_password\""
       alice <## "user does not exist or incorrect password"
       alice ##> "/_unhide user 2 \"new_password\""

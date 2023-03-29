@@ -190,11 +190,11 @@ data ChatCommand
   | APISetActiveUser UserId (Maybe UserPwd)
   | SetActiveUser UserName (Maybe UserPwd)
   | APIHideUser UserId UserPwd
-  | APIUnhideUser UserId (Maybe UserPwd)
-  | APIMuteUser UserId (Maybe UserPwd)
-  | APIUnmuteUser UserId (Maybe UserPwd)
+  | APIUnhideUser UserId UserPwd
+  | APIMuteUser UserId
+  | APIUnmuteUser UserId
   | HideUser UserPwd
-  | UnhideUser
+  | UnhideUser UserPwd
   | MuteUser
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
@@ -741,7 +741,7 @@ data ChatErrorType
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
   | CECantHideLastUser {userId :: UserId}
-  | CECantUnmuteHiddenUser {userId :: UserId}
+  | CEHiddenUserAlwaysMuted {userId :: UserId}
   | CEEmptyUserPassword {userId :: UserId}
   | CEUserAlreadyHidden {userId :: UserId}
   | CEUserNotHidden {userId :: UserId}
