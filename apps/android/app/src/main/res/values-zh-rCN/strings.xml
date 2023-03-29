@@ -1031,4 +1031,6 @@
     <string name="database_downgrade">数据库降级</string>
     <string name="mtr_error_no_down_migration">数据库版本比应用程序更新，但无法降级迁移：%s</string>
     <string name="downgrade_and_open_chat">降级并打开聊天</string>
+    <string name="hide_dev_options">隐藏：</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">当您的联系人完成上传后您将收到文件。</string>
 </resources>
