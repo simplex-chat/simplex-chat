@@ -116,7 +116,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
   CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
-  CRUserPrivacy u -> ttyUserPrefix u $ viewUserPrivacy u
+  CRUserPrivacy u u' -> ttyUserPrefix u $ viewUserPrivacy u u'
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq -> ttyUser u $ viewConnReqInvitation cReq
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
@@ -740,10 +740,11 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewUserPrivacy :: User -> [StyledString]
-viewUserPrivacy User {showNtfs, viewPwdHash} =
-  [ "user messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
-    "user profile is " <> if isJust viewPwdHash then "hidden" else "visible"
+viewUserPrivacy :: User -> User -> [StyledString]
+viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', showNtfs, viewPwdHash} =
+  [ (if userId == userId' then "current " else "") <> "user " <> plain n' <> ":",
+    "messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
+    "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
 -- TODO make more generic messages or split
