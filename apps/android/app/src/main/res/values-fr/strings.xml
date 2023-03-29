@@ -1023,4 +1023,15 @@
     <string name="you_can_hide_or_mute_user_profile">Vous pouvez masquer ou mettre en sourdine un profil d\'utilisateur - maintenez-le enfoncé pour accéder au menu.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu\'ils sont actifs.</string>
     <string name="settings_send_files_via_xftp">Envoi de fichiers via XFTP</string>
+    <string name="database_downgrade">Rétrogradation de la base de données</string>
+    <string name="database_upgrade">Mise à niveau de la base de données</string>
+    <string name="incompatible_database_version">Version de la base de données incompatible</string>
+    <string name="downgrade_and_open_chat">Rétrograder et ouvrir le chat</string>
+    <string name="invalid_migration_confirmation">Confirmation de migration invalide</string>
+    <string name="upgrade_and_open_chat">Mettre à niveau et ouvrir le chat</string>
+    <string name="database_migrations">Migrations : %s</string>
+    <string name="database_downgrade_warning">Attention : vous risquez de perdre des données !</string>
+    <string name="confirm_database_upgrades">Confirmer la mise à niveau de la base de données</string>
+    <string name="mtr_error_no_down_migration">la base de données a une version plus récente que celle de l\'application, mais il n\'y a pas de rétrogradation pour : %s</string>
+    <string name="mtr_error_different">migration différente dans l\'app/la base de données : %s / %s</string>
 </resources>
