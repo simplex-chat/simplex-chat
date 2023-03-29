@@ -1022,4 +1022,21 @@
     <string name="user_hide">Nascondi</string>
     <string name="v4_6_group_welcome_message_descr">Imposta il messaggio mostrato ai nuovi membri!</string>
     <string name="user_unmute">Riattiva audio</string>
+    <string name="settings_send_files_via_xftp">Invia file via XFTP</string>
+    <string name="database_downgrade">Downgrade del database</string>
+    <string name="database_upgrade">Aggiornamento del database</string>
+    <string name="incompatible_database_version">Versione del database incompatibile</string>
+    <string name="upgrade_and_open_chat">Aggiorna e apri chat</string>
+    <string name="developer_options">ID del database e opzione isolamento del trasporto.</string>
+    <string name="hide_dev_options">"Nascondi: "</string>
+    <string name="show_dev_options">"Mostra: "</string>
+    <string name="show_developer_options">Mostra opzioni sviluppatore</string>
+    <string name="xftp_requires_v461">v4.6.1+ necessaria per ricevere via XFTP.</string>
+    <string name="downgrade_and_open_chat">Esegui downgrade e apri chat</string>
+    <string name="database_migrations">Migrazioni: %s</string>
+    <string name="database_downgrade_warning">Attenzione: potresti perdere alcuni dati!</string>
+    <string name="confirm_database_upgrades">Conferma aggiornamenti database</string>
+    <string name="mtr_error_different">migrazione diversa nell\'app/nel database: %s / %s</string>
+    <string name="invalid_migration_confirmation">Conferma di migrazione non valida</string>
+    <string name="settings_section_title_experimenta">SPERIMENTALE</string>
 </resources>
