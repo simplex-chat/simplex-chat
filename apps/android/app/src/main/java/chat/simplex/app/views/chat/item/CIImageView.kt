@@ -27,8 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.model.CIFile
-import chat.simplex.app.model.CIFileStatus
+import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.*
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
@@ -46,6 +45,15 @@ fun CIImageView(
   receiveFile: (Long) -> Unit
 ) {
   @Composable
+  fun progressIndicator() {
+    CircularProgressIndicator(
+      Modifier.size(16.dp),
+      color = Color.White,
+      strokeWidth = 2.dp
+    )
+  }
+
+  @Composable
   fun loadingIndicator() {
     if (file != null) {
       Box(
@@ -55,12 +63,13 @@ fun CIImageView(
         contentAlignment = Alignment.Center
       ) {
         when (file.fileStatus) {
+          is CIFileStatus.SndStored ->
+            when (file.fileProtocol) {
+              FileProtocol.XFTP -> progressIndicator()
+              FileProtocol.SMP -> {}
+            }
           is CIFileStatus.SndTransfer ->
-            CircularProgressIndicator(
-              Modifier.size(16.dp),
-              color = Color.White,
-              strokeWidth = 2.dp
-            )
+            progressIndicator()
           is CIFileStatus.SndComplete ->
             Icon(
               Icons.Filled.Check,
@@ -76,11 +85,7 @@ fun CIImageView(
               tint = Color.White
             )
           is CIFileStatus.RcvTransfer ->
-            CircularProgressIndicator(
-              Modifier.size(16.dp),
-              color = Color.White,
-              strokeWidth = 2.dp
-            )
+            progressIndicator()
           is CIFileStatus.RcvInvitation ->
             Icon(
               Icons.Outlined.ArrowDownward,
@@ -136,7 +141,7 @@ fun CIImageView(
 
   fun fileSizeValid(): Boolean {
     if (file != null) {
-      return file.fileSize <= MAX_FILE_SIZE
+      return file.fileSize <= getMaxFileSize(file.fileProtocol)
     }
     return false
   }
@@ -179,14 +184,22 @@ fun CIImageView(
               } else {
                 AlertManager.shared.showAlertMsg(
                   generalGetString(R.string.large_file),
-                  String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(MAX_FILE_SIZE))
+                  String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
                 )
               }
             CIFileStatus.RcvAccepted ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(R.string.waiting_for_image),
-                generalGetString(R.string.image_will_be_received_when_contact_is_online)
-              )
+              when (file.fileProtocol) {
+                FileProtocol.XFTP ->
+                  AlertManager.shared.showAlertMsg(
+                    generalGetString(R.string.waiting_for_image),
+                    generalGetString(R.string.image_will_be_received_when_contact_completes_uploading)
+                  )
+                FileProtocol.SMP ->
+                  AlertManager.shared.showAlertMsg(
+                    generalGetString(R.string.waiting_for_image),
+                    generalGetString(R.string.image_will_be_received_when_contact_is_online)
+                  )
+              }
             CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
             CIFileStatus.RcvComplete -> {} // ?
             CIFileStatus.RcvCancelled -> {} // TODO

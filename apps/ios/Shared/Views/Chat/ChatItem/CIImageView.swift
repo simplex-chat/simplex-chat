@@ -41,7 +41,13 @@ struct CIImageView: View {
                                     // TODO image accepted alert?
                                 }
                             case .rcvAccepted:
-                                if file.isSMP {
+                                switch file.fileProtocol {
+                                case .xftp:
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "Waiting for image",
+                                        message: "Image will be received when your contact completes uploading it."
+                                    )
+                                case .smp:
                                     AlertManager.shared.showAlertMsg(
                                         title: "Waiting for image",
                                         message: "Image will be received when your contact is online, please wait or check later!"
@@ -79,6 +85,11 @@ struct CIImageView: View {
     @ViewBuilder private func loadingIndicator() -> some View {
         if let file = chatItem.file {
             switch file.fileStatus {
+            case .sndStored:
+                switch file.fileProtocol {
+                case .xftp: progressView()
+                case .smp: EmptyView()
+                }
             case .sndTransfer:
                 progressView()
             case .sndComplete:
