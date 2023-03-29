@@ -151,7 +151,8 @@ fun FramedItemView(
     }
   }
 
-  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage) && !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
+  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
+      !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
 
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
@@ -192,6 +193,14 @@ fun FramedItemView(
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
                 CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
+                if (mc.text == "" && !ci.meta.isLive) {
+                  metaColor = Color.White
+                } else {
+                  CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler)
+                }
+              }
+              is MsgContent.MCVideo -> {
+                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {

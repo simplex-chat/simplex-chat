@@ -9,14 +9,13 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.graphics.drawable.AnimatedImageDrawable
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -32,10 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.net.toFile
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -53,6 +50,7 @@ sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
   @Serializable class ImagePreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
+  @Serializable class VideoPreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
   @Serializable data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String, val uri: Uri): ComposePreview()
 }
@@ -99,6 +97,7 @@ data class ComposeState(
     get() = {
       val hasContent = when (preview) {
         is ComposePreview.ImagePreview -> true
+        is ComposePreview.VideoPreview -> true
         is ComposePreview.VoicePreview -> true
         is ComposePreview.FilePreview -> true
         else -> message.isNotEmpty() || liveMessage != null
@@ -112,6 +111,7 @@ data class ComposeState(
     get() =
       when (preview) {
         is ComposePreview.ImagePreview -> false
+        is ComposePreview.VideoPreview -> false
         is ComposePreview.VoicePreview -> false
         is ComposePreview.FilePreview -> false
         else -> useLinkPreviews
@@ -162,6 +162,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
     // TODO: include correct type
     is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
+    is MsgContent.MCVideo -> ComposePreview.VideoPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
     is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
     is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
     is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
@@ -235,6 +236,21 @@ fun ComposeView(
       composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.ImagePreview(imagesPreview, content))
     }
   }
+  val processPickedVideo = { uris: List<Uri>, text: String? ->
+    val content = ArrayList<UploadContent>()
+    val imagesPreview = ArrayList<String>()
+    uris.forEach { uri ->
+      val (bitmap: Bitmap?, durationMs: Long?) = getBitmapFromVideo(uri)
+      content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))
+      if (bitmap != null) {
+        imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
+      }
+    }
+
+    if (imagesPreview.isNotEmpty()) {
+      composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.VideoPreview(imagesPreview, content))
+    }
+  }
   val processPickedFile = { uri: Uri?, text: String? ->
     if (uri != null) {
       val fileSize = getFileSize(context, uri)
@@ -251,8 +267,10 @@ fun ComposeView(
       }
     }
   }
-  val galleryLauncher = rememberLauncherForActivityResult(contract = PickMultipleFromGallery()) { processPickedImage(it, null) }
-  val galleryLauncherFallback = rememberGetMultipleContentsLauncher { processPickedImage(it, null) }
+  val galleryImageLauncher = rememberLauncherForActivityResult(contract = PickMultipleImagesFromGallery()) { processPickedImage(it, null) }
+  val galleryImageLauncherFallback = rememberGetMultipleContentsLauncher { processPickedImage(it, null) }
+  val galleryVideoLauncher = rememberLauncherForActivityResult(contract = PickMultipleVideosFromGallery()) { processPickedVideo(it, null) }
+  val galleryVideoLauncherFallback = rememberGetMultipleContentsLauncher { processPickedVideo(it, null) }
   val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
@@ -271,9 +289,17 @@ fun ComposeView(
       }
       AttachmentOption.PickImage -> {
         try {
-          galleryLauncher.launch(0)
+          galleryImageLauncher.launch(0)
         } catch (e: ActivityNotFoundException) {
-          galleryLauncherFallback.launch("image/*")
+          galleryImageLauncherFallback.launch("image/*")
+        }
+        attachmentOption.value = null
+      }
+      AttachmentOption.PickVideo -> {
+        try {
+          galleryVideoLauncher.launch(0)
+        } catch (e: ActivityNotFoundException) {
+          galleryVideoLauncherFallback.launch("video/*")
         }
         attachmentOption.value = null
       }
@@ -394,6 +420,7 @@ fun ComposeView(
         is MsgContent.MCText -> checkLinkPreview()
         is MsgContent.MCLink -> checkLinkPreview()
         is MsgContent.MCImage -> MsgContent.MCImage(msgText, image = msgContent.image)
+        is MsgContent.MCVideo -> MsgContent.MCVideo(msgText, image = msgContent.image, duration = msgContent.duration)
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
@@ -438,10 +465,23 @@ fun ComposeView(
             val file = when (it) {
               is UploadContent.SimpleImage -> saveImage(context, it.uri)
               is UploadContent.AnimatedImage -> saveAnimImage(context, it.uri)
+              else -> return@forEachIndexed
             }
             if (file != null) {
               files.add(file)
               msgs.add(MsgContent.MCImage(if (preview.content.lastIndex == index) msgText else "", preview.images[index]))
+            }
+          }
+        }
+        is ComposePreview.VideoPreview -> {
+          preview.content.forEachIndexed { index, it ->
+            val file = when (it) {
+              is UploadContent.Video -> saveFileFromUri(context, it.uri)
+              else -> return@forEachIndexed
+            }
+            if (file != null) {
+              files.add(file)
+              msgs.add(MsgContent.MCVideo(if (preview.content.lastIndex == index) msgText else "", preview.images[index], it.duration))
             }
           }
         }
@@ -475,7 +515,12 @@ fun ComposeView(
           if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false
         )
       }
-      if (sent == null && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview || cs.preview is ComposePreview.VoicePreview)) {
+      if (sent == null &&
+        (cs.preview is ComposePreview.ImagePreview ||
+            cs.preview is ComposePreview.VideoPreview ||
+            cs.preview is ComposePreview.FilePreview ||
+            cs.preview is ComposePreview.VoicePreview)
+        ) {
         sent = send(cInfo, MsgContent.MCText(msgText), quotedItemId, null, live)
       }
     }
@@ -598,6 +643,11 @@ fun ComposeView(
       ComposePreview.NoPreview -> {}
       is ComposePreview.CLinkPreview -> ComposeLinkView(preview.linkPreview, ::cancelLinkPreview)
       is ComposePreview.ImagePreview -> ComposeImageView(
+        preview.images,
+        ::cancelImages,
+        cancelEnabled = !composeState.value.editing
+      )
+      is ComposePreview.VideoPreview -> ComposeImageView(
         preview.images,
         ::cancelImages,
         cancelEnabled = !composeState.value.editing
@@ -769,7 +819,7 @@ class PickFromGallery: ActivityResultContract<Int, Uri?>() {
   override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data
 }
 
-class PickMultipleFromGallery: ActivityResultContract<Int, List<Uri>>() {
+class PickMultipleImagesFromGallery: ActivityResultContract<Int, List<Uri>>() {
   override fun createIntent(context: Context, input: Int) =
     Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
       putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
@@ -788,6 +838,33 @@ class PickMultipleFromGallery: ActivityResultContract<Int, List<Uri>>() {
         }
         if (itemCount > 10) {
           AlertManager.shared.showAlertMsg(R.string.images_limit_title, R.string.images_limit_desc)
+        }
+        uris
+      }
+    else
+      emptyList()
+}
+
+
+class PickMultipleVideosFromGallery: ActivityResultContract<Int, List<Uri>>() {
+  override fun createIntent(context: Context, input: Int) =
+    Intent(Intent.ACTION_PICK, MediaStore.Video.Media.INTERNAL_CONTENT_URI).apply {
+      putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+      type = "video/*"
+    }
+
+  override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> =
+    if (intent?.data != null)
+      listOf(intent.data!!)
+    else if (intent?.clipData != null)
+      with(intent.clipData!!) {
+        val uris = ArrayList<Uri>()
+        for (i in 0 until kotlin.math.min(itemCount, 10)) {
+          val uri = getItemAt(i).uri
+          if (uri != null) uris.add(uri)
+        }
+        if (itemCount > 10) {
+          AlertManager.shared.showAlertMsg(R.string.videos_limit_title, R.string.videos_limit_desc)
         }
         uris
       }

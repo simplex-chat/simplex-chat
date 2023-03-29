@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
@@ -576,6 +577,28 @@ fun BoxWithConstraintsScope.ChatItemsList(
           stopListening = true
       }
   }
+  /*val unmute = {
+    var usedCallback = false
+    for (i in listState.firstVisibleItemIndex until listState.firstVisibleItemIndex + listState.layoutInfo.visibleItemsInfo.size) {
+      val item = reversedChatItems.getOrNull(i)
+      if (item?.content?.msgContent is MsgContent.MCVideo) {
+        usedCallback = VideoPlayer.enableSound(true, item.file?.fileName ?: continue)
+        break
+      }
+    }
+    usedCallback
+  }*/
+  DisposableEffectOnGone(
+    /*always = {
+      SimplexApp.context.chatModel.onVolumeButtonPress = SimplexApp.context.chatModel.onVolumeButtonPress + unmute
+    },
+    whenDispose = {
+      SimplexApp.context.chatModel.onVolumeButtonPress = SimplexApp.context.chatModel.onVolumeButtonPress - unmute
+    },*/
+    whenGone = {
+      VideoPlayer.releaseAll()
+    }
+  )
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id}) { i, cItem ->
       CompositionLocalProvider(
@@ -933,21 +956,26 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
   }
 }
 
+sealed class ProviderMedia {
+  data class Image(val uri: Uri, val image: Bitmap): ProviderMedia()
+  data class Video(val uri: Uri, val preview: String): ProviderMedia()
+}
+
 private fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
-  fun canShowImage(item: ChatItem): Boolean =
-    item.content.msgContent is MsgContent.MCImage && item.file?.loaded == true && getLoadedFilePath(SimplexApp.context, item.file) != null
+  fun canShowMedia(item: ChatItem): Boolean =
+    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && getLoadedFilePath(SimplexApp.context, item.file) != null)
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
     val indexOfFirst = chatItems.indexOfFirst { it.id == initialChatId }
     for (chatItemsIndex in if (skipInternalIndex >= 0) indexOfFirst downTo 0 else indexOfFirst..chatItems.lastIndex) {
       val item = chatItems[chatItemsIndex]
-      if (canShowImage(item)) {
+      if (canShowMedia(item)) {
         processedInternalIndex += skipInternalIndex.sign
       }
       if (processedInternalIndex == skipInternalIndex) {
@@ -961,16 +989,28 @@ private fun providerForGallery(
   var initialChatId = cItemId
   return object: ImageGalleryProvider {
     override val initialIndex: Int = initialIndex
-    override val totalImagesSize = mutableStateOf(Int.MAX_VALUE)
-    override fun getImage(index: Int): Pair<Bitmap, Uri>? {
+    override val totalMediaSize = mutableStateOf(Int.MAX_VALUE)
+    override fun getMedia(index: Int): ProviderMedia? {
       val internalIndex = initialIndex - index
-      val file = item(internalIndex, initialChatId)?.second?.file
-      val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, file)
-      val filePath = getLoadedFilePath(SimplexApp.context, file)
-      return if (imageBitmap != null && filePath != null) {
-        val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
-        imageBitmap to uri
-      } else null
+      val item = item(internalIndex, initialChatId)?.second ?: return null
+      return when (item.content.msgContent) {
+        is MsgContent.MCImage -> {
+          val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, item.file)
+          val filePath = getLoadedFilePath(SimplexApp.context, item.file)
+          if (imageBitmap != null && filePath != null) {
+            val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+            ProviderMedia.Image(uri, imageBitmap)
+          } else null
+        }
+        is MsgContent.MCVideo -> {
+          val filePath = getLoadedFilePath(SimplexApp.context, item.file)
+          if (filePath != null) {
+            val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+            ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)
+          } else null
+        }
+        else -> null
+      }
     }
 
     override fun currentPageChanged(index: Int) {
@@ -982,7 +1022,7 @@ private fun providerForGallery(
 
     override fun scrollToStart() {
       initialIndex = 0
-      initialChatId = chatItems.first { canShowImage(it) }.id
+      initialChatId = chatItems.first { canShowMedia(it) }.id
     }
 
     override fun onDismiss(index: Int) {

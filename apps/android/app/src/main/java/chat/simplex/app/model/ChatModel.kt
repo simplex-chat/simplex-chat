@@ -120,6 +120,9 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  // Handler for hardware volume button press. Useful for reacting on it for un-muting a video
+  var onVolumeButtonPress: List<() -> Boolean> = emptyList()
+
   fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
@@ -1419,7 +1422,7 @@ data class ChatItem (
         file = null
       )
     }
-    
+
     private const val TEMP_DELETED_CHAT_ITEM_ID = -1L
     const val TEMP_LIVE_CHAT_ITEM_ID = -2L
 
@@ -1765,6 +1768,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCText(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCImage(override val text: String, val image: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCVideo(override val text: String, val image: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
@@ -1818,6 +1822,11 @@ object MsgContentSerializer : KSerializer<MsgContent> {
       element<String>("text")
       element<String>("image")
     })
+    element("MCVideo", buildClassSerialDescriptor("MCVideo") {
+      element<String>("text")
+      element<String>("image")
+      element<Int>("duration")
+    })
     element("MCFile", buildClassSerialDescriptor("MCFile") {
       element<String>("text")
     })
@@ -1840,6 +1849,11 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           "image" -> {
             val image = json["image"]?.jsonPrimitive?.content ?: "unknown message format"
             MsgContent.MCImage(text, image)
+          }
+          "video" -> {
+            val image = json["image"]?.jsonPrimitive?.content ?: "unknown message format"
+            val duration = json["duration"]?.jsonPrimitive?.intOrNull ?: 0
+            MsgContent.MCVideo(text, image, duration)
           }
           "voice" -> {
             val duration = json["duration"]?.jsonPrimitive?.intOrNull ?: 0
@@ -1875,6 +1889,13 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "image")
           put("text", value.text)
           put("image", value.image)
+        }
+      is MsgContent.MCVideo ->
+        buildJsonObject {
+          put("type", "video")
+          put("text", value.text)
+          put("image", value.image)
+          put("duration", value.duration)
         }
       is MsgContent.MCVoice ->
         buildJsonObject {
