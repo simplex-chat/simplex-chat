@@ -1022,4 +1022,16 @@
     <string name="you_will_still_receive_calls_and_ntfs">Stále budete přijímat volání a upozornění od umlčených profilů pokud budou aktivní.</string>
     <string name="you_can_hide_or_mute_user_profile">Můžete skrýt nebo ztlumit uživatelský profil - Podržte pro menu.</string>
     <string name="user_unhide">Odkrýt</string>
+    <string name="settings_send_files_via_xftp">Poslat soubory přes XFTP</string>
+    <string name="database_upgrade">Aktualizace databáze</string>
+    <string name="database_downgrade_warning">Upozornění: můžete ztratit nějaká data!</string>
+    <string name="confirm_database_upgrades">Potvrdit aktualizaci databáze</string>
+    <string name="database_downgrade">Původní databáze</string>
+    <string name="mtr_error_no_down_migration">verze databáze je novější než aplikace, ale žádný přechod dolů pro: %s</string>
+    <string name="downgrade_and_open_chat">Snížit a otevřít chat</string>
+    <string name="database_migrations">Migrací: %s</string>
+    <string name="mtr_error_different">různé migrace v aplikaci/databázi: %s / %s</string>
+    <string name="incompatible_database_version">Nekompatibilní verze databáze</string>
+    <string name="invalid_migration_confirmation">Neplatné potvrzení migrace</string>
+    <string name="upgrade_and_open_chat">Zvýšit a otevřít chat</string>
 </resources>
