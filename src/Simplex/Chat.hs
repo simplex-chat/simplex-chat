@@ -1390,30 +1390,28 @@ processChatCommand = \case
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
-        FTSnd ftm@FileTransferMeta {cancelled} fts -> do
-          if cancelled
-            then throwChatError $ CEFileAlreadyCancelled fileId
-            else do
-              fileAgentConnIds <- cancelSndFile user ftm fts True
-              deleteAgentConnectionsAsync user fileAgentConnIds
-              sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-              withStore (\db -> getChatRefByFileId db user fileId) >>= \case
-                ChatRef CTDirect contactId -> do
-                  contact <- withStore $ \db -> getContact db user contactId
-                  void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
-                ChatRef CTGroup groupId -> do
-                  Group gInfo ms <- withStore $ \db -> getGroup db user groupId
-                  void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
-                _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
-              ci <- withStore $ \db -> getChatItemByFileId db user fileId
-              pure $ CRSndFileCancelled user ci ftm fts
-        FTRcv ftr@RcvFileTransfer {cancelled} -> do
-          if cancelled
-            then throwChatError $ CEFileAlreadyCancelled fileId
-            else do
-              cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
-              ci <- withStore $ \db -> getChatItemByFileId db user fileId
-              pure $ CRRcvFileCancelled user ci ftr
+        FTSnd ftm@FileTransferMeta {cancelled} fts
+          | cancelled -> throwChatError $ CEFileAlreadyCancelled fileId
+          | otherwise -> do
+            fileAgentConnIds <- cancelSndFile user ftm fts True
+            deleteAgentConnectionsAsync user fileAgentConnIds
+            sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+            withStore (\db -> getChatRefByFileId db user fileId) >>= \case
+              ChatRef CTDirect contactId -> do
+                contact <- withStore $ \db -> getContact db user contactId
+                void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
+              ChatRef CTGroup groupId -> do
+                Group gInfo ms <- withStore $ \db -> getGroup db user groupId
+                void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
+              _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
+            ci <- withStore $ \db -> getChatItemByFileId db user fileId
+            pure $ CRSndFileCancelled user ci ftm fts
+        FTRcv ftr@RcvFileTransfer {cancelled}
+          | cancelled -> throwChatError $ CEFileAlreadyCancelled fileId
+          | otherwise -> do
+            cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
+            ci <- withStore $ \db -> getChatItemByFileId db user fileId
+            pure $ CRRcvFileCancelled user ci ftr
   FileStatus fileId -> withUser $ \user -> do
     fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
     pure $ CRFileTransferStatus user fileStatus
