@@ -1039,4 +1039,7 @@
     <string name="mtr_error_different">migrazione diversa nell\'app/nel database: %s / %s</string>
     <string name="invalid_migration_confirmation">Conferma di migrazione non valida</string>
     <string name="settings_section_title_experimenta">SPERIMENTALE</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">L\'immagine verrà ricevuta quando il tuo contatto completerà l\'invio.</string>
+    <string name="mtr_error_no_down_migration">la versione del database è più recente di quella dell\'app, ma nessuna migrazione downgrade per: %s</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Il file verrà ricevuto quando il tuo contatto completerà l\'invio.</string>
 </resources>
