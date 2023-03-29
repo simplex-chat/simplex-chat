@@ -1034,4 +1034,12 @@
     <string name="confirm_database_upgrades">Confirmer la mise à niveau de la base de données</string>
     <string name="mtr_error_no_down_migration">la base de données a une version plus récente que celle de l\'application, mais il n\'y a pas de rétrogradation pour : %s</string>
     <string name="mtr_error_different">migration différente dans l\'app/la base de données : %s / %s</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">L\'image sera reçue lorsque votre contact aura terminé de la mettre en ligne.</string>
+    <string name="show_dev_options">"Afficher : "</string>
+    <string name="show_developer_options">Afficher les options pour les développeurs</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Le fichier sera reçu lorsque votre contact aura terminé de le mettre en ligne.</string>
+    <string name="xftp_requires_v461">v4.6.1+ nécessaire pour la réception via XFTP.</string>
+    <string name="developer_options">IDs de base de données et option d\'isolation du transport.</string>
+    <string name="settings_section_title_experimenta">EXPÉRIMENTALE</string>
+    <string name="hide_dev_options">"Cacher : "</string>
 </resources>
