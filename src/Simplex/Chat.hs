@@ -1392,6 +1392,7 @@ processChatCommand = \case
       withStore (\db -> getFileTransfer db user fileId) >>= \case
         FTSnd ftm@FileTransferMeta {cancelled} fts
           | cancelled -> throwChatError $ CEFileAlreadyCancelled fileId
+          -- TODO check complete
           | otherwise -> do
             fileAgentConnIds <- cancelSndFile user ftm fts True
             deleteAgentConnectionsAsync user fileAgentConnIds
@@ -1408,6 +1409,7 @@ processChatCommand = \case
             pure $ CRSndFileCancelled user ci ftm fts
         FTRcv ftr@RcvFileTransfer {cancelled}
           | cancelled -> throwChatError $ CEFileAlreadyCancelled fileId
+          -- TODO check complete
           | otherwise -> do
             cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
             ci <- withStore $ \db -> getChatItemByFileId db user fileId
@@ -2350,6 +2352,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
       case msg of
         RFPROG rcvProgress rcvTotal -> do
           let status = CIFSRcvTransfer {rcvProgress, rcvTotal}
+          -- TODO unless cancelled
           ci <- withStore $ \db -> do
             liftIO $ updateCIFileStatus db user fileId status
             getChatItemByFileId db user fileId
@@ -2756,6 +2759,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case err of
             SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
               ci <- withStore $ \db -> getChatItemByFileId db user fileId
+              -- TODO if it's direct chat: withStore' (\db -> updateFileCancelled db user fileId CIFSSndCancelled)
               toView $ CRSndFileRcvCancelled user ci ft
             _ -> throwChatError $ CEFileSend fileId err
         MSG meta _ _ -> do
