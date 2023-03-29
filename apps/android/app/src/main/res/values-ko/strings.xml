@@ -7,7 +7,7 @@
     <string name="display_name_connection_established">상호 연결 완료</string>
     <string name="connection_timeout">연결 시간 초과</string>
     <string name="cannot_receive_file">파일을 받을 수 없습니다</string>
-    <string name="contact_already_exists">연락처가 이미 추가되어 있어요</string>
+    <string name="contact_already_exists">이미 추가된 연락처에요.</string>
     <string name="smp_server_test_connect">연결</string>
     <string name="connection_error_auth">연결 오류 (인증)</string>
     <string name="smp_server_test_create_queue">대기열 생성</string>
@@ -56,11 +56,11 @@
     <string name="app_version_code">앱 빌드 : %s</string>
     <string name="appearance_settings">외관</string>
     <string name="app_version_title">앱 버전</string>
-    <string name="app_version_name">앱 버전: v%s</string>
+    <string name="app_version_name">앱 버전 : v%s</string>
     <string name="accept_automatically">자동</string>
     <string name="contact_requests">대화 상대의 요청</string>
     <string name="core_version">코어 버전 : v%s</string>
-    <string name="callstatus_accepted">전화 수락 완료</string>
+    <string name="callstatus_accepted">전화 받음</string>
     <string name="bold">굵게</string>
     <string name="callstatus_in_progress">전화 연결 중</string>
     <string name="colored">색깔</string>
@@ -73,7 +73,7 @@
     <string name="callstate_connecting">연결 중…</string>
     <string name="create_your_profile">내 프로필 생성</string>
     <string name="onboarding_notifications_mode_periodic_desc"><b>배터리에 좋음</b>. 백그라운드 서비스는 10분마다 새 메시지를 확인합니다. 전화 및 긴급 메시지를 놓칠 수 있습니다.</string>
-    <string name="call_already_ended">통화가 이미 종료되었습니다!</string>
+    <string name="call_already_ended">전화가 이미 종료되었습니다!</string>
     <string name="always_use_relay">항상 릴레이 사용</string>
     <string name="icon_descr_audio_call">음성 전화</string>
     <string name="settings_audio_video_calls">음성 &amp; 영상 전화</string>
@@ -84,7 +84,7 @@
     <string name="icon_descr_audio_off">소리 끄기</string>
     <string name="icon_descr_call_ended">통화 종료됨</string>
     <string name="icon_descr_call_connecting">전화 연결 중</string>
-    <string name="auto_accept_images">이미지 받기 자동 수락</string>
+    <string name="auto_accept_images">이미지 자동 다운로드하기</string>
     <string name="integrity_msg_bad_hash">잘못된 메시지 해시</string>
     <string name="integrity_msg_bad_id">잘못된 메시지 아이디</string>
     <string name="settings_section_title_calls">전화</string>
@@ -186,7 +186,7 @@
     <string name="icon_descr_cancel_image_preview">이미지 미리보기 취소</string>
     <string name="rcv_group_event_changed_member_role">%s 역할에서 %s 역할로 변경되었습니다</string>
     <string name="chat_database_section">채팅 데이터베이스</string>
-    <string name="alert_title_cant_invite_contacts">상대를 초대할 수 없습니다</string>
+    <string name="alert_title_cant_invite_contacts">대화 상대를 초대할 수 없습니다!</string>
     <string name="change_verb">변경</string>
     <string name="chat_archive_header">채팅 기록 보관함</string>
     <string name="change_role">역할 바꾸기</string>
@@ -223,7 +223,7 @@
     <string name="delete_member_message__question">멤버의 메시지를 삭제할까요\?</string>
     <string name="maximum_supported_file_size">현재 지원되는 최대 파일 크기는 <xliff:g id="maxFileSize">%1$s</xliff:g>입니다.</string>
     <string name="image_decoding_exception_title">디코딩 에러</string>
-    <string name="button_delete_contact">연락처 삭제</string>
+    <string name="button_delete_contact">대화 상대 삭제</string>
     <string name="delete_contact_question">연락처를 삭제할까요\?</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 데스크톱: <b>QR 코드 스캔</b>을 통해 앱에서 표시된 QR 코드를 스캔해 주세요.</string>
     <string name="delete_contact_menu_action">삭제</string>
@@ -321,4 +321,65 @@
     <string name="mtr_error_different">앱/데이터베이스의 다른 마이그레이션: %s / %s</string>
     <string name="v4_5_multiple_chat_profiles_descr">다른 이름, 아바타 그리고 전송 격리.</string>
     <string name="dont_show_again">다시 보지 않기</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">이 대화 상대로부터의 메시지를 수신할 서버와 연결되었어요.</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="contact_developers">앱 업데이트 후 개발자에게 연락해 주세요.</string>
+    <string name="connection_error_auth_desc">대화 상대가 나갔거나 초대 링크가 이미 사용된 경우가 아니면 버그일 수 있어요. 이 경우 개발자에게 알려주세요.
+\n대화 상대에게 다른 초대 링크 만들도록 부탁하고 네트워크 연결이 안정적인지 확인하세요.</string>
+    <string name="auth_enable_simplex_lock">SimpleX 잠금 활성화</string>
+    <string name="auth_log_in_using_credential">자격 증명으로 로그인</string>
+    <string name="auth_open_chat_console">채팅 콘솔 열기</string>
+    <string name="auth_stop_chat">채팅 중지하기</string>
+    <string name="auth_unlock">잠금 해제하기</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">앱을 사용하지 않는 지 30초가 지나면 다시 인증해야 해요.</string>
+    <string name="contact_wants_to_connect_with_you">님이 연결하고 싶어해요!</string>
+    <string name="callstate_starting">시작…</string>
+    <string name="callstate_waiting_for_answer">응답 대기 중…</string>
+    <string name="callstate_waiting_for_confirmation">확인 대기 중…</string>
+    <string name="alert_title_skipped_messages">읽지 않는 메시지</string>
+    <string name="alert_title_cant_invite_contacts_descr">이 그룹에서 익명 프로필을 사용하고 있어요. 내 원래 프로필이 노출되는 걸 방지하기 위해 대화 상대 초대가 허용되지 않아요.</string>
+    <string name="button_remove_member">멤버 삭제하기</string>
+    <string name="chat_item_ttl_seconds">%s 초</string>
+    <string name="alert_message_group_invitation_expired">이 링크로 참여할 수 없어요. 이미 삭제된 링크에요.</string>
+    <string name="alert_message_no_group">존재하지 않는 그룹이에요.</string>
+    <string name="alert_title_no_group">그룹을 찾을 수 없어요!</string>
+    <string name="button_add_members">맴버 초대하기</string>
+    <string name="button_welcome_message">환영 메시지</string>
+    <string name="button_edit_group_profile">그룹 프로필 수정</string>
+    <string name="button_leave_group">그룹 나가기</string>
+    <string name="button_send_direct_message">1:1 채팅 시작하기</string>
+    <string name="conn_stats_section_title_servers">서버</string>
+    <string name="conn_level_desc_indirect">인다이렉트 (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+    <string name="chat_preferences_you_allow">허용함</string>
+    <string name="chat_preferences_off">꺼짐</string>
+    <string name="chat_preferences_on">켜짐</string>
+    <string name="chat_preferences_no">아니요</string>
+    <string name="ask_your_contact_to_enable_voice">대화 상대에게 음성 메시지 기능을 활성화 해달라고 부탁해보세요.</string>
+    <string name="chat_help_tap_button">탭 버튼</string>
+    <string name="connection_you_accepted_will_be_cancelled">수락한 연결이 취소됩니다!</string>
+    <string name="chat_lock">SimpleX 잠금</string>
+    <string name="callstatus_rejected">거절된 전화</string>
+    <string name="callstate_ended">종료됨</string>
+    <string name="call_connection_peer_to_peer">P2P</string>
+    <string name="call_connection_via_relay">릴레이를 경유</string>
+    <string name="alert_title_group_invitation_expired">만료된 초대 링크에요!</string>
+    <string name="chat_preferences_yes">네</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g>님이 다음을 통해 연결하려고 해요 :</string>
+    <string name="allow_accepting_calls_from_lock_screen">설정에서 잠금 화면에서 바로 전화를 받을 수 있도록 설정할 수 있어요.</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">연결을 완료하려면 대화 상대가 온라인 상태여야 해요.
+\n연결 요청을 취소하고 대화 상대를 삭제할 수 있어요 (그리고 새 링크로 재시도).</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">다음과 같은 경우에 발생할 수 있어요.
+\n1. 대화 상대가 메시지를 보낸 지 30일 지나서 서버에서 삭제된 경우
+\n2. 메시지를 수신하는 데 사용된 서버가 업데이트되고 재부팅된 경우
+\n3. 침해된 연결의 경우
+\n서버 업데이트를 받으려면 설정을 통해 개발자에게 연락해 주세요.
+\n저희 개발팀은 메시지 손실을 방지하기 위해 중복된 서버를 추가할 예정이에요.</string>
+    <string name="auth_simplex_lock_turned_on">SimpleX 잠금 켜짐</string>
+    <string name="callstate_received_answer">응답됨…</string>
+    <string name="callstate_received_confirmation">확인 받음…</string>
+    <string name="callstatus_missed">부재 중 전화</string>
+    <string name="chat_item_ttl_none">사용 안 함</string>
+    <string name="chat_with_the_founder">질문이나 아이디어 보내기</string>
+    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(스캔하거나 클립보드에서 붙여넣기)</string>
+    <string name="contact_sent_large_file">대화 상대가 현재 지원되는 최대 크기(<xliff:g id="maxFileSize">%1$s</xliff:g>)보다 큰 파일을 보냈습니다.</string>
 </resources>
