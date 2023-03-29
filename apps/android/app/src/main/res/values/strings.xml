@@ -509,6 +509,10 @@
   <string name="core_version">Core version: v%s</string>
   <string name="core_build_timestamp">Core built at: %s</string>
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+  <string name="show_dev_options">Show:\ </string>
+  <string name="hide_dev_options">Hide:\ </string>
+  <string name="show_developer_options">Show developer options</string>
+  <string name="developer_options">Database IDs and Transport isolation option.</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -716,7 +720,9 @@
   <string name="settings_section_title_messages">MESSAGES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
+  <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
   <string name="settings_send_files_via_xftp">Send files via XFTP</string>
+  <string name="xftp_requires_v461">v4.6.1+ is required to receive via XFTP.</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
