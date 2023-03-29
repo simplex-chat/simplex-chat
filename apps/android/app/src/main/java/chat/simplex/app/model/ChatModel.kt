@@ -1711,7 +1711,8 @@ class CIFile(
   val fileName: String,
   val fileSize: Long,
   val filePath: String? = null,
-  val fileStatus: CIFileStatus
+  val fileStatus: CIFileStatus,
+  val fileProtocol: FileProtocol
 ) {
   val loaded: Boolean = when (fileStatus) {
     is CIFileStatus.SndStored -> true
@@ -1733,19 +1734,25 @@ class CIFile(
       filePath: String? = "test.txt",
       fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ): CIFile =
-      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus)
+      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
   }
+}
+
+@Serializable
+enum class FileProtocol {
+  @SerialName("smp") SMP,
+  @SerialName("xftp") XFTP;
 }
 
 @Serializable
 sealed class CIFileStatus {
   @Serializable @SerialName("sndStored") object SndStored: CIFileStatus()
-  @Serializable @SerialName("sndTransfer") class SndTransfer(val sndProgress: Int, val sndTotal: Int): CIFileStatus()
+  @Serializable @SerialName("sndTransfer") class SndTransfer(val sndProgress: Long, val sndTotal: Long): CIFileStatus()
   @Serializable @SerialName("sndComplete") object SndComplete: CIFileStatus()
   @Serializable @SerialName("sndCancelled") object SndCancelled: CIFileStatus()
   @Serializable @SerialName("rcvInvitation") object RcvInvitation: CIFileStatus()
   @Serializable @SerialName("rcvAccepted") object RcvAccepted: CIFileStatus()
-  @Serializable @SerialName("rcvTransfer") class RcvTransfer(val rcvProgress: Int, val rcvTotal: Int): CIFileStatus()
+  @Serializable @SerialName("rcvTransfer") class RcvTransfer(val rcvProgress: Long, val rcvTotal: Long): CIFileStatus()
   @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
 }

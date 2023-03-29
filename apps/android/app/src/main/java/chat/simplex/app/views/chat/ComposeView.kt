@@ -182,6 +182,8 @@ fun ComposeView(
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
+  val xftpSendEnabled = chatModel.controller.appPrefs.xftpSendEnabled.get()
+  val maxFileSize = getMaxFileSize(fileProtocol = if (xftpSendEnabled) FileProtocol.XFTP else FileProtocol.SMP)
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
@@ -212,13 +214,13 @@ fun ComposeView(
       if (isAnimNewApi || isAnimOldApi) {
         // It's a gif or webp
         val fileSize = getFileSize(context, uri)
-        if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
+        if (fileSize != null && fileSize <= maxFileSize) {
           content.add(UploadContent.AnimatedImage(uri))
         } else {
           bitmap = null
           AlertManager.shared.showAlertMsg(
             generalGetString(R.string.large_file),
-            String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
+            String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
           )
         }
       } else {
@@ -236,7 +238,7 @@ fun ComposeView(
   val processPickedFile = { uri: Uri?, text: String? ->
     if (uri != null) {
       val fileSize = getFileSize(context, uri)
-      if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
+      if (fileSize != null && fileSize <= maxFileSize) {
         val fileName = getFileName(SimplexApp.context, uri)
         if (fileName != null) {
           composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.FilePreview(fileName, uri))
@@ -244,7 +246,7 @@ fun ComposeView(
       } else {
         AlertManager.shared.showAlertMsg(
           generalGetString(R.string.large_file),
-          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
+          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
         )
       }
     }

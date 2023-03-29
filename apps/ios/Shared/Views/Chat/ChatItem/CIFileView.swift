@@ -56,7 +56,7 @@ struct CIFileView: View {
             case .sndComplete: return false
             case .sndCancelled: return false
             case .rcvInvitation: return true
-            case .rcvAccepted: return file.isSMP
+            case .rcvAccepted: return true
             case .rcvTransfer: return false
             case .rcvComplete: return true
             case .rcvCancelled: return false
@@ -92,7 +92,13 @@ struct CIFileView: View {
                     )
                 }
             case .rcvAccepted:
-                if file.isSMP {
+                switch file.fileProtocol {
+                case .xftp:
+                    AlertManager.shared.showAlertMsg(
+                        title: "Waiting for file",
+                        message: "File will be received when your contact completes uploading it."
+                    )
+                case .smp:
                     AlertManager.shared.showAlertMsg(
                         title: "Waiting for file",
                         message: "File will be received when your contact is online, please wait or check later!"
@@ -112,7 +118,11 @@ struct CIFileView: View {
     @ViewBuilder private func fileIndicator() -> some View {
         if let file = file {
             switch file.fileStatus {
-            case .sndStored: fileIcon("doc.fill")
+            case .sndStored:
+                switch file.fileProtocol {
+                case .xftp: progressView()
+                case .smp: fileIcon("doc.fill")
+                }
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
                 case .xftp: progressCircle(sndProgress, sndTotal)

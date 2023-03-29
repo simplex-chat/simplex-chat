@@ -238,6 +238,7 @@
   <string name="icon_descr_asked_to_receive">Asked to receive the image</string>
   <string name="icon_descr_image_snd_complete">Image sent</string>
   <string name="waiting_for_image">Waiting for image</string>
+  <string name="image_will_be_received_when_contact_completes_uploading">Image will be received when your contact completes uploading it.</string>
   <string name="image_will_be_received_when_contact_is_online">Image will be received when your contact is online, please wait or check later!</string>
   <string name="image_saved">Image saved to Gallery</string>
 
@@ -247,6 +248,7 @@
   <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
   <string name="maximum_supported_file_size">Currently maximum supported file size is <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
   <string name="waiting_for_file">Waiting for file</string>
+  <string name="file_will_be_received_when_contact_completes_uploading">File will be received when your contact completes uploading it.</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
   <string name="file_saved">File saved</string>
   <string name="file_not_found">File not found</string>
