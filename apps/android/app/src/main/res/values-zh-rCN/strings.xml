@@ -1032,5 +1032,14 @@
     <string name="mtr_error_no_down_migration">数据库版本比应用程序更新，但无法降级迁移：%s</string>
     <string name="downgrade_and_open_chat">降级并打开聊天</string>
     <string name="hide_dev_options">隐藏：</string>
-    <string name="file_will_be_received_when_contact_completes_uploading">当您的联系人完成上传后您将收到文件。</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">文件将在您的联系人完成上传后收到。</string>
+    <string name="incompatible_database_version">数据库版本不兼容</string>
+    <string name="database_migrations">迁移：%s</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">图片将在您的联系人完成上传后收到。</string>
+    <string name="show_developer_options">显示开发者选项</string>
+    <string name="xftp_requires_v461">通过 XFTP 接收需要 v4.6.1 以上版本。</string>
+    <string name="upgrade_and_open_chat">升级并打开聊天</string>
+    <string name="database_downgrade_warning">警告：您可能会丢失部分数据！</string>
+    <string name="invalid_migration_confirmation">迁移确认无效</string>
+    <string name="show_dev_options">显示：</string>
 </resources>
