@@ -28,7 +28,13 @@ This profile is local to the device, it is not stored anywhere else
 
 ### Choose notifications mode
 
-TODO describe onboarding screens for iOS / Android
+After you have created the chat profile the app will ask you to choose notifications mode.
+
+<img src="../../blog/images/20220711-notifications.png" width="330">
+
+Please read their description, as on iOS it is trade-off between convenience and privacy, with instant notifications sharing more meta-data with the servers, and on Android it is a trade-off between notification delays and battery life.
+
+You can read more about [the differences between notifications work on Android and iOS](../../blog/20220404-simplex-chat-instant-notifications.md).
 
 ### Connect to developers
 
