@@ -66,6 +66,10 @@ The channel through which you share the link does not have to be secure - it is 
 
 After you connect, you can [verify connection security code](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification).
 
+## User guide (NEW)
+
+Read about the app features and settings in the new [User guide](./docs/guide/README.md).
+
 ## Help translating SimpleX Chat
 
 Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps, website and documents are translated to many other languages.
