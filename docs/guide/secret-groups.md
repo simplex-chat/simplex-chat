@@ -4,7 +4,7 @@ Secret groups are anonymous and private, they are designed to be hard to track b
 
 ## Creating a group
 
-<img src="../../blog/images/20220808-group1.png" width="330"> &nbsp; <img src="../../blog/images/20220808-group2.png" width="330"> &nbsp; <img src="../../blog/images/20220808-group3.png" width="330">
+<img src="../../blog/images/20220808-group1.png" width="330"> <img src="../../blog/images/20220808-group2.png" width="330"> <img src="../../blog/images/20220808-group3.png" width="330">
 
 - Tap on a button in the lower right-hand of the screen.
 - Tap on "Create secret group".
