@@ -58,6 +58,8 @@ Read more in [this post](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.m
 
 ### WebRTC ICE servers
 
+<img src="../../blog/images/20220928-ice-servers.png" width="330">
+
 SimpleX Chat uses a preset relay server to hide your IP address from your contacts by default, but it can also observe the duration of your calls. If you don't want that, you can configure and use your self-hosted WebRTC relay servers instead for further control of your calls.
 
 1. Open the app settings menu.
