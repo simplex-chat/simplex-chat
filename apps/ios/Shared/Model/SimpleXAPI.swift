@@ -1357,6 +1357,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .sndFileCompleteXFTP(user, aChatItem, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)

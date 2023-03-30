@@ -1440,6 +1440,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
+      is CR.SndFileCompleteXFTP ->
+        chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.CallInvitation -> {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation)
       }
@@ -3077,6 +3079,7 @@ sealed class CR {
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
+  @Serializable @SerialName("sndFileCompleteXFTP") class SndFileCompleteXFTP(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR()
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val user: User, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val user: User, val contact: Contact, val answer: WebRTCSession): CR()
@@ -3181,6 +3184,7 @@ sealed class CR {
     is SndFileRcvCancelled -> "sndFileRcvCancelled"
     is SndFileStart -> "sndFileStart"
     is SndFileProgressXFTP -> "sndFileProgressXFTP"
+    is SndFileCompleteXFTP -> "sndFileCompleteXFTP"
     is CallInvitation -> "callInvitation"
     is CallOffer -> "callOffer"
     is CallAnswer -> "callAnswer"
@@ -3287,6 +3291,7 @@ sealed class CR {
     is SndFileRcvCancelled -> withUser(user, json.encodeToString(chatItem))
     is SndFileStart -> withUser(user, json.encodeToString(chatItem))
     is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nsentSize: $sentSize\ntotalSize: $totalSize")
+    is SndFileCompleteXFTP -> withUser(user, json.encodeToString(chatItem))
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
