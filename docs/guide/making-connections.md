@@ -1,5 +1,7 @@
 # Connect to somebody in the chat
 
+_Work in progress_
+
 Because you have no identifier on the SimpleX platform, nobody can contact you unless you share a one-time or temporary user address, such as a QR code or a link.
 
 Even with the optional user address, while it can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.

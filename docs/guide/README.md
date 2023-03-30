@@ -5,7 +5,6 @@ The first messaging platform that has no user identifiers of any kind — 100% p
 ## Contents
 
 - [Quick start](#quick-start) - scroll down this page
-- [Making connections](./making-connections.md)
 - [Sending messages](./send-messages.md)
 - [Secret groups](./secret-groups.md)
 - [Chat profiles](./chat-profiles.md)
