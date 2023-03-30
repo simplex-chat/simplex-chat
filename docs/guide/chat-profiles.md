@@ -40,12 +40,12 @@ This feature is unique to SimpleX Chat – it is independent from chat profiles.
 
 When "Incognito Mode” is turned on, your currently chosen profile name and image are hidden from your new contacts. It allows anonymous connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each connection.
 
-TODO link to post.
-
 To toggle the incognito mode on/off:
 
 - [Open the app settings](./app-settings.md#opening-the-app-settings).
 - Turn on/off incognito mode by tapping on the switch on "Incognito".
+
+Please read more in [this post](../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode).
 
 ## Edit your profile
 

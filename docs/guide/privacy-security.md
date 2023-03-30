@@ -34,13 +34,9 @@ When installed, the app generates a random passphrase for the chat database and 
 
 ## Incognito mode
 
-<img src="../../blog/images/20220901-incognito1.png" width="330"> <img src="../../blog/images/20220901-incognito2.png" width="330"> <img src="../../blog/images/20220901-incognito3.png" width="330">
-
 This feature generates a random profile name for each new contact. Read more in [Incognito mode](./app-settings.md#incognito).
 
 ## Hidden profiles
-
-<img src="../../blog/images/20230328-hidden-profiles1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230328-hidden-profiles2.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230328-hidden-profiles3.png" width="288">
 
 This feature allows to hide some of your chat profiles with the password. Read more in [Hiding and muting chat profiles](./chat-profiles.md#hiding-and-muting-chat-profiles).
 
