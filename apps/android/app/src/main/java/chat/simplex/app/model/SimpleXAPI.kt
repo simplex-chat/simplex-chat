@@ -439,18 +439,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun apiHideUser(userId: Long, viewPwd: String): User =
     setUserPrivacy(CC.ApiHideUser(userId, viewPwd))
 
-  suspend fun apiUnhideUser(userId: Long, viewPwd: String?): User =
+  suspend fun apiUnhideUser(userId: Long, viewPwd: String): User =
     setUserPrivacy(CC.ApiUnhideUser(userId, viewPwd))
 
-  suspend fun apiMuteUser(userId: Long, viewPwd: String?): User =
-    setUserPrivacy(CC.ApiMuteUser(userId, viewPwd))
+  suspend fun apiMuteUser(userId: Long): User =
+    setUserPrivacy(CC.ApiMuteUser(userId))
 
-  suspend fun apiUnmuteUser(userId: Long, viewPwd: String?): User =
-    setUserPrivacy(CC.ApiUnmuteUser(userId, viewPwd))
+  suspend fun apiUnmuteUser(userId: Long): User =
+    setUserPrivacy(CC.ApiUnmuteUser(userId))
 
   private suspend fun setUserPrivacy(cmd: CC): User {
     val r = sendCmd(cmd)
-    if (r is CR.UserPrivacy) return r.user
+    if (r is CR.UserPrivacy) return r.updatedUser
     else throw Exception("Failed to change user privacy: ${r.responseType} ${r.details}")
   }
 
@@ -998,6 +998,25 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  suspend fun cancelFile(user: User, fileId: Long) {
+    val chatItem = apiCancelFile(fileId)
+    if (chatItem != null) {
+      chatItemSimpleUpdate(user, chatItem)
+    }
+  }
+
+  suspend fun apiCancelFile(fileId: Long): AChatItem? {
+    val r = sendCmd(CC.CancelFile(fileId))
+    return when (r) {
+      is CR.SndFileCancelled -> r.chatItem
+      is CR.RcvFileCancelled -> r.chatItem
+      else -> {
+        Log.d(TAG, "apiCancelFile bad response: ${r.responseType} ${r.details}")
+        null
+      }
+    }
+  }
+
   suspend fun apiNewGroup(p: GroupProfile): GroupInfo? {
     val userId = kotlin.runCatching { currentUserId("apiNewGroup") }.getOrElse { return null }
     val r = sendCmd(CC.ApiNewGroup(userId, p))
@@ -1394,13 +1413,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         if (active(r.user)) {
           chatModel.updateGroup(r.toGroup)
         }
-      is CR.MemberRole ->
-        if (active(r.user)) {
-          chatModel.updateGroup(r.groupInfo)
-        }
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.RcvFileComplete ->
+        chatItemSimpleUpdate(r.user, r.chatItem)
+      is CR.RcvFileSndCancelled ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.RcvFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
@@ -1419,6 +1436,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           removeFile(appContext, fileName)
         }
       }
+      is CR.SndFileRcvCancelled ->
+        chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.CallInvitation -> {
@@ -1796,9 +1815,9 @@ sealed class CC {
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
-  class ApiUnhideUser(val userId: Long, val viewPwd: String?): CC()
-  class ApiMuteUser(val userId: Long, val viewPwd: String?): CC()
-  class ApiUnmuteUser(val userId: Long, val viewPwd: String?): CC()
+  class ApiUnhideUser(val userId: Long, val viewPwd: String): CC()
+  class ApiMuteUser(val userId: Long): CC()
+  class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val expire: Boolean): CC()
   class ApiStopChat: CC()
@@ -1870,6 +1889,7 @@ sealed class CC {
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
   class ReceiveFile(val fileId: Long, val inline: Boolean?): CC()
+  class CancelFile(val fileId: Long): CC()
   class ShowVersion(): CC()
 
   val cmdString: String get() = when (this) {
@@ -1879,9 +1899,9 @@ sealed class CC {
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId${maybePwd(viewPwd)}"
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
-    is ApiUnhideUser -> "/_unhide user $userId${maybePwd(viewPwd)}"
-    is ApiMuteUser -> "/_mute user $userId${maybePwd(viewPwd)}"
-    is ApiUnmuteUser -> "/_unmute user $userId${maybePwd(viewPwd)}"
+    is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"
+    is ApiMuteUser -> "/_mute user $userId"
+    is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
@@ -1953,6 +1973,7 @@ sealed class CC {
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile -> if (inline == null) "/freceive $fileId" else "/freceive $fileId inline=${onOff(inline)}"
+    is CancelFile -> "/fcancel $fileId"
     is ShowVersion -> "/version"
   }
 
@@ -2037,6 +2058,7 @@ sealed class CC {
     is ApiChatRead -> "apiChatRead"
     is ApiChatUnread -> "apiChatUnread"
     is ReceiveFile -> "receiveFile"
+    is CancelFile -> "cancelFile"
     is ShowVersion -> "showVersion"
   }
 
@@ -2052,9 +2074,7 @@ sealed class CC {
       is ApiStorageEncryption -> ApiStorageEncryption(DBEncryptionConfig(obfuscate(config.currentKey), obfuscate(config.newKey)))
       is ApiSetActiveUser -> ApiSetActiveUser(userId, obfuscateOrNull(viewPwd))
       is ApiHideUser -> ApiHideUser(userId, obfuscate(viewPwd))
-      is ApiUnhideUser -> ApiUnhideUser(userId, obfuscateOrNull(viewPwd))
-      is ApiMuteUser -> ApiMuteUser(userId, obfuscateOrNull(viewPwd))
-      is ApiUnmuteUser -> ApiUnmuteUser(userId, obfuscateOrNull(viewPwd))
+      is ApiUnhideUser -> ApiUnhideUser(userId, obfuscate(viewPwd))
       is ApiDeleteUser -> ApiDeleteUser(userId, delSMPQueues, obfuscateOrNull(viewPwd))
       else -> this
     }
@@ -2990,7 +3010,7 @@ sealed class CR {
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: User, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile): CR()
-  @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User): CR()
+  @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User, val updatedUser: User): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: User, val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: User, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val user: User, val fromContact: Contact, val toContact: Contact): CR()
@@ -3048,13 +3068,14 @@ sealed class CR {
   @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val user: User, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileStart") class RcvFileStart(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val user: User, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: User, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileSndCancelled") class RcvFileSndCancelled(val user: User, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileProgressXFTP") class RcvFileProgressXFTP(val user: User, val chatItem: AChatItem, val receivedSize: Long, val totalSize: Long): CR()
   // sending file events
   @Serializable @SerialName("sndFileStart") class SndFileStart(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
-  @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
-  @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
   @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val user: User, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
@@ -3152,12 +3173,13 @@ sealed class CR {
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
+    is RcvFileCancelled -> "rcvFileCancelled"
+    is RcvFileSndCancelled -> "rcvFileSndCancelled"
     is RcvFileProgressXFTP -> "rcvFileProgressXFTP"
     is SndFileCancelled -> "sndFileCancelled"
     is SndFileComplete -> "sndFileComplete"
     is SndFileRcvCancelled -> "sndFileRcvCancelled"
     is SndFileStart -> "sndFileStart"
-    is SndGroupFileCancelled -> "sndGroupFileCancelled"
     is SndFileProgressXFTP -> "sndFileProgressXFTP"
     is CallInvitation -> "callInvitation"
     is CallOffer -> "callOffer"
@@ -3200,7 +3222,7 @@ sealed class CR {
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
     is UserProfileNoChange -> withUser(user, noDetails())
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
-    is UserPrivacy -> withUser(user, "")
+    is UserPrivacy -> withUser(user, json.encodeToString(updatedUser))
     is ContactAliasUpdated -> withUser(user, json.encodeToString(toContact))
     is ConnectionAliasUpdated -> withUser(user, json.encodeToString(toConnection))
     is ContactPrefsUpdated -> withUser(user, "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}")
@@ -3257,12 +3279,13 @@ sealed class CR {
     is RcvFileAccepted -> withUser(user, json.encodeToString(chatItem))
     is RcvFileStart -> withUser(user, json.encodeToString(chatItem))
     is RcvFileComplete -> withUser(user, json.encodeToString(chatItem))
+    is RcvFileCancelled -> withUser(user, json.encodeToString(chatItem))
+    is RcvFileSndCancelled -> withUser(user, json.encodeToString(chatItem))
     is RcvFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nreceivedSize: $receivedSize\ntotalSize: $totalSize")
     is SndFileCancelled -> json.encodeToString(chatItem)
     is SndFileComplete -> withUser(user, json.encodeToString(chatItem))
     is SndFileRcvCancelled -> withUser(user, json.encodeToString(chatItem))
     is SndFileStart -> withUser(user, json.encodeToString(chatItem))
-    is SndGroupFileCancelled -> withUser(user, json.encodeToString(chatItem))
     is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nsentSize: $sentSize\ntotalSize: $totalSize")
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")

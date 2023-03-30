@@ -190,11 +190,11 @@ data ChatCommand
   | APISetActiveUser UserId (Maybe UserPwd)
   | SetActiveUser UserName (Maybe UserPwd)
   | APIHideUser UserId UserPwd
-  | APIUnhideUser UserId (Maybe UserPwd)
-  | APIMuteUser UserId (Maybe UserPwd)
-  | APIUnmuteUser UserId (Maybe UserPwd)
+  | APIUnhideUser UserId UserPwd
+  | APIMuteUser UserId
+  | APIUnmuteUser UserId
   | HideUser UserPwd
-  | UnhideUser
+  | UnhideUser UserPwd
   | MuteUser
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
@@ -421,7 +421,7 @@ data ChatResponse
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
-  | CRUserPrivacy {user :: User}
+  | CRUserPrivacy {user :: User, updatedUser :: User}
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation {user :: User}
@@ -445,13 +445,12 @@ data ChatResponse
   | CRRcvFileStart {user :: User, chatItem :: AChatItem}
   | CRRcvFileProgressXFTP {user :: User, chatItem :: AChatItem, receivedSize :: Int64, totalSize :: Int64}
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
-  | CRRcvFileCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndGroupFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileProgressXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
   | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
@@ -742,7 +741,7 @@ data ChatErrorType
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
   | CECantHideLastUser {userId :: UserId}
-  | CECantUnmuteHiddenUser {userId :: UserId}
+  | CEHiddenUserAlwaysMuted {userId :: UserId}
   | CEEmptyUserPassword {userId :: UserId}
   | CEUserAlreadyHidden {userId :: UserId}
   | CEUserNotHidden {userId :: UserId}
@@ -771,6 +770,7 @@ data ChatErrorType
   | CEFileNotFound {message :: String}
   | CEFileAlreadyReceiving {message :: String}
   | CEFileCancelled {message :: String}
+  | CEFileCancel {fileId :: FileTransferId, message :: String}
   | CEFileAlreadyExists {filePath :: FilePath}
   | CEFileRead {filePath :: FilePath, message :: String}
   | CEFileWrite {filePath :: FilePath, message :: String}

@@ -2236,6 +2236,22 @@ public struct CIFile: Decodable {
             }
         }
     }
+
+    public var cancellable: Bool {
+        get {
+            switch self.fileStatus {
+            case .sndStored: return self.fileProtocol != .xftp // TODO true - enable when XFTP send supports cancel
+            case .sndTransfer: return self.fileProtocol != .xftp // TODO true
+            case .sndComplete: return false
+            case .sndCancelled: return false
+            case .rcvInvitation: return false
+            case .rcvAccepted: return true
+            case .rcvTransfer: return true
+            case .rcvCancelled: return false
+            case .rcvComplete: return false
+            }
+        }
+    }
 }
 
 public enum FileProtocol: String, Decodable {

@@ -33,7 +33,7 @@ struct HiddenProfileView: View {
             }
 
             Section {
-                PassphraseField(key: $hidePassword, placeholder: "Password to show", valid: true, showStrength: true)
+                PassphraseField(key: $hidePassword, placeholder: "Password to show", valid: passwordValid, showStrength: true)
                 PassphraseField(key: $confirmHidePassword, placeholder: "Confirm password", valid: confirmValid)
 
                 settingsRow("lock") {
@@ -72,9 +72,11 @@ struct HiddenProfileView: View {
         }
     }
 
+    var passwordValid: Bool { hidePassword == hidePassword.trimmingCharacters(in: .whitespaces) }
+
     var confirmValid: Bool { confirmHidePassword == "" || hidePassword == confirmHidePassword }
 
-    var saveDisabled: Bool { hidePassword == "" || confirmHidePassword == "" || !confirmValid }
+    var saveDisabled: Bool { hidePassword == "" || !passwordValid || confirmHidePassword == "" || !confirmValid }
 }
 
 struct ProfilePrivacyView_Previews: PreviewProvider {

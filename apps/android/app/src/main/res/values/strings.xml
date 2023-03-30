@@ -191,6 +191,8 @@
   <string name="delete_member_message__question">Delete member message?</string>
   <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
   <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
+  <string name="cancel_file__question">Cancel file transfer?</string>
+  <string name="file_transfer_will_be_cancelled_warning">File transfer will be cancelled. If it\'s in progress it will be stoppped.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 
@@ -522,8 +524,8 @@
   <string name="core_version">Core version: v%s</string>
   <string name="core_build_timestamp">Core built at: %s</string>
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-  <string name="show_dev_options">Show:\ </string>
-  <string name="hide_dev_options">Hide:\ </string>
+  <string name="show_dev_options">Show:</string>
+  <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
 
@@ -1067,6 +1069,11 @@
   <string name="dont_show_again">Don\'t show again</string>
   <string name="muted_when_inactive">Muted when inactive!</string>
   <string name="you_will_still_receive_calls_and_ntfs">You will still receive calls and notifications from muted profiles when they are active.</string>
+  <string name="delete_profile">Delete profile</string>
+  <string name="delete_chat_profile">Delete chat profile</string>
+  <string name="unhide_profile">Unhide profile</string>
+  <string name="unhide_chat_profile">Unhide chat profile</string>
+  <string name="profile_password">Profile password</string>
 
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>
