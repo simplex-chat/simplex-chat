@@ -292,6 +292,7 @@ If you are considering developing with SimpleX platform please get in touch for 
 - 🏗 Video messages.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
 - 🏗 Reduced battery and traffic usage in large groups.
+- Include optional message into connection request sent via contact address.
 - Ephemeral/disappearing/OTR conversations with the existing contacts.
 - Access password/pin (with optional alternative access password).
 - Local app files encryption.
