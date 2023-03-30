@@ -1043,4 +1043,11 @@
     <string name="show_developer_options">Mostrar opciones de desarrollador</string>
     <string name="hide_dev_options">Ocultar:</string>
     <string name="show_dev_options">Mostrar:</string>
+    <string name="cancel_file__question">¿Cancelar el envío de archivos\?</string>
+    <string name="file_transfer_will_be_cancelled_warning">El envío de archivos será cancelado. Si está en progreso se detendrá.</string>
+    <string name="delete_chat_profile">Eliminar perfil de chat</string>
+    <string name="profile_password">Contraseña del perfil</string>
+    <string name="unhide_chat_profile">Mostrar perfil de chat</string>
+    <string name="unhide_profile">Mostrar perfil</string>
+    <string name="delete_profile">Eliminar perfil</string>
 </resources>
