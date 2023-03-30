@@ -607,6 +607,7 @@ testFilesFoldersImageRcvDelete =
         alice <## "bob cancelled receiving file 1 (test.jpg)"
         alice ##> "/fs 1"
         alice <## "sending file 1 (test.jpg) cancelled: bob"
+        alice <## "file transfer cancelled"
 
 testSendImageWithTextAndQuote :: HasCallStack => FilePath -> IO ()
 testSendImageWithTextAndQuote =
