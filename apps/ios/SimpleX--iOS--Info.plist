@@ -52,7 +52,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
-		<string>bluetooth-central</string>
 		<string>fetch</string>
 		<string>remote-notification</string>
 		<string>voip</string>
