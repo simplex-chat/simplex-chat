@@ -10,8 +10,6 @@ Mar 28, 2023 [SimpleX Chat v4.6 released](./20230328-simplex-chat-v4-6-hidden-pr
 - reduced battery usage
 - SMP server monitoring: status bot and page
 
-Also, we added Chinese and Spanish interface languages, thanks to the users' community and Weblate!
-
 Also, we added Chinese and Spanish language interface, thanks to our users and Weblate!
 
 Mar 1, 2023 [SimpleX File Transfer Protocol](./20230301-simplex-file-transfer-protocol.md)
