@@ -174,7 +174,7 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
-[Mar 28, 2023. v4.6 released - with Android 8+ and ARMv7a support, hidden profiles, community moderation, improved audio/video calls and reduced battery usage.](./blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
+[Mar 28, 2023. v4.6 released - with Android 8+ and ARMv7a support, hidden profiles, community moderation, improved audio/video calls and reduced battery usage](./blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
 
 [Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
 
@@ -288,7 +288,7 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Improved audio & video calls.
 - ✅ Support older Android OS and 32-bit CPUs.
 - ✅ Hidden chat profiles.
-- 🏗 Sending and receiving large fils.
+- 🏗 Sending and receiving large files via [XFTP protocol](./blog/20230301-simplex-file-transfer-protocol.md).
 - 🏗 Video messages.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
 - 🏗 Reduced battery and traffic usage in large groups.
