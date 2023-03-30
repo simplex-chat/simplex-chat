@@ -38,7 +38,7 @@ SimpleX Chat shows an incoming call on your device's lock screen by default. How
    - Show - the call will show on the lock screen, you need to unlock the device and the app to accept it.
    - Accept - the call can be accepted and rejected directly from the lock screen, without opening the app.
 
-_Please note_: some Android systems/devices prohibit full screen views on lock screen - in this case the call will show as a usual notification.
+**Please note**: some Android systems/devices prohibit full screen views on lock screen - in this case the call will show as a usual notification.
 
 ### Calls on lock screen on iOS
 
@@ -50,7 +50,7 @@ By default, SimpleX Chat uses native iOS call interface, where allowed, to show 
 2. Tap **Audio and Video calls**.
 3. Toggle the **Use iOS call interface** switch off.
 
-_Please note_: iOS call interface allows accepting the calls without unlocking the device and the app. If this is undesirable, please disable it – the calls will show as notifications in this case.
+**Please note**: iOS call interface allows accepting the calls without unlocking the device and the app. If this is undesirable, please disable it – the calls will show as notifications in this case.
 
 Read more in [this post](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#improved-audiovideo-calls).
 
@@ -67,7 +67,7 @@ SimpleX Chat uses a preset relay server to hide your IP address from your contac
 5. Enter your ICE server addresses (one per line).
 6. Tap **Save**.
 
-_Please note_: unlike messaging relays (SMP servers), the configuration of WebRTC ICE servers is stored on the current device, not in the chat database. if you transfer the chat database to another device you need to update this configuration.
+**Please note**: unlike messaging relays (SMP servers), the configuration of WebRTC ICE servers is stored on the current device, not in the chat database. if you transfer the chat database to another device you need to update this configuration.
 
 ### Always use relay
 
@@ -77,4 +77,4 @@ Audio and video calls on SimpleX Chat are routed via a TURN relay server by defa
 2. Tap **Audio and Video calls**.
 3. Toggle the **Always use relay** switch on to use a relay server or off for P2P.
 
-_Please note_: disabling this option allows P2P calls, but it does not prohibit the use of TURN relays – in case your network providers block P2P connections, the call will still use relays if the are available. To prohibit the use of relays you need to change WebRTC ICE server configuration to only include STUN servers, for example:
+**Please note**: disabling this option allows P2P calls, but it does not prohibit the use of TURN relays – in case your network providers block P2P connections, the call will still use relays if the are available. To prohibit the use of relays you need to change WebRTC ICE server configuration to only include STUN servers, for example:

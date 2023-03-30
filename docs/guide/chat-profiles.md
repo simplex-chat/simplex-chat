@@ -92,7 +92,7 @@ To import your SimpleX Chat data in the app on another device:
 - Tap "Import” on the pop-up prompt.
 - Start chat via toggle or close and start the app – you will be prompted to enter the passphrase for your chat database.
 
-_Please note_:
+**Please note**:
 
 1. Currently you cannot move some of the profiles, only the whole database containing all profiles can be moved.
 
