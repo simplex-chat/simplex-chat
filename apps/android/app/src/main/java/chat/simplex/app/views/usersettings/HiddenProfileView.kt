@@ -69,11 +69,12 @@ private fun HiddenProfileLayout(
 
     val hidePassword = rememberSaveable { mutableStateOf("") }
     val confirmHidePassword = rememberSaveable { mutableStateOf("") }
+    val passwordValid by remember { derivedStateOf { hidePassword.value == hidePassword.value.trim() } }
     val confirmValid by remember { derivedStateOf { confirmHidePassword.value == "" || hidePassword.value == confirmHidePassword.value } }
-    val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || confirmHidePassword.value == "" || !confirmValid } }
+    val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || !passwordValid || confirmHidePassword.value == "" || !confirmValid } }
     SectionView(stringResource(R.string.hidden_profile_password).uppercase()) {
       SectionItemView {
-        PassphraseField(hidePassword, generalGetString(R.string.password_to_show), isValid = { true }, showStrength = true)
+        PassphraseField(hidePassword, generalGetString(R.string.password_to_show), isValid = { passwordValid }, showStrength = true)
       }
       SectionDivider()
       SectionItemView {

@@ -176,7 +176,7 @@ func apiUnmuteUser(_ userId: Int64) async throws -> User {
 
 func setUserPrivacy_(_ cmd: ChatCommand) async throws -> User {
     let r = await chatSendCmd(cmd)
-    if case let .userPrivacy(user) = r { return user }
+    if case let .userPrivacy(_, updatedUser) = r { return updatedUser }
     throw r
 }
 
@@ -750,6 +750,23 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil) async -> AChatItem? {
     return nil
 }
 
+func cancelFile(user: User, fileId: Int64) async {
+    if let chatItem = await apiCancelFile(fileId: fileId) {
+        DispatchQueue.main.async { chatItemSimpleUpdate(user, chatItem) }
+    }
+}
+
+func apiCancelFile(fileId: Int64) async -> AChatItem? {
+    let r = await chatSendCmd(.cancelFile(fileId: fileId))
+    switch r {
+    case let .sndFileCancelled(_, chatItem, _, _) : return chatItem
+    case let .rcvFileCancelled(_, chatItem, _) : return chatItem
+    default:
+        logger.error("apiCancelFile error: \(String(describing: r))")
+        return nil
+    }
+}
+
 func networkErrorAlert(_ r: ChatResponse) -> Bool {
     let am = AlertManager.shared
     switch r {
@@ -1321,6 +1338,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .rcvFileSndCancelled(user, aChatItem, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileProgressXFTP(user, aChatItem, _, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileStart(user, aChatItem, _):
@@ -1334,6 +1353,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
+        case let .sndFileRcvCancelled(user, aChatItem, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .callInvitation(invitation):

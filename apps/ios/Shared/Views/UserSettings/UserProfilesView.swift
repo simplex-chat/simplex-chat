@@ -182,13 +182,10 @@ struct UserProfilesView: View {
         let s = searchTextOrPassword.trimmingCharacters(in: .whitespaces)
         let lower = s.localizedLowercase
         return m.users.filter { u in
-            if (u.user.activeUser || u.user.viewPwdHash == nil) && (s == "" || u.user.chatViewName.localizedLowercase.contains(lower)) {
+            if (u.user.activeUser || !u.user.hidden) && (s == "" || u.user.chatViewName.localizedLowercase.contains(lower)) {
                 return true
             }
-            if let ph = u.user.viewPwdHash {
-                return s != "" && chatPasswordHash(s, ph.salt) == ph.hash
-            }
-            return false
+            return correctPassword(u.user, s)
         }
     }
 
@@ -214,11 +211,11 @@ struct UserProfilesView: View {
         List {
             switch action {
             case let .deleteUser(user, delSMPQueues):
-                actionHeader("Delete user", user)
+                actionHeader("Delete profile", user)
                 Section {
                     passwordField
                     settingsRow("trash") {
-                        Button("Delete user", role: .destructive) {
+                        Button("Delete chat profile", role: .destructive) {
                             profileAction = nil
                             Task { await removeUser(user, delSMPQueues, viewPwd: actionPassword) }
                         }
@@ -231,11 +228,11 @@ struct UserProfilesView: View {
                     }
                 }
             case let .unhideUser(user):
-                actionHeader("Unhide user", user)
+                actionHeader("Unhide profile", user)
                 Section {
                     passwordField
                     settingsRow("lock.open") {
-                        Button("Unhide user") {
+                        Button("Unhide chat profile") {
                             profileAction = nil
                             setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: actionPassword) }
                         }
