@@ -168,7 +168,21 @@
                     
                 
                     
+                        <li>
+                            <a href="/it/" class="px-[20px] flex items-center gap-4 flag-anchor">
+                                <img class="h-4" src="/img/flags/it.svg" alt="" srcset="">
+                                <p>Italiano</p>
+                            </a>
+                        </li>
+                    
                 
+                    
+                        <li>
+                            <a href="/nl/" class="px-[20px] flex items-center gap-4 flag-anchor">
+                                <img class="h-4" src="/img/flags/nl.svg" alt="" srcset="">
+                                <p>Nederlands</p>
+                            </a>
+                        </li>
                     
                 
                     
@@ -296,10 +310,10 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="landing-page-header-article-paragraph text-black dark:text-white text-center xl:text-justify text-[16px] leading-[24px] mb-[20px] header-description">
                             Les autres applications ont des IDs d'utilisateur : Signal, Matrix, Session, Briar, Jami, Cwtch, etc.<br> SimpleX n'en a pas, <strong>pas même des nombres aléatoires</strong>.<br > Ce qui améliore radicalement votre vie privée.
                         </p>
-                        <a href="javascript:void(0)" data-show-overlay="hero-overlay-2" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">Pourquoi les IDs d'utilisateur sont nuisibles pour votre vie privée ?</a>
+                        <a href="javascript:void(0)" data-show-overlay="why-ids-bad-for-privacy" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">Pourquoi les IDs d'utilisateur sont nuisibles pour votre vie privée ?</a>
                         
     
-    <div id="hero-overlay-2" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="why-ids-bad-for-privacy" data-scroll-to="" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
             <h1 class="text-3xl font-bold text-active-blue mb-6 ">Pourquoi les IDs d'utilisateur sont nuisibles pour votre vie privée ?</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
@@ -316,7 +330,7 @@ window.addEventListener('scroll',changeHeaderBg);
     Même avec les applications les plus privées qui utilisent les services Tor v3, si vous parlez à deux contacts différents via le même profil, ils peuvent prouver qu'ils sont connectés à la même personne.
 </p>
 <p>
-    SimpleX protège contre ces attaques en n'ayant aucun identifiant d'utilisateur dans on modèle. Et, si vous utilisez le mode Incognito, vous aurez un nom d'affichage différent pour chaque contact, évitant toutes les données partagées entre eux.
+    SimpleX protège contre ces attaques en n'ayant aucun identifiant d'utilisateur dans son modèle. Et, si vous utilisez le mode Incognito, vous aurez un nom d'affichage différent pour chaque contact, évitant toutes données partagées entre eux.
 </p>
                         </div>
                     </div>
@@ -338,10 +352,10 @@ window.addEventListener('scroll',changeHeaderBg);
         </div>
     </div>
 
-                        <a href="javascript:void(0)" data-show-overlay="hero-overlay-1" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">Comment fonctionne SimpleX ?</a>
+                        <a href="javascript:void(0)" data-show-overlay="how-simplex-works" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">Comment fonctionne SimpleX ?</a>
                         
     
-    <div id="hero-overlay-1" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="how-simplex-works" data-scroll-to="" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
             <h1 class="text-3xl font-bold text-active-blue mb-6 ">Comment fonctionne SimpleX ?</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
@@ -464,10 +478,10 @@ window.addEventListener('scroll',changeHeaderBg);
 </script>
 
 
-<section class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5 lg:h-[888px]">
+<section id="why-privacy" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5 lg:h-[888px]">
     <div class="container">
-        <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">Pourquoi la protection de la vie privé <span class='gradient-text'>est importante</span></p>
-        <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">La préservation de la confidentialité de vos métadonnées &mdash; <span class='text-active-blue'>avec qui vous parlez</span> vous protège de :</p>
+        <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">Pourquoi protéger votre vie privée <span class='gradient-text'>est important</span></p>
+        <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">Assurer la confidentialité de vos métadonnées &mdash; <span class='text-active-blue'> c'est-à-dire avec qui vous communiquez </span> &mdash; vous protège contre :</p>
         <div class="flex flex-col lg:flex-row gap-[20px] mb-[62px] lg:mb-[90px]">
 
             
@@ -476,14 +490,14 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/privacy-section-1.svg" alt="">
                 </div>
                 <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
-                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">Publicité et discrimination par les prix</p>
+                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">La publicité et la discrimination par les prix</p>
                     
-                    <a href="javascript:void(0);" data-show-overlay="why-privacy-matters-1" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">La protection de votre vie privée vous fait économiser de l'argent</a>
+                    <a href="javascript:void(0);" data-show-overlay="privacy-saves-money" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">Protéger votre vie privée peut vous faire économiser de l'argent</a>
                     
     
-    <div id="why-privacy-matters-1" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="privacy-saves-money" data-scroll-to="why-privacy" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">La protection de votre vie privée vous fait économiser de l'argent</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">Protéger votre vie privée peut vous faire économiser de l'argent</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -523,14 +537,14 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/privacy-section-2.svg" alt="">
                 </div>
                 <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
-                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">Manipulation des élections</p>
+                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">La manipulation des élections</p>
                     
-                    <a href="javascript:void(0);" data-show-overlay="why-privacy-matters-2" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">Le respect de votre vie privée vous donne un pouvoir</a>
+                    <a href="javascript:void(0);" data-show-overlay="privacy-gives-power" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">Préserver sa vie privée, c'est s'offrir du pouvoir</a>
                     
     
-    <div id="why-privacy-matters-2" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="privacy-gives-power" data-scroll-to="why-privacy" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">Le respect de votre vie privée vous donne un pouvoir</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">Préserver sa vie privée, c'est s'offrir du pouvoir</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -567,14 +581,14 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/privacy-section-3.svg" alt="">
                 </div>
                 <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
-                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">Poursuites pour association innocente</p>
+                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">Les accusations pour association innocente</p>
                     
-                    <a href="javascript:void(0);" data-show-overlay="why-privacy-matters-3" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">Le respect de votre vie privée protège votre liberté</a>
+                    <a href="javascript:void(0);" data-show-overlay="privacy-protects-freedom" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">Protéger votre vie privée, c'est défendre votre liberté</a>
                     
     
-    <div id="why-privacy-matters-3" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="privacy-protects-freedom" data-scroll-to="why-privacy" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">Le respect de votre vie privée protège votre liberté</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">Protéger votre vie privée, c'est défendre votre liberté</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -611,7 +625,7 @@ window.addEventListener('scroll',changeHeaderBg);
             
 
         </div>
-        <p class="text-center w-full max-w-[900px] text-[20px] leading-[28px] m-auto text-black dark:text-white">Assurez-vous que votre messagerie ne peut pas accéder à vos données !</p>
+        <p class="text-center w-full max-w-[900px] text-[20px] leading-[28px] m-auto text-black dark:text-white">Gardez le contrôle de vos données en empêchant votre messagerie d'y accéder !</p>
     </div>
 </section>
 
@@ -650,7 +664,7 @@ window.addEventListener('scroll',changeHeaderBg);
                                     </div>
                                 
                                 
-                                    <a href="javascript:void(0)" data-show-overlay="why-simplex-is-unique-1" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">En savoir plus</a>
+                                    <a href="javascript:void(0)" data-show-overlay="privacy-of-identity-contacts-metadata" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">En savoir plus</a>
                                 
                             </div>
                         </div>
@@ -698,7 +712,7 @@ window.addEventListener('scroll',changeHeaderBg);
                                     </div>
                                 
                                 
-                                    <a href="javascript:void(0)" data-show-overlay="why-simplex-is-unique-2" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">En savoir plus</a>
+                                    <a href="javascript:void(0)" data-show-overlay="protection-from-spam-and-abuse" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">En savoir plus</a>
                                 
                             </div>
                         </div>
@@ -749,7 +763,7 @@ window.addEventListener('scroll',changeHeaderBg);
                                     </div>
                                 
                                 
-                                    <a href="javascript:void(0)" data-show-overlay="why-simplex-is-unique-3" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">En savoir plus</a>
+                                    <a href="javascript:void(0)" data-show-overlay="you-control-your-data" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">En savoir plus</a>
                                 
                             </div>
                         </div>
@@ -800,7 +814,7 @@ window.addEventListener('scroll',changeHeaderBg);
                                     </div>
                                 
                                 
-                                    <a href="javascript:void(0)" data-show-overlay="why-simplex-is-unique-4" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">En savoir plus</a>
+                                    <a href="javascript:void(0)" data-show-overlay="you-own-simplex-network" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">En savoir plus</a>
                                 
                             </div>
                         </div>
@@ -842,7 +856,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
         
     
-    <div id="why-simplex-is-unique-1" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="privacy-of-identity-contacts-metadata" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
             <h1 class="text-3xl font-bold text-active-blue mb-6 ">Confidentialité totale de votre identité, profil, contacts et métadonnées</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
@@ -884,7 +898,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
         
     
-    <div id="why-simplex-is-unique-2" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="protection-from-spam-and-abuse" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
             <h1 class="text-3xl font-bold text-active-blue mb-6 ">La meilleure protection contre le spam et les abus</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
@@ -923,7 +937,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
         
     
-    <div id="why-simplex-is-unique-3" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="you-control-your-data" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
             <h1 class="text-3xl font-bold text-active-blue mb-6 ">Propriété, contrôle et sécurité de vos données</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
@@ -968,7 +982,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
         
     
-    <div id="why-simplex-is-unique-4" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="you-own-simplex-network" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
             <h1 class="text-3xl font-bold text-active-blue mb-6 ">Entièrement décentralisé &mdash; les utilisateurs sont maîtres de leur réseau SimpleX</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
@@ -1058,7 +1072,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-4.svg" alt="" class="dark:hidden"/>
                     <img src="/img/new/feature-4-dark.svg" alt="" class="hidden dark:block"/>
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Messages vocaux chiffrés E2E <em>(bientôt)</em></p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Messages vocaux chiffrés E2E</p>
             </div>
             
             <div class="flex flex-col items-center">
@@ -1066,7 +1080,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-5.svg" alt="" class="dark:hidden"/>
                     <img src="/img/new/feature-5-dark.svg" alt="" class="hidden dark:block"/>
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Conversations secrètes éphémères <em>(bientôt)</em></p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Conversations secrètes éphémères</p>
             </div>
             
             <div class="flex flex-col items-center">
@@ -1203,7 +1217,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Mélange de messages<br>pour réduire la corrélation</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Les serveurs SimpleX agissent comme des nœuds mixtes à faible latence - les messages entrants et sortants ont un ordre différent.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Les serveurs SimpleX agissent comme des nœuds de mixage à faible latence - les messages entrants et sortants ont un ordre différent.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Appuyez pour fermer</p>
@@ -1219,7 +1233,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Transport TLS<br>sécurisé et authentifié</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Seul TLS 1.2/1.3 avec des algorithmes puissants est utilisé pour les connexions client-serveur.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Les connexions client-serveur ne sont établies qu'avec des algorithmes de chiffrement robustes et en TLS 1.2/1.3.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">L'empreinte du serveur et la fixation des canaux empêchent les attaques MITM et les attaques par rejeu.</p>
                             
@@ -1299,7 +1313,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <section id="network" class="bg-secondary-bg-light dark:bg-secondary-bg-dark lg:h-[642px] py-[95px] px-5">
     <div class="container">
         <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-5"><span class='gradient-text'>Réseau</span> SimpleX</p>
-        <p class="text-black dark:text-white text-[16px] font-normal text-center mb-16">Simplex Chat offre la meilleure protection de votre vie privé en combinant les avantages du P2P et des réseaux fédérés.</p>
+        <p class="text-black dark:text-white text-[16px] font-normal text-center mb-16">Simplex Chat offre la meilleure protection pour votre vie privée en combinant les avantages du P2P et des réseaux fédérés.</p>
 
         <div class="flex flex-col lg:flex-row justify-between gap-12 md:gap-14 lg:gap-16">
             <div class="flex flex-col md:flex-row lg:flex-col items-center md:gap-9 lg:gap-0">
@@ -1310,10 +1324,10 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
                     <p class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">Contrairement aux réseaux P2P</p>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
-                        Tous les messages sont envoyés via les serveurs, offrant à la fois une meilleure protection des métadonnées et une livraison asynchrone fiable des messages, tout en évitant de nombreux <a href="javascript:void(0)" data-show-overlay="simplex-network-overlay-1" class="open-overlay-btn">problèmes des réseaux P2P</a>.
+                        Tous les messages sont envoyés via les serveurs, offrant à la fois une meilleure protection des métadonnées et une livraison asynchrone fiable des messages, tout en évitant de nombreux <a href="javascript:void(0)" data-show-overlay="comparison-with-p2p-protocols" class="open-overlay-btn">problèmes des réseaux P2P</a>.
                         
     
-    <div id="simplex-network-overlay-1" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
+    <div id="comparison-with-p2p-protocols" data-scroll-to="network" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
             <h1 class="text-3xl font-bold text-active-blue mb-6 ">Comparaison avec des protocoles de messagerie P2P</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
@@ -1608,7 +1622,7 @@ window.addEventListener("load", function () {
         <div class="flex flex-col items-center gap-5 self-stretch mb-12">
             <a href="https://www.reddit.com/r/SimpleXChat/" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border bg-[#D9ECFF]">Rejoindre la communauté REDDIT</a>
             <a href="https://github.com/simplex-chat" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border bg-[#D9ECFF]">Rejoignez-nous sur GitHub</a>
-            <a href="https://github.com/simplex-chat/simplex-chat#help-us-with-donations" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border-none bg-white dark:bg-[rgba(112,240,249,0.2)] border border-[#0053D0]">Faites un don ici pour nous aider</a>
+            <a href="https://github.com/simplex-chat/simplex-chat#help-us-with-donations" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:border-none bg-white dark:bg-[rgba(112,240,249,0.2)] border border-[#0053D0]">Faites un don ici pour nous aider</a>
         </div>
 
         <p class="text-grey-black dark:text-white text-base text-center mb-7">Inscrivez-vous pour recevoir nos mises à jour</p>
