@@ -2,52 +2,75 @@
 
 SimpleX Chat allows you to make end-to-end encrypted audio and video calls with your contacts via WebRTC. Note: Group calls are not supported at this time.
 
-## How to make an audio call
+## Making and accepting the calls
 
-1. Open the app.
-2. Tap on a contact.
-3. Tap on the phone icon to the right of your contact's name at the top of the screen.
+### How to make an audio call
 
-## How to make a video call
+1. Tap on a contact.
+2. Tap on the phone icon to the right of your contact's name at the top of the screen.
 
-1. Open the app.
-2. Tap on a contact.
-3. Tap on the three vertical dots on the top right-hand corner of the screen to access more options.
-4. Choose **Video call**.
+### How to make a video call
 
-## WebRTC ICE servers
+1. Tap on a contact.
+2. Tap on the three vertical dots on the top right-hand corner of the screen to access more options.
+3. Choose **Video call**.
+
+### Accepting the calls
+
+When there is an incoming call you have three options:
+
+- accept: to connect the call
+- reject: to reject the call, _without_ notifying the caller.
+- ignore: to temporarily dismiss the call, but in a way that it can be accepted later, if the caller is still waiting, via the **Accept call** message in the conversation with this contact.
+
+There is no time limit that the call invitation can remain active - as long as the caller is still waiting, you can accept the call any time later.
+
+The call can be accepted from the lock screen, both on Android (it needs to be enabled via options) and on iOS (by default, using native iOS call interface that can be disabled).
+
+### Calls on lock screen on Android
+
+SimpleX Chat shows an incoming call on your device's lock screen by default. However, you can change this behavior in the app settings menu.
+
+1. Open the app settings menu.
+2. Tap **Audio and Video calls**.
+3. On the **Calls on lock screen** drop-down list, choose from the following three options:
+   - Disable - the call will show as a notification.
+   - Show - the call will show on the lock screen, you need to unlock the device and the app to accept it.
+   - Accept - the call can be accepted and rejected directly from the lock screen, without opening the app.
+
+_Please note_: some Android systems/devices prohibit full screen views on lock screen - in this case the call will show as a usual notification.
+
+### Calls on lock screen on iOS
+
+By default, SimpleX Chat uses native iOS call interface, where allowed, to show incoming calls on the lock screen. You can disable it:
+
+1. Open the app settings menu.
+2. Tap **Audio and Video calls**.
+3. Toggle the **Use iOS call interface** switch off.
+
+_Please note_: iOS call interface allows accepting the calls without unlocking the device and the app. If this is undesirable, please disable it – the calls will show as notifications in this case.
+
+## Advanced call settings
+
+### WebRTC ICE servers
 
 SimpleX Chat uses a preset relay server to hide your IP address from your contacts by default, but it can also observe the duration of your calls. If you don't want that, you can configure and use your self-hosted WebRTC relay servers instead for further control of your calls.
 
-1. Open the app.
-2. Open the app settings menu.
-3. Tap **Audio and Video calls**.
-4. Tap **WebRTC ICE servers**.
-5. Toggle the **Configure ICE servers** switch on.
-6. Enter your ICE server addresses (one per line).
-7. Tap **Save**.
+1. Open the app settings menu.
+2. Tap **Audio and Video calls**.
+3. Tap **WebRTC ICE servers**.
+4. Toggle the **Configure ICE servers** switch on.
+5. Enter your ICE server addresses (one per line).
+6. Tap **Save**.
 
 _Please note_: unlike messaging relays (SMP servers), the configuration of WebRTC ICE servers is stored on the current device, not in the chat database. if you transfer the chat database to another device you need to update this configuration.
 
-## Calls on lock screen
+### Always use relay
 
-SimpleX Chat only shows an incoming call on your device's lock screen by default. However, you can change this behavior in the app settings menu.
+Audio and video calls on SimpleX Chat are routed via a TURN relay server by default. Optionally you can disable this and use peer-to-peer (P2P) instead, when it is supported by your network. However, your IP address will be known to your contacts.
 
-1. Open the app.
-2. Open the app settings menu.
-3. Tap **Audio and Video calls**.
-4. On the **Calls on lock screen** drop-down list, choose from the following three options:
-   - Disable
-   - Show
-   - Accept
-
-## Always use relay
-
-Audio and video calls on SimpleX Chat are routed via a relay server by default. Optionally you can disable this and use peer-to-peer (P2P) instead, when it is supported by your network. However, your IP address will be known to your contacts.
-
-1. Open the app.
-2. Open the app settings menu.
-3. Tap **Audio and Video calls**.
-4. Toggle the **Always use relay** switch on to use a relay server or off for P2P.
+1. Open the app settings menu.
+2. Tap **Audio and Video calls**.
+3. Toggle the **Always use relay** switch on to use a relay server or off for P2P.
 
 _Please note_: disabling this option allows P2P calls, but it does not prohibit the use of TURN relays – in case your network providers block P2P connections, the call will still use relays if the are available. To prohibit the use of relays you need to change WebRTC ICE server configuration to only include STUN servers, for example:
