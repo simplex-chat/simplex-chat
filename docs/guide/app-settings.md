@@ -26,8 +26,6 @@ This page allows adding and configuring your chat profiles. Please see [Your cha
 
 ### Incognito
 
-<img src="../../blog/images/20220901-incognito1.png" width="330"> <img src="../../blog/images/20220901-incognito2.png" width="330"> <img src="../../blog/images/20220901-incognito3.png" width="330">
-
 This feature is unique to SimpleX Chat – it is independent from chat profiles.
 
 When "Incognito” is turned on, your current profile name and image are NOT shared with your new contacts. It allows connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each contact or group.
