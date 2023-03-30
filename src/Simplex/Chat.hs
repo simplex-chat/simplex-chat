@@ -2328,6 +2328,12 @@ processAgentMsgSndFile _corrId aFileId msg =
                         void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
                   _ -> pure ()
               _ -> pure () -- TODO error?
+        SFERR e -> do
+          throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
+          -- update chat item status
+          -- send status to view
+          -- agentXFTPDeleteSndFile
+          pure ()
       where
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
@@ -2378,11 +2384,11 @@ processAgentMsgRcvFile _corrId aFileId msg =
                   getChatItemByFileId db user fileId
                 agentXFTPDeleteRcvFile user aFileId fileId
                 toView $ CRRcvFileComplete user ci
-        RFERR _e -> do
+        RFERR e -> do
+          throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
           -- update chat item status
           -- send status to view
           agentXFTPDeleteRcvFile user aFileId fileId
-          pure ()
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn user _ agentConnId END =
