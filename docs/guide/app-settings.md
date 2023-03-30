@@ -1,5 +1,13 @@
 # App settings
 
+## Opening the app settings
+
+To open app settings:
+
+- Open the app.
+- Tap on your user profile image in the upper right-hand of the screen.
+- If you have more than one profile, tap the current profile again or choose Settings.
+
 ## Your profile settings
 
 This section is labelled **"You"** in the app settings.
@@ -18,6 +26,8 @@ This page allows adding and configuring your chat profiles. Please see [Your cha
 
 ### Incognito
 
+<img src="../../blog/images/20220901-incognito1.png" width="330"> <img src="../../blog/images/20220901-incognito2.png" width="330"> <img src="../../blog/images/20220901-incognito3.png" width="330">
+
 This feature is unique to SimpleX Chat – it is independent from chat profiles.
 
 When "Incognito” is turned on, your current profile name and image are NOT shared with your new contacts. It allows connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each contact or group.
@@ -25,6 +35,8 @@ When "Incognito” is turned on, your current profile name and image are NOT sha
 Please read more in [this post](../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode).
 
 ### Your SimpleX contact address
+
+<img src="../../blog/images/20221108-address1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-address2.png" width="288">
 
 This page allows you to create a long term address that can be used by other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on other social media platforms.
 
@@ -64,11 +76,17 @@ Also, currently instant notifications have the highest battery consumption - we 
 
 This page allows to configure your own SMP relays and change other network settings.
 
+<img src="../../blog/images/20230204-transport.png" width="288">
+
 #### SMP servers
+
+<img src="../../blog/images/20221206-server1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-server2.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-server3.png" width="288">
 
 By default, the app has preset relays configured – you can change them to your own.
 
 This page also allows testing the connection with the servers.
+
+Read more in [this post](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#smp-servers-configuration-and-password).
 
 #### Use SOCKS proxy (Android only)
 
@@ -88,6 +106,8 @@ The most typical use for this is to run Orbot app that provides a SOCKS proxy to
 
 ##### iOS
 
+<img src="../../blog/images/20220901-onion1.png" width="330"> &nbsp; <img src="../../blog/images/20220901-onion2.png" width="330">
+
 While iOS does not support SOCKS proxies, you can install Orbot app that works as VPN provider. You can choose:
 
 - _no_ (default): do not use .onion hosts. Choose this option if you do not use Orbot or if you use VPN that proxies connections via some other overlay network.
@@ -104,7 +124,58 @@ Please read the details in [this post](../../blog/20230204-simplex-chat-v4-5-use
 
 #### Advanced network settings
 
+<img src="../../blog/images/20220808-network.png" width="330">
+
 If your network is slow, and connections to the servers keep failing (you would see a spinner on your contacts), please increase TCP and protocol timeouts in this page.
+
+### Privacy and security
+
+#### SimpleX Lock
+
+SimpleX Lock when enabled requires to pass the device authentication when you open the app or use some security- or privacy-sensitive features.
+
+You will be offered to enable it after you open the app a few times.
+
+To enable it later:
+
+- [Open the app settings](#opening-the-app-settings).
+- Tap on "Privacy & security".
+- Toggle on "SimpleX Lock" slider.
+- Confirm your phone credentials.
+
+Done! Now you will be required to authenticate when you start or resume the app after 30 seconds in background.
+
+#### Protect app screen
+
+<img src="../../blog/images/20221206-protect.png" width="330">
+
+This option hides the app screen in recent apps - it is enabled by default. On Android it also prevents screenshots.
+
+#### Auto Accept Images
+
+Auto-accepting images may reduce privacy – your contacts will know you are online.
+
+- [Open the app settings](#opening-the-app-settings).
+- Tap on "Privacy & security".
+- Toggle on "Auto-accept images".
+
+#### Send Link Previews
+
+Enabling sending link previews may reduce privacy – your app will be loading link preview from the website.
+
+- [Open the app settings](#opening-the-app-settings).
+- Tap on "Privacy & security".
+- Toggle on "Send link previews".
+
+#### SimpleX Links
+
+This option affects how the links to connect to other SimpleX users or to join groups are shown in the conversations. You can choose between:
+
+- _description_ (default): only the link description and server host name are shown. The link won't be opened in the browser.
+- _full link_: the full link is shown. The link will still not be opened in the browser.
+- _via browser_: the full link is shown, and it will be opened in the browser. In this case, if the link domain is different from simplex.chat, the link will be shown in red color, as it might be malicious.
+
+Read more about [SimpleX Links security](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#privacy-and-security-of-simplex-invitation-links).
 
 ### Appearance
 

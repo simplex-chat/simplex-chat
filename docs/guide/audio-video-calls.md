@@ -42,6 +42,8 @@ _Please note_: some Android systems/devices prohibit full screen views on lock s
 
 ### Calls on lock screen on iOS
 
+<img src="../../blog/images/20230328-call1.png" width="288">
+
 By default, SimpleX Chat uses native iOS call interface, where allowed, to show incoming calls on the lock screen. You can disable it:
 
 1. Open the app settings menu.
@@ -49,6 +51,8 @@ By default, SimpleX Chat uses native iOS call interface, where allowed, to show 
 3. Toggle the **Use iOS call interface** switch off.
 
 _Please note_: iOS call interface allows accepting the calls without unlocking the device and the app. If this is undesirable, please disable it – the calls will show as notifications in this case.
+
+Read more in [this post](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#improved-audiovideo-calls).
 
 ## Advanced call settings
 

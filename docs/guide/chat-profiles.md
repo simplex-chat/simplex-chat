@@ -4,20 +4,31 @@
 
 SimpleX Chat allows creating as many chat profiles as you like. Same as the first profile, they are only stored locally on your device.
 
+<img src="../../blog/images/20230204-profiles2.png" width="288">
+
 To create an additional SimpleX Chat profile:
 
-- [Open the app settings](#accessing-app-settings).
+- [Open the app settings](./app-settings.md#opening-the-app-settings).
 - Select "Your chat profiles".
 - Unlock option via fingerprint or PIN.
 - Tap on "+ Add profile”.
 - Create a new profile by inputting your display name and full name (optional).
 - Tap on "Create".
 
-TODO hidden profiles - to be added in 4.6
+## Hiding and muting chat profiles
+
+v4.6 added the ability to mute and to hide chat profiles.
+
+<img src="../../blog/images/20230328-hidden-profiles1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230328-hidden-profiles2.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230328-hidden-profiles3.png" width="288">
+
+These actions are available via long-press (Android) or swipe (iOS) on the profile in the list.
+
+To unhide hidden profiles, enter the full password in the search bar.
 
 ## Switching between profiles
 
-- Open the app.
+<img src="../../blog/images/20230204-profiles1.png" width="288">
+
 - Tap on your user profile image in the upper right-hand of the screen.
 - Select which profile you want to use.
 
@@ -33,14 +44,14 @@ TODO link to post.
 
 To toggle the incognito mode on/off:
 
-- [Open the app settings](#accessing-app-settings).
+- [Open the app settings](./app-settings.md#opening-the-app-settings).
 - Turn on/off incognito mode by tapping on the switch on "Incognito".
 
 ## Edit your profile
 
 To edit your profile:
 
-- [Open the app settings](#accessing-app-settings).
+- [Open the app settings](./app-settings.md#opening-the-app-settings).
 - Select your profile.
 - Tap on "Edit".
 - Input your desired profile name and/or update your full name.
@@ -53,7 +64,7 @@ SimpleX Chat stores all user data only on client devices using a portable encryp
 
 To export your SimpleX Chat data:
 
-- [Open the app settings](#accessing-app-settings).
+- [Open the app settings](./app-settings.md#opening-the-app-settings).
 - Tap on your user profile image in the upper right-hand of the screen.
 - If you have more than one profile, tap it again or choose Settings
 - Select "Database passphrase & export".
