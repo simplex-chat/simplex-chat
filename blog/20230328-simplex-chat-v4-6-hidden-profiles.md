@@ -16,7 +16,8 @@ permalink: "/blog/20230328-simplex-chat-v4-6-hidden-profiles.html"
 
 - [ARMv7a and Android 8+ support](#armv7a-32-bit-and-android-8-support)
 - [hidden chat profiles](#hidden-chat-profiles)
-- [community moderation](#community-moderation)
+- [group / community moderation](#group--community-moderation)
+- [group welcome message](#group-welcome-message)
 - [improved audio/video calls](#improved-audiovideo-calls)
 - [reduced battery usage](#reduced-battery-usage).
 - [SMP server monitoring: status bot and page](#smp-server-monitoring)
@@ -41,7 +42,7 @@ So instead of having an app password, that reduces convenience and doesn't impro
 
 It's important to remember that these hidden profiles are still stored locally on your device, so if somebody has access to your chat database (they need to know database passphrase, that is independent from device PIN or profile passphrases) or to chat console in the app, they will be able to access these profiles data and reset their passwords. We are considering how chat console can be better protected - e.g., by requiring a separate password or by providing an option to remove it from the UI permanently - tell us what you think.
 
-### Community moderation
+### Group / Community moderation
 
 Initially we did not design SimpleX Chat to support communities - our focus has always been maximum privacy and security.
 
@@ -54,6 +55,10 @@ Firstly, group admins and owners can revoke members rights to send messages to t
 Secondly, group admins can now delete messages sent by other members (excluding the messages sent by the group owners). "Moderate" action in the message menu will either mark the message as deleted or delete it irreversibly for all members, as set in group preferences by the owners.
 
 These features will allow group owners to decide their own rules. More robust moderation tools are coming later when we build support for large communities.
+
+### Group welcome message
+
+Group owners can now set a welcome message that will be shown to new members when they join the group via a group link.
 
 ### Improved audio/video calls
 
