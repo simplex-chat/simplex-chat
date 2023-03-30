@@ -1116,4 +1116,11 @@
     <string name="xftp_requires_v461">Für den Empfang per XFTP wird v4.6.1 oder neuer benötigt.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
+    <string name="cancel_file__question">Dateitransfer abbrechen\?</string>
+    <string name="file_transfer_will_be_cancelled_warning">Der Dateitransfer wird abgebrochen. Falls er gerade abläuft, wird er angehalten.</string>
+    <string name="delete_chat_profile">Chat-Profil löschen</string>
+    <string name="delete_profile">Profil löschen</string>
+    <string name="unhide_profile">Verbergen des Profils aufheben</string>
+    <string name="profile_password">Passwort für Profil</string>
+    <string name="unhide_chat_profile">Verbergen des Chat-Profils aufheben</string>
 </resources>
