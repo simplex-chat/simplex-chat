@@ -1056,6 +1056,11 @@
   <string name="dont_show_again">Don\'t show again</string>
   <string name="muted_when_inactive">Muted when inactive!</string>
   <string name="you_will_still_receive_calls_and_ntfs">You will still receive calls and notifications from muted profiles when they are active.</string>
+  <string name="delete_profile">Delete profile</string>
+  <string name="delete_chat_profile">Delete chat profile</string>
+  <string name="unhide_profile">Unhide profile</string>
+  <string name="unhide_chat_profile">Unhide chat profile</string>
+  <string name="profile_password">Profile password</string>
 
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>

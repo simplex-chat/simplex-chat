@@ -2,9 +2,11 @@ package chat.simplex.app.views.usersettings
 
 import SectionDivider
 import SectionItemView
+import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -24,6 +26,8 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chatlist.UserProfilePickerItem
+import chat.simplex.app.views.chatlist.UserProfileRow
+import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.CreateProfile
 import kotlinx.coroutines.delay
@@ -93,15 +97,28 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     unhideUser = { user ->
-      setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, userViewPassword(user, searchTextOrPassword.value)) }
+      if (passwordEntryRequired(user, searchTextOrPassword.value)) {
+        ModalManager.shared.showModalCloseable(true) { close ->
+          ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
+            withBGApi {
+              setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, pwd) }
+              close()
+            }
+          }
+        }
+      } else {
+        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, searchTextOrPassword.value) } }
+      }
     },
     muteUser = { user ->
-      setUserPrivacy(m, onSuccess = { if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert) }) {
-        m.controller.apiMuteUser(user.userId, userViewPassword(user, searchTextOrPassword.value))
+      withBGApi {
+        setUserPrivacy(m, onSuccess = {
+          if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
+        }) { m.controller.apiMuteUser(user.userId) }
       }
     },
     unmuteUser = { user ->
-      setUserPrivacy(m) { m.controller.apiUnmuteUser(user.userId, userViewPassword(user, searchTextOrPassword.value)) }
+      withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user.userId) } }
     },
     showHiddenProfile = { user ->
       ModalManager.shared.showModalCloseable(true) { close ->
@@ -235,60 +252,129 @@ private fun UserView(
   }
 }
 
+enum class UserProfileAction {
+  DELETE,
+  UNHIDE
+}
+
+@Composable
+private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (String) -> Unit) {
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState())
+      .padding(bottom = DEFAULT_BOTTOM_PADDING),
+  ) {
+    val actionPassword = rememberSaveable { mutableStateOf("") }
+    val passwordValid by remember { derivedStateOf { actionPassword.value == actionPassword.value.trim() } }
+    val actionEnabled by remember { derivedStateOf { actionPassword.value != "" && passwordValid && correctPassword(user, actionPassword.value) } }
+
+    @Composable fun ActionHeader(@StringRes title: Int) {
+      AppBarTitle(stringResource(title))
+      SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+        UserProfileRow(user)
+      }
+      SectionSpacer()
+    }
+
+    @Composable fun PasswordAndAction(@StringRes label: Int, color: Color = MaterialTheme.colors.primary) {
+      SectionView() {
+        SectionItemView {
+          PassphraseField(actionPassword, generalGetString(R.string.profile_password), isValid = { passwordValid }, showStrength = true)
+        }
+        SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
+          Text(generalGetString(label), color = if (actionEnabled) color else HighOrLowlight)
+        }
+      }
+    }
+
+    when (action) {
+      UserProfileAction.DELETE -> {
+        ActionHeader(R.string.delete_profile)
+        PasswordAndAction(R.string.delete_chat_profile, color = Color.Red)
+        if (actionEnabled) {
+          SectionTextFooter(stringResource(R.string.users_delete_all_chats_deleted))
+        }
+      }
+      UserProfileAction.UNHIDE -> {
+        ActionHeader(R.string.unhide_profile)
+        PasswordAndAction(R.string.unhide_chat_profile)
+      }
+    }
+  }
+}
+
 private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->
-    if ((u.user.activeUser || u.user.viewPwdHash == null) && (s == "" || u.user.chatViewName.lowercase().contains(lower))) {
+    if ((u.user.activeUser || !u.user.hidden) && (s == "" || u.user.chatViewName.lowercase().contains(lower))) {
       true
-    } else if (u.user.viewPwdHash != null) {
-      s != "" && chatPasswordHash(s, u.user.viewPwdHash.salt) == u.user.viewPwdHash.hash
     } else {
-      false
+      correctPassword(u.user, s)
     }
   }.map { it.user }
 }
 
 private fun visibleUsersCount(m: ChatModel): Int = m.users.filter { u -> !u.user.hidden }.size
 
+private fun correctPassword(user: User, pwd: String): Boolean {
+  val ph = user.viewPwdHash
+  return ph != null && pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
+}
+
 private fun userViewPassword(user: User, searchTextOrPassword: String): String? =
-  if (user.activeUser || !user.hidden) null else searchTextOrPassword
+  if (user.hidden) searchTextOrPassword else null
+
+private fun passwordEntryRequired(user: User, searchTextOrPassword: String): Boolean =
+  user.hidden && user.activeUser && !correctPassword(user, searchTextOrPassword)
 
 private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues: Boolean, searchTextOrPassword: String) {
-  if (users.size < 2) return
-
-  withBGApi {
-    suspend fun deleteUser(user: User) {
-      m.controller.apiDeleteUser(user.userId, delSMPQueues, userViewPassword(user, searchTextOrPassword))
-      m.removeUser(user)
-    }
-    try {
-      if (user.activeUser) {
-        val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
-        if (newActive != null) {
-          m.controller.changeActiveUser_(newActive.userId, null)
-          deleteUser(user.copy(activeUser = false))
+  if (passwordEntryRequired(user, searchTextOrPassword)) {
+    ModalManager.shared.showModalCloseable(true) { close ->
+      ProfileActionView(UserProfileAction.DELETE, user) { pwd ->
+        withBGApi {
+          doRemoveUser(m, user, users, delSMPQueues, pwd)
+          close()
         }
-      } else {
-        deleteUser(user)
       }
-    } catch (e: Exception) {
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_user), e.stackTraceToString())
     }
+  } else {
+    withBGApi { doRemoveUser(m, user, users, delSMPQueues, userViewPassword(user, searchTextOrPassword)) }
   }
 }
 
-private fun setUserPrivacy(m: ChatModel, onSuccess: (() -> Unit)? = null, api: suspend () -> User) {
-  withBGApi {
-    try {
-      m.updateUser(api())
-      onSuccess?.invoke()
-    } catch (e: Exception) {
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(R.string.error_updating_user_privacy),
-        text = e.stackTraceToString()
-      )
+private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, delSMPQueues: Boolean, viewPwd: String?) {
+  if (users.size < 2) return
+
+  suspend fun deleteUser(user: User) {
+    m.controller.apiDeleteUser(user.userId, delSMPQueues, viewPwd)
+    m.removeUser(user)
+  }
+  try {
+    if (user.activeUser) {
+      val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
+      if (newActive != null) {
+        m.controller.changeActiveUser_(newActive.userId, null)
+        deleteUser(user.copy(activeUser = false))
+      }
+    } else {
+      deleteUser(user)
     }
+  } catch (e: Exception) {
+    AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_user), e.stackTraceToString())
+  }
+}
+
+private suspend fun setUserPrivacy(m: ChatModel, onSuccess: (() -> Unit)? = null, api: suspend () -> User) {
+  try {
+    m.updateUser(api())
+    onSuccess?.invoke()
+  } catch (e: Exception) {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(R.string.error_updating_user_privacy),
+      text = e.stackTraceToString()
+    )
   }
 }
 

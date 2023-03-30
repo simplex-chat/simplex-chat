@@ -439,18 +439,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun apiHideUser(userId: Long, viewPwd: String): User =
     setUserPrivacy(CC.ApiHideUser(userId, viewPwd))
 
-  suspend fun apiUnhideUser(userId: Long, viewPwd: String?): User =
+  suspend fun apiUnhideUser(userId: Long, viewPwd: String): User =
     setUserPrivacy(CC.ApiUnhideUser(userId, viewPwd))
 
-  suspend fun apiMuteUser(userId: Long, viewPwd: String?): User =
-    setUserPrivacy(CC.ApiMuteUser(userId, viewPwd))
+  suspend fun apiMuteUser(userId: Long): User =
+    setUserPrivacy(CC.ApiMuteUser(userId))
 
-  suspend fun apiUnmuteUser(userId: Long, viewPwd: String?): User =
-    setUserPrivacy(CC.ApiUnmuteUser(userId, viewPwd))
+  suspend fun apiUnmuteUser(userId: Long): User =
+    setUserPrivacy(CC.ApiUnmuteUser(userId))
 
   private suspend fun setUserPrivacy(cmd: CC): User {
     val r = sendCmd(cmd)
-    if (r is CR.UserPrivacy) return r.user
+    if (r is CR.UserPrivacy) return r.updatedUser
     else throw Exception("Failed to change user privacy: ${r.responseType} ${r.details}")
   }
 
@@ -1796,9 +1796,9 @@ sealed class CC {
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
-  class ApiUnhideUser(val userId: Long, val viewPwd: String?): CC()
-  class ApiMuteUser(val userId: Long, val viewPwd: String?): CC()
-  class ApiUnmuteUser(val userId: Long, val viewPwd: String?): CC()
+  class ApiUnhideUser(val userId: Long, val viewPwd: String): CC()
+  class ApiMuteUser(val userId: Long): CC()
+  class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val expire: Boolean): CC()
   class ApiStopChat: CC()
@@ -1879,9 +1879,9 @@ sealed class CC {
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId${maybePwd(viewPwd)}"
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
-    is ApiUnhideUser -> "/_unhide user $userId${maybePwd(viewPwd)}"
-    is ApiMuteUser -> "/_mute user $userId${maybePwd(viewPwd)}"
-    is ApiUnmuteUser -> "/_unmute user $userId${maybePwd(viewPwd)}"
+    is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"
+    is ApiMuteUser -> "/_mute user $userId"
+    is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
@@ -2052,9 +2052,7 @@ sealed class CC {
       is ApiStorageEncryption -> ApiStorageEncryption(DBEncryptionConfig(obfuscate(config.currentKey), obfuscate(config.newKey)))
       is ApiSetActiveUser -> ApiSetActiveUser(userId, obfuscateOrNull(viewPwd))
       is ApiHideUser -> ApiHideUser(userId, obfuscate(viewPwd))
-      is ApiUnhideUser -> ApiUnhideUser(userId, obfuscateOrNull(viewPwd))
-      is ApiMuteUser -> ApiMuteUser(userId, obfuscateOrNull(viewPwd))
-      is ApiUnmuteUser -> ApiUnmuteUser(userId, obfuscateOrNull(viewPwd))
+      is ApiUnhideUser -> ApiUnhideUser(userId, obfuscate(viewPwd))
       is ApiDeleteUser -> ApiDeleteUser(userId, delSMPQueues, obfuscateOrNull(viewPwd))
       else -> this
     }
@@ -2990,7 +2988,7 @@ sealed class CR {
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: User, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile): CR()
-  @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User): CR()
+  @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User, val updatedUser: User): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: User, val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: User, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val user: User, val fromContact: Contact, val toContact: Contact): CR()
@@ -3200,7 +3198,7 @@ sealed class CR {
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
     is UserProfileNoChange -> withUser(user, noDetails())
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
-    is UserPrivacy -> withUser(user, "")
+    is UserPrivacy -> withUser(user, json.encodeToString(updatedUser))
     is ContactAliasUpdated -> withUser(user, json.encodeToString(toContact))
     is ConnectionAliasUpdated -> withUser(user, json.encodeToString(toConnection))
     is ContactPrefsUpdated -> withUser(user, "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}")
