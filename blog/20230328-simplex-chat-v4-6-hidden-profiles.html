@@ -230,7 +230,8 @@ window.addEventListener('scroll',changeHeaderBg);
 <ul>
 <li><a href="#armv7a-32-bit-and-android-8-support">ARMv7a and Android 8+ support</a></li>
 <li><a href="#hidden-chat-profiles">hidden chat profiles</a></li>
-<li><a href="#community-moderation">community moderation</a></li>
+<li><a href="#group--community-moderation">group / community moderation</a></li>
+<li><a href="#group-welcome-message">group welcome message</a></li>
 <li><a href="#improved-audiovideo-calls">improved audio/video calls</a></li>
 <li><a href="#reduced-battery-usage">reduced battery usage</a>.</li>
 <li><a href="#smp-server-monitoring">SMP server monitoring: status bot and page</a></li>
@@ -245,13 +246,15 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>Many users asked to allow setting the app password or PIN independently from the device PIN, as some other apps do. But it did not seem a good enough solution - if somebody has your device PIN, then in most cases they can also ask you to provide the app PIN as well.</p>
 <p>So instead of having an app password, that reduces convenience and doesn't improve security too much, we did what we think could be better. You can now create hidden chat profiles, that are not visible anywhere in the app, and do not show any notifications, until you enter a correct passphrase. If multiple profiles are hidden with the same passphrase they will all show in the list when you enter it.</p>
 <p>It's important to remember that these hidden profiles are still stored locally on your device, so if somebody has access to your chat database (they need to know database passphrase, that is independent from device PIN or profile passphrases) or to chat console in the app, they will be able to access these profiles data and reset their passwords. We are considering how chat console can be better protected - e.g., by requiring a separate password or by providing an option to remove it from the UI permanently - tell us what you think.</p>
-<h3 id="community-moderation" tabindex="-1">Community moderation</h3>
+<h3 id="group-community-moderation" tabindex="-1">Group / Community moderation</h3>
 <p>Initially we did not design SimpleX Chat to support communities - our focus has always been maximum privacy and security.</p>
 <p>SimpleX Chat supports small and fully decentralized groups, that are not hosted anywhere. But many users want to participate in and to discover communities. Since we added support for group links, the groups we created to let users test the app started to grow, and many other communities of over 100 people emerged.</p>
 <p>We are already observing some less-than-friendly messages and undesirable content that is not welcome in some communities. So this version adds features allowing to moderate groups.</p>
 <p>Firstly, group admins and owners can revoke members rights to send messages to the group by assigning members an &quot;observer&quot; role, and also make this role default for users joining via a group link.</p>
 <p>Secondly, group admins can now delete messages sent by other members (excluding the messages sent by the group owners). &quot;Moderate&quot; action in the message menu will either mark the message as deleted or delete it irreversibly for all members, as set in group preferences by the owners.</p>
 <p>These features will allow group owners to decide their own rules. More robust moderation tools are coming later when we build support for large communities.</p>
+<h3 id="group-welcome-message" tabindex="-1">Group welcome message</h3>
+<p>Group owners can now set a welcome message that will be shown to new members when they join the group via a group link.</p>
 <h3 id="improved-audiovideo-calls" tabindex="-1">Improved audio/video calls</h3>
 <img src="./images/20230328-call2.png" width="288">
 <p>Prior to this version audio and video calls in iOS app were very limited – they only worked while the app was in foreground. This version fully re-implemented audio/video calls in iOS – it now uses native WebRTC library instead of web view. These calls are still end-to-end encrypted, and compatible with the calls in the previous versions of the app, both on iOS and on Android platforms.</p>
