@@ -125,6 +125,18 @@ fun FramedItemView(
             modifier = Modifier.size(68.dp).clipToBounds()
           )
         }
+        is MsgContent.MCVideo -> {
+          Box(Modifier.fillMaxWidth().weight(1f)) {
+            ciQuotedMsgView(qi)
+          }
+          val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
+          Image(
+            imageBitmap,
+            contentDescription = stringResource(R.string.video_descr),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(68.dp).clipToBounds()
+          )
+        }
         is MsgContent.MCFile, is MsgContent.MCVoice -> {
           Box(Modifier.fillMaxWidth().weight(1f)) {
             ciQuotedMsgView(qi)
