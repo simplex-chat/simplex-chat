@@ -5,7 +5,6 @@ import android.graphics.Rect
 import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -14,8 +13,6 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.*
@@ -50,10 +47,10 @@ fun CIVideoView(
     val context = LocalContext.current
     val filePath = remember(file) { getLoadedFilePath(SimplexApp.context, file) }
     val preview = remember(image) { base64ToBitmap(image) }
-    if (filePath != null) {
+    if (file != null && filePath != null) {
       val uri = remember(filePath) { FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))  }
       val view = LocalView.current
-      VideoView(uri, preview, duration * 1000L, showMenu, onClick = {
+      VideoView(uri, file, preview, duration * 1000L, showMenu, onClick = {
         hideKeyboard(view)
         ModalManager.shared.showCustomModal(animated = false) { close ->
           ImageFullScreenView(imageProvider, close)
@@ -87,6 +84,9 @@ fun CIVideoView(
             }
           }
         })
+        if (file != null) {
+          DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
+        }
         if (file?.fileStatus is CIFileStatus.RcvInvitation) {
           PlayButton(error = false, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
@@ -97,7 +97,7 @@ fun CIVideoView(
 }
 
 @Composable
-private fun VideoView(uri: Uri, defaultPreview: Bitmap, defaultDuration: Long, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
+private fun VideoView(uri: Uri, file: CIFile, defaultPreview: Bitmap, defaultDuration: Long, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
   val context = LocalContext.current
   val player = remember(uri) { VideoPlayer.getOrCreate(uri, false, defaultPreview, defaultDuration, true, context) }
   val videoPlaying = remember(uri.path) { player.videoPlaying }
@@ -123,19 +123,16 @@ private fun VideoView(uri: Uri, defaultPreview: Bitmap, defaultDuration: Long, s
   Box {
     val windowWidth = LocalWindowWidth()
     val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 1000.dp }
-    val height = remember(preview) { width / (preview.width.toFloat() / preview.height) }
     AndroidView(
       factory = { ctx ->
         StyledPlayerView(ctx).apply {
           useController = false
           resizeMode = RESIZE_MODE_FIXED_WIDTH
-          background = preview.toDrawable(ctx.resources)
           this.player = player.player
         }
       },
       Modifier
         .width(width)
-        .height(height)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = { if (player.player.playWhenReady) stop() else onClick() }
@@ -145,7 +142,7 @@ private fun VideoView(uri: Uri, defaultPreview: Bitmap, defaultDuration: Long, s
       ImageView(preview, showMenu, onClick)
       PlayButton(brokenVideo, onLongClick =  { showMenu.value = true }, play)
     }
-    DurationProgress(duration, progress/*, soundEnabled*/)
+    DurationProgress(file, videoPlaying, duration, progress/*, soundEnabled*/)
   }
 }
 
@@ -153,19 +150,19 @@ private fun VideoView(uri: Uri, defaultPreview: Bitmap, defaultDuration: Long, s
 private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit, onClick: () -> Unit) {
   Surface(
     Modifier.align(Alignment.Center),
-    color = Color.White,
+    color = Color.White.copy(alpha = 0.8f),
     shape = RoundedCornerShape(percent = 50)
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp)
+        .defaultMinSize(minWidth = 40.dp, minHeight = 40.dp)
         .combinedClickable(onClick = onClick, onLongClick = onLongClick),
       contentAlignment = Alignment.Center
     ) {
       Icon(
         imageVector = Icons.Filled.PlayArrow,
         contentDescription = null,
-        Modifier.size(36.dp),
+        Modifier.size(25.dp),
         tint = if (error) WarningOrange else MaterialTheme.colors.primary
       )
     }
@@ -173,29 +170,45 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
 }
 
 @Composable
-private fun DurationProgress(duration: MutableState<Long>, progress: MutableState<Long>/*, soundEnabled: MutableState<Boolean>*/) {
+private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, duration: MutableState<Long>, progress: MutableState<Long>/*, soundEnabled: MutableState<Boolean>*/) {
   if (duration.value > 0L || progress.value > 0) {
-    Row(Modifier
-      .padding(DEFAULT_PADDING_HALF)
-      .background(Color.Black.copy(alpha = 0.4f), MaterialTheme.shapes.small)
-      .padding(vertical = 2.dp, horizontal = 4.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      val time = (if (progress.value > 0) durationText((progress.value / 1000).toInt()) else durationText((duration.value / 1000).toInt()))
-      val sp30 = with(LocalDensity.current){ 30.sp.toDp()}
-      val sp45 = with(LocalDensity.current){ 45.sp.toDp()}
-      Text(
-        time,
-        Modifier.widthIn(min = if (time.length <= 5) sp30 else sp45),
-        fontSize = 10.sp,
-        color = Color.White
-      )
-      /*if (!soundEnabled.value) {
+    Row {
+      Box(
+        Modifier
+          .padding(DEFAULT_PADDING_HALF)
+          .background(Color.Black.copy(alpha = 0.4f), MaterialTheme.shapes.small)
+          .padding(vertical = 2.dp, horizontal = 4.dp)
+      ) {
+        val time = (if (progress.value > 0) durationText((progress.value / 1000).toInt()) else durationText((duration.value / 1000).toInt()))
+        val sp30 = with(LocalDensity.current) { 30.sp.toDp() }
+        val sp45 = with(LocalDensity.current) { 45.sp.toDp() }
+        Text(
+          time,
+          Modifier.widthIn(min = if (time.length <= 5) sp30 else sp45),
+          fontSize = 13.sp,
+          color = Color.White
+        )
+        /*if (!soundEnabled.value) {
         Icon(Icons.Outlined.VolumeOff, null,
           Modifier.padding(start = 5.dp).size(10.dp),
           tint = Color.White
         )
       }*/
+      }
+      if (!playing.value) {
+        Box(
+          Modifier
+            .padding(top = DEFAULT_PADDING_HALF)
+            .background(Color.Black.copy(alpha = 0.4f), MaterialTheme.shapes.small)
+            .padding(vertical = 2.dp, horizontal = 4.dp)
+        ) {
+          Text(
+            formatBytes(file.fileSize),
+            fontSize = 13.sp,
+            color = Color.White
+          )
+        }
+      }
     }
   }
 }
@@ -204,13 +217,11 @@ private fun DurationProgress(duration: MutableState<Long>, progress: MutableStat
 private fun ImageView(preview: Bitmap, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
   val windowWidth = LocalWindowWidth()
   val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 1000.dp }
-  val height = remember(preview) { width / (preview.width.toFloat() / preview.height) }
   Image(
     preview.asImageBitmap(),
     contentDescription = stringResource(R.string.video_descr),
     modifier = Modifier
       .width(width)
-      .height(height)
       .combinedClickable(
         onLongClick = { showMenu.value = true },
         onClick = onClick
