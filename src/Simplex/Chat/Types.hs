@@ -1614,6 +1614,11 @@ instance ToJSON RcvFileStatus where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RFS"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RFS"
 
+rcvFileComplete :: RcvFileStatus -> Bool
+rcvFileComplete = \case
+  RFSComplete _ -> True
+  _ -> False
+
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
     connId :: Maybe Int64,
