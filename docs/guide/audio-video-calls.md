@@ -27,6 +27,8 @@ SimpleX Chat uses a preset relay server to hide your IP address from your contac
 6. Enter your ICE server addresses (one per line).
 7. Tap **Save**.
 
+*Please note*: unlike messaging relays (SMP servers), the configuration of WebRTC ICE servers is stored on the current device, not in the chat database. if you transfer the chat database to another device you need to update this configuration.
+
 ## Calls on lock screen
 
 SimpleX Chat only shows an incoming call on your device's lock screen by default. However, you can change this behaviour in the app settings menu. 
@@ -41,9 +43,12 @@ SimpleX Chat only shows an incoming call on your device's lock screen by default
 
 ## Always use relay
 
-Audio and video calls on SimpleX Chat are routed via a relay server by default. Optionally you can disable this and use peer-to-peer (P2P) instead. However, your IP address will be known to your contacts. 
+Audio and video calls on SimpleX Chat are routed via a relay server by default. Optionally you can disable this and use peer-to-peer (P2P) instead, when it is supported by your network. However, your IP address will be known to your contacts. 
 
 1. Open the app. 
 2. Open the app settings menu. 
 3. Tap **Audio and Video calls**. 
 4. Toggle the **Always use relay** switch on to use a relay server or off for P2P.
+
+*Please note*: disabling this option allows P2P calls, but it does not prohibit the use of TURN relays – in case your network providers block P2P connections, the call will still use relays if the are available. To prohibit the use of relays you need to change WebRTC ICE server configuration to only include STUN servers, for example:
+
