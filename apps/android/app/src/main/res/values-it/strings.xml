@@ -1028,8 +1028,8 @@
     <string name="incompatible_database_version">Versione del database incompatibile</string>
     <string name="upgrade_and_open_chat">Aggiorna e apri chat</string>
     <string name="developer_options">ID del database e opzione isolamento del trasporto.</string>
-    <string name="hide_dev_options">"Nascondi: "</string>
-    <string name="show_dev_options">"Mostra: "</string>
+    <string name="hide_dev_options">Nascondi:</string>
+    <string name="show_dev_options">Mostra:</string>
     <string name="show_developer_options">Mostra opzioni sviluppatore</string>
     <string name="xftp_requires_v461">v4.6.1+ necessaria per ricevere via XFTP.</string>
     <string name="downgrade_and_open_chat">Esegui downgrade e apri chat</string>
@@ -1042,4 +1042,11 @@
     <string name="image_will_be_received_when_contact_completes_uploading">L\'immagine verrà ricevuta quando il tuo contatto completerà l\'invio.</string>
     <string name="mtr_error_no_down_migration">la versione del database è più recente di quella dell\'app, ma nessuna migrazione downgrade per: %s</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Il file verrà ricevuto quando il tuo contatto completerà l\'invio.</string>
+    <string name="cancel_file__question">Annullare il trasferimento di file\?</string>
+    <string name="file_transfer_will_be_cancelled_warning">Il trasferimento di file verrà annullato. Se è in corso, verrà interrotto.</string>
+    <string name="unhide_chat_profile">Svela il profilo chat</string>
+    <string name="unhide_profile">Svela profilo</string>
+    <string name="delete_chat_profile">Elimina il profilo di chat</string>
+    <string name="delete_profile">Elimina profilo</string>
+    <string name="profile_password">Password del profilo</string>
 </resources>
