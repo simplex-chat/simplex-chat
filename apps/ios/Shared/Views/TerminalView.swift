@@ -20,6 +20,7 @@ struct TerminalView: View {
     @State var composeState: ComposeState = ComposeState()
     @FocusState private var keyboardVisible: Bool
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var terminalItem: TerminalItem?
 
     var body: some View {
         if authorized {
@@ -38,19 +39,8 @@ struct TerminalView: View {
                 ScrollView {
                     LazyVStack {
                         ForEach(chatModel.terminalItems) { item in
-                            NavigationLink {
-                                let s = item.details
-                                ScrollView {
-                                    Text(s.prefix(maxItemSize))
-                                        .padding()
-                                }
-                                .toolbar {
-                                    ToolbarItem(placement: .navigationBarTrailing) {
-                                        Button { showShareSheet(items: [s]) } label: {
-                                            Image(systemName: "square.and.arrow.up")
-                                        }
-                                    }
-                                }
+                            Button {
+                                terminalItem = item
                             } label: {
                                 HStack {
                                     Text(item.id.formatted(date: .omitted, time: .standard))
@@ -70,6 +60,11 @@ struct TerminalView: View {
                                 }
                             }
                         }
+                        .background(NavigationLink(
+                            isActive: Binding(get: { terminalItem != nil }, set: { _ in }),
+                            destination: terminalItemView,
+                            label: { EmptyView() }
+                        ))
                     }
                 }
 
@@ -95,6 +90,22 @@ struct TerminalView: View {
                 proxy.scrollTo(id, anchor: .bottom)
             }
         }
+    }
+
+    func terminalItemView() -> some View {
+        let s = terminalItem?.details ?? ""
+        return ScrollView {
+            Text(s.prefix(maxItemSize))
+                .padding()
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showShareSheet(items: [s]) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
+        .onDisappear { terminalItem = nil }
     }
     
     func sendMessage() {

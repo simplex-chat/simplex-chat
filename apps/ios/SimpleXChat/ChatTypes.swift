@@ -2215,9 +2215,10 @@ public struct CIFile: Decodable {
     public var fileSize: Int64
     public var filePath: String?
     public var fileStatus: CIFileStatus
+    public var fileProtocol: FileProtocol
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
-        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
+        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus, fileProtocol: .xftp)
     }
 
     public var loaded: Bool {
@@ -2237,16 +2238,35 @@ public struct CIFile: Decodable {
     }
 }
 
-public enum CIFileStatus: String, Decodable {
-    case sndStored = "snd_stored"
-    case sndTransfer = "snd_transfer"
-    case sndComplete = "snd_complete"
-    case sndCancelled = "snd_cancelled"
-    case rcvInvitation = "rcv_invitation"
-    case rcvAccepted = "rcv_accepted"
-    case rcvTransfer = "rcv_transfer"
-    case rcvComplete = "rcv_complete"
-    case rcvCancelled = "rcv_cancelled"
+public enum FileProtocol: String, Decodable {
+    case smp = "smp"
+    case xftp = "xftp"
+}
+
+public enum CIFileStatus: Decodable {
+    case sndStored
+    case sndTransfer(sndProgress: Int64, sndTotal: Int64)
+    case sndComplete
+    case sndCancelled
+    case rcvInvitation
+    case rcvAccepted
+    case rcvTransfer(rcvProgress: Int64, rcvTotal: Int64)
+    case rcvComplete
+    case rcvCancelled
+
+    var id: String {
+        switch self {
+        case .sndStored: return "sndStored"
+        case let .sndTransfer(sndProgress, sndTotal): return "sndTransfer \(sndProgress) \(sndTotal)"
+        case .sndComplete: return "sndComplete"
+        case .sndCancelled: return "sndCancelled"
+        case .rcvInvitation: return "rcvInvitation"
+        case .rcvAccepted: return "rcvAccepted"
+        case let .rcvTransfer(rcvProgress, rcvTotal): return "rcvTransfer \(rcvProgress) \(rcvTotal)"
+        case .rcvComplete: return "rcvComplete"
+        case .rcvCancelled: return "rcvCancelled"
+        }
+    }
 }
 
 public enum MsgContent {

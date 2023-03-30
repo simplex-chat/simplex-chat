@@ -41,6 +41,7 @@ struct GroupLinkView: View {
                                 Text(role.text)
                             }
                         }
+                        .frame(height: 36)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     QRCode(uri: groupLink)

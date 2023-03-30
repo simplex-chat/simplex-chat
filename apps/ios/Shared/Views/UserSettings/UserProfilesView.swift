@@ -13,15 +13,17 @@ struct UserProfilesView: View {
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
     @State private var showDeleteConfirmation = false
-    @State private var userToDelete: UserInfo?
+    @State private var userToDelete: User?
     @State private var alert: UserProfilesAlert?
     @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var searchTextOrPassword = ""
     @State private var selectedUser: User?
     @State private var profileHidden = false
+    @State private var profileAction: UserProfileAction?
+    @State private var actionPassword = ""
 
     private enum UserProfilesAlert: Identifiable {
-        case deleteUser(userInfo: UserInfo, delSMPQueues: Bool)
+        case deleteUser(user: User, delSMPQueues: Bool)
         case cantDeleteLastUser
         case hiddenProfilesNotice
         case muteProfileAlert
@@ -30,12 +32,24 @@ struct UserProfilesView: View {
 
         var id: String {
             switch self {
-            case let .deleteUser(userInfo, delSMPQueues): return "deleteUser \(userInfo.user.userId) \(delSMPQueues)"
+            case let .deleteUser(user, delSMPQueues): return "deleteUser \(user.userId) \(delSMPQueues)"
             case .cantDeleteLastUser: return "cantDeleteLastUser"
             case .hiddenProfilesNotice: return "hiddenProfilesNotice"
             case .muteProfileAlert: return "muteProfileAlert"
             case let .activateUserError(err): return "activateUserError \(err)"
             case let .error(title, _): return "error \(title)"
+            }
+        }
+    }
+
+    private enum UserProfileAction: Identifiable {
+        case deleteUser(user: User, delSMPQueues: Bool)
+        case unhideUser(user: User)
+
+        var id: String {
+            switch self {
+            case let .deleteUser(user, delSMPQueues): return "deleteUser \(user.userId) \(delSMPQueues)"
+            case let .unhideUser(user): return "unhideUser \(user.userId)"
             }
         }
     }
@@ -69,7 +83,7 @@ struct UserProfilesView: View {
                     if let i = indexSet.first {
                         if m.users.count > 1 && (m.users[i].user.hidden || visibleUsersCount > 1) {
                             showDeleteConfirmation = true
-                            userToDelete = users[i]
+                            userToDelete = users[i].user
                         } else {
                             alert = .cantDeleteLastUser
                         }
@@ -114,14 +128,17 @@ struct UserProfilesView: View {
                 withAnimation { profileHidden = false }
             }
         }
+        .sheet(item: $profileAction) { action in
+            profileActionView(action)
+        }
         .alert(item: $alert) { alert in
             switch alert {
-            case let .deleteUser(userInfo, delSMPQueues):
+            case let .deleteUser(user, delSMPQueues):
                 return Alert(
                     title: Text("Delete user profile?"),
                     message: Text("All chats and messages will be deleted - this cannot be undone!"),
                     primaryButton: .destructive(Text("Delete")) {
-                        Task { await removeUser(userInfo, delSMPQueues) }
+                        Task { await removeUser(user, delSMPQueues, viewPwd: userViewPassword(user)) }
                     },
                     secondaryButton: .cancel()
                 )
@@ -179,36 +196,100 @@ struct UserProfilesView: View {
         m.users.filter({ u in !u.user.hidden }).count
     }
 
-    private func userViewPassword(_ user: User) -> String? {
-        user.activeUser || !user.hidden ? nil : searchTextOrPassword
+    private func correctPassword(_ user: User, _ pwd: String) -> Bool {
+        if let ph = user.viewPwdHash {
+            return pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
+        }
+        return false
     }
 
-    private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
-        Button(title, role: .destructive) {
-            if let userInfo = userToDelete {
-                alert = .deleteUser(userInfo: userInfo, delSMPQueues: delSMPQueues)
+    private func userViewPassword(_ user: User) -> String? {
+        !user.hidden ? nil : searchTextOrPassword
+    }
+
+    @ViewBuilder private func profileActionView(_ action: UserProfileAction) -> some View {
+        let passwordValid = actionPassword == actionPassword.trimmingCharacters(in: .whitespaces)
+        let passwordField = PassphraseField(key: $actionPassword, placeholder: "Profile password", valid: passwordValid)
+        let actionEnabled: (User) -> Bool = { user in actionPassword != "" && passwordValid && correctPassword(user, actionPassword) }
+        List {
+            switch action {
+            case let .deleteUser(user, delSMPQueues):
+                actionHeader("Delete user", user)
+                Section {
+                    passwordField
+                    settingsRow("trash") {
+                        Button("Delete user", role: .destructive) {
+                            profileAction = nil
+                            Task { await removeUser(user, delSMPQueues, viewPwd: actionPassword) }
+                        }
+                        .disabled(!actionEnabled(user))
+                    }
+                } footer: {
+                    if actionEnabled(user) {
+                        Text("All chats and messages will be deleted - this cannot be undone!")
+                            .font(.callout)
+                    }
+                }
+            case let .unhideUser(user):
+                actionHeader("Unhide user", user)
+                Section {
+                    passwordField
+                    settingsRow("lock.open") {
+                        Button("Unhide user") {
+                            profileAction = nil
+                            setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: actionPassword) }
+                        }
+                        .disabled(!actionEnabled(user))
+                    }
+                }
             }
         }
     }
 
-    private func removeUser(_ userInfo: UserInfo, _ delSMPQueues: Bool) async {
+    @ViewBuilder func actionHeader(_ title: LocalizedStringKey, _ user: User) -> some View {
+        Text(title)
+            .font(.title)
+            .bold()
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .listRowBackground(Color.clear)
+        Section() {
+            ProfilePreview(profileOf: user).padding(.leading, -8)
+        }
+    }
+
+    private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
+        Button(title, role: .destructive) {
+            if let user = userToDelete {
+                if passwordEntryRequired(user) {
+                    profileAction = .deleteUser(user: user, delSMPQueues: delSMPQueues)
+                } else {
+                    alert = .deleteUser(user: user, delSMPQueues: delSMPQueues)
+                }
+            }
+        }
+    }
+
+    private func passwordEntryRequired(_ user: User) -> Bool {
+        user.hidden && user.activeUser && !correctPassword(user, searchTextOrPassword)
+    }
+
+    private func removeUser(_ user: User, _ delSMPQueues: Bool, viewPwd: String?) async {
         do {
-            let u = userInfo.user
-            if u.activeUser {
+            if user.activeUser {
                 if let newActive = m.users.first(where: { u in !u.user.activeUser && !u.user.hidden }) {
                     try await changeActiveUserAsync_(newActive.user.userId, viewPwd: nil)
-                    try await deleteUser(u)
+                    try await deleteUser()
                 }
             } else {
-                try await deleteUser(u)
+                try await deleteUser()
             }
         } catch let error {
             let a = getErrorAlert(error, "Error deleting user profile")
             alert = .error(title: a.title, error: a.message)
         }
 
-        func deleteUser(_ user: User) async throws {
-            try await apiDeleteUser(user.userId, delSMPQueues, viewPwd: userViewPassword(user))
+        func deleteUser() async throws {
+            try await apiDeleteUser(user.userId, delSMPQueues, viewPwd: viewPwd)
             await MainActor.run { withAnimation { m.removeUser(user) } }
         }
     }
@@ -247,7 +328,11 @@ struct UserProfilesView: View {
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if user.hidden {
                 Button("Unhide") {
-                    setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: userViewPassword(user)) }
+                    if passwordEntryRequired(user) {
+                        profileAction = .unhideUser(user: user)
+                    } else {
+                        setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: searchTextOrPassword) }
+                    }
                 }
                 .tint(.green)
             } else {
@@ -261,12 +346,12 @@ struct UserProfilesView: View {
                     if user.showNtfs {
                         Button("Mute") {
                             setUserPrivacy(user, successAlert: showMuteProfileAlert ? .muteProfileAlert : nil) {
-                                try await apiMuteUser(user.userId, viewPwd: userViewPassword(user))
+                                try await apiMuteUser(user.userId)
                             }
                         }
                     } else {
                         Button("Unmute") {
-                            setUserPrivacy(user) { try await apiUnmuteUser(user.userId, viewPwd: userViewPassword(user)) }
+                            setUserPrivacy(user) { try await apiUnmuteUser(user.userId) }
                         }
                     }
                 }

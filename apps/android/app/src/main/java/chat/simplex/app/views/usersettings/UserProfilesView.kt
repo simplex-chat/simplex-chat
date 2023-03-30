@@ -216,12 +216,12 @@ private fun UserView(
           })
         }
         if (user.showNtfs) {
-          ItemAction(stringResource(R.string.user_mute), Icons.Outlined.Notifications, onClick = {
+          ItemAction(stringResource(R.string.user_mute), Icons.Outlined.NotificationsOff, onClick = {
             showDropdownMenu = false
             muteUser(user)
           })
         } else {
-          ItemAction(stringResource(R.string.user_unmute), Icons.Outlined.NotificationsOff, onClick = {
+          ItemAction(stringResource(R.string.user_unmute), Icons.Outlined.Notifications, onClick = {
             showDropdownMenu = false
             unmuteUser(user)
           })

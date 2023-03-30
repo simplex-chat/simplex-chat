@@ -116,8 +116,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
   CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
-  CRUserPrivacy u -> ttyUserPrefix u $ viewUserPrivacy u
-  CRVersionInfo info -> viewVersionInfo logLevel info
+  CRUserPrivacy u u' -> ttyUserPrefix u $ viewUserPrivacy u u'
+  CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq -> ttyUser u $ viewConnReqInvitation cReq
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
@@ -132,10 +132,13 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
+  CRRcvFileDescrReady _ _ -> []
+  CRRcvFileDescrNotReady _ _ -> []
+  CRRcvFileProgressXFTP _ _ _ _ -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRSndGroupFileCancelled u _ ftm fts -> ttyUser u $ viewSndGroupFileCancelled ftm fts
-  CRRcvFileCancelled u ft -> ttyUser u $ receivingFile_ "cancelled" ft
+  CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
+  CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
   CRUserProfileUpdated u p p' -> ttyUser u $ viewUserProfileUpdated p p'
   CRContactPrefsUpdated {user = u, fromContact, toContact} -> ttyUser u $ viewUserContactPrefsUpdated u fromContact toContact
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
@@ -145,10 +148,13 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
   CRRcvFileStart u ci -> ttyUser u $ receivingFile_' "started" ci
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' "completed" ci
-  CRRcvFileSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
+  CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
+  CRSndFileStartXFTP _ _ _ -> []
+  CRSndFileProgressXFTP _ _ _ _ _ -> []
+  CRSndFileCompleteXFTP _ _ _ -> []
+  CRSndFileCancelledXFTP _ _ _ -> []
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting u _ -> ttyUser u []
@@ -734,10 +740,11 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewUserPrivacy :: User -> [StyledString]
-viewUserPrivacy User {showNtfs, viewPwdHash} =
-  [ "user messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
-    "user profile is " <> if isJust viewPwdHash then "hidden" else "visible"
+viewUserPrivacy :: User -> User -> [StyledString]
+viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', showNtfs, viewPwdHash} =
+  [ (if userId == userId' then "current " else "") <> "user " <> plain n' <> ":",
+    "messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
+    "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
 -- TODO make more generic messages or split
@@ -1026,7 +1033,7 @@ viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts = case filePa
   where
     ttySentFile fPath = ["/f " <> to <> ttyFilePath fPath] <> cancelSending
     cancelSending = case fileStatus of
-      CIFSSndTransfer -> []
+      CIFSSndTransfer _ _ -> []
       _ -> ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
 sentWithTime_ :: CurrentTime -> [StyledString] -> CIMeta c d -> [StyledString]
@@ -1047,8 +1054,8 @@ viewRcvFileSndCancelled :: RcvFileTransfer -> [StyledString]
 viewRcvFileSndCancelled ft@RcvFileTransfer {senderDisplayName = c} =
   [ttyContact c <> " cancelled sending " <> rcvFile ft]
 
-viewSndGroupFileCancelled :: FileTransferMeta -> [SndFileTransfer] -> [StyledString]
-viewSndGroupFileCancelled FileTransferMeta {fileId, fileName} fts =
+viewSndFileCancelled :: FileTransferMeta -> [SndFileTransfer] -> [StyledString]
+viewSndFileCancelled FileTransferMeta {fileId, fileName} fts =
   case filter (\SndFileTransfer {fileStatus = s} -> s /= FSCancelled && s /= FSComplete) fts of
     [] -> ["cancelled sending " <> fileTransferStr fileId fileName]
     ts -> ["cancelled sending " <> fileTransferStr fileId fileName <> " to " <> listRecipients ts]
@@ -1226,6 +1233,8 @@ viewChatError logLevel = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
+    CENoSndFileUser aFileId -> ["error: snd file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
+    CENoRcvFileUser aFileId -> ["error: rcv file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
     CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
     CEUserUnknown -> ["user does not exist or incorrect password"]
@@ -1233,8 +1242,8 @@ viewChatError logLevel = \case
     CECantDeleteActiveUser _ -> ["cannot delete active user"]
     CECantDeleteLastUser _ -> ["cannot delete last user"]
     CECantHideLastUser _ -> ["cannot hide the only not hidden user"]
-    CECantUnmuteHiddenUser _ -> ["cannot unmute hidden user"]
-    CEEmptyUserPassword _ -> ["cannot set empty password"]
+    CEHiddenUserAlwaysMuted _ -> ["hidden user always muted when inactive"]
+    CEEmptyUserPassword _ -> ["user password is required"]
     CEUserAlreadyHidden _ -> ["user is already hidden"]
     CEUserNotHidden _ -> ["user is not hidden"]
     CEChatNotStarted -> ["error: chat not started"]
@@ -1265,6 +1274,7 @@ viewChatError logLevel = \case
     CEFileNotFound f -> ["file not found: " <> plain f]
     CEFileAlreadyReceiving f -> ["file is already being received: " <> plain f]
     CEFileCancelled f -> ["file cancelled: " <> plain f]
+    CEFileAlreadyCancelled fileId -> ["file already cancelled: " <> sShow fileId]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
     CEFileRead f e -> ["cannot read file " <> plain f, sShow e]
     CEFileWrite f e -> ["cannot write file " <> plain f, sShow e]
@@ -1287,6 +1297,7 @@ viewChatError logLevel = \case
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CECommandError e -> ["bad chat command: " <> plain e]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
+    CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEInternalError e -> ["internal chat error: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of

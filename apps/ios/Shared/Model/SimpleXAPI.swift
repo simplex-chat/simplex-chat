@@ -162,16 +162,16 @@ func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }
 
-func apiUnhideUser(_ userId: Int64, viewPwd: String?) async throws -> User {
+func apiUnhideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiUnhideUser(userId: userId, viewPwd: viewPwd))
 }
 
-func apiMuteUser(_ userId: Int64, viewPwd: String?) async throws -> User {
-    try await setUserPrivacy_(.apiMuteUser(userId: userId, viewPwd: viewPwd))
+func apiMuteUser(_ userId: Int64) async throws -> User {
+    try await setUserPrivacy_(.apiMuteUser(userId: userId))
 }
 
-func apiUnmuteUser(_ userId: Int64, viewPwd: String?) async throws -> User {
-    try await setUserPrivacy_(.apiUnmuteUser(userId: userId, viewPwd: viewPwd))
+func apiUnmuteUser(_ userId: Int64) async throws -> User {
+    try await setUserPrivacy_(.apiUnmuteUser(userId: userId))
 }
 
 func setUserPrivacy_(_ cmd: ChatCommand) async throws -> User {
@@ -215,8 +215,20 @@ func apiSuspendChat(timeoutMicroseconds: Int) {
     logger.error("apiSuspendChat error: \(String(describing: r))")
 }
 
+func apiSetTempFolder(tempFolder: String) throws {
+    let r = chatSendCmdSync(.setTempFolder(tempFolder: tempFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiSetFilesFolder(filesFolder: String) throws {
     let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
+    let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg))
     if case .cmdOk = r { return }
     throw r
 }
@@ -972,7 +984,7 @@ func apiGetGroupLink(_ groupId: Int64) throws -> (String, GroupMemberRole)? {
 
 func apiGetVersion() throws -> CoreVersionInfo {
     let r = chatSendCmdSync(.showVersion)
-    if case let .versionInfo(info) = r { return info }
+    if case let .versionInfo(info, _, _) = r { return info }
     throw r
 }
 
@@ -983,16 +995,18 @@ private func currentUserId(_ funcName: String) throws -> Int64 {
     throw RuntimeError("\(funcName): no current user")
 }
 
-func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true) throws {
+func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
-    (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey)
+    (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
     }
+    try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+    try setXFTPConfig(getXFTPCfg())
     try apiSetIncognito(incognito: incognitoGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
@@ -1307,6 +1321,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .rcvFileProgressXFTP(user, aChatItem, _, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileStart(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileComplete(user, aChatItem, _):
@@ -1318,6 +1334,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
+        case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
+            chatItemSimpleUpdate(user, aChatItem)
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)

@@ -18,15 +18,17 @@ public enum ChatCommand {
     case listUsers
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
     case apiHideUser(userId: Int64, viewPwd: String)
-    case apiUnhideUser(userId: Int64, viewPwd: String?)
-    case apiMuteUser(userId: Int64, viewPwd: String?)
-    case apiUnmuteUser(userId: Int64, viewPwd: String?)
+    case apiUnhideUser(userId: Int64, viewPwd: String)
+    case apiMuteUser(userId: Int64)
+    case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
     case startChat(subscribe: Bool, expire: Bool)
     case apiStopChat
     case apiActivateChat
     case apiSuspendChat(timeoutMicroseconds: Int)
+    case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
+    case apiSetXFTPConfig(config: XFTPFileConfig?)
     case setIncognito(incognito: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
@@ -109,15 +111,21 @@ public enum ChatCommand {
             case .listUsers: return "/users"
             case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
-            case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId)\(maybePwd(viewPwd))"
-            case let .apiMuteUser(userId, viewPwd): return "/_mute user \(userId)\(maybePwd(viewPwd))"
-            case let .apiUnmuteUser(userId, viewPwd): return "/_unmute user \(userId)\(maybePwd(viewPwd))"
+            case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
+            case let .apiMuteUser(userId): return "/_mute user \(userId)"
+            case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
             case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
+            case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
+            case let .apiSetXFTPConfig(cfg): if let cfg = cfg {
+                return "/_xftp on \(encodeJSON(cfg))"
+            } else {
+                return "/_xftp off"
+            }
             case let .setIncognito(incognito): return "/incognito \(onOff(incognito))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
@@ -219,7 +227,9 @@ public enum ChatCommand {
             case .apiStopChat: return "apiStopChat"
             case .apiActivateChat: return "apiActivateChat"
             case .apiSuspendChat: return "apiSuspendChat"
+            case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
+            case .apiSetXFTPConfig: return "apiSetXFTPConfig"
             case .setIncognito: return "setIncognito"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
@@ -322,10 +332,6 @@ public enum ChatCommand {
             return .apiHideUser(userId: userId, viewPwd: obfuscate(viewPwd))
         case let .apiUnhideUser(userId, viewPwd):
             return .apiUnhideUser(userId: userId, viewPwd: obfuscate(viewPwd))
-        case let .apiMuteUser(userId, viewPwd):
-            return .apiMuteUser(userId: userId, viewPwd: obfuscate(viewPwd))
-        case let .apiUnmuteUser(userId, viewPwd):
-            return .apiUnmuteUser(userId: userId, viewPwd: obfuscate(viewPwd))
         case let .apiDeleteUser(userId, delSMPQueues, viewPwd):
             return .apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: obfuscate(viewPwd))
         default: return self
@@ -339,9 +345,8 @@ public enum ChatCommand {
     private func obfuscate(_ s: String?) -> String? {
         if let s = s {
             return obfuscate(s)
-        } else {
-            return nil
         }
+        return nil
     }
 
     private func onOff(_ b: Bool) -> String {
@@ -441,6 +446,7 @@ public enum ChatResponse: Decodable, Error {
     case rcvFileAccepted(user: User, chatItem: AChatItem)
     case rcvFileAcceptedSndCancelled(user: User, rcvFileTransfer: RcvFileTransfer)
     case rcvFileStart(user: User, chatItem: AChatItem)
+    case rcvFileProgressXFTP(user: User, chatItem: AChatItem, receivedSize: Int64, totalSize: Int64)
     case rcvFileComplete(user: User, chatItem: AChatItem)
     // sending file events
     case sndFileStart(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
@@ -448,6 +454,7 @@ public enum ChatResponse: Decodable, Error {
     case sndFileCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileRcvCancelled(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndGroupFileCancelled(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
+    case sndFileProgressXFTP(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sentSize: Int64, totalSize: Int64)
     case callInvitation(callInvitation: RcvCallInvitation)
     case callOffer(user: User, contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
     case callAnswer(user: User, contact: Contact, answer: WebRTCSession)
@@ -459,7 +466,7 @@ public enum ChatResponse: Decodable, Error {
     case ntfMessages(user_: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(user: User, connection: PendingContactConnection)
     case contactConnectionDeleted(user: User, connection: PendingContactConnection)
-    case versionInfo(versionInfo: CoreVersionInfo)
+    case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: User?)
     case chatCmdError(user_: User?, chatError: ChatError)
     case chatError(user_: User?, chatError: ChatError)
@@ -548,12 +555,14 @@ public enum ChatResponse: Decodable, Error {
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileAcceptedSndCancelled: return "rcvFileAcceptedSndCancelled"
             case .rcvFileStart: return "rcvFileStart"
+            case .rcvFileProgressXFTP: return "rcvFileProgressXFTP"
             case .rcvFileComplete: return "rcvFileComplete"
             case .sndFileStart: return "sndFileStart"
             case .sndFileComplete: return "sndFileComplete"
             case .sndFileCancelled: return "sndFileCancelled"
             case .sndFileRcvCancelled: return "sndFileRcvCancelled"
             case .sndGroupFileCancelled: return "sndGroupFileCancelled"
+            case .sndFileProgressXFTP: return "sndFileProgressXFTP"
             case .callInvitation: return "callInvitation"
             case .callOffer: return "callOffer"
             case .callAnswer: return "callAnswer"
@@ -657,12 +666,14 @@ public enum ChatResponse: Decodable, Error {
             case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
             case .rcvFileAcceptedSndCancelled: return noDetails
             case let .rcvFileStart(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .rcvFileProgressXFTP(u, chatItem, receivedSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nreceivedSize: \(receivedSize)\ntotalSize: \(totalSize)")
             case let .rcvFileComplete(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .sndFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndGroupFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
+            case let .sndFileProgressXFTP(u, chatItem, _, sentSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nsentSize: \(sentSize)\ntotalSize: \(totalSize)")
             case let .callInvitation(inv): return String(describing: inv)
             case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")
             case let .callAnswer(u, contact, answer): return withUser(u, "contact: \(contact.id)\nanswer: \(String(describing: answer))")
@@ -674,7 +685,7 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
             case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
-            case let .versionInfo(versionInfo): return String(describing: versionInfo)
+            case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
@@ -710,6 +721,10 @@ struct ComposedMessage: Encodable {
     var filePath: String?
     var quotedItemId: Int64?
     var msgContent: MsgContent
+}
+
+public struct XFTPFileConfig: Encodable {
+    var minFileSize: Int64
 }
 
 public struct ArchiveConfig: Encodable {

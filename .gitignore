@@ -75,3 +75,4 @@ website/package-lock.json
 # Ignore test files
 website/.cache
 website/test/stubs-layout-cache/_includes/*.js
+apps/android/app/release

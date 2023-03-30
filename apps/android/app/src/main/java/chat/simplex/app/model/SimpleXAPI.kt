@@ -142,11 +142,14 @@ class AppPreferences(val context: Context) {
   val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
   val initializationVectorDBPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE, null)
   val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null, true)
+  val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
+
+  val xftpSendEnabled = mkBoolPreference(SHARED_PREFS_XFTP_SEND_ENABLED, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -242,9 +245,11 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE = "EncryptedDBPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE = "InitializationVectorDBPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
+    private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
+    private const val SHARED_PREFS_XFTP_SEND_ENABLED = "XFTPSendEnabled"
   }
 }
 
@@ -280,6 +285,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     try {
       if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
+      apiSetTempFolder(getTempFilesDirectory(appContext))
+      apiSetFilesFolder(getAppFilesDirectory(appContext))
+      apiSetXFTPConfig(getXFTPCfg())
       val justStarted = apiStartChat()
       val users = listUsers()
       chatModel.users.clear()
@@ -287,7 +295,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       if (justStarted) {
         chatModel.currentUser.value = user
         chatModel.userCreated.value = true
-        apiSetFilesFolder(getAppFilesDirectory(appContext))
         apiSetIncognito(chatModel.incognito.value)
         getUserChatData()
         chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
@@ -471,10 +478,22 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  private suspend fun apiSetTempFolder(tempFolder: String) {
+    val r = sendCmd(CC.SetTempFolder(tempFolder))
+    if (r is CR.CmdOk) return
+    throw Error("failed to set temp folder: ${r.responseType} ${r.details}")
+  }
+
   private suspend fun apiSetFilesFolder(filesFolder: String) {
     val r = sendCmd(CC.SetFilesFolder(filesFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetXFTPConfig(cfg: XFTPFileConfig?) {
+    val r = sendCmd(CC.ApiSetXFTPConfig(cfg))
+    if (r is CR.CmdOk) return
+    throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetIncognito(incognito: Boolean) {
@@ -1383,6 +1402,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.RcvFileComplete ->
         chatItemSimpleUpdate(r.user, r.chatItem)
+      is CR.RcvFileProgressXFTP ->
+        chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileStart ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileComplete -> {
@@ -1398,6 +1419,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           removeFile(appContext, fileName)
         }
       }
+      is CR.SndFileProgressXFTP ->
+        chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.CallInvitation -> {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation)
       }
@@ -1695,6 +1718,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  fun getXFTPCfg(): XFTPFileConfig? {
+    val prefXFTPSendEnabled = appPrefs.xftpSendEnabled.get()
+    return if (prefXFTPSendEnabled) XFTPFileConfig(minFileSize = 0) else null
+  }
+
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
     val socksProxy = if (useSocksProxy) ":9050" else null
@@ -1774,7 +1802,9 @@ sealed class CC {
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val expire: Boolean): CC()
   class ApiStopChat: CC()
+  class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
+  class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
   class SetIncognito(val incognito: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
@@ -1855,7 +1885,9 @@ sealed class CC {
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
+    is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
+    is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
     is SetIncognito -> "/incognito ${onOff(incognito)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
@@ -1937,7 +1969,9 @@ sealed class CC {
     is ApiDeleteUser -> "apiDeleteUser"
     is StartChat -> "startChat"
     is ApiStopChat -> "apiStopChat"
+    is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
+    is ApiSetXFTPConfig -> "apiSetXFTPConfig"
     is SetIncognito -> "setIncognito"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
@@ -2065,6 +2099,9 @@ sealed class ChatPagination {
 
 @Serializable
 class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgContent: MsgContent)
+
+@Serializable
+class XFTPFileConfig(val minFileSize: Long)
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
@@ -3011,12 +3048,14 @@ sealed class CR {
   @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val user: User, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileStart") class RcvFileStart(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val user: User, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileProgressXFTP") class RcvFileProgressXFTP(val user: User, val chatItem: AChatItem, val receivedSize: Long, val totalSize: Long): CR()
   // sending file events
   @Serializable @SerialName("sndFileStart") class SndFileStart(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
+  @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val user: User, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val user: User, val contact: Contact, val answer: WebRTCSession): CR()
@@ -3024,7 +3063,7 @@ sealed class CR {
   @Serializable @SerialName("callEnded") class CallEnded(val user: User, val contact: Contact): CR()
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: User, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: User, val connection: PendingContactConnection): CR()
-  @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo): CR()
+  @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: User?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: User?, val chatError: ChatError): CR()
@@ -3113,11 +3152,13 @@ sealed class CR {
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
+    is RcvFileProgressXFTP -> "rcvFileProgressXFTP"
     is SndFileCancelled -> "sndFileCancelled"
     is SndFileComplete -> "sndFileComplete"
     is SndFileRcvCancelled -> "sndFileRcvCancelled"
     is SndFileStart -> "sndFileStart"
     is SndGroupFileCancelled -> "sndGroupFileCancelled"
+    is SndFileProgressXFTP -> "sndFileProgressXFTP"
     is CallInvitation -> "callInvitation"
     is CallOffer -> "callOffer"
     is CallAnswer -> "callAnswer"
@@ -3216,11 +3257,13 @@ sealed class CR {
     is RcvFileAccepted -> withUser(user, json.encodeToString(chatItem))
     is RcvFileStart -> withUser(user, json.encodeToString(chatItem))
     is RcvFileComplete -> withUser(user, json.encodeToString(chatItem))
+    is RcvFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nreceivedSize: $receivedSize\ntotalSize: $totalSize")
     is SndFileCancelled -> json.encodeToString(chatItem)
     is SndFileComplete -> withUser(user, json.encodeToString(chatItem))
     is SndFileRcvCancelled -> withUser(user, json.encodeToString(chatItem))
     is SndFileStart -> withUser(user, json.encodeToString(chatItem))
     is SndGroupFileCancelled -> withUser(user, json.encodeToString(chatItem))
+    is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nsentSize: $sentSize\ntotalSize: $totalSize")
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
@@ -3228,7 +3271,9 @@ sealed class CR {
     is CallEnded -> withUser(user, "contact: ${contact.id}")
     is NewContactConnection -> withUser(user, json.encodeToString(connection))
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
-    is VersionInfo -> json.encodeToString(versionInfo)
+    is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
+        "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
+        "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"
     is CmdOk -> withUser(user, noDetails())
     is ChatCmdError -> withUser(user_, chatError.string)
     is ChatRespError -> withUser(user_, chatError.string)

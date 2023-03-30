@@ -854,7 +854,7 @@
     <string name="skip_inviting_button">Přeskočit pozvání členů</string>
     <string name="select_contacts">Vybrat kontakty</string>
     <string name="icon_descr_contact_checked">Zkontrolované kontakty</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> kontakt(y) vybrán(y)</string>
+    <string name="num_contacts_selected">%d kontakt(y) vybrán(y)</string>
     <string name="button_add_members">Pozvat členy</string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBERS</string>
     <string name="group_info_member_you">vy: <xliff:g id="group_info_you">%1$s</xliff:g></string>
@@ -963,7 +963,6 @@
     <string name="your_contact_address">Vaše adresa</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Váš chat profil bude odeslán
 \nvašemu kontaktu</string>
-    <string name="your_chat_profiles_stored_locally">Vaše chat profily jsou uloženy lokálně, pouze ve vašem zařízení.</string>
     <string name="your_chats">Vaše konverzace</string>
     <string name="paste_connection_link_below_to_connect">Do níže uvedeného pole vložte odkaz, který jste obdrželi pro spojení s kontaktem.</string>
     <string name="share_invitation_link">Sdílet pozvánku</string>

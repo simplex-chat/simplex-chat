@@ -381,7 +381,7 @@ final class ChatModel: ObservableObject {
             markChatItemsRead(cInfo)
         }
     }
-   
+
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
         _updateChat(cInfo.id) { chat in
             chat.chatStats.unreadChat = unreadChat
