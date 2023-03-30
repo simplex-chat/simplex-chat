@@ -4,8 +4,7 @@
             "label": "en",
             "name": "English",
             "flag": "/img/flags/en.svg",
-            "enabled": true,
-            "rtl": true
+            "enabled": true
         },
         {
             "label": "de",
@@ -60,6 +59,15 @@
             "name": "Russian",
             "flag": "/img/flags/ru.svg",
             "enabled": false
+        },
+        {
+            "label": "ar",
+            "name": "Arabic",
+            "iconText": "العربية",
+            "textColor": "white",
+            "iconBg": "green",
+            "enabled": true,
+            "rtl": true
         }
     ]
 }

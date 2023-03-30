@@ -97,17 +97,36 @@
         {% if 'blog' not in page.url %}
         <div class="nav-link relative">
             <a href="javascript:void(0);" class="flex items-center justify-end ml-8 lg:ml-5 xl:ml-10 h-6 w-8">
-                <img src="/img/flags/{{ page.url | getlang }}.svg" alt="" srcset="">
+                {% for language in languages.languages %}
+                    {% if language.label == page.url | getlang %}
+                        {% if language.flag %}
+                            <img src="{{ language.flag }}" alt="" srcset="">
+                        {% else %}
+                            <div class="flex items-center justify-center" style="background-color:{{ language.iconBg }}; color:{{ language.textColor }}; width:32px; height:24px">
+                                <p style="text-align:center; font-size:9px">{{ language.iconText }}</p>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
             </a>
             
             <ul class="flex flex-col items-start gap-2 h-fit absolute top-11 -left-10 bg-white dark:bg-black mt-[10px] py-4 min-w-[170px] rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu overflow-auto">
                 {% for language in languages.languages %}
                     {% if language.enabled %}
                         <li>
-                            <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="px-[20px] flex items-center gap-4 flag-anchor">
-                                <img class="h-4" src="{{ language.flag }}" alt="" srcset="">
-                                <p>{{ language.name }}</p>
-                            </a>
+                            {% if language.flag %}
+                                <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="px-[20px] flex items-center gap-4 flag-anchor">
+                                    <img class="h-4" src="{{ language.flag }}" alt="" srcset="">
+                                    <p>{{ language.name }}</p>
+                                </a>
+                            {% else %}
+                                <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="px-[20px] flex items-center gap-4 flag-anchor">
+                                    <div class="flex items-center justify-center" style="background-color:{{ language.iconBg }}; color:{{ language.textColor }}; width:21.33px; height:16px">
+                                        <p style="text-align:center; font-size:7px">{{ language.iconText }}</p>
+                                    </div>
+                                    <p>{{ language.name }}</p>
+                                </a>
+                            {% endif %} 
                         </li>
                     {% endif %}
                 {% endfor %}
