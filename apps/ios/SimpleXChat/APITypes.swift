@@ -459,6 +459,7 @@ public enum ChatResponse: Decodable, Error {
     case sndFileCancelled(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
     case sndFileRcvCancelled(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileProgressXFTP(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sentSize: Int64, totalSize: Int64)
+    case sndFileCompleteXFTP(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
     case callInvitation(callInvitation: RcvCallInvitation)
     case callOffer(user: User, contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
     case callAnswer(user: User, contact: Contact, answer: WebRTCSession)
@@ -568,6 +569,7 @@ public enum ChatResponse: Decodable, Error {
             case .sndFileCancelled: return "sndFileCancelled"
             case .sndFileRcvCancelled: return "sndFileRcvCancelled"
             case .sndFileProgressXFTP: return "sndFileProgressXFTP"
+            case .sndFileCompleteXFTP: return "sndFileCompleteXFTP"
             case .callInvitation: return "callInvitation"
             case .callOffer: return "callOffer"
             case .callAnswer: return "callAnswer"
@@ -680,6 +682,7 @@ public enum ChatResponse: Decodable, Error {
             case let .sndFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
             case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileProgressXFTP(u, chatItem, _, sentSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nsentSize: \(sentSize)\ntotalSize: \(totalSize)")
+            case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .callInvitation(inv): return String(describing: inv)
             case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")
             case let .callAnswer(u, contact, answer): return withUser(u, "contact: \(contact.id)\nanswer: \(String(describing: answer))")
