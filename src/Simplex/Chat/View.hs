@@ -153,7 +153,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP _ _ _ -> []
   CRSndFileProgressXFTP _ _ _ _ _ -> []
-  CRSndFileCompleteXFTP _ _ _ -> []
+  CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadedFile ci
   CRSndFileCancelledXFTP _ _ _ -> []
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
@@ -1063,6 +1063,13 @@ viewSndFileCancelled FileTransferMeta {fileId, fileName} fts =
 sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
+
+uploadedFile :: AChatItem -> [StyledString]
+uploadedFile (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
+  ["uploaded " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
+uploadedFile (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
+  ["uploaded " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
+uploadedFile _ = ["uploaded file"] -- shouldn't happen
 
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
