@@ -579,24 +579,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           stopListening = true
       }
   }
-  /*val unmute = {
-    var usedCallback = false
-    for (i in listState.firstVisibleItemIndex until listState.firstVisibleItemIndex + listState.layoutInfo.visibleItemsInfo.size) {
-      val item = reversedChatItems.getOrNull(i)
-      if (item?.content?.msgContent is MsgContent.MCVideo) {
-        usedCallback = VideoPlayer.enableSound(true, item.file?.fileName ?: continue)
-        break
-      }
-    }
-    usedCallback
-  }*/
   DisposableEffectOnGone(
-    /*always = {
-      SimplexApp.context.chatModel.onVolumeButtonPress = SimplexApp.context.chatModel.onVolumeButtonPress + unmute
-    },
-    whenDispose = {
-      SimplexApp.context.chatModel.onVolumeButtonPress = SimplexApp.context.chatModel.onVolumeButtonPress - unmute
-    },*/
     whenGone = {
       VideoPlayer.releaseAll()
     }

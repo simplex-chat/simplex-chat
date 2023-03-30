@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.*
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
-import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -22,7 +21,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
@@ -62,14 +60,6 @@ class MainActivity: FragmentActivity() {
     }
   }
   private val vm by viewModels<SimplexViewModel>()
-
-  override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-    if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-      return if (vm.chatModel.onVolumeButtonPress.asReversed().any { it() }) true else super.onKeyDown(keyCode, event)
-    } else {
-      return super.onKeyDown(keyCode, event)
-    }
-  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)

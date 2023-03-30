@@ -120,9 +120,6 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  // Handler for hardware volume button press. Useful for reacting on it for un-muting a video
-  var onVolumeButtonPress: List<() -> Boolean> = emptyList()
-
   fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
