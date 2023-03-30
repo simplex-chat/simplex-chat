@@ -191,6 +191,8 @@
   <string name="delete_member_message__question">Delete member message?</string>
   <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
   <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
+  <string name="cancel_file__question">Cancel file transfer?</string>
+  <string name="file_transfer_will_be_cancelled_warning">File transfer will be cancelled. If it\'s in progress it will be stoppped.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 

@@ -1726,6 +1726,18 @@ class CIFile(
     is CIFileStatus.RcvComplete -> true
   }
 
+  val cancellable: Boolean = when (fileStatus) {
+    is CIFileStatus.SndStored -> fileProtocol != FileProtocol.XFTP // TODO true - enable when XFTP send supports cancel
+    is CIFileStatus.SndTransfer -> fileProtocol != FileProtocol.XFTP // TODO true
+    is CIFileStatus.SndComplete -> false
+    is CIFileStatus.SndCancelled -> false
+    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvAccepted -> true
+    is CIFileStatus.RcvTransfer -> true
+    is CIFileStatus.RcvCancelled -> false
+    is CIFileStatus.RcvComplete -> false
+  }
+
   companion object {
     fun getSample(
       fileId: Long = 1,
