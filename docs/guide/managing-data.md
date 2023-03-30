@@ -9,7 +9,7 @@ Here you can choose to delete messages from your local chat database after a set
 To open your chat database settings:
 
 - [Open the app settings](#accessing-app-settings).
-- Tap on "Database passhprase & export" button.
+- Tap on "Database passphrase & export" button.
 
 ### Database passphrase
 

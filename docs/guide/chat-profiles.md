@@ -4,7 +4,7 @@
 
 SimpleX Chat allows creating as many chat profiles as you like. Same as the first profile, they are only stored locally on your device.
 
-To create an additiona SimpleX Chat profile:
+To create an additional SimpleX Chat profile:
 
 - [Open the app settings](#accessing-app-settings).
 - Select "Your chat profiles".
@@ -68,7 +68,7 @@ To import your SimpleX Chat data in the app on another device:
 
 - Transfer the database file to this device.
 - Download SimpleX and install it on your new device.
-- Create chat profile by following the steps in [Create yout first chat profile](#create-yout-first-chat-profile).
+- Create chat profile by following the steps in [Create your first chat profile](#create-yout-first-chat-profile).
 - Tap on your user profile image in the upper right-hand corner of the screen to open Settings.
 - Select "Database passphrase & export".
 - Disable chat by tapping the switch on "Chat is running".

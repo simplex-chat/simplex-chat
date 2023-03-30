@@ -11,7 +11,7 @@ The first messaging platform that has no user identifiers of any kind — 100% p
 - [Chat profiles](./chat-profiles.md)
 - [Managing data](./managing-data.md)
 - [Audio & video calls](./audio-video-calls.md)
-- [Privact & security](./privacy-security.md)
+- [Privacy & security](./privacy-security.md)
 - [App settings](./app-settings.md)
 
 ## Quick start
