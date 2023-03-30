@@ -936,7 +936,7 @@ testXFTPFileTransfer =
       bob ##> "/fr 1 ./tests/tmp"
       bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
       -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
-      alice <## "completed sending file 1 (test.pdf) to bob"
+      alice <## "uploaded file 1 (test.pdf) for bob"
       bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
@@ -962,8 +962,8 @@ testXFTPGroupFileTransfer =
             cath <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
             cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
         ]
-      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
-      -- alice <## "completed sending file 1 (test.pdf) to bob" -- TODO "completed uploading" ?
+      -- alice <## "started sending file 1 (test.pdf) to #team" -- TODO "started uploading" ?
+      alice <## "uploaded file 1 (test.pdf) for #team"
 
       bob ##> "/fr 1 ./tests/tmp"
       bob
@@ -1006,7 +1006,7 @@ testXFTPWithChangedConfig =
       bob ##> "/fr 1 ./tests/tmp"
       bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
       -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
-      alice <## "completed sending file 1 (test.pdf) to bob"
+      alice <## "uploaded file 1 (test.pdf) for bob"
       bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
@@ -1045,7 +1045,7 @@ testXFTPWithRelativePaths =
       bob ##> "/fr 1"
       bob <## "saving file 1 from alice to test.pdf"
       -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
-      alice <## "completed sending file 1 (test.pdf) to bob"
+      alice <## "uploaded file 1 (test.pdf) for bob"
       bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
@@ -1067,7 +1067,7 @@ testXFTPContinueRcv tmp = do
         bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
         bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
         -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
-        alice <## "completed sending file 1 (test.pdf) to bob"
+        alice <## "uploaded file 1 (test.pdf) for bob"
 
   -- server is down - file is not received
   withTestChatCfg tmp cfg "bob" $ \bob -> do
