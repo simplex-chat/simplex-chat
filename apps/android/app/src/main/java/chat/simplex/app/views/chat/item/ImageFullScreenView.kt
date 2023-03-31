@@ -207,7 +207,7 @@ private fun VideoView(modifier: Modifier, uri: Uri, defaultPreview: Bitmap, curr
           setShowSubtitleButton(false)
           setShowVrButton(false)
           controllerAutoShow = false
-          findViewById<View>(com.google.android.exoplayer2.R.id.exo_controls_background).setBackgroundColor(Color.Black.copy(alpha = 0.4f).toArgb())
+          findViewById<View>(com.google.android.exoplayer2.R.id.exo_controls_background).setBackgroundColor(Color.Black.copy(alpha = 0.3f).toArgb())
           findViewById<View>(com.google.android.exoplayer2.R.id.exo_settings).isVisible = false
           this.player = player.player
         }
