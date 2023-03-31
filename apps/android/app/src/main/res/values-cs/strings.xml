@@ -1042,4 +1042,11 @@
     <string name="show_dev_options">Zobrazit:</string>
     <string name="developer_options">ID databáze a možnost Izolace přenosu.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Soubor bude přijat, jakmile váš kontakt dokončí nahrávání.</string>
+    <string name="file_transfer_will_be_cancelled_warning">Přenos souboru bude zrušen. Pokud probíhá, bude zastaven.</string>
+    <string name="delete_chat_profile">Smazat chat profil</string>
+    <string name="delete_profile">Smazat profil</string>
+    <string name="profile_password">Heslo profilu</string>
+    <string name="unhide_chat_profile">Odkrýt chat profil</string>
+    <string name="unhide_profile">Odkrýt profil</string>
+    <string name="cancel_file__question">Zrušit přenos souboru\?</string>
 </resources>
