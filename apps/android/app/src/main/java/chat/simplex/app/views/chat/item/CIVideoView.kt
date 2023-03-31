@@ -3,8 +3,10 @@ package chat.simplex.app.views.chat.item
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -15,6 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
@@ -252,6 +255,30 @@ private fun progressIndicator() {
 }
 
 @Composable
+private fun fileIcon(icon: ImageVector, @StringRes stringId: Int) {
+  Icon(
+    icon,
+    stringResource(stringId),
+    Modifier.fillMaxSize(),
+    tint = Color.White
+  )
+}
+
+@Composable
+private fun progressCircle(progress: Long, total: Long) {
+  val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
+  val strokeWidth = with(LocalDensity.current) { 2.dp.toPx() }
+  val strokeColor = Color.White
+  Surface(
+    Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
+    color = Color.Transparent,
+    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+  ) {
+    Box(Modifier.size(16.dp))
+  }
+}
+
+@Composable
 private fun loadingIndicator(file: CIFile?) {
   if (file != null) {
     Box(
@@ -267,30 +294,21 @@ private fun loadingIndicator(file: CIFile?) {
             FileProtocol.SMP -> {}
           }
         is CIFileStatus.SndTransfer ->
-          progressIndicator()
-        is CIFileStatus.SndComplete ->
-          Icon(
-            Icons.Filled.Check,
-            stringResource(R.string.icon_descr_video_snd_complete),
-            Modifier.fillMaxSize(),
-            tint = Color.White
-          )
-        is CIFileStatus.RcvAccepted ->
-          Icon(
-            Icons.Outlined.MoreHoriz,
-            stringResource(R.string.icon_descr_waiting_for_video),
-            Modifier.fillMaxSize(),
-            tint = Color.White
-          )
+          when (file.fileProtocol) {
+            FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
+            FileProtocol.SMP -> progressIndicator()
+          }
+        is CIFileStatus.SndComplete -> fileIcon(Icons.Filled.Check, R.string.icon_descr_video_snd_complete)
+        is CIFileStatus.SndCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
+        is CIFileStatus.RcvInvitation -> fileIcon(Icons.Outlined.ArrowDownward, R.string.icon_descr_video_asked_to_receive)
+        is CIFileStatus.RcvAccepted -> fileIcon(Icons.Outlined.MoreHoriz, R.string.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
-          progressIndicator()
-        is CIFileStatus.RcvInvitation ->
-          Icon(
-            Icons.Outlined.ArrowDownward,
-            stringResource(R.string.icon_descr_video_asked_to_receive),
-            Modifier.fillMaxSize(),
-            tint = Color.White
-          )
+          if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
+            progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
+          } else {
+            progressIndicator()
+          }
+        is CIFileStatus.RcvCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
         else -> {}
       }
     }

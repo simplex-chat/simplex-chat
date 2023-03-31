@@ -115,7 +115,7 @@ fun CIFileView(
     CircularProgressIndicator(
       Modifier.size(32.dp),
       color = if (isInDarkTheme()) FileDark else FileLight,
-      strokeWidth = 4.dp
+      strokeWidth = 3.dp
     )
   }
 
