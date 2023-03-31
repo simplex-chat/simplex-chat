@@ -2311,8 +2311,10 @@ processAgentMsgSndFile _corrId aFileId msg =
                   (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
                     ms <- withStore' $ \db -> getGroupMembers db user g
                     forM_ (zip rfds $ memberFTs ms) $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
-                    -- TODO update database status and send event to view CRSndFileCompleteXFTP
-                    pure ()
+                    ci' <- withStore $ \db -> do
+                      liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
+                      getChatItemByFileId db user fileId
+                    toView $ CRSndFileCompleteXFTP user ci' ft
                     where
                       memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                       memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -2328,6 +2330,11 @@ processAgentMsgSndFile _corrId aFileId msg =
                         void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
                   _ -> pure ()
               _ -> pure () -- TODO error?
+        SFERR e -> do
+          -- update chat item status
+          -- send status to view
+          -- agentXFTPDeleteSndFile
+          throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
       where
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
@@ -2378,11 +2385,11 @@ processAgentMsgRcvFile _corrId aFileId msg =
                   getChatItemByFileId db user fileId
                 agentXFTPDeleteRcvFile user aFileId fileId
                 toView $ CRRcvFileComplete user ci
-        RFERR _e -> do
+        RFERR e -> do
           -- update chat item status
           -- send status to view
           agentXFTPDeleteRcvFile user aFileId fileId
-          pure ()
+          throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn user _ agentConnId END =
@@ -3286,13 +3293,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     checkSndInlineFTComplete :: Connection -> AgentMsgId -> m ()
     checkSndInlineFTComplete conn agentMsgId = do
-      ft_ <- withStore' $ \db -> getSndFTViaMsgDelivery db user conn agentMsgId
-      forM_ ft_ $ \ft@SndFileTransfer {fileId} -> do
-        ci <- withStore $ \db -> do
-          liftIO $ updateSndFileStatus db ft FSComplete
-          liftIO $ deleteSndFileChunks db ft
+      sft_ <- withStore' $ \db -> getSndFTViaMsgDelivery db user conn agentMsgId
+      forM_ sft_ $ \sft@SndFileTransfer {fileId} -> do
+        ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> do
+          liftIO $ updateSndFileStatus db sft FSComplete
+          liftIO $ deleteSndFileChunks db sft
           updateDirectCIFileStatus db user fileId CIFSSndComplete
-        toView $ CRSndFileComplete user ci ft
+        case file of
+          Just CIFile {fileProtocol = FPXFTP} -> do
+            ft <- withStore $ \db -> getFileTransferMeta db user fileId
+            toView $ CRSndFileCompleteXFTP user ci ft
+          _ -> toView $ CRSndFileComplete user ci sft
 
     allowSendInline :: Integer -> Maybe InlineFileMode -> m Bool
     allowSendInline fileSize = \case

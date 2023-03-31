@@ -1,6 +1,22 @@
 # Blog
 
-Feb 4, 2023 [SimpleX Chat v4.5 released](./20230103-simplex-chat-v4.4-disappearing-messages.md)
+Mar 28, 2023 [SimpleX Chat v4.6 released](./20230328-simplex-chat-v4-6-hidden-profiles.md)
+
+- ARMv7a and Android 8+ support!
+- hidden chat profiles
+- group/community moderation
+- group welcome message
+- improved audio/video calls
+- reduced battery usage
+- SMP server monitoring: status bot and page
+
+Also, we added Chinese and Spanish language interface, thanks to our users and Weblate!
+
+Mar 1, 2023 [SimpleX File Transfer Protocol](./20230301-simplex-file-transfer-protocol.md)
+
+A new protocol for sending large files efficiently, privately and securely. It will be soon integrated into SimpleX Chat apps.
+
+Feb 4, 2023 [SimpleX Chat v4.5 released](./20230204-simplex-chat-v4-5-user-chat-profiles.md)
 
 - multiple chat profiles.
 - message draft.
@@ -8,7 +24,7 @@ Feb 4, 2023 [SimpleX Chat v4.5 released](./20230103-simplex-chat-v4.4-disappeari
 - reduced battery usage.
 - private filenames.
 
-Also, we added [Italian language interface](#french-language-interface), thanks to our users and Weblate!
+Also, we added Italian language interface, thanks to our users and Weblate!
 
 Jan 3, 2023 [SimpleX Chat v4.4 released](./20230103-simplex-chat-v4.4-disappearing-messages.md)
 
@@ -17,7 +33,7 @@ Jan 3, 2023 [SimpleX Chat v4.4 released](./20230103-simplex-chat-v4.4-disappeari
 - connection security verification.
 - animated images and stickers – now on iOS too.
 
-Also, we added [French language interface](#french-language-interface), thanks to our users and Weblate!
+Also, we added French language interface, thanks to our users and Weblate!
 
 Dec 6, 2022 [SimpleX Chat reviews and v4.3 released](./20221206-simplex-chat-v4.3-voice-messages.md)
 

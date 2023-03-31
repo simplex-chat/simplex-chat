@@ -134,7 +134,10 @@ mobileChatOpts dbFilePrefix dbKey =
 
 defaultMobileConfig :: ChatConfig
 defaultMobileConfig =
-  defaultChatConfig {confirmMigrations = MCYesUp}
+  defaultChatConfig
+    { confirmMigrations = MCYesUp,
+      logLevel = CLLError
+    }
 
 type CJSONString = CString
 

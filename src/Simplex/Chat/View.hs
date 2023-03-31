@@ -153,7 +153,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP _ _ _ -> []
   CRSndFileProgressXFTP _ _ _ _ _ -> []
-  CRSndFileCompleteXFTP _ _ _ -> []
+  CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadedFile ci
   CRSndFileCancelledXFTP _ _ _ -> []
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
@@ -1064,6 +1064,13 @@ sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
+uploadedFile :: AChatItem -> [StyledString]
+uploadedFile (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
+  ["uploaded " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
+uploadedFile (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
+  ["uploaded " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
+uploadedFile _ = ["uploaded file"] -- shouldn't happen
+
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
@@ -1284,6 +1291,8 @@ viewChatError logLevel = \case
     CEFileImageType _ -> ["image type must be jpg, send as a file using " <> highlight' "/f"]
     CEFileImageSize _ -> ["max image size: " <> sShow maxImageSize <> " bytes, resize it or send as a file using " <> highlight' "/f"]
     CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
+    CEXFTPRcvFile fileId aFileId e -> ["error receiving XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
+    CEXFTPSndFile fileId aFileId e -> ["error sending XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
