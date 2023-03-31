@@ -104,7 +104,7 @@
     <string name="group_member_status_connected">연결됨</string>
     <string name="group_member_status_connecting">연결 중</string>
     <string name="group_member_status_accepted">연결 중 (수락됨)</string>
-    <string name="group_member_status_announced">연결 중 (초대됨)</string>
+    <string name="group_member_status_announced">연결 중 (알림)</string>
     <string name="group_member_status_intro_invitation">연결 중(초대 시작)</string>
     <string name="group_member_status_creator">제작자</string>
     <string name="invite_prohibited">상대를 초대할 수 없습니다</string>
@@ -168,7 +168,7 @@
     <string name="network_session_mode_user_description">별도로 분리된 TCP 연결(그리고 SOCKS 자격 증명)이 <b>각각의 채팅 프로필</b>에 사용될 거예요.</string>
     <string name="network_session_mode_entity_description">별도로 분리된 TCP 연결(및 SOCKS 자격 증명)이 <b>각각의 연락처 및 그룹 구성원</b>에게 사용될 거예요.
 \n<b>참고</b>: 연결이 많은 경우 배터리 및 트래픽 소비가 엄청 높을 수 있고 일부 연결이 실패할 수 있어요.</string>
-    <string name="icon_descr_asked_to_receive">이미지 수신 요청</string>
+    <string name="icon_descr_asked_to_receive">이미지 수신 요청됨</string>
     <string name="v4_6_audio_video_calls">음성 및 영상 전화</string>
     <string name="audio_call_no_encryption">음성 전화 (종단간 암호화 X)</string>
     <string name="auth_unavailable">인증할 수 없어요</string>
@@ -199,7 +199,7 @@
     <string name="display_name_connecting">연결 중…</string>
     <string name="icon_descr_close_button">닫기 버튼</string>
     <string name="connect_button">연결</string>
-    <string name="group_member_status_introduced">전화 연결 중 (도입)</string>
+    <string name="group_member_status_introduced">연결 중 (도입)</string>
     <string name="connection_error">연결 오류</string>
     <string name="connection_local_display_name">연결 <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
     <string name="connect_via_contact_link">링크를 통해 연결하겠습니까\?</string>
@@ -475,4 +475,80 @@
     <string name="error_saving_group_profile">그룹 프로필 저장 오류</string>
     <string name="feature_offered_item">%s 제안</string>
     <string name="feature_offered_item_with_param">%s 제안: %2s</string>
+    <string name="icon_descr_instant_notifications">즉시 알림</string>
+    <string name="hide_notification">숨김</string>
+    <string name="hide_verb">숨기기</string>
+    <string name="for_everybody">모두에게</string>
+    <string name="icon_descr_edited">수정됨</string>
+    <string name="icon_descr_image_snd_complete">이미지 보냄</string>
+    <string name="full_name__field">이름 :</string>
+    <string name="hide_profile">프로필 숨기기</string>
+    <string name="icon_descr_flip_camera">카메라 전환</string>
+    <string name="icon_descr_hang_up">전화 끊기</string>
+    <string name="file_with_path">파일 : %s</string>
+    <string name="group_invitation_tap_to_join">탭하여 참여</string>
+    <string name="group_invitation_tap_to_join_incognito">탭하여 익명으로 참여</string>
+    <string name="group_member_status_left">나감</string>
+    <string name="group_member_role_member">멤버</string>
+    <string name="group_member_role_owner">소유자</string>
+    <string name="group_member_status_group_deleted">그룹 삭제됨</string>
+    <string name="group_member_status_invited">초대됨</string>
+    <string name="group_member_status_removed">삭제됨</string>
+    <string name="icon_descr_expand_role">역할 선택지 펼치기</string>
+    <string name="files_and_media_section">파일 &amp; 미디어</string>
+    <string name="group_invitation_item_description">그룹으로 초대 <xliff:g id="group_name">%1$s</xliff:g></string>
+    <string name="group_link">그룹 링크</string>
+    <string name="group_welcome_title">환영 메시지</string>
+    <string name="group_display_name_field">보여지는 그룹 이름</string>
+    <string name="group_full_name_field">그룹 이름 :</string>
+    <string name="group_is_decentralized">그룹은 완전히 탈중앙화되어 있으며 구성원만 그룹을 볼 수 있어요.</string>
+    <string name="group_unsupported_incognito_main_profile_sent">여기에서는 시크릿 모드가 지원되지 않아요. 기본 프로필이 그룹 멤버들에게 전송될 거예요.</string>
+    <string name="group_main_profile_sent">프로필이 그룹 구성원에게 전송될 거예요.</string>
+    <string name="group_profile_is_stored_on_members_devices">그룹 프로필은 서버가 아닌 멤버들의 기기에 저장되어요.</string>
+    <string name="group_preferences">그룹 설정</string>
+    <string name="group_members_can_send_disappearing">그룹 구성원은 자동 삭제되는 메시지를 보낼 수 있어요.</string>
+    <string name="group_members_can_send_dms">그룹 멤버들끼리 1:1 채팅을 할 수 있어요.</string>
+    <string name="icon_descr_add_members">멤버 초대하기</string>
+    <string name="icon_descr_group_inactive">비활성 그룹</string>
+    <string name="group_member_role_observer">관찰자</string>
+    <string name="group_info_member_you">나 : <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> 멤버</string>
+    <string name="file_saved">파일 저장됨</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">대화 상대가 업로드를 완료하면 파일이 저장되어요.</string>
+    <string name="file_will_be_received_when_contact_is_online">대화 상대가 온라인 상태일 때 파일이 전송되어요. 대화 상대가 온라인이 되기를 기다리거나 나중에 다시 확인해 주세요!</string>
+    <string name="icon_descr_record_voice_message">음성 메시지 녹화하기</string>
+    <string name="from_gallery_button">갤러리에서</string>
+    <string name="icon_descr_profile_image_placeholder">프로필 이미지 플레이스 홀더</string>
+    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> 주소</string>
+    <string name="how_to">설명서</string>
+    <string name="how_to_use_your_servers">내 서버 사용법</string>
+    <string name="how_to_use_markdown">마크다운 사용법</string>
+    <string name="how_simplex_works"><xliff:g id="appName">SimpleX</xliff:g> 작동 방식</string>
+    <string name="group_invitation_expired">그룹 초대가 만료되었어요.</string>
+    <string name="group_members_can_delete">그룹 멤버는 보낸 메시지를 영구 삭제할 수 있어요.</string>
+    <string name="group_members_can_send_voice">그룹 멤버는 음성 메시지를 보낼 수 있어요.</string>
+    <string name="hidden_profile_password">숨긴 프로필 비밀번호</string>
+    <string name="full_name_optional__prompt">이름 (선택 사항)</string>
+    <string name="how_it_works">작동 방식</string>
+    <string name="hide_dev_options">숨기기 :</string>
+    <string name="cancel_file__question">파일 전송을 취소할까요\?</string>
+    <string name="file_transfer_will_be_cancelled_warning">파일 전송이 취소될 거예요. 이미 전송이 시작되었다면 중지될 거예요.</string>
+    <string name="icon_descr_sent_msg_status_sent">보냄</string>
+    <string name="group_preview_join_as">%s(으)로 참여</string>
+    <string name="group_preview_you_are_invited">그룹에 초대되었어요.</string>
+    <string name="icon_descr_received_msg_status_unread">잃지 않음</string>
+    <string name="icon_descr_sent_msg_status_send_failed">보내기 실패</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">비인증 전송</string>
+    <string name="icon_descr_help">도움말</string>
+    <string name="first_platform_without_user_ids">개인을 식별할 수 있는 어떠한 정보(임의의 숫자 포함)도 없는 첫 번째 플랫폼. 단순히 약속이 아니라 프로그램 설계상 완전한 익명성을 제공해요.</string>
+    <string name="icon_descr_call_rejected">거절된 전화</string>
+    <string name="icon_descr_call_pending_sent">대기 중인 전화</string>
+    <string name="icon_descr_call_missed">부재중 전화</string>
+    <string name="icon_descr_file">파일</string>
+    <string name="icon_descr_more_button">더 보기</string>
+    <string name="icon_descr_send_message">메시지 보내기</string>
+    <string name="icon_descr_server_status_error">오류</string>
+    <string name="how_to_use_simplex_chat">사용법</string>
+    <string name="icon_descr_email">이메일</string>
+    <string name="icon_descr_server_status_pending">대기 중</string>
 </resources>
