@@ -1,5 +1,5 @@
 /*
-! tailwindcss v3.3.0 | MIT License | https://tailwindcss.com
+! tailwindcss v3.3.1 | MIT License | https://tailwindcss.com
 */
 
 /*
@@ -634,10 +634,6 @@ video {
   top: 52%;
 }
 
-.top-\[55\%\] {
-  top: 55%;
-}
-
 .top-\[66px\] {
   top: 66px;
 }
@@ -815,10 +811,6 @@ video {
   margin-bottom: 80px;
 }
 
-.ml-8 {
-  margin-left: 2rem;
-}
-
 .ml-\[-15px\] {
   margin-left: -15px;
 }
@@ -829,10 +821,6 @@ video {
 
 .mr-\[-4px\] {
   margin-right: -4px;
-}
-
-.mr-auto {
-  margin-right: auto;
 }
 
 .mt-1 {
@@ -1226,6 +1214,10 @@ video {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
+.flex-row {
+  flex-direction: row;
+}
+
 .flex-col {
   flex-direction: column;
 }
@@ -1378,16 +1370,6 @@ video {
 .rounded-b-\[20px\] {
   border-bottom-right-radius: 20px;
   border-bottom-left-radius: 20px;
-}
-
-.rounded-l-\[34px\] {
-  border-top-left-radius: 34px;
-  border-bottom-left-radius: 34px;
-}
-
-.rounded-r-\[34px\] {
-  border-top-right-radius: 34px;
-  border-bottom-right-radius: 34px;
 }
 
 .border {
@@ -2033,12 +2015,60 @@ video {
   outline-offset: 2px;
 }
 
+:is([dir="ltr"] .ltr\:ml-8) {
+  margin-left: 2rem;
+}
+
+:is([dir="ltr"] .ltr\:mr-auto) {
+  margin-right: auto;
+}
+
+:is([dir="ltr"] .ltr\:\!hidden) {
+  display: none !important;
+}
+
+:is([dir="ltr"] .ltr\:rounded-l-\[34px\]) {
+  border-top-left-radius: 34px;
+  border-bottom-left-radius: 34px;
+}
+
+:is([dir="ltr"] .ltr\:rounded-r-\[34px\]) {
+  border-top-right-radius: 34px;
+  border-bottom-right-radius: 34px;
+}
+
+:is([dir="rtl"] .rtl\:ml-auto) {
+  margin-left: auto;
+}
+
+:is([dir="rtl"] .rtl\:mr-8) {
+  margin-right: 2rem;
+}
+
+:is([dir="rtl"] .rtl\:\!hidden) {
+  display: none !important;
+}
+
+:is([dir="rtl"] .rtl\:rounded-l-\[34px\]) {
+  border-top-left-radius: 34px;
+  border-bottom-left-radius: 34px;
+}
+
+:is([dir="rtl"] .rtl\:rounded-r-\[34px\]) {
+  border-top-right-radius: 34px;
+  border-bottom-right-radius: 34px;
+}
+
 :is(.dark .dark\:block) {
   display: block;
 }
 
 :is(.dark .dark\:inline-block) {
   display: inline-block;
+}
+
+:is(.dark .dark\:\!hidden) {
+  display: none !important;
 }
 
 :is(.dark .dark\:hidden) {
@@ -2408,7 +2438,19 @@ video {
     line-height: 63px;
   }
 
+  :is([dir="rtl"] .md\:rtl\:inline-block) {
+    display: inline-block;
+  }
+
+  :is([dir="rtl"] .md\:rtl\:text-right) {
+    text-align: right;
+  }
+
   :is(.dark .dark\:md\:inline-block) {
+    display: inline-block;
+  }
+
+  :is(.dark .md\:dark\:inline-block) {
     display: inline-block;
   }
 }
@@ -2444,14 +2486,6 @@ video {
 
   .lg\:mb-\[90px\] {
     margin-bottom: 90px;
-  }
-
-  .lg\:ml-4 {
-    margin-left: 1rem;
-  }
-
-  .lg\:ml-5 {
-    margin-left: 1.25rem;
   }
 
   .lg\:mt-0 {
@@ -2610,10 +2644,6 @@ video {
     padding-top: 0px;
   }
 
-  .lg\:text-left {
-    text-align: left;
-  }
-
   .lg\:text-center {
     text-align: center;
   }
@@ -2651,6 +2681,30 @@ video {
     --tw-shadow: 0 0 3px rgb(60 72 88 / 15%);
     --tw-shadow-colored: 0 0 3px var(--tw-shadow-color);
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+  }
+
+  :is([dir="ltr"] .ltr\:lg\:ml-4) {
+    margin-left: 1rem;
+  }
+
+  :is([dir="ltr"] .ltr\:lg\:ml-5) {
+    margin-left: 1.25rem;
+  }
+
+  :is([dir="ltr"] .lg\:ltr\:text-left) {
+    text-align: left;
+  }
+
+  :is([dir="rtl"] .rtl\:lg\:mr-4) {
+    margin-right: 1rem;
+  }
+
+  :is([dir="rtl"] .rtl\:lg\:mr-5) {
+    margin-right: 1.25rem;
+  }
+
+  :is([dir="rtl"] .lg\:rtl\:text-right) {
+    text-align: right;
   }
 
   :is(.dark .dark\:lg\:flex) {
@@ -2694,14 +2748,6 @@ video {
 
   .xl\:mb-\[25px\] {
     margin-bottom: 25px;
-  }
-
-  .xl\:ml-10 {
-    margin-left: 2.5rem;
-  }
-
-  .xl\:ml-8 {
-    margin-left: 2rem;
   }
 
   .xl\:block {
@@ -2790,5 +2836,25 @@ video {
 
   .xl\:text-\[16px\] {
     font-size: 16px;
+  }
+
+  :is([dir="ltr"] .ltr\:xl\:ml-10) {
+    margin-left: 2.5rem;
+  }
+
+  :is([dir="ltr"] .ltr\:xl\:ml-8) {
+    margin-left: 2rem;
+  }
+
+  :is([dir="rtl"] .rtl\:xl\:mr-10) {
+    margin-right: 2.5rem;
+  }
+
+  :is([dir="rtl"] .rtl\:xl\:mr-8) {
+    margin-right: 2rem;
+  }
+
+  :is([dir="rtl"] .xl\:rtl\:text-right) {
+    text-align: right;
   }
 }
