@@ -185,7 +185,7 @@ struct DatabaseView: View {
                     if fileCount == 0 {
                         Text("No received or sent files")
                     } else {
-                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter().string(fromByteCount: Int64(size)))")
+                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
                     }
                 }
             }

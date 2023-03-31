@@ -1419,7 +1419,7 @@ data class ChatItem (
         file = null
       )
     }
-    
+
     private const val TEMP_DELETED_CHAT_ITEM_ID = -1L
     const val TEMP_LIVE_CHAT_ITEM_ID = -2L
 
@@ -1711,18 +1711,31 @@ class CIFile(
   val fileName: String,
   val fileSize: Long,
   val filePath: String? = null,
-  val fileStatus: CIFileStatus
+  val fileStatus: CIFileStatus,
+  val fileProtocol: FileProtocol
 ) {
   val loaded: Boolean = when (fileStatus) {
-    CIFileStatus.SndStored -> true
-    CIFileStatus.SndTransfer -> true
-    CIFileStatus.SndComplete -> true
-    CIFileStatus.SndCancelled -> true
-    CIFileStatus.RcvInvitation -> false
-    CIFileStatus.RcvAccepted -> false
-    CIFileStatus.RcvTransfer -> false
-    CIFileStatus.RcvCancelled -> false
-    CIFileStatus.RcvComplete -> true
+    is CIFileStatus.SndStored -> true
+    is CIFileStatus.SndTransfer -> true
+    is CIFileStatus.SndComplete -> true
+    is CIFileStatus.SndCancelled -> true
+    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvAccepted -> false
+    is CIFileStatus.RcvTransfer -> false
+    is CIFileStatus.RcvCancelled -> false
+    is CIFileStatus.RcvComplete -> true
+  }
+
+  val cancellable: Boolean = when (fileStatus) {
+    is CIFileStatus.SndStored -> fileProtocol != FileProtocol.XFTP // TODO true - enable when XFTP send supports cancel
+    is CIFileStatus.SndTransfer -> fileProtocol != FileProtocol.XFTP // TODO true
+    is CIFileStatus.SndComplete -> false
+    is CIFileStatus.SndCancelled -> false
+    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvAccepted -> true
+    is CIFileStatus.RcvTransfer -> true
+    is CIFileStatus.RcvCancelled -> false
+    is CIFileStatus.RcvComplete -> false
   }
 
   companion object {
@@ -1733,21 +1746,27 @@ class CIFile(
       filePath: String? = "test.txt",
       fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ): CIFile =
-      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus)
+      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
   }
 }
 
 @Serializable
-enum class CIFileStatus {
-  @SerialName("snd_stored") SndStored,
-  @SerialName("snd_transfer") SndTransfer,
-  @SerialName("snd_complete") SndComplete,
-  @SerialName("snd_cancelled") SndCancelled,
-  @SerialName("rcv_invitation") RcvInvitation,
-  @SerialName("rcv_accepted") RcvAccepted,
-  @SerialName("rcv_transfer") RcvTransfer,
-  @SerialName("rcv_complete") RcvComplete,
-  @SerialName("rcv_cancelled") RcvCancelled;
+enum class FileProtocol {
+  @SerialName("smp") SMP,
+  @SerialName("xftp") XFTP;
+}
+
+@Serializable
+sealed class CIFileStatus {
+  @Serializable @SerialName("sndStored") object SndStored: CIFileStatus()
+  @Serializable @SerialName("sndTransfer") class SndTransfer(val sndProgress: Long, val sndTotal: Long): CIFileStatus()
+  @Serializable @SerialName("sndComplete") object SndComplete: CIFileStatus()
+  @Serializable @SerialName("sndCancelled") object SndCancelled: CIFileStatus()
+  @Serializable @SerialName("rcvInvitation") object RcvInvitation: CIFileStatus()
+  @Serializable @SerialName("rcvAccepted") object RcvAccepted: CIFileStatus()
+  @Serializable @SerialName("rcvTransfer") class RcvTransfer(val rcvProgress: Long, val rcvTotal: Long): CIFileStatus()
+  @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
+  @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
@@ -1758,6 +1777,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCText(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCImage(override val text: String, val image: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCVideo(override val text: String, val image: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
@@ -1811,6 +1831,11 @@ object MsgContentSerializer : KSerializer<MsgContent> {
       element<String>("text")
       element<String>("image")
     })
+    element("MCVideo", buildClassSerialDescriptor("MCVideo") {
+      element<String>("text")
+      element<String>("image")
+      element<Int>("duration")
+    })
     element("MCFile", buildClassSerialDescriptor("MCFile") {
       element<String>("text")
     })
@@ -1833,6 +1858,11 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           "image" -> {
             val image = json["image"]?.jsonPrimitive?.content ?: "unknown message format"
             MsgContent.MCImage(text, image)
+          }
+          "video" -> {
+            val image = json["image"]?.jsonPrimitive?.content ?: "unknown message format"
+            val duration = json["duration"]?.jsonPrimitive?.intOrNull ?: 0
+            MsgContent.MCVideo(text, image, duration)
           }
           "voice" -> {
             val duration = json["duration"]?.jsonPrimitive?.intOrNull ?: 0
@@ -1868,6 +1898,13 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "image")
           put("text", value.text)
           put("image", value.image)
+        }
+      is MsgContent.MCVideo ->
+        buildJsonObject {
+          put("type", "video")
+          put("text", value.text)
+          put("image", value.image)
+          put("duration", value.duration)
         }
       is MsgContent.MCVoice ->
         buildJsonObject {

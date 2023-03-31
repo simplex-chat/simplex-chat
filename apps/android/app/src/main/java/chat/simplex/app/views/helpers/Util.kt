@@ -10,6 +10,7 @@ import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.*
 import android.provider.OpenableColumns
@@ -237,10 +238,16 @@ const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE
 const val MAX_VOICE_SIZE_FOR_SENDING: Long = 94680 // 6 chunks * 15780 bytes per chunk
 const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 43_000
 
-const val MAX_FILE_SIZE: Long = 8000000
+const val MAX_FILE_SIZE_SMP: Long = 8000000
+
+const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824
 
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()
+}
+
+fun getTempFilesDirectory(context: Context): String {
+  return "${getFilesDirectory(context)}/temp_files"
 }
 
 fun getAppFilesDirectory(context: Context): String {
@@ -489,9 +496,9 @@ fun formatBytes(bytes: Long): String {
     return "0 bytes"
   }
   val bytesDouble = bytes.toDouble()
-  val k = 1000.toDouble()
+  val k = 1024.toDouble()
   val units = arrayOf("bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-  val i = kotlin.math.floor(log2(bytesDouble) / log2(k))
+  val i = floor(log2(bytesDouble) / log2(k))
   val size = bytesDouble / k.pow(i)
   val unit = units[i.toInt()]
 
@@ -534,6 +541,26 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
     Log.e(TAG, "Util directoryFileCountAndSize error: ${e.stackTraceToString()}")
   }
   return fileCount to bytes
+}
+
+fun getMaxFileSize(fileProtocol: FileProtocol): Long {
+  return when (fileProtocol) {
+    FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
+    FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+  }
+}
+
+fun getBitmapFromVideo(uri: Uri, timestamp: Long? = null, random: Boolean = true): VideoPlayer.PreviewAndDuration {
+  val mmr = MediaMetadataRetriever()
+  mmr.setDataSource(SimplexApp.context, uri)
+  val durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
+  val image = when {
+    timestamp != null -> mmr.getFrameAtTime(timestamp * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
+    random -> mmr.frameAtTime
+    else -> mmr.getFrameAtIndex(0)
+  }
+  mmr.release()
+  return VideoPlayer.PreviewAndDuration(image, durationMs, timestamp ?: 0)
 }
 
 fun Color.darker(factor: Float = 0.1f): Color =
@@ -591,5 +618,26 @@ fun UriHandler.openUriCatching(uri: String) {
     openUri(uri)
   } catch (e: ActivityNotFoundException) {
     Log.e(TAG, e.stackTraceToString())
+  }
+}
+
+fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
+  save = { it.width to it.height },
+  restore = { IntSize(it.first, it.second) }
+)
+
+@Composable
+fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
+  val context = LocalContext.current
+  DisposableEffect(Unit) {
+    always()
+    val activity = context as? Activity ?: return@DisposableEffect onDispose {}
+    val orientation = activity.resources.configuration.orientation
+    onDispose {
+      whenDispose()
+      if (orientation == activity.resources.configuration.orientation) {
+        whenGone()
+      }
+    }
   }
 }

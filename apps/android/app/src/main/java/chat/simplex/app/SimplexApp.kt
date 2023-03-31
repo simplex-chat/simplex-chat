@@ -26,7 +26,7 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
-external fun chatMigrateInit(dbPath: String, dbKey: String): Array<Any>
+external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
@@ -41,10 +41,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   val defaultLocale: Locale = Locale.getDefault()
 
-  fun initChatController(useKey: String? = null, startChat: Boolean = true) {
+  fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
-    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey)
+    val confirm = confirmMigrations ?: if (appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
+    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey, confirm.value)
     val res: DBMigrationResult = kotlin.runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }

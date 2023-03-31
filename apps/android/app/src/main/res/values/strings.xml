@@ -191,6 +191,8 @@
   <string name="delete_member_message__question">Delete member message?</string>
   <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
   <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
+  <string name="cancel_file__question">Cancel file transfer?</string>
+  <string name="file_transfer_will_be_cancelled_warning">File transfer will be cancelled. If it\'s in progress it will be stoppped.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 
@@ -225,7 +227,9 @@
   <string name="icon_descr_cancel_image_preview">Cancel image preview</string>
   <string name="icon_descr_cancel_file_preview">Cancel file preview</string>
   <string name="images_limit_title">Too many images!</string>
+  <string name="videos_limit_title">Too many videos!</string>
   <string name="images_limit_desc">Only 10 images can be sent at the same time</string>
+  <string name="videos_limit_desc">Only 10 videos can be sent at the same time</string>
   <string name="image_decoding_exception_title">Decoding error</string>
   <string name="image_decoding_exception_desc">The image cannot be decoded. Please, try a different image or contact developers.</string>
   <string name="you_are_observer">you are observer</string>
@@ -238,8 +242,18 @@
   <string name="icon_descr_asked_to_receive">Asked to receive the image</string>
   <string name="icon_descr_image_snd_complete">Image sent</string>
   <string name="waiting_for_image">Waiting for image</string>
+  <string name="image_will_be_received_when_contact_completes_uploading">Image will be received when your contact completes uploading it.</string>
   <string name="image_will_be_received_when_contact_is_online">Image will be received when your contact is online, please wait or check later!</string>
   <string name="image_saved">Image saved to Gallery</string>
+
+  <!-- Videos - chat.simplex.app.views.chat.item.CIVideoView.kt -->
+  <string name="video_descr">Video</string>
+  <string name="icon_descr_waiting_for_video">Waiting for video</string>
+  <string name="icon_descr_video_asked_to_receive">Asked to receive the video</string>
+  <string name="icon_descr_video_snd_complete">Video sent</string>
+  <string name="waiting_for_video">Waiting for video</string>
+  <string name="video_will_be_received_when_contact_completes_uploading">Video will be received when your contact completes uploading it.</string>
+  <string name="video_will_be_received_when_contact_is_online">Video will be received when your contact is online, please wait or check later!</string>
 
   <!-- Files - CIFileView.kt -->
   <string name="icon_descr_file">File</string>
@@ -247,6 +261,7 @@
   <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
   <string name="maximum_supported_file_size">Currently maximum supported file size is <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
   <string name="waiting_for_file">Waiting for file</string>
+  <string name="file_will_be_received_when_contact_completes_uploading">File will be received when your contact completes uploading it.</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
   <string name="file_saved">File saved</string>
   <string name="file_not_found">File not found</string>
@@ -509,6 +524,10 @@
   <string name="core_version">Core version: v%s</string>
   <string name="core_build_timestamp">Core built at: %s</string>
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+  <string name="show_dev_options">Show:</string>
+  <string name="hide_dev_options">Hide:</string>
+  <string name="show_developer_options">Show developer options</string>
+  <string name="developer_options">Database IDs and Transport isolation option.</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -716,6 +735,9 @@
   <string name="settings_section_title_messages">MESSAGES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
+  <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
+  <string name="settings_send_files_via_xftp">Send videos and files via XFTP</string>
+  <string name="xftp_requires_v461">v4.6.1+ is required to receive via XFTP.</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
@@ -823,6 +845,17 @@
   <string name="restore_database_alert_confirm">Restore</string>
   <string name="database_restore_error">Restore database error</string>
   <string name="restore_passphrase_not_found_desc">Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please, contact developers.</string>
+  <string name="database_upgrade">Database upgrade</string>
+  <string name="database_downgrade">Database downgrade</string>
+  <string name="incompatible_database_version">Incompatible database version</string>
+  <string name="confirm_database_upgrades">Confirm database upgrades</string>
+  <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
+  <string name="upgrade_and_open_chat">Upgrade and open chat</string>
+  <string name="downgrade_and_open_chat">Downgrade and open chat</string>
+  <string name="mtr_error_no_down_migration">database version is newer than the app, but no down migration for: %s</string>
+  <string name="mtr_error_different">different migration in the app/database: %s / %s</string>
+  <string name="database_migrations">Migrations: %s</string>
+  <string name="database_downgrade_warning">Warning: you may lose some data!</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>
@@ -1036,6 +1069,11 @@
   <string name="dont_show_again">Don\'t show again</string>
   <string name="muted_when_inactive">Muted when inactive!</string>
   <string name="you_will_still_receive_calls_and_ntfs">You will still receive calls and notifications from muted profiles when they are active.</string>
+  <string name="delete_profile">Delete profile</string>
+  <string name="delete_chat_profile">Delete chat profile</string>
+  <string name="unhide_profile">Unhide profile</string>
+  <string name="unhide_chat_profile">Unhide chat profile</string>
+  <string name="profile_password">Profile password</string>
 
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>

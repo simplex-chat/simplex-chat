@@ -115,6 +115,7 @@ mobileChatOpts dbFilePrefix dbKey =
           { dbFilePrefix,
             dbKey,
             smpServers = [],
+            xftpServers = [],
             networkConfig = defaultNetworkConfig,
             logLevel = CLLImportant,
             logConnections = False,
@@ -133,7 +134,10 @@ mobileChatOpts dbFilePrefix dbKey =
 
 defaultMobileConfig :: ChatConfig
 defaultMobileConfig =
-  defaultChatConfig {confirmMigrations = MCYesUp}
+  defaultChatConfig
+    { confirmMigrations = MCYesUp,
+      logLevel = CLLError
+    }
 
 type CJSONString = CString
 
