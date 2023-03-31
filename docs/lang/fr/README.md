@@ -4,7 +4,7 @@
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 [![Follow on Mastodon](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)](https://mastodon.social/@simplex)
 
-| 19/03/2023 | FR, [EN](/README.md), [CZ](/docs/lang/cs/README.md) |
+| 30/03/2023 | FR, [EN](/README.md), [CZ](/docs/lang/cs/README.md) |
 
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
@@ -65,6 +65,10 @@ Le canal par lequel vous partagez le lien n'a pas besoin d'être sécurisé - il
 <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Make a private connection" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Video call" height="360">
 
 Une fois la connexion établie, vous pouvez [vérifier le code de sécurité de la connexion](/blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification).
+
+## Guide de l'utilisateur (NOUVEAU)
+
+Découvrez les fonctionnalités et les paramètres de l'application dans le nouveau [Guide de l'utilisateur](../fr/guide/README.md). (PROCHAINEMENT EN FR)
 
 ## Aider à traduire SimpleX Chat
 
@@ -175,13 +179,17 @@ Vous pouvez utiliser SimpleX avec vos propres serveurs et continuer à communiqu
 
 Mises à jour récentes :
 
-[04 févr. 2023. Sortie de la v4.5 - avec plusieurs profils d'utilisateurs, les brouillons de messages, l'isolation du transport et l'interface en italien](/blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
+[28 mars, 2023. Sortie de la v4.6 - support d'Android 8+ et d'ARMv7a, profiles cachés, outils de modération de communauté, amélioration des appels audio/vidéo et réduction de l'utilisation de la batterie](/blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
 
-[03 janv. 2023. Sortie de la v4.4 - avec les messages éphèmères, les messages "en direct" (dynamique), la vérification de sécurité de la connexion, les GIFs et les autocollants ainsi que la langue de l'interface en français](/blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
+[1er mars, 2023. Protocole de transfert de fichiers SimpleX – envoyer des fichiers volumineux de manière efficace, privée et sécurisée, bientôt intégré dans les applications SimpleX Chat](/blog/20230301-simplex-file-transfer-protocol.md).
 
-[06 déc. 2022. Revues de novembre et sortie de la v4.3 - avec les messages vocaux instantanés, la suppression irréversible de messages et une configuration améliorée des serveurs](/blog/20221206-simplex-chat-v4.3-voice-messages.md).
+[4 févr. 2023. Sortie de la v4.5 - avec plusieurs profils d'utilisateurs, les brouillons de messages, l'isolation du transport et l'interface en italien](/blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
 
-[08 nov. 2022. Audit de sécurité par Trail of Bits, nouveau site web et sortie de la v4.2](/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+[3 janv. 2023. Sortie de la v4.4 - avec les messages éphèmères, les messages "en direct" (dynamique), la vérification de sécurité de la connexion, les GIFs et les autocollants ainsi que la langue de l'interface en français](/blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
+
+[6 déc. 2022. Revues de novembre et sortie de la v4.3 - avec les messages vocaux instantanés, la suppression irréversible de messages et une configuration améliorée des serveurs](/blog/20221206-simplex-chat-v4.3-voice-messages.md).
+
+[8 nov. 2022. Audit de sécurité par Trail of Bits, nouveau site web et sortie de la v4.2](/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 [28 sept. 2022. v4.0 : base de données de chat local chiffrée et beaucoup d'autres changements](/blog/20220928-simplex-chat-v4-encrypted-database.md).
 
@@ -281,17 +289,21 @@ Si vous envisagez de développer avec la plateforme SimpleX, n'hésitez pas à n
 - ✅ Plusieurs profils d'utilisateurs dans la même base de données de chat.
 - ✅ Optionnellement, éviter de réutiliser la même session TCP pour plusieurs connexions.
 - ✅ Conservation des brouillons de message.
-- 🏗 Serveur de fichiers pour optimiser l'envoi efficace et privé de fichiers volumineux.
-- 🏗 Amélioration des appels audio et vidéo.
+- ✅ Serveur de fichiers pour optimiser l'envoi efficace et privé de fichiers volumineux.
+- ✅ Amélioration des appels audio et vidéo.
+- ✅ Prise en charge d'anciens OS d'Android et des processeurs 32 bits.
+- ✅ Profiles de chat cachés
+- 🏗 Envoi et réception de fichiers volumineux via le [protocole XFTP](/blog/20230301-simplex-file-transfer-protocol.md).
+- 🏗 Messages vidéo
 - 🏗 Redondance et rotation des files d'attente SMP (mode manuel déjà fonctionnel).
 - 🏗 Réduction de l'utilisation de la batterie et du trafic dans les grands groupes.
-- 🏗 Prise en charge d'anciens OS d'Android et des processeurs 32 bits.
+- Inclure un message facultatif dans la demande de connexion envoyée via l'adresse de contact.
 - Conversations éphémères/disparaissantes/OTR avec les contacts existants.
 - Mot de passe/pin d'accès (avec mot de passe d'accès alternatif facultatif).
 - Chiffrement des fichiers locaux de l'app.
-- Messages vidéo.
 - Amélioration de la navigation et de la recherche dans la conversation (développer et faire défiler jusqu'au message cité, faire défiler jusqu'aux résultats de la recherche, etc.)
 - Confirmation de la distribution du message (avec option d'acceptation ou de refus de l'expéditeur par contact, TBC).
+- Partager votre position en privé.
 - Flux/diffusion.
 - Widgets Web pour une interactivité personnalisée dans les chats.
 - Automatismes et règles de chat programmables (réponses/transferts/suppressions/envois automatiques, rappels, etc.)
