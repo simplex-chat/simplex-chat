@@ -317,6 +317,13 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
+data ContactOrGroup = CGContact Contact | CGGroup Group
+
+contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
+contactAndGroupIds = \case
+  CGContact Contact {contactId} -> (Just contactId, Nothing)
+  CGGroup (Group GroupInfo {groupId} _) -> (Nothing, Just groupId)
+
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
   { enableNtfs :: Bool
@@ -1484,7 +1491,9 @@ data SndFileTransfer = SndFileTransfer
     recipientDisplayName :: ContactName,
     connId :: Int64,
     agentConnId :: AgentConnId,
+    groupMemberId :: Maybe Int64,
     fileStatus :: FileStatus,
+    fileDescrId :: Maybe Int64,
     fileInline :: Maybe InlineFileMode
   }
   deriving (Eq, Show, Generic)
@@ -1513,18 +1522,26 @@ instance ToJSON FileInvitation where
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
-data FileDescr
-  = FDText {fileDescrText :: Text}
-  | FDInline {fileDescrSize :: Integer, fileDescrInline :: InlineFileMode}
-  | FDPending
+data FileDescr = FileDescr {fileDescrText :: Text, fileDescrPartNo :: Int, fileDescrComplete :: Bool}
   deriving (Eq, Show, Generic)
 
 instance ToJSON FileDescr where
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "FD"
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "FD"
+  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions
 
 instance FromJSON FileDescr where
-  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
+  parseJSON = J.genericParseJSON J.defaultOptions
+
+xftpFileInvitation :: FilePath -> Integer -> FileDescr -> FileInvitation
+xftpFileInvitation fileName fileSize fileDescr =
+  FileInvitation
+    { fileName,
+      fileSize,
+      fileDigest = Nothing,
+      fileConnReq = Nothing,
+      fileInline = Nothing,
+      fileDescr = Just fileDescr
+    }
 
 data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted
@@ -1553,10 +1570,10 @@ instance ToJSON InlineFileMode where
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
+    xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
     rcvFileInline :: Maybe InlineFileMode,
-    rcvFileDescription :: Maybe RcvFileDescr,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
@@ -1566,11 +1583,20 @@ data RcvFileTransfer = RcvFileTransfer
 
 instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
+data XFTPRcvFile = XFTPRcvFile
+  { rcvFileDescription :: RcvFileDescr,
+    agentRcvFileId :: Maybe AgentRcvFileId,
+    agentRcvFileDeleted :: Bool
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON XFTPRcvFile where toEncoding = J.genericToEncoding J.defaultOptions
+
 data RcvFileDescr = RcvFileDescr
   { fileDescrId :: Int64,
-    fileDescrStatus :: RcvFileStatus,
     fileDescrText :: Text,
-    chunkSize :: Integer
+    fileDescrPartNo :: Int,
+    fileDescrComplete :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -1588,6 +1614,11 @@ instance ToJSON RcvFileStatus where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RFS"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RFS"
 
+rcvFileComplete :: RcvFileStatus -> Bool
+rcvFileComplete = \case
+  RFSComplete _ -> True
+  _ -> False
+
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
     connId :: Maybe Int64,
@@ -1597,14 +1628,22 @@ data RcvFileInfo = RcvFileInfo
 
 instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
-liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
-liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
-  RFSAccepted fi -> acId fi
-  RFSConnected fi -> acId fi
+liveRcvFileTransferInfo :: RcvFileTransfer -> Maybe RcvFileInfo
+liveRcvFileTransferInfo RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted fi -> Just fi
+  RFSConnected fi -> Just fi
   _ -> Nothing
+
+liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
+liveRcvFileTransferConnId ft = acId =<< liveRcvFileTransferInfo ft
   where
     acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
     acId _ = Nothing
+
+liveRcvFileTransferPath :: RcvFileTransfer -> Maybe FilePath
+liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
+  where
+    fp RcvFileInfo {filePath} = filePath
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
@@ -1621,6 +1660,38 @@ instance ToJSON AgentConnId where
 instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
 
 instance ToField AgentConnId where toField (AgentConnId m) = toField m
+
+newtype AgentSndFileId = AgentSndFileId ConnId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentSndFileId where
+  strEncode (AgentSndFileId connId) = strEncode connId
+  strDecode s = AgentSndFileId <$> strDecode s
+  strP = AgentSndFileId <$> strP
+
+instance ToJSON AgentSndFileId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromField f
+
+instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
+
+newtype AgentRcvFileId = AgentRcvFileId ConnId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentRcvFileId where
+  strEncode (AgentRcvFileId connId) = strEncode connId
+  strDecode s = AgentRcvFileId <$> strDecode s
+  strP = AgentRcvFileId <$> strP
+
+instance ToJSON AgentRcvFileId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentRcvFileId where fromField f = AgentRcvFileId <$> fromField f
+
+instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField m
 
 newtype AgentInvId = AgentInvId InvitationId
   deriving (Eq, Show)
@@ -1652,6 +1723,7 @@ instance ToJSON FileTransfer where
 
 data FileTransferMeta = FileTransferMeta
   { fileId :: FileTransferId,
+    xftpSndFile :: Maybe XFTPSndFile,
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,
@@ -1663,10 +1735,20 @@ data FileTransferMeta = FileTransferMeta
 
 instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaultOptions
 
+data XFTPSndFile = XFTPSndFile
+  { agentSndFileId :: AgentSndFileId,
+    privateSndFileDescr :: Maybe Text
+    -- TODO agentSndFileDeleted :: Bool
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON XFTPSndFile where toEncoding = J.genericToEncoding J.defaultOptions
+
 fileTransferCancelled :: FileTransfer -> Bool
 fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
 fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
 
+-- For XFTP file transfers FSConnected means "uploaded to XFTP relays"
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ textDecode

@@ -8,10 +8,12 @@ import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.text.InputType
+import android.util.Log
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.*
 import android.widget.EditText
+import android.widget.TextView
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -50,6 +52,7 @@ import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.*
+import java.lang.reflect.Field
 
 @Composable
 fun SendMsgView(
@@ -72,7 +75,7 @@ fun SendMsgView(
 ) {
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
-    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
+    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.VideoPreview || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
@@ -240,7 +243,17 @@ private fun NativeKeyboard(
     editText.background = drawable
     editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
-    editText.textCursorDrawable?.let { DrawableCompat.setTint(it, HighOrLowlight.toArgb()) }
+    if (Build.VERSION.SDK_INT >= 29) {
+      editText.textCursorDrawable?.let { DrawableCompat.setTint(it, HighOrLowlight.toArgb()) }
+    } else {
+      try {
+        val f: Field = TextView::class.java.getDeclaredField("mCursorDrawableRes")
+        f.isAccessible = true
+        f.set(editText, R.drawable.edit_text_cursor)
+      } catch (e: Exception) {
+        Log.e(chat.simplex.app.TAG, e.stackTraceToString())
+      }
+    }
     editText.doOnTextChanged { text, _, _, _ -> onMessageChange(text.toString()) }
     editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
     editText

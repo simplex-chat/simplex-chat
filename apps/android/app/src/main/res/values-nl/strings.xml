@@ -815,7 +815,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed">je bent van adres veranderd</string>
     <string name="select_contacts">Selecteer contacten</string>
     <string name="skip_inviting_button">Sla het uitnodigen van leden over</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(en) geselecteerd</string>
+    <string name="num_contacts_selected">%d contact(en) geselecteerd</string>
     <string name="remove_member_confirmation">Verwijderen</string>
     <string name="button_remove_member">Gebruiker verwijderen</string>
     <string name="role_in_group">Rol</string>
@@ -898,7 +898,6 @@
     <string name="update_network_settings_question">Netwerk instellingen bijwerken\?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Door de instellingen bij te werken, wordt de client opnieuw verbonden met alle servers.</string>
     <string name="update_network_settings_confirmation">Update</string>
-    <string name="your_chat_profiles_stored_locally">Uw chat profielen worden lokaal opgeslagen, alleen op uw apparaat</string>
     <string name="incognito_random_profile">Je willekeurige profiel</string>
     <string name="prohibit_sending_disappearing_messages">Verbied het verzenden van verdwijnende berichten.</string>
     <string name="prohibit_sending_voice_messages">Verbieden het verzenden van spraak berichten.</string>

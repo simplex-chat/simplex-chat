@@ -170,7 +170,7 @@
     "feature-6-title": "Chiamate audio e video<br>crittografate E2E",
     "simplex-private-6-title": "Scambio di chiavi<br>fuori banda",
     "feature-7-title": "Database crittografato trasferibile &mdash; sposta il tuo profilo su un altro dispositivo",
-    "simplex-private-card-1-point-2": "Cryptobox NaCL in ogni coda per impedire la correlazione del traffico tra le code di messaggi se il TLS è compromesso.",
+    "simplex-private-card-1-point-2": "Cryptobox NaCL in ogni coda per evitare correlazioni di traffico tra code di messaggi se il TLS è compromesso.",
     "simplex-private-card-3-point-3": "Ripresa della connessione disattivata per evitare attacchi alla sessione.",
     "hero-overlay-card-1-p-4": "Questo design impedisce la fuoriuscita di metadati degli utenti a livello di applicazione. Per aumentare ulteriormente la privacy e proteggere il tuo indirizzo IP puoi connetterti ai server di messaggistica tramite Tor.",
     "hero-overlay-card-2-p-3": "Anche con le app più private che usano i servizi Tor v3, se parli con due contatti diversi tramite lo stesso profilo, questi possono dimostrare di essere connessi alla stessa persona.",

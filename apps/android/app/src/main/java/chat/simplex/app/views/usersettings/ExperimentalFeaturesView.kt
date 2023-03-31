@@ -5,18 +5,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.views.helpers.withApi
 
 @Composable
-fun ExperimentalFeaturesView(chatModel: ChatModel, enableCalls: MutableState<Boolean>) {
+fun ExperimentalFeaturesView(chatModel: ChatModel) {
   Column(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start
@@ -27,7 +27,11 @@ fun ExperimentalFeaturesView(chatModel: ChatModel, enableCalls: MutableState<Boo
       modifier = Modifier.padding(start = 16.dp, bottom = 24.dp)
     )
     SectionView("") {
-      SettingsPreferenceItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), chatModel.controller.appPrefs.experimentalCalls, enableCalls)
+      SettingsPreferenceItem(Icons.Outlined.UploadFile, stringResource(R.string.settings_send_files_via_xftp), chatModel.controller.appPrefs.xftpSendEnabled) {
+        withApi {
+          chatModel.controller.apiSetXFTPConfig(chatModel.controller.getXFTPCfg())
+        }
+      }
     }
   }
 }

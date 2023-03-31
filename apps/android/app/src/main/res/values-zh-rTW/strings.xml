@@ -765,7 +765,6 @@
     <string name="network_options_save">儲存</string>
     <string name="update_network_settings_question">更新網路設定？</string>
     <string name="update_network_settings_confirmation">更新</string>
-    <string name="your_chat_profiles_stored_locally">你的個人檔案只會儲存於你的本機裝置內。</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">更新設定會將客戶端重新連接到所有的伺服器。</string>
     <string name="users_delete_question">刪除個人檔案？</string>
     <string name="users_delete_profile_for">刪除個人檔案</string>
@@ -927,7 +926,7 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">你將停止接收來自此群組的訊息。群組內的記錄會保留。</string>
     <string name="you_rejected_group_invitation">你已拒絕加入群組</string>
     <string name="group_member_status_announced">連線中（宣布階段）</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> 已選擇多個聊絡人</string>
+    <string name="num_contacts_selected">%d 已選擇多個聊絡人</string>
     <string name="your_ice_servers">你的 ICE 伺服器</string>
     <string name="webrtc_ice_servers">WebRTC ICE 伺服器</string>
     <string name="update_database">更新</string>

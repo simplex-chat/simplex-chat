@@ -66,6 +66,10 @@ The channel through which you share the link does not have to be secure - it is 
 
 After you connect, you can [verify connection security code](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification).
 
+## User guide (NEW)
+
+Read about the app features and settings in the new [User guide](./docs/guide/README.md).
+
 ## Help translating SimpleX Chat
 
 Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps, website and documents are translated to many other languages.
@@ -175,13 +179,17 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
-[Feb 04, 2023. v4.5 released - with multiple user profiles, message draft, transport isolation and Italian interface](./blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
+[Mar 28, 2023. v4.6 released - with Android 8+ and ARMv7a support, hidden profiles, community moderation, improved audio/video calls and reduced battery usage](./blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
 
-[Jan 03, 2023. v4.4 released - with disappearing messages, "live" messages, connection security verifications, GIFs and stickers and with French interface language](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
+[Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
 
-[Dec 06, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration](./blog/20221206-simplex-chat-v4.3-voice-messages.md).
+[Feb 4, 2023. v4.5 released - with multiple user profiles, message draft, transport isolation and Italian interface](./blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
 
-[Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+[Jan 3, 2023. v4.4 released - with disappearing messages, "live" messages, connection security verifications, GIFs and stickers and with French interface language](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
+
+[Dec 6, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration](./blog/20221206-simplex-chat-v4.3-voice-messages.md).
+
+[Nov 8, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 [Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md).
 
@@ -281,17 +289,21 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Multiple user profiles in the same chat database.
 - ✅ Optionally avoid re-using the same TCP session for multiple connections.
 - ✅ Preserve message drafts.
-- 🏗 File server to optimize for efficient and private sending of large files.
-- 🏗 Improved audio & video calls.
+- ✅ File server to optimize for efficient and private sending of large files.
+- ✅ Improved audio & video calls.
+- ✅ Support older Android OS and 32-bit CPUs.
+- ✅ Hidden chat profiles.
+- 🏗 Sending and receiving large files via [XFTP protocol](./blog/20230301-simplex-file-transfer-protocol.md).
+- 🏗 Video messages.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
 - 🏗 Reduced battery and traffic usage in large groups.
-- 🏗 Support older Android OS and 32-bit CPUs.
+- Include optional message into connection request sent via contact address.
 - Ephemeral/disappearing/OTR conversations with the existing contacts.
 - Access password/pin (with optional alternative access password).
 - Local app files encryption.
-- Video messages.
 - Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).
 - Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
+- Privately share your location.
 - Feeds/broadcasts.
 - Web widgets for custom interactivity in the chats.
 - Programmable chat automations / rules (automatic replies/forward/deletion/sending, reminders, etc.).

@@ -128,6 +128,7 @@ class MainActivity: FragmentActivity() {
 
   override fun onStop() {
     super.onStop()
+    VideoPlayer.stopAll()
     enteredBackground.value = elapsedRealtime()
   }
 

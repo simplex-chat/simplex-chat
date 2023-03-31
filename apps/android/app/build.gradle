@@ -9,15 +9,12 @@ android {
 
     defaultConfig {
         applicationId "chat.simplex.app"
-        minSdk 29
+        minSdk 26
         targetSdk 32
-        versionCode 107
-        versionName "4.6"
+        versionCode 109
+        versionName "4.6.1-beta.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        ndk {
-            abiFilters 'arm64-v8a'
-        }
         vectorDrawables {
             useSupportLibrary true
         }
@@ -77,10 +74,27 @@ android {
         jniLibs.useLegacyPackaging = compression_level != "0"
     }
     def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
+    def isBundle = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("bundle") }) != null
 //    if (isRelease) {
         // Comma separated list of languages that will be included in the apk
     android.defaultConfig.resConfigs("en", "cs", "de", "es", "fr", "it", "nl", "ru", "zh-rCN")
 //    }
+    if (isBundle) {
+        defaultConfig.ndk.abiFilters 'arm64-v8a', 'armeabi-v7a'
+    } else {
+        splits {
+            abi {
+                enable true
+                reset()
+                if (isRelease) {
+                    include 'arm64-v8a', 'armeabi-v7a'
+                } else {
+                    include 'arm64-v8a', 'armeabi-v7a'
+                    universalApk false
+                }
+            }
+        }
+    }
 }
 
 dependencies {
@@ -128,6 +142,9 @@ dependencies {
     // GIFs support
     implementation "io.coil-kt:coil-compose:2.1.0"
     implementation "io.coil-kt:coil-gif:2.1.0"
+
+    // Video support
+    implementation "com.google.android.exoplayer:exoplayer:2.17.1"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
@@ -196,6 +213,8 @@ tasks.register("compressApk") {
 
         if (project.properties['android.injected.signing.key.alias'] != null && buildType == 'release') {
             new File(outputDir, "app-release.apk").renameTo(new File(outputDir, "simplex.apk"))
+            new File(outputDir, "app-armeabi-v7a-release.apk").renameTo(new File(outputDir, "simplex-armv7a.apk"))
+            new File(outputDir, "app-arm64-v8a-release.apk").renameTo(new File(outputDir, "simplex.apk"))
         }
 
         // View all gradle properties set

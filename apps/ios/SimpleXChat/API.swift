@@ -17,7 +17,7 @@ public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     fatalError("chat controller not initialized")
 }
 
-public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
+public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: MigrationConfirmation? = nil) -> (Bool, DBMigrationResult) {
     if let res = migrationResult { return res }
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
@@ -34,12 +34,14 @@ public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult
             dbKey = key
         }
     }
-    logger.debug("chatMigrateInit DB path: \(dbPath)")
+    let confirm = confirmMigrations ?? defaultMigrationConfirmation()
+    logger.debug("chatMigrateInit DB path: \(dbPath), confirm: \(confirm.rawValue)")
 //    logger.debug("chatMigrateInit DB key: \(dbKey)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
+    var cConfirm = confirm.rawValue.cString(using: .utf8)!
     // the last parameter of chat_migrate_init is used to return the pointer to chat controller
-    let cjson = chat_migrate_init(&cPath, &cKey, &chatController)!
+    let cjson = chat_migrate_init(&cPath, &cKey, &cConfirm, &chatController)!
     let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
     let keychainErr = dbRes == .ok && useKeychain && encrypted && !setDatabaseKey(dbKey)
@@ -207,10 +209,38 @@ func chatErrorString(_ err: ChatError) -> String {
 
 public enum DBMigrationResult: Decodable, Equatable {
     case ok
+    case invalidConfirmation
     case errorNotADatabase(dbFile: String)
-    case error(dbFile: String, migrationError: String)
+    case errorMigration(dbFile: String, migrationError: MigrationError)
+    case errorSQL(dbFile: String, migrationSQLError: String)
     case errorKeychain
     case unknown(json: String)
+}
+
+public enum MigrationConfirmation: String {
+    case yesUp
+    case yesUpDown
+    case error
+}
+
+public func defaultMigrationConfirmation() -> MigrationConfirmation {
+    confirmDBUpgradesGroupDefault.get() ? .error : .yesUp
+}
+
+public enum MigrationError: Decodable, Equatable {
+    case upgrade(upMigrations: [UpMigration])
+    case downgrade(downMigrations: [String])
+    case migrationError(mtrError: MTRError)
+}
+
+public struct UpMigration: Decodable, Equatable {
+    public var upName: String
+//    public var withDown: Bool
+}
+
+public enum MTRError: Decodable, Equatable {
+    case noDown(dbMigrations: [String])
+    case different(appMigration: String, dbMigration: String)
 }
 
 func dbMigrationResult(_ s: String) -> DBMigrationResult {

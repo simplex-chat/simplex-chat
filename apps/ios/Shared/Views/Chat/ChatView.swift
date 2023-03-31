@@ -489,6 +489,11 @@ struct ChatView: View {
                 if revealed {
                     menu.append(hideUIAction())
                 }
+                if ci.meta.itemDeleted == nil,
+                   let file = ci.file,
+                   file.cancellable {
+                    menu.append(cancelFileUIAction(file.fileId))
+                }
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
                 }
@@ -576,6 +581,27 @@ struct ChatView: View {
                 withAnimation {
                     composeState = ComposeState(editingItem: ci)
                 }
+            }
+        }
+
+        private func cancelFileUIAction(_ fileId: Int64) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Cancel", comment: "chat item action"),
+                image: UIImage(systemName: "xmark"),
+                attributes: [.destructive]
+            ) { _ in
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Cancel file transfer?"),
+                    message: Text("File transfer will be cancelled. If it's in progress it will be stoppped."),
+                    primaryButton: .destructive(Text("Confirm")) {
+                        Task {
+                            if let user = ChatModel.shared.currentUser {
+                                await cancelFile(user: user, fileId: fileId)
+                            }
+                        }
+                    },
+                    secondaryButton: .cancel()
+                ))
             }
         }
 
