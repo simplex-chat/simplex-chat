@@ -132,7 +132,7 @@ fun ChatItemView(
             copyText(context, cItem.content.text)
             showMenu.value = false
           })
-          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
+          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
               val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -145,8 +145,7 @@ fun ChatItemView(
                       writePermissionState.launchPermissionRequest()
                     }
                   }
-                  is MsgContent.MCFile -> saveFileLauncher.launch(cItem.file?.fileName)
-                  is MsgContent.MCVoice -> saveFileLauncher.launch(cItem.file?.fileName)
+                  is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> saveFileLauncher.launch(cItem.file?.fileName)
                   else -> {}
                 }
                 showMenu.value = false

@@ -227,7 +227,9 @@
   <string name="icon_descr_cancel_image_preview">Cancel image preview</string>
   <string name="icon_descr_cancel_file_preview">Cancel file preview</string>
   <string name="images_limit_title">Too many images!</string>
+  <string name="videos_limit_title">Too many videos!</string>
   <string name="images_limit_desc">Only 10 images can be sent at the same time</string>
+  <string name="videos_limit_desc">Only 10 videos can be sent at the same time</string>
   <string name="image_decoding_exception_title">Decoding error</string>
   <string name="image_decoding_exception_desc">The image cannot be decoded. Please, try a different image or contact developers.</string>
   <string name="you_are_observer">you are observer</string>
@@ -243,6 +245,15 @@
   <string name="image_will_be_received_when_contact_completes_uploading">Image will be received when your contact completes uploading it.</string>
   <string name="image_will_be_received_when_contact_is_online">Image will be received when your contact is online, please wait or check later!</string>
   <string name="image_saved">Image saved to Gallery</string>
+
+  <!-- Videos - chat.simplex.app.views.chat.item.CIVideoView.kt -->
+  <string name="video_descr">Video</string>
+  <string name="icon_descr_waiting_for_video">Waiting for video</string>
+  <string name="icon_descr_video_asked_to_receive">Asked to receive the video</string>
+  <string name="icon_descr_video_snd_complete">Video sent</string>
+  <string name="waiting_for_video">Waiting for video</string>
+  <string name="video_will_be_received_when_contact_completes_uploading">Video will be received when your contact completes uploading it.</string>
+  <string name="video_will_be_received_when_contact_is_online">Video will be received when your contact is online, please wait or check later!</string>
 
   <!-- Files - CIFileView.kt -->
   <string name="icon_descr_file">File</string>

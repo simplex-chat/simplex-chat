@@ -48,4 +48,5 @@ object UriSerializer : KSerializer<Uri> {
 sealed class UploadContent {
   @Serializable data class SimpleImage(val uri: Uri): UploadContent()
   @Serializable data class AnimatedImage(val uri: Uri): UploadContent()
+  @Serializable data class Video(val uri: Uri, val duration: Int): UploadContent()
 }
