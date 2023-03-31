@@ -173,12 +173,12 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
 private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, duration: MutableState<Long>, progress: MutableState<Long>/*, soundEnabled: MutableState<Boolean>*/) {
   if (duration.value > 0L || progress.value > 0) {
     Row {
-      val boxModifier =
+      Box(
         Modifier
           .padding(DEFAULT_PADDING_HALF)
           .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(percent = 50))
           .padding(vertical = 2.dp, horizontal = 4.dp)
-      Box(boxModifier) {
+      ) {
         val time = if (progress.value > 0) progress.value else duration.value
         val timeStr = durationText((time / 1000).toInt())
         val width = if (timeStr.length <= 5) 44 else 50
@@ -196,7 +196,12 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
       }*/
       }
       if (!playing.value) {
-        Box(boxModifier) {
+        Box(
+          Modifier
+            .padding(top = DEFAULT_PADDING_HALF)
+            .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(percent = 50))
+            .padding(vertical = 2.dp, horizontal = 4.dp)
+        ) {
           Text(
             formatBytes(file.fileSize),
             Modifier.padding(horizontal = 4.dp),
