@@ -198,27 +198,42 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       deleteMessage = { itemId, mode ->
         withApi {
           val cInfo = chat.chatInfo
-          val r = chatModel.controller.apiDeleteChatItem(
-            type = cInfo.chatType,
-            id = cInfo.apiId,
-            itemId = itemId,
-            mode = mode
-          )
-          if (r != null) {
-            val toChatItem = r.toChatItem
-            if (toChatItem == null) {
-              chatModel.removeChatItem(cInfo, r.deletedChatItem.chatItem)
-            } else {
-              chatModel.upsertChatItem(cInfo, toChatItem.chatItem)
-            }
+          val toDeleteItem = chatModel.chatItems.firstOrNull { it.id == itemId }
+          val toModerate = toDeleteItem?.memberToModerate(chat.chatInfo)
+          val groupInfo = toModerate?.first
+          val groupMember = toModerate?.second
+          val deletedChatItem: ChatItem?
+          val toChatItem: ChatItem?
+          if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
+            val r = chatModel.controller.apiDeleteMemberChatItem(
+              groupId = groupInfo.groupId,
+              groupMemberId = groupMember.groupMemberId,
+              itemId = itemId
+            )
+            deletedChatItem = r?.first
+            toChatItem = r?.second
+          } else {
+            val r = chatModel.controller.apiDeleteChatItem(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              itemId = itemId,
+              mode = mode
+            )
+            deletedChatItem = r?.deletedChatItem?.chatItem
+            toChatItem = r?.toChatItem?.chatItem
+          }
+          if (toChatItem == null && deletedChatItem != null) {
+            chatModel.removeChatItem(cInfo, deletedChatItem)
+          } else if (toChatItem != null) {
+            chatModel.upsertChatItem(cInfo, toChatItem)
           }
         }
       },
       receiveFile = { fileId ->
-        val user = chatModel.currentUser.value
-        if (user != null) {
-          withApi { chatModel.controller.receiveFile(user, fileId) }
-        }
+        withApi { chatModel.controller.receiveFile(user, fileId) }
+      },
+      cancelFile = { fileId ->
+        withApi { chatModel.controller.cancelFile(user, fileId) }
       },
       joinGroup = { groupId ->
         withApi { chatModel.controller.apiJoinGroup(groupId) }
@@ -298,6 +313,7 @@ fun ChatLayout(
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -342,7 +358,7 @@ fun ChatLayout(
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
-              receiveFile, joinGroup, acceptCall, acceptFeature, markRead, setFloatingButton, onComposed,
+              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, markRead, setFloatingButton, onComposed,
             )
           }
         }
@@ -515,6 +531,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
@@ -623,11 +640,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           } else {
             Box(Modifier.padding(start = 104.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           }
         } else { // direct message
@@ -638,7 +655,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
           }
         }
 
@@ -1045,6 +1062,7 @@ fun PreviewChatLayout() {
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      cancelFile = {},
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
@@ -1104,6 +1122,7 @@ fun PreviewGroupChatLayout() {
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      cancelFile = {},
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },

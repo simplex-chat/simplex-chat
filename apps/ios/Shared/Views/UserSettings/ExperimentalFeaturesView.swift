@@ -7,15 +7,23 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ExperimentalFeaturesView: View {
-    @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
+    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: groupDefaults) private var xftpSendEnabled = false
 
     var body: some View {
         List {
             Section("") {
-                settingsRow("video") {
-                    Toggle("Audio & video calls", isOn: $enableCalls)
+                settingsRow("arrow.up.doc") {
+                    Toggle("Send files via XFTP", isOn: $xftpSendEnabled)
+                        .onChange(of: xftpSendEnabled) { _ in
+                            do {
+                                try setXFTPConfig(getXFTPCfg())
+                            } catch {
+                                logger.error("setXFTPConfig: cannot set XFTP config \(responseError(error))")
+                            }
+                        }
                 }
             }
         }

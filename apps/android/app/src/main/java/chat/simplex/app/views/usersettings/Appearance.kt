@@ -2,13 +2,20 @@ package chat.simplex.app.views.usersettings
 
 import SectionCustomFooter
 import SectionDivider
+import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionItemWithValue
 import SectionSpacer
 import SectionView
+import android.app.Activity
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,6 +24,7 @@ import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -30,9 +38,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import chat.simplex.app.*
 import chat.simplex.app.R
+import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.SharedPreference
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.godaddy.android.colorpicker.*
+import kotlinx.coroutines.delay
+import java.util.*
 
 enum class AppIcon(val resId: Int) {
   DEFAULT(R.mipmap.icon),
@@ -40,7 +52,7 @@ enum class AppIcon(val resId: Int) {
 }
 
 @Composable
-fun AppearanceView() {
+fun AppearanceView(m: ChatModel) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
 
   fun setAppIcon(newIcon: AppIcon) {
@@ -62,6 +74,7 @@ fun AppearanceView() {
 
   AppearanceLayout(
     appIcon,
+    m.controller.appPrefs.appLanguage,
     changeIcon = ::setAppIcon,
     editPrimaryColor = { primary ->
       ModalManager.shared.showModalCloseable { close ->
@@ -73,6 +86,7 @@ fun AppearanceView() {
 
 @Composable fun AppearanceLayout(
   icon: MutableState<AppIcon>,
+  languagePref: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
   editPrimaryColor: (Color) -> Unit,
 ) {
@@ -81,6 +95,37 @@ fun AppearanceView() {
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.appearance_settings))
+    SectionView(stringResource(R.string.settings_section_title_language), padding = PaddingValues()) {
+      val context = LocalContext.current
+//      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//        SectionItemWithValue(
+//          generalGetString(R.string.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
+//          remember { mutableStateOf("system") },
+//          listOf(ValueTitleDesc("system", generalGetString(R.string.change_verb), "")),
+//          onSelected = { openSystemLangPicker(context as? Activity ?: return@SectionItemWithValue) }
+//        )
+//      } else {
+        val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
+        SectionItemView {
+          LangSelector(state) {
+            state.value = it
+            withApi {
+              delay(200)
+              val activity = context as? Activity
+              if (activity != null) {
+                if (it == "system") {
+                  saveAppLocale(languagePref, activity)
+                } else {
+                  saveAppLocale(languagePref, activity, it)
+                }
+              }
+            }
+          }
+        }
+//      }
+    }
+    SectionSpacer()
+
     SectionView(stringResource(R.string.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
@@ -180,6 +225,32 @@ fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
 }
 
 @Composable
+private fun LangSelector(state: State<String>, onSelected: (String) -> Unit) {
+  // Should be the same as in app/build.gradle's `android.defaultConfig.resConfigs`
+  val supportedLanguages = mapOf(
+    "system" to generalGetString(R.string.language_system),
+    "en" to "English",
+    "cs" to "Čeština",
+    "de" to "Deutsch",
+    "es" to "Español",
+    "fr" to "Français",
+    "it" to "Italiano",
+    "nl" to "Nederlands",
+    "ru" to "Русский",
+    "zh-CN" to "简体中文"
+  )
+  val values by remember { mutableStateOf(supportedLanguages.map { it.key to it.value }) }
+  ExposedDropDownSettingRow(
+    generalGetString(R.string.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
+    values,
+    state,
+    icon = null,
+    enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+@Composable
 private fun ThemeSelector(state: State<DefaultTheme>, onSelected: (DefaultTheme) -> Unit) {
   val darkTheme = isSystemInDarkTheme()
   val values by remember { mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second to it.third }) }
@@ -193,6 +264,9 @@ private fun ThemeSelector(state: State<DefaultTheme>, onSelected: (DefaultTheme)
   )
 }
 
+//private fun openSystemLangPicker(activity: Activity) {
+//  activity.startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:" + SimplexApp.context.packageName)))
+//}
 
 private fun findEnabledIcon(): AppIcon = AppIcon.values().first { icon ->
   SimplexApp.context.packageManager.getComponentEnabledSetting(
@@ -206,6 +280,7 @@ fun PreviewAppearanceSettings() {
   SimpleXTheme {
     AppearanceLayout(
       icon = remember { mutableStateOf(AppIcon.DARK_BLUE) },
+      languagePref = SharedPreference({ null }, {}),
       changeIcon = {},
       editPrimaryColor = {},
     )

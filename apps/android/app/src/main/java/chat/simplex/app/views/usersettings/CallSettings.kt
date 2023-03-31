@@ -2,6 +2,7 @@ package chat.simplex.app.views.usersettings
 
 import SectionDivider
 import SectionItemView
+import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -43,16 +44,23 @@ fun CallSettingsLayout(
     AppBarTitle(stringResource(R.string.your_calls))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     SectionView(stringResource(R.string.settings_section_title_settings)) {
-      SectionItemView() {
-        SharedPreferenceToggle(stringResource(R.string.connect_calls_via_relay), webrtcPolicyRelay)
-      }
+      SectionItemView(editIceServers) { Text(stringResource(R.string.webrtc_ice_servers)) }
       SectionDivider()
 
       val enabled = remember { mutableStateOf(true) }
       SectionItemView { LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it }) }
       SectionDivider()
-      SectionItemView(editIceServers) { Text(stringResource(R.string.webrtc_ice_servers)) }
+      SectionItemView() {
+        SharedPreferenceToggle(stringResource(R.string.always_use_relay), webrtcPolicyRelay)
+      }
     }
+    SectionTextFooter(
+      if (remember { webrtcPolicyRelay.state }.value) {
+        generalGetString(R.string.relay_server_protects_ip)
+      } else {
+        generalGetString(R.string.relay_server_if_necessary)
+      }
+    )
   }
 }
 

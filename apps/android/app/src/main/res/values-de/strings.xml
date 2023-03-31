@@ -513,13 +513,15 @@
     <!-- Call settings -->
     <string name="settings_audio_video_calls">Audio- &amp; Videoanrufe</string>
     <string name="your_calls">Ihre Anrufe</string>
-    <string name="connect_calls_via_relay">Über ein Relais verbinden</string>
+    <string name="always_use_relay">Über ein Relais verbinden</string>
     <string name="call_on_lock_screen">Anrufe auf Sperrbildschirm:</string>
     <string name="accept_call_on_lock_screen">Akzeptieren</string>
     <string name="show_call_on_lock_screen">Anzeigen</string>
     <string name="no_call_on_lock_screen">Deaktivieren</string>
     <string name="your_ice_servers">Ihre ICE-Server</string>
     <string name="webrtc_ice_servers">WebRTC ICE-Server</string>
+    <string name="relay_server_protects_ip">Relais-Server schützen Ihre IP-Adresse, aber sie können die Anrufdauer erfassen.</string>
+    <string name="relay_server_if_necessary">Relais-Server werden nur genutzt, wenn sie benötigt werden. Ihre IP-Adresse kann von Anderen erfasst werden.</string>
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Öffnen Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g>, um den Anruf anzunehmen.</string>
     <string name="allow_accepting_calls_from_lock_screen">Aktivieren Sie Anrufe vom Sperrbildschirm über die Einstellungen.</string>
@@ -763,7 +765,7 @@
     <string name="select_contacts">Kontakte auswählen</string>
     <string name="icon_descr_contact_checked">Kontakt geprüft</string>
     <string name="clear_contacts_selection_button">Löschen</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> Kontakt(e) ausgewählt</string>
+    <string name="num_contacts_selected">%d Kontakt(e) ausgewählt</string>
     <string name="no_contacts_selected">Keine Kontakte ausgewählt</string>
     <string name="invite_prohibited">Kontakt kann nicht eingeladen werden!</string>
     <string name="invite_prohibited_description">Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden.</string>
@@ -1021,7 +1023,6 @@
     <string name="users_delete_data_only">Nur lokale Profildaten</string>
     <string name="users_delete_with_connections">Profil und Serververbindungen</string>
     <string name="messages_section_description">Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil</string>
-    <string name="your_chat_profiles_stored_locally">Ihre Chat-Profile werden nur lokal auf Ihrem Endgerät gespeichert</string>
     <string name="failed_to_create_user_duplicate_title">Doppelter Anzeigename!</string>
     <string name="failed_to_create_user_title">Fehler beim Erstellen des Profils!</string>
     <string name="failed_to_active_user_title">Fehler beim Umschalten des Profils!</string>
@@ -1041,4 +1042,58 @@
     <string name="v4_4_french_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
     <string name="v4_5_private_filenames_descr">Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.</string>
     <string name="moderated_description">Moderiert</string>
+    <string name="moderated_item_description">Von %s moderiert</string>
+    <string name="moderate_verb">Moderieren</string>
+    <string name="moderate_message_will_be_marked_warning">Diese Nachricht wird für alle Mitglieder als moderiert gekennzeichnet.</string>
+    <string name="you_are_observer">Sie sind Beobachter</string>
+    <string name="observer_cant_send_message_title">Sie können keine Nachrichten versenden!</string>
+    <string name="group_member_role_observer">Beobachter</string>
+    <string name="initial_member_role">Anfängliche Rolle</string>
+    <string name="delete_member_message__question">Nachricht des Mitglieds löschen\?</string>
+    <string name="error_updating_link_for_group">Fehler beim Aktualisieren des Gruppen-Links</string>
+    <string name="observer_cant_send_message_desc">Bitte kontaktieren Sie den Gruppen-Administrator.</string>
+    <string name="moderate_message_will_be_deleted_warning">Diese Nachricht wird für alle Gruppenmitglieder gelöscht.</string>
+    <string name="language_system">System</string>
+    <string name="confirm_password">Bestätigen Sie das Passwort</string>
+    <string name="cant_delete_user_profile">Das Benutzerprofil kann nicht gelöscht werden!</string>
+    <string name="dont_show_again">Nicht nochmals anzeigen</string>
+    <string name="v4_6_chinese_spanish_interface">Chinesische und spanische Bedienoberfläche</string>
+    <string name="v4_6_audio_video_calls">Audio- und Videoanrufe</string>
+    <string name="button_add_welcome_message">Fügen Sie eine Begrüßungsmeldung hinzu</string>
+    <string name="error_updating_user_privacy">Fehler beim Aktualisieren der Benutzer-Privatsphäre</string>
+    <string name="smp_save_servers_question">Alle Server speichern\?</string>
+    <string name="hide_profile">Verberge das Profil</string>
+    <string name="password_to_show">Passwort anzeigen</string>
+    <string name="save_profile_password">Profil-Passwort speichern</string>
+    <string name="error_saving_user_password">Fehler beim Speichern des Benutzer-Passworts</string>
+    <string name="hidden_profile_password">Verborgenes Profil-Passwort</string>
+    <string name="button_welcome_message">Begrüßungsmeldung</string>
+    <string name="save_welcome_message_question">Begrüßungsmeldung speichern\?</string>
+    <string name="user_unhide">Verbergen aufheben</string>
+    <string name="enter_password_to_show">Geben Sie oben das Passwort für die Anzeige an!</string>
+    <string name="make_profile_private">Erzeugen Sie ein privates Profil!</string>
+    <string name="user_mute">Stummschalten</string>
+    <string name="tap_to_activate_profile">Tippen Sie, um das Profil zu aktivieren.</string>
+    <string name="should_be_at_least_one_profile">Es muss mindestens ein Benutzer-Profil vorhanden sein.</string>
+    <string name="should_be_at_least_one_visible_profile">Es muss mindestens ein sichtbares Benutzer-Profil vorhanden sein.</string>
+    <string name="user_unmute">Stummschaltung aufheben</string>
+    <string name="muted_when_inactive">Bei Inaktivität stummgeschaltet!</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Schützen Sie Ihre Chat-Profile mit einem Passwort!</string>
+    <string name="v4_6_audio_video_calls_descr">Bluetooth-Unterstützung und weitere Verbesserungen.</string>
+    <string name="v4_6_group_moderation_descr">Administratoren können nun
+\n- Nachrichten von Gruppenmitgliedern löschen
+\n- Gruppenmitglieder deaktivieren (\"Beobachter\"-Rolle)</string>
+    <string name="v4_6_group_welcome_message">Gruppen-Begrüßungsmeldung</string>
+    <string name="v4_6_reduced_battery_usage">Weiter reduzierter Batterieverbrauch</string>
+    <string name="v4_6_reduced_battery_usage_descr">Weitere Verbesserungen sind bald verfügbar!</string>
+    <string name="v4_6_group_welcome_message_descr">Legen Sie die Nachricht fest, die neuen Mitgliedern angezeigt werden soll!</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="v4_6_group_moderation">Gruppenmoderation</string>
+    <string name="v4_6_hidden_chat_profiles">Verborgene Chat-Profile</string>
+    <string name="user_hide">Verberge</string>
+    <string name="save_and_update_group_profile">Sichern und aktualisieren des Gruppen-Profils</string>
+    <string name="you_will_still_receive_calls_and_ntfs">Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.</string>
+    <string name="group_welcome_title">Begrüßungsmeldung</string>
+    <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten - für das Menü gedrückt halten.</string>
+    <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
 </resources>

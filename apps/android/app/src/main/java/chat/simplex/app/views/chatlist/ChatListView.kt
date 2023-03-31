@@ -132,7 +132,7 @@ private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
     val uriHandler = LocalUriHandler.current
     ConnectButton(generalGetString(R.string.chat_with_developers)) {
-      uriHandler.openUri(simplexTeamUri)
+      uriHandler.openUriCatching(simplexTeamUri)
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
     ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatSheet)
@@ -208,9 +208,9 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
       } else if (chatModel.users.isEmpty()) {
         NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
       } else {
-        val users by remember { derivedStateOf { chatModel.users.toList() } }
+        val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
         val allRead = users
-          .filter { !it.user.activeUser }
+          .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
         UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
           if (users.size == 1) {
@@ -247,7 +247,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
 }
 
 @Composable
-private fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
+fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
   IconButton(onClick = onButtonClicked) {
     Box {
       ProfileImage(

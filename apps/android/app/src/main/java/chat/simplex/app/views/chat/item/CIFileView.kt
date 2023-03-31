@@ -3,6 +3,7 @@ package chat.simplex.app.views.chat.item
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
@@ -64,7 +66,7 @@ fun CIFileView(
 
   fun fileSizeValid(): Boolean {
     if (file != null) {
-      return file.fileSize <= MAX_FILE_SIZE
+      return file.fileSize <= getMaxFileSize(file.fileProtocol)
     }
     return false
   }
@@ -72,22 +74,30 @@ fun CIFileView(
   fun fileAction() {
     if (file != null) {
       when (file.fileStatus) {
-        CIFileStatus.RcvInvitation -> {
+        is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
             receiveFile(file.fileId)
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(R.string.large_file),
-              String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(MAX_FILE_SIZE))
+              String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
             )
           }
         }
-        CIFileStatus.RcvAccepted ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(R.string.waiting_for_file),
-            String.format(generalGetString(R.string.file_will_be_received_when_contact_is_online), MAX_FILE_SIZE)
-          )
-        CIFileStatus.RcvComplete -> {
+        is CIFileStatus.RcvAccepted ->
+          when (file.fileProtocol) {
+            FileProtocol.XFTP ->
+              AlertManager.shared.showAlertMsg(
+                generalGetString(R.string.waiting_for_file),
+                generalGetString(R.string.file_will_be_received_when_contact_completes_uploading)
+              )
+            FileProtocol.SMP ->
+              AlertManager.shared.showAlertMsg(
+                generalGetString(R.string.waiting_for_file),
+                generalGetString(R.string.file_will_be_received_when_contact_is_online)
+              )
+          }
+        is CIFileStatus.RcvComplete -> {
           val filePath = getLoadedFilePath(context, file)
           if (filePath != null) {
             saveFileLauncher.launch(file.fileName)
@@ -110,6 +120,20 @@ fun CIFileView(
   }
 
   @Composable
+  fun progressCircle(progress: Long, total: Long) {
+    val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
+    val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
+    val strokeColor = if (isInDarkTheme()) FileDark else FileLight
+    Surface(
+      Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
+      color = Color.Transparent,
+      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+    ) {
+      Box(Modifier.size(32.dp))
+    }
+  }
+
+  @Composable
   fun fileIndicator() {
     Box(
       Modifier
@@ -120,19 +144,32 @@ fun CIFileView(
     ) {
       if (file != null) {
         when (file.fileStatus) {
-          CIFileStatus.SndStored -> fileIcon()
-          CIFileStatus.SndTransfer -> progressIndicator()
-          CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
-          CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
-          CIFileStatus.RcvInvitation ->
+          is CIFileStatus.SndStored ->
+            when (file.fileProtocol) {
+              FileProtocol.XFTP -> progressIndicator()
+              FileProtocol.SMP -> fileIcon()
+            }
+          is CIFileStatus.SndTransfer ->
+            when (file.fileProtocol) {
+              FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
+              FileProtocol.SMP -> progressIndicator()
+            }
+          is CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
+          is CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          is CIFileStatus.RcvInvitation ->
             if (fileSizeValid())
               fileIcon(innerIcon = Icons.Outlined.ArrowDownward, color = MaterialTheme.colors.primary)
             else
               fileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
-          CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
-          CIFileStatus.RcvTransfer -> progressIndicator()
-          CIFileStatus.RcvComplete -> fileIcon()
-          CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
+          is CIFileStatus.RcvTransfer ->
+            if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
+              progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
+            } else {
+              progressIndicator()
+            }
+          is CIFileStatus.RcvComplete -> fileIcon()
+          is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
         }
       } else {
         fileIcon()
@@ -191,7 +228,7 @@ class ChatItemProvider: PreviewParameterProvider<ChatItem> {
     ChatItem.getFileMsgContentSample(),
     ChatItem.getFileMsgContentSample(fileName = "some_long_file_name_here", fileStatus = CIFileStatus.RcvInvitation),
     ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvAccepted),
-    ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvTransfer),
+    ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10)),
     ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvCancelled),
     ChatItem.getFileMsgContentSample(fileSize = 1_000_000_000, fileStatus = CIFileStatus.RcvInvitation),
     ChatItem.getFileMsgContentSample(text = "Hello there", fileStatus = CIFileStatus.RcvInvitation),

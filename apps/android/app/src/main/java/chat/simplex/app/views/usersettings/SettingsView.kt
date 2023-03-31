@@ -6,6 +6,7 @@ import SectionSpacer
 import SectionView
 import android.content.Context
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,7 +22,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
@@ -53,11 +57,22 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       chatModel.chatDbEncrypted.value == true,
       chatModel.incognito,
       chatModel.controller.appPrefs.incognito,
-      developerTools = chatModel.controller.appPrefs.developerTools,
       user.displayName,
       setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
+      showSettingsModalWithSearch = { modalView ->
+        ModalManager.shared.showCustomModal { close ->
+          val search = rememberSaveable { mutableStateOf("") }
+          ModalView(
+            { close() },
+            if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight,
+            endButtons = {
+              SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), alwaysVisible = true) { search.value = it }
+            },
+            content = { modalView(chatModel, search) })
+        }
+      },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showVersion = {
         withApi {
@@ -110,11 +125,11 @@ fun SettingsLayout(
   encrypted: Boolean,
   incognito: MutableState<Boolean>,
   incognitoPref: SharedPreference<Boolean>,
-  developerTools: SharedPreference<Boolean>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showSettingsModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (block: () -> Unit) -> Unit
@@ -141,7 +156,8 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.ManageAccounts, stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModal { UserProfilesView(it) }() } }, disabled = stopped)
+        val profileHidden = rememberSaveable { mutableStateOf(false) }
+        SettingsActionItem(Icons.Outlined.ManageAccounts, stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped)
         SectionDivider()
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SectionDivider()
@@ -154,13 +170,13 @@ fun SettingsLayout(
       SectionView(stringResource(R.string.settings_section_title_settings)) {
         SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView() }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it) }, disabled = stopped)
         SectionDivider()
         DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
@@ -173,9 +189,9 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Email, stringResource(R.string.send_us_an_email), { uriHandler.openUri("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
+        SettingsActionItem(Icons.Outlined.Email, stringResource(R.string.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
       }
       SectionSpacer()
 
@@ -189,16 +205,9 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_develop)) {
-        val devTools = remember { mutableStateOf(developerTools.get()) }
-        SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools, devTools)
+        SettingsActionItem(Icons.Outlined.Code, stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) })
         SectionDivider()
-        if (devTools.value) {
-          ChatConsoleItem { withAuth(showCustomModal { it, close -> TerminalView(it, close) }) }
-          SectionDivider()
-          InstallTerminalAppItem(uriHandler)
-          SectionDivider()
-        }
-//        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it, enableCalls) })
+//        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it) })
 //        SectionDivider()
         AppVersionItem(showVersion)
       }
@@ -313,7 +322,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable private fun ContributeItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat#contribute") }) {
+  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat#contribute") }) {
     Icon(
       Icons.Outlined.Keyboard,
       contentDescription = "GitHub",
@@ -326,8 +335,8 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 
 @Composable private fun RateAppItem(uriHandler: UriHandler) {
   SectionItemView({
-    runCatching { uriHandler.openUri("market://details?id=chat.simplex.app") }
-      .onFailure { uriHandler.openUri("https://play.google.com/store/apps/details?id=chat.simplex.app") }
+    runCatching { uriHandler.openUriCatching("market://details?id=chat.simplex.app") }
+      .onFailure { uriHandler.openUriCatching("https://play.google.com/store/apps/details?id=chat.simplex.app") }
   }
   ) {
     Icon(
@@ -341,7 +350,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable private fun StarOnGithubItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
+  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
       contentDescription = "GitHub",
@@ -352,7 +361,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable private fun ChatConsoleItem(showTerminal: () -> Unit) {
+@Composable fun ChatConsoleItem(showTerminal: () -> Unit) {
   SectionItemView(showTerminal) {
     Icon(
       painter = painterResource(id = R.drawable.ic_outline_terminal),
@@ -364,8 +373,8 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable private fun InstallTerminalAppItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
+@Composable fun InstallTerminalAppItem(uriHandler: UriHandler) {
+  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
       contentDescription = "GitHub",
@@ -377,9 +386,11 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable private fun AppVersionItem(showVersion: () -> Unit) {
-  SectionItemView(showVersion) {
-    Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-  }
+  SectionItemView(showVersion) { AppVersionText() }
+}
+
+@Composable fun AppVersionText() {
+  Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
 }
 
 @Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary, stopped: Boolean = false) {
@@ -526,11 +537,11 @@ fun PreviewSettingsLayout() {
       encrypted = false,
       incognito = remember { mutableStateOf(false) },
       incognitoPref = SharedPreference({ false }, {}),
-      developerTools = SharedPreference({ false }, {}),
       userDisplayName = "Alice",
       setPerformLA = {},
       showModal = { {} },
       showSettingsModal = { {} },
+      showSettingsModalWithSearch = { },
       showCustomModal = { {} },
       showVersion = {},
       withAuth = {},

@@ -24,12 +24,15 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.Indigo
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
+  val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
+  val switchingUsers = rememberSaveable { mutableStateOf(false) }
   Scaffold(
-    topBar = { Column { ShareListToolbar(chatModel, stopped) { searchInList = it.trim() } } },
+    topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
   ) {
     Box(Modifier.padding(it)) {
       Column(
@@ -45,23 +48,41 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       }
     }
   }
+  UserPicker(chatModel, userPickerState, switchingUsers, showSettings = false, showCancel = true, cancelClicked = {
+    chatModel.sharedContent.value = null
+  })
 }
 
 @Composable
 private fun EmptyList() {
-  Box {
-    Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Text(stringResource(R.string.you_have_no_chats), color = HighOrLowlight)
   }
 }
 
 @Composable
-private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
+private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val hideSearchOnBack = { onSearchValueChanged(""); showSearch = false }
   if (showSearch) {
     BackHandler(onBack = hideSearchOnBack)
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
+  val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
+  val navButton: @Composable RowScope.() -> Unit = {
+    when {
+      showSearch -> NavigationButtonBack(hideSearchOnBack)
+      users.size > 1 -> {
+        val allRead = users
+          .filter { u -> !u.user.activeUser && !u.user.hidden }
+          .all { u -> u.unreadCount == 0 }
+        UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
+          userPickerState.value = AnimatedViewState.VISIBLE
+        }
+      }
+      else -> NavigationButtonBack { chatModel.sharedContent.value = null }
+    }
+  }
   if (chatModel.chats.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
@@ -87,7 +108,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
   }
 
   DefaultTopAppBar(
-    navigationButton = { if (showSearch) NavigationButtonBack(hideSearchOnBack) else NavigationButtonBack { chatModel.sharedContent.value = null } },
+    navigationButton = navButton,
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(

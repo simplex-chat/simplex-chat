@@ -6,7 +6,6 @@ import android.content.*
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager
 import android.graphics.*
-import android.graphics.ImageDecoder.DecodeException
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Base64
@@ -114,7 +113,7 @@ fun base64ToBitmap(base64ImageString: String): Bitmap {
 class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Uri?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
-    tmpFile = File.createTempFile("image", ".bmp", context.filesDir)
+    tmpFile = File.createTempFile("image", ".bmp", File(getAppFilesDirectory(SimplexApp.context)))
     // Since the class should return Uri, the file should be deleted somewhere else. And in order to be sure, delegate this to system
     tmpFile?.deleteOnExit()
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)
@@ -205,17 +204,10 @@ fun GetImageBottomSheet(
   val context = LocalContext.current
   val processPickedImage = { uri: Uri? ->
     if (uri != null) {
-      val source = ImageDecoder.createSource(context.contentResolver, uri)
-      try {
-        val bitmap = ImageDecoder.decodeBitmap(source)
+      val bitmap = getBitmapFromUri(uri)
+      if (bitmap != null) {
         imageBitmap.value = uri
         onImageChange(bitmap)
-      } catch (e: DecodeException) {
-        Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(R.string.image_decoding_exception_title),
-          text = generalGetString(R.string.image_decoding_exception_desc)
-        )
       }
     }
   }

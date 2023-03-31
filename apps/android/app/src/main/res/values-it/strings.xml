@@ -378,7 +378,7 @@
     <string name="icon_descr_call_progress">Chiamata in corso</string>
     <string name="call_on_lock_screen">Chiamate sulla schermata di blocco:</string>
     <string name="icon_descr_call_connecting">Connessione chiamata</string>
-    <string name="connect_calls_via_relay">Connetti via relay</string>
+    <string name="always_use_relay">Connetti via relay</string>
     <string name="status_contact_has_e2e_encryption">il contatto ha la crittografia e2e</string>
     <string name="status_contact_has_no_e2e_encryption">il contatto non ha la crittografia e2e</string>
     <string name="no_call_on_lock_screen">Disattiva</string>
@@ -718,6 +718,8 @@
     <string name="icon_descr_video_off">Video off</string>
     <string name="icon_descr_video_on">Video on</string>
     <string name="webrtc_ice_servers">Server WebRTC ICE</string>
+    <string name="relay_server_protects_ip">Il server relay protegge il tuo indirizzo IP, ma può osservare la durata della chiamata.</string>
+    <string name="relay_server_if_necessary">Il server relay viene usato solo se necessario. Un altro utente può osservare il tuo indirizzo IP.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> messaggio/i saltato/i</string>
     <string name="your_calls">Le tue chiamate</string>
     <string name="your_ice_servers">I tuoi server ICE</string>
@@ -817,7 +819,7 @@
     <string name="button_send_direct_message">Invia messaggio diretto</string>
     <string name="skip_inviting_button">Salta l\'invito di membri</string>
     <string name="switch_verb">Cambia</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contatto/i selezionato/i</string>
+    <string name="num_contacts_selected">%d contatto/i selezionato/i</string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBRI</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puoi condividere un link o un codice QR: chiunque potrà unirsi al gruppo. Non perderai i membri del gruppo se in seguito lo elimini.</string>
     <string name="invite_prohibited_description">Stai tentando di invitare un contatto con cui hai condiviso un profilo in incognito nel gruppo in cui stai usando il tuo profilo principale</string>
@@ -946,7 +948,6 @@
     <string name="delete_files_and_media_for_all_users">Elimina i file per tutti i profili di chat</string>
     <string name="failed_to_active_user_title">Errore nel cambio di profilo!</string>
     <string name="failed_to_create_user_title">Errore nella creazione del profilo!</string>
-    <string name="your_chat_profiles_stored_locally">I tuoi profili di chat sono memorizzati localmente, solo sul tuo dispositivo</string>
     <string name="error_deleting_user">Errore nell\'eliminazione del profilo utente</string>
     <string name="users_delete_with_connections">Profilo e connessioni al server</string>
     <string name="your_chat_profiles">I tuoi profili di chat</string>
@@ -967,4 +968,58 @@
     <string name="v4_5_private_filenames_descr">Per proteggere il fuso orario, i file immagine/vocali usano UTC.</string>
     <string name="v4_5_multiple_chat_profiles_descr">Nomi e avatar diversi, isolamento del trasporto.</string>
     <string name="moderated_description">moderato</string>
+    <string name="moderated_item_description">moderato da %s</string>
+    <string name="delete_member_message__question">Eliminare il messaggio del membro\?</string>
+    <string name="moderate_verb">Modera</string>
+    <string name="moderate_message_will_be_deleted_warning">Il messaggio verrà eliminato per tutti i membri.</string>
+    <string name="moderate_message_will_be_marked_warning">Il messaggio sarà segnato come moderato per tutti i membri.</string>
+    <string name="you_are_observer">sei un osservatore</string>
+    <string name="initial_member_role">Ruolo iniziale</string>
+    <string name="error_updating_link_for_group">Errore nell\'aggiornamento del link del gruppo</string>
+    <string name="group_member_role_observer">osservatore</string>
+    <string name="observer_cant_send_message_desc">Contatta l\'amministratore del gruppo.</string>
+    <string name="observer_cant_send_message_title">Non puoi inviare messaggi!</string>
+    <string name="language_system">Sistema</string>
+    <string name="button_add_welcome_message">Aggiungi messaggio di benvenuto</string>
+    <string name="button_welcome_message">Messaggio di benvenuto</string>
+    <string name="save_welcome_message_question">Salvare il messaggio di benvenuto\?</string>
+    <string name="group_welcome_title">Messaggio di benvenuto</string>
+    <string name="save_and_update_group_profile">Salva e aggiorna il profilo del gruppo</string>
+    <string name="enter_password_to_show">Inserisci la password sopra per mostrare!</string>
+    <string name="user_mute">Silenzia</string>
+    <string name="tap_to_activate_profile">Tocca per attivare il profilo.</string>
+    <string name="user_unhide">Svela</string>
+    <string name="make_profile_private">Rendi privato il profilo!</string>
+    <string name="should_be_at_least_one_profile">Deve esserci almeno un profilo utente.</string>
+    <string name="should_be_at_least_one_visible_profile">Deve esserci almeno un profilo utente visibile.</string>
+    <string name="you_can_hide_or_mute_user_profile">Puoi nascondere o silenziare un profilo utente - tienilo premuto per il menu.</string>
+    <string name="dont_show_again">Non mostrare più</string>
+    <string name="muted_when_inactive">Silenzioso quando inattivo!</string>
+    <string name="you_will_still_receive_calls_and_ntfs">Continuerai a ricevere chiamate e notifiche da profili silenziati quando sono attivi.</string>
+    <string name="v4_6_audio_video_calls">Chiamate audio e video</string>
+    <string name="v4_6_group_moderation">Moderazione del gruppo</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Proteggi i tuoi profili di chat con una password!</string>
+    <string name="v4_6_audio_video_calls_descr">Supporto a bluetooth e altri miglioramenti.</string>
+    <string name="v4_6_group_welcome_message">Messaggio di benvenuto del gruppo</string>
+    <string name="v4_6_reduced_battery_usage_descr">Altri miglioramenti sono in arrivo!</string>
+    <string name="v4_6_chinese_spanish_interface">Interfaccia cinese e spagnola</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
+    <string name="hidden_profile_password">Password del profilo nascosta</string>
+    <string name="save_profile_password">Salva la password del profilo</string>
+    <string name="to_reveal_profile_enter_password">Per rivelare il tuo profilo nascosto, inserisci una password completa in un campo di ricerca nella pagina \"I tuoi profili di chat\".</string>
+    <string name="password_to_show">Password per mostrare</string>
+    <string name="v4_6_group_moderation_descr">Ora gli amministratori possono:
+\n- eliminare i messaggi dei membri.
+\n- disattivare i membri (ruolo \"osservatore\")</string>
+    <string name="cant_delete_user_profile">Impossibile eliminare il profilo utente!</string>
+    <string name="hide_profile">Nascondi il profilo</string>
+    <string name="confirm_password">Conferma password</string>
+    <string name="error_updating_user_privacy">Errore nell\'aggiornamento della privacy dell\'utente</string>
+    <string name="smp_save_servers_question">Salvare i server\?</string>
+    <string name="error_saving_user_password">Errore nel salvataggio della password utente</string>
+    <string name="v4_6_reduced_battery_usage">Ulteriore riduzione del consumo della batteria</string>
+    <string name="v4_6_hidden_chat_profiles">Profili di chat nascosti</string>
+    <string name="user_hide">Nascondi</string>
+    <string name="v4_6_group_welcome_message_descr">Imposta il messaggio mostrato ai nuovi membri!</string>
+    <string name="user_unmute">Riattiva audio</string>
 </resources>

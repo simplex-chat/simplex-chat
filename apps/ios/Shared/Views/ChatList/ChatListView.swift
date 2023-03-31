@@ -71,7 +71,7 @@ struct ChatListView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    if chatModel.users.count > 1 {
+                    if chatModel.users.filter { u in u.user.activeUser || !u.user.hidden }.count > 1 {
                         withAnimation {
                             userPickerVisible.toggle()
                         }
@@ -85,7 +85,7 @@ struct ChatListView: View {
                             .frame(width: 32, height: 32)
                             .padding(.trailing, 4)
                         let allRead = chatModel.users
-                            .filter { !$0.user.activeUser }
+                            .filter { u in !u.user.activeUser && !u.user.hidden }
                             .allSatisfy { u in u.unreadCount == 0 }
                         if !allRead {
                             unreadBadge(size: 12)

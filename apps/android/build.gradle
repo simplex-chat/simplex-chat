@@ -8,6 +8,7 @@ buildscript {
         compose_version = localProperties['compose_version'] ?: '1.2.0-beta02'
         kotlin_version = localProperties['kotlin_version'] ?: '1.6.21'
         gradle_plugin_version = localProperties['gradle_plugin_version'] ?: '7.2.0'
+        abi_filter = localProperties['abi_filter'] ?: 'arm64-v8a'
 
         // Name that will be shown for debug build. By default it is from strings
         app_name = localProperties['app_name'] ?: "@string/app_name"

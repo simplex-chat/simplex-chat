@@ -514,13 +514,15 @@
     <!-- Call settings -->
     <string name="settings_audio_video_calls">Аудио- и видеозвонки</string>
     <string name="your_calls">Ваши звонки</string>
-    <string name="connect_calls_via_relay">Соединяться через сервер (relay)</string>
+    <string name="always_use_relay">Всегда соединяться через relay</string>
     <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
     <string name="accept_call_on_lock_screen">Принимать</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
     <string name="your_ice_servers">Ваши ICE серверы</string>
     <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
+    <string name="relay_server_protects_ip">Relay сервер защищает ваш IP адрес, но может отслеживать продолжительность звонка.</string>
+    <string name="relay_server_if_necessary">Relay сервер используется только при необходимости. Другая сторона может видеть ваш IP адрес.</string>
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Откройте <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\nчтобы принять звонок</string>
     <string name="allow_accepting_calls_from_lock_screen">Вы можете разрешить принимать звонки на экране блокировки через Настройки.</string>
@@ -765,7 +767,7 @@
     <string name="select_contacts">Выберите контакты</string>
     <string name="icon_descr_contact_checked">Контакт выбран</string>
     <string name="clear_contacts_selection_button">Очистить</string>
-    <string name="num_contacts_selected">Выбрано контактов: <xliff:g id="num_contacts">%1$s</xliff:g></string>
+    <string name="num_contacts_selected">Выбрано контактов: %d</string>
     <string name="no_contacts_selected">Контакты не выбраны</string>
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
     <string name="invite_prohibited_description">Вы пытаетесь пригласить инкогнито контакт в группу, где вы используете свой основной профиль</string>
@@ -1005,7 +1007,6 @@
     <string name="users_delete_data_only">Только локальные данные профиля</string>
     <string name="messages_section_title">Сообщения</string>
     <string name="smp_servers_per_user">Серверы для новых соединений вашего текущего профиля чата</string>
-    <string name="your_chat_profiles_stored_locally">Ваши профили чата хранятся локально, только на вашем устройстве</string>
     <string name="your_chat_profiles">Ваши профили чата</string>
     <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
@@ -1039,4 +1040,58 @@
     <string name="v4_5_reduced_battery_usage">Уменьшенное потребление батареи</string>
     <string name="v4_5_transport_isolation">Отдельные транспортные сессии</string>
     <string name="moderated_description">удалено</string>
+    <string name="moderated_item_description">удалено %s</string>
+    <string name="delete_member_message__question">Удалить сообщение участника\?</string>
+    <string name="moderate_verb">Модерировать</string>
+    <string name="moderate_message_will_be_deleted_warning">Сообщение будет удалено для всех членов группы.</string>
+    <string name="moderate_message_will_be_marked_warning">Сообщение будет помечено как удаленное для всех членов группы.</string>
+    <string name="observer_cant_send_message_desc">Пожалуйста, свяжитесь с админом группы.</string>
+    <string name="observer_cant_send_message_title">Вы не можете отправлять сообщения!</string>
+    <string name="you_are_observer">только чтение сообщений</string>
+    <string name="group_member_role_observer">читатель</string>
+    <string name="initial_member_role">Роль при вступлении</string>
+    <string name="error_updating_link_for_group">Ошибка обновления ссылки группы</string>
+    <string name="language_system">Системный</string>
+    <string name="v4_6_audio_video_calls">Аудио и видео звонки</string>
+    <string name="error_saving_user_password">Ошибка при сохранении пароля пользователя</string>
+    <string name="smp_save_servers_question">Сохранить серверы\?</string>
+    <string name="should_be_at_least_one_profile">Должен быть хотя бы один профиль пользователя.</string>
+    <string name="should_be_at_least_one_visible_profile">Должен быть хотя бы один открытый профиль пользователя.</string>
+    <string name="to_reveal_profile_enter_password">Чтобы показать Ваш скрытый профиль, введите пароль в поле поиска на странице Ваши профили чата.</string>
+    <string name="user_unmute">Уведомлять</string>
+    <string name="group_welcome_title">Приветственное сообщение</string>
+    <string name="confirm_password">Подтвердить пароль</string>
+    <string name="button_add_welcome_message">Добавить приветственное сообщение</string>
+    <string name="button_welcome_message">Приветственное сообщение</string>
+    <string name="save_and_update_group_profile">Сохранить сообщение и обновить группу</string>
+    <string name="muted_when_inactive">Без звука, когда не активный!</string>
+    <string name="cant_delete_user_profile">Нельзя удалить профиль пользователя!</string>
+    <string name="enter_password_to_show">Введите пароль в поиске!</string>
+    <string name="save_profile_password">Сохранить пароль профиля</string>
+    <string name="v4_6_chinese_spanish_interface">Китайский и Испанский интерфейс</string>
+    <string name="dont_show_again">Не показывать</string>
+    <string name="user_hide">Скрыть</string>
+    <string name="v4_6_reduced_battery_usage">Уменьшенное потребление батареи</string>
+    <string name="v4_6_group_moderation">Модерация группы</string>
+    <string name="hidden_profile_password">Пароль скрытого профиля</string>
+    <string name="password_to_show">Пароль чтобы раскрыть</string>
+    <string name="v4_6_hidden_chat_profiles">Скрытые профили чата</string>
+    <string name="error_updating_user_privacy">Ошибка при обновлении конфиденциальности</string>
+    <string name="v4_6_group_welcome_message">Приветственное сообщение группы</string>
+    <string name="hide_profile">Скрыть профиль</string>
+    <string name="user_mute">Без звука</string>
+    <string name="make_profile_private">Сделайте профиль конфиденциальным!</string>
+    <string name="v4_6_reduced_battery_usage_descr">Дополнительные улучшения скоро!</string>
+    <string name="v4_6_group_moderation_descr">Теперь админы могут:
+\n- удалять сообщения членов.
+\n- приостанавливать членов (роль \"наблюдатель\")</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Защитите ваши профили чата паролем!</string>
+    <string name="user_unhide">Раскрыть</string>
+    <string name="v4_6_audio_video_calls_descr">Поддержка bluetooth и другие улучшения.</string>
+    <string name="save_welcome_message_question">Сохранить приветственное сообщение\?</string>
+    <string name="v4_6_group_welcome_message_descr">Установить сообщение для новых членов группы!</string>
+    <string name="tap_to_activate_profile">Нажмите, чтобы сделать профиль активным.</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="you_will_still_receive_calls_and_ntfs">Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
+    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть профиль или выключить уведомления - подержите, чтобы увидеть меню.</string>
 </resources>

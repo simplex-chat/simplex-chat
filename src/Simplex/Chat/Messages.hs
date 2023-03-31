@@ -13,8 +13,10 @@
 
 module Simplex.Chat.Messages where
 
+import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Encoding as JE
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -408,7 +410,8 @@ data CIFile (d :: MsgDirection) = CIFile
     fileName :: String,
     fileSize :: Integer,
     filePath :: Maybe FilePath, -- local file path
-    fileStatus :: CIFileStatus d
+    fileStatus :: CIFileStatus d,
+    fileProtocol :: FileProtocol
   }
   deriving (Show, Generic)
 
@@ -416,14 +419,34 @@ instance MsgDirectionI d => ToJSON (CIFile d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data FileProtocol = FPSMP | FPXFTP
+  deriving (Eq, Show, Ord)
+
+instance FromField FileProtocol where fromField = fromTextField_ textDecode
+
+instance ToField FileProtocol where toField = toField . textEncode
+
+instance ToJSON FileProtocol where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance TextEncoding FileProtocol where
+  textDecode = \case
+    "smp" -> Just FPSMP
+    "xftp" -> Just FPXFTP
+    _ -> Nothing
+  textEncode = \case
+    FPSMP -> "smp"
+    FPXFTP -> "xftp"
+
 data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
-  CIFSSndTransfer :: CIFileStatus 'MDSnd
+  CIFSSndTransfer :: {sndProgress :: Int64, sndTotal :: Int64} -> CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
   CIFSSndComplete :: CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
   CIFSRcvAccepted :: CIFileStatus 'MDRcv
-  CIFSRcvTransfer :: CIFileStatus 'MDRcv
+  CIFSRcvTransfer :: {rcvProgress :: Int64, rcvTotal :: Int64} -> CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
 
@@ -434,18 +457,18 @@ deriving instance Show (CIFileStatus d)
 ciFileEnded :: CIFileStatus d -> Bool
 ciFileEnded = \case
   CIFSSndStored -> False
-  CIFSSndTransfer -> False
+  CIFSSndTransfer {} -> False
   CIFSSndCancelled -> True
   CIFSSndComplete -> True
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
-  CIFSRcvTransfer -> False
+  CIFSRcvTransfer {} -> False
   CIFSRcvCancelled -> True
   CIFSRcvComplete -> True
 
-instance MsgDirectionI d => ToJSON (CIFileStatus d) where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+instance ToJSON (CIFileStatus d) where
+  toJSON = J.toJSON . jsonCIFileStatus
+  toEncoding = J.toEncoding . jsonCIFileStatus
 
 instance MsgDirectionI d => ToField (CIFileStatus d) where toField = toField . decodeLatin1 . strEncode
 
@@ -458,12 +481,12 @@ deriving instance Show ACIFileStatus
 instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
   strEncode = \case
     CIFSSndStored -> "snd_stored"
-    CIFSSndTransfer -> "snd_transfer"
+    CIFSSndTransfer sent total -> strEncode (Str "snd_transfer", sent, total)
     CIFSSndCancelled -> "snd_cancelled"
     CIFSSndComplete -> "snd_complete"
     CIFSRcvInvitation -> "rcv_invitation"
     CIFSRcvAccepted -> "rcv_accepted"
-    CIFSRcvTransfer -> "rcv_transfer"
+    CIFSRcvTransfer rcvd total -> strEncode (Str "rcv_transfer", rcvd, total)
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
   strP = (\(AFS _ st) -> checkDirection st) <$?> strP
@@ -473,15 +496,59 @@ instance StrEncoding ACIFileStatus where
   strP =
     A.takeTill (== ' ') >>= \case
       "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
-      "snd_transfer" -> pure $ AFS SMDSnd CIFSSndTransfer
+      "snd_transfer" -> AFS SMDSnd <$> progress CIFSSndTransfer
       "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
       "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
       "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
       "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
-      "rcv_transfer" -> pure $ AFS SMDRcv CIFSRcvTransfer
+      "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
       "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
       _ -> fail "bad file status"
+    where
+      progress :: (Int64 -> Int64 -> a) -> A.Parser a
+      progress f = f <$> num <*> num <|> pure (f 0 1)
+      num = A.space *> A.decimal
+
+data JSONCIFileStatus
+  = JCIFSSndStored
+  | JCIFSSndTransfer {sndProgress :: Int64, sndTotal :: Int64}
+  | JCIFSSndCancelled
+  | JCIFSSndComplete
+  | JCIFSRcvInvitation
+  | JCIFSRcvAccepted
+  | JCIFSRcvTransfer {rcvProgress :: Int64, rcvTotal :: Int64}
+  | JCIFSRcvComplete
+  | JCIFSRcvCancelled
+  deriving (Generic)
+
+instance ToJSON JSONCIFileStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIFS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIFS"
+
+jsonCIFileStatus :: CIFileStatus d -> JSONCIFileStatus
+jsonCIFileStatus = \case
+  CIFSSndStored -> JCIFSSndStored
+  CIFSSndTransfer sent total -> JCIFSSndTransfer sent total
+  CIFSSndCancelled -> JCIFSSndCancelled
+  CIFSSndComplete -> JCIFSSndComplete
+  CIFSRcvInvitation -> JCIFSRcvInvitation
+  CIFSRcvAccepted -> JCIFSRcvAccepted
+  CIFSRcvTransfer rcvd total -> JCIFSRcvTransfer rcvd total
+  CIFSRcvComplete -> JCIFSRcvComplete
+  CIFSRcvCancelled -> JCIFSRcvCancelled
+
+aciFileStatusJSON :: JSONCIFileStatus -> ACIFileStatus
+aciFileStatusJSON = \case
+  JCIFSSndStored -> AFS SMDSnd CIFSSndStored
+  JCIFSSndTransfer sent total -> AFS SMDSnd $ CIFSSndTransfer sent total
+  JCIFSSndCancelled -> AFS SMDSnd CIFSSndCancelled
+  JCIFSSndComplete -> AFS SMDSnd CIFSSndComplete
+  JCIFSRcvInvitation -> AFS SMDRcv CIFSRcvInvitation
+  JCIFSRcvAccepted -> AFS SMDRcv CIFSRcvAccepted
+  JCIFSRcvTransfer rcvd total -> AFS SMDRcv $ CIFSRcvTransfer rcvd total
+  JCIFSRcvComplete -> AFS SMDRcv CIFSRcvComplete
+  JCIFSRcvCancelled -> AFS SMDRcv CIFSRcvCancelled
 
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo

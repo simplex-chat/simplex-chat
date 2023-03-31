@@ -8,7 +8,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import qualified Data.ByteString.Char8 as B
-import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), defaultInlineFilesConfig)
+import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFileConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesFileExist)
@@ -48,6 +48,12 @@ chatFileTests = do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
+  describe "file transfer over XFTP" $ do
+    it "send and receive file" testXFTPFileTransfer
+    it "send and receive file in group" testXFTPGroupFileTransfer
+    it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
+    it "with relative paths: send and receive file" testXFTPWithRelativePaths
+    it "continue receiving file after restart" testXFTPContinueRcv
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -269,6 +275,7 @@ testFileRcvCancel =
             alice <## "bob cancelled receiving file 1 (test.jpg)"
             alice ##> "/fs 1"
             alice <## "sending file 1 (test.jpg) cancelled: bob"
+            alice <## "file transfer cancelled"
         ]
       checkPartialTransfer "test.jpg"
 
@@ -600,6 +607,7 @@ testFilesFoldersImageRcvDelete =
         alice <## "bob cancelled receiving file 1 (test.jpg)"
         alice ##> "/fs 1"
         alice <## "sending file 1 (test.jpg) cancelled: bob"
+        alice <## "file transfer cancelled"
 
 testSendImageWithTextAndQuote :: HasCallStack => FilePath -> IO ()
 testSendImageWithTextAndQuote =
@@ -914,6 +922,171 @@ testAsyncGroupFileTransfer tmp = do
   dest `shouldBe` src
   dest2 <- B.readFile "./tests/tmp/test_1.jpg"
   dest2 `shouldBe` src
+
+testXFTPFileTransfer :: HasCallStack => FilePath -> IO ()
+testXFTPFileTransfer =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+      alice <## "uploaded file 1 (test.pdf) for bob"
+      bob <## "started receiving file 1 (test.pdf) from alice"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testXFTPGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testXFTPGroupFileTransfer =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    withXFTPServer $ do
+      createGroup3 "team" alice bob cath
+
+      alice #> "/f #team ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      -- alice <## "started sending file 1 (test.pdf) to #team" -- TODO "started uploading" ?
+      alice <## "uploaded file 1 (test.pdf) for #team"
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob
+        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from alice to ./tests/tmp/test_1.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      cath <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest1 <- B.readFile "./tests/tmp/test.pdf"
+      dest2 <- B.readFile "./tests/tmp/test_1.pdf"
+      dest1 `shouldBe` src
+      dest2 `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testXFTPWithChangedConfig :: HasCallStack => FilePath -> IO ()
+testXFTPWithChangedConfig =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      alice #$> ("/_xftp off", id, "ok")
+      alice #$> ("/_xftp on {\"minFileSize\":1024}", id, "ok")
+
+      bob #$> ("/xftp off", id, "ok")
+      bob #$> ("/xftp on minFileSize=1kb", id, "ok")
+
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+      alice <## "uploaded file 1 (test.pdf) for bob"
+      bob <## "started receiving file 1 (test.pdf) from alice"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {tempDir = Just "./tests/tmp"}
+
+testXFTPWithRelativePaths :: HasCallStack => FilePath -> IO ()
+testXFTPWithRelativePaths =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      -- agent is passed xftp work directory only on chat start,
+      -- so for test we work around by stopping and starting chat
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
+      alice #$> ("/_temp_folder ./tests/tmp/alice_xftp", id, "ok")
+      alice ##> "/_start"
+      alice <## "chat started"
+
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob #$> ("/_files_folder ./tests/tmp/bob_files", id, "ok")
+      bob #$> ("/_temp_folder ./tests/tmp/bob_xftp", id, "ok")
+      bob ##> "/_start"
+      bob <## "chat started"
+
+      connectUsers alice bob
+
+      alice #> "/f @bob test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      bob <## "saving file 1 from alice to test.pdf"
+      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+      alice <## "uploaded file 1 (test.pdf) for bob"
+      bob <## "started receiving file 1 (test.pdf) from alice"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}}
+
+testXFTPContinueRcv :: HasCallStack => FilePath -> IO ()
+testXFTPContinueRcv tmp = do
+  withXFTPServer $ do
+    withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+        connectUsers alice bob
+
+        alice #> "/f @bob ./tests/fixtures/test.pdf"
+        alice <## "use /fc 1 to cancel sending"
+        bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+        bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+        alice <## "uploaded file 1 (test.pdf) for bob"
+
+  -- server is down - file is not received
+  withTestChatCfg tmp cfg "bob" $ \bob -> do
+    bob <## "1 contacts connected (use /cs for the list)"
+    bob ##> "/fr 1 ./tests/tmp"
+    bob <## "started receiving file 1 (test.pdf) from alice"
+    bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+    (bob </)
+
+  withXFTPServer $ do
+    -- server is up - file reception is continued
+    withTestChatCfg tmp cfg "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =

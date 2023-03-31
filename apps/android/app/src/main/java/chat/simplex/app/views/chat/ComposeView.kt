@@ -7,11 +7,10 @@ import android.Manifest
 import android.app.Activity
 import android.content.*
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
-import android.graphics.ImageDecoder.DecodeException
+import android.graphics.*
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
@@ -36,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toFile
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -182,14 +182,17 @@ fun ComposeView(
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
+  val xftpSendEnabled = chatModel.controller.appPrefs.xftpSendEnabled.get()
+  val maxFileSize = getMaxFileSize(fileProtocol = if (xftpSendEnabled) FileProtocol.XFTP else FileProtocol.SMP)
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
     if (uri != null) {
-      val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
-      val bitmap = ImageDecoder.decodeBitmap(source)
-      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview), listOf(UploadContent.SimpleImage(uri))))
+      val bitmap: Bitmap? = getBitmapFromUri(uri)
+      if (bitmap != null) {
+        val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+        composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview), listOf(UploadContent.SimpleImage(uri))))
+      }
     }
   }
   val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
@@ -203,28 +206,21 @@ fun ComposeView(
     val content = ArrayList<UploadContent>()
     val imagesPreview = ArrayList<String>()
     uris.forEach { uri ->
-      val source = ImageDecoder.createSource(context.contentResolver, uri)
-      val drawable = try {
-        ImageDecoder.decodeDrawable(source)
-      } catch (e: DecodeException) {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(R.string.image_decoding_exception_title),
-          text = generalGetString(R.string.image_decoding_exception_desc)
-        )
-        Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
-        null
-      }
-      var bitmap: Bitmap? = if (drawable != null) ImageDecoder.decodeBitmap(source) else null
-      if (drawable is AnimatedImageDrawable) {
+      val drawable = getDrawableFromUri(uri)
+      var bitmap: Bitmap? = if (drawable != null) getBitmapFromUri(uri) else null
+      val isAnimNewApi = Build.VERSION.SDK_INT >= 28 && drawable is AnimatedImageDrawable
+      val isAnimOldApi = Build.VERSION.SDK_INT < 28 &&
+          (getFileName(SimplexApp.context, uri)?.endsWith(".gif") == true || getFileName(SimplexApp.context, uri)?.endsWith(".webp") == true)
+      if (isAnimNewApi || isAnimOldApi) {
         // It's a gif or webp
         val fileSize = getFileSize(context, uri)
-        if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
+        if (fileSize != null && fileSize <= maxFileSize) {
           content.add(UploadContent.AnimatedImage(uri))
         } else {
           bitmap = null
           AlertManager.shared.showAlertMsg(
             generalGetString(R.string.large_file),
-            String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
+            String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
           )
         }
       } else {
@@ -242,7 +238,7 @@ fun ComposeView(
   val processPickedFile = { uri: Uri?, text: String? ->
     if (uri != null) {
       val fileSize = getFileSize(context, uri)
-      if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
+      if (fileSize != null && fileSize <= maxFileSize) {
         val fileName = getFileName(SimplexApp.context, uri)
         if (fileName != null) {
           composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.FilePreview(fileName, uri))
@@ -250,7 +246,7 @@ fun ComposeView(
       } else {
         AlertManager.shared.showAlertMsg(
           generalGetString(R.string.large_file),
-          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
+          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
         )
       }
     }

@@ -16,7 +16,9 @@ public let MAX_IMAGE_SIZE: Int64 = 236700
 
 public let MAX_IMAGE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
-public let MAX_FILE_SIZE: Int64 = 8000000
+public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824
+
+public let MAX_FILE_SIZE_SMP: Int64 = 8000000
 
 public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(30)
 
@@ -42,7 +44,6 @@ func getAppDirectory() -> URL {
     dbContainerGroupDefault.get() == .group
     ? getGroupContainerDirectory()
     : getDocumentsDirectory()
-//    getDocumentsDirectory()
 }
 
 let DB_FILE_PREFIX = "simplex_v1"
@@ -158,6 +159,10 @@ public func removeLegacyDatabaseAndFiles() -> Bool {
     return r1 && r2
 }
 
+public func getTempFilesDirectory() -> URL {
+    getAppDirectory().appendingPathComponent("temp_files", isDirectory: true)
+}
+
 public func getAppFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
@@ -182,5 +187,12 @@ public func removeFile(_ fileName: String) {
         try FileManager.default.removeItem(atPath: getAppFilePath(fileName).path)
     } catch {
         logger.error("FileUtils.removeFile error: \(error.localizedDescription)")
+    }
+}
+
+public func getMaxFileSize(_ fileProtocol: FileProtocol) -> Int64 {
+    switch fileProtocol {
+    case .xftp: return MAX_FILE_SIZE_XFTP
+    case .smp: return MAX_FILE_SIZE_SMP
     }
 }

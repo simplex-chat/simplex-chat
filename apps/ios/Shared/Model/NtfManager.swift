@@ -39,7 +39,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         if let userId = content.userInfo["userId"] as? Int64,
            userId != chatModel.currentUser?.userId {
-           changeActiveUser(userId)
+            changeActiveUser(userId, viewPwd: nil)
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
             let chatId = content.userInfo["chatId"] as? String {
@@ -87,13 +87,17 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             switch content.categoryIdentifier {
             case ntfCategoryMessageReceived:
                 let recent = recentInTheSameChat(content)
-                if model.chatId == nil {
+                let userId = content.userInfo["userId"] as? Int64
+                if let userId = userId, let user = model.getUser(userId), !user.showNotifications {
+                    // ... inactive user with disabled notifications
+                    return []
+                } else if model.chatId == nil {
                     // in the chat list...
-                    if model.currentUser?.userId == (content.userInfo["userId"] as? Int64) {
-                        // ... of the current user
+                    if model.currentUser?.userId == userId {
+                        // ... of the active user
                         return recent ? [] : [.sound, .list]
                     } else {
-                        // ... of different user
+                        // ... of inactive user
                         return recent ? [.banner] : [.sound, .banner, .list]
                     }
                 } else if model.chatId == content.targetContentIdentifier {

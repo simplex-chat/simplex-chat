@@ -16,40 +16,68 @@ struct DatabaseErrorView: View {
     @State private var storedDBKey = getDatabaseKey()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var showRestoreDbButton = false
+    @State private var starting = false
 
     var body: some View {
+        ZStack {
+            databaseErrorView().disabled(starting)
+            if starting {
+                ProgressView().scaleEffect(2)
+            }
+        }
+    }
+
+    @ViewBuilder private func databaseErrorView() -> some View {
         VStack(alignment: .leading, spacing: 16) {
             switch status {
             case let .errorNotADatabase(dbFile):
                 if useKeychain && storedDBKey != nil && storedDBKey != "" {
-                    Text("Wrong database passphrase").font(.title)
+                    titleText("Wrong database passphrase")
                     Text("Database passphrase is different from saved in the keychain.")
                     databaseKeyField(onSubmit: saveAndRunChat)
                     saveAndOpenButton()
-                    Text("File: \(dbFile)")
+                    fileNameText(dbFile)
                 } else {
-                    Text("Encrypted database").font(.title)
+                    titleText("Encrypted database")
                     Text("Database passphrase is required to open chat.")
                     if useKeychain {
                         databaseKeyField(onSubmit: saveAndRunChat)
                         saveAndOpenButton()
                     } else {
-                        databaseKeyField(onSubmit: runChat)
+                        databaseKeyField(onSubmit: { runChat() })
                         openChatButton()
                     }
                 }
-            case let .error(dbFile, migrationError):
-                Text("Database error")
-                    .font(.title)
-                Text("File: \(dbFile)")
-                Text("Error: \(migrationError)")
+            case let .errorMigration(dbFile, migrationError):
+                switch migrationError {
+                case let .upgrade(upMigrations):
+                    titleText("Database upgrade")
+                    Button("Upgrade and open chat") { runChat(confirmMigrations: .yesUp) }
+                    fileNameText(dbFile)
+                    migrationsText(upMigrations.map(\.upName))
+                case let .downgrade(downMigrations):
+                    titleText("Database downgrade")
+                    Text("Warning: you may lose some data!").bold()
+                    Button("Downgrade and open chat") { runChat(confirmMigrations: .yesUpDown) }
+                    fileNameText(dbFile)
+                    migrationsText(downMigrations)
+                case let .migrationError(mtrError):
+                    titleText("Incompatible database version")
+                    fileNameText(dbFile)
+                    Text("Error: ") + Text(mtrErrorDescription(mtrError))
+                }
+            case let .errorSQL(dbFile, migrationSQLError):
+                titleText("Database error")
+                fileNameText(dbFile)
+                Text("Error: \(migrationSQLError)")
             case .errorKeychain:
-                Text("Keychain error")
-                    .font(.title)
+                titleText("Keychain error")
                 Text("Cannot access keychain to save database password")
+            case .invalidConfirmation:
+                // this can only happen if incorrect parameter is passed
+                Text(String("Invalid migration confirmation")).font(.title)
             case let .unknown(json):
-                Text("Database error")
-                    .font(.title)
+                titleText("Database error")
                 Text("Unknown database error: \(json)")
             case .ok:
                 EmptyView()
@@ -61,12 +89,33 @@ struct DatabaseErrorView: View {
             }
         }
         .padding()
-        .frame(maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear() { showRestoreDbButton = shouldShowRestoreDbButton() }
     }
 
+    private func titleText(_ s: LocalizedStringKey) -> Text {
+        Text(s).font(.title)
+    }
+
+    private func fileNameText(_ f: String) -> Text {
+        Text("File: \((f as NSString).lastPathComponent)")
+    }
+
+    private func migrationsText(_ ms: [String]) -> Text {
+        Text("Migrations: \(ms.joined(separator: ", "))")
+    }
+
+    private func mtrErrorDescription(_ err: MTRError) -> LocalizedStringKey {
+        switch err {
+        case let .noDown(dbMigrations):
+            return "database version is newer than the app, but no down migration for: \(dbMigrations.joined(separator: ", "))"
+        case let .different(appMigration, dbMigration):
+            return "different migration in the app/database: \(appMigration) / \(dbMigration)"
+        }
+    }
+
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
-        DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: onSubmit)
+        PassphraseField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: onSubmit)
     }
 
     private func saveAndOpenButton() -> some View {
@@ -89,14 +138,24 @@ struct DatabaseErrorView: View {
         runChat()
     }
 
-    private func runChat() {
+    private func runChat(confirmMigrations: MigrationConfirmation? = nil) {
+        starting = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            runChatSync(confirmMigrations: confirmMigrations)
+            starting = false
+        }
+    }
+
+    private func runChatSync(confirmMigrations: MigrationConfirmation? = nil) {
         do {
             resetChatCtrl()
-            try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
+            try initializeChat(start: m.v3DBMigration.startChat, dbKey: useKeychain ? nil : dbKey, confirmMigrations: confirmMigrations)
             if let s = m.chatDbStatus {
                 status = s
                 let am = AlertManager.shared
                 switch s {
+                case .invalidConfirmation:
+                    am.showAlert(Alert(title: Text(String("Invalid migration confirmation"))))
                 case .errorNotADatabase:
                     am.showAlertMsg(
                         title: "Wrong passphrase!",
@@ -104,7 +163,7 @@ struct DatabaseErrorView: View {
                     )
                 case .errorKeychain:
                     am.showAlertMsg(title: "Keychain error")
-                case let .error(_, error):
+                case let .errorSQL(_, error):
                     am.showAlert(Alert(
                         title: Text("Database error"),
                         message: Text(error)
@@ -114,6 +173,7 @@ struct DatabaseErrorView: View {
                         title: Text("Unknown error"),
                         message: Text(error)
                     ))
+                case .errorMigration: ()
                 case .ok: ()
                 }
             }

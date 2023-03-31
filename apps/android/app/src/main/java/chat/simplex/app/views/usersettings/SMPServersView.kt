@@ -27,7 +27,7 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.launch
 
 @Composable
-fun SMPServersView(m: ChatModel) {
+fun SMPServersView(m: ChatModel, close: () -> Unit) {
   var servers by remember {
     mutableStateOf(m.userSMPServersUnsaved.value ?: m.userSMPServers.value ?: emptyList())
   }
@@ -72,83 +72,90 @@ fun SMPServersView(m: ChatModel) {
     }
   }
   val scope = rememberCoroutineScope()
-
-  SMPServersLayout(
-    testing = testing.value,
-    servers = servers,
-    serversUnchanged = serversUnchanged.value,
-    saveDisabled = saveDisabled.value,
-    allServersDisabled = allServersDisabled.value,
-    m.currentUser.value,
-    addServer = {
-      AlertManager.shared.showAlertDialogButtonsColumn(
-        title = generalGetString(R.string.smp_servers_add),
-        buttons = {
-          Column {
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              servers = servers + ServerCfg.empty
-              // No saving until something will be changed on the next screen to prevent blank servers on the list
-              showServer(servers.last())
-            }) {
-              Text(stringResource(R.string.smp_servers_enter_manually))
-            }
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              ModalManager.shared.showModalCloseable { close ->
-                ScanSMPServer {
-                  close()
-                  servers = servers + it
-                  m.userSMPServersUnsaved.value = servers
+  ModalView(
+    close = {
+      if (saveDisabled.value) close()
+      else showUnsavedChangesAlert({ saveSMPServers(servers, m, close) }, close)
+    },
+    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+  ) {
+    SMPServersLayout(
+      testing = testing.value,
+      servers = servers,
+      serversUnchanged = serversUnchanged.value,
+      saveDisabled = saveDisabled.value,
+      allServersDisabled = allServersDisabled.value,
+      m.currentUser.value,
+      addServer = {
+        AlertManager.shared.showAlertDialogButtonsColumn(
+          title = generalGetString(R.string.smp_servers_add),
+          buttons = {
+            Column {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                servers = servers + ServerCfg.empty
+                // No saving until something will be changed on the next screen to prevent blank servers on the list
+                showServer(servers.last())
+              }) {
+                Text(stringResource(R.string.smp_servers_enter_manually))
+              }
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                ModalManager.shared.showModalCloseable { close ->
+                  ScanSMPServer {
+                    close()
+                    servers = servers + it
+                    m.userSMPServersUnsaved.value = servers
+                  }
+                }
+              }
+              ) {
+                Text(stringResource(R.string.smp_servers_scan_qr))
+              }
+              val hasAllPresets = hasAllPresets(servers, m)
+              if (!hasAllPresets) {
+                SectionItemView({
+                  AlertManager.shared.hideAlert()
+                  servers = (servers + addAllPresets(servers, m)).sortedByDescending { it.preset }
+                }) {
+                  Text(stringResource(R.string.smp_servers_preset_add), color = MaterialTheme.colors.onBackground)
                 }
               }
             }
-            ) {
-              Text(stringResource(R.string.smp_servers_scan_qr))
-            }
-            val hasAllPresets = hasAllPresets(servers, m)
-            if (!hasAllPresets) {
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-                servers = (servers + addAllPresets(servers, m)).sortedByDescending { it.preset }
-              }) {
-                Text(stringResource(R.string.smp_servers_preset_add), color = MaterialTheme.colors.onBackground)
-              }
-            }
+          }
+        )
+      },
+      testServers = {
+        scope.launch {
+          testServers(testing, servers, m) {
+            servers = it
+            m.userSMPServersUnsaved.value = servers
           }
         }
-      )
-    },
-    testServers = {
-      scope.launch {
-        testServers(testing, servers, m) {
-          servers = it
-          m.userSMPServersUnsaved.value = servers
-        }
-      }
-    },
-    resetServers = {
-      servers = m.userSMPServers.value ?: emptyList()
-      m.userSMPServersUnsaved.value = null
-    },
-    saveSMPServers = {
-      saveSMPServers(servers, m)
-    },
-    showServer = ::showServer,
-  )
+      },
+      resetServers = {
+        servers = m.userSMPServers.value ?: emptyList()
+        m.userSMPServersUnsaved.value = null
+      },
+      saveSMPServers = {
+        saveSMPServers(servers, m)
+      },
+      showServer = ::showServer,
+    )
 
-  if (testing.value) {
-    Box(
-      Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center
-    ) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(horizontal = 2.dp)
-          .size(30.dp),
-        color = HighOrLowlight,
-        strokeWidth = 2.5.dp
-      )
+    if (testing.value) {
+      Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        CircularProgressIndicator(
+          Modifier
+            .padding(horizontal = 2.dp)
+            .size(30.dp),
+          color = HighOrLowlight,
+          strokeWidth = 2.5.dp
+        )
+      }
     }
   }
 }
@@ -247,7 +254,7 @@ private fun HowToButton() {
   SettingsActionItem(
     Icons.Outlined.OpenInNew,
     stringResource(R.string.how_to_use_your_servers),
-    { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
+    { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary
   )
@@ -324,12 +331,22 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
   return fs
 }
 
-private fun saveSMPServers(servers: List<ServerCfg>, m: ChatModel) {
+private fun saveSMPServers(servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
   withApi {
     if (m.controller.setUserSMPServers(servers)) {
       m.userSMPServers.value = servers
       m.userSMPServersUnsaved.value = null
     }
+    afterSave()
   }
 }
 
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(R.string.smp_save_servers_question),
+    confirmText = generalGetString(R.string.save_verb),
+    dismissText = generalGetString(R.string.exit_without_saving),
+    onConfirm = save,
+    onDismiss = revert,
+  )
+}

@@ -1,5 +1,7 @@
 package chat.simplex.app.views.chat.item
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +27,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.ComposeContextItem
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.datetime.Clock
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
@@ -40,6 +43,7 @@ fun ChatItemView(
   linkMode: SimplexLinkMode,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
@@ -91,6 +95,14 @@ fun ChatItemView(
         }
       }
 
+      fun moderateMessageQuestionText(): String {
+        return if (fullDeleteAllowed) {
+          generalGetString(R.string.moderate_message_will_be_deleted_warning)
+        } else {
+          generalGetString(R.string.moderate_message_will_be_marked_warning)
+        }
+      }
+
       @Composable
       fun MsgContentItemDropdownMenu() {
         DropdownMenu(
@@ -123,9 +135,16 @@ fun ChatItemView(
           if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
+              val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
               ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
                 when (cItem.content.msgContent) {
-                  is MsgContent.MCImage -> saveImage(context, cItem.file)
+                  is MsgContent.MCImage -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.hasPermission) {
+                      saveImage(context, cItem.file)
+                    } else {
+                      writePermissionState.launchPermissionRequest()
+                    }
+                  }
                   is MsgContent.MCFile -> saveFileLauncher.launch(cItem.file?.fileName)
                   is MsgContent.MCVoice -> saveFileLauncher.launch(cItem.file?.fileName)
                   else -> {}
@@ -150,8 +169,15 @@ fun ChatItemView(
               }
             )
           }
+          if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancellable) {
+            CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile)
+          }
           if (!(live && cItem.meta.isLive)) {
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
+          }
+          val groupInfo = cItem.memberToModerate(cInfo)?.first
+          if (groupInfo != null) {
+            ModerateItemAction(cItem, questionText = moderateMessageQuestionText(), showMenu, deleteMessage)
           }
         }
       }
@@ -163,14 +189,16 @@ fun ChatItemView(
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          ItemAction(
-            stringResource(R.string.reveal_verb),
-            Icons.Outlined.Visibility,
-            onClick = {
-              revealed.value = true
-              showMenu.value = false
-            }
-          )
+          if (!cItem.isDeletedContent) {
+            ItemAction(
+              stringResource(R.string.reveal_verb),
+              Icons.Outlined.Visibility,
+              onClick = {
+                revealed.value = true
+                showMenu.value = false
+              }
+            )
+          }
           DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
@@ -238,12 +266,29 @@ fun ChatItemView(
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
         is CIContent.RcvGroupFeatureRejected -> CIChatFeatureView(cItem, c.groupFeature, Color.Red)
-        is CIContent.SndModerated -> DeletedItem()
-        is CIContent.RcvModerated -> DeletedItem()
+        is CIContent.SndModerated -> MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
+        is CIContent.RcvModerated -> MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
         is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
       }
     }
   }
+}
+
+@Composable
+fun CancelFileItemAction(
+  fileId: Long,
+  showMenu: MutableState<Boolean>,
+  cancelFile: (Long) -> Unit
+) {
+  ItemAction(
+    stringResource(R.string.cancel_verb),
+    Icons.Outlined.Close,
+    onClick = {
+      showMenu.value = false
+      cancelFileAlertDialog(fileId, cancelFile = cancelFile)
+    },
+    color = Color.Red
+  )
 }
 
 @Composable
@@ -265,6 +310,24 @@ fun DeleteItemAction(
 }
 
 @Composable
+fun ModerateItemAction(
+  cItem: ChatItem,
+  questionText: String,
+  showMenu: MutableState<Boolean>,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
+) {
+  ItemAction(
+    stringResource(R.string.moderate_verb),
+    Icons.Outlined.Flag,
+    onClick = {
+      showMenu.value = false
+      moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
 fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
   DropdownMenuItem(onClick) {
     Row {
@@ -279,6 +342,18 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
       Icon(icon, text, tint = color)
     }
   }
+}
+
+fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.cancel_file__question),
+    text = generalGetString(R.string.file_transfer_will_be_cancelled_warning),
+    confirmText = generalGetString(R.string.confirm_verb),
+    destructive = true,
+    onConfirm = {
+      cancelFile(fileId)
+    }
+  )
 }
 
 fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
@@ -308,6 +383,18 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
   )
 }
 
+fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.delete_member_message__question),
+    text = questionText,
+    confirmText = generalGetString(R.string.delete_verb),
+    destructive = true,
+    onConfirm = {
+      deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
+    }
+  )
+}
+
 private fun showMsgDeliveryErrorAlert(description: String) {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.message_delivery_error_title),
@@ -329,6 +416,7 @@ fun PreviewChatItemView() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      cancelFile = {},
       joinGroup = {},
       acceptCall = { _ -> },
       scrollToItem = {},
@@ -349,6 +437,7 @@ fun PreviewChatItemViewDeletedContent() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      cancelFile = {},
       joinGroup = {},
       acceptCall = { _ -> },
       scrollToItem = {},

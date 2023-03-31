@@ -1,12 +1,17 @@
 package chat.simplex.app.views.helpers
 
+import android.app.Activity
 import android.app.Application
+//import android.app.LocaleManager
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.FileUtils
+import android.os.*
 import android.provider.OpenableColumns
 import android.text.Spanned
 import android.text.SpannedString
@@ -29,11 +34,12 @@ import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
-import chat.simplex.app.model.CIFile
-import chat.simplex.app.model.json
+import chat.simplex.app.R
+import chat.simplex.app.model.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import org.apache.commons.io.IOUtils
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -231,10 +237,16 @@ const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE
 const val MAX_VOICE_SIZE_FOR_SENDING: Long = 94680 // 6 chunks * 15780 bytes per chunk
 const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 43_000
 
-const val MAX_FILE_SIZE: Long = 8000000
+const val MAX_FILE_SIZE_SMP: Long = 8000000
+
+const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824
 
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()
+}
+
+fun getTempFilesDirectory(context: Context): String {
+  return "${getFilesDirectory(context)}/temp_files"
 }
 
 fun getAppFilesDirectory(context: Context): String {
@@ -319,6 +331,14 @@ fun getFileName(context: Context, uri: Uri): String? {
   }
 }
 
+fun getAppFilePath(context: Context, uri: Uri): String? {
+  return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+    cursor.moveToFirst()
+    getAppFilePath(context, cursor.getString(nameIndex))
+  }
+}
+
 fun getFileSize(context: Context, uri: Uri): Long? {
   return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
     val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
@@ -327,9 +347,48 @@ fun getFileSize(context: Context, uri: Uri): Long? {
   }
 }
 
+fun getBitmapFromUri(uri: Uri, withAlertOnException: Boolean = true): Bitmap? {
+  return if (Build.VERSION.SDK_INT >= 28) {
+    val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+    try {
+      ImageDecoder.decodeBitmap(source)
+    } catch (e: android.graphics.ImageDecoder.DecodeException) {
+      Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
+      if (withAlertOnException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.image_decoding_exception_title),
+          text = generalGetString(R.string.image_decoding_exception_desc)
+        )
+      }
+      null
+    }
+  } else {
+    BitmapFactory.decodeFile(getAppFilePath(SimplexApp.context, uri))
+  }
+}
+
+fun getDrawableFromUri(uri: Uri, withAlertOnException: Boolean = true): Drawable? {
+  return if (Build.VERSION.SDK_INT >= 28) {
+    val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+    try {
+      ImageDecoder.decodeDrawable(source)
+    } catch (e: android.graphics.ImageDecoder.DecodeException) {
+      if (withAlertOnException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.image_decoding_exception_title),
+          text = generalGetString(R.string.image_decoding_exception_desc)
+        )
+      }
+      Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
+      null
+    }
+  } else {
+    Drawable.createFromPath(getAppFilePath(SimplexApp.context, uri))
+  }
+}
+
 fun saveImage(context: Context, uri: Uri): String? {
-  val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
-  val bitmap = ImageDecoder.decodeBitmap(source)
+  val bitmap = getBitmapFromUri(uri) ?: return null
   return saveImage(context, bitmap)
 }
 
@@ -400,7 +459,7 @@ fun saveFileFromUri(context: Context, uri: Uri): String? {
     if (inputStream != null && fileToSave != null) {
       val destFileName = uniqueCombine(context, fileToSave)
       val destFile = File(getAppFilePath(context, destFileName))
-      FileUtils.copy(inputStream, FileOutputStream(destFile))
+      IOUtils.copy(inputStream, FileOutputStream(destFile))
       destFileName
     } else {
       Log.e(chat.simplex.app.TAG, "Util.kt saveFileFromUri null inputStream")
@@ -436,9 +495,9 @@ fun formatBytes(bytes: Long): String {
     return "0 bytes"
   }
   val bytesDouble = bytes.toDouble()
-  val k = 1000.toDouble()
+  val k = 1024.toDouble()
   val units = arrayOf("bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-  val i = kotlin.math.floor(log2(bytesDouble) / log2(k))
+  val i = floor(log2(bytesDouble) / log2(k))
   val size = bytesDouble / k.pow(i)
   val unit = units[i.toInt()]
 
@@ -483,6 +542,13 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
+fun getMaxFileSize(fileProtocol: FileProtocol): Long {
+  return when (fileProtocol) {
+    FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
+    FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+  }
+}
+
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
 
@@ -501,3 +567,42 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
     save = { json.encodeToString(it) },
     restore = { json.decodeFromString(it) }
   )
+
+fun saveAppLocale(pref: SharedPreference<String?>, activity: Activity, languageCode: String? = null) {
+//  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//    val localeManager = SimplexApp.context.getSystemService(LocaleManager::class.java)
+//    localeManager.applicationLocales = LocaleList(Locale.forLanguageTag(languageCode ?: return))
+//  } else {
+    pref.set(languageCode)
+    if (languageCode == null) {
+      activity.applyLocale(SimplexApp.context.defaultLocale)
+    }
+    activity.recreate()
+//  }
+}
+
+fun Activity.applyAppLocale(pref: SharedPreference<String?>) {
+//  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+    val lang = pref.get()
+    if (lang == null || lang == Locale.getDefault().language) return
+    applyLocale(Locale.forLanguageTag(lang))
+//  }
+}
+
+private fun Activity.applyLocale(locale: Locale) {
+  Locale.setDefault(locale)
+  val appConf = Configuration(SimplexApp.context.resources.configuration).apply { setLocale(locale) }
+  val activityConf = Configuration(resources.configuration).apply { setLocale(locale) }
+  @Suppress("DEPRECATION")
+  SimplexApp.context.resources.updateConfiguration(appConf, resources.displayMetrics)
+  @Suppress("DEPRECATION")
+  resources.updateConfiguration(activityConf, resources.displayMetrics)
+}
+
+fun UriHandler.openUriCatching(uri: String) {
+  try {
+    openUri(uri)
+  } catch (e: ActivityNotFoundException) {
+    Log.e(TAG, e.stackTraceToString())
+  }
+}

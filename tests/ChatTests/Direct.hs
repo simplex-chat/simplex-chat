@@ -62,6 +62,7 @@ chatDirectTests = do
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
+    it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -787,13 +788,13 @@ testMuteContact =
       connectUsers alice bob
       alice #> "@bob hello"
       bob <# "alice> hello"
-      bob ##> "/mute alice"
+      bob ##> "/mute @alice"
       bob <## "ok"
       alice #> "@bob hi"
       (bob </)
       bob ##> "/contacts"
       bob <## "alice (Alice) (muted, you can /unmute @alice)"
-      bob ##> "/unmute alice"
+      bob ##> "/unmute @alice"
       bob <## "ok"
       bob ##> "/contacts"
       bob <## "alice (Alice)"
@@ -1501,6 +1502,105 @@ testUsersTimedMessages tmp = do
       alice <## "bob updated preferences for you:"
       alice <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes (" <> ttl <> " sec))")
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY") -- to remove feature items
+
+testUserPrivacy :: HasCallStack => FilePath -> IO ()
+testUserPrivacy =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      -- connect using second user
+      connectUsers alice bob
+      alice #> "@bob hello"
+      bob <# "alisa> hello"
+      bob #> "@alisa hey"
+      alice <# "bob> hey"
+      -- hide user profile
+      alice ##> "/hide user my_password"
+      userHidden alice "current "
+      -- shows messages when active
+      bob #> "@alisa hello again"
+      alice <# "bob> hello again"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      -- does not show messages to user
+      bob #> "@alisa this won't show"
+      (alice </)
+      -- does not show hidden user
+      alice ##> "/users"
+      alice <## "alice (Alice) (active)"
+      (alice </)
+      -- requires password to switch to the user
+      alice ##> "/user alisa"
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/user alisa wrong_password"
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/user alisa my_password"
+      showActiveUser alice "alisa"
+      -- shows hidden user when active
+      alice ##> "/users"
+      alice <## "alice (Alice)"
+      alice <## "alisa (active, hidden, muted)"
+      -- hidden message is saved
+      alice ##> "/tail"
+      alice
+        <##? [ "bob> Disappearing messages: off",
+               "bob> Full deletion: off",
+               "bob> Voice messages: enabled",
+               "@bob hello",
+               "bob> hey",
+               "bob> hello again",
+               "bob> this won't show"
+             ]
+      -- change profile password
+      alice ##> "/unmute user"
+      alice <## "hidden user always muted when inactive"
+      alice ##> "/hide user password"
+      alice <## "user is already hidden"
+      alice ##> "/unhide user wrong_password"
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/unhide user my_password"
+      userVisible alice "current "
+      alice ##> "/hide user new_password"
+      userHidden alice "current "
+      alice ##> "/_delete user 1 del_smp=on"
+      alice <## "cannot delete last user"
+      alice ##> "/_hide user 1 \"password\""
+      alice <## "cannot hide the only not hidden user"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      -- change profile privacy for inactive user via API requires correct password
+      alice ##> "/_unmute user 2"
+      alice <## "hidden user always muted when inactive"
+      alice ##> "/_hide user 2 \"password\""
+      alice <## "user is already hidden"
+      alice ##> "/_unhide user 2 \"wrong_password\""
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/_unhide user 2 \"new_password\""
+      userVisible alice ""
+      alice ##> "/_hide user 2 \"another_password\""
+      userHidden alice ""
+      alice ##> "/user alisa another_password"
+      showActiveUser alice "alisa"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice ##> "/_delete user 2 del_smp=on"
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/_delete user 2 del_smp=on \"wrong_password\""
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/_delete user 2 del_smp=on \"another_password\""
+      alice <## "ok"
+      alice <## "completed deleting user"
+  where
+    userHidden alice current = do
+      alice <## (current <> "user alisa:")
+      alice <## "messages are hidden (use /tail to view)"
+      alice <## "profile is hidden"
+    userVisible alice current = do
+      alice <## (current <> "user alisa:")
+      alice <## "messages are shown"
+      alice <## "profile is visible"
 
 testSetChatItemTTL :: HasCallStack => FilePath -> IO ()
 testSetChatItemTTL =

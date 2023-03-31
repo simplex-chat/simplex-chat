@@ -598,12 +598,14 @@
     <string name="incoming_audio_call">Appel audio entrant</string>
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> veut se connecter à vous via</string>
     <string name="your_calls">Vos appels</string>
-    <string name="connect_calls_via_relay">Se connecter via relais</string>
+    <string name="always_use_relay">Se connecter via relais</string>
     <string name="call_on_lock_screen">Appels en écran verrouillé :</string>
     <string name="show_call_on_lock_screen">Montrer</string>
     <string name="no_call_on_lock_screen">Désactiver</string>
     <string name="your_ice_servers">Vos serveurs ICE</string>
     <string name="webrtc_ice_servers">Serveurs WebRTC ICE</string>
+    <string name="relay_server_protects_ip">Le serveur relais protège votre adresse IP, mais il peut observer la durée de l\'appel.</string>
+    <string name="relay_server_if_necessary">Le serveur relais n\'est utilisé que si nécessaire. Un tiers peut observer votre adresse IP.</string>
     <string name="open_simplex_chat_to_accept_call">Ouvrez <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pour décrocher</string>
     <string name="status_no_e2e_encryption">sans chiffrement de bout en bout</string>
     <string name="status_contact_has_e2e_encryption">Ce contact a le chiffrement de bout en bout</string>
@@ -742,7 +744,7 @@
     <string name="member_role_will_be_changed_with_notification">Le rôle sera changé pour «%s». Les membres du groupe seront notifiés.</string>
     <string name="icon_descr_contact_checked">Contact vérifié⸱e</string>
     <string name="clear_contacts_selection_button">Effacer</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact·s sélectionné·e·s</string>
+    <string name="num_contacts_selected">%d contact·s sélectionné·e·s</string>
     <string name="skip_inviting_button">Passer l’invitation de membres</string>
     <string name="select_contacts">Sélectionnez des contacts</string>
     <string name="no_contacts_selected">Aucun contact sélectionné</string>
@@ -940,7 +942,6 @@
     <string name="users_delete_with_connections">Profil et connexions au serveur</string>
     <string name="network_session_mode_transport_isolation">Isolement du transport</string>
     <string name="update_network_session_mode_question">Mettre à jour le mode d\'isolation du transport \?</string>
-    <string name="your_chat_profiles_stored_locally">Vos profils de chat sont stockés localement, uniquement sur votre appareil</string>
     <string name="network_session_mode_entity_description">Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>.
 \n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.</string>
     <string name="network_session_mode_user">Profil de chat</string>
@@ -967,4 +968,58 @@
     <string name="v4_5_transport_isolation">Isolation du transport</string>
     <string name="v4_5_multiple_chat_profiles_descr">Différents noms, avatars et mode d\'isolation de transport.</string>
     <string name="moderated_description">modéré</string>
+    <string name="moderated_item_description">modéré par %s</string>
+    <string name="delete_member_message__question">Supprimer le message de ce membre \?</string>
+    <string name="moderate_verb">Modéré</string>
+    <string name="moderate_message_will_be_deleted_warning">Le message sera supprimé pour tous les membres.</string>
+    <string name="moderate_message_will_be_marked_warning">Le message sera marqué comme modéré pour tous les membres.</string>
+    <string name="you_are_observer">vous êtes observateur</string>
+    <string name="error_updating_link_for_group">Erreur lors de la mise à jour du lien de groupe</string>
+    <string name="initial_member_role">Rôle initial</string>
+    <string name="observer_cant_send_message_desc">Veuillez contacter l\'administrateur du groupe.</string>
+    <string name="observer_cant_send_message_title">Vous ne pouvez pas envoyer de messages !</string>
+    <string name="group_member_role_observer">observateur</string>
+    <string name="language_system">Système</string>
+    <string name="smp_save_servers_question">Sauvegarder les serveurs \?</string>
+    <string name="dont_show_again">Ne plus afficher</string>
+    <string name="button_add_welcome_message">Ajouter un message d\'accueil</string>
+    <string name="cant_delete_user_profile">Impossible de supprimer le profil d\'utilisateur !</string>
+    <string name="v4_6_group_moderation">Modération de groupe</string>
+    <string name="user_hide">Cacher</string>
+    <string name="muted_when_inactive">Mute en cas d\'inactivité !</string>
+    <string name="confirm_password">Confirmer le mot de passe</string>
+    <string name="v4_6_reduced_battery_usage">Réduction accrue de l\'utilisation de la batterie</string>
+    <string name="v4_6_chinese_spanish_interface">Interface en chinois et en espagnol</string>
+    <string name="enter_password_to_show">Entrez le mot de passe ci-dessus pour continuer !</string>
+    <string name="v4_6_audio_video_calls">Appels audio et vidéo</string>
+    <string name="v4_6_group_welcome_message">Message d\'accueil du groupe</string>
+    <string name="error_saving_user_password">Erreur d\'enregistrement du mot de passe de l\'utilisateur</string>
+    <string name="error_updating_user_privacy">Erreur de mise à jour de la confidentialité de l\'utilisateur</string>
+    <string name="hidden_profile_password">Mot de passe de profil caché</string>
+    <string name="v4_6_hidden_chat_profiles">Profils de chat cachés</string>
+    <string name="v4_6_group_moderation_descr">Désormais, les administrateurs peuvent :
+\n- supprimer les messages des membres.
+\n- désactiver des membres (rôle \"observateur\")</string>
+    <string name="save_welcome_message_question">Sauvegarder le message d\'accueil \?</string>
+    <string name="v4_6_group_welcome_message_descr">Choisissez un message à l\'attention des nouveaux membres !</string>
+    <string name="hide_profile">Masquer le profil</string>
+    <string name="v4_6_reduced_battery_usage_descr">D\'autres améliorations sont à venir !</string>
+    <string name="password_to_show">Mot de passe à afficher</string>
+    <string name="make_profile_private">Rendre le profil privé !</string>
+    <string name="user_mute">Mute</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Protégez vos profils de chat par un mot de passe !</string>
+    <string name="tap_to_activate_profile">Appuyez pour activer le profil.</string>
+    <string name="save_and_update_group_profile">Sauvegarder et mettre à jour le profil du groupe</string>
+    <string name="save_profile_password">Enregistrer le mot de passe du profil</string>
+    <string name="to_reveal_profile_enter_password">Pour révéler votre profil caché, entrez un mot de passe complet dans le champ de recherche de la page Profils de chat.</string>
+    <string name="v4_6_audio_video_calls_descr">Prise en charge du Bluetooth et autres améliorations.</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Merci aux utilisateurs - contribuez via Weblate !</string>
+    <string name="should_be_at_least_one_profile">Il doit y avoir au moins un profil d\'utilisateur.</string>
+    <string name="should_be_at_least_one_visible_profile">Il doit y avoir au moins un profil d\'utilisateur visible.</string>
+    <string name="user_unhide">Dévoiler</string>
+    <string name="user_unmute">Démute</string>
+    <string name="button_welcome_message">Message d\'accueil</string>
+    <string name="group_welcome_title">Message d\'accueil</string>
+    <string name="you_can_hide_or_mute_user_profile">Vous pouvez masquer ou mettre en sourdine un profil d\'utilisateur - maintenez-le enfoncé pour accéder au menu.</string>
+    <string name="you_will_still_receive_calls_and_ntfs">Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu\'ils sont actifs.</string>
 </resources>
