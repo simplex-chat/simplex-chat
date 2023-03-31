@@ -7,6 +7,21 @@
             "enabled": true
         },
         {
+            "label": "ar",
+            "name": "العربية",
+            "iconText": "العربية",
+            "textColor": "white",
+            "iconBg": "green",
+            "enabled": false,
+            "rtl": true
+        },
+        {
+            "label": "cs",
+            "name": "Čeština",
+            "flag": "/img/flags/cs.svg",
+            "enabled": true
+        },
+        {
             "label": "de",
             "name": "Deutsch",
             "flag": "/img/flags/de.svg",
@@ -16,12 +31,6 @@
             "label": "fr",
             "name": "Français",
             "flag": "/img/flags/fr.svg",
-            "enabled": true
-        },
-        {
-            "label": "cs",
-            "name": "Čeština",
-            "flag": "/img/flags/cs.svg",
             "enabled": true
         },
         {
@@ -59,15 +68,6 @@
             "name": "Russian",
             "flag": "/img/flags/ru.svg",
             "enabled": false
-        },
-        {
-            "label": "ar",
-            "name": "Arabic",
-            "iconText": "العربية",
-            "textColor": "white",
-            "iconBg": "green",
-            "enabled": true,
-            "rtl": true
         }
     ]
 }
