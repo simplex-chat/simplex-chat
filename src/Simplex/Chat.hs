@@ -582,7 +582,8 @@ processChatCommand = \case
         fsFilePath <- toFSFilePath file
         aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) fsFilePath n
         -- TODO CRSndFileStart event for XFTP
-        ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv $ AgentSndFileId aFileId
+        chSize <- asks $ fileChunkSize . config
+        ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv (AgentSndFileId aFileId) chSize
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
         case contactOrGroup of
           CGContact Contact {activeConn} -> withStore' $ \db -> createSndFTDescrXFTP db user Nothing activeConn ft fileDescr
