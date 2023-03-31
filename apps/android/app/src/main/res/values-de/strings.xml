@@ -1096,7 +1096,7 @@
     <string name="group_welcome_title">Begrüßungsmeldung</string>
     <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten - für das Menü gedrückt halten.</string>
     <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
-    <string name="settings_send_files_via_xftp">Dateien per XFTP versenden</string>
+    <string name="settings_send_files_via_xftp">Videos und Dateien per XFTP versenden</string>
     <string name="invalid_migration_confirmation">Migrations-Bestätigung ungültig</string>
     <string name="upgrade_and_open_chat">Aktualisieren und den Chat öffnen</string>
     <string name="confirm_database_upgrades">Datenbank-Aktualisierungen bestätigen</string>
@@ -1123,4 +1123,13 @@
     <string name="unhide_profile">Verbergen des Profils aufheben</string>
     <string name="profile_password">Passwort für Profil</string>
     <string name="unhide_chat_profile">Verbergen des Chat-Profils aufheben</string>
+    <string name="icon_descr_video_asked_to_receive">Aufforderung zum Empfang des Videos</string>
+    <string name="videos_limit_desc">Es können nur 10 Videos zur gleichen Zeit versendet werden</string>
+    <string name="videos_limit_title">Zu viele Videos auf einmal!</string>
+    <string name="video_descr">Video</string>
+    <string name="icon_descr_video_snd_complete">Video gesendet</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Das Video wird empfangen, sobald Ihr Kontakt das Hochladen beendet hat.</string>
+    <string name="icon_descr_waiting_for_video">Auf das Video warten</string>
+    <string name="waiting_for_video">Auf das Video warten</string>
+    <string name="video_will_be_received_when_contact_is_online">Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</string>
 </resources>
