@@ -150,7 +150,7 @@ private fun VideoView(uri: Uri, file: CIFile, defaultPreview: Bitmap, defaultDur
 private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit, onClick: () -> Unit) {
   Surface(
     Modifier.align(Alignment.Center),
-    color = Color.White.copy(alpha = 0.8f),
+    color = Color.Black.copy(alpha = 0.25f),
     shape = RoundedCornerShape(percent = 50)
   ) {
     Box(
@@ -163,7 +163,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
         imageVector = Icons.Filled.PlayArrow,
         contentDescription = null,
         Modifier.size(25.dp),
-        tint = if (error) WarningOrange else MaterialTheme.colors.primary
+        tint = if (error) WarningOrange else Color.White
       )
     }
   }
@@ -176,7 +176,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
       Box(
         Modifier
           .padding(DEFAULT_PADDING_HALF)
-          .background(Color.Black.copy(alpha = 0.4f), MaterialTheme.shapes.small)
+          .background(Color.Black.copy(alpha = 0.35f), MaterialTheme.shapes.small)
           .padding(vertical = 2.dp, horizontal = 4.dp)
       ) {
         val time = (if (progress.value > 0) durationText((progress.value / 1000).toInt()) else durationText((duration.value / 1000).toInt()))
@@ -199,7 +199,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
         Box(
           Modifier
             .padding(top = DEFAULT_PADDING_HALF)
-            .background(Color.Black.copy(alpha = 0.4f), MaterialTheme.shapes.small)
+            .background(Color.Black.copy(alpha = 0.35f), MaterialTheme.shapes.small)
             .padding(vertical = 2.dp, horizontal = 4.dp)
         ) {
           Text(
