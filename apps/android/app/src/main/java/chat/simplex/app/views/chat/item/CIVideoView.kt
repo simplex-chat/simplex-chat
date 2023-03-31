@@ -179,12 +179,11 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
           .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(percent = 50))
           .padding(vertical = 2.dp, horizontal = 4.dp)
       ) {
-        val time = (if (progress.value > 0) durationText((progress.value / 1000).toInt()) else durationText((duration.value / 1000).toInt()))
-        val sp30 = with(LocalDensity.current) { 30.sp.toDp() }
-        val sp45 = with(LocalDensity.current) { 45.sp.toDp() }
+        val time = durationText(((if (progress.value > 0) progress.value else duration.value) / 1000).toInt())
+        val width = with(LocalDensity.current) { (if (time.length <= 5) 44 else 50).sp.toDp() }
         Text(
           time,
-          Modifier.widthIn(min = if (time.length <= 5) sp30 else sp45).padding(horizontal = 4.dp),
+          Modifier.widthIn(min = width).padding(horizontal = 4.dp),
           fontSize = 13.sp,
           color = Color.White
         )
