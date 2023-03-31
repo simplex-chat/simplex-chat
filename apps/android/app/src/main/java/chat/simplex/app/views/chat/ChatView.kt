@@ -134,6 +134,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       linkMode = chatModel.simplexLinkMode.value,
+      allowVideoAttachment = chatModel.controller.appPrefs.xftpSendEnabled.get(),
       chatModelIncognito = chatModel.incognito.value,
       back = {
         hideKeyboard(view)
@@ -307,6 +308,7 @@ fun ChatLayout(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
+  allowVideoAttachment: Boolean,
   chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
@@ -338,6 +340,7 @@ fun ChatLayout(
         sheetContent = {
           ChooseAttachmentView(
             attachmentOption,
+            allowVideoAttachment,
             hide = { scope.launch { attachmentBottomSheetState.hide() } }
           )
         },
@@ -1078,6 +1081,7 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
+      allowVideoAttachment = true,
       chatModelIncognito = false,
       back = {},
       info = {},
@@ -1138,6 +1142,7 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
+      allowVideoAttachment = true,
       chatModelIncognito = false,
       back = {},
       info = {},
