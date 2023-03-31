@@ -91,7 +91,7 @@
     <string name="chat_is_running">채팅 기능이 작동하고 있어요</string>
     <string name="settings_section_title_chats">채팅</string>
     <string name="chat_database_imported">채팅 데이테베이스를 불러 왔어요</string>
-    <string name="impossible_to_recover_passphrase"><b>주의</b>: 비밀번호를 분실하면 복구나 변경할 수 없어요.</string>
+    <string name="impossible_to_recover_passphrase"><b>주의</b>: 비밀번호를 분실하면 복구나 비밀번호 변경을 할 수 없어요.</string>
     <string name="change_database_passphrase_question">데이터베이스 암호를 바꾸겠습니까\?</string>
     <string name="confirm_new_passphrase">새로운 암호 확인…</string>
     <string name="chat_archive_section">채팅 기록 보관함</string>
@@ -222,7 +222,7 @@
     <string name="for_me_only">나에게서만 삭제</string>
     <string name="delete_member_message__question">멤버의 메시지를 삭제할까요\?</string>
     <string name="maximum_supported_file_size">현재 지원되는 최대 파일 크기는 <xliff:g id="maxFileSize">%1$s</xliff:g>입니다.</string>
-    <string name="image_decoding_exception_title">디코딩 에러</string>
+    <string name="image_decoding_exception_title">디코딩 오류</string>
     <string name="button_delete_contact">대화 상대 삭제</string>
     <string name="delete_contact_question">연락처를 삭제할까요\?</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 데스크톱: <b>QR 코드 스캔</b>을 통해 앱에서 표시된 QR 코드를 스캔해 주세요.</string>
@@ -552,4 +552,37 @@
     <string name="icon_descr_email">이메일</string>
     <string name="icon_descr_server_status_pending">대기 중</string>
     <string name="icon_descr_settings">설정</string>
+    <string name="icon_descr_waiting_for_image">이미지 기다리는 중</string>
+    <string name="image_decoding_exception_desc">이미지를 디코딩할 수 없어요. 다른 이미지를 시도하거나 개발자에게 문의해 주세요.</string>
+    <string name="image_descr">이미지</string>
+    <string name="image_saved">갤러리에 사진 저장됨</string>
+    <string name="images_limit_desc">동시에 최대 10개까지만 이미지를 보낼 수 있어요.</string>
+    <string name="images_limit_title">이미지 수가 너무 많아요!</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">거절해도 상대에게 알림이 전송되지 않아요.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">직접 만날 수 없다면 <b>영상 통화에서 QR 코드를 보여주거나</b> 링크를 공유해 주세요.</string>
+    <string name="icon_descr_video_call">영상 전화</string>
+    <string name="icon_descr_video_off">영상 끄기</string>
+    <string name="icon_descr_speaker_on">스피커 켜기</string>
+    <string name="icon_descr_video_on">영상 켜기</string>
+    <string name="icon_descr_speaker_off">스피커 끄기</string>
+    <string name="import_database">데이터베이스 가져오기</string>
+    <string name="import_database_confirmation">가져오기</string>
+    <string name="incognito">익명 모드</string>
+    <string name="incognito_info_find">익명 채팅에 사용되는 프로필을 찾으려면 채팅 상단에 있는 연락처 또는 그룹 이름을 탭하세요.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">대화 상대가 업로드를 완료하면 이미지가 수신될 거예요.</string>
+    <string name="image_descr_profile_image">프로필 이미지</string>
+    <string name="incognito_info_allows">하나의 프로필로 여러 사람과 연락할 필요 없이 무수히 많은 익명 프로필로 연락할 수 있어요.</string>
+    <string name="immune_to_spam_and_abuse">스팸 및 남용에 면역</string>
+    <string name="ignore">무시하기</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser"><xliff:g id="appName">SimpleX Chat</xliff:g> 초대 링크를 받으면 브라우저에서 참여할 수 있어요 :</string>
+    <string name="image_descr_link_preview">링크 미리보기 이미지</string>
+    <string name="image_descr_qr_code">QR 코드</string>
+    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> 팀</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">직접 만날 수 없다면 <b>영상 통화에서 QR 코드를 스캔</b>하거나 상대에게 초대 링크를 공유할 수 있어요.</string>
+    <string name="icon_descr_video_snd_complete">동영상 보내짐</string>
+    <string name="icon_descr_video_asked_to_receive">동영상 수신 요청됨</string>
+    <string name="icon_descr_waiting_for_video">동영상 기다리는 중</string>
+    <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> 로고</string>
+    <string name="image_will_be_received_when_contact_is_online">대화 상대가 온라인 상태일 때 이미지가 수신될 거예요. 기다리거나 나중에 확인하세요!</string>
+    <string name="import_database_question">채팅 데이터베이스를 가져올까요\?</string>
 </resources>
