@@ -11,8 +11,8 @@ android {
         applicationId "chat.simplex.app"
         minSdk 26
         targetSdk 32
-        versionCode 107
-        versionName "4.6"
+        versionCode 109
+        versionName "4.6.1-beta.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -142,6 +142,9 @@ dependencies {
     // GIFs support
     implementation "io.coil-kt:coil-compose:2.1.0"
     implementation "io.coil-kt:coil-gif:2.1.0"
+
+    // Video support
+    implementation "com.google.android.exoplayer:exoplayer:2.17.1"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
