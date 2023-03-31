@@ -176,7 +176,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
       Box(
         Modifier
           .padding(DEFAULT_PADDING_HALF)
-          .background(Color.Black.copy(alpha = 0.35f), MaterialTheme.shapes.small)
+          .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(percent = 50))
           .padding(vertical = 2.dp, horizontal = 4.dp)
       ) {
         val time = (if (progress.value > 0) durationText((progress.value / 1000).toInt()) else durationText((duration.value / 1000).toInt()))
@@ -184,7 +184,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
         val sp45 = with(LocalDensity.current) { 45.sp.toDp() }
         Text(
           time,
-          Modifier.widthIn(min = if (time.length <= 5) sp30 else sp45),
+          Modifier.widthIn(min = if (time.length <= 5) sp30 else sp45).padding(horizontal = 4.dp),
           fontSize = 13.sp,
           color = Color.White
         )
@@ -199,11 +199,12 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
         Box(
           Modifier
             .padding(top = DEFAULT_PADDING_HALF)
-            .background(Color.Black.copy(alpha = 0.35f), MaterialTheme.shapes.small)
+            .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(percent = 50))
             .padding(vertical = 2.dp, horizontal = 4.dp)
         ) {
           Text(
             formatBytes(file.fileSize),
+            Modifier.padding(horizontal = 4.dp),
             fontSize = 13.sp,
             color = Color.White
           )
