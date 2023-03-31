@@ -551,4 +551,5 @@
     <string name="how_to_use_simplex_chat">사용법</string>
     <string name="icon_descr_email">이메일</string>
     <string name="icon_descr_server_status_pending">대기 중</string>
+    <string name="icon_descr_settings">설정</string>
 </resources>
