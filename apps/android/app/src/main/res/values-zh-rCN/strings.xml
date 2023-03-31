@@ -1022,7 +1022,7 @@
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
     <string name="group_welcome_title">欢迎信息</string>
-    <string name="settings_send_files_via_xftp">通过 XFTP 发送文件</string>
+    <string name="settings_send_files_via_xftp">通过 XFTP 发送视频和文件</string>
     <string name="confirm_database_upgrades">确认数据库升级</string>
     <string name="settings_section_title_experimenta">实验性</string>
     <string name="database_upgrade">数据库升级</string>
@@ -1049,4 +1049,13 @@
     <string name="delete_chat_profile">删除聊天资料</string>
     <string name="unhide_profile">取消隐藏个人资料</string>
     <string name="file_transfer_will_be_cancelled_warning">文件传输将被取消。文件传输将被终止如果它正在进行中。</string>
+    <string name="videos_limit_desc">同一时间只能发送10个视频</string>
+    <string name="videos_limit_title">过多视频！</string>
+    <string name="video_descr">视频</string>
+    <string name="icon_descr_waiting_for_video">等待视频中</string>
+    <string name="video_will_be_received_when_contact_is_online">视频将在您的联系人在线时收到，请稍等或稍后查看！</string>
+    <string name="waiting_for_video">等待视频中</string>
+    <string name="icon_descr_video_snd_complete">视频已发送</string>
+    <string name="icon_descr_video_asked_to_receive">要求接收视频</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">视频将在您的联系人完成上传后收到。</string>
 </resources>
