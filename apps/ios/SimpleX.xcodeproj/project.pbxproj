@@ -10,9 +10,11 @@
 		184152CEF68D2336FC2EBCB0 /* CallViewRenderers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415B08031E8FB0F7FC27F9 /* CallViewRenderers.swift */; };
 		1841538E296606C74533367C /* UserPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415835CBD939A9ABDC108A /* UserPicker.swift */; };
 		1841560FD1CD447955474C1D /* UserProfilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415845648CA4F5A8BCA272 /* UserProfilesView.swift */; };
+		184158C131FDB829D8A117EA /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415DAAAD1ADBEDB0EDA852 /* VideoPlayerView.swift */; };
 		1841594C978674A7B42EF0C0 /* AnimatedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841511920742C6E152E469F /* AnimatedImageView.swift */; };
 		18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */; };
 		18415C6C56DBCEC2CBBD2F11 /* WebRTCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415323A4082FC92887F906 /* WebRTCClient.swift */; };
+		18415F9A2D551F9757DA4654 /* CIVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415FD2E36F13F596A45BB4 /* CIVideoView.swift */; };
 		18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841516F0CE5992B0EDFB377 /* GroupWelcomeView.swift */; };
 		3C71477A281C0F6800CB4D4B /* www in Resources */ = {isa = PBXBuildFile; fileRef = 3C714779281C0F6800CB4D4B /* www */; };
 		3C8C548928133C84000A3EC7 /* PasteToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */; };
@@ -25,7 +27,7 @@
 		5C05DF532840AA1D00C683F9 /* CallSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C05DF522840AA1D00C683F9 /* CallSettings.swift */; };
 		5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C10D88828EED12E00E58BF0 /* ContactConnectionInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C10D88728EED12E00E58BF0 /* ContactConnectionInfo.swift */; };
-		5C10D88A28F187F300E58BF0 /* FullScreenImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C10D88928F187F300E58BF0 /* FullScreenImageView.swift */; };
+		5C10D88A28F187F300E58BF0 /* FullScreenMediaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C10D88928F187F300E58BF0 /* FullScreenMediaView.swift */; };
 		5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
 		5C13730B28156D2700F43030 /* ContactConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C13730A28156D2700F43030 /* ContactConnectionView.swift */; };
 		5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */; };
@@ -240,6 +242,8 @@
 		18415845648CA4F5A8BCA272 /* UserProfilesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserProfilesView.swift; sourceTree = "<group>"; };
 		18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PressedButtonStyle.swift; sourceTree = "<group>"; };
 		18415B08031E8FB0F7FC27F9 /* CallViewRenderers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CallViewRenderers.swift; sourceTree = "<group>"; };
+		18415DAAAD1ADBEDB0EDA852 /* VideoPlayerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
+		18415FD2E36F13F596A45BB4 /* CIVideoView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CIVideoView.swift; sourceTree = "<group>"; };
 		3C714779281C0F6800CB4D4B /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; name = www; path = ../android/app/src/main/assets/www; sourceTree = "<group>"; };
 		3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteToConnectView.swift; sourceTree = "<group>"; };
 		3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeLinkView.swift; sourceTree = "<group>"; };
@@ -251,7 +255,7 @@
 		5C05DF522840AA1D00C683F9 /* CallSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallSettings.swift; sourceTree = "<group>"; };
 		5C063D2627A4564100AEC577 /* ChatPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPreviewView.swift; sourceTree = "<group>"; };
 		5C10D88728EED12E00E58BF0 /* ContactConnectionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactConnectionInfo.swift; sourceTree = "<group>"; };
-		5C10D88928F187F300E58BF0 /* FullScreenImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenImageView.swift; sourceTree = "<group>"; };
+		5C10D88928F187F300E58BF0 /* FullScreenMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenMediaView.swift; sourceTree = "<group>"; };
 		5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactRequestView.swift; sourceTree = "<group>"; };
 		5C13730A28156D2700F43030 /* ContactConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactConnectionView.swift; sourceTree = "<group>"; };
 		5C13730C2815740A00F43030 /* DebugJSON.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = DebugJSON.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
@@ -584,6 +588,7 @@
 				5CA7DFC229302AF000F7FDDE /* AppSheet.swift */,
 				18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */,
 				5CCB939B297EFCB100399E78 /* NavStackCompat.swift */,
+				18415DAAAD1ADBEDB0EDA852 /* VideoPlayerView.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -753,7 +758,7 @@
 				5CEACCEC27DEA495000BD591 /* MsgContentView.swift */,
 				5C3A88D027DF57800060F1C2 /* FramedItemView.swift */,
 				649BCDA12805D6EF00C3A862 /* CIImageView.swift */,
-				5C10D88928F187F300E58BF0 /* FullScreenImageView.swift */,
+				5C10D88928F187F300E58BF0 /* FullScreenMediaView.swift */,
 				648010AA281ADD15009009B9 /* CIFileView.swift */,
 				644EFFDF292CFD7F00525D5B /* CIVoiceView.swift */,
 				3CDBCF4727FF621E00354CDD /* CILinkView.swift */,
@@ -768,6 +773,7 @@
 				644EFFE32937BE9700525D5B /* MarkedDeletedItemView.swift */,
 				1841511920742C6E152E469F /* AnimatedImageView.swift */,
 				6407BA82295DA85D0082BA18 /* CIInvalidJSONView.swift */,
+				18415FD2E36F13F596A45BB4 /* CIVideoView.swift */,
 			);
 			path = ChatItem;
 			sourceTree = "<group>";
@@ -1052,7 +1058,7 @@
 				3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */,
 				3CDBCF4827FF621E00354CDD /* CILinkView.swift in Sources */,
 				5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
-				5C10D88A28F187F300E58BF0 /* FullScreenImageView.swift in Sources */,
+				5C10D88A28F187F300E58BF0 /* FullScreenMediaView.swift in Sources */,
 				D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */,
 				5C00164428A26FBC0094D739 /* ContextMenu.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
@@ -1143,6 +1149,8 @@
 				18415C6C56DBCEC2CBBD2F11 /* WebRTCClient.swift in Sources */,
 				184152CEF68D2336FC2EBCB0 /* CallViewRenderers.swift in Sources */,
 				18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */,
+				18415F9A2D551F9757DA4654 /* CIVideoView.swift in Sources */,
+				184158C131FDB829D8A117EA /* VideoPlayerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

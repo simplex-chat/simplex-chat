@@ -16,6 +16,8 @@ public let MAX_IMAGE_SIZE: Int64 = 236700
 
 public let MAX_IMAGE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
+public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 8000000
+
 public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824
 
 public let MAX_FILE_SIZE_SMP: Int64 = 8000000

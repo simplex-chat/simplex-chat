@@ -17,7 +17,7 @@ struct LibraryImagePicker: View {
     @State var images: [UploadContent] = []
 
     var body: some View {
-        LibraryImageListPicker(images: $images, selectionLimit: 1, didFinishPicking: didFinishPicking)
+        LibraryMediaListPicker(media: $images, selectionLimit: 1, didFinishPicking: didFinishPicking)
             .onChange(of: images) { _ in
                 if let img = images.first {
                     image = img.uiImage
@@ -26,19 +26,19 @@ struct LibraryImagePicker: View {
     }
 }
 
-struct LibraryImageListPicker: UIViewControllerRepresentable {
+struct LibraryMediaListPicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
-    @Binding var images: [UploadContent]
+    @Binding var media: [UploadContent]
     var selectionLimit: Int
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
 
     class Coordinator: PHPickerViewControllerDelegate {
-        let parent: LibraryImageListPicker
-        let dispatchQueue = DispatchQueue(label: "chat.simplex.app.LibraryImageListPicker")
-        var images: [UploadContent] = []
-        var imageCount: Int = 0
+        let parent: LibraryMediaListPicker
+        let dispatchQueue = DispatchQueue(label: "chat.simplex.app.LibraryMediaListPicker")
+        var media: [UploadContent] = []
+        var mediaCount: Int = 0
 
-        init(_ parent: LibraryImageListPicker) {
+        init(_ parent: LibraryMediaListPicker) {
             self.parent = parent
         }
 
@@ -48,13 +48,17 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
                 return
             }
 
-            parent.images = []
-            images = []
-            imageCount = results.count
+            parent.media = []
+            media = []
+            mediaCount = results.count
             for result in results {
-                logger.log("LibraryImageListPicker result")
+                logger.log("LibraryMediaListPicker result")
                 let p = result.itemProvider
-                if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
+                if p.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+                    p.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
+                        self.loadVideo(url: url, error: error)
+                    }
+                } else if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
                     p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
                         self.loadImage(object: url, error: error)
                     }
@@ -65,14 +69,14 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
                         }
                     }
                 } else {
-                    dispatchQueue.sync { self.imageCount -= 1}
+                    dispatchQueue.sync { self.mediaCount -= 1}
                 }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
                 self.dispatchQueue.sync {
-                    if self.parent.images.count == 0 {
-                        logger.log("LibraryImageListPicker: added \(self.images.count) images out of \(results.count)")
-                        self.parent.images = self.images
+                    if self.parent.media.count == 0 {
+                        logger.log("LibraryMediaListPicker: added \(self.media.count) images out of \(results.count)")
+                        self.parent.media = self.media
                     }
                 }
             }
@@ -80,19 +84,35 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
 
         func loadImage(object: Any?, error: Error? = nil) {
             if let error = error {
-                logger.error("LibraryImageListPicker: couldn't load image with error: \(error.localizedDescription)")
+                logger.error("LibraryMediaListPicker: couldn't load image with error: \(error.localizedDescription)")
             } else if let image = object as? UIImage {
-                images.append(.simpleImage(image: image))
-                logger.log("LibraryImageListPicker: added image")
+                media.append(.simpleImage(image: image))
+                logger.log("LibraryMediaListPicker: added image")
             } else if let url = object as? URL, let image = UploadContent.loadFromURL(url: url) {
-                images.append(image)
+                media.append(image)
             }
             dispatchQueue.sync {
-                self.imageCount -= 1
-                if self.imageCount == 0 && self.parent.images.count == 0 {
-                    logger.log("LibraryImageListPicker: added all images")
-                    self.parent.images = self.images
-                    self.images = []
+                self.mediaCount -= 1
+                if self.mediaCount == 0 && self.parent.media.count == 0 {
+                    logger.log("LibraryMediaListPicker: added all media")
+                    self.parent.media = self.media
+                    self.media = []
+                }
+            }
+        }
+
+        func loadVideo(url: URL?, error: Error? = nil) {
+            if let error = error {
+                logger.error("LibraryMediaListPicker: couldn't load image with error: \(error.localizedDescription)")
+            } else if let url = url as URL?, let video = UploadContent.loadVideoFromURL(url: url) {
+                media.append(video)
+            }
+            dispatchQueue.sync {
+                self.mediaCount -= 1
+                if self.mediaCount == 0 && self.parent.media.count == 0 {
+                    logger.log("LibraryMediaListPicker: added all media")
+                    self.parent.media = self.media
+                    self.media = []
                 }
             }
         }
@@ -104,8 +124,15 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
-        config.filter = .images
+        let allowVideoAttachment = true
+        if allowVideoAttachment {
+            config.filter = .any(of: [.images, .videos])
+        } else {
+            config.filter = .images
+        }
         config.selectionLimit = selectionLimit
+        config.selection = .ordered
+        //config.preferredAssetRepresentationMode = .current
         let controller = PHPickerViewController(configuration: config)
         controller.delegate = context.coordinator
         return controller

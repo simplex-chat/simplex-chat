@@ -277,6 +277,12 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
               privacyAcceptImagesGroupDefault.get() {
                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
            }
+        } else if case .video = cItem.content.msgContent {
+            if let file = cItem.file,
+               file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV,
+               privacyAcceptImagesGroupDefault.get() {
+                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+            }
         } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
             if let file = cItem.file,
                file.fileSize <= MAX_IMAGE_SIZE,

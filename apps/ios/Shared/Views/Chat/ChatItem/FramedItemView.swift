@@ -64,7 +64,7 @@ struct FramedItemView: View {
                     .overlay(DetermineWidth())
             }
         }
-            .background(chatItemFrameColorMaybeImage(chatItem, colorScheme))
+            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
         
@@ -100,6 +100,19 @@ struct FramedItemView: View {
                             key: MetaColorPreferenceKey.self,
                             value: .white
                         )
+                } else {
+                    ciMsgContentView (chatItem, showMember)
+                }
+            case let .video(text, image, duration):
+                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
+                .overlay(DetermineWidth())
+                if text == "" && !chatItem.meta.isLive {
+                    Color.clear
+                    .frame(width: 0, height: 0)
+                    .preference(
+                        key: MetaColorPreferenceKey.self,
+                        value: .white
+                    )
                 } else {
                     ciMsgContentView (chatItem, showMember)
                 }
@@ -172,6 +185,19 @@ struct FramedItemView: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 68, height: 68)
                         .clipped()
+                } else {
+                    ciQuotedMsgView(qi)
+                }
+            case let .video(_, image, _):
+                if let data = Data(base64Encoded: dropImagePrefix(image)),
+                   let uiImage = UIImage(data: data) {
+                    ciQuotedMsgView(qi)
+                    .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
+                    Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 68, height: 68)
+                    .clipped()
                 } else {
                     ciQuotedMsgView(qi)
                 }
@@ -274,15 +300,17 @@ private struct MetaColorPreferenceKey: PreferenceKey {
     }
 }
 
-func onlyImage(_ ci: ChatItem) -> Bool {
+func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     if case let .image(text, _) = ci.content.msgContent {
+        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
+    } else if case let .video(text, _, _) = ci.content.msgContent {
         return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
     }
     return false
 }
 
-func chatItemFrameColorMaybeImage(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
-    onlyImage(ci)
+func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+    onlyImageOrVideo(ci)
     ? Color.clear
     : chatItemFrameColor(ci, colorScheme)
 }

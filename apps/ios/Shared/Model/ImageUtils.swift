@@ -9,6 +9,7 @@
 import Foundation
 import SimpleXChat
 import SwiftUI
+import AVKit
 
 func getLoadedFilePath(_ file: CIFile?) -> String? {
     if let fileName = getLoadedFileName(file) {
@@ -37,6 +38,17 @@ func getLoadedImage(_ file: CIFile?) -> UIImage? {
             return img
         } catch {
             return UIImage(contentsOfFile: loadedFilePath)
+        }
+    }
+    return nil
+}
+
+func getLoadedVideo(_ file: CIFile?) -> URL? {
+    let loadedFilePath = getLoadedFilePath(file)
+    if loadedFilePath != nil, let fileName = file?.filePath {
+        let filePath = getAppFilePath(fileName)
+        if FileManager.default.fileExists(atPath: filePath.path) {
+            return filePath
         }
     }
     return nil
@@ -202,6 +214,17 @@ func dropImagePrefix(_ s: String) -> String {
 
 private func dropPrefix(_ s: String, _ prefix: String) -> String {
     s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
+}
+
+extension AVAsset {
+    func generatePreview() -> (UIImage, Int)? {
+        let generator = AVAssetImageGenerator(asset: self)
+        var actualTime = CMTimeMake(value: 0, timescale: 0)
+        if let image = try? generator.copyCGImage(at: CMTimeMakeWithSeconds(0.0, preferredTimescale: 1), actualTime: &actualTime) {
+            return (UIImage(cgImage: image), Int(duration.seconds))
+        }
+        return nil
+    }
 }
 
 extension UIImage {
