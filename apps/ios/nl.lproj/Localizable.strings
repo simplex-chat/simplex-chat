@@ -413,7 +413,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Kan geen contacten uitnodigen!";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Cancel" = "Annuleren";
 
 /* feature offered item */
@@ -1780,7 +1780,7 @@
 "Periodically" = "Periodiek";
 
 /* No comment provided by engineer. */
-"PING count" = "PING telling";
+"PING count" = "PING count";
 
 /* No comment provided by engineer. */
 "PING interval" = "PING interval";

@@ -413,7 +413,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Impossible d'inviter les contacts !";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Cancel" = "Annuler";
 
 /* feature offered item */
@@ -984,7 +984,7 @@
 "Enter passphrase…" = "Entrez la phrase secrète…";
 
 /* No comment provided by engineer. */
-"Enter password above to show!" = "Entrez le mot de passe ci-dessus pour continuer !";
+"Enter password above to show!" = "Entrez ci-dessus le mot de passe pour afficher le profil !";
 
 /* No comment provided by engineer. */
 "Enter server manually" = "Entrer un serveur manuellement";
@@ -1488,7 +1488,7 @@
 "Make a private connection" = "Établir une connexion privée";
 
 /* No comment provided by engineer. */
-"Make profile private!" = "Rendre le profil privé !";
+"Make profile private!" = "Rendre un profil privé !";
 
 /* No comment provided by engineer. */
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Assurez-vous que les adresses des serveurs SMP sont au bon format et ne sont pas dupliquées, un par ligne.";
@@ -1756,7 +1756,7 @@
 "owner" = "propriétaire";
 
 /* No comment provided by engineer. */
-"Password to show" = "Mot de passe à afficher";
+"Password to show" = "Mot de passe à entrer";
 
 /* No comment provided by engineer. */
 "Paste" = "Coller";
@@ -2365,7 +2365,7 @@
 "To record voice message please grant permission to use Microphone." = "Pour enregistrer un message vocal, veuillez accorder la permission d'utiliser le microphone.";
 
 /* No comment provided by engineer. */
-"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Pour révéler votre profil caché, entrez un mot de passe complet dans le champ de recherche de la page **Vos profils de chat**.";
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Pour révéler votre profil caché, entrez le mot de passe dans le champ de recherche de la page **Vos profils de chat**.";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Pour prendre en charge les notifications push instantanées, la base de données du chat doit être migrée.";

@@ -249,7 +249,7 @@
 "Add to another device" = "Einem anderen Gerät hinzufügen";
 
 /* No comment provided by engineer. */
-"Add welcome message" = "Fügen Sie eine Begrüßungsmeldung hinzu";
+"Add welcome message" = "Begrüßungsmeldung hinzufügen";
 
 /* member role */
 "admin" = "Admin";
@@ -413,7 +413,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Kontakte können nicht eingeladen werden!";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Cancel" = "Abbrechen";
 
 /* feature offered item */
@@ -531,7 +531,7 @@
 "Confirm new passphrase…" = "Neues Passwort bestätigen…";
 
 /* No comment provided by engineer. */
-"Confirm password" = "Bestätigen Sie das Passwort";
+"Confirm password" = "Passwort bestätigen";
 
 /* server test step */
 "Connect" = "Verbinden";
@@ -984,7 +984,7 @@
 "Enter passphrase…" = "Passwort eingeben…";
 
 /* No comment provided by engineer. */
-"Enter password above to show!" = "Geben Sie oben das Passwort für die Anzeige an!";
+"Enter password above to show!" = "Für die Anzeige das Passwort im Suchfeld eingeben!";
 
 /* No comment provided by engineer. */
 "Enter server manually" = "Geben Sie den Server manuell ein";
@@ -1257,7 +1257,7 @@
 "Hide app screen in the recent apps." = "App-Bildschirm in aktuellen Anwendungen verbergen.";
 
 /* No comment provided by engineer. */
-"Hide profile" = "Verberge das Profil";
+"Hide profile" = "Profil verbergen";
 
 /* No comment provided by engineer. */
 "How it works" = "Wie es funktioniert";
@@ -1488,7 +1488,7 @@
 "Make a private connection" = "Stellen Sie eine private Verbindung her";
 
 /* No comment provided by engineer. */
-"Make profile private!" = "Erzeugen Sie ein privates Profil!";
+"Make profile private!" = "Privates Profil erzeugen!";
 
 /* No comment provided by engineer. */
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Stellen Sie sicher, dass die SMP-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind (%@).";
@@ -1572,7 +1572,7 @@
 "moderated" = "Moderiert";
 
 /* No comment provided by engineer. */
-"moderated by %@" = "von %@ moderiert";
+"moderated by %@" = "Von %@ moderiert";
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Weitere Verbesserungen sind bald verfügbar!";
@@ -1858,7 +1858,7 @@
 "Protect app screen" = "App-Bildschirm schützen";
 
 /* No comment provided by engineer. */
-"Protect your chat profiles with a password!" = "Schützen Sie Ihre Chat-Profile mit einem Passwort!";
+"Protect your chat profiles with a password!" = "Ihre Chat-Profile mit einem Passwort schützen!";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protokollzeitüberschreitung";
@@ -1993,7 +1993,7 @@
 "Save and notify group members" = "Speichern und Gruppenmitglieder benachrichtigen";
 
 /* No comment provided by engineer. */
-"Save and update group profile" = "Sichern und aktualisieren des Gruppen-Profils";
+"Save and update group profile" = "Gruppen-Profil sichern und aktualisieren";
 
 /* No comment provided by engineer. */
 "Save archive" = "Archiv speichern";
@@ -2119,7 +2119,7 @@
 "Set passphrase to export" = "Passwort für den Export festlegen";
 
 /* No comment provided by engineer. */
-"Set the message shown to new members!" = "Legen Sie die Nachricht fest, die neuen Mitgliedern angezeigt werden soll!";
+"Set the message shown to new members!" = "Definieren Sie eine Begrüßungsmeldung, die neuen Mitgliedern angezeigt wird!";
 
 /* No comment provided by engineer. */
 "Set timeouts for proxy/VPN" = "Zeitüberschreitungen für Proxy/VPN einstellen";
@@ -2140,7 +2140,7 @@
 "Share one-time invitation link" = "Einmal-Einladungslink teilen";
 
 /* No comment provided by engineer. */
-"Show calls in phone history" = "Anrufliste zeigen";
+"Show calls in phone history" = "Anrufliste anzeigen";
 
 /* No comment provided by engineer. */
 "Show preview" = "Vorschau anzeigen";
@@ -2464,7 +2464,7 @@
 "Use for new connections" = "Für neue Verbindungen nutzen";
 
 /* No comment provided by engineer. */
-"Use iOS call interface" = "Benutzen Sie die iOS Anrufschnittstelle";
+"Use iOS call interface" = "iOS Anrufschnittstelle nutzen";
 
 /* No comment provided by engineer. */
 "Use server" = "Server nutzen";
