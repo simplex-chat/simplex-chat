@@ -416,6 +416,9 @@
 /* chat item action */
 "Cancel" = "Zrušit";
 
+/* No comment provided by engineer. */
+"Cancel file transfer?" = "Zrušit přenos souboru?";
+
 /* feature offered item */
 "cancelled %@" = "zrušeno %@";
 
@@ -526,6 +529,9 @@
 
 /* No comment provided by engineer. */
 "Confirm" = "Potvrdit";
+
+/* No comment provided by engineer. */
+"Confirm database upgrades" = "Potvrdit aktualizaci databáze";
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Potvrdit novou heslovou frázi…";
@@ -693,6 +699,9 @@
 "Dark" = "Tmavý";
 
 /* No comment provided by engineer. */
+"Database downgrade" = "Původní databáze";
+
+/* No comment provided by engineer. */
 "Database encrypted!" = "Databáze zašifrována!";
 
 /* No comment provided by engineer. */
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Database ID" = "ID databáze";
+
+/* No comment provided by engineer. */
+"Database IDs and Transport isolation option." = "ID databáze a možnost Izolace přenosu.";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "Databáze je zašifrována pomocí náhodné přístupové fráze, můžete ji změnit.";
@@ -724,6 +736,9 @@
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "Pro otevření chatu je vyžadována přístupová fráze databáze.";
+
+/* No comment provided by engineer. */
+"Database upgrade" = "Aktualizace databáze";
 
 /* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "Databáze bude zašifrována a heslo bude uloženo v klíčence.\n";
@@ -760,6 +775,9 @@
 
 /* No comment provided by engineer. */
 "Delete chat archive?" = "Smazat archiv chatu?";
+
+/* No comment provided by engineer. */
+"Delete chat profile" = "Smazat chat profil";
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "Smazat chat profil?";
@@ -829,6 +847,9 @@
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Smazat čekající připojení?";
+
+/* No comment provided by engineer. */
+"Delete profile" = "Smazat profil";
 
 /* server test step */
 "Delete queue" = "Odstranit frontu";
@@ -901,6 +922,9 @@
 
 /* No comment provided by engineer. */
 "Don't show again" = "Znovu neukazuj";
+
+/* No comment provided by engineer. */
+"Downgrade and open chat" = "Snížit a otevřít chat";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "Duplicitní zobrazované jméno!";
@@ -1110,6 +1134,9 @@
 "Error updating user privacy" = "Chyba aktualizace soukromí uživatele";
 
 /* No comment provided by engineer. */
+"Error: " = "Chyba: ";
+
+/* No comment provided by engineer. */
 "Error: %@" = "Chyba: %@";
 
 /* No comment provided by engineer. */
@@ -1135,6 +1162,12 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Přístupovou frázi se nepodařilo odstranit";
+
+/* No comment provided by engineer. */
+"File transfer will be cancelled. If it's in progress it will be stoppped." = "Přenos souboru bude zrušen. Pokud probíhá, bude zastaven.";
+
+/* No comment provided by engineer. */
+"File will be received when your contact completes uploading it." = "Soubor bude přijat, jakmile váš kontakt dokončí nahrávání.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "Soubor bude přijat, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!";
@@ -1260,6 +1293,9 @@
 "Hide profile" = "Skrýt profil";
 
 /* No comment provided by engineer. */
+"Hide:" = "Skrýt:";
+
+/* No comment provided by engineer. */
 "How it works" = "Jak to funguje";
 
 /* No comment provided by engineer. */
@@ -1288,6 +1324,9 @@
 
 /* No comment provided by engineer. */
 "Ignore" = "Ignorovat";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact completes uploading it." = "Obrázek bude přijat, až kontakt dokončí jeho nahrání.";
 
 /* No comment provided by engineer. */
 "Image will be received when your contact is online, please wait or check later!" = "Obrázek bude přijat, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!";
@@ -1339,6 +1378,9 @@
 
 /* notification */
 "Incoming video call" = "Příchozí videohovor";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Nekompatibilní verze databáze";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "Nesprávný bezpečnostní kód!";
@@ -1843,6 +1885,9 @@
 "Profile image" = "Profilový obrázek";
 
 /* No comment provided by engineer. */
+"Profile password" = "Heslo profilu";
+
+/* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Zakázat nevratné mazání zpráv.";
 
 /* No comment provided by engineer. */
@@ -2143,10 +2188,16 @@
 "Show calls in phone history" = "Ukaž hovory v historii telefonu";
 
 /* No comment provided by engineer. */
+"Show developer options" = "Zobrazit možnosti vývojáře";
+
+/* No comment provided by engineer. */
 "Show preview" = "Zobrazení náhledu";
 
 /* No comment provided by engineer. */
 "Show QR code" = "Zobrazit QR kód";
+
+/* No comment provided by engineer. */
+"Show:" = "Zobrazit:";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "Zabezpečení SimpleX chatu bylo [auditováno společností Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
@@ -2403,6 +2454,12 @@
 /* No comment provided by engineer. */
 "Unhide" = "Odkrýt";
 
+/* No comment provided by engineer. */
+"Unhide chat profile" = "Odkrýt chat profil";
+
+/* No comment provided by engineer. */
+"Unhide profile" = "Odkrýt profil";
+
 /* connection info */
 "unknown" = "neznámý";
 
@@ -2455,6 +2512,9 @@
 "Updating this setting will re-connect the client to all servers." = "Aktualizace tohoto nastavení znovu připojí klienta ke všem serverům.";
 
 /* No comment provided by engineer. */
+"Upgrade and open chat" = "Zvýšit a otevřít chat";
+
+/* No comment provided by engineer. */
 "Use .onion hosts" = "Použít hostitele .onion";
 
 /* No comment provided by engineer. */
@@ -2483,6 +2543,9 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
+
+/* No comment provided by engineer. */
+"v4.6.1+ is required to receive via XFTP." = "Pro příjem přes XFTP je vyžadována verze 4.6.1+.";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Ověření zabezpečení připojení";
@@ -2543,6 +2606,9 @@
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "chce se s vámi spojit!";
+
+/* No comment provided by engineer. */
+"Warning: you may lose some data!" = "Upozornění: můžete ztratit nějaká data!";
 
 /* No comment provided by engineer. */
 "WebRTC ICE servers" = "WebRTC servery ICE";

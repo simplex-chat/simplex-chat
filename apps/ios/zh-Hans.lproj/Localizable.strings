@@ -416,6 +416,9 @@
 /* chat item action */
 "Cancel" = "取消";
 
+/* No comment provided by engineer. */
+"Cancel file transfer?" = "取消文件传输？";
+
 /* feature offered item */
 "cancelled %@" = "已取消 %@";
 
@@ -526,6 +529,9 @@
 
 /* No comment provided by engineer. */
 "Confirm" = "确认";
+
+/* No comment provided by engineer. */
+"Confirm database upgrades" = "确认数据库升级";
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "确认新密码……";
@@ -693,6 +699,9 @@
 "Dark" = "深色";
 
 /* No comment provided by engineer. */
+"Database downgrade" = "数据库降级";
+
+/* No comment provided by engineer. */
 "Database encrypted!" = "数据库已加密！";
 
 /* No comment provided by engineer. */
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Database ID" = "数据库 ID";
+
+/* No comment provided by engineer. */
+"Database IDs and Transport isolation option." = "数据库 ID 和传输隔离选项。";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "数据库使用随机密码进行加密，您可以更改它。";
@@ -724,6 +736,9 @@
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "打开聊天需要数据库密码。";
+
+/* No comment provided by engineer. */
+"Database upgrade" = "数据库升级";
 
 /* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "数据库将被加密，密码保存在钥匙串中。\n";
@@ -760,6 +775,9 @@
 
 /* No comment provided by engineer. */
 "Delete chat archive?" = "删除聊天档案？";
+
+/* No comment provided by engineer. */
+"Delete chat profile" = "删除聊天资料";
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "删除聊天资料？";
@@ -829,6 +847,9 @@
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "删除待定连接？";
+
+/* No comment provided by engineer. */
+"Delete profile" = "删除个人资料";
 
 /* server test step */
 "Delete queue" = "删除队列";
@@ -901,6 +922,9 @@
 
 /* No comment provided by engineer. */
 "Don't show again" = "不再显示";
+
+/* No comment provided by engineer. */
+"Downgrade and open chat" = "降级并打开聊天";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "重复的显示名！";
@@ -1137,6 +1161,12 @@
 "Failed to remove passphrase" = "移除密码失败";
 
 /* No comment provided by engineer. */
+"File transfer will be cancelled. If it's in progress it will be stoppped." = "文件传输将被取消。文件传输将被终止如果它正在进行中。";
+
+/* No comment provided by engineer. */
+"File will be received when your contact completes uploading it." = "文件将在您的联系人完成上传后收到。";
+
+/* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "文件将在您的联系人在线时收到，请稍等或稍后再查看！";
 
 /* No comment provided by engineer. */
@@ -1260,6 +1290,9 @@
 "Hide profile" = "隐藏个人资料";
 
 /* No comment provided by engineer. */
+"Hide:" = "隐藏：";
+
+/* No comment provided by engineer. */
 "How it works" = "工作原理";
 
 /* No comment provided by engineer. */
@@ -1288,6 +1321,9 @@
 
 /* No comment provided by engineer. */
 "Ignore" = "忽视";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact completes uploading it." = "图片将在您的联系人完成上传后收到。";
 
 /* No comment provided by engineer. */
 "Image will be received when your contact is online, please wait or check later!" = "图片将在您的联系人在线时收到，请稍等或稍后查看！";
@@ -1339,6 +1375,9 @@
 
 /* notification */
 "Incoming video call" = "视频通话来电";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "数据库版本不兼容";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "安全码不正确！";
@@ -1843,6 +1882,9 @@
 "Profile image" = "资料图片";
 
 /* No comment provided by engineer. */
+"Profile password" = "个人资料密码";
+
+/* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "禁止不可撤回消息删除。";
 
 /* No comment provided by engineer. */
@@ -2143,10 +2185,16 @@
 "Show calls in phone history" = "在电话历史记录中显示通话";
 
 /* No comment provided by engineer. */
+"Show developer options" = "显示开发者选项";
+
+/* No comment provided by engineer. */
 "Show preview" = "显示预览";
 
 /* No comment provided by engineer. */
 "Show QR code" = "显示二维码";
+
+/* No comment provided by engineer. */
+"Show:" = "显示：";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "SimpleX Chat 的安全性 [由 Trail of Bits 审核](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)。";
@@ -2403,6 +2451,12 @@
 /* No comment provided by engineer. */
 "Unhide" = "取消隐藏";
 
+/* No comment provided by engineer. */
+"Unhide chat profile" = "取消隐藏聊天资料";
+
+/* No comment provided by engineer. */
+"Unhide profile" = "取消隐藏个人资料";
+
 /* connection info */
 "unknown" = "未知";
 
@@ -2455,6 +2509,9 @@
 "Updating this setting will re-connect the client to all servers." = "更新此设置将重新连接客户端到所有服务器。";
 
 /* No comment provided by engineer. */
+"Upgrade and open chat" = "升级并打开聊天";
+
+/* No comment provided by engineer. */
 "Use .onion hosts" = "使用 .onion 主机";
 
 /* No comment provided by engineer. */
@@ -2483,6 +2540,9 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
+
+/* No comment provided by engineer. */
+"v4.6.1+ is required to receive via XFTP." = "通过 XFTP 接收需要 v4.6.1 以上版本。";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "验证连接安全";
@@ -2543,6 +2603,9 @@
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "想要与您连接！";
+
+/* No comment provided by engineer. */
+"Warning: you may lose some data!" = "警告：您可能会丢失部分数据！";
 
 /* No comment provided by engineer. */
 "WebRTC ICE servers" = "WebRTC ICE 服务器";

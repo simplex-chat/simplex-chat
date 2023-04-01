@@ -622,6 +622,7 @@
       </trans-unit>
       <trans-unit id="Cancel file transfer?" xml:space="preserve">
         <source>Cancel file transfer?</source>
+        <target>Annuler le transfert de fichiers ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
@@ -771,6 +772,7 @@
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
         <source>Confirm database upgrades</source>
+        <target>Confirmer la mise à niveau de la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm new passphrase…" xml:space="preserve">
@@ -985,10 +987,12 @@
       </trans-unit>
       <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
         <source>Database IDs and Transport isolation option.</source>
+        <target>IDs de base de données et option d'isolation du transport.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade" xml:space="preserve">
         <source>Database downgrade</source>
+        <target>Rétrogradation de la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -1047,6 +1051,7 @@
       </trans-unit>
       <trans-unit id="Database upgrade" xml:space="preserve">
         <source>Database upgrade</source>
+        <target>Mise à niveau de la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve">
@@ -1115,6 +1120,7 @@
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
         <source>Delete chat profile</source>
+        <target>Supprimer le profil de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile?" xml:space="preserve">
@@ -1229,6 +1235,7 @@
       </trans-unit>
       <trans-unit id="Delete profile" xml:space="preserve">
         <source>Delete profile</source>
+        <target>Supprimer le profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete queue" xml:space="preserve">
@@ -1338,6 +1345,7 @@
       </trans-unit>
       <trans-unit id="Downgrade and open chat" xml:space="preserve">
         <source>Downgrade and open chat</source>
+        <target>Rétrograder et ouvrir le chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
@@ -1651,6 +1659,7 @@
       </trans-unit>
       <trans-unit id="Error: " xml:space="preserve">
         <source>Error: </source>
+        <target>Erreur : </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
@@ -1704,10 +1713,12 @@
       </trans-unit>
       <trans-unit id="File transfer will be cancelled. If it's in progress it will be stoppped." xml:space="preserve">
         <source>File transfer will be cancelled. If it's in progress it will be stoppped.</source>
+        <target>Le transfert de fichiers sera annulé. S'il est en cours, il sera interrompu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
         <source>File will be received when your contact completes uploading it.</source>
+        <target>Le fichier sera reçu lorsque votre contact aura terminé de le mettre en ligne.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -1907,6 +1918,7 @@
       </trans-unit>
       <trans-unit id="Hide:" xml:space="preserve">
         <source>Hide:</source>
+        <target>Cacher :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -1961,6 +1973,7 @@
       </trans-unit>
       <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
         <source>Image will be received when your contact completes uploading it.</source>
+        <target>L'image sera reçue lorsque votre contact aura terminé de la mettre en ligne.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -2035,6 +2048,7 @@
       </trans-unit>
       <trans-unit id="Incompatible database version" xml:space="preserve">
         <source>Incompatible database version</source>
+        <target>Version de la base de données incompatible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incorrect security code!" xml:space="preserve">
@@ -2729,6 +2743,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Profile password" xml:space="preserve">
         <source>Profile password</source>
+        <target>Mot de passe de profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -3207,6 +3222,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Show developer options" xml:space="preserve">
         <source>Show developer options</source>
+        <target>Afficher les options pour les développeurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -3216,6 +3232,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Show:" xml:space="preserve">
         <source>Show:</source>
+        <target>Afficher :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve">
@@ -3627,10 +3644,12 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
       </trans-unit>
       <trans-unit id="Unhide chat profile" xml:space="preserve">
         <source>Unhide chat profile</source>
+        <target>Dévoiler le profil de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide profile" xml:space="preserve">
         <source>Unhide profile</source>
+        <target>Dévoiler le profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
@@ -3712,6 +3731,7 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
         <source>Upgrade and open chat</source>
+        <target>Mettre à niveau et ouvrir le chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
@@ -3821,6 +3841,7 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
         <source>Warning: you may lose some data!</source>
+        <target>Attention : vous risquez de perdre des données !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WebRTC ICE servers" xml:space="preserve">
@@ -4710,6 +4731,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="v4.6.1+ is required to receive via XFTP." xml:space="preserve">
         <source>v4.6.1+ is required to receive via XFTP.</source>
+        <target>v4.6.1+ nécessaire pour la réception via XFTP.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="via contact address link" xml:space="preserve">
