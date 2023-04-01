@@ -413,7 +413,7 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Nelze pozvat kontakty!";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Cancel" = "Zrušit";
 
 /* feature offered item */
@@ -984,6 +984,9 @@
 "Enter passphrase…" = "Zadejte přístupovou frázi…";
 
 /* No comment provided by engineer. */
+"Enter password above to show!" = "Zadejte heslo do hledání!";
+
+/* No comment provided by engineer. */
 "Enter server manually" = "Zadejte server ručně";
 
 /* No comment provided by engineer. */
@@ -1156,6 +1159,9 @@
 
 /* No comment provided by engineer. */
 "Full name:" = "Celé jméno:";
+
+/* No comment provided by engineer. */
+"Fully re-implemented - work in background!" = "Plně přepracováno, prácuje na pozadí!";
 
 /* No comment provided by engineer. */
 "Further reduced battery usage" = "Další snížení spotřeby baterie";
@@ -2314,6 +2320,9 @@
 "There should be at least one user profile." = "Měl by tam být alespoň jeden uživatelský profil.";
 
 /* No comment provided by engineer. */
+"There should be at least one visible user profile." = "Měl by tam být alespoň jeden viditelný uživatelský profil.";
+
+/* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Tuto akci nelze vrátit zpět - všechny přijaté a odeslané soubory a média budou smazány. Obrázky s nízkým rozlišením zůstanou zachovány.";
 
 /* No comment provided by engineer. */
@@ -2356,6 +2365,9 @@
 "To record voice message please grant permission to use Microphone." = "Chcete-li nahrávat hlasové zprávy, udělte povolení k použití mikrofonu.";
 
 /* No comment provided by engineer. */
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Chcete-li odhalit svůj skrytý profil, zadejte celé heslo do vyhledávacího pole na stránce **Chat profily**.";
+
+/* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Pro podporu doručování okamžitých upozornění musí být přenesena chat databáze.";
 
 /* No comment provided by engineer. */
@@ -2387,6 +2399,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Neočekávaný stav přenášení";
+
+/* No comment provided by engineer. */
+"Unhide" = "Odkrýt";
 
 /* connection info */
 "unknown" = "neznámý";
@@ -2592,6 +2607,9 @@
 /* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Můžete se také připojit kliknutím na odkaz. Pokud se otevře v prohlížeči, klikněte na tlačítko **Otevřít v mobilní aplikaci**.";
 
+/* No comment provided by engineer. */
+"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.\nSimpleX zámek musí být povolen.";
+
 /* notification body */
 "You can now send messages to %@" = "Nyní můžete posílat zprávy %@";
 
@@ -2684,6 +2702,9 @@
 
 /* No comment provided by engineer. */
 "You will join a group this link refers to and connect to its group members." = "Připojíte se ke skupině, na kterou tento odkaz odkazuje, a spojíte se s jejími členy.";
+
+/* No comment provided by engineer. */
+"You will still receive calls and notifications from muted profiles when they are active." = "Stále budete přijímat volání a upozornění od umlčených profilů pokud budou aktivní.";
 
 /* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Přestanete dostávat zprávy z této skupiny. Historie chatu bude zachována.";
