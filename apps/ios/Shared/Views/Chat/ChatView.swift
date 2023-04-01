@@ -587,14 +587,13 @@ struct ChatView: View {
 
         private func cancelFileUIAction(_ fileId: Int64) -> UIAction {
             UIAction(
-                title: NSLocalizedString("Cancel", comment: "chat item action"),
-                image: UIImage(systemName: "xmark"),
-                attributes: [.destructive]
+                title: NSLocalizedString("Stop file", comment: "chat item action"),
+                image: UIImage(systemName: "xmark")
             ) { _ in
                 AlertManager.shared.showAlert(Alert(
-                    title: Text("Cancel file transfer?"),
-                    message: Text("File transfer will be cancelled. If it's in progress it will be stoppped."),
-                    primaryButton: .destructive(Text("Confirm")) {
+                    title: Text("Stop receiving file?"),
+                    message: Text("File reception will be stopped, and the received part removed."),
+                    primaryButton: .destructive(Text("Stop")) {
                         Task {
                             if let user = ChatModel.shared.currentUser {
                                 await cancelFile(user: user, fileId: fileId)
