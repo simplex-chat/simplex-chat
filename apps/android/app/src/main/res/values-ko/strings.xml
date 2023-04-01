@@ -12,7 +12,7 @@
     <string name="connection_error_auth">연결 오류 (인증)</string>
     <string name="smp_server_test_create_queue">대기열 생성</string>
     <string name="database_initialization_error_title">데이터베이스를 초기화할 수 없어요</string>
-    <string name="notifications_mode_service_desc">앱이 백그라운드에서 항상 실행돼요. 대신 메시지가 도착하자마자 바로 알림이 떠요.</string>
+    <string name="notifications_mode_service_desc">앱이 백그라운드에서 항상 실행되어요. 대신 메시지가 도착하자마자 바로 알림이 와요.</string>
     <string name="notifications_mode_periodic_desc">10분마다 최대 1분간 새 메시지 확인</string>
     <string name="notification_contact_connected">연결됨</string>
     <string name="notification_preview_somebody">숨긴 대화 상대 :</string>
@@ -119,7 +119,7 @@
     <string name="cant_delete_user_profile">사용자 프로필을 삭제할 수 없습니다</string>
     <string name="chat_preferences_always">항상</string>
     <string name="chat_preferences_contact_allows">대화 상대가 허용했어요.</string>
-    <string name="contact_preferences">연락처 설정</string>
+    <string name="contact_preferences">연락처 개별 설정</string>
     <string name="allow_voice_messages_only_if">대화 상대도 허용한 경우에만 음성 메시지를 보낼 수 있습니다.</string>
     <string name="allow_your_contacts_irreversibly_delete">모두에게서 메시지 영구 삭제 허용하기.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">대화 상대에게 자동 삭제되는 메시지 허용하기.</string>
@@ -166,7 +166,7 @@
     <string name="settings_section_title_icon">앱 아이콘</string>
     <string name="incognito_random_profile_from_contact_description">링크를 보낸 사람한테 랜덤으로 만들어진 익명 프로필이 보내져요</string>
     <string name="network_session_mode_user_description">별도로 분리된 TCP 연결(그리고 SOCKS 자격 증명)이 <b>각각의 채팅 프로필</b>에 사용될 거예요.</string>
-    <string name="network_session_mode_entity_description">별도로 분리된 TCP 연결(및 SOCKS 자격 증명)이 <b>각각의 연락처 및 그룹 구성원</b>에게 사용될 거예요.
+    <string name="network_session_mode_entity_description">별도로 분리된 TCP 연결(및 SOCKS 자격 증명)이 <b>각각의 대화 상대 및 그룹 구성원</b>에게 사용될 거예요.
 \n<b>참고</b>: 연결이 많은 경우 배터리 및 트래픽 소비가 엄청 높을 수 있고 일부 연결이 실패할 수 있어요.</string>
     <string name="icon_descr_asked_to_receive">이미지 수신 요청됨</string>
     <string name="v4_6_audio_video_calls">음성 및 영상 전화</string>
@@ -221,7 +221,7 @@
     <string name="delete_message__question">메시지를 삭제할까요\?</string>
     <string name="for_me_only">나에게서만 삭제</string>
     <string name="delete_member_message__question">멤버의 메시지를 삭제할까요\?</string>
-    <string name="maximum_supported_file_size">현재 지원되는 최대 파일 크기는 <xliff:g id="maxFileSize">%1$s</xliff:g>입니다.</string>
+    <string name="maximum_supported_file_size">현재 지원되는 최대 파일 크기는 <xliff:g id="maxFileSize">%1$s</xliff:g> 에요.</string>
     <string name="image_decoding_exception_title">디코딩 오류</string>
     <string name="button_delete_contact">대화 상대 삭제</string>
     <string name="delete_contact_question">연락처를 삭제할까요\?</string>
@@ -337,7 +337,7 @@
     <string name="callstate_waiting_for_answer">응답 대기 중…</string>
     <string name="callstate_waiting_for_confirmation">확인 대기 중…</string>
     <string name="alert_title_skipped_messages">읽지 않는 메시지</string>
-    <string name="alert_title_cant_invite_contacts_descr">이 그룹에서 익명 프로필을 사용하고 있어요. 내 원래 프로필이 노출되는 걸 방지하기 위해 대화 상대 초대가 허용되지 않아요.</string>
+    <string name="alert_title_cant_invite_contacts_descr">이 그룹에서 익명 프로필을 사용하고 있어요. 원래의 내 프로필이 노출되는 걸 방지하기 위해 대화 상대 초대가 허용되지 않아요.</string>
     <string name="button_remove_member">멤버 삭제하기</string>
     <string name="chat_item_ttl_seconds">%s 초</string>
     <string name="alert_message_group_invitation_expired">이 링크로 참여할 수 없어요. 이미 삭제된 링크에요.</string>
@@ -372,7 +372,7 @@
 \n1. 대화 상대가 메시지를 보낸 지 30일 지나서 서버에서 삭제된 경우
 \n2. 메시지를 수신하는 데 사용된 서버가 업데이트되고 재부팅된 경우
 \n3. 침해된 연결의 경우
-\n서버 업데이트를 받으려면 설정을 통해 개발자에게 연락해 주세요.
+\n서버 업데이트를 받으려면 설정에서 개발자에게 연락해 주세요.
 \n저희 개발팀은 메시지 손실을 방지하기 위해 중복된 서버를 추가할 예정이에요.</string>
     <string name="auth_simplex_lock_turned_on">SimpleX 잠금 켜짐</string>
     <string name="callstate_received_answer">응답됨…</string>
@@ -387,11 +387,11 @@
     <string name="description_via_group_link_incognito">그룹 링크로 익명 채팅</string>
     <string name="description_via_group_link">그룹 링크로 채팅</string>
     <string name="description_via_one_time_link">일회용 링크로 채팅</string>
-    <string name="description_you_shared_one_time_link_incognito">일회용 익명 연락처를 공유했어요.</string>
-    <string name="description_you_shared_one_time_link">일회용 프로필 연락처를 공유했어요.</string>
-    <string name="description_via_contact_address_link_incognito">상대의 연락처 링크로 익명 채팅</string>
-    <string name="description_via_contact_address_link">상대의 연락처 링크로 채팅</string>
-    <string name="description_via_one_time_link_incognito">일회용 연락처로 익명 채팅</string>
+    <string name="description_you_shared_one_time_link_incognito">일회용 익명 링크를 공유했어요.</string>
+    <string name="description_you_shared_one_time_link">일회용 링크를 공유했어요.</string>
+    <string name="description_via_contact_address_link_incognito">상대의 연락처 링크로 익명 연결</string>
+    <string name="description_via_contact_address_link">상대의 연락처 링크로 연결</string>
+    <string name="description_via_one_time_link_incognito">일회용 연락처로 익명 연결</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMP 서버 주소가 올바른 형식이고 줄로 구분되어 있고 중복이 없는지 확인해 주세요.</string>
     <string name="error_saving_smp_servers">SMP 서버 저장 오류</string>
     <string name="error_setting_network_config">네트워크 설정 업데이트 오류</string>
@@ -476,7 +476,7 @@
     <string name="feature_offered_item">%s 제안</string>
     <string name="feature_offered_item_with_param">%s 제안: %2s</string>
     <string name="icon_descr_instant_notifications">즉시 알림</string>
-    <string name="hide_notification">숨김</string>
+    <string name="hide_notification">숨기기</string>
     <string name="hide_verb">숨기기</string>
     <string name="for_everybody">모두에게</string>
     <string name="icon_descr_edited">수정됨</string>
@@ -568,7 +568,7 @@
     <string name="import_database">데이터베이스 가져오기</string>
     <string name="import_database_confirmation">가져오기</string>
     <string name="incognito">익명 모드</string>
-    <string name="incognito_info_find">익명 채팅에 사용되는 프로필을 찾으려면 채팅 상단에 있는 연락처 또는 그룹 이름을 탭하세요.</string>
+    <string name="incognito_info_find">익명 채팅에 사용되는 프로필을 확인하려면 채팅 상단에 있는 연락처 또는 그룹 이름을 탭하세요.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">대화 상대가 업로드를 완료하면 이미지가 수신될 거예요.</string>
     <string name="image_descr_profile_image">프로필 이미지</string>
     <string name="incognito_info_allows">하나의 프로필로 여러 사람과 연락할 필요 없이 무수히 많은 익명 프로필로 연락할 수 있어요.</string>
@@ -616,4 +616,88 @@
     <string name="invalid_QR_code">잘못된 QR 코드</string>
     <string name="incorrect_code">잘못된 보안 코드!</string>
     <string name="invalid_contact_link">잘못된 링크!</string>
+    <string name="marked_deleted_description">삭제됨으로 표시됨</string>
+    <string name="moderated_item_description">%s에 의해 조정됨</string>
+    <string name="live">라이브</string>
+    <string name="moderated_description">조정됨</string>
+    <string name="network_error_desc"><xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> 에서 네트워크 연결 상태를 확인한 후 다시 시도하세요.</string>
+    <string name="la_notice_title_simplex_lock">SimpleX 잠금</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">정보를 보호하려면 SimpleX 잠금을 켜세요.
+\n이 기능이 활성화하기 전에 인증을 완료하라는 메시지가 표시될 거예요.</string>
+    <string name="notification_new_contact_request">새로운 대화 요청</string>
+    <string name="notification_preview_mode_hidden">숨겨짐</string>
+    <string name="notification_preview_mode_contact_desc">대화 상대 이름만 표시</string>
+    <string name="notification_preview_new_message">새로운 메시지</string>
+    <string name="notifications_mode_off">앱이 열릴 때 실행</string>
+    <string name="notifications_mode_periodic">주기적으로 실행됨</string>
+    <string name="notification_display_mode_hidden_desc">연락처 이름 및 메시지 숨기기</string>
+    <string name="la_notice_turn_on">켜기</string>
+    <string name="message_delivery_error_desc">대화 상대가 나와의 연결을 삭제했을 가능성이 커요.</string>
+    <string name="message_delivery_error_title">메시지 전달 오류</string>
+    <string name="moderate_verb">조정</string>
+    <string name="moderate_message_will_be_deleted_warning">모든 멤버에게서 메시지가 삭제될 거예요.</string>
+    <string name="moderate_message_will_be_marked_warning">이 메시지는 모든 멤버에게 조정됨으로 표시될 거예요.</string>
+    <string name="no_details">세부 정보 없음</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 모바일: <b>모바일 앱에서 열기</b>를 누른 다음 앱에서 <b>연결</b>을 누르세요.</string>
+    <string name="mark_code_verified">확인됨으로 표시</string>
+    <string name="network_and_servers">네트워크 및 서버</string>
+    <string name="new_database_archive">새 데이터베이스 보관함</string>
+    <string name="new_member_role">새 멤버 역할</string>
+    <string name="no_contacts_to_add">추가할 연락처 없음</string>
+    <string name="no_contacts_selected">선택한 연락처 없음</string>
+    <string name="network_status">네트워크 상태</string>
+    <string name="language_system">시스템</string>
+    <string name="messages_section_title">메시지</string>
+    <string name="messages_section_description">이 설정은 현재 내 프로필의 메시지에 적용되어요.</string>
+    <string name="member_info_section_title_member">멤버</string>
+    <string name="member_role_will_be_changed_with_invitation">역할이 \"%s\"(으)로 변경되고, 회원은 새로운 초대를 받게 될 거예요.</string>
+    <string name="network_options_revert">되돌리기</string>
+    <string name="message_deletion_prohibited">이 채팅에서는 메시지 영구 삭제가 허용되지 않았어요.</string>
+    <string name="leave_group_button">나가기</string>
+    <string name="large_file">큰 파일!</string>
+    <string name="network_settings_title">네트워크 설정</string>
+    <string name="network_use_onion_hosts_required_desc">연결하려면 Onion 호스트가 필요해요.</string>
+    <string name="network_option_ping_count">핑 횟수</string>
+    <string name="network_option_ping_interval">핑 간격</string>
+    <string name="network_option_protocol_timeout">프로토콜 타임아웃</string>
+    <string name="network_option_seconds_label">초</string>
+    <string name="network_option_tcp_connection_timeout">TCP 연결 시간 초과</string>
+    <string name="muted_when_inactive">비활성 시 음소거!</string>
+    <string name="message_deletion_prohibited_in_chat">이 채팅에서는 메시지 영구 삭제가 허용되지 않아요.</string>
+    <string name="make_private_connection">비공개 연결하기</string>
+    <string name="no_received_app_files">수신 또는 전송된 파일 없음</string>
+    <string name="network_options_save">저장하기</string>
+    <string name="make_profile_private">프로필을 비공개로 설정하세요!</string>
+    <string name="live_message">라이브 메시지!</string>
+    <string name="mark_read">읽음으로 표시</string>
+    <string name="mark_unread">읽지 않음으로 표시</string>
+    <string name="mute_chat">음소거</string>
+    <string name="markdown_in_messages">메시지에 사용된 마크다운</string>
+    <string name="network_socks_toggle">SOCKS 프록시 사용 (포트 9050)</string>
+    <string name="network_disable_socks">직접적인 인터넷 연결을 사용할까요\?</string>
+    <string name="network_enable_socks">SOCKS 프록시를 사용할까요\?</string>
+    <string name="network_disable_socks_info">설정하면 메시징 서버에서 내 IP 주소와 내가 연결하려는 서버를 볼 수 있어요.</string>
+    <string name="network_use_onion_hosts">.onion 호스트 사용</string>
+    <string name="network_use_onion_hosts_no">아니요</string>
+    <string name="network_use_onion_hosts_prefer">사용 가능한 경우</string>
+    <string name="network_use_onion_hosts_required">필요함</string>
+    <string name="network_use_onion_hosts_prefer_desc">사용 가능한 경우 Onion 호스트가 사용될 거예요.</string>
+    <string name="network_use_onion_hosts_no_desc">Onion 호스트가 사용되지 않을 거예요.</string>
+    <string name="network_session_mode_transport_isolation">전송 격리</string>
+    <string name="network_use_onion_hosts_no_desc_in_alert">Onion 호스트가 사용되지 않을 거예요.</string>
+    <string name="network_use_onion_hosts_prefer_desc_in_alert">사용 가능한 경우 Onion 호스트가 사용될 거예요.</string>
+    <string name="network_use_onion_hosts_required_desc_in_alert">연결하려면 Onion 호스트가 필요해요.</string>
+    <string name="next_generation_of_private_messaging">차세대 사생활 보호 메시징</string>
+    <string name="new_passphrase">새 비밀번호…</string>
+    <string name="network_option_enable_tcp_keep_alive">TCP 연결 유지 활성화</string>
+    <string name="new_in_version">%s의 새로운 기능</string>
+    <string name="markdown_help">마크다운 도움말</string>
+    <string name="many_people_asked_how_can_it_deliver">많은 사람들의 질문 : <i><xliff:g id="appName">SimpleX</xliff:g>에는 사용자 식별자가 없는데도 어떻게 메시지를 전달할 수 있어요\?</i></string>
+    <string name="leave_group_question">그룹에서 나갈까요\?</string>
+    <string name="mtr_error_no_down_migration">데이터베이스 버전이 앱보다 최신이지만 다음에 대한 다운 마이그레이션 없음: %s</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">멤버가 그룹에서 제거되어요. 이 작업은 되돌릴 수 없어요!</string>
+    <string name="member_role_will_be_changed_with_notification">역할이 \"%s\"(으)로 변경되어요. 그룹의 모든 멤버에게 알림이 전송됩니다.</string>
+    <string name="network_options_reset_to_defaults">기본값으로 재설정</string>
+    <string name="notification_preview_mode_message">메시지 내용</string>
+    <string name="notification_preview_mode_message_desc">대화 상대 이름 및 메시지 표시</string>
 </resources>
