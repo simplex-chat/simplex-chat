@@ -115,7 +115,7 @@
     <string name="change_member_role_question">그룹 역할을 바꾸겠습니까\?</string>
     <string name="info_row_connection">연결</string>
     <string name="users_add">프로필 추가</string>
-    <string name="incognito_random_profile_description">대화 상대에게 랜덤으로 생성된 익명 프로필이 보내져요</string>
+    <string name="incognito_random_profile_description">대화 상대에게 랜덤으로 만들어진 익명 프로필이 보내져요</string>
     <string name="cant_delete_user_profile">사용자 프로필을 삭제할 수 없습니다</string>
     <string name="chat_preferences_always">항상</string>
     <string name="chat_preferences_contact_allows">대화 상대가 허용했어요.</string>
@@ -174,7 +174,7 @@
     <string name="auth_unavailable">인증할 수 없어요</string>
     <string name="turning_off_service_and_periodic">새 메시지를 수신하기 위해 배터리 최적화 설정을 바꿉니다. 설정에서 언제든지 다시 바꿀 수 있습니다.</string>
     <string name="onboarding_notifications_mode_off_desc"><b>배터리에 가장 좋음</b>. 앱이 실행 중일 때만 알림을 받게 되며 백그라운드에서 실행되지 않습니다.</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>설정을 통해 비활성화할 수 있습니다.</b> – 앱이 실행되는 동안 알림이 표시됩니다.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>설정을 통해 비활성화할 수 있어요.</b> – 앱이 실행되는 동안 알림이 표시되요.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">나와 대화 상대 모두 자동 삭제되는 메시지를 보낼 수 있어요.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QR 코드 스캔</b>: QR 코드를 보여주는 사람과 연결해요.</string>
     <string name="cannot_access_keychain">데이터베이스 암호를 저장하고 있는 암호키 저장소에 접근할 수 없습니다</string>
@@ -292,7 +292,7 @@
     <string name="encrypted_video_call">종단간 암호화된 영상 전화</string>
     <string name="no_call_on_lock_screen">비활성화</string>
     <string name="status_e2e_encrypted">종단간 암호화</string>
-    <string name="integrity_msg_duplicate">중복 메시지</string>
+    <string name="integrity_msg_duplicate">중복된 메시지</string>
     <string name="accept_feature_set_1_day">1일로 설정</string>
     <string name="v4_4_disappearing_messages">자동 삭제되는 메시지</string>
     <string name="total_files_count_and_size">전체 크기가 %s인 %d개의 파일</string>
@@ -585,4 +585,35 @@
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> 로고</string>
     <string name="image_will_be_received_when_contact_is_online">대화 상대가 온라인 상태일 때 이미지가 수신될 거예요. 기다리거나 나중에 확인하세요!</string>
     <string name="import_database_question">채팅 데이터베이스를 가져올까요\?</string>
+    <string name="server_error">오류</string>
+    <string name="invalid_chat">유효하지 않는 채팅</string>
+    <string name="invalid_data">잘못된 데이터</string>
+    <string name="invalid_message_format">잘못된 메시지 형식</string>
+    <string name="invalid_connection_link">잘못된 연결 링크</string>
+    <string name="notifications">알림</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 읽지 않은 메시지</string>
+    <string name="keychain_error">키체인 오류</string>
+    <string name="invite_to_group_button">그룹에 초대하기</string>
+    <string name="info_row_local_name">로컬 네임</string>
+    <string name="join_group_button">참여</string>
+    <string name="join_group_question">그룹에 참여할까요\?</string>
+    <string name="invite_prohibited_description">이 그룹에서는 기본 프로필을 사용하는 중인데 반해, 익명 프로필로 연락하고 있는 대화 상대를 초대하려고 하셨어요.</string>
+    <string name="initial_member_role">초기 역할</string>
+    <string name="info_row_group">그룹</string>
+    <string name="incompatible_database_version">호환되지 않는 데이터베이스 버전</string>
+    <string name="joining_group">그룹에 참여 중</string>
+    <string name="incognito_info_protects">익명 모드는 기본 프로필 이름과 사진과 같은 개인 정보를 보호해줘요. 새 대화 상대마다 새로운 랜덤 프로필이 만들어져요.</string>
+    <string name="is_verified">%s 은(는) 인증되었어요.</string>
+    <string name="italic">기울게</string>
+    <string name="incognito_info_share">익명 프로필 사용 중 초대받은 그룹에 참여하면, 그 그룹에서도 동일한 익명 프로필이 사용되어요.</string>
+    <string name="incognito_random_profile">내 랜덤 프로필</string>
+    <string name="incoming_audio_call">음성 전화 옴</string>
+    <string name="is_not_verified">%s은(는) 인증되지 않았어요.</string>
+    <string name="install_simplex_chat_for_terminal">터미널용 <xliff:g id="appNameFull">SimpleX Chat</xliff:g>를 설치하세요</string>
+    <string name="incoming_video_call">영상 전화 옴</string>
+    <string name="invalid_migration_confirmation">잘못된 마이그레이션 확인</string>
+    <string name="join_group_incognito_button">익명 모드로 참여</string>
+    <string name="invalid_QR_code">잘못된 QR 코드</string>
+    <string name="incorrect_code">잘못된 보안 코드!</string>
+    <string name="invalid_contact_link">잘못된 링크!</string>
 </resources>
