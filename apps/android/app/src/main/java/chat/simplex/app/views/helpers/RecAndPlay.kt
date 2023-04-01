@@ -39,6 +39,7 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     }
 
   override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
+    VideoPlayer.stopAll()
     AudioPlayer.stop()
     val rec: MediaRecorder
     recorder = initRecorder().also { rec = it }
@@ -152,6 +153,7 @@ object AudioPlayer {
       return null
     }
 
+    VideoPlayer.stopAll()
     RecorderNative.stopRecording?.invoke()
     val current = currentlyPlaying.value
     if (current == null || current.first != filePath) {

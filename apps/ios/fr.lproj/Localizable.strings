@@ -413,8 +413,11 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Impossible d'inviter les contacts !";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Cancel" = "Annuler";
+
+/* No comment provided by engineer. */
+"Cancel file transfer?" = "Annuler le transfert de fichiers ?";
 
 /* feature offered item */
 "cancelled %@" = "annulé %@";
@@ -526,6 +529,9 @@
 
 /* No comment provided by engineer. */
 "Confirm" = "Confirmer";
+
+/* No comment provided by engineer. */
+"Confirm database upgrades" = "Confirmer la mise à niveau de la base de données";
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Confirmer la nouvelle phrase secrète…";
@@ -693,6 +699,9 @@
 "Dark" = "Sombre";
 
 /* No comment provided by engineer. */
+"Database downgrade" = "Rétrogradation de la base de données";
+
+/* No comment provided by engineer. */
 "Database encrypted!" = "Base de données chiffrée !";
 
 /* No comment provided by engineer. */
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Database ID" = "ID de base de données";
+
+/* No comment provided by engineer. */
+"Database IDs and Transport isolation option." = "IDs de base de données et option d'isolation du transport.";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "La base de données est chiffrée à l'aide d'une phrase secrète aléatoire, que vous pouvez modifier.";
@@ -724,6 +736,9 @@
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "La phrase secrète de la base de données est nécessaire pour ouvrir le chat.";
+
+/* No comment provided by engineer. */
+"Database upgrade" = "Mise à niveau de la base de données";
 
 /* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "La base de données sera chiffrée et la phrase secrète sera stockée dans la keychain.\n";
@@ -760,6 +775,9 @@
 
 /* No comment provided by engineer. */
 "Delete chat archive?" = "Supprimer l'archive du chat ?";
+
+/* No comment provided by engineer. */
+"Delete chat profile" = "Supprimer le profil de chat";
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "Supprimer le profil du chat ?";
@@ -829,6 +847,9 @@
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Supprimer la connexion en attente ?";
+
+/* No comment provided by engineer. */
+"Delete profile" = "Supprimer le profil";
 
 /* server test step */
 "Delete queue" = "Supprimer la file d'attente";
@@ -901,6 +922,9 @@
 
 /* No comment provided by engineer. */
 "Don't show again" = "Ne plus afficher";
+
+/* No comment provided by engineer. */
+"Downgrade and open chat" = "Rétrograder et ouvrir le chat";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "Nom d'affichage en double !";
@@ -984,7 +1008,7 @@
 "Enter passphrase…" = "Entrez la phrase secrète…";
 
 /* No comment provided by engineer. */
-"Enter password above to show!" = "Entrez le mot de passe ci-dessus pour continuer !";
+"Enter password above to show!" = "Entrez ci-dessus le mot de passe pour afficher le profil !";
 
 /* No comment provided by engineer. */
 "Enter server manually" = "Entrer un serveur manuellement";
@@ -1110,6 +1134,9 @@
 "Error updating user privacy" = "Erreur de mise à jour de la confidentialité de l'utilisateur";
 
 /* No comment provided by engineer. */
+"Error: " = "Erreur : ";
+
+/* No comment provided by engineer. */
 "Error: %@" = "Erreur : %@";
 
 /* No comment provided by engineer. */
@@ -1135,6 +1162,12 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Échec de la suppression de la phrase secrète";
+
+/* No comment provided by engineer. */
+"File transfer will be cancelled. If it's in progress it will be stoppped." = "Le transfert de fichiers sera annulé. S'il est en cours, il sera interrompu.";
+
+/* No comment provided by engineer. */
+"File will be received when your contact completes uploading it." = "Le fichier sera reçu lorsque votre contact aura terminé de le mettre en ligne.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "Le fichier sera reçu quand votre contact sera en ligne, merci d'attendre ou de revenir plus tard !";
@@ -1260,6 +1293,9 @@
 "Hide profile" = "Masquer le profil";
 
 /* No comment provided by engineer. */
+"Hide:" = "Cacher :";
+
+/* No comment provided by engineer. */
 "How it works" = "Comment ça fonctionne";
 
 /* No comment provided by engineer. */
@@ -1288,6 +1324,9 @@
 
 /* No comment provided by engineer. */
 "Ignore" = "Ignorer";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact completes uploading it." = "L'image sera reçue lorsque votre contact aura terminé de la mettre en ligne.";
 
 /* No comment provided by engineer. */
 "Image will be received when your contact is online, please wait or check later!" = "L'image sera reçue quand votre contact sera en ligne, merci d'attendre ou de revenir plus tard !";
@@ -1339,6 +1378,9 @@
 
 /* notification */
 "Incoming video call" = "Appel vidéo entrant";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Version de la base de données incompatible";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "Code de sécurité incorrect !";
@@ -1488,7 +1530,7 @@
 "Make a private connection" = "Établir une connexion privée";
 
 /* No comment provided by engineer. */
-"Make profile private!" = "Rendre le profil privé !";
+"Make profile private!" = "Rendre un profil privé !";
 
 /* No comment provided by engineer. */
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Assurez-vous que les adresses des serveurs SMP sont au bon format et ne sont pas dupliquées, un par ligne.";
@@ -1756,7 +1798,7 @@
 "owner" = "propriétaire";
 
 /* No comment provided by engineer. */
-"Password to show" = "Mot de passe à afficher";
+"Password to show" = "Mot de passe à entrer";
 
 /* No comment provided by engineer. */
 "Paste" = "Coller";
@@ -1841,6 +1883,9 @@
 
 /* No comment provided by engineer. */
 "Profile image" = "Image de profil";
+
+/* No comment provided by engineer. */
+"Profile password" = "Mot de passe de profil";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Interdire la suppression irréversible des messages.";
@@ -2143,10 +2188,16 @@
 "Show calls in phone history" = "Afficher les appels dans l'historique du téléphone";
 
 /* No comment provided by engineer. */
+"Show developer options" = "Afficher les options pour les développeurs";
+
+/* No comment provided by engineer. */
 "Show preview" = "Montrer l'aperçu";
 
 /* No comment provided by engineer. */
 "Show QR code" = "Afficher le code QR";
+
+/* No comment provided by engineer. */
+"Show:" = "Afficher :";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "La sécurité de SimpleX Chat a été [auditée par Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
@@ -2365,7 +2416,7 @@
 "To record voice message please grant permission to use Microphone." = "Pour enregistrer un message vocal, veuillez accorder la permission d'utiliser le microphone.";
 
 /* No comment provided by engineer. */
-"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Pour révéler votre profil caché, entrez un mot de passe complet dans le champ de recherche de la page **Vos profils de chat**.";
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Pour révéler votre profil caché, entrez le mot de passe dans le champ de recherche de la page **Vos profils de chat**.";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Pour prendre en charge les notifications push instantanées, la base de données du chat doit être migrée.";
@@ -2402,6 +2453,12 @@
 
 /* No comment provided by engineer. */
 "Unhide" = "Dévoiler";
+
+/* No comment provided by engineer. */
+"Unhide chat profile" = "Dévoiler le profil de chat";
+
+/* No comment provided by engineer. */
+"Unhide profile" = "Dévoiler le profil";
 
 /* connection info */
 "unknown" = "inconnu";
@@ -2455,6 +2512,9 @@
 "Updating this setting will re-connect the client to all servers." = "La mise à jour de ce paramètre reconnectera le client à tous les serveurs.";
 
 /* No comment provided by engineer. */
+"Upgrade and open chat" = "Mettre à niveau et ouvrir le chat";
+
+/* No comment provided by engineer. */
 "Use .onion hosts" = "Utiliser les hôtes .onions";
 
 /* No comment provided by engineer. */
@@ -2483,6 +2543,9 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
+
+/* No comment provided by engineer. */
+"v4.6.1+ is required to receive via XFTP." = "v4.6.1+ nécessaire pour la réception via XFTP.";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Vérifier la sécurité de la connexion";
@@ -2543,6 +2606,9 @@
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "veut établir une connexion !";
+
+/* No comment provided by engineer. */
+"Warning: you may lose some data!" = "Attention : vous risquez de perdre des données !";
 
 /* No comment provided by engineer. */
 "WebRTC ICE servers" = "Serveurs WebRTC ICE";

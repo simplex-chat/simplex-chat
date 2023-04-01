@@ -10,6 +10,7 @@ import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.*
 import android.provider.OpenableColumns
@@ -549,6 +550,19 @@ fun getMaxFileSize(fileProtocol: FileProtocol): Long {
   }
 }
 
+fun getBitmapFromVideo(uri: Uri, timestamp: Long? = null, random: Boolean = true): VideoPlayer.PreviewAndDuration {
+  val mmr = MediaMetadataRetriever()
+  mmr.setDataSource(SimplexApp.context, uri)
+  val durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
+  val image = when {
+    timestamp != null -> mmr.getFrameAtTime(timestamp * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
+    random -> mmr.frameAtTime
+    else -> mmr.getFrameAtIndex(0)
+  }
+  mmr.release()
+  return VideoPlayer.PreviewAndDuration(image, durationMs, timestamp ?: 0)
+}
+
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
 
@@ -604,5 +618,26 @@ fun UriHandler.openUriCatching(uri: String) {
     openUri(uri)
   } catch (e: ActivityNotFoundException) {
     Log.e(TAG, e.stackTraceToString())
+  }
+}
+
+fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
+  save = { it.width to it.height },
+  restore = { IntSize(it.first, it.second) }
+)
+
+@Composable
+fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
+  val context = LocalContext.current
+  DisposableEffect(Unit) {
+    always()
+    val activity = context as? Activity ?: return@DisposableEffect onDispose {}
+    val orientation = activity.resources.configuration.orientation
+    onDispose {
+      whenDispose()
+      if (orientation == activity.resources.configuration.orientation) {
+        whenGone()
+      }
+    }
   }
 }

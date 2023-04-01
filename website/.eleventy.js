@@ -31,7 +31,7 @@ const translations = require("./translations.json")
 module.exports = function (ty) {
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
-  ty.addShortcode("getlang", (path) => {
+  ty.addFilter("getlang", (path) => {
     const lang = path.split("/")[1]
     if (supportedRoutes.includes(lang)) return "en"
     else if (supportedLangs.includes(lang)) return lang
