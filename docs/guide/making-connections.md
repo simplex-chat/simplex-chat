@@ -1,3 +1,11 @@
+---
+layout: layouts/doc.html
+title: Making connections
+displayAt: 9
+permalink: "/docs/guide/making-connections.html"
+supportedLangsForDoc:
+    - en
+---
 # Connect to somebody in the chat
 
 _Work in progress_

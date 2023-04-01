@@ -1,3 +1,11 @@
+---
+layout: layouts/doc.html
+title: Audio & video Calls
+displayAt: 6
+permalink: "/docs/guide/audio-video-calls.html"
+supportedLangsForDoc:
+    - en
+---
 # Audio and Video Calls
 
 SimpleX Chat allows you to make end-to-end encrypted audio and video calls with your contacts via WebRTC. Note: Group calls are not supported at this time.

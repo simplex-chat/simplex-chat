@@ -120,13 +120,15 @@ module.exports = function (ty) {
 
   ty.addCollection('docs', function (collection) {
     const docs = collection.getFilteredByGlob('src/docs/**/*.md').map(doc => {
-      return { url: doc.url, title: doc.data.title }
+      return { url: doc.url, title: doc.data.title, displayAt: doc.data.displayAt || 0 }
     })
 
     const newDocs = []
     docs.forEach(doc => {
       const url = doc.url.replace("/docs/", "")
       const urlParts = url.split("/")
+
+      if (urlParts.includes("rfcs")) return false
 
       if (urlParts.length === 1 && urlParts[0] !== "") {
         const index = newDocs.findIndex((ele) => ele.lang === 'en' && ele.menu === 'root')
@@ -184,6 +186,10 @@ module.exports = function (ty) {
         }
       }
     })
+
+    newDocs.forEach(obj => {
+      obj.data.sort((a, b) => a.displayAt - b.displayAt);
+    });
 
     return newDocs.sort((a, b) => a.priority - b.priority)
   })

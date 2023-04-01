@@ -1,3 +1,11 @@
+---
+layout: layouts/doc.html
+title: Quick start
+displayAt: 1
+permalink: "/docs/guide/quick-start.html"
+supportedLangsForDoc:
+    - en
+---
 # SimpleX Chat User Guide
 
 The first messaging platform that has no user identifiers of any kind — 100% private by design.

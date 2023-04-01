@@ -1,3 +1,11 @@
+---
+layout: layouts/doc.html
+title: Privacy & security
+displayAt: 7
+permalink: "/docs/guide/privacy-security.html"
+supportedLangsForDoc:
+    - en
+---
 # Privacy and Security
 
 SimpleX Chat default configuration aims to balance privacy, security and convenience. You may want to change the default options.

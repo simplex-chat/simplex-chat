@@ -1,3 +1,11 @@
+---
+layout: layouts/doc.html
+title: Chat profiles
+displayAt: 4
+permalink: "/docs/guide/chat-profiles.html"
+supportedLangsForDoc:
+    - en
+---
 # Your chat profiles
 
 ## Creating additional chat profiles

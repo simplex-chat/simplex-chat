@@ -1,3 +1,11 @@
+---
+layout: layouts/doc.html
+title: App settings
+displayAt: 8
+permalink: "/docs/guide/app-settings.html"
+supportedLangsForDoc:
+    - en
+---
 # App settings
 
 ## Opening the app settings
