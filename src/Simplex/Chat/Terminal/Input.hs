@@ -12,9 +12,12 @@ module Simplex.Chat.Terminal.Input where
 import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, threadDelay)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Char (isAlphaNum)
+import qualified Data.ByteString.Char8 as B
+import Data.Char (isAlphaNum, isAscii)
+import Data.Either (fromRight)
 import Data.List (dropWhileEnd, foldl')
 import Data.Maybe (isJust, isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Weak (deRefWeak)
@@ -27,6 +30,11 @@ import Simplex.Messaging.Util (whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
+import qualified Data.Attoparsec.ByteString.Char8 as A
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
+import Simplex.Messaging.Util (safeDecodeUtf8, catchAll_)
+import qualified Database.SQLite.Simple as DB
+import Database.SQLite.Simple (Only (..))
 
 getKey :: MonadTerminal m => m (Key, Modifiers)
 getKey =
@@ -119,7 +127,7 @@ runTerminalInput ct cc = withChatTerm ct $ do
   receiveFromTTY cc ct
 
 receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, termState, liveMessageState} =
+receiveFromTTY cc@ChatController {inputQ, activeTo, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState} =
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
@@ -135,10 +143,12 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
     submit live =
       atomically (readTVar termState >>= submitInput live)
         >>= mapM_ (uncurry endLiveMessage)
-    update key = atomically $ do
-      ac <- readTVar activeTo
-      live <- isJust <$> readTVar liveMessageState
-      modifyTVar termState $ updateTermState ac live (width termSize) key
+    update key = do
+      ac <- readTVarIO activeTo
+      live <- isJust <$> readTVarIO liveMessageState
+      ts <- readTVarIO termState
+      ts' <- updateTermState chatStore ac live (width termSize) key ts
+      atomically $ writeTVar termState $! ts'
 
     endLiveMessage :: String -> LiveMessage -> IO ()
     endLiveMessage sentMsg lm = do
@@ -175,19 +185,21 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
         isSend s = length s > 1 && (head s == '@' || head s == '#')
         ts' = ts {inputString = "", inputPosition = 0}
 
-updateTermState :: ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
-updateTermState ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
+data AutoComplete = ACContact Text | ACGroup Text | ACCommand Text | ACNone
+
+updateTermState :: SQLiteStore -> ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
+updateTermState st ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
   CharKey c
-    | ms == mempty || ms == shiftKey -> insertCharsWithContact [c]
-    | ms == altKey && c == 'b' -> setPosition prevWordPos
-    | ms == altKey && c == 'f' -> setPosition nextWordPos
-    | otherwise -> ts
-  TabKey -> insertCharsWithContact "    "
-  BackspaceKey -> backDeleteChar
-  DeleteKey -> deleteChar
-  HomeKey -> setPosition 0
-  EndKey -> setPosition $ length s
-  ArrowKey d -> case d of
+    | ms == mempty || ms == shiftKey -> pure $ insertChars $ charsWithContact [c]
+    | ms == altKey && c == 'b' -> pure $ setPosition prevWordPos
+    | ms == altKey && c == 'f' -> pure $ setPosition nextWordPos
+    | otherwise -> pure ts
+  TabKey -> insertChars . commonPrefix <$> autoComplete
+  BackspaceKey -> pure $ backDeleteChar
+  DeleteKey -> pure $ deleteChar
+  HomeKey -> pure $ setPosition 0
+  EndKey -> pure $ setPosition $ length s
+  ArrowKey d -> pure $ case d of
     Leftwards -> setPosition leftPos
     Rightwards -> setPosition rightPos
     Upwards
@@ -197,15 +209,46 @@ updateTermState ac live tw (key, ms) ts@TerminalState {inputString = s, inputPos
     Downwards
       | ms == mempty -> let p' = p + tw in if p' <= length s then setPosition p' else ts
       | otherwise -> ts
-  _ -> ts
+  _ -> pure ts
   where
-    insertCharsWithContact cs
-      | live = insertChars cs
+    autoComplete = getAutoCompleteChars $ fromRight ACNone $ A.parseOnly autoCompleteP $ encodeUtf8 $ T.pack s
+      where
+        autoCompleteP = A.choice
+          [ ACContact <$> (contactPfx *> displayName),
+            ACGroup <$> (groupPfx *> displayName),
+            ACCommand <$> ("/" *> cmdP)
+          ]
+        displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' ')) <* A.endOfInput
+        refChar c = c > ' ' && c /= '#' && c /= '@'
+        cmdP = safeDecodeUtf8 <$> A.takeWhile (\c -> isAscii c || c == '-' || c == '_')
+        contactPfx = A.choice  ["@", ">@", "> @", ">>@", ">>@"]
+        groupPfx = A.choice ["#", ">#", "> #"]
+        getAutoCompleteChars = \case
+          ACContact pfx -> getNameSuffixes "contacts" pfx
+          ACGroup pfx -> getNameSuffixes "groups" pfx
+          ACCommand pfx -> getCommandSuffixes pfx
+          ACNone -> pure [charsWithContact "    "]
+    getCommandSuffixes pfx = pure []
+    getNameSuffixes table pfx = withDb $ \db ->
+      map (drop (T.length pfx) . fromOnly) <$> DB.query db q (Only $ pfx <> "%")
+      where
+        q = "SELECT local_display_name FROM " <> table <> " WHERE local_display_name LIKE ?"
+        withDb action = withTransaction st action `catchAll_` pure []
+    commonPrefix = \case
+      x : xs -> foldl go x xs
+      _ -> ""
+      where
+        go (c : cs) (c' : cs')
+          | c == c' = c : go cs cs'
+          | otherwise = ""
+        go _ _ = ""
+    charsWithContact cs
+      | live = cs
       | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" =
-        insertChars $ contactPrefix <> cs
+        contactPrefix <> cs
       | (s == ">" || s == "\\" || s == "!") && cs == " " =
-        insertChars $ cs <> contactPrefix
-      | otherwise = insertChars cs
+        cs <> contactPrefix
+      | otherwise = cs
     insertChars = ts' . if p >= length s then append else insert
     append cs = let s' = s <> cs in (s', length s')
     insert cs = let (b, a) = splitAt p s in (b <> cs <> a, p + length cs)
