@@ -62,6 +62,12 @@ jobs:
             cache_path: C:/cabal
             asset_name: simplex-chat-windows-x86-64
     steps:
+      - name: Configure pagefile (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: al-cheb/configure-pagefile-action@v1.2
+        with:
+          minimum-size: 16GB
+
       - name: Clone project
         uses: actions/checkout@v2
 
