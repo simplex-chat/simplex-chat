@@ -939,9 +939,8 @@
     <string name="your_chat_database">Base de datos de Chat</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puedes iniciar el chat en Configuración / Base de datos o reiniciando la aplicación.</string>
     <string name="you_sent_group_invitation">Has enviado una invitación de grupo</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contacto(s) seleccionado(s)</string>
+    <string name="num_contacts_selected">%d contacto(s) seleccionado(s)</string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members"> %1$s </xliff:g> MIEMBROS</string>
-    <string name="your_chat_profiles_stored_locally">Tus perfiles de chat se almacenan localmente, sólo en tu dispositivo</string>
     <string name="voice_prohibited_in_this_chat">Los mensajes de voz están prohibidos en este chat.</string>
     <string name="whats_new">Novedades</string>
     <string name="you_have_to_enter_passphrase_every_time">La contraseña no se almacena en el dispositivo, tienes que introducirla cada vez que inicies la aplicación.</string>

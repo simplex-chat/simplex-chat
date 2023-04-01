@@ -25,7 +25,7 @@ main = do
     testBracket test = do
       t <- getSystemTime
       let ts = show (systemSeconds t) <> show (systemNanoseconds t)
-      withSmpServer $ withTmpFiles $ withTempDirectory "tests" ("tmp" <> ts) test
+      withSmpServer $ withTmpFiles $ withTempDirectory "tests/tmp" ts test
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}

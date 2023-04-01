@@ -592,7 +592,6 @@
     <string name="your_chat_profiles">您的聊天资料</string>
     <string name="icon_descr_call_missed">未接来电</string>
     <string name="icon_descr_call_pending_sent">待定来电</string>
-    <string name="your_chat_profiles_stored_locally">您的聊天资料存储在本地，仅存储在您的设备上</string>
     <string name="connection_error_auth_desc">除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。
 \n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。</string>
     <string name="you_are_already_connected_to_vName_via_this_link">您已经连接到 <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>。</string>
@@ -956,7 +955,7 @@
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">你加入了这个群组。连接到邀请组成员。</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">您更改了 %s 的地址</string>
     <string name="snd_group_event_user_left">您已离开</string>
-    <string name="num_contacts_selected"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 已选择联系人</string>
+    <string name="num_contacts_selected">%d 已选择联系人</string>
     <string name="chat_preferences_you_allow">您允许</string>
     <string name="v4_2_auto_accept_contact_requests_desc">带有可选的欢迎消息。</string>
     <string name="ttl_m">%dm</string>

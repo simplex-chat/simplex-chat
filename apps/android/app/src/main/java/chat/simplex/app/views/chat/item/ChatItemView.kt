@@ -43,6 +43,7 @@ fun ChatItemView(
   linkMode: SimplexLinkMode,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
@@ -131,7 +132,7 @@ fun ChatItemView(
             copyText(context, cItem.content.text)
             showMenu.value = false
           })
-          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
+          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
               val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -144,8 +145,7 @@ fun ChatItemView(
                       writePermissionState.launchPermissionRequest()
                     }
                   }
-                  is MsgContent.MCFile -> saveFileLauncher.launch(cItem.file?.fileName)
-                  is MsgContent.MCVoice -> saveFileLauncher.launch(cItem.file?.fileName)
+                  is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> saveFileLauncher.launch(cItem.file?.fileName)
                   else -> {}
                 }
                 showMenu.value = false
@@ -167,6 +167,9 @@ fun ChatItemView(
                 showMenu.value = false
               }
             )
+          }
+          if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancellable) {
+            CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile)
           }
           if (!(live && cItem.meta.isLive)) {
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
@@ -271,6 +274,23 @@ fun ChatItemView(
 }
 
 @Composable
+fun CancelFileItemAction(
+  fileId: Long,
+  showMenu: MutableState<Boolean>,
+  cancelFile: (Long) -> Unit
+) {
+  ItemAction(
+    stringResource(R.string.cancel_verb),
+    Icons.Outlined.Close,
+    onClick = {
+      showMenu.value = false
+      cancelFileAlertDialog(fileId, cancelFile = cancelFile)
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
 fun DeleteItemAction(
   cItem: ChatItem,
   showMenu: MutableState<Boolean>,
@@ -321,6 +341,18 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
       Icon(icon, text, tint = color)
     }
   }
+}
+
+fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.cancel_file__question),
+    text = generalGetString(R.string.file_transfer_will_be_cancelled_warning),
+    confirmText = generalGetString(R.string.confirm_verb),
+    destructive = true,
+    onConfirm = {
+      cancelFile(fileId)
+    }
+  )
 }
 
 fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
@@ -383,6 +415,7 @@ fun PreviewChatItemView() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      cancelFile = {},
       joinGroup = {},
       acceptCall = { _ -> },
       scrollToItem = {},
@@ -403,6 +436,7 @@ fun PreviewChatItemViewDeletedContent() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      cancelFile = {},
       joinGroup = {},
       acceptCall = { _ -> },
       scrollToItem = {},

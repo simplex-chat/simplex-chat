@@ -59,24 +59,27 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (diffInMicros, diffInSeconds)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
+import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
+import Simplex.FileTransfer.Protocol (FileParty (..))
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (dbNew), execSQL)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration)
+import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
+import Simplex.Messaging.Protocol (EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import System.Exit (exitFailure, exitSuccess)
-import System.FilePath (combine, splitExtensions, takeFileName)
+import System.FilePath (combine, splitExtensions, takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
@@ -92,11 +95,9 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            tbqSize = 1024,
-            database = AgentDBFile {dbFile = "simplex_v1_agent", dbKey = ""},
-            yesToMigrations = False
+            tbqSize = 1024
           },
-      yesToMigrations = False,
+      confirmMigrations = MCConsole,
       defaultServers =
         DefaultAgentServers
           { smp = _defaultSMPServers,
@@ -106,7 +107,10 @@ defaultChatConfig =
           },
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
+      xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
+      xftpFileConfig = Nothing,
+      tempDir = Nothing,
       logLevel = CLLImportant,
       subscriptionEvents = False,
       hostEvents = False,
@@ -134,23 +138,24 @@ fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEA
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-createChatDatabase :: FilePath -> String -> Bool -> IO ChatDatabase
-createChatDatabase filePrefix key yesToMigrations = do
-  chatStore <- createChatStore (chatStoreFile filePrefix) key yesToMigrations
-  agentStore <- createAgentStore (agentStoreFile filePrefix) key yesToMigrations
+createChatDatabase :: FilePath -> String -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
+createChatDatabase filePrefix key confirmMigrations = runExceptT $ do
+  chatStore <- ExceptT $ createChatStore (chatStoreFile filePrefix) key confirmMigrations
+  agentStore <- ExceptT $ createAgentStore (agentStoreFile filePrefix) key confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles} ChatOpts {coreOptions = CoreChatOpts {smpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, allowInstantFiles} sendToast = do
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, allowInstantFiles} sendToast = do
   let inlineFiles' = if allowInstantFiles then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
       config = cfg {logLevel, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
-  smpAgent <- getSMPAgentClient aCfg {tbqSize, database = AgentDB agentStore} =<< agentServers config
+  servers <- agentServers config
+  smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
   agentAsync <- newTVarIO Nothing
-  idsDrg <- newTVarIO =<< drgNew
+  idsDrg <- newTVarIO =<< liftIO drgNew
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
@@ -166,12 +171,15 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   cleanupManagerAsync <- newTVarIO Nothing
   timedItemThreads <- atomically TM.empty
   showLiveItems <- newTVarIO False
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, logFilePath = logFile}
+  userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
+  tempDirectory <- newTVarIO tempDir
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
       let smp' = fromMaybe (smp (defaultServers :: DefaultAgentServers)) (nonEmpty smpServers)
-       in defaultServers {smp = smp', netCfg = networkConfig}
+          xftp' = fromMaybe (xftp (defaultServers :: DefaultAgentServers)) (nonEmpty xftpServers)
+       in defaultServers {smp = smp', xftp = xftp', netCfg = networkConfig}
     agentServers :: ChatConfig -> IO InitialAgentServers
     agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
       users <- withTransaction chatStore getUsers
@@ -211,9 +219,15 @@ startChatController subConns enableExpireCIs = do
           then Just <$> async (subscribeUsers users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
+      startXFTP
       startCleanupManager
       when enableExpireCIs $ startExpireCIs users
       pure a1
+    startXFTP = do
+      tmp <- readTVarIO =<< asks tempDirectory
+      runExceptT (withAgent $ \a -> xftpStartWorkers a tmp) >>= \case
+        Left e -> liftIO $ print $ "Error starting XFTP workers: " <> show e
+        Right _ -> pure ()
     startCleanupManager = do
       cleanupAsync <- asks cleanupManagerAsync
       readTVarIO cleanupAsync >>= \case
@@ -321,7 +335,7 @@ processChatCommand = \case
     tryError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
-  APIHideUser userId' (UserPwd viewPwd) -> withUser $ \_ -> do
+  APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
       Just _ -> throwChatError $ CEUserAlreadyHidden userId'
@@ -330,34 +344,26 @@ processChatCommand = \case
         users <- withStore' getUsers
         unless (length (filter (isNothing . viewPwdHash) users) > 1) $ throwChatError $ CECantHideLastUser userId'
         viewPwdHash' <- hashPassword
-        setUserPrivacy user' {viewPwdHash = viewPwdHash', showNtfs = False}
+        setUserPrivacy user user' {viewPwdHash = viewPwdHash', showNtfs = False}
         where
           hashPassword = do
             salt <- drgRandomBytes 16
             let hash = B64UrlByteString $ C.sha512Hash $ encodeUtf8 viewPwd <> salt
             pure $ Just UserPwdHash {hash, salt = B64UrlByteString salt}
-  APIUnhideUser userId' viewPwd_ -> withUser $ \user -> do
+  APIUnhideUser userId' viewPwd@(UserPwd pwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
       Nothing -> throwChatError $ CEUserNotHidden userId'
       _ -> do
-        validateUserPassword user user' viewPwd_
-        setUserPrivacy user' {viewPwdHash = Nothing, showNtfs = True}
-  APIMuteUser userId' viewPwd_ -> withUser $ \user -> do
-    user' <- privateGetUser userId'
-    validateUserPassword user user' viewPwd_
-    setUserPrivacy user' {showNtfs = False}
-  APIUnmuteUser userId' viewPwd_ -> withUser $ \user -> do
-    user' <- privateGetUser userId'
-    case viewPwdHash user' of
-      Just _ -> throwChatError $ CECantUnmuteHiddenUser userId'
-      _ -> do
-        validateUserPassword user user' viewPwd_
-        setUserPrivacy user' {showNtfs = True}
+        when (T.null pwd) $ throwChatError $ CEEmptyUserPassword userId'
+        validateUserPassword user user' $ Just viewPwd
+        setUserPrivacy user user' {viewPwdHash = Nothing, showNtfs = True}
+  APIMuteUser userId' -> setUserNotifications userId' False
+  APIUnmuteUser userId' -> setUserNotifications userId' True
   HideUser viewPwd -> withUser $ \User {userId} -> processChatCommand $ APIHideUser userId viewPwd
-  UnhideUser -> withUser $ \User {userId} -> processChatCommand $ APIUnhideUser userId Nothing
-  MuteUser -> withUser $ \User {userId} -> processChatCommand $ APIMuteUser userId Nothing
-  UnmuteUser -> withUser $ \User {userId} -> processChatCommand $ APIUnmuteUser userId Nothing
+  UnhideUser viewPwd -> withUser $ \User {userId} -> processChatCommand $ APIUnhideUser userId viewPwd
+  MuteUser -> withUser $ \User {userId} -> processChatCommand $ APIMuteUser userId
+  UnmuteUser -> withUser $ \User {userId} -> processChatCommand $ APIUnmuteUser userId
   APIDeleteUser userId' delSMPQueues viewPwd_ -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' viewPwd_
@@ -381,9 +387,17 @@ processChatCommand = \case
     withAgent (`suspendAgent` t)
     ok_
   ResubscribeAllConnections -> withStore' getUsers >>= subscribeUsers >> ok_
+  -- has to be called before StartChat
+  SetTempFolder tf -> do
+    createDirectoryIfMissing True tf
+    asks tempDirectory >>= atomically . (`writeTVar` Just tf)
+    ok_
   SetFilesFolder ff -> do
     createDirectoryIfMissing True ff
     asks filesFolder >>= atomically . (`writeTVar` Just ff)
+    ok_
+  APISetXFTPConfig cfg -> do
+    asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
     ok_
   SetIncognito onOff -> do
     asks incognitoMode >>= atomically . (`writeTVar` onOff)
@@ -419,9 +433,9 @@ processChatCommand = \case
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         else do
-          (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
+          (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
           timed_ <- sndContactCITimed live ct
-          (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ timed_
+          (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_
           (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
           case ft_ of
             Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
@@ -435,23 +449,30 @@ processChatCommand = \case
       where
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer ct = forM file_ $ \file -> do
-          (fileSize, chSize, fileInline) <- checkSndFile mc file 1
-          (agentConnId_, fileConnReq) <-
-            if isJust fileInline
-              then pure (Nothing, Nothing)
-              else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing)
-          let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
-          withStore' $ \db -> do
-            ft@FileTransferMeta {fileId} <- createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
-            fileStatus <- case fileInline of
-              Just IFMSent -> createSndDirectInlineFT db ct ft $> CIFSSndTransfer
-              _ -> pure CIFSSndStored
-            let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus}
-            pure (fileInvitation, ciFile, ft)
+          (fileSize, fileMode) <- checkSndFile mc file 1
+          case fileMode of
+            SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
+            SendFileXFTP -> xftpSndFileTransfer user file fileSize 1 $ CGContact ct
+          where
+            smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+            smpSndFileTransfer file fileSize fileInline = do
+              (agentConnId_, fileConnReq) <-
+                if isJust fileInline
+                  then pure (Nothing, Nothing)
+                  else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing)
+              let fileName = takeFileName file
+                  fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
+              chSize <- asks $ fileChunkSize . config
+              withStore' $ \db -> do
+                ft@FileTransferMeta {fileId} <- createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
+                fileStatus <- case fileInline of
+                  Just IFMSent -> createSndDirectInlineFT db ct ft $> CIFSSndTransfer 0 1
+                  _ -> pure CIFSSndStored
+                let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus, fileProtocol = FPSMP}
+                pure (fileInvitation, ciFile, ft)
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> m (MsgContainer, Maybe (CIQuote 'CTDirect))
-        prepareMsg fileInvitation_ timed_ = case quotedItemId_ of
-          Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Nothing)
+        prepareMsg fInv_ timed_ = case quotedItemId_ of
+          Nothing -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
           Just quotedItemId -> do
             CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
               withStore $ \db -> getDirectChatItem db user chatId quotedItemId
@@ -459,7 +480,7 @@ processChatCommand = \case
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                 qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
+            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
           where
             quoteData :: ChatItem c d -> m (MsgContent, CIQDirection 'CTDirect, Bool)
             quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidQuote
@@ -467,14 +488,14 @@ processChatCommand = \case
             quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
             quoteData _ = throwChatError CEInvalidQuote
     CTGroup -> do
-      Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
+      g@(Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms) <- withStore $ \db -> getGroup db user chatId
       assertUserGroupRole gInfo GRAuthor
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
         else do
-          (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
+          (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo
-          (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ timed_ membership
+          (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
           ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
@@ -483,16 +504,23 @@ processChatCommand = \case
           setActive $ ActiveG gName
           pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
       where
-        setupSndFileTransfer :: GroupInfo -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
-        setupSndFileTransfer gInfo n = forM file_ $ \file -> do
-          (fileSize, chSize, fileInline) <- checkSndFile mc file $ fromIntegral n
-          let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescr = Nothing}
-              fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer else CIFSSndStored
-          withStore' $ \db -> do
-            ft@FileTransferMeta {fileId} <- createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
-            let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus}
-            pure (fileInvitation, ciFile, ft)
+        setupSndFileTransfer :: Group -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
+        setupSndFileTransfer g@(Group gInfo _) n = forM file_ $ \file -> do
+          (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
+          case fileMode of
+            SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
+            SendFileXFTP -> xftpSndFileTransfer user file fileSize n $ CGGroup g
+          where
+            smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+            smpSndFileTransfer file fileSize fileInline = do
+              let fileName = takeFileName file
+                  fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescr = Nothing}
+                  fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer 0 1 else CIFSSndStored
+              chSize <- asks $ fileChunkSize . config
+              withStore' $ \db -> do
+                ft@FileTransferMeta {fileId} <- createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
+                let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus, fileProtocol = FPSMP}
+                pure (fileInvitation, ciFile, ft)
         sendGroupFileInline :: [GroupMember] -> SharedMsgId -> FileTransferMeta -> m ()
         sendGroupFileInline ms sharedMsgId ft@FileTransferMeta {fileInline} =
           when (fileInline == Just IFMSent) . forM_ ms $ \m ->
@@ -504,8 +532,8 @@ processChatCommand = \case
                 sendMemberFileInline m conn ft sharedMsgId
             processMember _ = pure ()
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> GroupMember -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
-        prepareMsg fileInvitation_ timed_ membership = case quotedItemId_ of
-          Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Nothing)
+        prepareMsg fInv_ timed_ membership = case quotedItemId_ of
+          Nothing -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
           Just quotedItemId -> do
             CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
               withStore $ \db -> getGroupChatItem db user chatId quotedItemId
@@ -513,7 +541,7 @@ processChatCommand = \case
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                 qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
+            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
           where
             quoteData :: ChatItem c d -> GroupMember -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
             quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwChatError CEInvalidQuote
@@ -546,6 +574,27 @@ processChatCommand = \case
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
           qTextOrFile = if T.null qText then qFileName else qText
+      xftpSndFileTransfer :: User -> FilePath -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+      xftpSndFileTransfer user file fileSize n contactOrGroup = do
+        let fileName = takeFileName file
+            fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+            fInv = xftpFileInvitation fileName fileSize fileDescr
+        fsFilePath <- toFSFilePath file
+        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) fsFilePath n
+        -- TODO CRSndFileStart event for XFTP
+        chSize <- asks $ fileChunkSize . config
+        ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv (AgentSndFileId aFileId) chSize
+        let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
+        case contactOrGroup of
+          CGContact Contact {activeConn} -> withStore' $ \db -> createSndFTDescrXFTP db user Nothing activeConn ft fileDescr
+          CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchError` (toView . CRChatError (Just user))
+            where
+              -- we are not sending files to pending members, same as with inline files
+              saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
+                when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
+                  withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
+              saveMemberFD _ = pure ()
+        pure (fInv, ciFile, ft)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
@@ -1334,8 +1383,11 @@ processChatCommand = \case
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
-        FTSnd ftm@FileTransferMeta {cancelled} fts -> do
-          unless cancelled $ do
+        FTSnd ftm@FileTransferMeta {cancelled} fts
+          | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
+          | not (null fts) && all (\SndFileTransfer {fileStatus = s} -> s == FSComplete || s == FSCancelled) fts ->
+            throwChatError $ CEFileCancel fileId "file transfer is complete"
+          | otherwise -> do
             fileAgentConnIds <- cancelSndFile user ftm fts True
             deleteAgentConnectionsAsync user fileAgentConnIds
             sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
@@ -1347,12 +1399,15 @@ processChatCommand = \case
                 Group gInfo ms <- withStore $ \db -> getGroup db user groupId
                 void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
               _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
-          ci <- withStore $ \db -> getChatItemByFileId db user fileId
-          pure $ CRSndGroupFileCancelled user ci ftm fts
-        FTRcv ftr@RcvFileTransfer {cancelled} -> do
-          unless cancelled $
+            ci <- withStore $ \db -> getChatItemByFileId db user fileId
+            pure $ CRSndFileCancelled user ci ftm fts
+        FTRcv ftr@RcvFileTransfer {cancelled, fileStatus}
+          | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
+          | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
+          | otherwise -> do
             cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
-          pure $ CRRcvFileCancelled user ftr
+            ci <- withStore $ \db -> getChatItemByFileId db user fileId
+            pure $ CRRcvFileCancelled user ci ftr
   FileStatus fileId -> withUser $ \user -> do
     fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
     pure $ CRFileTransferStatus user fileStatus
@@ -1389,7 +1444,11 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
+  ShowVersion -> do
+    let versionInfo = coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
+    chatMigrations <- map upMigration <$> withStore' Migrations.getCurrent
+    agentMigrations <- withAgent getAgentMigrations
+    pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
@@ -1480,14 +1539,21 @@ processChatCommand = \case
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
-    checkSndFile :: MsgContent -> FilePath -> Integer -> m (Integer, Integer, Maybe InlineFileMode)
+    checkSndFile :: MsgContent -> FilePath -> Integer -> m (Integer, SendFileMode)
     checkSndFile mc f n = do
       fsFilePath <- toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      xftpCfg <- readTVarIO =<< asks userXFTPFileConfig
       fileSize <- getFileSize fsFilePath
       let chunks = - ((- fileSize) `div` fileChunkSize)
-      pure (fileSize, fileChunkSize, inlineFileMode mc inlineFiles chunks n)
+          fileInline = inlineFileMode mc inlineFiles chunks n
+          fileMode = case xftpCfg of
+            Just cfg
+              | fileInline == Just IFMSent || fileSize < minFileSize cfg -> SendFileSMP fileInline
+              | otherwise -> SendFileXFTP
+            _ -> SendFileSMP fileInline
+      pure (fileSize, fileMode)
     inlineFileMode mc InlineFilesConfig {offerChunks, sendChunks, totalSendChunks} chunks n
       | chunks > offerChunks = Nothing
       | chunks <= sendChunks && chunks * n <= totalSendChunks && isVoice mc = Just IFMSent
@@ -1636,11 +1702,21 @@ processChatCommand = \case
     validPassword :: Text -> UserPwdHash -> Bool
     validPassword pwd UserPwdHash {hash = B64UrlByteString hash, salt = B64UrlByteString salt} =
       hash == C.sha512Hash (encodeUtf8 pwd <> salt)
-    setUserPrivacy :: User -> m ChatResponse
-    setUserPrivacy user = do
-      asks currentUser >>= atomically . (`writeTVar` Just user)
-      withStore' (`updateUserPrivacy` user)
-      pure $ CRUserPrivacy user
+    setUserNotifications :: UserId -> Bool -> m ChatResponse
+    setUserNotifications userId' showNtfs = withUser $ \user -> do
+      user' <- privateGetUser userId'
+      case viewPwdHash user' of
+        Just _ -> throwChatError $ CEHiddenUserAlwaysMuted userId'
+        _ -> setUserPrivacy user user' {showNtfs}
+    setUserPrivacy :: User -> User -> m ChatResponse
+    setUserPrivacy user@User {userId} user'@User {userId = userId'}
+      | userId == userId' = do
+        asks currentUser >>= atomically . (`writeTVar` Just user')
+        withStore' (`updateUserPrivacy` user')
+        pure $ CRUserPrivacy {user = user', updatedUser = user'}
+      | otherwise = do
+        withStore' (`updateUserPrivacy` user')
+        pure $ CRUserPrivacy {user, updatedUser = user'}
     checkDeleteChatUser :: User -> m ()
     checkDeleteChatUser user@User {userId} = do
       when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
@@ -1783,21 +1859,27 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 -- used during file transfer for actual operations with file system
 toFSFilePath :: ChatMonad m => FilePath -> m FilePath
 toFSFilePath f =
-  maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
+  maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
-  case fileConnReq of
+  case (xftpRcvFile, fileConnReq) of
     -- direct file protocol
-    Just connReq -> do
+    (Nothing, Just connReq) -> do
       connIds <- joinAgentConnectionAsync user True connReq . directMessage $ XFileAcpt fName
-      filePath <- getRcvFilePath fileId filePath_ fName
+      filePath <- getRcvFilePath fileId filePath_ fName True
       withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
+    -- XFTP
+    (Just XFTPRcvFile {rcvFileDescription}, _) -> do
+      filePath <- getRcvFilePath fileId filePath_ fName False
+      ci <- withStore $ \db -> xftpAcceptRcvFT db user fileId filePath
+      receiveViaCompleteFD user fileId rcvFileDescription
+      pure ci
     -- group & direct file protocol
-    Nothing -> do
+    _ -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
         (ChatRef CTDirect contactId, Nothing) -> do
@@ -1813,7 +1895,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
   where
     acceptFile :: CommandFunction -> (ChatMsgEvent 'Json -> m ()) -> m AChatItem
     acceptFile cmdFunction send = do
-      filePath <- getRcvFilePath fileId filePath_ fName
+      filePath <- getRcvFilePath fileId filePath_ fName True
       inline <- receiveInline
       if
           | inline -> do
@@ -1837,8 +1919,24 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
                  || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
              )
 
-getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
-getRcvFilePath fileId fPath_ fn = case fPath_ of
+receiveViaCompleteFD :: ChatMonad m => User -> FileTransferId -> RcvFileDescr -> m ()
+receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} =
+  when fileDescrComplete $ do
+    rd <- parseRcvFileDescription fileDescrText
+    aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd
+    startReceivingFile user fileId
+    withStore' $ \db -> updateRcvFileAgentId db fileId (AgentRcvFileId aFileId)
+
+startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
+startReceivingFile user fileId = do
+  ci <- withStore $ \db -> do
+    liftIO $ updateRcvFileStatus db fileId FSConnected
+    liftIO $ updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
+    getChatItemByFileId db user fileId
+  toView $ CRRcvFileStart user ci
+
+getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> Bool -> m FilePath
+getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
   Nothing ->
     asks filesFolder >>= readTVarIO >>= \case
       Nothing -> do
@@ -1863,9 +1961,15 @@ getRcvFilePath fileId fPath_ fn = case fPath_ of
     createEmptyFile fPath = emptyFile fPath `E.catch` (throwChatError . CEFileWrite fPath . (show :: E.SomeException -> String))
     emptyFile :: FilePath -> m FilePath
     emptyFile fPath = do
-      h <- getFileHandle fileId fPath rcvFiles AppendMode
+      h <-
+        if keepHandle
+          then getFileHandle fileId fPath rcvFiles AppendMode
+          else getTmpHandle fPath
       liftIO $ B.hPut h "" >> hFlush h
       pure fPath
+    getTmpHandle :: FilePath -> m Handle
+    getTmpHandle fPath =
+      liftIO (openFile fPath AppendMode) `E.catch` (throwChatError . CEFileInternal . (show :: E.SomeException -> String))
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
@@ -1912,18 +2016,24 @@ deleteGroupLink_ user gInfo conn = do
   deleteAgentConnectionAsync user $ aConnId conn
   withStore' $ \db -> deleteGroupLink db user gInfo
 
-agentSubscriber :: ChatMonad' m => m ()
+agentSubscriber :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
-  forever $ do
-    (corrId, connId, APC _ msg) <- atomically $ readTBQueue q
-    let name = "agentSubscriber connId=" <> str connId <> " corrId=" <> str corrId <> " msg=" <> str (aCommandTag msg)
-    withLock l name . void . runExceptT $
-      processAgentMessage corrId connId msg `catchError` (toView . CRChatError Nothing)
+  forever $ atomically (readTBQueue q) >>= void . process l
   where
-    str :: StrEncoding a => a -> String
-    str = B.unpack . strEncode
+    process :: Lock -> (ACorrId, EntityId, APartyCmd 'Agent) -> m (Either ChatError ())
+    process l (corrId, entId, APC e msg) = run $ case e of
+      SAENone -> processAgentMessageNoConn msg
+      SAEConn -> processAgentMessage corrId entId msg
+      SAERcvFile -> processAgentMsgRcvFile corrId entId msg
+      SAESndFile -> processAgentMsgSndFile corrId entId msg
+      where
+        run action = do
+          let name = "agentSubscriber entity=" <> show e <> " entId=" <> str entId <> " msg=" <> str (aCommandTag msg)
+          withLock l name $ runExceptT $ action `catchError` (toView . CRChatError Nothing)
+        str :: StrEncoding a => a -> String
+        str = B.unpack . strEncode
 
 type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
 
@@ -2141,9 +2251,7 @@ expireChatItems user@User {userId} ttl sync = do
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
-processAgentMessage :: forall e m. (AEntityI e, ChatMonad m) => ACorrId -> ConnId -> ACommand 'Agent e -> m ()
-processAgentMessage _ "" msg =
-  processAgentMessageNoConn msg `catchError` (toView . CRChatError Nothing)
+processAgentMessage :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
   toView $ CRAgentRcvQueueDeleted (AgentConnId connId) srv (AgentQueueId qId) err_
 processAgentMessage _ connId DEL_CONN =
@@ -2153,7 +2261,7 @@ processAgentMessage corrId connId msg =
     Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
-processAgentMessageNoConn :: forall e m. ChatMonad m => ACommand 'Agent e -> m ()
+processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone -> m ()
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
@@ -2161,7 +2269,6 @@ processAgentMessageNoConn = \case
   UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
-  _ -> pure ()
   where
     hostEvent :: ChatResponse -> m ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
@@ -2170,7 +2277,122 @@ processAgentMessageNoConn = \case
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 
-processAgentMessageConn :: forall e m. (AEntityI e, ChatMonad m) => User -> ACorrId -> ConnId -> ACommand 'Agent e -> m ()
+processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> m ()
+processAgentMsgSndFile _corrId aFileId msg =
+  withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
+    Just user -> process user `catchError` (toView . CRChatError (Just user))
+    _ -> throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
+  where
+    process :: User -> m ()
+    process user = do
+      (ft@FileTransferMeta {fileId, cancelled}, sfts) <- withStore $ \db -> do
+        fileId <- getXFTPSndFileDBId db user $ AgentSndFileId aFileId
+        getSndFileTransfer db user fileId
+      case msg of
+        SFPROG sndProgress sndTotal ->
+          unless cancelled $ do
+            let status = CIFSSndTransfer {sndProgress, sndTotal}
+            ci <- withStore $ \db -> do
+              liftIO $ updateCIFileStatus db user fileId status
+              getChatItemByFileId db user fileId
+            toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
+        SFDONE _sndDescr rfds ->
+          unless cancelled $ do
+            ci@(AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
+              withStore $ \db -> getChatItemByFileId db user fileId
+            case (msgId_, itemDeleted) of
+              (Just sharedMsgId, Nothing) -> do
+                when (length rfds < length sfts) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
+                -- TODO either update database status or move to SFPROG
+                toView $ CRSndFileProgressXFTP user ci ft 1 1
+                case (rfds, sfts, d, cInfo) of
+                  (rfd : _, sft : _, SMDSnd, DirectChat ct) -> do
+                    msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
+                    withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+                  (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
+                    ms <- withStore' $ \db -> getGroupMembers db user g
+                    forM_ (zip rfds $ memberFTs ms) $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
+                    ci' <- withStore $ \db -> do
+                      liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
+                      getChatItemByFileId db user fileId
+                    toView $ CRSndFileCompleteXFTP user ci' ft
+                    where
+                      memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
+                      memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
+                        where
+                          mConns' = mapMaybe useMember ms
+                          sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
+                          useMember GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
+                            | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
+                            | otherwise = Nothing
+                          useMember _ = Nothing
+                      sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m ()
+                      sendToMember (rfd, (conn, sft)) =
+                        void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
+                  _ -> pure ()
+              _ -> pure () -- TODO error?
+        SFERR e -> do
+          -- update chat item status
+          -- send status to view
+          -- agentXFTPDeleteSndFile
+          throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
+      where
+        sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
+        sendFileDescription sft rfd msgId sendMsg = do
+          let rfdText = safeDecodeUtf8 $ strEncode rfd
+          withStore' $ \db -> updateSndFTDescrXFTP db user sft rfdText
+          partSize <- asks $ xftpDescrPartSize . config
+          sendParts 1 partSize rfdText
+          where
+            sendParts partNo partSize rfdText = do
+              let (part, rest) = T.splitAt partSize rfdText
+                  complete = T.null rest
+                  fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
+              (_, msgDeliveryId) <- sendMsg $ XMsgFileDescr {msgId, fileDescr}
+              if complete
+                then pure msgDeliveryId
+                else sendParts (partNo + 1) partSize rest
+
+processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> m ()
+processAgentMsgRcvFile _corrId aFileId msg =
+  withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
+    Just user -> process user `catchError` (toView . CRChatError (Just user))
+    _ -> throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
+  where
+    process :: User -> m ()
+    process user = do
+      ft@RcvFileTransfer {fileId, cancelled} <- withStore $ \db -> do
+        fileId <- getXFTPRcvFileDBId db $ AgentRcvFileId aFileId
+        getRcvFileTransfer db user fileId
+      case msg of
+        RFPROG rcvProgress rcvTotal ->
+          unless cancelled $ do
+            let status = CIFSRcvTransfer {rcvProgress, rcvTotal}
+            ci <- withStore $ \db -> do
+              liftIO $ updateCIFileStatus db user fileId status
+              getChatItemByFileId db user fileId
+            toView $ CRRcvFileProgressXFTP user ci rcvProgress rcvTotal
+        RFDONE xftpPath ->
+          unless cancelled $ do
+            case liveRcvFileTransferPath ft of
+              Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
+              Just targetPath -> do
+                fsTargetPath <- toFSFilePath targetPath
+                renameFile xftpPath fsTargetPath
+                ci <- withStore $ \db -> do
+                  liftIO $ do
+                    updateRcvFileStatus db fileId FSComplete
+                    updateCIFileStatus db user fileId CIFSRcvComplete
+                  getChatItemByFileId db user fileId
+                agentXFTPDeleteRcvFile user aFileId fileId
+                toView $ CRRcvFileComplete user ci
+        RFERR e -> do
+          -- update chat item status
+          -- send status to view
+          agentXFTPDeleteRcvFile user aFileId fileId
+          throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
+
+processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn user _ agentConnId END =
   withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
     RcvDirectMsgConnection _ (Just ct@Contact {localDisplayName = c}) -> do
@@ -2261,6 +2483,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             updateChatLock "directMessage" event
             case event of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
+              XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct sharedMsgId fileDescr msgMeta
+              XMsgFileCancel sharedMsgId -> cancelMessageFile ct sharedMsgId msgMeta
               XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct sharedMsgId mContent msg msgMeta ttl live
               XMsgDel sharedMsgId _ -> messageDelete ct sharedMsgId msg msgMeta
               -- TODO discontinue XFile
@@ -2476,6 +2700,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           updateChatLock "groupMessage" event
           case event of
             XMsgNew mc -> canSend $ newGroupContentMessage gInfo m mc msg msgMeta
+            XMsgFileDescr sharedMsgId fileDescr -> canSend $ groupMessageFileDescription gInfo m sharedMsgId fileDescr msgMeta
+            XMsgFileCancel sharedMsgId -> cancelGroupMessageFile gInfo m sharedMsgId msgMeta
             XMsgUpdate sharedMsgId mContent ttl live -> canSend $ groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta ttl live
             XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo m sharedMsgId memberId msg
             -- TODO discontinue XFile
@@ -2537,7 +2763,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         CON -> do
           ci <- withStore $ \db -> do
             liftIO $ updateSndFileStatus db ft FSConnected
-            updateDirectCIFileStatus db user fileId CIFSSndTransfer
+            updateDirectCIFileStatus db user fileId $ CIFSSndTransfer 0 1
           toView $ CRSndFileStart user ci ft
           sendFileChunk user ft
         SENT msgId -> do
@@ -2547,7 +2773,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           cancelSndFileTransfer user ft True >>= mapM_ (deleteAgentConnectionAsync user)
           case err of
             SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
-              ci <- withStore $ \db -> getChatItemByFileId db user fileId
+              ci <- withStore $ \db -> do
+                getChatRefByFileId db user fileId >>= \case
+                  ChatRef CTDirect _ -> liftIO $ updateFileCancelled db user fileId CIFSSndCancelled
+                  _ -> pure ()
+                getChatItemByFileId db user fileId
               toView $ CRSndFileRcvCancelled user ci ft
             _ -> throwChatError $ CEFileSend fileId err
         MSG meta _ _ -> do
@@ -2594,7 +2824,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case chatMsgEvent of
             XOk -> allowAgentConnectionAsync user conn confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
             _ -> pure ()
-        CON -> startReceivingFile ft
+        CON -> startReceivingFile user fileId
         MSG meta _ msgBody -> do
           parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
         OK ->
@@ -2609,20 +2839,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- TODO add debugging output
         _ -> pure ()
 
-    startReceivingFile :: RcvFileTransfer -> m ()
-    startReceivingFile ft@RcvFileTransfer {fileId} = do
-      ci <- withStore $ \db -> do
-        liftIO $ updateRcvFileStatus db ft FSConnected
-        liftIO $ updateCIFileStatus db user fileId CIFSRcvTransfer
-        getChatItemByFileId db user fileId
-      toView $ CRRcvFileStart user ci
-
     receiveFileChunk :: RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> m ()
     receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize, cancelled} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
       FileChunkCancel ->
         unless cancelled $ do
           cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
-          toView $ CRRcvFileSndCancelled user ft
+          ci <- withStore $ \db -> getChatItemByFileId db user fileId
+          toView $ CRRcvFileSndCancelled user ci ft
       FileChunk {chunkNo, chunkBytes = chunk} -> do
         case integrity of
           MsgOk -> pure ()
@@ -2641,7 +2864,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 appendFileChunk ft chunkNo chunk
                 ci <- withStore $ \db -> do
                   liftIO $ do
-                    updateRcvFileStatus db ft FSComplete
+                    updateRcvFileStatus db fileId FSComplete
                     updateCIFileStatus db user fileId CIFSRcvComplete
                     deleteRcvFileChunks db ft
                   getChatItemByFileId db user fileId
@@ -2716,7 +2939,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       where
         s = " " <> name <> "=" <> B.unpack (strEncode $ toCMEventTag event)
 
-    withCompletedCommand :: Connection -> ACommand 'Agent e -> (CommandData -> m ()) -> m ()
+    withCompletedCommand :: forall e. AEntityI e => Connection -> ACommand 'Agent e -> (CommandData -> m ()) -> m ()
     withCompletedCommand Connection {connId} agentMsg action = do
       let agentMsgTag = APCT (sAEntity @e) $ aCommandTag agentMsg
       cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
@@ -2809,7 +3032,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     newContentMessage ct@Contact {localDisplayName = c, contactUsed} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      let ExtMsgContent content fileInvitation_ _ _ = mcExtMsgContent mc
+      let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
       if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
@@ -2818,7 +3041,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           let ExtMsgContent _ _ itemTTL live_ = mcExtMsgContent mc
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
-          ciFile_ <- processFileInvitation fileInvitation_ content $ \db -> createRcvFileTransfer db userId ct
+          ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_ timed_ live
           whenContactNtfs user ct $ do
             showMsgToast (c <> "> ") content formattedText
@@ -2829,18 +3052,51 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
           pure ci
 
-    processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
+    messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> MsgMeta -> m ()
+    messageFileDescription ct@Contact {contactId} sharedMsgId fileDescr msgMeta = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+      fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
+      processFDMessage fileId fileDescr
+
+    groupMessageFileDescription :: GroupInfo -> GroupMember -> SharedMsgId -> FileDescr -> MsgMeta -> m ()
+    groupMessageFileDescription GroupInfo {groupId} _m sharedMsgId fileDescr _msgMeta = do
+      fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
+      processFDMessage fileId fileDescr
+
+    processFDMessage :: FileTransferId -> FileDescr -> m ()
+    processFDMessage fileId fileDescr = do
+      (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
+        rfd <- appendRcvFD db userId fileId fileDescr
+        ft <- getRcvFileTransfer db user fileId
+        pure (rfd, ft)
+      case fileStatus of
+        RFSAccepted _ -> receiveViaCompleteFD user fileId rfd
+        _ -> pure ()
+
+    cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
+    cancelMessageFile ct _sharedMsgId msgMeta = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+      -- find the original chat item and file
+      -- mark file as cancelled, remove description if exists
+      pure ()
+
+    cancelGroupMessageFile :: GroupInfo -> GroupMember -> SharedMsgId -> MsgMeta -> m ()
+    cancelGroupMessageFile _gInfo _m _sharedMsgId _msgMeta = do
+      pure ()
+
+    processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
     processFileInvitation fInv_ mc createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
-      chSize <- asks $ fileChunkSize . config
-      inline <- receiveInlineMode fInv (Just mc) chSize
-      ft@RcvFileTransfer {fileId} <- withStore' $ \db -> createRcvFT db fInv inline chSize
+      ChatConfig {fileChunkSize} <- asks config
+      inline <- receiveInlineMode fInv (Just mc) fileChunkSize
+      ft@RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFT db fInv inline fileChunkSize
+      let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
       (filePath, fileStatus) <- case inline of
         Just IFMSent -> do
-          fPath <- getRcvFilePath fileId Nothing fileName
+          fPath <- getRcvFilePath fileId Nothing fileName True
           withStore' $ \db -> startRcvInlineFT db user ft fPath inline
           pure (Just fPath, CIFSRcvAccepted)
         _ -> pure (Nothing, CIFSRcvInvitation)
-      pure CIFile {fileId, fileName, fileSize, filePath, fileStatus}
+      pure CIFile {fileId, fileName, fileSize, filePath, fileStatus, fileProtocol}
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
@@ -2966,10 +3222,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
     processFileInvitation' ct@Contact {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      chSize <- asks $ fileChunkSize . config
-      inline <- receiveInlineMode fInv Nothing chSize
-      RcvFileTransfer {fileId} <- withStore' $ \db -> createRcvFileTransfer db userId ct fInv inline chSize
-      let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+      ChatConfig {fileChunkSize} <- asks config
+      inline <- receiveInlineMode fInv Nothing fileChunkSize
+      RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFileTransfer db userId ct fInv inline fileChunkSize
+      let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
+          ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
       ci <- saveRcvChatItem' user (CDDirectRcv ct) msg sharedMsgId_ msgMeta (CIRcvMsgContent $ MCFile "") ciFile Nothing False
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
       whenContactNtfs user ct $ do
@@ -2979,10 +3236,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     -- TODO remove once XFile is discontinued
     processGroupFileInvitation' :: GroupInfo -> GroupMember -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
     processGroupFileInvitation' gInfo m@GroupMember {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} msgMeta = do
-      chSize <- asks $ fileChunkSize . config
-      inline <- receiveInlineMode fInv Nothing chSize
-      RcvFileTransfer {fileId} <- withStore' $ \db -> createRcvGroupFileTransfer db userId m fInv inline chSize
-      let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+      ChatConfig {fileChunkSize} <- asks config
+      inline <- receiveInlineMode fInv Nothing fileChunkSize
+      RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvGroupFileTransfer db userId m fInv inline fileChunkSize
+      let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
+          ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
       ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta (CIRcvMsgContent $ MCFile "") ciFile Nothing False
       groupMsgToView gInfo m ci msgMeta
       let g = groupName' gInfo
@@ -2991,8 +3249,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         setActive $ ActiveG g
 
     receiveInlineMode :: FileInvitation -> Maybe MsgContent -> Integer -> m (Maybe InlineFileMode)
-    receiveInlineMode FileInvitation {fileSize, fileInline} mc_ chSize = case fileInline of
-      Just mode -> do
+    receiveInlineMode FileInvitation {fileSize, fileInline, fileDescr} mc_ chSize = case (fileInline, fileDescr) of
+      (Just mode, Nothing) -> do
         InlineFilesConfig {receiveChunks, receiveInstant} <- asks $ inlineFiles . config
         pure $ if fileSize <= receiveChunks * chSize then inline' receiveInstant else Nothing
         where
@@ -3006,7 +3264,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
       unless cancelled $ do
         cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
-        toView $ CRRcvFileSndCancelled user ft
+        ci <- withStore $ \db -> getChatItemByFileId db user fileId
+        toView $ CRRcvFileSndCancelled user ci ft
 
     xFileAcptInv :: Contact -> SharedMsgId -> Maybe ConnReqInvitation -> String -> MsgMeta -> m ()
     xFileAcptInv ct sharedMsgId fileConnReq_ fName msgMeta = do
@@ -3023,7 +3282,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           -- receiving inline
           _ -> do
             event <- withStore $ \db -> do
-              ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
+              ci <- updateDirectCIFileStatus db user fileId $ CIFSSndTransfer 0 1
               sft <- liftIO $ createSndDirectInlineFT db ct ft
               pure $ CRSndFileStart user ci sft
             toView event
@@ -3035,13 +3294,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     checkSndInlineFTComplete :: Connection -> AgentMsgId -> m ()
     checkSndInlineFTComplete conn agentMsgId = do
-      ft_ <- withStore' $ \db -> getSndInlineFTViaMsgDelivery db user conn agentMsgId
-      forM_ ft_ $ \ft@SndFileTransfer {fileId} -> do
-        ci <- withStore $ \db -> do
-          liftIO $ updateSndFileStatus db ft FSComplete
-          liftIO $ deleteSndFileChunks db ft
+      sft_ <- withStore' $ \db -> getSndFTViaMsgDelivery db user conn agentMsgId
+      forM_ sft_ $ \sft@SndFileTransfer {fileId} -> do
+        ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> do
+          liftIO $ updateSndFileStatus db sft FSComplete
+          liftIO $ deleteSndFileChunks db sft
           updateDirectCIFileStatus db user fileId CIFSSndComplete
-        toView $ CRSndFileComplete user ci ft
+        case file of
+          Just CIFile {fileProtocol = FPXFTP} -> do
+            ft <- withStore $ \db -> getFileTransferMeta db user fileId
+            toView $ CRSndFileCompleteXFTP user ci ft
+          _ -> toView $ CRSndFileComplete user ci sft
 
     allowSendInline :: Integer -> Maybe InlineFileMode -> m Bool
     allowSendInline fileSize = \case
@@ -3064,9 +3327,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
       | chunkNo == 1 = throwChatError $ CEInlineFileProhibited fileId
       | otherwise = pure ()
-    receiveInlineChunk ft chunk meta = do
+    receiveInlineChunk ft@RcvFileTransfer {fileId} chunk meta = do
       case chunk of
-        FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile ft
+        FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile user fileId
         _ -> pure ()
       receiveFileChunk ft Nothing meta chunk
 
@@ -3082,7 +3345,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
               unless cancelled $ do
                 cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
-                toView $ CRRcvFileSndCancelled user ft
+                ci <- withStore $ \db -> getChatItemByFileId db user fileId
+                toView $ CRRcvFileSndCancelled user ci ft
             else messageError "x.file.cancel: group member attempted to cancel file of another member" -- shouldn't happen now that query includes group member id
         (SMDSnd, _) -> messageError "x.file.cancel: group member attempted invalid file cancel"
 
@@ -3102,7 +3366,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           (_, Just conn) -> do
             -- receiving inline
             event <- withStore $ \db -> do
-              ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
+              ci <- updateDirectCIFileStatus db user fileId $ CIFSSndTransfer 0 1
               sft <- liftIO $ createSndGroupInlineFT db m conn ft
               pure $ CRSndFileStart user ci sft
             toView event
@@ -3497,6 +3761,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
+parseRcvFileDescription :: ChatMonad m => Text -> m (ValidFileDescription 'FRecipient)
+parseRcvFileDescription =
+  liftEither . first (ChatError . CEInvalidFileDescription) . (strDecode . encodeUtf8)
+
 sendDirectFileInline :: ChatMonad m => Contact -> FileTransferMeta -> SharedMsgId -> m ()
 sendDirectFileInline ct ft sharedMsgId = do
   msgDeliveryId <- sendFileInline_ ft sharedMsgId $ sendDirectContactMessage ct
@@ -3599,23 +3867,35 @@ isFileActive fileId files = do
   isJust . M.lookup fileId <$> readTVarIO fs
 
 cancelRcvFileTransfer :: ChatMonad m => User -> RcvFileTransfer -> m (Maybe ConnId)
-cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, rcvFileInline} =
+cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInline} =
   cancel' `catchError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
   where
     cancel' = do
       closeFileHandle fileId rcvFiles
       withStore' $ \db -> do
         updateFileCancelled db user fileId CIFSRcvCancelled
-        updateRcvFileStatus db ft FSCancelled
+        updateRcvFileStatus db fileId FSCancelled
         deleteRcvFileChunks db ft
+      case xftpRcvFile of
+        Just XFTPRcvFile {agentRcvFileId = Just (AgentRcvFileId aFileId), agentRcvFileDeleted} ->
+          unless agentRcvFileDeleted $ agentXFTPDeleteRcvFile user aFileId fileId
+        _ -> pure ()
       pure fileConnId
-    fileConnId = if isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
+    fileConnId = if isNothing xftpRcvFile && isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
 
 cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> m [ConnId]
-cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
+cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
   withStore' (\db -> updateFileCancelled db user fileId CIFSSndCancelled)
     `catchError` (toView . CRChatError (Just user))
-  catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
+  case xftpSndFile of
+    Nothing ->
+      catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
+    Just _patternAgentSndFileId -> do
+      forM_ fts (\ft -> cancelSndFileTransfer user ft False)
+      -- TODO unless agentSndFileDeleted, do agentXFTPDeleteSndFile:
+      -- TODO   - with agent xftpDeleteSndFile
+      -- TODO   - with store setSndFTAgentDeleted
+      pure []
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe ConnId)
 cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
@@ -3633,7 +3913,7 @@ cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, age
           void . sendDirectMessage conn (BFileChunk sharedMsgId FileChunkCancel) $ ConnectionId connId
         _ -> withAgent $ \a -> void . sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel
       pure fileConnId
-    fileConnId = if isJust fileInline then Nothing else Just acId
+    fileConnId = if isNothing fileInline then Just acId else Nothing
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do
@@ -3840,6 +4120,11 @@ deleteAgentConnectionsAsync :: ChatMonad m => User -> [ConnId] -> m ()
 deleteAgentConnectionsAsync _ [] = pure ()
 deleteAgentConnectionsAsync user acIds =
   withAgent (`deleteConnectionsAsync` acIds) `catchError` (toView . CRChatError (Just user))
+
+agentXFTPDeleteRcvFile :: ChatMonad m => User -> RcvFileId -> FileTransferId -> m ()
+agentXFTPDeleteRcvFile user aFileId fileId = do
+  withAgent $ \a -> xftpDeleteRcvFile a (aUserId user) aFileId
+  withStore' $ \db -> setRcvFTAgentDeleted db fileId
 
 userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct =
@@ -4060,11 +4345,11 @@ chatCommandP =
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
-      "/_unhide user " *> (APIUnhideUser <$> A.decimal <*> optional (A.space *> jsonP)),
-      "/_mute user " *> (APIMuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
-      "/_unmute user " *> (APIUnmuteUser <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
+      "/_mute user " *> (APIMuteUser <$> A.decimal),
+      "/_unmute user " *> (APIUnmuteUser <$> A.decimal),
       "/hide user " *> (HideUser <$> pwdP),
-      "/unhide user" $> UnhideUser,
+      "/unhide user " *> (UnhideUser <$> pwdP),
       "/mute user" $> MuteUser,
       "/unmute user" $> UnmuteUser,
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
@@ -4076,7 +4361,10 @@ chatCommandP =
       "/_app activate" $> APIActivateChat,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
+      "/_temp_folder " *> (SetTempFolder <$> filePath),
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
+      "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
+      "/xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
@@ -4339,6 +4627,17 @@ chatCommandP =
       logErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout logErrors
+    xftpCfgP = do
+      minFileSize <- "minFileSize=" *> fileSizeP
+      pure $ XFTPFileConfig {minFileSize}
+    -- TODO move to Utils in simplexmq
+    fileSizeP =
+      A.choice
+        [ gb <$> A.decimal <* "gb",
+          mb <$> A.decimal <* "mb",
+          kb <$> A.decimal <* "kb",
+          A.decimal
+        ]
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if null s then Left "empty key" else Right k
     autoAcceptP =

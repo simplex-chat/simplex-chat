@@ -1518,7 +1518,7 @@ testUserPrivacy =
       alice <# "bob> hey"
       -- hide user profile
       alice ##> "/hide user my_password"
-      userHidden alice
+      userHidden alice "current "
       -- shows messages when active
       bob #> "@alisa hello again"
       alice <# "bob> hello again"
@@ -1555,13 +1555,15 @@ testUserPrivacy =
              ]
       -- change profile password
       alice ##> "/unmute user"
-      alice <## "cannot unmute hidden user"
+      alice <## "hidden user always muted when inactive"
       alice ##> "/hide user password"
       alice <## "user is already hidden"
-      alice ##> "/unhide user"
-      userVisible alice
+      alice ##> "/unhide user wrong_password"
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/unhide user my_password"
+      userVisible alice "current "
       alice ##> "/hide user new_password"
-      userHidden alice
+      userHidden alice "current "
       alice ##> "/_delete user 1 del_smp=on"
       alice <## "cannot delete last user"
       alice ##> "/_hide user 1 \"password\""
@@ -1570,18 +1572,15 @@ testUserPrivacy =
       showActiveUser alice "alice (Alice)"
       -- change profile privacy for inactive user via API requires correct password
       alice ##> "/_unmute user 2"
-      alice <## "cannot unmute hidden user"
+      alice <## "hidden user always muted when inactive"
       alice ##> "/_hide user 2 \"password\""
       alice <## "user is already hidden"
-      alice ##> "/_unhide user 2"
-      alice <## "user does not exist or incorrect password"
       alice ##> "/_unhide user 2 \"wrong_password\""
       alice <## "user does not exist or incorrect password"
       alice ##> "/_unhide user 2 \"new_password\""
-      userVisible alice
+      userVisible alice ""
       alice ##> "/_hide user 2 \"another_password\""
-      userHidden alice
-      -- check new password
+      userHidden alice ""
       alice ##> "/user alisa another_password"
       showActiveUser alice "alisa"
       alice ##> "/user alice"
@@ -1594,12 +1593,14 @@ testUserPrivacy =
       alice <## "ok"
       alice <## "completed deleting user"
   where
-    userHidden alice = do
-      alice <## "user messages are hidden (use /tail to view)"
-      alice <## "user profile is hidden"
-    userVisible alice = do
-      alice <## "user messages are shown"
-      alice <## "user profile is visible"
+    userHidden alice current = do
+      alice <## (current <> "user alisa:")
+      alice <## "messages are hidden (use /tail to view)"
+      alice <## "profile is hidden"
+    userVisible alice current = do
+      alice <## (current <> "user alisa:")
+      alice <## "messages are shown"
+      alice <## "profile is visible"
 
 testSetChatItemTTL :: HasCallStack => FilePath -> IO ()
 testSetChatItemTTL =

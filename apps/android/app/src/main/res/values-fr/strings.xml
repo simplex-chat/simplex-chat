@@ -744,7 +744,7 @@
     <string name="member_role_will_be_changed_with_notification">Le rôle sera changé pour «%s». Les membres du groupe seront notifiés.</string>
     <string name="icon_descr_contact_checked">Contact vérifié⸱e</string>
     <string name="clear_contacts_selection_button">Effacer</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact·s sélectionné·e·s</string>
+    <string name="num_contacts_selected">%d contact·s sélectionné·e·s</string>
     <string name="skip_inviting_button">Passer l’invitation de membres</string>
     <string name="select_contacts">Sélectionnez des contacts</string>
     <string name="no_contacts_selected">Aucun contact sélectionné</string>
@@ -942,7 +942,6 @@
     <string name="users_delete_with_connections">Profil et connexions au serveur</string>
     <string name="network_session_mode_transport_isolation">Isolement du transport</string>
     <string name="update_network_session_mode_question">Mettre à jour le mode d\'isolation du transport \?</string>
-    <string name="your_chat_profiles_stored_locally">Vos profils de chat sont stockés localement, uniquement sur votre appareil</string>
     <string name="network_session_mode_entity_description">Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>.
 \n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.</string>
     <string name="network_session_mode_user">Profil de chat</string>

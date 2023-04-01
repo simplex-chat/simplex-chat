@@ -31,10 +31,12 @@ const translations = require("./translations.json")
 module.exports = function (ty) {
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
-  ty.addFilter("capitalize", (str) => {
-    if (typeof str !== "string") return "";
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  });
+  ty.addFilter("getlang", (path) => {
+    const lang = path.split("/")[1]
+    if (supportedRoutes.includes(lang)) return "en"
+    else if (supportedLangs.includes(lang)) return lang
+    return "en"
+  })
 
   ty.addFilter("getlang", (path) => {
     const urlParts = path.split("/")

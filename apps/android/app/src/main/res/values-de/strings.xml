@@ -765,7 +765,7 @@
     <string name="select_contacts">Kontakte auswählen</string>
     <string name="icon_descr_contact_checked">Kontakt geprüft</string>
     <string name="clear_contacts_selection_button">Löschen</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> Kontakt(e) ausgewählt</string>
+    <string name="num_contacts_selected">%d Kontakt(e) ausgewählt</string>
     <string name="no_contacts_selected">Keine Kontakte ausgewählt</string>
     <string name="invite_prohibited">Kontakt kann nicht eingeladen werden!</string>
     <string name="invite_prohibited_description">Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden.</string>
@@ -1023,7 +1023,6 @@
     <string name="users_delete_data_only">Nur lokale Profildaten</string>
     <string name="users_delete_with_connections">Profil und Serververbindungen</string>
     <string name="messages_section_description">Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil</string>
-    <string name="your_chat_profiles_stored_locally">Ihre Chat-Profile werden nur lokal auf Ihrem Endgerät gespeichert</string>
     <string name="failed_to_create_user_duplicate_title">Doppelter Anzeigename!</string>
     <string name="failed_to_create_user_title">Fehler beim Erstellen des Profils!</string>
     <string name="failed_to_active_user_title">Fehler beim Umschalten des Profils!</string>

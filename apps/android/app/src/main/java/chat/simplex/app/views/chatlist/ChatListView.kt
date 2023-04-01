@@ -208,7 +208,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
       } else if (chatModel.users.isEmpty()) {
         NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
       } else {
-        val users by remember { derivedStateOf { chatModel.users.toList() } }
+        val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -247,7 +247,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
 }
 
 @Composable
-private fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
+fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
   IconButton(onClick = onButtonClicked) {
     Box {
       ProfileImage(

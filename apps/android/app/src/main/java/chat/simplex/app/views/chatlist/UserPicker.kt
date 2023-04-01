@@ -34,7 +34,15 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, switchingUsers: MutableState<Boolean>, openSettings: () -> Unit) {
+fun UserPicker(
+  chatModel: ChatModel,
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  switchingUsers: MutableState<Boolean>,
+  showSettings: Boolean = true,
+  showCancel: Boolean = false,
+  cancelClicked: () -> Unit = {},
+  settingsClicked: () -> Unit = {},
+) {
   val scope = rememberCoroutineScope()
   var newChat by remember { mutableStateOf(userPickerState.value) }
   val users by remember {
@@ -101,12 +109,12 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
         .shadow(8.dp, MaterialTheme.shapes.medium, clip = false)
-        .background(MaterialTheme.colors.background, MaterialTheme.shapes.medium)
+        .background(if (isInDarkTheme()) MaterialTheme.colors.background.darker(-0.7f) else MaterialTheme.colors.background, MaterialTheme.shapes.medium)
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         users.forEach { u ->
           UserProfilePickerItem(u.user, u.unreadCount, openSettings = {
-            openSettings()
+            settingsClicked()
             userPickerState.value = AnimatedViewState.GONE
           }) {
             userPickerState.value = AnimatedViewState.HIDING
@@ -126,9 +134,17 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
           if (u.user.activeUser) Divider(Modifier.requiredHeight(0.5.dp))
         }
       }
-      SettingsPickerItem {
-        openSettings()
-        userPickerState.value = AnimatedViewState.GONE
+      if (showSettings) {
+        SettingsPickerItem {
+          settingsClicked()
+          userPickerState.value = AnimatedViewState.GONE
+        }
+      }
+      if (showCancel) {
+        CancelPickerItem {
+          cancelClicked()
+          userPickerState.value = AnimatedViewState.GONE
+        }
       }
     }
   }
@@ -209,5 +225,17 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
       color = MaterialTheme.colors.onBackground,
     )
     Icon(Icons.Outlined.Settings, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+  }
+}
+
+@Composable
+private fun CancelPickerItem(onClick: () -> Unit) {
+  SectionItemViewSpaceBetween(onClick, minHeight = 68.dp) {
+    val text = generalGetString(R.string.cancel_verb)
+    Text(
+      text,
+      color = MaterialTheme.colors.onBackground,
+    )
+    Icon(Icons.Outlined.Close, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
   }
 }

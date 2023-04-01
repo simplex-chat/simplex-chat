@@ -210,9 +210,9 @@ private fun VoiceMsgIndicator(
       PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
     }
   } else {
-    if (file?.fileStatus == CIFileStatus.RcvInvitation
-      || file?.fileStatus == CIFileStatus.RcvTransfer
-      || file?.fileStatus == CIFileStatus.RcvAccepted
+    if (file?.fileStatus is CIFileStatus.RcvInvitation
+      || file?.fileStatus is CIFileStatus.RcvTransfer
+      || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {
       Box(
         Modifier
@@ -228,7 +228,7 @@ private fun VoiceMsgIndicator(
   }
 }
 
-private fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = drawWithCache {
+fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = drawWithCache {
   val brush = Brush.linearGradient(
     0f to Color.Transparent,
     0f to color,
