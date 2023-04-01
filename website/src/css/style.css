@@ -293,6 +293,10 @@ header nav {
     opacity: 1;
     transform: translateX(0);
   }
+
+  .flag-container .sub-menu{
+    max-height: fit-content;
+  }
 }
 
 .lock-scroll {
