@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="{{ page.url | getlang }}">
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
+        {% endif %}
+    {% endfor %}>
 
     <head>
         <meta charset="UTF-8">
