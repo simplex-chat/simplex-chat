@@ -11,8 +11,8 @@ android {
         applicationId "chat.simplex.app"
         minSdk 26
         targetSdk 32
-        versionCode 109
-        versionName "4.6.1-beta.0"
+        versionCode 110
+        versionName "4.6.1-beta.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
