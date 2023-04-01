@@ -1423,8 +1423,9 @@
         <target>Šifrovaná zpráva: chyba databáze</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database migration error" xml:space="preserve" approved="no">
         <source>Encrypted message: database migration error</source>
+        <target state="translated">Šifrovaná zpráva: chyba migrace databáze</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
@@ -1682,8 +1683,9 @@
         <target>Ukončit bez uložení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Experimental" xml:space="preserve">
+      <trans-unit id="Experimental" xml:space="preserve" approved="no">
         <source>Experimental</source>
+        <target state="translated">Pokusný</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -2343,8 +2345,9 @@ Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</tar
         <target>Přenesení dokončeno</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
+      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
         <source>Migrations: %@</source>
+        <target state="translated">Migrace: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -3081,8 +3084,9 @@ Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</tar
         <target>Odeslat přímou zprávu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send files via XFTP" xml:space="preserve">
+      <trans-unit id="Send files via XFTP" xml:space="preserve" approved="no">
         <source>Send files via XFTP</source>
+        <target state="translated">Odeslat soubory přes XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
@@ -4400,8 +4404,9 @@ Servery SimpleX nevidí váš profil.</target>
         <target>tvůrce</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
+        <target state="translated">verze databáze je novější než aplikace, ale žádný přechod dolů pro: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -4419,8 +4424,9 @@ Servery SimpleX nevidí váš profil.</target>
         <target>odstraněna skupina</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
+      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve" approved="no">
         <source>different migration in the app/database: %@ / %@</source>
+        <target state="translated">různé migrace v aplikaci/databázi: %@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">
