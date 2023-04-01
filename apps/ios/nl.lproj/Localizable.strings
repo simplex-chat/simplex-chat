@@ -416,6 +416,9 @@
 /* chat item action */
 "Cancel" = "Annuleren";
 
+/* No comment provided by engineer. */
+"Cancel file transfer?" = "Bestand overdracht annuleren?";
+
 /* feature offered item */
 "cancelled %@" = "geannuleerd %@";
 
@@ -526,6 +529,9 @@
 
 /* No comment provided by engineer. */
 "Confirm" = "Bevestigen";
+
+/* No comment provided by engineer. */
+"Confirm database upgrades" = "Bevestig database upgrades";
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Bevestig nieuw wachtwoord…";
@@ -693,6 +699,9 @@
 "Dark" = "Donker";
 
 /* No comment provided by engineer. */
+"Database downgrade" = "Database downgraden";
+
+/* No comment provided by engineer. */
 "Database encrypted!" = "Database versleuteld!";
 
 /* No comment provided by engineer. */
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Database ID" = "Database ID";
+
+/* No comment provided by engineer. */
+"Database IDs and Transport isolation option." = "Database ID's en Transport isolatie optie.";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "De database is versleuteld met een willekeurig wachtwoord, u kunt deze wijzigen.";
@@ -724,6 +736,9 @@
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "Database wachtwoord is vereist om je gesprekken te openen.";
+
+/* No comment provided by engineer. */
+"Database upgrade" = "Database upgrade";
 
 /* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "De database wordt versleuteld en het wachtwoord wordt opgeslagen in de keychain.\n";
@@ -760,6 +775,9 @@
 
 /* No comment provided by engineer. */
 "Delete chat archive?" = "Chat archief verwijderen?";
+
+/* No comment provided by engineer. */
+"Delete chat profile" = "Chat profiel verwijderen";
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "Chat profiel verwijderen?";
@@ -829,6 +847,9 @@
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Wachtende verbinding verwijderen?";
+
+/* No comment provided by engineer. */
+"Delete profile" = "Verwijder profiel";
 
 /* server test step */
 "Delete queue" = "Wachtrij verwijderen";
@@ -901,6 +922,9 @@
 
 /* No comment provided by engineer. */
 "Don't show again" = "Niet meer weergeven";
+
+/* No comment provided by engineer. */
+"Downgrade and open chat" = "Downgraden en chat openen";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "Dubbele weergavenaam!";
@@ -1110,6 +1134,9 @@
 "Error updating user privacy" = "Fout bij updaten van gebruikers privacy";
 
 /* No comment provided by engineer. */
+"Error: " = "Fout: ";
+
+/* No comment provided by engineer. */
 "Error: %@" = "Fout: %@";
 
 /* No comment provided by engineer. */
@@ -1135,6 +1162,12 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Kan wachtwoord niet verwijderen";
+
+/* No comment provided by engineer. */
+"File transfer will be cancelled. If it's in progress it will be stoppped." = "Bestand overdracht wordt geannuleerd. Als het bezig is, wordt het gestopt.";
+
+/* No comment provided by engineer. */
+"File will be received when your contact completes uploading it." = "Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "Het bestand wordt ontvangen wanneer uw contact persoon online is, even geduld a.u.b. of controleer later!";
@@ -1260,6 +1293,9 @@
 "Hide profile" = "Profiel verbergen";
 
 /* No comment provided by engineer. */
+"Hide:" = "Verbergen:";
+
+/* No comment provided by engineer. */
 "How it works" = "Hoe het werkt";
 
 /* No comment provided by engineer. */
@@ -1288,6 +1324,9 @@
 
 /* No comment provided by engineer. */
 "Ignore" = "Negeren";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact completes uploading it." = "De afbeelding wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.";
 
 /* No comment provided by engineer. */
 "Image will be received when your contact is online, please wait or check later!" = "De afbeelding wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!";
@@ -1339,6 +1378,9 @@
 
 /* notification */
 "Incoming video call" = "Inkomend video gesprek";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Incompatibele database versie";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "Onjuiste beveiligingscode!";
@@ -1843,6 +1885,9 @@
 "Profile image" = "profielfoto";
 
 /* No comment provided by engineer. */
+"Profile password" = "Profiel wachtwoord";
+
+/* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Verbied het onomkeerbaar verwijderen van berichten.";
 
 /* No comment provided by engineer. */
@@ -2143,10 +2188,16 @@
 "Show calls in phone history" = "Toon oproepen in de telefoongeschiedenis";
 
 /* No comment provided by engineer. */
+"Show developer options" = "Ontwikkelaars opties tonen";
+
+/* No comment provided by engineer. */
 "Show preview" = "Toon voorbeeld";
 
 /* No comment provided by engineer. */
 "Show QR code" = "Toon QR-code";
+
+/* No comment provided by engineer. */
+"Show:" = "Toon:";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "De beveiliging van SimpleX Chat is [gecontroleerd door Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
@@ -2403,6 +2454,12 @@
 /* No comment provided by engineer. */
 "Unhide" = "zichtbaar maken";
 
+/* No comment provided by engineer. */
+"Unhide chat profile" = "Chat profiel zichtbaar maken";
+
+/* No comment provided by engineer. */
+"Unhide profile" = "Profiel zichtbaar maken";
+
 /* connection info */
 "unknown" = "onbekend";
 
@@ -2455,6 +2512,9 @@
 "Updating this setting will re-connect the client to all servers." = "Als u deze instelling bijwerkt, wordt de client opnieuw verbonden met alle servers.";
 
 /* No comment provided by engineer. */
+"Upgrade and open chat" = "Upgrade en open chat";
+
+/* No comment provided by engineer. */
 "Use .onion hosts" = "Gebruik .onion-hosts";
 
 /* No comment provided by engineer. */
@@ -2483,6 +2543,9 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
+
+/* No comment provided by engineer. */
+"v4.6.1+ is required to receive via XFTP." = "v4.6.1+ is vereist om te ontvangen via XFTP.";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Controleer de verbindingsbeveiliging";
@@ -2543,6 +2606,9 @@
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "wil met je in contact komen!";
+
+/* No comment provided by engineer. */
+"Warning: you may lose some data!" = "Waarschuwing: u kunt sommige gegevens verliezen!";
 
 /* No comment provided by engineer. */
 "WebRTC ICE servers" = "WebRTC ICE servers";

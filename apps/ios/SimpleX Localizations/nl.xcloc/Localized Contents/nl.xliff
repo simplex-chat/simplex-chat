@@ -620,9 +620,9 @@
         <target>Annuleren</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Cancel file transfer?" xml:space="preserve" approved="no">
+      <trans-unit id="Cancel file transfer?" xml:space="preserve">
         <source>Cancel file transfer?</source>
-        <target state="translated">Bestand overdracht annuleren?</target>
+        <target>Bestand overdracht annuleren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
@@ -770,9 +770,9 @@
         <target>Bevestigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm database upgrades" xml:space="preserve" approved="no">
+      <trans-unit id="Confirm database upgrades" xml:space="preserve">
         <source>Confirm database upgrades</source>
-        <target state="translated">Bevestig database upgrades</target>
+        <target>Bevestig database upgrades</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm new passphrase…" xml:space="preserve">
@@ -985,14 +985,14 @@
         <target>Database ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve" approved="no">
+      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
         <source>Database IDs and Transport isolation option.</source>
-        <target state="translated">Database ID's en Transport isolatie optie.</target>
+        <target>Database ID's en Transport isolatie optie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database downgrade" xml:space="preserve" approved="no">
+      <trans-unit id="Database downgrade" xml:space="preserve">
         <source>Database downgrade</source>
-        <target state="translated">Database downgraden</target>
+        <target>Database downgraden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -1049,9 +1049,9 @@
         <target>Database wachtwoord is vereist om je gesprekken te openen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database upgrade" xml:space="preserve" approved="no">
+      <trans-unit id="Database upgrade" xml:space="preserve">
         <source>Database upgrade</source>
-        <target state="translated">Database upgrade</target>
+        <target>Database upgrade</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve">
@@ -1118,9 +1118,9 @@
         <target>Chat archief verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat profile" xml:space="preserve" approved="no">
+      <trans-unit id="Delete chat profile" xml:space="preserve">
         <source>Delete chat profile</source>
-        <target state="translated">Chat profiel verwijderen</target>
+        <target>Chat profiel verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile?" xml:space="preserve">
@@ -1233,9 +1233,9 @@
         <target>Wachtende verbinding verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete profile" xml:space="preserve" approved="no">
+      <trans-unit id="Delete profile" xml:space="preserve">
         <source>Delete profile</source>
-        <target state="translated">Verwijder profiel</target>
+        <target>Verwijder profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete queue" xml:space="preserve">
@@ -1343,9 +1343,9 @@
         <target>Niet meer weergeven</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Downgrade and open chat" xml:space="preserve" approved="no">
+      <trans-unit id="Downgrade and open chat" xml:space="preserve">
         <source>Downgrade and open chat</source>
-        <target state="translated">Downgraden en chat openen</target>
+        <target>Downgraden en chat openen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
@@ -1657,9 +1657,9 @@
         <target>Fout bij updaten van gebruikers privacy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error: " xml:space="preserve" approved="no">
+      <trans-unit id="Error: " xml:space="preserve">
         <source>Error: </source>
-        <target state="translated">Fout: </target>
+        <target>Fout: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
@@ -1711,14 +1711,14 @@
         <target>Kan wachtwoord niet verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File transfer will be cancelled. If it's in progress it will be stoppped." xml:space="preserve" approved="no">
+      <trans-unit id="File transfer will be cancelled. If it's in progress it will be stoppped." xml:space="preserve">
         <source>File transfer will be cancelled. If it's in progress it will be stoppped.</source>
-        <target state="translated">Bestand overdracht wordt geannuleerd. Als het bezig is, wordt het gestopt.</target>
+        <target>Bestand overdracht wordt geannuleerd. Als het bezig is, wordt het gestopt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve" approved="no">
+      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
         <source>File will be received when your contact completes uploading it.</source>
-        <target state="translated">Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target>Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -1916,9 +1916,9 @@
         <target>Profiel verbergen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide:" xml:space="preserve" approved="no">
+      <trans-unit id="Hide:" xml:space="preserve">
         <source>Hide:</source>
-        <target state="translated">Verbergen:</target>
+        <target>Verbergen:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -1971,9 +1971,9 @@
         <target>Negeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve" approved="no">
+      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
         <source>Image will be received when your contact completes uploading it.</source>
-        <target state="translated">De afbeelding wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target>De afbeelding wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -2046,9 +2046,9 @@
         <target>Inkomend video gesprek</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Incompatible database version" xml:space="preserve" approved="no">
+      <trans-unit id="Incompatible database version" xml:space="preserve">
         <source>Incompatible database version</source>
-        <target state="translated">Incompatibele database versie</target>
+        <target>Incompatibele database versie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incorrect security code!" xml:space="preserve">
@@ -2741,9 +2741,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>profielfoto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile password" xml:space="preserve" approved="no">
+      <trans-unit id="Profile password" xml:space="preserve">
         <source>Profile password</source>
-        <target state="translated">Profiel wachtwoord</target>
+        <target>Profiel wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -3220,9 +3220,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Toon oproepen in de telefoongeschiedenis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show developer options" xml:space="preserve" approved="no">
+      <trans-unit id="Show developer options" xml:space="preserve">
         <source>Show developer options</source>
-        <target state="translated">Ontwikkelaars opties tonen</target>
+        <target>Ontwikkelaars opties tonen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -3230,9 +3230,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Toon voorbeeld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show:" xml:space="preserve" approved="no">
+      <trans-unit id="Show:" xml:space="preserve">
         <source>Show:</source>
-        <target state="translated">Toon:</target>
+        <target>Toon:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve">
@@ -3642,14 +3642,14 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>zichtbaar maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide chat profile" xml:space="preserve" approved="no">
+      <trans-unit id="Unhide chat profile" xml:space="preserve">
         <source>Unhide chat profile</source>
-        <target state="translated">Chat profiel zichtbaar maken</target>
+        <target>Chat profiel zichtbaar maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide profile" xml:space="preserve" approved="no">
+      <trans-unit id="Unhide profile" xml:space="preserve">
         <source>Unhide profile</source>
-        <target state="translated">Profiel zichtbaar maken</target>
+        <target>Profiel zichtbaar maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
@@ -3729,9 +3729,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Als u deze instelling bijwerkt, wordt de client opnieuw verbonden met alle servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade and open chat" xml:space="preserve" approved="no">
+      <trans-unit id="Upgrade and open chat" xml:space="preserve">
         <source>Upgrade and open chat</source>
-        <target state="translated">Upgrade en open chat</target>
+        <target>Upgrade en open chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
@@ -3839,9 +3839,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Wachten op afbeelding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Warning: you may lose some data!" xml:space="preserve" approved="no">
+      <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
         <source>Warning: you may lose some data!</source>
-        <target state="translated">Waarschuwing: u kunt sommige gegevens verliezen!</target>
+        <target>Waarschuwing: u kunt sommige gegevens verliezen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WebRTC ICE servers" xml:space="preserve">
@@ -4729,9 +4729,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="v4.6.1+ is required to receive via XFTP." xml:space="preserve" approved="no">
+      <trans-unit id="v4.6.1+ is required to receive via XFTP." xml:space="preserve">
         <source>v4.6.1+ is required to receive via XFTP.</source>
-        <target state="translated">v4.6.1+ is vereist om te ontvangen via XFTP.</target>
+        <target>v4.6.1+ is vereist om te ontvangen via XFTP.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="via contact address link" xml:space="preserve">

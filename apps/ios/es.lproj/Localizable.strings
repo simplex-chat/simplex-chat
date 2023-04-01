@@ -416,6 +416,9 @@
 /* chat item action */
 "Cancel" = "Cancelar";
 
+/* No comment provided by engineer. */
+"Cancel file transfer?" = "¿Cancelar el envío de archivos?";
+
 /* feature offered item */
 "cancelled %@" = "cancelado %@";
 
@@ -526,6 +529,9 @@
 
 /* No comment provided by engineer. */
 "Confirm" = "Confirmar";
+
+/* No comment provided by engineer. */
+"Confirm database upgrades" = "Confirmar actualizaciones de la bases de datos";
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Confirme nueva contraseña…";
@@ -693,6 +699,9 @@
 "Dark" = "Oscuro";
 
 /* No comment provided by engineer. */
+"Database downgrade" = "Degradación de la base de datos";
+
+/* No comment provided by engineer. */
 "Database encrypted!" = "¡Base de datos cifrada!";
 
 /* No comment provided by engineer. */
@@ -706,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "Database ID" = "ID de la base de datos";
+
+/* No comment provided by engineer. */
+"Database IDs and Transport isolation option." = "ID de base de datos y opción de aislamiento de transporte.";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "La base de datos está cifrada con una contraseña aleatoria, puedes cambiarla.";
@@ -724,6 +736,9 @@
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "Para abrir la aplicación se requiere la contraseña de la base de datos.";
+
+/* No comment provided by engineer. */
+"Database upgrade" = "Actualización de la base de datos";
 
 /* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "La base de datos será cifrada y la contraseña se guardará en Keychain.\n";
@@ -760,6 +775,9 @@
 
 /* No comment provided by engineer. */
 "Delete chat archive?" = "¿Eliminar archivo del chat?";
+
+/* No comment provided by engineer. */
+"Delete chat profile" = "Eliminar perfil de chat";
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "¿Eliminar el perfil de chat?";
@@ -829,6 +847,9 @@
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "¿Eliminar conexion pendiente?";
+
+/* No comment provided by engineer. */
+"Delete profile" = "Eliminar perfil";
 
 /* server test step */
 "Delete queue" = "Eliminar cola";
@@ -901,6 +922,9 @@
 
 /* No comment provided by engineer. */
 "Don't show again" = "No mostrar de nuevo";
+
+/* No comment provided by engineer. */
+"Downgrade and open chat" = "Degradar y abrir Chat";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "¡Nombre mostrado duplicado!";
@@ -1110,6 +1134,9 @@
 "Error updating user privacy" = "Error actualizando la privacidad de usuario";
 
 /* No comment provided by engineer. */
+"Error: " = "Error: ";
+
+/* No comment provided by engineer. */
 "Error: %@" = "Error: %@";
 
 /* No comment provided by engineer. */
@@ -1135,6 +1162,12 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Error eliminando la contraseña";
+
+/* No comment provided by engineer. */
+"File transfer will be cancelled. If it's in progress it will be stoppped." = "El envío de archivos será cancelado. Si está en progreso se detendrá.";
+
+/* No comment provided by engineer. */
+"File will be received when your contact completes uploading it." = "El archivo se recibirá cuando tu contacto termine de subirlo.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "El archivo se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde.";
@@ -1260,6 +1293,9 @@
 "Hide profile" = "Ocultar perfil";
 
 /* No comment provided by engineer. */
+"Hide:" = "Ocultar:";
+
+/* No comment provided by engineer. */
 "How it works" = "Cómo funciona";
 
 /* No comment provided by engineer. */
@@ -1288,6 +1324,9 @@
 
 /* No comment provided by engineer. */
 "Ignore" = "Ignorar";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact completes uploading it." = "La imagen se recibirá cuando tu contacto termine de subirla.";
 
 /* No comment provided by engineer. */
 "Image will be received when your contact is online, please wait or check later!" = "La imagen se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde.";
@@ -1339,6 +1378,9 @@
 
 /* notification */
 "Incoming video call" = "Videollamada entrante";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Versión de base de datos incompatible";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "¡Código de seguridad incorrecto!";
@@ -1843,6 +1885,9 @@
 "Profile image" = "Imagen del perfil";
 
 /* No comment provided by engineer. */
+"Profile password" = "Contraseña del perfil";
+
+/* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Prohibir la eliminación irreversible de mensajes.";
 
 /* No comment provided by engineer. */
@@ -2143,10 +2188,16 @@
 "Show calls in phone history" = "Mostrar llamadas en el historial del teléfono";
 
 /* No comment provided by engineer. */
+"Show developer options" = "Mostrar opciones de desarrollador";
+
+/* No comment provided by engineer. */
 "Show preview" = "Mostrar vista previa";
 
 /* No comment provided by engineer. */
 "Show QR code" = "Mostrar código QR";
+
+/* No comment provided by engineer. */
+"Show:" = "Mostrar:";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "La seguridad de SimpleX Chat fue [auditada por Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
@@ -2403,6 +2454,12 @@
 /* No comment provided by engineer. */
 "Unhide" = "Mostrar";
 
+/* No comment provided by engineer. */
+"Unhide chat profile" = "Mostrar perfil de chat";
+
+/* No comment provided by engineer. */
+"Unhide profile" = "Mostrar perfil";
+
 /* connection info */
 "unknown" = "desconocido";
 
@@ -2455,6 +2512,9 @@
 "Updating this setting will re-connect the client to all servers." = "Al actualizar esta configuración el cliente se reconectará a todos los servidores.";
 
 /* No comment provided by engineer. */
+"Upgrade and open chat" = "Actualizar y abrir Chat";
+
+/* No comment provided by engineer. */
 "Use .onion hosts" = "Usar hosts .onion";
 
 /* No comment provided by engineer. */
@@ -2483,6 +2543,9 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
+
+/* No comment provided by engineer. */
+"v4.6.1+ is required to receive via XFTP." = "Se requiere v4.6.1+ para recibir vía XFTP.";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Comprobar la seguridad de la conexión";
@@ -2543,6 +2606,9 @@
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "¡quiere contactar contigo!";
+
+/* No comment provided by engineer. */
+"Warning: you may lose some data!" = "Atención: ¡puedes perder algunos datos!";
 
 /* No comment provided by engineer. */
 "WebRTC ICE servers" = "Servidores WebRTC ICE";
