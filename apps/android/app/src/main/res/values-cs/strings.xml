@@ -93,7 +93,7 @@
     <string name="profile_will_be_sent_to_contact_sending_link">Váš profil bude odeslán kontaktu, od kterého jste obdrželi tento odkaz.</string>
     <string name="server_connected">připojeno</string>
     <string name="server_error">chyba</string>
-    <string name="server_connecting">připojení</string>
+    <string name="server_connecting">připojování</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Pokus o připojení k serveru používanému pro příjem zpráv od tohoto kontaktu.</string>
     <string name="deleted_description">smazáno</string>
     <string name="invalid_chat">neplatný chat</string>
@@ -101,7 +101,7 @@
     <string name="connection_local_display_name">spojení <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
     <string name="display_name_connection_established">spojení navázáno</string>
     <string name="display_name_invited_to_connect">pozvánka k připojení</string>
-    <string name="display_name_connecting">připojení…</string>
+    <string name="display_name_connecting">připojování…</string>
     <string name="description_you_shared_one_time_link">sdíleli jste jednorázový odkaz</string>
     <string name="description_you_shared_one_time_link_incognito">sdíleli jste jednorázový odkaz inkognito</string>
     <string name="description_via_group_link">prostřednictvím skupinového odkazu</string>
@@ -685,7 +685,7 @@
     <string name="callstate_waiting_for_confirmation">čekání na potvrzení…</string>
     <string name="callstate_received_answer">obdržel odpověď…</string>
     <string name="callstate_received_confirmation">obdržel potvrzení…</string>
-    <string name="callstate_connecting">připojení…</string>
+    <string name="callstate_connecting">připojování…</string>
     <string name="privacy_redefined">Nové vymezení soukromí</string>
     <string name="first_platform_without_user_ids">1. platforma bez jakýchkoliv uživatelských identifikátorů – soukromá již od návrhu.</string>
     <string name="immune_to_spam_and_abuse">Odolná vůči spamu a zneužití</string>
@@ -1022,7 +1022,7 @@
     <string name="you_will_still_receive_calls_and_ntfs">Stále budete přijímat volání a upozornění od umlčených profilů pokud budou aktivní.</string>
     <string name="you_can_hide_or_mute_user_profile">Můžete skrýt nebo ztlumit uživatelský profil - Podržte pro menu.</string>
     <string name="user_unhide">Odkrýt</string>
-    <string name="settings_send_files_via_xftp">Poslat soubory přes XFTP</string>
+    <string name="settings_send_files_via_xftp">Poslat videa a soubory přes XFTP</string>
     <string name="database_upgrade">Aktualizace databáze</string>
     <string name="database_downgrade_warning">Upozornění: můžete ztratit nějaká data!</string>
     <string name="confirm_database_upgrades">Potvrdit aktualizaci databáze</string>
@@ -1049,4 +1049,13 @@
     <string name="unhide_chat_profile">Odkrýt chat profil</string>
     <string name="unhide_profile">Odkrýt profil</string>
     <string name="cancel_file__question">Zrušit přenos souboru\?</string>
+    <string name="icon_descr_video_asked_to_receive">Žádost o přijetí videa</string>
+    <string name="videos_limit_desc">Současně lze odeslat pouze 10 videí</string>
+    <string name="videos_limit_title">Příliš mnoho videí!</string>
+    <string name="video_descr">Video</string>
+    <string name="icon_descr_waiting_for_video">Čekám na video</string>
+    <string name="icon_descr_video_snd_complete">Video odesláno</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Video bude přijato, až kontakt dokončí jeho nahrávání.</string>
+    <string name="video_will_be_received_when_contact_is_online">Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!</string>
+    <string name="waiting_for_video">Čekám na video</string>
 </resources>
