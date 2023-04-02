@@ -12,6 +12,7 @@ import Control.Concurrent (ThreadId)
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.List (intercalate)
 import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat (processChatCommand)
 import Simplex.Chat.Controller
@@ -38,7 +39,14 @@ data TerminalState = TerminalState
   { inputPrompt :: String,
     inputString :: String,
     inputPosition :: Int,
-    previousInput :: String
+    previousInput :: String,
+    autoComplete :: AutoCompleteState
+  }
+
+data AutoCompleteState = ACState
+  { acVariants :: [String],
+    acTabPressed :: Bool,
+    acShowAll :: Bool
   }
 
 data LiveMessage = LiveMessage
@@ -82,8 +90,12 @@ mkTermState =
     { inputString = "",
       inputPosition = 0,
       inputPrompt = "> ",
-      previousInput = ""
+      previousInput = "",
+      autoComplete = mkAutoComplete
     }
+
+mkAutoComplete :: AutoCompleteState
+mkAutoComplete = ACState {acVariants = [], acTabPressed = False, acShowAll = False}
 
 withTermLock :: MonadTerminal m => ChatTerminal -> m () -> m ()
 withTermLock ChatTerminal {termLock} action = do
@@ -141,11 +153,13 @@ updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessag
   let ih = inputHeight ts
       iStart = height - ih
       prompt = inputPrompt ts
-      Position {row, col} = positionRowColumn width $ length prompt + inputPosition ts
+      acPfx = autoCompletePrefix ts
+      Position {row, col} = positionRowColumn width $ length acPfx + length prompt + inputPosition ts
   if nmr >= iStart
     then atomically $ writeTVar nextMessageRow iStart
     else clearLines nmr iStart
   setCursorPosition $ Position {row = max nmr iStart, col = 0}
+  putStyled $ Styled [SetColor Foreground Dull White] acPfx
   putString $ prompt <> inputString ts <> " "
   eraseInLine EraseForward
   setCursorPosition $ Position {row = iStart + row, col}
@@ -160,7 +174,14 @@ updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessag
         eraseInLine EraseForward
         clearLines (from + 1) till
     inputHeight :: TerminalState -> Int
-    inputHeight ts = length (inputPrompt ts <> inputString ts) `div` width + 1
+    inputHeight ts = length (autoCompletePrefix ts <> inputPrompt ts <> inputString ts) `div` width + 1
+    autoCompletePrefix :: TerminalState -> String
+    autoCompletePrefix TerminalState {autoComplete = ac} = case acVariants ac of
+      [] -> ""
+      [_] -> ""
+      vars
+        | acShowAll ac || length vars <= 4 -> "(" <> intercalate ", " vars <> ") "
+        | otherwise -> "(" <> intercalate ", " (take 3 vars) <> "... " <> show (length vars - 3) <> " more) "
     positionRowColumn :: Int -> Int -> Position
     positionRowColumn wid pos =
       let row = pos `div` wid

@@ -15,6 +15,7 @@ import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, thre
 import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Bifunctor (second)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlpha, isAlphaNum, isAscii)
 import Data.Either (fromRight)
@@ -187,19 +188,22 @@ receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@C
       pure $ (s,) <$> lm_
       where
         isSend s = length s > 1 && (head s == '@' || head s == '#')
-        ts' = ts {inputString = "", inputPosition = 0}
+        ts' = ts {inputString = "", inputPosition = 0, autoComplete = mkAutoComplete}
 
 data AutoComplete = ACContact Text | ACMember Text Text | ACGroup Text | ACCommand Text | ACNone
   deriving (Show)
 
 updateTermState :: Maybe User -> SQLiteStore -> ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
-updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
+updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p, autoComplete = acp} = case key of
   CharKey c
     | ms == mempty || ms == shiftKey -> pure $ insertChars $ charsWithContact [c]
     | ms == altKey && c == 'b' -> pure $ setPosition prevWordPos
     | ms == altKey && c == 'f' -> pure $ setPosition nextWordPos
     | otherwise -> pure ts
-  TabKey -> insertChars . commonPrefix <$> autoComplete user_
+  TabKey -> do
+    (pfx, vs) <- autoCompleteVariants user_
+    let acp' = acp {acVariants = vs, acShowAll = acTabPressed acp && not (acShowAll acp), acTabPressed = True}
+    pure $ (insertChars pfx) {autoComplete = acp'}
   BackspaceKey -> pure backDeleteChar
   DeleteKey -> pure deleteChar
   HomeKey -> pure $ setPosition 0
@@ -216,8 +220,8 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
       | otherwise -> ts
   _ -> pure ts
   where
-    autoComplete Nothing = pure [charsWithContact "    "]
-    autoComplete (Just User {userId, userContactId}) =
+    autoCompleteVariants Nothing = pure ("", [charsWithContact "    "])
+    autoCompleteVariants (Just User {userId, userContactId}) =
       getAutoCompleteChars $ fromRight ACNone $ A.parseOnly autoCompleteP $ encodeUtf8 $ T.pack s
       where
         autoCompleteP =
@@ -240,11 +244,11 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
         groupMemberPfx = A.choice $ ["/i #", "/info #", "/code #", "/verify #"] <> sfx_ '#' ["/rm ", "/remove", "/l ", "/leave "]
         sfx_ c = map (<* optional (A.char c))
         getAutoCompleteChars = \case
-          ACContact pfx -> getNameSfxs "contacts" pfx
-          ACGroup pfx -> getNameSfxs "groups" pfx
-          ACMember gName pfx -> getMemberNameSfxs gName pfx
-          ACCommand pfx -> pure $ nameSfxs pfx commands
-          ACNone -> pure [charsWithContact ""]
+          ACContact pfx -> common pfx <$> getNameSfxs "contacts" pfx
+          ACGroup pfx -> common pfx <$> getNameSfxs "groups" pfx
+          ACMember gName pfx -> common pfx <$> getMemberNameSfxs gName pfx
+          ACCommand pfx -> pure $ second (map ('/' :)) $ common pfx $ hasPfx pfx commands
+          ACNone -> pure ("", [charsWithContact ""])
           where
             getMemberNameSfxs gName pfx =
               getNameSfxs_
@@ -264,9 +268,10 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
                 "SELECT local_display_name FROM " <> table <> " WHERE user_id = ? AND local_display_name LIKE ?"
             getNameSfxs_ :: DB.ToRow p => Text -> p -> DB.Query -> IO [String]
             getNameSfxs_ pfx ps q =
-              withTransaction st (\db -> nameSfxs pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
+              withTransaction st (\db -> hasPfx pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
             commands = ["tail ", "info ", "file ", "clear ", "delete ", "accept @", "reject @", "add #", "join #", "remove #", "leave #", "code", "verify", "chats", "groups", "members #", "member role #", "help", "markdown", "quit"]
-            nameSfxs pfx = map (T.unpack . T.drop (T.length pfx)) . filter (pfx `T.isPrefixOf`)
+            hasPfx pfx = map T.unpack . filter (pfx `T.isPrefixOf`)
+            common pfx xs = (commonPrefix $ map (drop $ T.length pfx) xs, xs)
     commonPrefix = \case
       x : xs -> foldl go x xs
       _ -> ""
