@@ -4,37 +4,40 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Terminal.Input where
 
+import Control.Applicative (optional)
 import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, threadDelay)
 import Control.Monad.Except
 import Control.Monad.Reader
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isAlphaNum, isAscii)
+import Data.Char (isAlpha, isAlphaNum, isAscii)
 import Data.Either (fromRight)
 import Data.List (dropWhileEnd, foldl')
 import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Database.SQLite.Simple (Only (..))
+import qualified Database.SQLite.Simple as DB
+import Database.SQLite.Simple.QQ (sql)
 import GHC.Weak (deRefWeak)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
-import Simplex.Messaging.Util (whenM)
+import Simplex.Chat.Types (User (..))
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
+import Simplex.Messaging.Util (catchAll_, safeDecodeUtf8, whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
-import qualified Data.Attoparsec.ByteString.Char8 as A
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
-import Simplex.Messaging.Util (safeDecodeUtf8, catchAll_)
-import qualified Database.SQLite.Simple as DB
-import Database.SQLite.Simple (Only (..))
 
 getKey :: MonadTerminal m => m (Key, Modifiers)
 getKey =
@@ -127,7 +130,7 @@ runTerminalInput ct cc = withChatTerm ct $ do
   receiveFromTTY cc ct
 
 receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, activeTo, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState} =
+receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState} =
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
@@ -147,7 +150,8 @@ receiveFromTTY cc@ChatController {inputQ, activeTo, chatStore} ct@ChatTerminal {
       ac <- readTVarIO activeTo
       live <- isJust <$> readTVarIO liveMessageState
       ts <- readTVarIO termState
-      ts' <- updateTermState chatStore ac live (width termSize) key ts
+      user_ <- readTVarIO currentUser
+      ts' <- updateTermState user_ chatStore ac live (width termSize) key ts
       atomically $ writeTVar termState $! ts'
 
     endLiveMessage :: String -> LiveMessage -> IO ()
@@ -185,18 +189,19 @@ receiveFromTTY cc@ChatController {inputQ, activeTo, chatStore} ct@ChatTerminal {
         isSend s = length s > 1 && (head s == '@' || head s == '#')
         ts' = ts {inputString = "", inputPosition = 0}
 
-data AutoComplete = ACContact Text | ACGroup Text | ACCommand Text | ACNone
+data AutoComplete = ACContact Text | ACMember Text Text | ACGroup Text | ACCommand Text | ACNone
+  deriving (Show)
 
-updateTermState :: SQLiteStore -> ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
-updateTermState st ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
+updateTermState :: Maybe User -> SQLiteStore -> ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
+updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
   CharKey c
     | ms == mempty || ms == shiftKey -> pure $ insertChars $ charsWithContact [c]
     | ms == altKey && c == 'b' -> pure $ setPosition prevWordPos
     | ms == altKey && c == 'f' -> pure $ setPosition nextWordPos
     | otherwise -> pure ts
-  TabKey -> insertChars . commonPrefix <$> autoComplete
-  BackspaceKey -> pure $ backDeleteChar
-  DeleteKey -> pure $ deleteChar
+  TabKey -> insertChars . commonPrefix <$> autoComplete user_
+  BackspaceKey -> pure backDeleteChar
+  DeleteKey -> pure deleteChar
   HomeKey -> pure $ setPosition 0
   EndKey -> pure $ setPosition $ length s
   ArrowKey d -> pure $ case d of
@@ -211,29 +216,57 @@ updateTermState st ac live tw (key, ms) ts@TerminalState {inputString = s, input
       | otherwise -> ts
   _ -> pure ts
   where
-    autoComplete = getAutoCompleteChars $ fromRight ACNone $ A.parseOnly autoCompleteP $ encodeUtf8 $ T.pack s
+    autoComplete Nothing = pure [charsWithContact "    "]
+    autoComplete (Just User {userId, userContactId}) =
+      getAutoCompleteChars $ fromRight ACNone $ A.parseOnly autoCompleteP $ encodeUtf8 $ T.pack s
       where
-        autoCompleteP = A.choice
-          [ ACContact <$> (contactPfx *> displayName),
-            ACGroup <$> (groupPfx *> displayName),
-            ACCommand <$> ("/" *> cmdP)
-          ]
-        displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' ')) <* A.endOfInput
+        autoCompleteP =
+          A.choice
+            [ ACContact <$> (contactPfx *> displayName <* A.endOfInput),
+              ACMember <$> (groupMemberPfx *> displayName) <* A.space <* optional (A.char '@') <*> displayName <* A.endOfInput,
+              ACGroup <$> (groupPfx *> displayName <* A.endOfInput),
+              ACCommand . safeDecodeUtf8 <$> ("/" *> A.takeWhile (\c -> isAscii c && isAlpha c)) <* A.endOfInput
+            ]
+        displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
         refChar c = c > ' ' && c /= '#' && c /= '@'
-        cmdP = safeDecodeUtf8 <$> A.takeWhile (\c -> isAscii c || c == '-' || c == '_')
-        contactPfx = A.choice  ["@", ">@", "> @", ">>@", ">>@"]
-        groupPfx = A.choice ["#", ">#", "> #"]
+        contactPfx =
+          A.choice $
+            ["@", ">@", "> @", ">>@", ">>@", "/t @", "/tail @", "/? @"]
+              <> sfx_ '@' ["/i ", "/info ", "/f ", "/file ", "/clear", "/d ", "/delete ", "/ac ", "/accept ", "/rc ", "/reject ", "/code ", "/verify "]
+        groupPfx =
+          A.choice $
+            ["#", ">#", "> #", "/t #", "/tail #", "/? #", "/i #", "/info #", "/f #", "/file #", "/clear #", "/d #", "/delete #", "/code #", "/verify #"]
+              <> sfx_ '#' ["/a ", "/add ", "/j", "/join", "/rm ", "/remove", "/l ", "/leave ", "/ms ", "/members "]
+        groupMemberPfx = A.choice $ ["/i #", "/info #", "/code #", "/verify #"] <> sfx_ '#' ["/rm ", "/remove", "/l ", "/leave "]
+        sfx_ c = map (<* optional (A.char c))
         getAutoCompleteChars = \case
-          ACContact pfx -> getNameSuffixes "contacts" pfx
-          ACGroup pfx -> getNameSuffixes "groups" pfx
-          ACCommand pfx -> getCommandSuffixes pfx
-          ACNone -> pure [charsWithContact "    "]
-    getCommandSuffixes pfx = pure []
-    getNameSuffixes table pfx = withDb $ \db ->
-      map (drop (T.length pfx) . fromOnly) <$> DB.query db q (Only $ pfx <> "%")
-      where
-        q = "SELECT local_display_name FROM " <> table <> " WHERE local_display_name LIKE ?"
-        withDb action = withTransaction st action `catchAll_` pure []
+          ACContact pfx -> getNameSfxs "contacts" pfx
+          ACGroup pfx -> getNameSfxs "groups" pfx
+          ACMember gName pfx -> getMemberNameSfxs gName pfx
+          ACCommand pfx -> pure $ nameSfxs pfx commands
+          ACNone -> pure [charsWithContact ""]
+          where
+            getMemberNameSfxs gName pfx =
+              getNameSfxs_
+                pfx
+                (userId, userContactId, gName, pfx <> "%")
+                [sql|
+                  SELECT m.local_display_name
+                  FROM group_members m
+                  JOIN groups g USING (group_id)
+                  WHERE g.user_id = ?
+                    AND (m.contact_id IS NULL OR m.contact_id != ?)
+                    AND g.local_display_name = ?
+                    AND m.local_display_name LIKE ?
+                |]
+            getNameSfxs table pfx =
+              getNameSfxs_ pfx (userId, pfx <> "%") $
+                "SELECT local_display_name FROM " <> table <> " WHERE user_id = ? AND local_display_name LIKE ?"
+            getNameSfxs_ :: DB.ToRow p => Text -> p -> DB.Query -> IO [String]
+            getNameSfxs_ pfx ps q =
+              withTransaction st (\db -> nameSfxs pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
+            commands = ["tail ", "info ", "file ", "clear ", "delete ", "accept @", "reject @", "add #", "join #", "remove #", "leave #", "code", "verify", "chats", "contacts", "groups", "members #", "member role #", "help", "markdown", "quit"]
+            nameSfxs pfx = map (T.unpack . T.drop (T.length pfx)) . filter (pfx `T.isPrefixOf`)
     commonPrefix = \case
       x : xs -> foldl go x xs
       _ -> ""
