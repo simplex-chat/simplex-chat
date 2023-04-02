@@ -45,6 +45,7 @@ data TerminalState = TerminalState
 
 data AutoCompleteState = ACState
   { acVariants :: [String],
+    acInputString :: String,
     acTabPressed :: Bool,
     acShowAll :: Bool
   }
@@ -95,7 +96,7 @@ mkTermState =
     }
 
 mkAutoComplete :: AutoCompleteState
-mkAutoComplete = ACState {acVariants = [], acTabPressed = False, acShowAll = False}
+mkAutoComplete = ACState {acVariants = [], acInputString = "", acTabPressed = False, acShowAll = False}
 
 withTermLock :: MonadTerminal m => ChatTerminal -> m () -> m ()
 withTermLock ChatTerminal {termLock} action = do
