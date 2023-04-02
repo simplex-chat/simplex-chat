@@ -181,7 +181,7 @@ updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessag
       [_] -> ""
       vars
         | acShowAll ac || length vars <= 4 -> "(" <> intercalate ", " vars <> ") "
-        | otherwise -> "(" <> intercalate ", " (take 3 vars) <> "... " <> show (length vars - 3) <> " more) "
+        | otherwise -> "(" <> intercalate ", " (take 3 vars) <> "... +" <> show (length vars - 3) <> ") "
     positionRowColumn :: Int -> Int -> Position
     positionRowColumn wid pos =
       let row = pos `div` wid

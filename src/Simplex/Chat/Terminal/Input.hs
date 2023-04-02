@@ -202,7 +202,8 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
     | otherwise -> pure ts
   TabKey -> do
     (pfx, vs) <- autoCompleteVariants user_
-    let acp' = acp {acVariants = vs, acShowAll = acTabPressed acp && not (acShowAll acp), acTabPressed = True}
+    let acShowAll' = acTabPressed acp && not (acShowAll acp) && acVariants acp == vs
+        acp' = acp {acVariants = vs, acShowAll = acShowAll', acTabPressed = not (null vs)}
     pure $ (insertChars pfx) {autoComplete = acp'}
   BackspaceKey -> pure backDeleteChar
   DeleteKey -> pure deleteChar
