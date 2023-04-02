@@ -265,7 +265,7 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
             getNameSfxs_ :: DB.ToRow p => Text -> p -> DB.Query -> IO [String]
             getNameSfxs_ pfx ps q =
               withTransaction st (\db -> nameSfxs pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
-            commands = ["tail ", "info ", "file ", "clear ", "delete ", "accept @", "reject @", "add #", "join #", "remove #", "leave #", "code", "verify", "chats", "contacts", "groups", "members #", "member role #", "help", "markdown", "quit"]
+            commands = ["tail ", "info ", "file ", "clear ", "delete ", "accept @", "reject @", "add #", "join #", "remove #", "leave #", "code", "verify", "chats", "groups", "members #", "member role #", "help", "markdown", "quit"]
             nameSfxs pfx = map (T.unpack . T.drop (T.length pfx)) . filter (pfx `T.isPrefixOf`)
     commonPrefix = \case
       x : xs -> foldl go x xs
