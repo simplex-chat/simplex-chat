@@ -1,6 +1,6 @@
 # Privacy and Security
 
-SimpleX Chat default configuration aims to balance privacy, security and convenience. You may want to change the default options.
+SimpleX Chat default configuration aims to balance privacy, security and convenience. You may want to change the default options to suit your specific needs.
 
 This page lists all the features and options that affect privacy and security.
 
@@ -12,21 +12,22 @@ These settings are available in the [Privacy & Security settings](./app-settings
 
 <img src="../../blog/images/20230103-verification.png" width="288">
 
-While SimpleX Chat always establishes connection via link passed via an independent channel, so it is already more protected than other apps, there are scenarios when the invitation links can be substituted in transit (MITM attack). To protect against such attacks, you should verify the security code with your contacts:
+While SimpleX Chat always establishes connection via link passed via an independent channel, so it is already more protected than other apps, there are scenarios when the invitation links can be substituted in transit (MITM attack). To protect against such attacks, you should verify the security code with your contacts.
 
-- open the conversation with the contact
-- tap the contact name on top of the conversation
-- tap "Verify security code"
-- ask your contact to do the same
-- the connection is secure if you and your contact have the same security code
+#### To verify security code:
 
-This can be validated by one of the following:
+1. Tap on your contact. 
+2. Tap on your contact's name at the top of the screen.
+3. Tap **Verify security code**.
+4. Ask your contact to follow the first three steps and compare your security code with theirs. 
 
-- one of you can scan the security code from their device, if the codes match the contact will be marked as verified on the device that scanned the code.
-- simply tap mark verified if you trust the confirmation from your contact that the code is verified.
-- you can also read the contact over the voice call.
+The connection is secure if both you and your contact have the same security code. This can be validated by one of the following options:
 
-Read more in [this post](../../blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification)
+- One of you can scan the other's security code. If the codes match, the contact will be marked as verified on the device that scanned the code.
+- Simply tap **Mark verified** if you trust the confirmation from your contact that the code is verified.
+- You can also read out your security code over a voice call with your contact.
+
+Please read [this blog post](../../blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification) for more details.
 
 ## Database passphrase
 
