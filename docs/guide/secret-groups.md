@@ -62,7 +62,7 @@ As a group owner, you can choose whether you want to allow disappearing messages
 4. Set your group preferences. 
 5. Tap **Save and notify group members**. 
 
-## Creating a group link
+### Creating a group link
 
 <img src="../../blog/images/20221108-group1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-group2.png" width="288">
 
