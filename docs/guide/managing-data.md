@@ -8,16 +8,16 @@ Here you can choose to delete messages from your local chat database after a set
 
 ## Chat Database
 
-To open your chat database settings:
+#### To open your chat database settings:
 
-- [Open the app settings](./app-settings.md#opening-the-app-settings).
-- Tap on "Database passphrase & export" button.
+1. [Open the app settings](./app-settings.md#opening-the-app-settings).
+2. Under the **"Settings"** section, tap **Database passphrase & export**.
 
 ### Database passphrase
 
 <img src="../../blog/images/20220928-passphrase.png" width="330">
 
-By default, database passphrase is random, you have to set it manually to be able to export it.
+The chat database passphrase is random by default, so you have to set it manually to be able to export it.
 
 ### App data backup
 
