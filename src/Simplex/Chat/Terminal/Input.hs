@@ -209,8 +209,13 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
     | otherwise -> pure ts
   TabKey -> do
     (pfx, vs) <- autoCompleteVariants user_
-    let acShowAll' = acTabPressed acp && not (acShowAll acp) && acInputString acp == s
-        acp' = acp {acVariants = vs, acInputString = s, acShowAll = acShowAll', acTabPressed = not (null vs)}
+    let sv = acShowVariants acp
+        sv'
+          | not (acTabPressed acp) = if null pfx || sv /= SVNone then SVSome else SVNone
+          | sv == SVNone = SVSome
+          | sv == SVSome && length vs > 4 = SVAll
+          | otherwise = SVNone
+        acp' = acp {acVariants = vs, acInputString = s, acShowVariants = sv', acTabPressed = True}
     pure $ (insertChars pfx) {autoComplete = acp'}
   BackspaceKey -> pure backDeleteChar
   DeleteKey -> pure deleteChar
@@ -265,7 +270,7 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
         cmd c = map $ \t -> A.char '/' *> t <* A.space <* A.char c
         cmd_ c = map $ \t -> A.char '/' *> t <* A.space <* optional (A.char c)
         getAutoCompleteChars = \case
-          ACContact pfx -> common pfx <$> getNameSfxs "contacts" pfx
+          ACContact pfx -> common pfx <$> getContactSfxs pfx
           ACContactRequest pfx -> common pfx <$> getNameSfxs "contact_requests" pfx
           ACGroup pfx -> common pfx <$> getNameSfxs "groups" pfx
           ACMember gName pfx -> common pfx <$> getMemberNameSfxs gName pfx
@@ -285,6 +290,11 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
                     AND g.local_display_name = ?
                     AND m.local_display_name LIKE ?
                 |]
+            getContactSfxs pfx =
+              getNameSfxs_
+                pfx
+                (userId, pfx <> "%")
+                "SELECT local_display_name FROM contacts WHERE is_user = 0 AND user_id = ? AND local_display_name LIKE ?"
             getNameSfxs table pfx =
               getNameSfxs_ pfx (userId, pfx <> "%") $
                 "SELECT local_display_name FROM " <> table <> " WHERE user_id = ? AND local_display_name LIKE ?"
@@ -364,4 +374,4 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
         let after = drop p s
             afterWord = dropWhile (/= ' ') $ dropWhile (== ' ') after
          in min (length s) $ p + length after - length afterWord
-    ts' (s', p') = ts {inputString = s', inputPosition = p'}
+    ts' (s', p') = ts {inputString = s', inputPosition = p', autoComplete = acp {acTabPressed = False}}

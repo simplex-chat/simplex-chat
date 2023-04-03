@@ -43,11 +43,14 @@ data TerminalState = TerminalState
     autoComplete :: AutoCompleteState
   }
 
+data ACShowVariants = SVNone | SVSome | SVAll
+  deriving (Eq, Enum)
+
 data AutoCompleteState = ACState
   { acVariants :: [String],
     acInputString :: String,
     acTabPressed :: Bool,
-    acShowAll :: Bool
+    acShowVariants :: ACShowVariants
   }
 
 data LiveMessage = LiveMessage
@@ -96,7 +99,7 @@ mkTermState =
     }
 
 mkAutoComplete :: AutoCompleteState
-mkAutoComplete = ACState {acVariants = [], acInputString = "", acTabPressed = False, acShowAll = False}
+mkAutoComplete = ACState {acVariants = [], acInputString = "", acTabPressed = False, acShowVariants = SVNone}
 
 withTermLock :: MonadTerminal m => ChatTerminal -> m () -> m ()
 withTermLock ChatTerminal {termLock} action = do
@@ -177,12 +180,13 @@ updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessag
     inputHeight :: TerminalState -> Int
     inputHeight ts = length (autoCompletePrefix ts <> inputPrompt ts <> inputString ts) `div` width + 1
     autoCompletePrefix :: TerminalState -> String
-    autoCompletePrefix TerminalState {autoComplete = ac} = case acVariants ac of
-      [] -> ""
-      [_] -> ""
-      vars
-        | acShowAll ac || length vars <= 4 -> "(" <> intercalate ", " vars <> ") "
-        | otherwise -> "(" <> intercalate ", " (take 3 vars) <> "... +" <> show (length vars - 3) <> ") "
+    autoCompletePrefix TerminalState {autoComplete = ac}
+      | length vars <= 1 || sv == SVNone = ""
+      | sv == SVAll || length vars <= 4 = "(" <> intercalate ", " vars <> ") "
+      | otherwise = "(" <> intercalate ", " (take 3 vars) <> "... +" <> show (length vars - 3) <> ") "
+      where
+        sv = acShowVariants ac
+        vars = acVariants ac
     positionRowColumn :: Int -> Int -> Position
     positionRowColumn wid pos =
       let row = pos `div` wid
