@@ -38,6 +38,7 @@ chatFileTests = do
   describe "messages with files" $ do
     describe "send and receive message with file" $ fileTestMatrix2 runTestMessageWithFile
     it "send and receive image" testSendImage
+    it "sender marking chat item deleted during file transfer cancels file" testSenderMarkItemDeletedTransfer
     it "files folder: send and receive image" testFilesFoldersSendImage
     it "files folder: sender deleted file during transfer" testFilesFoldersImageSndDelete
     it "files folder: recipient deleted file during transfer" testFilesFoldersImageRcvDelete
@@ -526,6 +527,36 @@ testSendImage =
       bob <## "alice: contact is deleted"
       fileExists <- doesFileExist "./tests/tmp/test.jpg"
       fileExists `shouldBe` True
+
+testSenderMarkItemDeletedTransfer :: HasCallStack => FilePath -> IO ()
+testSenderMarkItemDeletedTransfer =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test_1MB.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
+      alice <# "@bob hi, sending a file"
+      alice <# "/f @bob ./tests/fixtures/test_1MB.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> hi, sending a file"
+      bob <# "alice> sends file test_1MB.pdf (1017.7 KiB / 1042157 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test_1MB.pdf"
+      concurrently_
+        (bob <## "started receiving file 1 (test_1MB.pdf) from alice")
+        (alice <## "started sending file 1 (test_1MB.pdf) to bob")
+
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " broadcast", id, "message marked deleted")
+
+      alice ##> "/fs 1"
+      alice <## "sending file 1 (test_1MB.pdf) cancelled: bob"
+      alice <## "file transfer cancelled"
+
+      bob <# "alice> [marked deleted] hi, sending a file"
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (test_1MB.pdf) cancelled, received part path: ./tests/tmp/test_1MB.pdf"
+
+      checkPartialTransfer "test_1MB.pdf"
 
 testFilesFoldersSendImage :: HasCallStack => FilePath -> IO ()
 testFilesFoldersSendImage =
