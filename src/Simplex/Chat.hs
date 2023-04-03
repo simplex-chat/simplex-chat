@@ -1401,13 +1401,27 @@ processChatCommand = \case
               _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
             ci <- withStore $ \db -> getChatItemByFileId db user fileId
             pure $ CRSndFileCancelled user ci ftm fts
-        FTRcv ftr@RcvFileTransfer {cancelled, fileStatus}
+        FTRcv ftr@RcvFileTransfer {cancelled, fileStatus, xftpRcvFile}
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
           | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
-          | otherwise -> do
-            cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
-            ci <- withStore $ \db -> getChatItemByFileId db user fileId
-            pure $ CRRcvFileCancelled user ci ftr
+          | otherwise -> case xftpRcvFile of
+            Nothing -> do
+              cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
+              ci <- withStore $ \db -> getChatItemByFileId db user fileId
+              pure $ CRRcvFileCancelled user ci ftr
+            Just XFTPRcvFile {agentRcvFileId} -> do
+              forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
+                fsFilePath <- toFSFilePath filePath
+                removeFile fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+              forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
+                withAgent $ \a -> xftpDeleteRcvFile a (aUserId user) aFileId
+              ci <- withStore $ \db -> do
+                liftIO $ do
+                  updateCIFileStatus db user fileId CIFSRcvInvitation
+                  updateRcvFileStatus db fileId FSNew
+                  updateRcvFileAgentId db fileId Nothing
+                getChatItemByFileId db user fileId
+              pure $ CRRcvFileCancelled user ci ftr
   FileStatus fileId -> withUser $ \user -> do
     fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
     pure $ CRFileTransferStatus user fileStatus
@@ -1808,7 +1822,7 @@ deleteFile' user CIFileInfo {filePath, fileId, fileStatus} sendCancel = do
     delete :: m ()
     delete = withFilesFolder $ \filesFolder ->
       forM_ filePath $ \fPath -> do
-        let fsFilePath = filesFolder <> "/" <> fPath
+        let fsFilePath = filesFolder </> fPath
         removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
           removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
@@ -1925,7 +1939,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     rd <- parseRcvFileDescription fileDescrText
     aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd
     startReceivingFile user fileId
-    withStore' $ \db -> updateRcvFileAgentId db fileId (AgentRcvFileId aFileId)
+    withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
 
 startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
 startReceivingFile user fileId = do

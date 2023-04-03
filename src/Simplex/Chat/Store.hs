@@ -3074,7 +3074,7 @@ getRcvFileDescrByFileId_ db fileId =
     toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete) =
       RcvFileDescr {fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete}
 
-updateRcvFileAgentId :: DB.Connection -> FileTransferId -> AgentRcvFileId -> IO ()
+updateRcvFileAgentId :: DB.Connection -> FileTransferId -> Maybe AgentRcvFileId -> IO ()
 updateRcvFileAgentId db fileId aFileId = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE rcv_files SET agent_rcv_file_id = ?, updated_at = ? WHERE file_id = ?" (aFileId, currentTs, fileId)

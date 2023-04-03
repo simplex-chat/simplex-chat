@@ -10,8 +10,11 @@ import Control.Concurrent.Async (concurrently_)
 import qualified Data.ByteString.Char8 as B
 import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFileConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesFileExist)
+import System.Environment (withArgs)
+import System.IO.Silently (capture_)
 import Test.Hspec
 
 chatFileTests :: SpecWith FilePath
@@ -54,6 +57,7 @@ chatFileTests = do
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     it "continue receiving file after restart" testXFTPContinueRcv
+    it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -1087,6 +1091,41 @@ testXFTPContinueRcv tmp = do
       dest `shouldBe` src
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testXFTPCancelRcvRepeat :: HasCallStack => FilePath -> IO ()
+testXFTPCancelRcvRepeat =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile"]
+
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/tmp/testfile"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file testfile (17.0 MiB / 17825792 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/testfile_1"
+      -- alice <## "started sending file 1 (testfile) to bob" -- TODO "started uploading" ?
+      alice <## "uploaded file 1 (testfile) for bob"
+      bob <## "started receiving file 1 (testfile) from alice"
+
+      bob ##> "/fc 1"
+      bob <## "cancelled receiving file 1 (testfile) from alice"
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "started receiving file 1 (testfile) from alice"
+      bob <## "saving file 1 from alice to ./tests/tmp/testfile_1"
+      bob <## "completed receiving file 1 (testfile) from alice"
+
+      src <- B.readFile "./tests/tmp/testfile"
+      dest <- B.readFile "./tests/tmp/testfile_1"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+xftpCLI :: [String] -> IO [String]
+xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
