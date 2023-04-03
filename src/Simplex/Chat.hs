@@ -4103,7 +4103,7 @@ markDirectCIDeleted user ct@Contact{contactId} ci@(CChatItem _ ChatItem {file}) 
   toCi <- withStore $ \db -> do
     liftIO $ markDirectChatItemDeleted db user ct ci msgId
     getDirectChatItem db user contactId (cchatItemId ci)
-  pure $ CRChatItemDeleted user (ctItem ci) (Just (ctItem toCi)) byUser False
+  pure $ CRChatItemDeleted user (ctItem ci) (Just $ ctItem toCi) byUser False
   where
     ctItem (CChatItem msgDir ci') = AChatItem SCTDirect msgDir (DirectChat ct) ci'
 
@@ -4113,7 +4113,7 @@ markGroupCIDeleted user gInfo@GroupInfo {groupId} ci@(CChatItem _ ChatItem {file
   toCi <- withStore $ \db -> do
     liftIO $ markGroupChatItemDeleted db user gInfo ci msgId byGroupMember_
     getGroupChatItem db user groupId (cchatItemId ci)
-  pure $ CRChatItemDeleted user (gItem ci) (Just (gItem toCi)) byUser False
+  pure $ CRChatItemDeleted user (gItem ci) (Just $ gItem toCi) byUser False
   where
     gItem (CChatItem msgDir ci') = AChatItem SCTGroup msgDir (GroupChat gInfo) ci'
 
