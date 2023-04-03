@@ -3084,9 +3084,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      RcvFileTransfer {fileStatus, cancelled} <- withStore $ \db -> getRcvFileTransfer db user fileId
+      RcvFileTransfer {cancelled} <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless cancelled $ do
-        rfd <- withStore $ \db -> appendRcvFD db userId fileId fileDescr
+        (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
+          rfd <- appendRcvFD db userId fileId fileDescr
+          -- reading second time in the same transaction as appending description
+          -- to prevent race condition with accept
+          ft <- getRcvFileTransfer db user fileId
+          pure (rfd, ft)
         case fileStatus of
           RFSAccepted _ -> receiveViaCompleteFD user fileId rfd
           _ -> pure ()
@@ -4097,7 +4102,7 @@ deleteCIFile user file =
     deleteAgentConnectionsAsync user fileAgentConnIds
 
 markDirectCIDeleted :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> MessageId -> Bool -> m ChatResponse
-markDirectCIDeleted user ct@Contact {contactId} ci@(CChatItem _ ChatItem {file}) msgId byUser = do
+markDirectCIDeleted user ct@Contact{contactId} ci@(CChatItem _ ChatItem {file}) msgId byUser = do
   cancelCIFile user file
   toCi <- withStore $ \db -> do
     liftIO $ markDirectChatItemDeleted db user ct ci msgId
