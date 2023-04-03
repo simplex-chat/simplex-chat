@@ -1801,12 +1801,26 @@ deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m [ConnId]
 deleteFile user fileInfo = deleteFile' user fileInfo False
 
 deleteFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m [ConnId]
-deleteFile' user CIFileInfo {filePath, fileId, fileStatus} sendCancel = do
-  aConnIds <- case fileStatus of
-    Just fStatus -> cancel' fStatus `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
-    Nothing -> pure []
+deleteFile' user ciFileInfo@CIFileInfo {filePath} sendCancel = do
+  aConnIds <- cancelFile' user ciFileInfo sendCancel
   delete `catchError` (toView . CRChatError (Just user))
   pure aConnIds
+  where
+    delete :: m ()
+    delete = withFilesFolder $ \filesFolder ->
+      forM_ filePath $ \fPath -> do
+        let fsFilePath = filesFolder </> fPath
+        removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+          removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+    -- perform an action only if filesFolder is set (i.e. on mobile devices)
+    withFilesFolder :: (FilePath -> m ()) -> m ()
+    withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
+
+cancelFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m [ConnId]
+cancelFile' user CIFileInfo {fileId, fileStatus} sendCancel =
+  case fileStatus of
+    Just fStatus -> cancel' fStatus `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
+    Nothing -> pure []
   where
     cancel' :: ACIFileStatus -> m [ConnId]
     cancel' (AFS dir status) =
@@ -1819,15 +1833,6 @@ deleteFile' user CIFileInfo {filePath, fileId, fileStatus} sendCancel = do
           SMDRcv -> do
             ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
             if cancelled then pure [] else maybeToList <$> cancelRcvFileTransfer user ft
-    delete :: m ()
-    delete = withFilesFolder $ \filesFolder ->
-      forM_ filePath $ \fPath -> do
-        let fsFilePath = filesFolder </> fPath
-        removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-          removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
-    -- perform an action only if filesFolder is set (i.e. on mobile devices)
-    withFilesFolder :: (FilePath -> m ()) -> m ()
-    withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
 
 updateCallItemStatus :: ChatMonad m => User -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
 updateCallItemStatus user ct Call {chatItemId} receivedStatus msgId_ = do
@@ -1887,10 +1892,15 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
     -- XFTP
-    (Just XFTPRcvFile {rcvFileDescription}, _) -> do
+    (Just _xftpRcvFile, _) -> do
       filePath <- getRcvFilePath fileId filePath_ fName False
-      ci <- withStore $ \db -> xftpAcceptRcvFT db user fileId filePath
-      receiveViaCompleteFD user fileId rcvFileDescription
+      (ci, rfd) <- withStore $ \db -> do
+        -- marking file as accepted and reading description in the same transaction
+        -- to prevent race condition with appending description
+        ci <- xftpAcceptRcvFT db user fileId filePath
+        rfd <- getRcvFileDescrByFileId db fileId
+        pure (ci, rfd)
+      receiveViaCompleteFD user fileId rfd
       pure ci
     -- group & direct file protocol
     _ -> do
@@ -3079,13 +3089,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
-        rfd <- appendRcvFD db userId fileId fileDescr
-        ft <- getRcvFileTransfer db user fileId
-        pure (rfd, ft)
-      case fileStatus of
-        RFSAccepted _ -> receiveViaCompleteFD user fileId rfd
-        _ -> pure ()
+      RcvFileTransfer {cancelled} <- withStore $ \db -> getRcvFileTransfer db user fileId
+      unless cancelled $ do
+        (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
+          rfd <- appendRcvFD db userId fileId fileDescr
+          -- reading second time in the same transaction as appending description
+          -- to prevent race condition with accept
+          ft <- getRcvFileTransfer db user fileId
+          pure (rfd, ft)
+        case fileStatus of
+          RFSAccepted _ -> receiveViaCompleteFD user fileId rfd
+          _ -> pure ()
 
     cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
     cancelMessageFile ct _sharedMsgId msgMeta = do
@@ -4093,14 +4107,31 @@ deleteCIFile user file =
     deleteAgentConnectionsAsync user fileAgentConnIds
 
 markDirectCIDeleted :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> MessageId -> Bool -> m ChatResponse
-markDirectCIDeleted user ct ci@(CChatItem msgDir deletedItem) msgId byUser = do
-  toCi <- withStore' $ \db -> markDirectChatItemDeleted db user ct ci msgId
-  pure $ CRChatItemDeleted user (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) (Just toCi) byUser False
+markDirectCIDeleted user ct@Contact {contactId} ci@(CChatItem _ ChatItem {file}) msgId byUser = do
+  cancelCIFile user file
+  toCi <- withStore $ \db -> do
+    liftIO $ markDirectChatItemDeleted db user ct ci msgId
+    getDirectChatItem db user contactId (cchatItemId ci)
+  pure $ CRChatItemDeleted user (ctItem ci) (Just $ ctItem toCi) byUser False
+  where
+    ctItem (CChatItem msgDir ci') = AChatItem SCTDirect msgDir (DirectChat ct) ci'
 
 markGroupCIDeleted :: ChatMonad m => User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> Bool -> Maybe GroupMember -> m ChatResponse
-markGroupCIDeleted user gInfo ci@(CChatItem msgDir deletedItem) msgId byUser byGroupMember_ = do
-  toCi <- withStore' $ \db -> markGroupChatItemDeleted db user gInfo ci msgId byGroupMember_
-  pure $ CRChatItemDeleted user (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) (Just toCi) byUser False
+markGroupCIDeleted user gInfo@GroupInfo {groupId} ci@(CChatItem _ ChatItem {file}) msgId byUser byGroupMember_ = do
+  cancelCIFile user file
+  toCi <- withStore $ \db -> do
+    liftIO $ markGroupChatItemDeleted db user gInfo ci msgId byGroupMember_
+    getGroupChatItem db user groupId (cchatItemId ci)
+  pure $ CRChatItemDeleted user (gItem ci) (Just $ gItem toCi) byUser False
+  where
+    gItem (CChatItem msgDir ci') = AChatItem SCTGroup msgDir (GroupChat gInfo) ci'
+
+cancelCIFile :: (ChatMonad m, MsgDirectionI d) => User -> Maybe (CIFile d) -> m ()
+cancelCIFile user file =
+  forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
+    let fileInfo = CIFileInfo {fileId, fileStatus = Just $ AFS msgDirection fileStatus, filePath}
+    fileAgentConnIds <- cancelFile' user fileInfo True
+    deleteAgentConnectionsAsync user fileAgentConnIds
 
 createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode = do
