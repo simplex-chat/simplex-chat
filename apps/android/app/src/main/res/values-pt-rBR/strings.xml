@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="about_simplex_chat">Sobre o <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="about_simplex">Sobre o SimpleX</string>
+    <string name="about_simplex">Sobre SimpleX</string>
     <string name="chat_item_ttl_day">1 dia</string>
     <string name="chat_item_ttl_week">1 semana</string>
     <string name="chat_item_ttl_month">1 mês</string>
@@ -67,7 +67,7 @@
     <string name="incognito_random_profile_description">Um perfil aleatório será enviado para o seu contato</string>
     <string name="chat_preferences">Preferências de bate-papo</string>
     <string name="network_session_mode_user">perfil de bate-papo</string>
-    <string name="accept_requests">Aceitar pedidos</string>
+    <string name="accept_requests">Aceitar solicitações</string>
     <string name="icon_descr_audio_off">Áudio desligado</string>
     <string name="auto_accept_images">Aceitar imagens automaticamente</string>
     <string name="chat_database_deleted">Banco de dados de bate-papo excluído</string>
@@ -114,7 +114,7 @@
     <string name="allow_direct_messages">Permitir o envio de mensagens diretas aos membros.</string>
     <string name="connect_via_link_or_qr">Conectar via link/ QR Code</string>
     <string name="clear_chat_warning">"Todas as mensagens serão excluídas - isso não pode ser desfeito!  As mensagens serão excluídas APENAS para você."</string>
-    <string name="smp_servers_preset_add">Adicionar servidores predefinidos</string>
+    <string name="smp_servers_preset_add">Adicionar servidores pré-definidos</string>
     <string name="smp_servers_add">Adicionar servidor…</string>
     <string name="create_your_profile">Crie seu perfil</string>
     <string name="icon_descr_context">Ícone de contexto</string>
@@ -156,7 +156,7 @@
     <string name="alert_title_contact_connection_pending">Contato ainda não está conectado!</string>
     <string name="contribute">Contribuir</string>
     <string name="create_profile_button">Criar</string>
-    <string name="network_enable_socks_info">"Acessar os servidores via proxy SOCKS na porta 9050\?  O proxy deve ser iniciado antes de habilitar esta opção."</string>
+    <string name="network_enable_socks_info">Acessar os servidores via proxy SOCKS na porta 9050\? O proxy deve ser iniciado antes de habilitar esta opção.</string>
     <string name="allow_your_contacts_irreversibly_delete">Permitir que seus contatos excluam de forma irreversível as mensagens enviadas.</string>
     <string name="smp_servers_add_to_another_device">Adicionar a outro dispositivo</string>
     <string name="v4_2_group_links_desc">Os administradores podem criar os links para ingressar em grupos.</string>
@@ -449,7 +449,7 @@
     <string name="sending_files_not_yet_supported">o envio de arquivos ainda não é suportado</string>
     <string name="prohibit_sending_voice_messages">Proibir o envio de mensagens de voz.</string>
     <string name="display_name_invited_to_connect">convidado à conectar</string>
-    <string name="description_you_shared_one_time_link_incognito">você compartilhou um link incógnita de uso único</string>
+    <string name="description_you_shared_one_time_link_incognito">você compartilhou um link anônimo de uso único</string>
     <string name="simplex_link_mode">Links SimpleX</string>
     <string name="contact_developers">Por favor, atualize o app e contate os desenvolvedores .</string>
     <string name="error_smp_test_server_auth">O servidor requer autorização para criar filas, verifique a senha</string>
@@ -557,7 +557,7 @@
     <string name="update_network_settings_question">Atualizar configurações de rede\?</string>
     <string name="network_option_ping_count">contagem de PING</string>
     <string name="users_delete_with_connections">Conexões de servidor e perfil</string>
-    <string name="incognito_info_find">Para encontrar o perfil utilizado para uma conexão incógnita, toque no contato ou no nome do grupo no topo do chat.</string>
+    <string name="incognito_info_find">Para encontrar o perfil utilizado para uma conexão anônima, toque no contato ou no nome do grupo no topo do chat.</string>
     <string name="your_preferences">Suas preferências</string>
     <string name="set_group_preferences">Definir preferências de grupo</string>
     <string name="only_you_can_delete_messages">Somente você pode excluir irreversivelmente as mensagens (seu contato pode marcá-las para exclusão).</string>
@@ -576,7 +576,7 @@
     <string name="simplex_link_mode_browser_warning">Abrir o link no navegador pode reduzir a privacidade e a segurança da conexão. Links SimpleX não confiáveis ficarão vermelhos.</string>
     <string name="invalid_connection_link">Link de conexão inválido</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor SMP estejam no formato correto, separados por linhas e não estejam duplicados.</string>
-    <string name="sender_may_have_deleted_the_connection_request">O remetente pode ter excluído o pedido de conexão.</string>
+    <string name="sender_may_have_deleted_the_connection_request">O remetente pode ter excluído a solicitação de conexão.</string>
     <string name="periodic_notifications_disabled">Notificações periódicas estão desativadas!</string>
     <string name="service_notifications_disabled">As notificações instantâneas estão desativadas!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Para preservar sua privacidade, em vez de notificações push, o aplicativo tem um
@@ -639,7 +639,7 @@
     <string name="settings_notifications_mode_title">Serviço de notificação</string>
     <string name="notification_preview_mode_message">Mensagem de texto</string>
     <string name="notification_preview_new_message">nova mensagem</string>
-    <string name="notification_new_contact_request">Novo pedido de contato</string>
+    <string name="notification_new_contact_request">Nova solicitação de contato</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Você será solicitado a autenticar quando iniciar ou voltar ao aplicativo após 30 segundos em segundo plano.</string>
     <string name="reply_verb">Responder</string>
     <string name="auth_log_in_using_credential">Inicie sessão com a sua credencial</string>
@@ -791,7 +791,7 @@
     <string name="group_invitation_item_description">convite para o grupo
 \n<xliff:g id="group_name">
 \n%1$s</xliff:g></string>
-    <string name="alert_title_cant_invite_contacts_descr">Você esta usando um perfil incógnita para este grupo - para evitar compartilhar seu perfil principal, convidar contatos não é permitido</string>
+    <string name="alert_title_cant_invite_contacts_descr">Você esta usando um perfil anônimo para este grupo - para evitar compartilhar seu perfil principal, convidar contatos não é permitido</string>
     <string name="invalid_migration_confirmation">confirmação de migração inválida</string>
     <string name="database_migrations">Migrações: %s</string>
     <string name="mtr_error_no_down_migration">versão do banco de dados é mais recente do que o aplicativo, mas não há migração para: %s</string>
@@ -878,7 +878,8 @@
     <string name="delete_chat_profile">Excluir perfil de chat</string>
     <string name="save_servers_button">Salvar</string>
     <string name="star_on_github">Estrela no GitHub</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Seu contato precisa estar online para completar a conexão. Você pode cancelar esta conexão e remover o contato (e tentar mais tarde com um novo link).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Seu contato precisa estar online para completar a conexão.
+\nVocê pode cancelar esta conexão e remover o contato (e tentar mais tarde com um novo link).</string>
     <string name="app_name"><xliff:g id="appName">
 \nSimpleX</xliff:g></string>
     <string name="only_group_owners_can_enable_voice">Somente o dono do grupo pode ativar mensagens de voz</string>
@@ -922,7 +923,7 @@
     <string name="unknown_database_error_with_info">Erro de banco de dados desconhecido: %s</string>
     <string name="unknown_error">Erro desconhecido</string>
     <string name="group_invitation_tap_to_join">Toque para se juntar</string>
-    <string name="group_invitation_tap_to_join_incognito">Toque para entrar no modo incógnito</string>
+    <string name="group_invitation_tap_to_join_incognito">Toque para entrar no modo anônimo</string>
     <string name="you_are_invited_to_group">Você está convidado para o grupo</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">A atualização das configurações reconectará o cliente a todos os servidores.</string>
     <string name="update_network_settings_confirmation">Atualizar</string>
@@ -999,7 +1000,7 @@
     <string name="v4_5_transport_isolation">Isolamento de transporte</string>
     <string name="v4_5_italian_interface_descr">Obrigado aos usuários – contribua via Weblate!</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Você está convidado para o grupo. Junte-se para se conectar com os membros do grupo.</string>
-    <string name="incognito_info_share">Quando você compartilha um perfil incógnito com alguém, esse perfil será usado para os grupos aos quais essa pessoa o convidar.</string>
+    <string name="incognito_info_share">Quando você compartilha um perfil anônimo com alguém, esse perfil será usado para os grupos aos quais essa pessoa o convidar.</string>
     <string name="button_welcome_message">Mensagem de boas-vindas</string>
     <string name="user_unhide">Mostrar</string>
     <string name="user_unmute">Desmutar</string>
@@ -1091,4 +1092,6 @@
 \n<xliff:g id="appNameFull">
 \nSimpleX</xliff:g>!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">A plataforma de mensagens que protege sua privacidade e segurança.</string>
+    <string name="invite_prohibited_description">Você está tentando convidar um contato com quem compartilhou um perfil anônimo para o grupo no qual está usando seu perfil principal</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Você controla por meio de qual(is) servidor(es) <b>receber</b> as mensagens, seus contatos controlam os servidores que você usa para enviar mensagens.</string>
 </resources>
