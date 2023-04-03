@@ -391,22 +391,28 @@ func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserSMPServers() throws -> ([ServerCfg], [String]) {
+func getUserProtocolServers(_ p: ServerProtocol) throws -> ([ServerCfg], [String]) {
+    if case .smp = p {
+        return try getUserSMPServers()
+    }
+    throw RuntimeError("not supported")
+}
+
+private func getUserSMPServers() throws -> ([ServerCfg], [String]) {
     let userId = try currentUserId("getUserSMPServers")
-    return try userSMPServersResponse(chatSendCmdSync(.apiGetUserSMPServers(userId: userId)))
-}
-
-func getUserSMPServersAsync() async throws -> ([ServerCfg], [String]) {
-    let userId = try currentUserId("getUserSMPServersAsync")
-    return try userSMPServersResponse(await chatSendCmd(.apiGetUserSMPServers(userId: userId)))
-}
-
-private func userSMPServersResponse(_ r: ChatResponse) throws -> ([ServerCfg], [String]) {
+    let r = chatSendCmdSync(.apiGetUserSMPServers(userId: userId))
     if case let .userSMPServers(_, smpServers, presetServers) = r { return (smpServers, presetServers) }
     throw r
 }
 
-func setUserSMPServers(smpServers: [ServerCfg]) async throws {
+func setUserProtocolServers(_ p: ServerProtocol, servers: [ServerCfg]) async throws {
+    if case .smp = p {
+        return try await setUserSMPServers(smpServers: servers)
+    }
+    throw RuntimeError("not supported")
+}
+
+private func setUserSMPServers(smpServers: [ServerCfg]) async throws {
     let userId = try currentUserId("setUserSMPServers")
     try await sendCommandOkResp(.apiSetUserSMPServers(userId: userId, smpServers: smpServers))
 }
@@ -1098,7 +1104,6 @@ func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
 func getUserChatData() throws {
     let m = ChatModel.shared
     m.userAddress = try apiGetUserAddress()
-    (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
     m.chats = chats.map { Chat.init($0) }
@@ -1106,13 +1111,11 @@ func getUserChatData() throws {
 
 private func getUserChatDataAsync() async throws {
     let userAddress = try await apiGetUserAddressAsync()
-    let servers = try await getUserSMPServersAsync()
     let chatItemTTL = try await getChatItemTTLAsync()
     let chats = try await apiGetChatsAsync()
     await MainActor.run {
         let m = ChatModel.shared
         m.userAddress = userAddress
-        (m.userSMPServers, m.presetSMPServers) = servers
         m.chatItemTTL = chatItemTTL
         m.chats = chats.map { Chat.init($0) }
     }

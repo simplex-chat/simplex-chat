@@ -9,13 +9,16 @@
 import SwiftUI
 import SimpleXChat
 
-struct SMPServerView: View {
+struct ProtocolServerView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    let serverProtocol: ServerProtocol
     @Binding var server: ServerCfg
     @State var serverToEdit: ServerCfg
     @State private var showTestFailure = false
     @State private var testing = false
     @State private var testFailure: SMPTestFailure?
+
+    var proto: String { serverProtocol.rawValue.uppercased() }
 
     var body: some View {
         ZStack {
@@ -28,7 +31,7 @@ struct SMPServerView: View {
                 ProgressView().scaleEffect(2)
             }
         }
-        .modifier(BackButton(label: "Your SMP servers") {
+        .modifier(BackButton(label: "Your \(proto) servers") {
             server = serverToEdit
             dismiss()
         })
@@ -169,8 +172,12 @@ func serverHostname(_ srv: String) -> String {
     parseServerAddress(srv)?.hostnames.first ?? srv
 }
 
-struct SMPServerView_Previews: PreviewProvider {
+struct ProtocolServerView_Previews: PreviewProvider {
     static var previews: some View {
-        SMPServerView(server: Binding.constant(ServerCfg.sampleData.custom), serverToEdit: ServerCfg.sampleData.custom)
+        ProtocolServerView(
+            serverProtocol: .smp,
+            server: Binding.constant(ServerCfg.sampleData.custom),
+            serverToEdit: ServerCfg.sampleData.custom
+        )
     }
 }

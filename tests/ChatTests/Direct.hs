@@ -392,7 +392,7 @@ testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/_smp 1", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+      alice #$> ("/_servers 1 smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
       alice #$> ("/smp", id, "smp://1234-w==@smp1.example.im")
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
@@ -415,7 +415,7 @@ testTestSMPServerConnection =
       alice <## "SMP server test passed"
       alice ##> "/smp test smp://LcJU@localhost:7001"
       alice <## "SMP server test failed at Connect, error: BROKER smp://LcJU@localhost:7001 NETWORK"
-      alice <## "Possibly, certificate fingerprint in server address is incorrect"
+      alice <## "Possibly, certificate fingerprint in SMP server address is incorrect"
 
 testAsyncInitiatingOffline :: HasCallStack => FilePath -> IO ()
 testAsyncInitiatingOffline tmp = do

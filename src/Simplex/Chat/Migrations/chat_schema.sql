@@ -547,7 +547,7 @@ CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
 CREATE INDEX idx_snd_files_group_member_id ON snd_files(group_member_id);
 CREATE INDEX idx_snd_files_connection_id ON snd_files(connection_id);
 CREATE INDEX idx_snd_files_file_id ON snd_files(file_id);
-CREATE TABLE IF NOT EXISTS "smp_servers"(
+CREATE TABLE IF NOT EXISTS "protocol_servers"(
   smp_server_id INTEGER PRIMARY KEY,
   host TEXT NOT NULL,
   port TEXT NOT NULL,
@@ -559,9 +559,11 @@ CREATE TABLE IF NOT EXISTS "smp_servers"(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  protocol TEXT NOT NULL DEFAULT 'smp',
+  location TEXT,
   UNIQUE(user_id, host, port)
 );
-CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
+CREATE INDEX idx_smp_servers_user_id ON "protocol_servers"(user_id);
 CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON chat_items(
   item_deleted_by_group_member_id
 );

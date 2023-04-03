@@ -63,10 +63,10 @@
 		5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
 		5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E88279CBCB3000C6508 /* ChatModel.swift */; };
 		5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 5C8F01CC27A6F0D8007D2C8D /* CodeScanner */; };
-		5C93292F29239A170090FFF9 /* SMPServersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C93292E29239A170090FFF9 /* SMPServersView.swift */; };
-		5C93293129239BED0090FFF9 /* SMPServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C93293029239BED0090FFF9 /* SMPServerView.swift */; };
+		5C93292F29239A170090FFF9 /* ProtocolServersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C93292E29239A170090FFF9 /* ProtocolServersView.swift */; };
+		5C93293129239BED0090FFF9 /* ProtocolServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C93293029239BED0090FFF9 /* ProtocolServerView.swift */; };
 		5C93293F2928E0FD0090FFF9 /* AudioRecPlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C93293E2928E0FD0090FFF9 /* AudioRecPlay.swift */; };
-		5C9329412929248A0090FFF9 /* ScanSMPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9329402929248A0090FFF9 /* ScanSMPServer.swift */; };
+		5C9329412929248A0090FFF9 /* ScanProtocolServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9329402929248A0090FFF9 /* ScanProtocolServer.swift */; };
 		5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */; };
 		5C971E2127AEBF8300C8A3CE /* ChatInfoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */; };
 		5C9A5BDB2871E05400A5B906 /* SetNotificationsMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9A5BDA2871E05400A5B906 /* SetNotificationsMode.swift */; };
@@ -307,10 +307,10 @@
 		5C8B41CA29AF41BC00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5C8B41CB29AF44CF00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = "cs.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5C8B41CC29AF44CF00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		5C93292E29239A170090FFF9 /* SMPServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServersView.swift; sourceTree = "<group>"; };
-		5C93293029239BED0090FFF9 /* SMPServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServerView.swift; sourceTree = "<group>"; };
+		5C93292E29239A170090FFF9 /* ProtocolServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolServersView.swift; sourceTree = "<group>"; };
+		5C93293029239BED0090FFF9 /* ProtocolServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolServerView.swift; sourceTree = "<group>"; };
 		5C93293E2928E0FD0090FFF9 /* AudioRecPlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecPlay.swift; sourceTree = "<group>"; };
-		5C9329402929248A0090FFF9 /* ScanSMPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSMPServer.swift; sourceTree = "<group>"; };
+		5C9329402929248A0090FFF9 /* ScanProtocolServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanProtocolServer.swift; sourceTree = "<group>"; };
 		5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoView.swift; sourceTree = "<group>"; };
 		5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoImage.swift; sourceTree = "<group>"; };
 		5C9A5BDA2871E05400A5B906 /* SetNotificationsMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetNotificationsMode.swift; sourceTree = "<group>"; };
@@ -685,9 +685,9 @@
 				5CB924E027A867BA00ACCCDD /* UserProfile.swift */,
 				5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */,
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
-				5C93292E29239A170090FFF9 /* SMPServersView.swift */,
-				5C93293029239BED0090FFF9 /* SMPServerView.swift */,
-				5C9329402929248A0090FFF9 /* ScanSMPServer.swift */,
+				5C93292E29239A170090FFF9 /* ProtocolServersView.swift */,
+				5C93293029239BED0090FFF9 /* ProtocolServerView.swift */,
+				5C9329402929248A0090FFF9 /* ScanProtocolServer.swift */,
 				5CB2084E28DA4B4800D024EC /* RTCServers.swift */,
 				5C3F1D592844B4DE00EC8A82 /* ExperimentalFeaturesView.swift */,
 				64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */,
@@ -1022,7 +1022,7 @@
 				5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */,
 				5C3F1D58284363C400EC8A82 /* PrivacySettings.swift in Sources */,
 				5C55A923283CEDE600C4E99E /* SoundPlayer.swift in Sources */,
-				5C93292F29239A170090FFF9 /* SMPServersView.swift in Sources */,
+				5C93292F29239A170090FFF9 /* ProtocolServersView.swift in Sources */,
 				5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */,
 				5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */,
 				5C65DAF929D0CC20003CEE45 /* DeveloperView.swift in Sources */,
@@ -1032,7 +1032,7 @@
 				5C13730B28156D2700F43030 /* ContactConnectionView.swift in Sources */,
 				644EFFE0292CFD7F00525D5B /* CIVoiceView.swift in Sources */,
 				6432857C2925443C00FBE5C8 /* GroupPreferencesView.swift in Sources */,
-				5C93293129239BED0090FFF9 /* SMPServerView.swift in Sources */,
+				5C93293129239BED0090FFF9 /* ProtocolServerView.swift in Sources */,
 				5C9CC7AD28C55D7800BEF955 /* DatabaseEncryptionView.swift in Sources */,
 				5CBD285A295711D700EC2CF4 /* ImageUtils.swift in Sources */,
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
@@ -1122,7 +1122,7 @@
 				6440CA00288857A10062C672 /* CIEventView.swift in Sources */,
 				5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */,
 				5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */,
-				5C9329412929248A0090FFF9 /* ScanSMPServer.swift in Sources */,
+				5C9329412929248A0090FFF9 /* ScanProtocolServer.swift in Sources */,
 				64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */,
 				5C93293F2928E0FD0090FFF9 /* AudioRecPlay.swift in Sources */,
 				5C029EA82837DBB3004A9677 /* CICallItemView.swift in Sources */,
