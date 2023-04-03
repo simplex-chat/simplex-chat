@@ -54,6 +54,7 @@ chatFileTests = do
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "file transfer over XFTP" $ do
     it "send and receive file" testXFTPFileTransfer
+    it "send and receive file, accepting after upload" testXFTPAcceptAfterUpload
     it "send and receive file in group" testXFTPGroupFileTransfer
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
@@ -981,6 +982,32 @@ testXFTPFileTransfer =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
+testXFTPAcceptAfterUpload :: HasCallStack => FilePath -> IO ()
+testXFTPAcceptAfterUpload =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+      alice <## "uploaded file 1 (test.pdf) for bob"
+
+      threadDelay 100000
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "started receiving file 1 (test.pdf) from alice"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
 testXFTPGroupFileTransfer :: HasCallStack => FilePath -> IO ()
 testXFTPGroupFileTransfer =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
@@ -1145,8 +1172,10 @@ testXFTPCancelRcvRepeat =
       bob <## "cancelled receiving file 1 (testfile) from alice"
 
       bob ##> "/fr 1 ./tests/tmp"
-      bob <## "started receiving file 1 (testfile) from alice"
-      bob <## "saving file 1 from alice to ./tests/tmp/testfile_1"
+      bob
+        <### [ "saving file 1 from alice to ./tests/tmp/testfile_1",
+               "started receiving file 1 (testfile) from alice"
+             ]
       bob <## "completed receiving file 1 (testfile) from alice"
 
       src <- B.readFile "./tests/tmp/testfile"
