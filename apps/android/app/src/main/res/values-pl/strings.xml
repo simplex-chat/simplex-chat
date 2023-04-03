@@ -397,7 +397,7 @@
     <string name="display_name">Wyświetlana nazwa</string>
     <string name="display_name_cannot_contain_whitespace">Wyświetlana nazwa nie może zawierać spacji.</string>
     <string name="error_saving_user_password">Błąd zapisu hasła użytkownika</string>
-    <string name="hidden_profile_password">Ukryte hasło profilu</string>
+    <string name="hidden_profile_password">Hasło ukrytego profilu</string>
     <string name="password_to_show">Hasło do wyświetlenia</string>
     <string name="save_profile_password">Zapisz hasło profilu</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Platforma komunikacyjna i aplikacyjna chroniąca Twoją prywatność i bezpieczeństwo.</string>
@@ -451,7 +451,7 @@
     <string name="onboarding_notifications_mode_periodic">Okresowo</string>
     <string name="onboarding_notifications_mode_title">Prywatne powiadomienia</string>
     <string name="read_more_in_github_with_link">Przeczytaj więcej w naszym <font color="#0088ff">repozytorium GitHub</font>.</string>
-    <string name="read_more_in_github">Przeczytaj więcej w naszym repozytorium GitHub.</string>
+    <string name="read_more_in_github">Przeczytaj więcej na naszym repozytorium GitHub.</string>
     <string name="use_chat">Użyj czatu</string>
     <string name="onboarding_notifications_mode_off">Gdy aplikacja jest uruchomiona</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">Kontrolujesz przez który serwer(y) <b>odbierać</b> wiadomości, Twoje kontakty - serwery, których używasz do wysyłania im wiadomości.</string>
@@ -624,7 +624,7 @@
     <string name="chat_archive_section">ARCHIWUM CZATU</string>
     <string name="chat_is_stopped_indication">Czat jest zatrzymany</string>
     <string name="confirm_database_upgrades">Potwierdź aktualizacje bazy danych</string>
-    <string name="database_downgrade">"Obniż  wersję bazy danych"</string>
+    <string name="database_downgrade">Obniż wersję bazy danych</string>
     <string name="database_upgrade">Aktualizacja bazy danych</string>
     <string name="mtr_error_no_down_migration">wersja bazy danych jest nowsza od aplikacji, ale nie ma migracji w dół dla: %s</string>
     <string name="delete_archive">Usuń archiwum</string>
