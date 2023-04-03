@@ -255,13 +255,13 @@
     <string name="delete_pending_connection__question">Excluir conexão pendente\?</string>
     <string name="simplex_link_mode_description">Descrição</string>
     <string name="smp_servers_delete_server">Excluir servidor</string>
-    <string name="group_member_status_intro_invitation">conectando (introduction invitation)</string>
+    <string name="group_member_status_intro_invitation">conectando (convite de introdução)</string>
     <string name="connection_timeout">Tempo de conexão esgotado</string>
     <string name="delete_member_message__question">Excluir mensagem do membro\?</string>
     <string name="smp_server_test_delete_queue">Excluir fila</string>
     <string name="settings_section_title_device">DISPOSITIVO</string>
     <string name="settings_developer_tools">Ferramentas de desenvolvimento</string>
-    <string name="group_member_status_introduced">conectando (introduced)</string>
+    <string name="group_member_status_introduced">conectando (introduzido)</string>
     <string name="color_primary">Realçar</string>
     <string name="error_removing_member">Erro ao remover membro</string>
     <string name="error_changing_role">Erro ao alterar regra</string>
@@ -688,7 +688,7 @@
     <string name="call_connection_peer_to_peer">ponto-a-ponto</string>
     <string name="icon_descr_call_pending_sent">Chamada pendente</string>
     <string name="new_database_archive">Novo arquivo de banco de dados</string>
-    <string name="notifications_will_be_hidden">Notificações serão entregues somente até o app parar!</string>
+    <string name="notifications_will_be_hidden">As notificações serão entregues até o aplicativo parar!</string>
     <string name="remove_passphrase_from_keychain">Remover senha da Keystore\?</string>
     <string name="new_passphrase">Nova senha…</string>
     <string name="database_restore_error">Erro na restauração do banco de dados</string>
@@ -864,7 +864,7 @@
     <string name="error_saving_user_password">Erro ao salvar a senha do usuário</string>
     <string name="hide_profile">Ocultar perfil</string>
     <string name="callstate_received_confirmation">confirmação recebida…</string>
-    <string name="relay_server_protects_ip">O servidor de retransmissão protege seu endereço IP, mas pode observar a duração da chamada.</string>
+    <string name="relay_server_protects_ip">O servidor relay protege seu endereço IP, mas pode observar a duração da chamada.</string>
     <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
     <string name="snd_conn_event_switch_queue_phase_completed">você alterou o endereço</string>
     <string name="database_upgrade">Atualização do banco de dados</string>
@@ -1004,7 +1004,7 @@
     <string name="user_unhide">Mostrar</string>
     <string name="user_unmute">Desmutar</string>
     <string name="v4_3_voice_messages">Mensagens de voz</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Você pode <font color="#0088ff">se conectar ao <xliff:g id="appNameFull">SimpleX</xliff:g> desenvolvedores para fazer qualquer pergunta e receber atualizações</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Você pode <font color="#0088ff">se conectar aos desenvolvedores do<xliff:g id="appNameFull">SimpleX</xliff:g> para fazer qualquer pergunta e receber atualizações</font>.</string>
     <string name="connection_you_accepted_will_be_cancelled">A conexão que você aceitou será cancelada!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">O contato com o qual você compartilhou este link NÃO será capaz de se conectar!</string>
     <string name="icon_descr_simplex_team">Equipe <xliff:g id="appName">SimpleX</xliff:g></string>
@@ -1051,4 +1051,12 @@
 \n%1$s</xliff:g> ).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Tentando se conectar ao servidor utilizado para receber mensagens deste contato.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Você está conectado ao servidor usado para receber mensagens desse contato.</string>
+    <string name="smp_servers_your_server">Seu servidor</string>
+    <string name="chat_lock">Bloqueio SimpleX</string>
+    <string name="error_smp_test_certificate">Possivelmente, a impressão digital do certificado no endereço do servidor está incorreta</string>
+    <string name="you_sent_group_invitation">Você enviou convite de grupo</string>
+    <string name="incognito_random_profile">Seu perfil aleatório</string>
+    <string name="auth_simplex_lock_turned_on">Bloqueio SimpleX ativado</string>
+    <string name="your_simplex_contact_address">Seu endereço de contato
+\n<xliff:g id="appName">SimpleX</xliff:g></string>
 </resources>
