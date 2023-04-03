@@ -1423,8 +1423,9 @@
         <target>Messaggio crittografato: errore del database</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database migration error" xml:space="preserve" approved="no">
         <source>Encrypted message: database migration error</source>
+        <target state="translated">Messaggio crittografato: errore di migrazione del database</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
@@ -1682,8 +1683,9 @@
         <target>Esci senza salvare</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Experimental" xml:space="preserve">
+      <trans-unit id="Experimental" xml:space="preserve" approved="no">
         <source>Experimental</source>
+        <target state="translated">Sperimentale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -2343,8 +2345,9 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>La migrazione è completata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
+      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
         <source>Migrations: %@</source>
+        <target state="translated">Migrazioni: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -3081,8 +3084,9 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Invia messaggio diretto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send files via XFTP" xml:space="preserve">
+      <trans-unit id="Send files via XFTP" xml:space="preserve" approved="no">
         <source>Send files via XFTP</source>
+        <target state="translated">Invia file tramite XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
@@ -4400,8 +4404,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>creatore</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
+        <target state="translated">la versione del database è più recente di quella dell'app, ma nessuna migrazione downgrade per: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -4419,8 +4424,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>gruppo eliminato</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
+      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve" approved="no">
         <source>different migration in the app/database: %@ / %@</source>
+        <target state="translated">migrazione diversa nell'app/nel database: %@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">
