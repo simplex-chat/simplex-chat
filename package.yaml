@@ -107,6 +107,7 @@ tests:
       - deepseq == 1.4.*
       - hspec == 2.7.*
       - network == 3.1.*
+      - silently == 1.2.*
       - stm == 2.5.*
     ghc-options:
       - -threaded
