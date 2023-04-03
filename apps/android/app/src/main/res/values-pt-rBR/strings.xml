@@ -884,4 +884,7 @@
     <string name="only_group_owners_can_enable_voice">Somente o dono do grupo pode ativar mensagens de voz</string>
     <string name="description_you_shared_one_time_link">você compartilhou um link de uso único</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Você será conectado quando sua solicitação de conexão for aceita, aguarde ou verifique mais tarde!</string>
+    <string name="settings_section_title_settings">CONFIGURAÇÕES</string>
+    <string name="v4_6_group_welcome_message_descr">Defina a mensagem mostrada aos novos membros!</string>
+    <string name="icon_descr_settings">Configurações</string>
 </resources>
