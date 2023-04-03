@@ -482,7 +482,7 @@
     <string name="invalid_QR_code">Código QR inválido</string>
     <string name="icon_descr_more_button">Mais</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Você será conectado ao grupo quando o dispositivo do host do grupo estiver online, por favor aguarde ou verifique mais tarde!</string>
-    <string name="this_string_is_not_a_connection_link">Esta string não é um link de conexão!</string>
+    <string name="this_string_is_not_a_connection_link">Essa string não é um link de conexão!</string>
     <string name="network_use_onion_hosts_prefer">Quando disponível</string>
     <string name="app_version_code">Build do app: %s</string>
     <string name="save_and_notify_contact">Salvar e notificar contato</string>
@@ -794,7 +794,7 @@
     <string name="alert_title_cant_invite_contacts_descr">Você esta usando um perfil incógnita para este grupo - para evitar compartilhar seu perfil principal, convidar contatos não é permitido</string>
     <string name="invalid_migration_confirmation">confirmação de migração inválida</string>
     <string name="database_migrations">Migrações: %s</string>
-    <string name="mtr_error_no_down_migration">a versão do banco de dados é mais recente que o aplicativo, mas não há migração para: %s</string>
+    <string name="mtr_error_no_down_migration">versão do banco de dados é mais recente do que o aplicativo, mas não há migração para: %s</string>
     <string name="you_joined_this_group">Você entrou neste grupo</string>
     <string name="snd_group_event_user_left">você saiu</string>
     <string name="whats_new">Novidades</string>
@@ -992,7 +992,7 @@
     <string name="icon_descr_speaker_off">Alto-falante desligado</string>
     <string name="you_can_hide_or_mute_user_profile">Você pode ocultar ou mutar um perfil de usuário - segure-o para abrir o menu.</string>
     <string name="v4_6_chinese_spanish_interface_descr">Obrigado aos usuários – contribua via Weblate!</string>
-    <string name="skip_inviting_button">Pular membros convidados</string>
+    <string name="skip_inviting_button">Ignorar o convite aos membros</string>
     <string name="v4_2_security_assessment_desc">A segurança do SimpleX foi auditada pelo Trail of Bits.</string>
     <string name="v4_3_irreversible_message_deletion_desc">Seus contatos podem permitir a exclusão completa da mensagem.</string>
     <string name="v4_4_french_interface_descr">Obrigado aos usuários – contribua via Weblate!</string>
@@ -1059,4 +1059,36 @@
     <string name="auth_simplex_lock_turned_on">Bloqueio SimpleX ativado</string>
     <string name="your_simplex_contact_address">Seu endereço de contato
 \n<xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="network_options_reset_to_defaults">Redefinir para os padrões</string>
+    <string name="image_descr_link_preview">imagem de pré-visualização do link</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger suas informações, ative o bloqueio SimpleX.
+\nVocê será solicitado a completar a autenticação antes que este recurso seja ativado.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocolo de código aberto – qualquer um pode executar os servidores.</string>
+    <string name="theme_light">Claro</string>
+    <string name="chat_preferences_contact_allows">O contato permite</string>
+    <string name="chat_preferences_on">ativado</string>
+    <string name="simplex_link_contact">Endereço de contato</string>
+    <string name="simplex_link_group">Link do grupo</string>
+    <string name="simplex_link_invitation">Convite único</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 móvel: toque em <b>Abrir no aplicativo móvel</b> e toque em <b>Conectar</b> no aplicativo.</string>
+    <string name="ntf_channel_calls">Chamadas</string>
+    <string name="ntf_channel_messages">Mensagens</string>
+    <string name="la_notice_title_simplex_lock">Bloqueio SimpleX</string>
+    <string name="markdown_help">Ajuda Markdown</string>
+    <string name="onboarding_notifications_mode_service">Instantânea</string>
+    <string name="open_simplex_chat_to_accept_call">Abra
+\n<xliff:g id="appNameFull">
+\no chat do SimpleX</xliff:g> para aceitar a chamada</string>
+    <string name="call_connection_via_relay">via relay</string>
+    <string name="feature_off">desativado</string>
+    <string name="downgrade_and_open_chat">Desatualizar e abrir o chat</string>
+    <string name="chat_preferences_off">desligado</string>
+    <string name="settings_section_title_support">APOIE SIMPLEX</string>
+    <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
+    <string name="confirm_database_upgrades">Confirmar atualizações do banco de dados</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Perfis de usuário, contatos, grupos e mensagens enviadas com <b>criptografia de ponta-a-ponta</b> são armazenados somente no seu dispositivo.</string>
+    <string name="thank_you_for_installing_simplex">Obrigado por instalar
+\n<xliff:g id="appNameFull">
+\nSimpleX</xliff:g>!</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">A plataforma de mensagens que protege sua privacidade e segurança.</string>
 </resources>
