@@ -2909,8 +2909,9 @@ Będziemy dodawać redundancję serwerów, aby zapobiec utracie wiadomości.</ta
         <target state="translated">Uruchom ponownie aplikację, aby użyć zaimportowanej bazy danych czatu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Restore" xml:space="preserve">
+      <trans-unit id="Restore" xml:space="preserve" approved="no">
         <source>Restore</source>
+        <target state="translated">Przywróć</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restore database backup" xml:space="preserve">
