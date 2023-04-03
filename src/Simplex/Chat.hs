@@ -1892,10 +1892,15 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
     -- XFTP
-    (Just XFTPRcvFile {rcvFileDescription}, _) -> do
+    (Just _xftpRcvFile, _) -> do
       filePath <- getRcvFilePath fileId filePath_ fName False
-      ci <- withStore $ \db -> xftpAcceptRcvFT db user fileId filePath
-      receiveViaCompleteFD user fileId rcvFileDescription
+      (ci, rfd) <- withStore $ \db -> do
+        -- marking file as accepted and reading description in the same transaction
+        -- to prevent race condition with appending description
+        ci <- xftpAcceptRcvFT db user fileId filePath
+        rfd <- getRcvFileDescrByFileId db fileId
+        pure (ci, rfd)
+      receiveViaCompleteFD user fileId rfd
       pure ci
     -- group & direct file protocol
     _ -> do
@@ -4102,7 +4107,7 @@ deleteCIFile user file =
     deleteAgentConnectionsAsync user fileAgentConnIds
 
 markDirectCIDeleted :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> MessageId -> Bool -> m ChatResponse
-markDirectCIDeleted user ct@Contact{contactId} ci@(CChatItem _ ChatItem {file}) msgId byUser = do
+markDirectCIDeleted user ct@Contact {contactId} ci@(CChatItem _ ChatItem {file}) msgId byUser = do
   cancelCIFile user file
   toCi <- withStore $ \db -> do
     liftIO $ markDirectChatItemDeleted db user ct ci msgId
