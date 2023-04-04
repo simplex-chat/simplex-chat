@@ -44,7 +44,7 @@ struct DeveloperView: View {
 
                 Section {
                     settingsRow("arrow.up.doc") {
-                        Toggle("Send files via XFTP", isOn: $xftpSendEnabled)
+                        Toggle("Send videos and files via XFTP", isOn: $xftpSendEnabled)
                             .onChange(of: xftpSendEnabled) { _ in
                                 do {
                                     try setXFTPConfig(getXFTPCfg())

@@ -28,6 +28,7 @@ struct LibraryImagePicker: View {
 
 struct LibraryMediaListPicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
+    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: groupDefaults) var xftpSendEnabled = false
     @Binding var media: [UploadContent]
     var selectionLimit: Int
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
@@ -56,7 +57,14 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
                 let p = result.itemProvider
                 if p.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
                     p.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
-                        self.loadVideo(url: url, error: error)
+                        if let url = url {
+                            var tempUrl = URL(fileURLWithPath: getTempFilesDirectory().path + "/" + generateNewFileName("video", url.pathExtension))
+                            let res = try? FileManager.default.copyItem(at: url, to: tempUrl)
+                            if res != nil {
+                                ChatModel.shared.filesToDelete.insert(tempUrl)
+                                self.loadVideo(url: tempUrl, error: error)
+                            }
+                        }
                     }
                 } else if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
                     p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
@@ -124,7 +132,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
-        let allowVideoAttachment = true
+        let allowVideoAttachment = xftpSendEnabled
         if allowVideoAttachment {
             config.filter = .any(of: [.images, .videos])
         } else {

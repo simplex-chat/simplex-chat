@@ -628,7 +628,7 @@ struct ComposeView: View {
                 }
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
-                chatModel.filesToDelete.removeAll { $0 == recordingFileName }
+                chatModel.filesToDelete.remove(getAppFilePath(recordingFileName))
                 sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
@@ -698,7 +698,7 @@ struct ComposeView: View {
 
         func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false) async -> ChatItem? {
             let (image, data) = imageData
-            if case let .video(_, url, duration) = data, let savedFile = saveFileFromURL(url) {
+            if case let .video(_, url, duration) = data, let savedFile = saveFileFromURLWithoutLoad(url) {
                 return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live)
             }
             return nil
@@ -845,7 +845,7 @@ struct ComposeView: View {
         if case .recording = composeState.voiceMessageRecordingState {
             finishVoiceMessageRecording()
             if let fileName = composeState.voiceMessageRecordingFileName {
-                chatModel.filesToDelete.append(fileName)
+                chatModel.filesToDelete.insert(getAppFilePath(fileName))
             }
         }
         chatModel.draft = composeState

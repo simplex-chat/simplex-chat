@@ -184,6 +184,14 @@ public func saveFile(_ data: Data, _ fileName: String) -> String? {
     }
 }
 
+public func removeFile(_ url: URL) {
+    do {
+        try FileManager.default.removeItem(atPath: url.path)
+    } catch {
+        logger.error("FileUtils.removeFile error: \(error.localizedDescription)")
+    }
+}
+
 public func removeFile(_ fileName: String) {
     do {
         try FileManager.default.removeItem(atPath: getAppFilePath(fileName).path)

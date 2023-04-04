@@ -61,7 +61,7 @@ final class ChatModel: ObservableObject {
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
-    var filesToDelete: [String] = []
+    var filesToDelete: Set<URL> = []
 
     static let shared = ChatModel()
 

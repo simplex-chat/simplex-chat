@@ -23,6 +23,7 @@ struct FramedItemView: View {
     @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
     @State var imgWidth: CGFloat? = nil
+    @State var videoWidth: CGFloat? = nil
     @State var metaColor = Color.secondary
     @State var showFullScreenImage = false
     
@@ -104,7 +105,7 @@ struct FramedItemView: View {
                     ciMsgContentView (chatItem, showMember)
                 }
             case let .video(text, image, duration):
-                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
+                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, videoWidth: $videoWidth, scrollProxy: scrollProxy)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -165,8 +166,8 @@ struct FramedItemView: View {
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
         .background(chatItemFrameContextColor(chatItem, colorScheme))
-        if let imgWidth = imgWidth, imgWidth < maxWidth {
-            v.frame(maxWidth: imgWidth, alignment: .leading)
+        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
             v
         }
@@ -216,9 +217,9 @@ struct FramedItemView: View {
             .overlay(DetermineWidth())
             .frame(minWidth: msgWidth, alignment: .leading)
             .background(chatItemFrameContextColor(chatItem, colorScheme))
-        
-        if let imgWidth = imgWidth, imgWidth < maxWidth {
-            v.frame(maxWidth: imgWidth, alignment: .leading)
+
+        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
             v
         }
@@ -269,9 +270,9 @@ struct FramedItemView: View {
         .overlay(DetermineWidth())
         .frame(minWidth: 0, alignment: .leading)
         .textSelection(.enabled)
-        
-        if let imgWidth = imgWidth, imgWidth < maxWidth {
-            v.frame(maxWidth: imgWidth, alignment: .leading)
+
+        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
             v
         }
@@ -282,6 +283,16 @@ struct FramedItemView: View {
             .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem, showMember)
+        }
+    }
+
+    private func maxMediaWidth() -> CGFloat? {
+        if let imgWidth = imgWidth, let videoWidth = videoWidth {
+            return imgWidth > videoWidth ? imgWidth : videoWidth
+        } else if let imgWidth = imgWidth {
+            return imgWidth
+        } else {
+            return videoWidth
         }
     }
 }

@@ -40,7 +40,10 @@ class AudioRecorder {
                 AVEncoderBitRateKey: 12000,
                 AVNumberOfChannelsKey: 1
             ]
-            audioRecorder = try AVAudioRecorder(url: getAppFilePath(fileName), settings: settings)
+            let url = getAppFilePath(fileName)
+            NotificationCenter.default.post(name: .MediaStartedPlaying, object: nil, userInfo: ["url": url])
+            addObserver(url)
+            audioRecorder = try AVAudioRecorder(url: url, settings: settings)
             audioRecorder?.record(forDuration: MAX_VOICE_MESSAGE_LENGTH)
 
             await MainActor.run {
@@ -69,6 +72,7 @@ class AudioRecorder {
             timer.invalidate()
         }
         recordingTimer = nil
+        removeObserver()
     }
 
     private func checkPermission() async -> Bool {
@@ -87,6 +91,17 @@ class AudioRecorder {
         @unknown default: return false
         }
     }
+
+    private func addObserver(_ url: URL) {
+        NotificationCenter.default.addObserver(forName: .MediaStartedPlaying, object: nil, queue: .main) { ntf in
+            self.stop()
+            self.onFinishRecording?()
+        }
+    }
+
+    private func removeObserver() {
+        NotificationCenter.default.removeObserver(self)
+    }
 }
 
 class AudioPlayer: NSObject, AVAudioPlayerDelegate {
@@ -102,10 +117,13 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     }
 
     func start(fileName: String) {
-        audioPlayer = try? AVAudioPlayer(contentsOf: getAppFilePath(fileName))
+        let url = getAppFilePath(fileName)
+        audioPlayer = try? AVAudioPlayer(contentsOf: url)
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
         audioPlayer?.play()
+        NotificationCenter.default.post(name: .MediaStartedPlaying, object: nil, userInfo: ["url": url])
+        addObserver(url)
 
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             if self.audioPlayer?.isPlaying ?? false {
@@ -121,6 +139,9 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
 
     func play() {
         audioPlayer?.play()
+        if let url = audioPlayer?.url {
+            NotificationCenter.default.post(name: .MediaStartedPlaying, object: nil, userInfo: ["url": url])
+        }
     }
 
     func stop() {
@@ -132,10 +153,25 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
             timer.invalidate()
         }
         playbackTimer = nil
+        removeObserver()
     }
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         stop()
         self.onFinishPlayback?()
+    }
+
+    private func addObserver(_ url: URL) {
+        NotificationCenter.default.addObserver(forName: .MediaStartedPlaying, object: nil, queue: .main) { ntf in
+            if let u = ntf.userInfo?.first { $0.key as? String == "url" }?.value as? URL, u != url {
+                // Other player started to play
+                self.stop()
+                self.onFinishPlayback?()
+            }
+        }
+    }
+
+    private func removeObserver() {
+        NotificationCenter.default.removeObserver(self)
     }
 }

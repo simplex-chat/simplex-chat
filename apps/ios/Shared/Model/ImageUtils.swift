@@ -176,6 +176,20 @@ func saveFileFromURL(_ url: URL) -> String? {
     return savedFile
 }
 
+func saveFileFromURLWithoutLoad(_ url: URL) -> String? {
+    let savedFile: String?
+    do {
+        let fileName = uniqueCombine(url.lastPathComponent)
+        try FileManager.default.moveItem(at: url, to: getAppFilePath(fileName))
+        ChatModel.shared.filesToDelete.remove(url)
+        savedFile = fileName
+    } catch {
+        logger.error("FileUtils.saveFileFromURLWithoutLoad error: \(error.localizedDescription)")
+        savedFile = nil
+    }
+    return savedFile
+}
+
 func generateNewFileName(_ prefix: String, _ ext: String) -> String {
     uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)")
 }
