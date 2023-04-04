@@ -29,6 +29,9 @@ struct VideoPlayerView: UIViewRepresentable {
         let controller = AVPlayerViewController()
         controller.player = player
         controller.showsPlaybackControls = showControls
+        if #available(iOS 16.0, *) {
+            controller.speeds = []
+        }
         context.coordinator.controller = controller
         NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { _ in
             player.seek(to: CMTime.zero)
