@@ -1777,7 +1777,7 @@ startExpireCIThread user@User {userId} = do
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           ttl <- withStore' (`getChatItemTTL` user)
           forM_ ttl $ \t -> expireChatItems user t False
-        threadDelay interval
+        liftIO $ threadDelay' interval
 
 setExpireCIFlag :: ChatMonad' m => User -> Bool -> m ()
 setExpireCIFlag User {userId} b = do
