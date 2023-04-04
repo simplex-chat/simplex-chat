@@ -1,5 +1,5 @@
 # Updating nix package config
-realToFrac
+
 1. Install `nix`, `gawk` and `jq`.
 
 2. Start nix-shell from repo root:
