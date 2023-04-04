@@ -402,7 +402,8 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processNotificationIntent: OpenChatAction $chatId")
       if (chatId != null) {
         withBGApi {
-          if (userId != null && userId != chatModel.currentUser.value?.userId) {
+          awaitChatStartedIfNeeded(chatModel)
+          if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
             chatModel.controller.changeActiveUser(userId, null)
           }
           val cInfo = chatModel.getChat(chatId)?.chatInfo
@@ -414,7 +415,8 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
     NtfManager.ShowChatsAction -> {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
       withBGApi {
-        if (userId != null && userId != chatModel.currentUser.value?.userId) {
+        awaitChatStartedIfNeeded(chatModel)
+        if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
           chatModel.controller.changeActiveUser(userId, null)
         }
         chatModel.chatId.value = null
@@ -505,6 +507,20 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
     }
   }
 }
+
+suspend fun awaitChatStartedIfNeeded(chatModel: ChatModel, timeout: Long = 30_000) {
+  // Still decrypting database
+  if (chatModel.chatRunning.value == null) {
+    val step = 50L
+    for (i in 0..(timeout / step)) {
+      if (chatModel.chatRunning.value == true || chatModel.onboardingStage.value == OnboardingStage.Step1_SimpleXInfo) {
+        break
+      }
+      delay(step)
+    }
+  }
+}
+
 //fun testJson() {
 //  val str: String = """
 //  """.trimIndent()
