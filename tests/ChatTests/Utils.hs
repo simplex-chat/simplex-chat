@@ -22,6 +22,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
 import Simplex.Messaging.Encoding.String
 import System.Directory (doesFileExist)
+import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 import System.Info (os)
 import Test.Hspec
@@ -45,7 +46,9 @@ xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = if os == "darwin" then xit else it
+xit'' d t = do
+  ci <- runIO $ lookupEnv "ci"
+  (if os == "darwin" && ci == Just "true" then xit else it) d t
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
