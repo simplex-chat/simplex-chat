@@ -90,27 +90,25 @@ struct CIImageView: View {
                 case .xftp: progressView()
                 case .smp: EmptyView()
                 }
-            case .sndTransfer:
-                progressView()
-            case .sndComplete:
-                Image(systemName: "checkmark")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 10, height: 10)
-                    .foregroundColor(.white)
-                    .padding(13)
-            case .rcvAccepted:
-                Image(systemName: "ellipsis")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 14, height: 14)
-                    .foregroundColor(.white)
-                    .padding(11)
-            case .rcvTransfer:
-                progressView()
+            case .sndTransfer: progressView()
+            case .sndComplete: fileIcon("checkmark", 10, 13)
+            case .sndCancelled: fileIcon("xmark", 10, 13)
+            case .rcvInvitation: fileIcon("arrow.down", 10, 13)
+            case .rcvAccepted: fileIcon("ellipsis", 14, 11)
+            case .rcvTransfer: progressView()
+            case .rcvCancelled: fileIcon("xmark", 10, 13)
             default: EmptyView()
             }
         }
+    }
+
+    private func fileIcon(_ icon: String, _ size: CGFloat, _ padding: CGFloat) -> some View {
+        Image(systemName: icon)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size, height: size)
+            .foregroundColor(.white)
+            .padding(padding)
     }
 
     private func progressView() -> some View {

@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
@@ -133,6 +134,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       linkMode = chatModel.simplexLinkMode.value,
+      allowVideoAttachment = chatModel.controller.appPrefs.xftpSendEnabled.get(),
       chatModelIncognito = chatModel.incognito.value,
       back = {
         hideKeyboard(view)
@@ -306,6 +308,7 @@ fun ChatLayout(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
+  allowVideoAttachment: Boolean,
   chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
@@ -337,6 +340,7 @@ fun ChatLayout(
         sheetContent = {
           ChooseAttachmentView(
             attachmentOption,
+            allowVideoAttachment,
             hide = { scope.launch { attachmentBottomSheetState.hide() } }
           )
         },
@@ -578,6 +582,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
           stopListening = true
       }
   }
+  DisposableEffectOnGone(
+    whenGone = {
+      VideoPlayer.releaseAll()
+    }
+  )
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id}) { i, cItem ->
       CompositionLocalProvider(
@@ -597,10 +606,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
           LaunchedEffect(Unit) {
             scope.launch {
-              if (composeState.value.editing) {
-                composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-              } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-                composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+              if (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) {
+                if (composeState.value.editing) {
+                  composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+                } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                  composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+                }
               }
             }
           }
@@ -935,21 +946,26 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
   }
 }
 
+sealed class ProviderMedia {
+  data class Image(val uri: Uri, val image: Bitmap): ProviderMedia()
+  data class Video(val uri: Uri, val preview: String): ProviderMedia()
+}
+
 private fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
-  fun canShowImage(item: ChatItem): Boolean =
-    item.content.msgContent is MsgContent.MCImage && item.file?.loaded == true && getLoadedFilePath(SimplexApp.context, item.file) != null
+  fun canShowMedia(item: ChatItem): Boolean =
+    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && getLoadedFilePath(SimplexApp.context, item.file) != null)
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
     val indexOfFirst = chatItems.indexOfFirst { it.id == initialChatId }
     for (chatItemsIndex in if (skipInternalIndex >= 0) indexOfFirst downTo 0 else indexOfFirst..chatItems.lastIndex) {
       val item = chatItems[chatItemsIndex]
-      if (canShowImage(item)) {
+      if (canShowMedia(item)) {
         processedInternalIndex += skipInternalIndex.sign
       }
       if (processedInternalIndex == skipInternalIndex) {
@@ -963,16 +979,28 @@ private fun providerForGallery(
   var initialChatId = cItemId
   return object: ImageGalleryProvider {
     override val initialIndex: Int = initialIndex
-    override val totalImagesSize = mutableStateOf(Int.MAX_VALUE)
-    override fun getImage(index: Int): Pair<Bitmap, Uri>? {
+    override val totalMediaSize = mutableStateOf(Int.MAX_VALUE)
+    override fun getMedia(index: Int): ProviderMedia? {
       val internalIndex = initialIndex - index
-      val file = item(internalIndex, initialChatId)?.second?.file
-      val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, file)
-      val filePath = getLoadedFilePath(SimplexApp.context, file)
-      return if (imageBitmap != null && filePath != null) {
-        val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
-        imageBitmap to uri
-      } else null
+      val item = item(internalIndex, initialChatId)?.second ?: return null
+      return when (item.content.msgContent) {
+        is MsgContent.MCImage -> {
+          val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, item.file)
+          val filePath = getLoadedFilePath(SimplexApp.context, item.file)
+          if (imageBitmap != null && filePath != null) {
+            val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+            ProviderMedia.Image(uri, imageBitmap)
+          } else null
+        }
+        is MsgContent.MCVideo -> {
+          val filePath = getLoadedFilePath(SimplexApp.context, item.file)
+          if (filePath != null) {
+            val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+            ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)
+          } else null
+        }
+        else -> null
+      }
     }
 
     override fun currentPageChanged(index: Int) {
@@ -984,7 +1012,7 @@ private fun providerForGallery(
 
     override fun scrollToStart() {
       initialIndex = 0
-      initialChatId = chatItems.first { canShowImage(it) }.id
+      initialChatId = chatItems.first { canShowMedia(it) }.id
     }
 
     override fun onDismiss(index: Int) {
@@ -1055,6 +1083,7 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
+      allowVideoAttachment = true,
       chatModelIncognito = false,
       back = {},
       info = {},
@@ -1115,6 +1144,7 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
+      allowVideoAttachment = true,
       chatModelIncognito = false,
       back = {},
       info = {},

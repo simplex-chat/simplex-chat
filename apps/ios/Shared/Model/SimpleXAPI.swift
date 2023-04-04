@@ -1359,6 +1359,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileCompleteXFTP(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
+            let cItem = aChatItem.chatItem
+            let mc = cItem.content.msgContent
+            if case .file = mc,
+               let fileName = cItem.file?.filePath {
+                removeFile(fileName)
+            }
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)

@@ -1026,4 +1026,5 @@
     <string name="user_unmute">取消靜音</string>
     <string name="you_will_still_receive_calls_and_ntfs">當靜音配置文件處於活動狀態時，您仍會收到來自靜音配置文件的電話和通知。</string>
     <string name="user_unhide">取消隱藏</string>
+    <string name="settings_send_files_via_xftp">通過 XFTP 傳送文件</string>
 </resources>
