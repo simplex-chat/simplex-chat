@@ -277,7 +277,7 @@
     <string name="paste_connection_link_below_to_connect">Wklej otrzymany link w pole poniżej, aby połączyć się z kontaktem.</string>
     <string name="image_descr_qr_code">Kod QR</string>
     <string name="scan_code">Zeskanuj kod</string>
-    <string name="scan_code_from_contacts_app">Zeskanuj kod zabezpieczający z aplikacji Twojego kontaktu.</string>
+    <string name="scan_code_from_contacts_app">Zeskanuj kod bezpieczeństwa z aplikacji Twojego kontaktu.</string>
     <string name="security_code">Kod bezpieczeństwa</string>
     <string name="icon_descr_settings">Ustawienia</string>
     <string name="share_invitation_link">Udostępnij link zaproszenia</string>
@@ -402,7 +402,7 @@
     <string name="save_profile_password">Zapisz hasło profilu</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Platforma komunikacyjna i aplikacyjna chroniąca Twoją prywatność i bezpieczeństwo.</string>
     <string name="profile_is_only_shared_with_your_contacts">Profil jest udostępniany tylko Twoim kontaktom.</string>
-    <string name="to_reveal_profile_enter_password">Aby ujawnić Twój ukryty profil, wprowadź pełne hasło w pole wyszukiwania na stronie Twojego profile czatu.</string>
+    <string name="to_reveal_profile_enter_password">Aby ujawnić Twój ukryty profil, wprowadź pełne hasło w pole wyszukiwania na stronie Twoich profili czatu.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Nie przechowujemy na serwerach żadnych Twoich kontaktów ani wiadomości (po ich dostarczeniu).</string>
     <string name="you_control_your_chat">Ty kontrolujesz swój czat!</string>
     <string name="your_profile_is_stored_on_your_device">Twój profil, kontakty i dostarczone wiadomości są przechowywane na Twoim urządzeniu.</string>
@@ -680,7 +680,7 @@
     <string name="rcv_group_event_member_deleted">usunięto <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_user_deleted">usunął cię</string>
     <string name="group_invitation_tap_to_join">Dotknij, aby dołączyć</string>
-    <string name="group_invitation_tap_to_join_incognito">Stuknij, aby dołączyć w trybie incognito</string>
+    <string name="group_invitation_tap_to_join_incognito">Dotknij, aby dołączyć w trybie incognito</string>
     <string name="rcv_group_event_updated_group_profile">zaktualizowano profil gorpy</string>
     <string name="you_are_invited_to_group">Jesteś zaproszony do grupy</string>
     <string name="snd_conn_event_switch_queue_phase_completed">zmieniłeś adres</string>
