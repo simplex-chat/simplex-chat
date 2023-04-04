@@ -1058,7 +1058,7 @@ testXFTPWithChangedConfig =
       alice #$> ("/_xftp on {\"minFileSize\":1024}", id, "ok")
 
       bob #$> ("/xftp off", id, "ok")
-      bob #$> ("/xftp on minFileSize=1kb", id, "ok")
+      bob #$> ("/xftp on size=1kb", id, "ok")
 
       connectUsers alice bob
 

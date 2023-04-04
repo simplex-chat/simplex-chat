@@ -4408,7 +4408,7 @@ chatCommandP =
       "/_temp_folder " *> (SetTempFolder <$> filePath),
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
-      "/xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
+      "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
@@ -4671,10 +4671,7 @@ chatCommandP =
       logErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout logErrors
-    xftpCfgP = do
-      minFileSize <- "minFileSize=" *> fileSizeP
-      pure $ XFTPFileConfig {minFileSize}
-    -- TODO move to Utils in simplexmq
+    xftpCfgP = XFTPFileConfig <$> (" size=" *> fileSizeP <|> pure 0)
     fileSizeP =
       A.choice
         [ gb <$> A.decimal <* "gb",
