@@ -2914,810 +2914,1013 @@ Będziemy dodawać redundancję serwerów, aby zapobiec utracie wiadomości.</ta
         <target state="translated">Przywróć</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Restore database backup" xml:space="preserve">
+      <trans-unit id="Restore database backup" xml:space="preserve" approved="no">
         <source>Restore database backup</source>
+        <target state="translated">Przywróć kopię zapasową bazy danych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Restore database backup?" xml:space="preserve">
+      <trans-unit id="Restore database backup?" xml:space="preserve" approved="no">
         <source>Restore database backup?</source>
+        <target state="translated">Przywrócić kopię zapasową bazy danych?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Restore database error" xml:space="preserve">
+      <trans-unit id="Restore database error" xml:space="preserve" approved="no">
         <source>Restore database error</source>
+        <target state="translated">Błąd przywracania bazy danych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reveal" xml:space="preserve">
+      <trans-unit id="Reveal" xml:space="preserve" approved="no">
         <source>Reveal</source>
+        <target state="translated">Ujawnij</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Revert" xml:space="preserve">
+      <trans-unit id="Revert" xml:space="preserve" approved="no">
         <source>Revert</source>
+        <target state="translated">Przywrócić</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role" xml:space="preserve">
+      <trans-unit id="Role" xml:space="preserve" approved="no">
         <source>Role</source>
+        <target state="translated">Rola</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Run chat" xml:space="preserve">
+      <trans-unit id="Run chat" xml:space="preserve" approved="no">
         <source>Run chat</source>
+        <target state="translated">Uruchom czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SMP servers" xml:space="preserve">
+      <trans-unit id="SMP servers" xml:space="preserve" approved="no">
         <source>SMP servers</source>
+        <target state="translated">Serwery SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save" xml:space="preserve">
+      <trans-unit id="Save" xml:space="preserve" approved="no">
         <source>Save</source>
+        <target state="translated">Zapisz</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Save (and notify contacts)" xml:space="preserve">
+      <trans-unit id="Save (and notify contacts)" xml:space="preserve" approved="no">
         <source>Save (and notify contacts)</source>
+        <target state="translated">Zapisz (i powiadom kontakty)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and notify contact" xml:space="preserve">
+      <trans-unit id="Save and notify contact" xml:space="preserve" approved="no">
         <source>Save and notify contact</source>
+        <target state="translated">Zapisz i powiadom kontakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and notify group members" xml:space="preserve">
+      <trans-unit id="Save and notify group members" xml:space="preserve" approved="no">
         <source>Save and notify group members</source>
+        <target state="translated">Zapisz i powiadom członków grupy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and update group profile" xml:space="preserve">
+      <trans-unit id="Save and update group profile" xml:space="preserve" approved="no">
         <source>Save and update group profile</source>
+        <target state="translated">Zapisz i zaktualizuj profil grupowy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save archive" xml:space="preserve">
+      <trans-unit id="Save archive" xml:space="preserve" approved="no">
         <source>Save archive</source>
+        <target state="translated">Zapisz archiwum</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save group profile" xml:space="preserve">
+      <trans-unit id="Save group profile" xml:space="preserve" approved="no">
         <source>Save group profile</source>
+        <target state="translated">Zapisz profil grupy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase and open chat" xml:space="preserve">
+      <trans-unit id="Save passphrase and open chat" xml:space="preserve" approved="no">
         <source>Save passphrase and open chat</source>
+        <target state="translated">Zapisz hasło i otwórz czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
+      <trans-unit id="Save passphrase in Keychain" xml:space="preserve" approved="no">
         <source>Save passphrase in Keychain</source>
+        <target state="translated">Zapisz hasło w pęku kluczy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save preferences?" xml:space="preserve">
+      <trans-unit id="Save preferences?" xml:space="preserve" approved="no">
         <source>Save preferences?</source>
+        <target state="translated">Zapisać preferencje?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save profile password" xml:space="preserve">
+      <trans-unit id="Save profile password" xml:space="preserve" approved="no">
         <source>Save profile password</source>
+        <target state="translated">Zapisz hasło profilu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers" xml:space="preserve">
+      <trans-unit id="Save servers" xml:space="preserve" approved="no">
         <source>Save servers</source>
+        <target state="translated">Zapisz serwery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers?" xml:space="preserve">
+      <trans-unit id="Save servers?" xml:space="preserve" approved="no">
         <source>Save servers?</source>
+        <target state="translated">Zapisać serwery?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save welcome message?" xml:space="preserve">
+      <trans-unit id="Save welcome message?" xml:space="preserve" approved="no">
         <source>Save welcome message?</source>
+        <target state="translated">Zapisać wiadomość powitalną?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
+      <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve" approved="no">
         <source>Saved WebRTC ICE servers will be removed</source>
+        <target state="translated">Zapisane serwery WebRTC ICE zostaną usunięte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan QR code" xml:space="preserve">
+      <trans-unit id="Scan QR code" xml:space="preserve" approved="no">
         <source>Scan QR code</source>
+        <target state="translated">Zeskanuj kod QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan code" xml:space="preserve">
+      <trans-unit id="Scan code" xml:space="preserve" approved="no">
         <source>Scan code</source>
+        <target state="translated">Zeskanuj kod</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan security code from your contact's app." xml:space="preserve">
+      <trans-unit id="Scan security code from your contact's app." xml:space="preserve" approved="no">
         <source>Scan security code from your contact's app.</source>
+        <target state="translated">Zeskanuj kod bezpieczeństwa z aplikacji Twojego kontaktu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan server QR code" xml:space="preserve">
+      <trans-unit id="Scan server QR code" xml:space="preserve" approved="no">
         <source>Scan server QR code</source>
+        <target state="translated">Zeskanuj kod QR serwera</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search" xml:space="preserve">
+      <trans-unit id="Search" xml:space="preserve" approved="no">
         <source>Search</source>
+        <target state="translated">Szukaj</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Secure queue" xml:space="preserve">
+      <trans-unit id="Secure queue" xml:space="preserve" approved="no">
         <source>Secure queue</source>
+        <target state="translated">Bezpieczna kolejka</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Security assessment" xml:space="preserve">
+      <trans-unit id="Security assessment" xml:space="preserve" approved="no">
         <source>Security assessment</source>
+        <target state="translated">Ocena bezpieczeństwa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Security code" xml:space="preserve">
+      <trans-unit id="Security code" xml:space="preserve" approved="no">
         <source>Security code</source>
+        <target state="translated">Kod bezpieczeństwa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send" xml:space="preserve">
+      <trans-unit id="Send" xml:space="preserve" approved="no">
         <source>Send</source>
+        <target state="translated">Wyślij</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send a live message - it will update for the recipient(s) as you type it" xml:space="preserve">
+      <trans-unit id="Send a live message - it will update for the recipient(s) as you type it" xml:space="preserve" approved="no">
         <source>Send a live message - it will update for the recipient(s) as you type it</source>
+        <target state="translated">Wysyłaj wiadomości na żywo - będą one aktualizowane dla odbiorcy(ów) w trakcie ich wpisywania</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send direct message" xml:space="preserve">
+      <trans-unit id="Send direct message" xml:space="preserve" approved="no">
         <source>Send direct message</source>
+        <target state="translated">Wyślij wiadomość bezpośrednią</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send files via XFTP" xml:space="preserve">
+      <trans-unit id="Send files via XFTP" xml:space="preserve" approved="no">
         <source>Send files via XFTP</source>
+        <target state="translated">Wyślij pliki przez XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send link previews" xml:space="preserve">
+      <trans-unit id="Send link previews" xml:space="preserve" approved="no">
         <source>Send link previews</source>
+        <target state="translated">Wyślij podgląd linku</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send live message" xml:space="preserve">
+      <trans-unit id="Send live message" xml:space="preserve" approved="no">
         <source>Send live message</source>
+        <target state="translated">Wyślij wiadomość na żywo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send notifications" xml:space="preserve">
+      <trans-unit id="Send notifications" xml:space="preserve" approved="no">
         <source>Send notifications</source>
+        <target state="translated">Wyślij powiadomienia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send notifications:" xml:space="preserve">
+      <trans-unit id="Send notifications:" xml:space="preserve" approved="no">
         <source>Send notifications:</source>
+        <target state="translated">Wyślij powiadomienia:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send questions and ideas" xml:space="preserve">
+      <trans-unit id="Send questions and ideas" xml:space="preserve" approved="no">
         <source>Send questions and ideas</source>
+        <target state="translated">Wyślij pytania i pomysły</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
+      <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve" approved="no">
         <source>Send them from gallery or custom keyboards.</source>
+        <target state="translated">Wyślij je z galerii lub niestandardowych klawiatur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
+      <trans-unit id="Sender cancelled file transfer." xml:space="preserve" approved="no">
         <source>Sender cancelled file transfer.</source>
+        <target state="translated">Nadawca anulował transfer pliku.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
+      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
         <source>Sender may have deleted the connection request.</source>
+        <target state="translated">Nadawca mógł usunąć prośbę o połączenie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending via" xml:space="preserve">
+      <trans-unit id="Sending via" xml:space="preserve" approved="no">
         <source>Sending via</source>
+        <target state="translated">Wysyłanie przez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent file event" xml:space="preserve">
+      <trans-unit id="Sent file event" xml:space="preserve" approved="no">
         <source>Sent file event</source>
+        <target state="translated">Wyślij zdarzenie pliku</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve">
+      <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve" approved="no">
         <source>Sent messages will be deleted after set time.</source>
+        <target state="translated">Wysłane wiadomości zostaną usunięte po ustawionym czasie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password</source>
+        <target state="translated">Serwer wymaga autoryzacji do tworzenia kolejek, sprawdź hasło</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server test failed!" xml:space="preserve">
+      <trans-unit id="Server test failed!" xml:space="preserve" approved="no">
         <source>Server test failed!</source>
+        <target state="translated">Test serwera nie powiódł się!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Servers" xml:space="preserve">
+      <trans-unit id="Servers" xml:space="preserve" approved="no">
         <source>Servers</source>
+        <target state="translated">Serwery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set 1 day" xml:space="preserve">
+      <trans-unit id="Set 1 day" xml:space="preserve" approved="no">
         <source>Set 1 day</source>
+        <target state="translated">Ustaw 1 dzień</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set contact name…" xml:space="preserve">
+      <trans-unit id="Set contact name…" xml:space="preserve" approved="no">
         <source>Set contact name…</source>
+        <target state="translated">Ustaw nazwę kontaktu…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set group preferences" xml:space="preserve">
+      <trans-unit id="Set group preferences" xml:space="preserve" approved="no">
         <source>Set group preferences</source>
+        <target state="translated">Ustaw preferencje grupy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passphrase to export" xml:space="preserve">
+      <trans-unit id="Set passphrase to export" xml:space="preserve" approved="no">
         <source>Set passphrase to export</source>
+        <target state="translated">Ustaw hasło do eksportu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set the message shown to new members!" xml:space="preserve">
+      <trans-unit id="Set the message shown to new members!" xml:space="preserve" approved="no">
         <source>Set the message shown to new members!</source>
+        <target state="translated">Ustaw wiadomość wyświetlaną nowym członkom!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
+      <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve" approved="no">
         <source>Set timeouts for proxy/VPN</source>
+        <target state="translated">Ustaw limity czasu dla serwera proxy/VPN</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Settings" xml:space="preserve">
+      <trans-unit id="Settings" xml:space="preserve" approved="no">
         <source>Settings</source>
+        <target state="translated">Ustawienia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share" xml:space="preserve">
+      <trans-unit id="Share" xml:space="preserve" approved="no">
         <source>Share</source>
+        <target state="translated">Udostępnij</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Share invitation link" xml:space="preserve">
+      <trans-unit id="Share invitation link" xml:space="preserve" approved="no">
         <source>Share invitation link</source>
+        <target state="translated">Udostępnij link zaproszenia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share link" xml:space="preserve">
+      <trans-unit id="Share link" xml:space="preserve" approved="no">
         <source>Share link</source>
+        <target state="translated">Udostępnij link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share one-time invitation link" xml:space="preserve">
+      <trans-unit id="Share one-time invitation link" xml:space="preserve" approved="no">
         <source>Share one-time invitation link</source>
+        <target state="translated">Jednorazowy link zaproszenia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show QR code" xml:space="preserve">
+      <trans-unit id="Show QR code" xml:space="preserve" approved="no">
         <source>Show QR code</source>
+        <target state="translated">Pokaż kod QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show calls in phone history" xml:space="preserve">
+      <trans-unit id="Show calls in phone history" xml:space="preserve" approved="no">
         <source>Show calls in phone history</source>
+        <target state="translated">Pokaż połączenia w historii telefonu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show developer options" xml:space="preserve">
+      <trans-unit id="Show developer options" xml:space="preserve" approved="no">
         <source>Show developer options</source>
+        <target state="translated">Pokaż opcje dewelopera</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show preview" xml:space="preserve">
+      <trans-unit id="Show preview" xml:space="preserve" approved="no">
         <source>Show preview</source>
+        <target state="translated">Pokaż podgląd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show:" xml:space="preserve">
+      <trans-unit id="Show:" xml:space="preserve" approved="no">
         <source>Show:</source>
+        <target state="translated">Pokaż:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve">
+      <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve" approved="no">
         <source>SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</source>
+        <target state="translated">Bezpieczeństwo SimpleX Chat zostało [zaudytowane przez Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock" xml:space="preserve">
+      <trans-unit id="SimpleX Lock" xml:space="preserve" approved="no">
         <source>SimpleX Lock</source>
+        <target state="translated">Blokada SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
+      <trans-unit id="SimpleX Lock turned on" xml:space="preserve" approved="no">
         <source>SimpleX Lock turned on</source>
+        <target state="translated">Blokada SimpleX włączona</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX contact address" xml:space="preserve">
+      <trans-unit id="SimpleX contact address" xml:space="preserve" approved="no">
         <source>SimpleX contact address</source>
+        <target state="translated">Adres kontaktowy SimpleX</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve">
+      <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve" approved="no">
         <source>SimpleX encrypted message or connection event</source>
+        <target state="translated">Szyfrowane zdarzenie wiadomości lub połączenia SimpleX</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="SimpleX group link" xml:space="preserve">
+      <trans-unit id="SimpleX group link" xml:space="preserve" approved="no">
         <source>SimpleX group link</source>
+        <target state="translated">Link grupy SimpleX</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="SimpleX links" xml:space="preserve">
+      <trans-unit id="SimpleX links" xml:space="preserve" approved="no">
         <source>SimpleX links</source>
+        <target state="translated">Linki SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
+      <trans-unit id="SimpleX one-time invitation" xml:space="preserve" approved="no">
         <source>SimpleX one-time invitation</source>
+        <target state="translated">Zaproszenie jednorazowe SimpleX</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="Skip" xml:space="preserve">
+      <trans-unit id="Skip" xml:space="preserve" approved="no">
         <source>Skip</source>
+        <target state="translated">Pomiń</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Skipped messages" xml:space="preserve">
+      <trans-unit id="Skipped messages" xml:space="preserve" approved="no">
         <source>Skipped messages</source>
+        <target state="translated">Pominięte wiadomości</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Somebody" xml:space="preserve">
+      <trans-unit id="Somebody" xml:space="preserve" approved="no">
         <source>Somebody</source>
+        <target state="translated">Ktoś</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Start a new chat" xml:space="preserve">
+      <trans-unit id="Start a new chat" xml:space="preserve" approved="no">
         <source>Start a new chat</source>
+        <target state="translated">Rozpocznij nowy czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start chat" xml:space="preserve">
+      <trans-unit id="Start chat" xml:space="preserve" approved="no">
         <source>Start chat</source>
+        <target state="translated">Rozpocznij czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start migration" xml:space="preserve">
+      <trans-unit id="Start migration" xml:space="preserve" approved="no">
         <source>Start migration</source>
+        <target state="translated">Rozpocznij migrację</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop" xml:space="preserve">
+      <trans-unit id="Stop" xml:space="preserve" approved="no">
         <source>Stop</source>
+        <target state="translated">Zatrzymaj</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop SimpleX" xml:space="preserve">
+      <trans-unit id="Stop SimpleX" xml:space="preserve" approved="no">
         <source>Stop SimpleX</source>
+        <target state="translated">Zatrzymaj SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
+      <trans-unit id="Stop chat to enable database actions" xml:space="preserve" approved="no">
         <source>Stop chat to enable database actions</source>
+        <target state="translated">Zatrzymaj czat, aby umożliwić działania na bazie danych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
+      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
+        <target state="translated">Zatrzymaj czat, aby wyeksportować, zaimportować lub usunąć bazę danych czatu. Podczas zatrzymania chatu nie będzie można odbierać ani wysyłać wiadomości.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat?" xml:space="preserve">
+      <trans-unit id="Stop chat?" xml:space="preserve" approved="no">
         <source>Stop chat?</source>
+        <target state="translated">Zatrzymać czat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Support SimpleX Chat" xml:space="preserve">
+      <trans-unit id="Support SimpleX Chat" xml:space="preserve" approved="no">
         <source>Support SimpleX Chat</source>
+        <target state="translated">Wspieraj SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="System" xml:space="preserve">
+      <trans-unit id="System" xml:space="preserve" approved="no">
         <source>System</source>
+        <target state="translated">System</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection timeout" xml:space="preserve">
+      <trans-unit id="TCP connection timeout" xml:space="preserve" approved="no">
         <source>TCP connection timeout</source>
+        <target state="translated">Limit czasu połączenia TCP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP_KEEPCNT" xml:space="preserve">
+      <trans-unit id="TCP_KEEPCNT" xml:space="preserve" approved="no">
         <source>TCP_KEEPCNT</source>
+        <target state="translated">TCP_KEEPCNT</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP_KEEPIDLE" xml:space="preserve">
+      <trans-unit id="TCP_KEEPIDLE" xml:space="preserve" approved="no">
         <source>TCP_KEEPIDLE</source>
+        <target state="translated">TCP_KEEPIDLE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP_KEEPINTVL" xml:space="preserve">
+      <trans-unit id="TCP_KEEPINTVL" xml:space="preserve" approved="no">
         <source>TCP_KEEPINTVL</source>
+        <target state="translated">TCP_KEEPINTVL</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Take picture" xml:space="preserve">
+      <trans-unit id="Take picture" xml:space="preserve" approved="no">
         <source>Take picture</source>
+        <target state="translated">Zrób zdjęcie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap button " xml:space="preserve">
+      <trans-unit id="Tap button " xml:space="preserve" approved="no">
         <source>Tap button </source>
+        <target state="translated">Naciśnij przycisk </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to activate profile." xml:space="preserve">
+      <trans-unit id="Tap to activate profile." xml:space="preserve" approved="no">
         <source>Tap to activate profile.</source>
+        <target state="translated">Dotknij, aby aktywować profil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to join" xml:space="preserve">
+      <trans-unit id="Tap to join" xml:space="preserve" approved="no">
         <source>Tap to join</source>
+        <target state="translated">Dotknij, aby dołączyć</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to join incognito" xml:space="preserve">
+      <trans-unit id="Tap to join incognito" xml:space="preserve" approved="no">
         <source>Tap to join incognito</source>
+        <target state="translated">Dotnij, aby dołączyć w trybie incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to start a new chat" xml:space="preserve">
+      <trans-unit id="Tap to start a new chat" xml:space="preserve" approved="no">
         <source>Tap to start a new chat</source>
+        <target state="translated">Dotknij, aby rozpocząć nowy czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Test failed at step %@." xml:space="preserve">
+      <trans-unit id="Test failed at step %@." xml:space="preserve" approved="no">
         <source>Test failed at step %@.</source>
+        <target state="translated">Test nie powiódł się na etapie %@.</target>
         <note>server test failure</note>
       </trans-unit>
-      <trans-unit id="Test server" xml:space="preserve">
+      <trans-unit id="Test server" xml:space="preserve" approved="no">
         <source>Test server</source>
+        <target state="translated">Przetestuj serwer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Test servers" xml:space="preserve">
+      <trans-unit id="Test servers" xml:space="preserve" approved="no">
         <source>Test servers</source>
+        <target state="translated">Przetestuj serwery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tests failed!" xml:space="preserve">
+      <trans-unit id="Tests failed!" xml:space="preserve" approved="no">
         <source>Tests failed!</source>
+        <target state="translated">Testy nie powiodły się!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
+      <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve" approved="no">
         <source>Thank you for installing SimpleX Chat!</source>
+        <target state="translated">Dziękujemy za zainstalowanie SimpleX Chat!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" xml:space="preserve">
+      <trans-unit id="Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" xml:space="preserve" approved="no">
         <source>Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!</source>
+        <target state="translated">Podziękowania dla użytkowników - [wkład za pośrednictwem Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Thanks to the users – contribute via Weblate!" xml:space="preserve">
+      <trans-unit id="Thanks to the users – contribute via Weblate!" xml:space="preserve" approved="no">
         <source>Thanks to the users – contribute via Weblate!</source>
+        <target state="translated">Podziękowania dla użytkowników - wkład za pośrednictwem Weblate!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
+      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve" approved="no">
         <source>The 1st platform without any user identifiers – private by design.</source>
+        <target state="translated">Pierwsza platforma bez żadnych identyfikatorów użytkowników – z założenia prywatna.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
+      <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve" approved="no">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
+        <target state="translated">Aplikacja może powiadamiać Cię, gdy otrzymujesz wiadomości lub prośby o kontakt — otwórz ustawienia, aby włączyć.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve">
+      <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve" approved="no">
         <source>The attempt to change database passphrase was not completed.</source>
+        <target state="translated">Próba zmiany hasła bazy danych nie została zakończona.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve">
+      <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve" approved="no">
         <source>The connection you accepted will be cancelled!</source>
+        <target state="translated">Zaakceptowane przez Ciebie połączenie zostanie anulowane!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve">
+      <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve" approved="no">
         <source>The contact you shared this link with will NOT be able to connect!</source>
+        <target state="translated">Kontakt, któremu udostępniłeś ten link, NIE będzie mógł się połączyć!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The created archive is available via app Settings / Database / Old database archive." xml:space="preserve">
+      <trans-unit id="The created archive is available via app Settings / Database / Old database archive." xml:space="preserve" approved="no">
         <source>The created archive is available via app Settings / Database / Old database archive.</source>
+        <target state="translated">Utworzone archiwum jest dostępne poprzez aplikację Ustawienia / Baza danych / Stare archiwum bazy danych.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The group is fully decentralized – it is visible only to the members." xml:space="preserve">
+      <trans-unit id="The group is fully decentralized – it is visible only to the members." xml:space="preserve" approved="no">
         <source>The group is fully decentralized – it is visible only to the members.</source>
+        <target state="translated">Grupa jest w pełni zdecentralizowana – jest widoczna tylko dla członków.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The message will be deleted for all members." xml:space="preserve">
+      <trans-unit id="The message will be deleted for all members." xml:space="preserve" approved="no">
         <source>The message will be deleted for all members.</source>
+        <target state="translated">Wiadomość zostanie usunięta dla wszystkich członków.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve">
+      <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve" approved="no">
         <source>The message will be marked as moderated for all members.</source>
+        <target state="translated">Wiadomość zostanie oznaczona jako moderowana dla wszystkich członków.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The next generation of private messaging" xml:space="preserve">
+      <trans-unit id="The next generation of private messaging" xml:space="preserve" approved="no">
         <source>The next generation of private messaging</source>
+        <target state="translated">Następna generacja prywatnych wiadomości</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
+      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve" approved="no">
         <source>The old database was not removed during the migration, it can be deleted.</source>
+        <target state="translated">Stara baza danych nie została usunięta podczas migracji, można ją usunąć.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
+      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve" approved="no">
         <source>The profile is only shared with your contacts.</source>
+        <target state="translated">Profil jest udostępniany tylko Twoim kontaktom.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The sender will NOT be notified" xml:space="preserve">
+      <trans-unit id="The sender will NOT be notified" xml:space="preserve" approved="no">
         <source>The sender will NOT be notified</source>
+        <target state="translated">Nadawca NIE zostanie powiadomiony</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new connections of your current chat profile **%@**.</source>
+        <target state="translated">Serwery dla nowych połączeń bieżącego profilu czatu **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Theme" xml:space="preserve">
+      <trans-unit id="Theme" xml:space="preserve" approved="no">
         <source>Theme</source>
+        <target state="translated">Motyw</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one user profile." xml:space="preserve">
+      <trans-unit id="There should be at least one user profile." xml:space="preserve" approved="no">
         <source>There should be at least one user profile.</source>
+        <target state="translated">Powinien istnieć co najmniej jeden profil użytkownika.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There should be at least one visible user profile." xml:space="preserve">
+      <trans-unit id="There should be at least one visible user profile." xml:space="preserve" approved="no">
         <source>There should be at least one visible user profile.</source>
+        <target state="translated">Powinien istnieć co najmniej jeden widoczny profil użytkownika.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve" approved="no">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
+        <target state="translated">Tego działania nie można cofnąć - wszystkie odebrane i wysłane pliki oraz media zostaną usunięte. Obrazy o niskiej rozdzielczości pozostaną.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
+        <target state="translated">Tego działania nie można cofnąć - wiadomości wysłane i odebrane wcześniej niż wybrane zostaną usunięte. Może to potrwać kilka minut.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve" approved="no">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
+        <target state="translated">Tego działania nie można cofnąć - Twój profil, kontakty, wiadomości i pliki zostaną nieodwracalnie utracone.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">
+      <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve" approved="no">
         <source>This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</source>
+        <target state="translated">Ta funkcja jest eksperymentalna! Będzie działać tylko wtedy, gdy drugi klient ma zainstalowaną wersję 4.2. Po zakończeniu zmiany adresu powinieneś zobaczyć wiadomość w konwersacji - sprawdź, czy nadal możesz otrzymywać wiadomości od tego kontaktu (lub członka grupy).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This group no longer exists." xml:space="preserve">
+      <trans-unit id="This group no longer exists." xml:space="preserve" approved="no">
         <source>This group no longer exists.</source>
+        <target state="translated">Ta grupa już nie istnieje.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
+        <target state="translated">To ustawienie dotyczy wiadomości Twojego bieżącego profilu czatu **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
+      <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve" approved="no">
         <source>To ask any questions and to receive updates:</source>
+        <target state="translated">Aby zadać wszelkie pytania i otrzymywać aktualizacje:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To find the profile used for an incognito connection, tap the contact or group name on top of the chat." xml:space="preserve">
+      <trans-unit id="To find the profile used for an incognito connection, tap the contact or group name on top of the chat." xml:space="preserve" approved="no">
         <source>To find the profile used for an incognito connection, tap the contact or group name on top of the chat.</source>
+        <target state="translated">Aby znaleźć profil używany do połączenia incognito, dotknij nazwę kontaktu lub grupy w górnej części czatu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To make a new connection" xml:space="preserve">
+      <trans-unit id="To make a new connection" xml:space="preserve" approved="no">
         <source>To make a new connection</source>
+        <target state="translated">Aby nawiązać nowe połączenie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
+      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve" approved="no">
         <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
+        <target state="translated">Aby chronić prywatność, zamiast identyfikatorów użytkowników używanych przez wszystkie inne platformy, SimpleX ma identyfikatory dla kolejek wiadomości, oddzielne dla każdego z Twoich kontaktów.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
+      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve" approved="no">
         <source>To protect timezone, image/voice files use UTC.</source>
+        <target state="translated">Aby chronić strefę czasową, pliki obrazów/głosów używają UTC.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
+        <target state="translated">Aby chronić swoje informacje, włącz funkcję blokady SimpleX.
+Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
+      <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve" approved="no">
         <source>To record voice message please grant permission to use Microphone.</source>
+        <target state="translated">Aby nagrać wiadomość głosową należy udzielić zgody na użycie Mikrofonu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
+      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve" approved="no">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
+        <target state="translated">Aby ujawnić Twój ukryty profil, wprowadź pełne hasło w pole wyszukiwania na stronie **Twoich profili czatu**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
+      <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve" approved="no">
         <source>To support instant push notifications the chat database has to be migrated.</source>
+        <target state="translated">Aby obsługiwać natychmiastowe powiadomienia push, należy zmigrować bazę danych czatu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
+        <target state="translated">Aby zweryfikować szyfrowanie end-to-end z Twoim kontaktem porównaj (lub zeskanuj) kod na waszych urządzeniach.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Transport isolation" xml:space="preserve">
+      <trans-unit id="Transport isolation" xml:space="preserve" approved="no">
         <source>Transport isolation</source>
+        <target state="translated">Izolacja transportu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
+      <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve" approved="no">
         <source>Trying to connect to the server used to receive messages from this contact (error: %@).</source>
+        <target state="translated">Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu (błąd: %@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this contact." xml:space="preserve">
+      <trans-unit id="Trying to connect to the server used to receive messages from this contact." xml:space="preserve" approved="no">
         <source>Trying to connect to the server used to receive messages from this contact.</source>
+        <target state="translated">Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn off" xml:space="preserve">
+      <trans-unit id="Turn off" xml:space="preserve" approved="no">
         <source>Turn off</source>
+        <target state="translated">Wyłącz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn off notifications?" xml:space="preserve">
+      <trans-unit id="Turn off notifications?" xml:space="preserve" approved="no">
         <source>Turn off notifications?</source>
+        <target state="translated">Wyłączyć powiadomienia?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn on" xml:space="preserve">
+      <trans-unit id="Turn on" xml:space="preserve" approved="no">
         <source>Turn on</source>
+        <target state="translated">Włącz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unable to record voice message" xml:space="preserve">
+      <trans-unit id="Unable to record voice message" xml:space="preserve" approved="no">
         <source>Unable to record voice message</source>
+        <target state="translated">Nie można nagrać wiadomości głosowej</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unexpected error: %@" xml:space="preserve">
+      <trans-unit id="Unexpected error: %@" xml:space="preserve" approved="no">
         <source>Unexpected error: %@</source>
+        <target state="translated">Nieoczekiwany błąd: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unexpected migration state" xml:space="preserve">
+      <trans-unit id="Unexpected migration state" xml:space="preserve" approved="no">
         <source>Unexpected migration state</source>
+        <target state="translated">Nieoczekiwany stan migracji</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide" xml:space="preserve">
+      <trans-unit id="Unhide" xml:space="preserve" approved="no">
         <source>Unhide</source>
+        <target state="translated">Odkryj</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide chat profile" xml:space="preserve">
+      <trans-unit id="Unhide chat profile" xml:space="preserve" approved="no">
         <source>Unhide chat profile</source>
+        <target state="translated">Odkryj profil czatu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide profile" xml:space="preserve">
+      <trans-unit id="Unhide profile" xml:space="preserve" approved="no">
         <source>Unhide profile</source>
+        <target state="translated">Odkryj profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unknown caller" xml:space="preserve">
+      <trans-unit id="Unknown caller" xml:space="preserve" approved="no">
         <source>Unknown caller</source>
+        <target state="translated">Nieznany rozmówca</target>
         <note>callkit banner</note>
       </trans-unit>
-      <trans-unit id="Unknown database error: %@" xml:space="preserve">
+      <trans-unit id="Unknown database error: %@" xml:space="preserve" approved="no">
         <source>Unknown database error: %@</source>
+        <target state="translated">Nieznany błąd bazy danych: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unknown error" xml:space="preserve">
+      <trans-unit id="Unknown error" xml:space="preserve" approved="no">
         <source>Unknown error</source>
+        <target state="translated">Nieznany błąd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
+      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve" approved="no">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
+        <target state="translated">O ile nie korzystasz z interfejsu połączeń systemu iOS, włącz tryb Nie przeszkadzać, aby uniknąć przerywania.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
+      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve" approved="no">
         <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
 To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
+        <target state="translated">O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go.
+Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unlock" xml:space="preserve">
+      <trans-unit id="Unlock" xml:space="preserve" approved="no">
         <source>Unlock</source>
+        <target state="translated">Odblokuj</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Unmute" xml:space="preserve">
+      <trans-unit id="Unmute" xml:space="preserve" approved="no">
         <source>Unmute</source>
+        <target state="translated">Wyłącz wyciszenie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unread" xml:space="preserve">
+      <trans-unit id="Unread" xml:space="preserve" approved="no">
         <source>Unread</source>
+        <target state="translated">Oznacz jako nieprzeczytane</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update" xml:space="preserve">
+      <trans-unit id="Update" xml:space="preserve" approved="no">
         <source>Update</source>
+        <target state="translated">Aktualizuj</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update .onion hosts setting?" xml:space="preserve">
+      <trans-unit id="Update .onion hosts setting?" xml:space="preserve" approved="no">
         <source>Update .onion hosts setting?</source>
+        <target state="translated">Zaktualizować ustawienie hostów .onion?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update database passphrase" xml:space="preserve">
+      <trans-unit id="Update database passphrase" xml:space="preserve" approved="no">
         <source>Update database passphrase</source>
+        <target state="translated">Aktualizuj hasło do bazy danych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update network settings?" xml:space="preserve">
+      <trans-unit id="Update network settings?" xml:space="preserve" approved="no">
         <source>Update network settings?</source>
+        <target state="translated">Zaktualizować ustawienia sieci?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update transport isolation mode?" xml:space="preserve">
+      <trans-unit id="Update transport isolation mode?" xml:space="preserve" approved="no">
         <source>Update transport isolation mode?</source>
+        <target state="translated">Zaktualizować tryb izolacji transportu?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
+      <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve" approved="no">
         <source>Updating settings will re-connect the client to all servers.</source>
+        <target state="translated">Aktualizacja ustawień spowoduje ponowne połączenie klienta ze wszystkimi serwerami.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Updating this setting will re-connect the client to all servers." xml:space="preserve">
+      <trans-unit id="Updating this setting will re-connect the client to all servers." xml:space="preserve" approved="no">
         <source>Updating this setting will re-connect the client to all servers.</source>
+        <target state="translated">Aktualizacja tych ustawień spowoduje ponowne połączenie klienta ze wszystkimi serwerami.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade and open chat" xml:space="preserve">
+      <trans-unit id="Upgrade and open chat" xml:space="preserve" approved="no">
         <source>Upgrade and open chat</source>
+        <target state="translated">Zaktualizuj i otwórz czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use .onion hosts" xml:space="preserve">
+      <trans-unit id="Use .onion hosts" xml:space="preserve" approved="no">
         <source>Use .onion hosts</source>
+        <target state="translated">Użyj hostów .onion</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
+      <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve" approved="no">
         <source>Use SimpleX Chat servers?</source>
+        <target state="translated">Użyć serwerów SimpleX Chat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use chat" xml:space="preserve">
+      <trans-unit id="Use chat" xml:space="preserve" approved="no">
         <source>Use chat</source>
+        <target state="translated">Użyj czatu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use for new connections" xml:space="preserve">
+      <trans-unit id="Use for new connections" xml:space="preserve" approved="no">
         <source>Use for new connections</source>
+        <target state="translated">Użyj dla nowych połączeń</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use iOS call interface" xml:space="preserve">
+      <trans-unit id="Use iOS call interface" xml:space="preserve" approved="no">
         <source>Use iOS call interface</source>
+        <target state="translated">Użyj interfejsu połączeń iOS</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use server" xml:space="preserve">
+      <trans-unit id="Use server" xml:space="preserve" approved="no">
         <source>Use server</source>
+        <target state="translated">Użyj serwera</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
+      <trans-unit id="User profile" xml:space="preserve" approved="no">
         <source>User profile</source>
+        <target state="translated">Profil użytkownika</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
+      <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve" approved="no">
         <source>Using .onion hosts requires compatible VPN provider.</source>
+        <target state="translated">Używanie hostów .onion wymaga kompatybilnego dostawcy VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
+      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve" approved="no">
         <source>Using SimpleX Chat servers.</source>
+        <target state="translated">Używanie serwerów SimpleX Chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify connection security" xml:space="preserve">
+      <trans-unit id="Verify connection security" xml:space="preserve" approved="no">
         <source>Verify connection security</source>
+        <target state="translated">Weryfikuj bezpieczeństwo połączenia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify security code" xml:space="preserve">
+      <trans-unit id="Verify security code" xml:space="preserve" approved="no">
         <source>Verify security code</source>
+        <target state="translated">Weryfikuj kod bezpieczeństwa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Via browser" xml:space="preserve">
+      <trans-unit id="Via browser" xml:space="preserve" approved="no">
         <source>Via browser</source>
+        <target state="translated">Przez przeglądarkę</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video call" xml:space="preserve">
+      <trans-unit id="Video call" xml:space="preserve" approved="no">
         <source>Video call</source>
+        <target state="translated">Połączenie wideo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="View security code" xml:space="preserve">
+      <trans-unit id="View security code" xml:space="preserve" approved="no">
         <source>View security code</source>
+        <target state="translated">Pokaż kod bezpieczeństwa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages" xml:space="preserve">
+      <trans-unit id="Voice messages" xml:space="preserve" approved="no">
         <source>Voice messages</source>
+        <target state="translated">Wiadomości głosowe</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Voice messages are prohibited in this chat.</source>
+        <target state="translated">Wiadomości głosowe są zabronione na tym czacie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve" approved="no">
         <source>Voice messages are prohibited in this group.</source>
+        <target state="translated">Wiadomości głosowe są zabronione w tej grupie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages prohibited!" xml:space="preserve">
+      <trans-unit id="Voice messages prohibited!" xml:space="preserve" approved="no">
         <source>Voice messages prohibited!</source>
+        <target state="translated">Wiadomości głosowe zabronione!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice message…" xml:space="preserve">
+      <trans-unit id="Voice message…" xml:space="preserve" approved="no">
         <source>Voice message…</source>
+        <target state="translated">Wiadomość głosowa…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Waiting for file" xml:space="preserve">
+      <trans-unit id="Waiting for file" xml:space="preserve" approved="no">
         <source>Waiting for file</source>
+        <target state="translated">Oczekiwanie na plik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Waiting for image" xml:space="preserve">
+      <trans-unit id="Waiting for image" xml:space="preserve" approved="no">
         <source>Waiting for image</source>
+        <target state="translated">Oczekiwanie na obraz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
+      <trans-unit id="Warning: you may lose some data!" xml:space="preserve" approved="no">
         <source>Warning: you may lose some data!</source>
+        <target state="translated">Uwaga: możesz stracić niektóre dane!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="WebRTC ICE servers" xml:space="preserve">
+      <trans-unit id="WebRTC ICE servers" xml:space="preserve" approved="no">
         <source>WebRTC ICE servers</source>
+        <target state="translated">Serwery WebRTC ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome %@!" xml:space="preserve">
+      <trans-unit id="Welcome %@!" xml:space="preserve" approved="no">
         <source>Welcome %@!</source>
+        <target state="translated">Witaj %@!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message" xml:space="preserve">
+      <trans-unit id="Welcome message" xml:space="preserve" approved="no">
         <source>Welcome message</source>
+        <target state="translated">Wiadomość powitalna</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="What's new" xml:space="preserve">
+      <trans-unit id="What's new" xml:space="preserve" approved="no">
         <source>What's new</source>
+        <target state="translated">Co nowego</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When available" xml:space="preserve">
+      <trans-unit id="When available" xml:space="preserve" approved="no">
         <source>When available</source>
+        <target state="translated">Gdy dostępny</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
+      <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve" approved="no">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
+        <target state="translated">Gdy udostępnisz komuś profil incognito, będzie on używany w grupach, do których Cię zaprosi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="With optional welcome message." xml:space="preserve">
+      <trans-unit id="With optional welcome message." xml:space="preserve" approved="no">
         <source>With optional welcome message.</source>
+        <target state="translated">Z opcjonalną wiadomością powitalną.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong database passphrase" xml:space="preserve">
+      <trans-unit id="Wrong database passphrase" xml:space="preserve" approved="no">
         <source>Wrong database passphrase</source>
+        <target state="translated">Nieprawidłowe hasło bazy danych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong passphrase!" xml:space="preserve">
+      <trans-unit id="Wrong passphrase!" xml:space="preserve" approved="no">
         <source>Wrong passphrase!</source>
+        <target state="translated">Nieprawidłowe hasło!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You" xml:space="preserve">
+      <trans-unit id="You" xml:space="preserve" approved="no">
         <source>You</source>
+        <target state="translated">Ty</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You accepted connection" xml:space="preserve">
+      <trans-unit id="You accepted connection" xml:space="preserve" approved="no">
         <source>You accepted connection</source>
+        <target state="translated">Zaakceptowałeś połączenie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You allow" xml:space="preserve">
+      <trans-unit id="You allow" xml:space="preserve" approved="no">
         <source>You allow</source>
+        <target state="translated">Pozwalasz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve">
+      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve" approved="no">
         <source>You already have a chat profile with the same display name. Please choose another name.</source>
+        <target state="translated">Masz już profil czatu o tej samej nazwie wyświetlanej. Proszę wybrać inną nazwę.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connected to %@." xml:space="preserve">
+      <trans-unit id="You are already connected to %@." xml:space="preserve" approved="no">
         <source>You are already connected to %@.</source>
+        <target state="translated">Jesteś już połączony z %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
+      <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve" approved="no">
         <source>You are connected to the server used to receive messages from this contact.</source>
+        <target state="translated">Jesteś połączony z serwerem używanym do odbierania wiadomości od tego kontaktu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
