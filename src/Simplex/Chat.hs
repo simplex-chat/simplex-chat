@@ -57,7 +57,6 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (diffInMicros, diffInSeconds)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..))
@@ -78,6 +77,7 @@ import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
+import Simplex.Messaging.Util (diffInMicros, diffInSeconds)
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
@@ -2174,7 +2174,7 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-cleanupManagerInterval :: Int
+cleanupManagerInterval :: Int64
 cleanupManagerInterval = 1800 -- 30 minutes
 
 cleanupManager :: forall m. ChatMonad m => m ()
@@ -2186,7 +2186,7 @@ cleanupManager = do
       let (us, us') = partition activeUser users
       forM_ us cleanupUser
       forM_ us' cleanupUser
-    threadDelay $ cleanupManagerInterval * 1000000
+    liftIO $ threadDelay' $ cleanupManagerInterval * 1000000
   where
     cleanupUser user =
       cleanupTimedItems user `catchError` (toView . CRChatError (Just user))
@@ -2220,7 +2220,7 @@ startTimedItemThread user itemRef deleteAt = do
 deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
-  threadDelay $ diffInMicros deleteAt ts
+  liftIO $ threadDelay' $ diffInMicros deleteAt ts
   waitChatStarted
   case cType of
     CTDirect -> do
