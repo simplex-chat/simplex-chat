@@ -58,9 +58,8 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
                 if p.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
                     p.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
                         if let url = url {
-                            var tempUrl = URL(fileURLWithPath: getTempFilesDirectory().path + "/" + generateNewFileName("video", url.pathExtension))
-                            let res = try? FileManager.default.copyItem(at: url, to: tempUrl)
-                            if res != nil {
+                            let tempUrl = URL(fileURLWithPath: getTempFilesDirectory().path + "/" + generateNewFileName("video", url.pathExtension))
+                            if ((try? FileManager.default.copyItem(at: url, to: tempUrl)) != nil) {
                                 ChatModel.shared.filesToDelete.insert(tempUrl)
                                 self.loadVideo(url: tempUrl, error: error)
                             }

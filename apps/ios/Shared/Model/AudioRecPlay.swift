@@ -121,9 +121,9 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         audioPlayer = try? AVAudioPlayer(contentsOf: url)
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
-        audioPlayer?.play()
         NotificationCenter.default.post(name: .MediaStartedPlaying, object: nil, userInfo: ["url": url])
         addObserver(url)
+        audioPlayer?.play()
 
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             if self.audioPlayer?.isPlaying ?? false {
