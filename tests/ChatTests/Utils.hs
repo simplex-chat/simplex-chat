@@ -44,6 +44,9 @@ danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing,
 xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit' = if os == "linux" then xit else it
 
+xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
+xit'' = if os == "darwin" then xit else it
+
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
   it "v2" $ testChat2 aliceProfile bobProfile runTest
