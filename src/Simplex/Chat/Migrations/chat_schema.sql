@@ -560,7 +560,6 @@ CREATE TABLE IF NOT EXISTS "protocol_servers"(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   protocol TEXT NOT NULL DEFAULT 'smp',
-  location TEXT,
   UNIQUE(user_id, host, port)
 );
 CREATE INDEX idx_smp_servers_user_id ON "protocol_servers"(user_id);
