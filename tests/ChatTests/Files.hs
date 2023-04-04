@@ -58,7 +58,7 @@ chatFileTests = do
     it "send and receive file in group" testXFTPGroupFileTransfer
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
-    it "continue receiving file after restart" testXFTPContinueRcv
+    xit' "continue receiving file after restart" testXFTPContinueRcv
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()

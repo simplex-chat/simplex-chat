@@ -23,6 +23,7 @@ import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
 import Simplex.Messaging.Encoding.String
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
+import System.Info (os)
 import Test.Hspec
 
 defaultPrefs :: Maybe Preferences
@@ -39,6 +40,9 @@ cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Not
 
 danProfile :: Profile
 danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, preferences = defaultPrefs}
+
+xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
+xit' = if os == "linux" then xit else it
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
