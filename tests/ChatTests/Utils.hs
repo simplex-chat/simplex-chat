@@ -47,7 +47,7 @@ xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit'' d t = do
-  ci <- runIO $ lookupEnv "ci"
+  ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xit else it) d t
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
