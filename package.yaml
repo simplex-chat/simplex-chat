@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 4.6.1.0
+version: 4.6.1.1
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -107,6 +107,7 @@ tests:
       - deepseq == 1.4.*
       - hspec == 2.7.*
       - network == 3.1.*
+      - silently == 1.2.*
       - stm == 2.5.*
     ghc-options:
       - -threaded

@@ -26,4 +26,25 @@
     <string name="smp_servers_per_user">خوادم الاتصالات الجديدة لملف تعريف الدردشة الحالي الخاص بك</string>
     <string name="switch_receiving_address_desc">هذه الميزة تجريبية! ستعمل فقط إذا كان لدى العميل الآخر الإصدار 4.2 مثبتًا. يجب أن ترى الرسالة في المحادثة بمجرد اكتمال تغيير العنوان - يرجى التحقق من أنه لا يزال بإمكانك تلقي الرسائل من جهة الاتصال هذه (أو عضو المجموعة).</string>
     <string name="this_link_is_not_a_valid_connection_link">هذا الارتباط ليس ارتباط اتصال صالح!</string>
+    <string name="allow_verb">يسمح</string>
+    <string name="smp_servers_preset_add">أضف خوادم محددة مسبقًا</string>
+    <string name="smp_servers_add_to_another_device">أضف إلى جهاز آخر</string>
+    <string name="users_delete_all_chats_deleted">سيتم حذف جميع الدردشات والرسائل - لا يمكن التراجع عن هذا!</string>
+    <string name="network_enable_socks_info">الوصول إلى الخوادم عبر بروكسي SOCKS على المنفذ 9050؟ يجب بدء تشغيل الوكيل قبل تمكين هذا الخيار.</string>
+    <string name="accept_requests">قبول طلبات</string>
+    <string name="smp_servers_add">إضافة خادم …</string>
+    <string name="network_settings">إعدادات الشبكة المتقدمة</string>
+    <string name="all_group_members_will_remain_connected">سيبقى جميع أعضاء المجموعة على اتصال.</string>
+    <string name="allow_disappearing_messages_only_if">السماح باختفاء الرسائل فقط إذا سمحت جهة الاتصال الخاصة بك بذلك.</string>
+    <string name="allow_irreversible_message_deletion_only_if">السماح بحذف الرسائل بشكل لا رجوع فيه فقط إذا سمحت لك جهة الاتصال بذلك.</string>
+    <string name="group_member_role_admin">مسؤل</string>
+    <string name="users_add">إضافة ملف التعريف</string>
+    <string name="allow_direct_messages">السماح بإرسال رسائل مباشرة إلى الأعضاء.</string>
+    <string name="accept_contact_incognito_button">قبول التخفي</string>
+    <string name="button_add_welcome_message">أضف رسالة ترحيب</string>
+    <string name="v4_3_improved_server_configuration_desc">أضف الخوادم عن طريق مسح رموز QR.</string>
+    <string name="v4_2_group_links_desc">يمكن للمسؤولين إنشاء روابط للانضمام إلى المجموعات.</string>
+    <string name="accept_connection_request__question">قبول طلب الاتصال؟</string>
+    <string name="clear_chat_warning">سيتم حذف جميع الرسائل - لا يمكن التراجع عن هذا! سيتم حذف الرسائل فقط من أجلك.</string>
+    <string name="callstatus_accepted">مكالمة مقبولة</string>
 </resources>

@@ -7,18 +7,18 @@
                     <img class="static-phone-mobile md:hidden" src="/img/new/mobile-hero.png" alt="" />
 
                     <article class="w-full xl:max-w-[600px] landing-page-header-article">
-                        <p class="primary-header text-center xl:text-left font-bold text-[38px] md:text-[55px] leading-[46px] md:leading-[63px] mb-2 xl:mb-8">{{ "hero-header" | i18n({}, lang ) | safe }}</p>
-                        <p class="secondary-header text-center xl:text-left font-bold text-[28px] md:text-[38px] leading-[36px] md:leading-[43px] mb-2 xl:mb-8 tracking-[0.01em]">{{ "hero-subheader" | i18n({}, lang ) | safe }}</p>
+                        <p class="primary-header text-center xl:text-left xl:rtl:text-right font-bold text-[38px] md:text-[55px] leading-[46px] md:leading-[63px] mb-2 xl:mb-8">{{ "hero-header" | i18n({}, lang ) | safe }}</p>
+                        <p class="secondary-header text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[38px] leading-[36px] md:leading-[43px] mb-2 xl:mb-8 tracking-[0.01em]">{{ "hero-subheader" | i18n({}, lang ) | safe }}</p>
                         <p class="landing-page-header-article-paragraph text-black dark:text-white text-center xl:text-justify text-[16px] leading-[24px] mb-[20px] header-description">
                             {{ "hero-p-1" | i18n({}, lang ) | safe }}
                         </p>
-                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[1].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">{{ "hero-overlay-1-textlink" | i18n({}, lang ) | safe }}</a>
+                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[1].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left xl:rtl:text-right text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">{{ "hero-overlay-1-textlink" | i18n({}, lang ) | safe }}</a>
                         {{ overlay(hero_overlays.sections[1], lang) }}
-                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[0].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">{{ "hero-overlay-2-textlink" | i18n({}, lang ) | safe }}</a>
+                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[0].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left xl:rtl:text-right text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">{{ "hero-overlay-2-textlink" | i18n({}, lang ) | safe }}</a>
                         {{ overlay(hero_overlays.sections[0], lang) }}
                     </article>
                     <article class="w-full xl:max-w-[600px]">
-                        <p class="text-black dark:text-white hidden md:block text-center xl:text-left text-[16px] leading-[26px] mb-[11px] md:mt-6">{{ "get-simplex" | i18n({}, lang ) | safe }}</p>
+                        <p class="text-black dark:text-white hidden md:block text-center xl:text-left xl:rtl:text-right text-[16px] leading-[26px] mb-[11px] md:mt-6">{{ "get-simplex" | i18n({}, lang ) | safe }}</p>
                         <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
                             <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
                             <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
@@ -62,7 +62,7 @@
                     </div>
 
                     <article class="w-full xl:max-w-[600px] landing-page-header-article px-5">
-                        <p class="text-active-blue text-center xl:text-left font-bold text-[28px] md:text-[35px] leading-[36px] md:leading-[43px] mb-[28px]">
+                        <p class="text-active-blue text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[35px] leading-[36px] md:leading-[43px] mb-[28px]">
                             {{ "hero-2-header" | i18n({}, lang ) | safe }}
                         </p>
                         <p class="text-center text-black dark:text-white xl:text-justify leading-[24px] text-[16px] mb-10 xl:mb-[25px] header-description">

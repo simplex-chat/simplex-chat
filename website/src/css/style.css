@@ -293,6 +293,10 @@ header nav {
     opacity: 1;
     transform: translateX(0);
   }
+
+  .flag-container .sub-menu{
+    max-height: fit-content;
+  }
 }
 
 .lock-scroll {
@@ -311,6 +315,14 @@ header nav {
   opacity: 0;
   pointer-events: none;
   display: none !important;
+}
+
+@media (max-width: 767px) {
+  .swiper-button-next, .swiper-button-prev {
+    opacity: 0;
+    pointer-events: none;
+    display: none !important;
+  }
 }
 
 .swiper-pagination-bullet {
@@ -364,6 +376,14 @@ header nav {
 }
 .dark .swiper-scrollbar-drag{
   background-color: #70F0F9;
+}
+
+.swiper-rtl .swiper-button-prev{
+  right: 0 !important;
+}
+
+.swiper-rtl .swiper-button-next{
+  left: 0 !important;
 }
 
 /* What makes simplex private */
@@ -464,6 +484,11 @@ header nav {
   font-weight: 500;
   text-align: left;
 }
+
+[dir="rtl"] #comparison table tbody tr > td:first-child{
+  text-align: right;
+}
+
 @media (min-width: 1024px) {
   #comparison table tbody tr > td:first-child{
     font-size: 18px;

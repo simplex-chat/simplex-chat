@@ -1,6 +1,20 @@
-| Updated 31.01.2023 | Languages: [EN](/docs/SQL.md), FR |
+| 31.01.2023 | FR, [EN](/docs/SQL.md), [CZ](/docs/lang/cs/SQL.md) |
 
-# Accès à l'historique des messages via des requêtes SQL
+# Accès aux messages de la base de données
+
+## Déchiffrer les bases de données
+
+Afin de visualiser les données de la base de données, vous devez d'abord les déchiffrer. Installez `sqlcipher` en utilisant votre gestionnaire de paquets préféré et exécutez les commandes suivantes dans le répertoire contenant les bases de données :
+```bash
+sqlcipher files_chat.db
+pragma key="youDecryptionPassphrase";
+# S'assurer qu'il fonctionne bien
+select * from users;
+```
+
+Si vous voyez `Parse error : no such table : users`, assurez-vous que vous avez entré la bonne phrase secrète, et que vous avez changé la phrase secrète au hasard dans l'application Android (si vous avez obtenu cette base de données à partir d'un appareil Android, bien sûr).
+
+# Requêtes SQL
 
 Vous pouvez exécuter des requêtes `direct_messages`, `group_messages` et `all_messages` (ou leurs alternatives plus simples `direct_messages_plain`, `group_messages_plain` et `all_messages_plain`), par exemple :
 
