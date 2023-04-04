@@ -22,6 +22,8 @@ struct UserProfilesView: View {
     @State private var profileAction: UserProfileAction?
     @State private var actionPassword = ""
 
+    var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
+
     private enum UserProfilesAlert: Identifiable {
         case deleteUser(user: User, delSMPQueues: Bool)
         case cantDeleteLastUser
@@ -90,7 +92,7 @@ struct UserProfilesView: View {
                     }
                 }
 
-                if searchTextOrPassword == "" {
+                if trimmedSearchTextOrPassword == "" {
                     NavigationLink {
                         CreateProfile()
                     } label: {
@@ -179,7 +181,7 @@ struct UserProfilesView: View {
     }
 
     private func filteredUsers() -> [UserInfo] {
-        let s = searchTextOrPassword.trimmingCharacters(in: .whitespaces)
+        let s = trimmedSearchTextOrPassword
         let lower = s.localizedLowercase
         return m.users.filter { u in
             if (u.user.activeUser || !u.user.hidden) && (s == "" || u.user.chatViewName.localizedLowercase.contains(lower)) {
@@ -201,7 +203,7 @@ struct UserProfilesView: View {
     }
 
     private func userViewPassword(_ user: User) -> String? {
-        !user.hidden ? nil : searchTextOrPassword
+        !user.hidden ? nil : trimmedSearchTextOrPassword
     }
 
     @ViewBuilder private func profileActionView(_ action: UserProfileAction) -> some View {
@@ -267,7 +269,7 @@ struct UserProfilesView: View {
     }
 
     private func passwordEntryRequired(_ user: User) -> Bool {
-        user.hidden && user.activeUser && !correctPassword(user, searchTextOrPassword)
+        user.hidden && user.activeUser && !correctPassword(user, trimmedSearchTextOrPassword)
     }
 
     private func removeUser(_ user: User, _ delSMPQueues: Bool, viewPwd: String?) async {
@@ -328,7 +330,7 @@ struct UserProfilesView: View {
                     if passwordEntryRequired(user) {
                         profileAction = .unhideUser(user: user)
                     } else {
-                        setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: searchTextOrPassword) }
+                        setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: trimmedSearchTextOrPassword) }
                     }
                 }
                 .tint(.green)
