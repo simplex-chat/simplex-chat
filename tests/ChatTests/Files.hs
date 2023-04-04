@@ -47,7 +47,7 @@ chatFileTests = do
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
   describe "async sending and receiving files" $ do
     -- fails on CI
-    xit'' "send and receive file, sender restarts" testAsyncFileTransferSenderRestarts
+    xit "send and receive file, sender restarts" testAsyncFileTransferSenderRestarts
     it "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
     xdescribe "send and receive file, fully asynchronous" $ do
       it "v2" testAsyncFileTransfer
