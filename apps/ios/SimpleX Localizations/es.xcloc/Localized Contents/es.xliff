@@ -525,9 +525,9 @@
         <target>Adjuntar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio &amp; video calls" xml:space="preserve">
+      <trans-unit id="Audio &amp; video calls" xml:space="preserve" approved="no">
         <source>Audio &amp; video calls</source>
-        <target>Llamadas y videollamadas</target>
+        <target state="translated">Llamadas y Videollamadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio and video calls" xml:space="preserve">
@@ -1034,10 +1034,10 @@
         <target>Contraseña de la base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase &amp; export" xml:space="preserve">
+      <trans-unit id="Database passphrase &amp; export" xml:space="preserve" approved="no">
         <source>Database passphrase &amp; export</source>
-        <target>Base de datos
-y frase de contraseña</target>
+        <target state="translated">Base de datos
+y Contraseña</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
@@ -1424,8 +1424,9 @@ y frase de contraseña</target>
         <target>Mensaje cifrado: error en base de datos</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database migration error" xml:space="preserve" approved="no">
         <source>Encrypted message: database migration error</source>
+        <target state="translated">Mensaje cifrado: error de migración de base de datos</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
@@ -1683,8 +1684,9 @@ y frase de contraseña</target>
         <target>Salir sin guardar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Experimental" xml:space="preserve">
+      <trans-unit id="Experimental" xml:space="preserve" approved="no">
         <source>Experimental</source>
+        <target state="translated">Experimental</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -1937,9 +1939,9 @@ y frase de contraseña</target>
         <target>Cómo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to use it" xml:space="preserve">
+      <trans-unit id="How to use it" xml:space="preserve" approved="no">
         <source>How to use it</source>
-        <target>Guia de uso</target>
+        <target state="translated">Guía de uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use your servers" xml:space="preserve">
@@ -2344,8 +2346,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Migración completada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
+      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
         <source>Migrations: %@</source>
+        <target state="translated">Migraciones: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -2383,9 +2386,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Nombre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network &amp; servers" xml:space="preserve">
+      <trans-unit id="Network &amp; servers" xml:space="preserve" approved="no">
         <source>Network &amp; servers</source>
-        <target>Redes y servidores</target>
+        <target state="translated">Redes y Servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -2717,9 +2720,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Dirección del servidor predefinida</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy &amp; security" xml:space="preserve">
+      <trans-unit id="Privacy &amp; security" xml:space="preserve" approved="no">
         <source>Privacy &amp; security</source>
-        <target>Privacidad y seguridad</target>
+        <target state="translated">Privacidad y Seguridad</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -3082,8 +3085,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Enviar mensaje directo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send files via XFTP" xml:space="preserve">
+      <trans-unit id="Send files via XFTP" xml:space="preserve" approved="no">
         <source>Send files via XFTP</source>
+        <target state="translated">Enviar archivos vía XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
@@ -4222,9 +4226,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>[Contacta por email](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
+      <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve" approved="no">
         <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
-        <target>[Comienza en GitHub] (https://github.com/simplex-chat/simplex-chat)</target>
+        <target state="translated">[Dar Estrella en GitHub] (https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">
@@ -4402,8 +4406,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>creador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
+        <target state="translated">la versión de la base de datos es más reciente que la aplicación, pero no hay migración hacía versión anterior para: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -4421,8 +4426,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>grupo eliminado</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
+      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve" approved="no">
         <source>different migration in the app/database: %@ / %@</source>
+        <target state="translated">migración diferente en la aplicación/base de datos: %@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">
