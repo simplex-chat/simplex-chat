@@ -408,7 +408,7 @@
     <string name="your_profile_is_stored_on_your_device">Twój profil, kontakty i dostarczone wiadomości są przechowywane na Twoim urządzeniu.</string>
     <string name="a_plus_b">a + b</string>
     <string name="about_simplex">O SimpleX</string>
-    <string name="callstatus_accepted">akceptuj rozmowę</string>
+    <string name="callstatus_accepted">zaakceptowane połączenie</string>
     <string name="bold">pogrubiona</string>
     <string name="callstatus_ended">połączenie zakończone <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="callstatus_error">błąd połączenia</string>
@@ -658,7 +658,7 @@
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Dołączyłeś do tej grupy. Łączenie z zapraszającym członkiem grupy.</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Przestaniesz otrzymywać wiadomości od tej grupy. Historia czatu zostanie zachowana.</string>
     <string name="group_member_role_admin">administrator</string>
-    <string name="rcv_conn_event_switch_queue_phase_completed">zmieniono adres dla ciebie</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">zmieniono adres dla Ciebie</string>
     <string name="rcv_group_event_changed_member_role">zmieniono rolę %s na %s</string>
     <string name="rcv_group_event_changed_your_role">zmieniono Twoją rolę na %s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">zmiana adresu…</string>
@@ -681,7 +681,7 @@
     <string name="rcv_group_event_user_deleted">usunął cię</string>
     <string name="group_invitation_tap_to_join">Dotknij, aby dołączyć</string>
     <string name="group_invitation_tap_to_join_incognito">Dotknij, aby dołączyć w trybie incognito</string>
-    <string name="rcv_group_event_updated_group_profile">zaktualizowano profil gorpy</string>
+    <string name="rcv_group_event_updated_group_profile">zaktualizowano profil grupy</string>
     <string name="you_are_invited_to_group">Jesteś zaproszony do grupy</string>
     <string name="snd_conn_event_switch_queue_phase_completed">zmieniłeś adres</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">zmieniłeś adres dla %s</string>
