@@ -35,7 +35,7 @@ struct VideoPlayerView: UIViewRepresentable {
             player.play()
         }
         NotificationCenter.default.addObserver(forName: .MediaStartedPlaying, object: nil, queue: .main) { ntf in
-            if let url = ntf.userInfo?.first { $0.key as? String == "url" }?.value as? URL, url != self.url {
+            if let url = ntf.userInfo?.first(where: { $0.key as? String == "url" })?.value as? URL, url != self.url {
                 // Other player started to play
                 player.pause()
             }
