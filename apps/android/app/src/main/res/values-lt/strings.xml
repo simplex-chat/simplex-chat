@@ -47,4 +47,26 @@
     <string name="auth_unavailable">Tapatybės nustatymas neprieinamas</string>
     <string name="impossible_to_recover_passphrase"><b>Turėkite omenyje</b>: jeigu prarasite slaptafrazę, NEBEGALĖSITE jos atkurti ar pakeisti.</string>
     <string name="cancel_verb">Atsisakyti</string>
+    <string name="callstate_connecting">jungiamasi…</string>
+    <string name="connect_via_link_verb">Prisijungti</string>
+    <string name="server_connected">prisijungta</string>
+    <string name="server_connecting">jungiamasi</string>
+    <string name="display_name_connection_established">ryšys užmegztas</string>
+    <string name="display_name_connecting">jungiasi…</string>
+    <string name="connection_error">Ryšio klaida</string>
+    <string name="smp_server_test_connect">Prisijungti</string>
+    <string name="notification_contact_connected">Prisijungė</string>
+    <string name="connect_button">Prisijungti</string>
+    <string name="group_member_status_connected">prisijungė</string>
+    <string name="contact_connection_pending">jungiasi…</string>
+    <string name="group_connection_pending">jungiasi…</string>
+    <string name="icon_descr_server_status_connected">Prisijungta</string>
+    <string name="confirm_verb">Patvirtinti</string>
+    <string name="configure_ICE_servers">Konfigūruoti ICE serverius</string>
+    <string name="callstate_connected">prisijungta</string>
+    <string name="rcv_group_event_member_connected">prisijungė</string>
+    <string name="info_row_connection">Ryšys</string>
+    <string name="confirm_database_upgrades">Patvirtinti duomenų bazių naujinimus</string>
+    <string name="group_member_status_connecting">jungiasi</string>
+    <string name="network_session_mode_entity">Ryšys</string>
 </resources>
