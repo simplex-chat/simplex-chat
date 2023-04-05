@@ -1,5 +1,5 @@
 //
-//  SMPServersView.swift
+//  ProtocolServersView.swift
 //  SimpleX (iOS)
 //
 //  Created by Evgeny on 15/11/2022.
@@ -11,28 +11,33 @@ import SimpleXChat
 
 private let howToUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md")!
 
-struct SMPServersView: View {
+struct ProtocolServersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
-    @State private var servers = ChatModel.shared.userSMPServers ?? []
+    let serverProtocol: ServerProtocol
+    @State private var currServers: [ServerCfg] = []
+    @State private var presetServers: [String] = []
+    @State private var servers: [ServerCfg] = []
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var showScanSMPServer = false
     @State private var testing = false
-    @State private var alert: SMPServerAlert? = nil
+    @State private var alert: ServerAlert? = nil
     @State private var showSaveDialog = false
+
+    var proto: String { serverProtocol.rawValue.uppercased() }
 
     var body: some View {
         ZStack {
-            smpServersView()
+            protocolServersView()
             if testing {
                 ProgressView().scaleEffect(2)
             }
         }
     }
 
-    enum SMPServerAlert: Identifiable {
+    enum ServerAlert: Identifiable {
         case testsFailed(failures: [String: SMPTestFailure])
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
@@ -44,11 +49,11 @@ struct SMPServersView: View {
         }
     }
 
-    private func smpServersView() -> some View {
+    private func protocolServersView() -> some View {
         List {
             Section {
                 ForEach($servers) { srv in
-                    smpServerView(srv)
+                    protocolServerView(srv)
                 }
                 .onMove { indexSet, offset in
                     servers.move(fromOffsets: indexSet, toOffset: offset)
@@ -60,18 +65,18 @@ struct SMPServersView: View {
                     showAddServer = true
                 }
             } header: {
-                Text("SMP servers")
+                Text("\(proto) servers")
             } footer: {
                 Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
                     .lineLimit(10)
             }
 
             Section {
-                Button("Reset") { servers = m.userSMPServers ?? [] }
-                    .disabled(servers == m.userSMPServers || testing)
+                Button("Reset") { servers = currServers }
+                    .disabled(servers == currServers || testing)
                 Button("Test servers", action: testServers)
                     .disabled(testing || allServersDisabled)
-                Button("Save servers", action: saveSMPServers)
+                Button("Save servers", action: saveServers)
                     .disabled(saveDisabled)
                 howToButton()
             }
@@ -87,7 +92,7 @@ struct SMPServersView: View {
                 .disabled(hasAllPresets())
         }
         .sheet(isPresented: $showScanSMPServer) {
-            ScanSMPServer(servers: $servers)
+            ScanProtocolServer(servers: $servers)
         }
         .modifier(BackButton {
             if saveDisabled {
@@ -98,7 +103,7 @@ struct SMPServersView: View {
         })
         .confirmationDialog("Save servers?", isPresented: $showSaveDialog) {
             Button("Save") {
-                saveSMPServers()
+                saveServers()
                 dismiss()
             }
             Button("Exit without saving") { dismiss() }
@@ -119,11 +124,22 @@ struct SMPServersView: View {
                 )
             }
         }
+        .onAppear {
+            do {
+                (currServers, presetServers) = try getUserProtocolServers(serverProtocol)
+                servers = currServers
+            } catch let error {
+                alert = .error(
+                    title: "Error loading \(proto) servers",
+                    error: "Error: \(responseError(error))"
+                )
+            }
+        }
     }
 
     private var saveDisabled: Bool {
         servers.isEmpty ||
-        servers == m.userSMPServers ||
+        servers == currServers ||
         testing ||
         !servers.allSatisfy { srv in
             if let address = parseServerAddress(srv.server) {
@@ -138,12 +154,16 @@ struct SMPServersView: View {
         servers.allSatisfy { !$0.enabled }
     }
 
-    private func smpServerView(_ server: Binding<ServerCfg>) -> some View {
+    private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
         let srv = server.wrappedValue
         return NavigationLink(tag: srv.id, selection: $selectedServer) {
-            SMPServerView(server: server, serverToEdit: srv)
-                .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
-                .navigationBarTitleDisplayMode(.large)
+            ProtocolServerView(
+                serverProtocol: .smp,
+                server: server,
+                serverToEdit: srv
+            )
+            .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
+            .navigationBarTitleDisplayMode(.large)
         } label: {
             let address = parseServerAddress(srv.server)
             HStack {
@@ -201,11 +221,11 @@ struct SMPServersView: View {
     }
 
     private func hasAllPresets() -> Bool {
-        m.presetSMPServers?.allSatisfy { hasPreset($0) } ?? true
+        presetServers.allSatisfy { hasPreset($0) }
     }
 
     private func addAllPresets() {
-        for srv in m.presetSMPServers ?? [] {
+        for srv in presetServers {
             if !hasPreset(srv) {
                 servers.append(ServerCfg(server: srv, preset: true, tested: nil, enabled: true))
             }
@@ -250,21 +270,21 @@ struct SMPServersView: View {
         return fs
     }
 
-    func saveSMPServers() {
+    func saveServers() {
         Task {
             do {
-                try await setUserSMPServers(smpServers: servers)
+                try await setUserProtocolServers(serverProtocol, servers: servers)
                 await MainActor.run {
-                    m.userSMPServers = servers
+                    currServers = servers
                     editMode?.wrappedValue = .inactive
                 }
             } catch let error {
                 let err = responseError(error)
-                logger.error("saveSMPServers setUserSMPServers error: \(err)")
+                logger.error("saveServers setUserProtocolServers error: \(err)")
                 await MainActor.run {
                     alert = .error(
-                        title: "Error saving SMP servers",
-                        error: "Make sure SMP server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
+                        title: "Error saving \(proto) servers",
+                        error: "Make sure \(proto) server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
                     )
                 }
             }
@@ -272,8 +292,8 @@ struct SMPServersView: View {
     }
 }
 
-struct SMPServersView_Previews: PreviewProvider {
+struct ProtocolServersView_Previews: PreviewProvider {
     static var previews: some View {
-        SMPServersView()
+        ProtocolServersView(serverProtocol: .smp)
     }
 }

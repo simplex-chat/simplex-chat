@@ -29,6 +29,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
+import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
@@ -72,7 +73,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
@@ -182,26 +183,31 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
     agentServers :: ChatConfig -> IO InitialAgentServers
     agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
       users <- withTransaction chatStore getUsers
-      smp' <- getUserServers users smp
-      xftp' <- getUserServers users xftp
+      smp' <- getUserServers users SPSMP
+      xftp' <- getUserServers users SPXFTP
       pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
       where
-        getUserServers :: forall p. ProtocolTypeI p => [User] -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p)) -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
-        getUserServers users srvSel = case users of
-          [] -> pure $ M.fromList [(1, srvSel defServers)]
+        getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
+        getUserServers users protocol = case users of
+          [] -> pure $ M.fromList [(1, cfgServers protocol defServers)]
           _ -> M.fromList <$> initialServers
           where
             initialServers :: IO [(UserId, NonEmpty (ProtoServerWithAuth p))]
             initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
             userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
-            userServers user' = activeAgentServers config srvSel <$> withTransaction chatStore (`getProtocolServers` user')
+            userServers user' = activeAgentServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
-activeAgentServers :: ChatConfig -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p)) -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
-activeAgentServers ChatConfig {defaultServers} srvSel =
-  fromMaybe (srvSel defaultServers)
+activeAgentServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
+activeAgentServers ChatConfig {defaultServers} p =
+  fromMaybe (cfgServers p defaultServers)
     . nonEmpty
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
+
+cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p))
+cfgServers = \case
+  SPSMP -> smp
+  SPXFTP -> xftp
 
 startChatController :: forall m. ChatMonad' m => Bool -> Bool -> m (Async ())
 startChatController subConns enableExpireCIs = do
@@ -294,33 +300,37 @@ processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser p@Profile {displayName} sameServers -> do
     u <- asks currentUser
-    (smp, smpServers) <- chooseServers
+    (smp, smpServers) <- chooseServers SPSMP
+    (xftp, xftpServers) <- chooseServers SPXFTP
     auId <-
       withStore' getUsers >>= \case
         [] -> pure 1
         users -> do
           when (any (\User {localDisplayName = n} -> n == displayName) users) $
             throwChatError $ CEUserExists displayName
-          withAgent (`createUser` smp)
+          withAgent (\a -> createUser a smp xftp)
     user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
-    unless (null smpServers) $
-      withStore $ \db -> overwriteSMPServers db user smpServers
+    storeServers user smpServers
+    storeServers user xftpServers
     setActive ActiveNone
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
-      chooseServers :: m (NonEmpty SMPServerWithAuth, [ServerCfg 'PSMP])
-      chooseServers
+      chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> m (NonEmpty (ProtoServerWithAuth p), [ServerCfg p])
+      chooseServers protocol
         | sameServers =
           asks currentUser >>= readTVarIO >>= \case
             Nothing -> throwChatError CENoActiveUser
             Just user -> do
-              smpServers <- withStore' (`getSMPServers` user)
+              smpServers <- withStore' (`getProtocolServers` user)
               cfg <- asks config
-              pure (activeAgentServers cfg smp smpServers, smpServers)
+              pure (activeAgentServers cfg protocol smpServers, smpServers)
         | otherwise = do
-          DefaultAgentServers {smp} <- asks $ defaultServers . config
-          pure (smp, [])
+          defServers <- asks $ defaultServers . config
+          pure (cfgServers protocol defServers, [])
+      storeServers user servers =
+        unless (null servers) $
+          withStore $ \db -> overwriteProtocolServers db user servers
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
   APISetActiveUser userId' viewPwd_ -> withUser $ \user -> do
     user' <- privateGetUser userId'
@@ -902,30 +912,29 @@ processChatCommand = \case
       pure user_ $>>= \user ->
         withStore (\db -> Just <$> getConnectionEntity db user agentConnId) `catchError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
     pure CRNtfMessages {user_, connEntity, msgTs = msgTs', ntfMessages}
-  APIGetUserSMPServers userId -> withUserId userId $ \user -> do
-    ChatConfig {defaultServers = DefaultAgentServers {smp = defaultSMPServers}} <- asks config
-    smpServers <- withStore' (`getSMPServers` user)
-    let smpServers' = fromMaybe (L.map toServerCfg defaultSMPServers) $ nonEmpty smpServers
-    pure $ CRUserSMPServers user smpServers' defaultSMPServers
+  APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
+    ChatConfig {defaultServers} <- asks config
+    servers <- withStore' (`getProtocolServers` user)
+    let defServers = cfgServers p defaultServers
+        servers' = fromMaybe (L.map toServerCfg defServers) $ nonEmpty servers
+    pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p servers' defServers
     where
       toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = True}
-  GetUserSMPServers -> withUser $ \User {userId} ->
-    processChatCommand $ APIGetUserSMPServers userId
-  APISetUserSMPServers userId (SMPServersConfig smpServers) -> withUserId userId $ \user -> withChatLock "setUserSMPServers" $ do
-    withStore $ \db -> overwriteSMPServers db user smpServers
-    cfg <- asks config
-    withAgent $ \a -> setSMPServers a (aUserId user) $ activeAgentServers cfg smp smpServers
-    ok user
-  SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
-    processChatCommand $ APISetUserSMPServers userId smpServersConfig
-  APIGetUserServers _ -> pure $ chatCmdError Nothing "TODO"
-  GetUserServers -> pure $ chatCmdError Nothing "TODO"
-  APISetUserServers _ _ -> pure $ chatCmdError Nothing "TODO"
-  SetUserServers _ -> pure $ chatCmdError Nothing "TODO"
-  APITestSMPServer userId smpServer -> withUserId userId $ \user ->
-    CRSmpTestResult user <$> withAgent (\a -> testSMPServerConnection a (aUserId user) smpServer)
-  TestSMPServer smpServer -> withUser $ \User {userId} ->
-    processChatCommand $ APITestSMPServer userId smpServer
+  GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
+    processChatCommand $ APIGetUserProtoServers userId aProtocol
+  APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $
+    withChatLock "setUserSMPServers" $ do
+      withStore $ \db -> overwriteProtocolServers db user servers
+      cfg <- asks config
+      withAgent $ \a -> setProtocolServers a (aUserId user) $ activeAgentServers cfg p servers
+      ok user
+  SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
+    processChatCommand $ APISetUserProtoServers userId serversConfig
+  APITestProtoServer userId srv@(AProtoServerWithAuth p server) -> withUserId userId $ \user ->
+    withServerProtocol p $
+      CRServerTestResult user srv <$> withAgent (\a -> testProtocolServer a (aUserId user) server)
+  TestProtoServer srv -> withUser $ \User {userId} ->
+    processChatCommand $ APITestProtoServer userId srv
   APISetChatItemTTL userId newTTL_ -> withUser' $ \user -> do
     checkSameUser userId user
     checkStoreNotChanged $
@@ -1661,6 +1670,10 @@ processChatCommand = \case
                   atomically $ TM.delete ctId calls
               ok user
             | otherwise -> throwChatError $ CECallContact contactId
+    withServerProtocol :: ProtocolTypeI p => SProtocolType p -> (UserProtocol p => m a) -> m a
+    withServerProtocol p action = case userProtocol p of
+      Just Dict -> action
+      _ -> throwChatError $ CEServerProtocol $ AProtocolType p
     forwardFile :: ChatName -> FileTransferId -> (ChatName -> FilePath -> ChatCommand) -> m ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
       withStore (\db -> getFileTransfer db user fileId) >>= \case
@@ -4457,17 +4470,17 @@ chatCommandP =
       "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
-      -- /smp_servers is deprecated, use /smp and /_smp
-      "/smp_servers default" $> SetUserSMPServers (SMPServersConfig []),
-      "/smp_servers " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
-      "/smp_servers" $> GetUserSMPServers,
-      "/smp default" $> SetUserSMPServers (SMPServersConfig []),
-      "/_smp test " *> (APITestSMPServer <$> A.decimal <* A.space <*> strP),
-      "/smp test " *> (TestSMPServer <$> strP),
-      "/_smp " *> (APISetUserSMPServers <$> A.decimal <* A.space <*> jsonP),
-      "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
-      "/_smp " *> (APIGetUserSMPServers <$> A.decimal),
-      "/smp" $> GetUserSMPServers,
+      "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
+      "/smp test " *> (TestProtoServer . AProtoServerWithAuth SPSMP <$> strP),
+      "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
+      "/_servers " *> (APISetUserProtoServers <$> A.decimal <* A.space <*> srvCfgP),
+      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
+      "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig []),
+      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
+      "/xftp default" $> SetUserProtoServers (APSC SPXFTP $ ProtoServersConfig []),
+      "/_servers " *> (APIGetUserProtoServers <$> A.decimal <* A.space <*> strP),
+      "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
+      "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
       "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> ciTTLDecimal),
       "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
@@ -4686,6 +4699,7 @@ chatCommandP =
         onOffP
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
+    srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
 

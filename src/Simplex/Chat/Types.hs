@@ -52,7 +52,7 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolTypeI)
+import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 
 class IsContact a where
@@ -2099,22 +2099,4 @@ instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
 instance ProtocolTypeI p => FromJSON (ServerCfg p) where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
-
-data AServerCfg = AServerCfg
-  { server :: AProtoServerWithAuth,
-    preset :: Bool,
-    tested :: Maybe Bool,
-    enabled :: Bool
-  }
-
-deriving instance Show AServerCfg
-
-deriving instance Generic AServerCfg
-
-instance ToJSON AServerCfg where
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-
-instance FromJSON AServerCfg where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
