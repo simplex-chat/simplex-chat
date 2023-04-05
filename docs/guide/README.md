@@ -35,7 +35,7 @@ Download SimpleX Chat [here](https://simplex.chat) or follow the installation st
 After installing SimpleX Chat:
 
 1. Open the app.
-2. Enter your display name and full name (optional).
+2. Enter your desired display name and full name (optional).
 3. Tap **Create**.
 
 **Note**: your chat profile is stored locally on your device; it is not stored anywhere else.
