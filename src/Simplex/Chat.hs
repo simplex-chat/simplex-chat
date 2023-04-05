@@ -57,7 +57,6 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (diffInMicros, diffInSeconds)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..))
@@ -1778,7 +1777,7 @@ startExpireCIThread user@User {userId} = do
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           ttl <- withStore' (`getChatItemTTL` user)
           forM_ ttl $ \t -> expireChatItems user t False
-        threadDelay interval
+        liftIO $ threadDelay' interval
 
 setExpireCIFlag :: ChatMonad' m => User -> Bool -> m ()
 setExpireCIFlag User {userId} b = do
@@ -2174,7 +2173,7 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-cleanupManagerInterval :: Int
+cleanupManagerInterval :: Int64
 cleanupManagerInterval = 1800 -- 30 minutes
 
 cleanupManager :: forall m. ChatMonad m => m ()
@@ -2186,7 +2185,7 @@ cleanupManager = do
       let (us, us') = partition activeUser users
       forM_ us cleanupUser
       forM_ us' cleanupUser
-    threadDelay $ cleanupManagerInterval * 1000000
+    liftIO $ threadDelay' $ cleanupManagerInterval * 1000000
   where
     cleanupUser user =
       cleanupTimedItems user `catchError` (toView . CRChatError (Just user))
@@ -2220,7 +2219,7 @@ startTimedItemThread user itemRef deleteAt = do
 deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
-  threadDelay $ diffInMicros deleteAt ts
+  liftIO $ threadDelay' $ diffInMicros deleteAt ts
   waitChatStarted
   case cType of
     CTDirect -> do
@@ -4409,7 +4408,7 @@ chatCommandP =
       "/_temp_folder " *> (SetTempFolder <$> filePath),
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
-      "/xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
+      "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
@@ -4672,10 +4671,7 @@ chatCommandP =
       logErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout logErrors
-    xftpCfgP = do
-      minFileSize <- "minFileSize=" *> fileSizeP
-      pure $ XFTPFileConfig {minFileSize}
-    -- TODO move to Utils in simplexmq
+    xftpCfgP = XFTPFileConfig <$> (" size=" *> fileSizeP <|> pure 0)
     fileSizeP =
       A.choice
         [ gb <$> A.decimal <* "gb",
