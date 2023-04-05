@@ -38,7 +38,7 @@ struct ProtocolServersView: View {
     }
 
     enum ServerAlert: Identifiable {
-        case testsFailed(failures: [String: SMPTestFailure])
+        case testsFailed(failures: [String: ProtocolTestFailure])
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -126,7 +126,9 @@ struct ProtocolServersView: View {
         }
         .onAppear {
             do {
-                (currServers, presetServers) = try getUserProtocolServers(serverProtocol)
+                let r = try getUserProtoServers(serverProtocol)
+                currServers = r.protoServers
+                presetServers = r.presetServers
                 servers = currServers
             } catch let error {
                 alert = .error(
@@ -258,8 +260,8 @@ struct ProtocolServersView: View {
         }
     }
 
-    private func runServersTest() async -> [String: SMPTestFailure] {
-        var fs: [String: SMPTestFailure] = [:]
+    private func runServersTest() async -> [String: ProtocolTestFailure] {
+        var fs: [String: ProtocolTestFailure] = [:]
         for i in 0..<servers.count {
             if servers[i].enabled {
                 if let f = await testServerConnection(server: $servers[i]) {
@@ -273,7 +275,7 @@ struct ProtocolServersView: View {
     func saveServers() {
         Task {
             do {
-                try await setUserProtocolServers(serverProtocol, servers: servers)
+                try await setUserProtoServers(serverProtocol, servers: servers)
                 await MainActor.run {
                     currServers = servers
                     editMode?.wrappedValue = .inactive

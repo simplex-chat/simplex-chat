@@ -43,6 +43,13 @@ struct NetworkAndServers: View {
                         Text("SMP servers")
                     }
 
+                    NavigationLink {
+                        ProtocolServersView(serverProtocol: .xftp)
+                            .navigationTitle("Your XFTP servers")
+                    } label: {
+                        Text("XFTP servers")
+                    }
+
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }

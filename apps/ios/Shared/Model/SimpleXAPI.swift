@@ -391,36 +391,22 @@ func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserProtocolServers(_ p: ServerProtocol) throws -> ([ServerCfg], [String]) {
-    if case .smp = p {
-        return try getUserSMPServers()
-    }
-    throw RuntimeError("not supported")
-}
-
-private func getUserSMPServers() throws -> ([ServerCfg], [String]) {
-    let userId = try currentUserId("getUserSMPServers")
-    let r = chatSendCmdSync(.apiGetUserSMPServers(userId: userId))
-    if case let .userSMPServers(_, smpServers, presetServers) = r { return (smpServers, presetServers) }
+func getUserProtoServers(_ serverProtocol: ServerProtocol) throws -> UserProtoServers {
+    let userId = try currentUserId("getUserProtoServers")
+    let r = chatSendCmdSync(.apiGetUserProtoServers(userId: userId, serverProtocol: serverProtocol))
+    if case let .userProtoServers(_, servers) = r { return servers }
     throw r
 }
 
-func setUserProtocolServers(_ p: ServerProtocol, servers: [ServerCfg]) async throws {
-    if case .smp = p {
-        return try await setUserSMPServers(smpServers: servers)
-    }
-    throw RuntimeError("not supported")
+func setUserProtoServers(_ serverProtocol: ServerProtocol, servers: [ServerCfg]) async throws {
+    let userId = try currentUserId("setUserProtoServers")
+    try await sendCommandOkResp(.apiSetUserProtoServers(userId: userId, serverProtocol: serverProtocol, servers: servers))
 }
 
-private func setUserSMPServers(smpServers: [ServerCfg]) async throws {
-    let userId = try currentUserId("setUserSMPServers")
-    try await sendCommandOkResp(.apiSetUserSMPServers(userId: userId, smpServers: smpServers))
-}
-
-func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
-    let userId = try currentUserId("testSMPServer")
-    let r = await chatSendCmd(.apiTestSMPServer(userId: userId, smpServer: smpServer))
-    if case let .smpTestResult(_, testFailure) = r {
+func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFailure> {
+    let userId = try currentUserId("testProtoServer")
+    let r = await chatSendCmd(.apiTestProtoServer(userId: userId, server: server))
+    if case let .serverTestResult(_, _, testFailure) = r {
         if let t = testFailure {
             return .failure(t)
         }
