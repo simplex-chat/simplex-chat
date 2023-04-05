@@ -4,13 +4,13 @@
 
 Here you can choose to delete messages from your local chat database after a set period of time.
 
-**Please note**: This option does not delete messages for other users, only for you. This option is set independently for each chat profile.
+**Please note**: This option does not delete messages for other users, only for you. It is set independently for each chat profile.
 
 ## Chat Database
 
 #### To open your chat database settings:
 
-1. [Open the app settings](./app-settings.md#opening-the-app-settings).
+1. [Open app settings](./app-settings.md#opening-app-settings).
 2. Under the **"Settings"** section, tap **Database passphrase & export**.
 
 ### Database passphrase

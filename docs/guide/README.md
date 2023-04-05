@@ -38,7 +38,7 @@ After installing SimpleX Chat:
 2. Enter your display name and full name (optional).
 3. Tap **Create**.
 
-**Please note:** Your chat profile is stored locally on your device; it is not stored anywhere else.
+**Note**: your chat profile is stored locally on your device; it is not stored anywhere else.
 
 ### Choose your notifications mode
 
@@ -48,17 +48,15 @@ After creating your first chat profile, the app will then ask you to choose how 
 
 Please read the description for each option. On iOS, it is trade-off between convenience and privacy. On Android, it is a trade-off between notification delays and battery life.
 
-You can read more about [the differences on how notifications work in Android versus iOS](../../blog/20220404-simplex-chat-instant-notifications.md).
+Please read [this blog post](../../blog/20220404-simplex-chat-instant-notifications.md) for more details on the differences between notifications in Android and iOS.
 
 ### Connect with the developers
 
-When you start using SimpleX Chat, you can tap on the **chat with the developers** button to ask any questions or just to test the app. Feel free to send any test messages.
-
-**Please note:** This button will disappear once you make the first connection with someone.
+When you start using SimpleX Chat, you can tap on the **chat with the developers** button to ask any questions or just to test the app. Feel free to send any test messages. Please note that this button will disappear once you make the first connection with someone.
 
 To connect to the developers at a later time:
 
-1. [Open the app settings menu](./app-settings.md#opening-the-app-settings).
+1. [Open app settings](./app-settings.md#opening-app-settings).
 2. Tap **Send questions and ideas**.
 
 ### Join some user groups
@@ -73,7 +71,7 @@ There are links to join several [user groups](../../README.md#join-user-groups) 
 
 ### Connect with friends
 
-Tell your friends to download SimpleX Chat [here](https://simplex.chat). While they're at it, you can create a one-time invitation for each one and share it either as a QR code in-person or as a link from a distance. These will appear as pending connections in your list of chats after they've been created. You can optionally set a contact name for each invitation to help remember who it's for. 
+Tell your friends to download SimpleX Chat [here](https://simplex.chat). While they're at it, create a one-time invitation for each one of them and share it either as a QR code in-person or as a link from a distance. These will appear as pending connections in your list of chats after they've been created. You can optionally set a contact name for each invitation to help remember who it's for. 
 
 #### Here's how to do it:
 
@@ -84,7 +82,7 @@ Tell your friends to download SimpleX Chat [here](https://simplex.chat). While t
 
 Now that you've set up your invitations, tell your friends to tap on the new chat button and then tap on **Connect via link / QR code**. They can either scan your QR code or paste your link to connect with you. If they opened your link in the browser, they will need to tap on the **Open in mobile app** button on the page to connect with you.
 
-Watch [this video](https://simplex.chat) to see how it works.
+Watch the short video on the [the website](https://simplex.chat) to see how it works.
 
 You can also create a [SimpleX contact address](./app-settings.md#your-simplex-contact-address) to manage your connections.
 

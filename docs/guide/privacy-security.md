@@ -1,6 +1,6 @@
 # Privacy and Security
 
-SimpleX Chat default configuration aims to balance privacy, security and convenience. You may want to change the default options to suit your specific needs.
+SimpleX Chat's default configuration aims to balance privacy, security and convenience. You may want to change the default options to suit your specific needs.
 
 This page lists all the features and options that affect privacy and security.
 
@@ -12,7 +12,7 @@ These settings are available in the [Privacy & Security settings](./app-settings
 
 <img src="../../blog/images/20230103-verification.png" width="288">
 
-While SimpleX Chat always establishes connection via link passed via an independent channel, so it is already more protected than other apps, there are scenarios when the invitation links can be substituted in transit (MITM attack). To protect against such attacks, you should verify the security code with your contacts.
+While SimpleX Chat always establishes connection via link passed via an independent channel, so it is already more protected than other apps, there are scenarios when the invitation links can be substituted in transit (MITM attack). To protect against such attacks, you should verify your security code with your contacts.
 
 #### To verify security code:
 
@@ -21,9 +21,9 @@ While SimpleX Chat always establishes connection via link passed via an independ
 3. Tap **Verify security code**.
 4. Ask your contact to follow the first three steps and compare your security code with theirs. 
 
-The connection is secure if both you and your contact have the same security code. This can be validated by one of the following options:
+The connection is secure if both you and your contact have the same security code. This can be validated by one of the following methods:
 
-- One of you can scan the other's security code. If the codes match, the contact will be marked as verified on the device that scanned the code.
+- One of you can scan the other's security code in-person. If the codes match, the contact will be marked as verified on the device that scanned the code.
 - Simply tap **Mark verified** if you trust the confirmation from your contact that the code is verified.
 - You can also read out your security code over a voice call with your contact.
 
@@ -35,7 +35,7 @@ When installed, the app generates a random passphrase for the chat database and 
 
 ## Incognito mode
 
-This feature generates a random profile name for each new contact. Read more in [Incognito mode](./app-settings.md#incognito).
+This feature generates a random profile name for each new contact. Read more in [Incognito](./app-settings.md#incognito).
 
 ## Hidden profiles
 
@@ -49,7 +49,7 @@ This feature allows to hide some of your chat profiles with the password. Read m
 
 <img src="../../blog/images/20220808-tor1.png" width="330"> &nbsp; <img src="../../blog/images/20220808-tor2.png" width="330">
 
-To connect to SMP relays (messaging servers) via Tor you need to install Orbot app.
+To connect to SMP relays (messaging servers) via Tor, you need to install Orbot app.
 
 Android: use Orbot app as SOCKS proxy on port 9050 (default) and enable [Use SOCKS proxy](./app-settings.md#use-socks-proxy-android-only).
 

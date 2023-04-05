@@ -24,17 +24,17 @@ Secret groups are anonymous and private; they are designed to be hard to track b
 
 1. On Android, tap on the floating pencil button at the bottom-right corner of the screen. On iOS, tap on the pencil button at the top-right corner of the screen.
 2. Tap **Create secret group**.
-3. Enter group display name and an optional full name.
+3. Enter desired group display name and full name (optional).
 4. Tap **Create**.
 
 ## Managing a group
 
 ### Editing your group profile
 
-If you are a group owner, you can edit your group profile.
+As a group owner, you can edit your group profile.
 
 1. Open a group chat. 
-2. Tap on the group's name at the top of the screen. 
+2. Tap on your group's name at the top of the screen. 
 3. Tap **Edit group profile**. 
 4. Options:
    - Choose a new display name. 
@@ -44,10 +44,10 @@ If you are a group owner, you can edit your group profile.
 
 ### Adding a welcome message
 
-If you are a group owner, you can add a welcome message that will be shown to all new members when they join a group.
+As a group owner, you can add a welcome message that will be shown to all new members when they join your group.
 
 1. Open a group chat. 
-2. Tap on the group's name at the top of the screen. 
+2. Tap on your group's name at the top of the screen. 
 3. Tap **Add welcome message**. 
 4. Compose your welcome message. 
 5. Tap **Save and update group profile** when finished. 
@@ -57,7 +57,7 @@ If you are a group owner, you can add a welcome message that will be shown to al
 As a group owner, you can choose whether you want to allow disappearing messages, direct messages, delete for everyone and voice messages. 
 
 1. Open a group chat. 
-2. Tap on the group's name at the top of the screen.
+2. Tap on your group's name at the top of the screen.
 3. Tap **Group preferences**. 
 4. Set your group preferences. 
 5. Tap **Save and notify group members**. 
@@ -66,40 +66,43 @@ As a group owner, you can choose whether you want to allow disappearing messages
 
 <img src="../../blog/images/20221108-group1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-group2.png" width="288">
 
-If you are a group owner or admin, you can make your group public by creating and sharing a link/QR code that can be used by anyone to join the group.
+As a group owner or admin, you can make your group public by creating and sharing a link/QR code that can be used by anyone to join. Please note that deleting your group link won't remove members from your group. 
 
 1. Open a group chat.
-2. Tap on the group's name at the top of the screen.
+2. Tap on your group's name at the top of the screen.
 3. Tap **Create group link**.
-
-Once the group link is created, you can also set the initial role that will be assigned to members when they join.
+4. (Optional) Change **Initial role** to "observer". 
 
 ### Inviting members
 
+As a group owner or admin, you can invite members to your group. 
+
 1. Open a group chat.
-2. Tap on the invite button at the top of the screen to the right of the group's name.
+2. Tap on the invite button at the top of the screen to the right of your group's name.
 3. Select contacts you wish to invite.
 4. Tap **Invite to group**.
 
 ### Removing members
 
+As a group owner or admin, you can remove members from your group. 
+
 1. Open a group chat.
-2. Tap on the group's name at the top of the screen. 
+2. Tap on your group's name at the top of the screen. 
 3. Tap on a member. 
-4. Tap **Remove member** to remove them from the group.
+4. Tap **Remove member**.
 
 ### Changing a member's role
 
-If you are a group owner or admin, you can change a member's role. 
+As a group owner or admin, you can change a member's role. 
 
 1. Open a group chat. 
-2. Tap on the group's name at the top of the screen to view the list of members. 
+2. Tap on your group's name at the top of the screen to view the list of members. 
 3. Tap on a member to view their info.
 4. Change the member's role to one of the following options:
-   - Observer
-   - Member
-   - Admin 
-   - Owner
+   - observer
+   - member
+   - admin 
+   - owner
 
 ## Joining a group
 
@@ -116,5 +119,5 @@ Tap and hold (Android) or swipe (iOS) the group in the list of the conversations
 Alternatively, you can also leave the group from the group info page:
 
 1. Open a group chat.
-2. Tap on the group's name at the top of the screen.
+2. Tap on your group's name at the top of the screen.
 3. Scroll to the bottom and tap **Leave group**.
