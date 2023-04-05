@@ -66,7 +66,7 @@ There are links to join several [user groups](../../README.md#join-user-groups) 
 #### To join a group via a link:
 
 1. Get a link to a SimpleX user group, which you can get from your existing SimpleX conversations or by finding it online.
-2. On Android, tap on the floating pencil button on the bottom-right corner of the screen. On iOS, tap on the pencil button at the top-right corner of the screen.
+2. On Android, tap on the 🖉 (floating pencil) button in the bottom-right corner of the screen. On iOS, tap on the 🖉 (pencil) button in the top-right corner of the screen.
 3. Tap **Connect via link / QR code**.
 
 ### Connect with friends
@@ -75,7 +75,7 @@ Tell your friends to download SimpleX Chat [here](https://simplex.chat). While t
 
 #### Here's how to do it:
 
-1. On Android, tap on the floating pencil button in the bottom-right corner of the screen. On iOS, tap on the pencil button in the top-right corner of the screen.
+1. On Android, tap on the 🖉 (floating pencil) button in the bottom-right corner of the screen. On iOS, tap on the 🖉 (pencil) button in the top-right corner of the screen.
 2. Tap **Create one-time invitation link**. 
 3. Tap **Share invitation link** to share it with your friend from a distance. Or, you can show your QR code in person for your friend to scan. 
 4. (Optional) Go back to your list of chats and then tap on an invitation to set a contact name.
