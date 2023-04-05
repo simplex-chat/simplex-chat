@@ -192,10 +192,13 @@ class ChatModel(val controller: ChatController) {
     // add to current chat
     if (chatId.value == cInfo.id) {
       withContext(Dispatchers.Main) {
-        if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-          chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
-        } else {
-          chatItems.add(cItem)
+        // Prevent situation when chat item already in the list received from backend
+        if (chatItems.none { it.id == cItem.id }) {
+          if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+            chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
+          } else {
+            chatItems.add(cItem)
+          }
         }
       }
     }
