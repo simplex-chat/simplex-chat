@@ -225,19 +225,19 @@ class ChatModel(val controller: ChatController) {
       res = true
     }
     // update current chat
-    if (chatId.value == cInfo.id) {
-      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
-      if (itemIndex >= 0) {
-        chatItems[itemIndex] = cItem
-        return false
-      } else {
-        withContext(Dispatchers.Main) {
+    return if (chatId.value == cInfo.id) {
+      withContext(Dispatchers.Main) {
+        val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+        if (itemIndex >= 0) {
+          chatItems[itemIndex] = cItem
+          false
+        } else {
           chatItems.add(cItem)
+          true
         }
-        return true
       }
     } else {
-      return res
+      res
     }
   }
 
