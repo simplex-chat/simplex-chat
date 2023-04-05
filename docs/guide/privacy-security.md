@@ -1,6 +1,6 @@
 # Privacy and Security
 
-SimpleX Chat's default configuration aims to balance privacy, security and convenience. You may want to change the default options to suit your specific needs.
+SimpleX Chat's default configuration aims to balance privacy, security, and convenience. You may want to change the default options to suit your specific needs.
 
 This page lists all the features and options that affect privacy and security.
 
@@ -23,7 +23,7 @@ While SimpleX Chat always establishes connection via link passed via an independ
 
 The connection is secure if both you and your contact have the same security code. This can be validated by one of the following methods:
 
-- One of you can scan the other's security code in-person. If the codes match, the contact will be marked as verified on the device that scanned the code.
+- One of you can scan the other's security code in person. If the codes match, the contact will be marked as verified on the device that scanned the code.
 - Simply tap **Mark verified** if you trust the confirmation from your contact that the code is verified.
 - You can also read out your security code over a voice call with your contact.
 

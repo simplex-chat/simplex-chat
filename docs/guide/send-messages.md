@@ -45,7 +45,7 @@ On iOS, you can also paste images from the clipboard.
 3. From the **Delete after** dropdown menu, choose how long until messages are deleted after being sent.
 4. Tap **Save and notify contact**. 
 
-**Please note:** An offer will be sent to your contact. They must accept it to enable disappearing messages in your conversation with them. In addition, only a group owner can enable disappearing messages in your group.
+**Please note:** An offer will be sent to your contact. They must accept it to enable disappearing messages in your conversation with them. For groups, only a group owner can enable them.
 
 ### Sending "live" messages
 
@@ -54,7 +54,7 @@ On iOS, you can also paste images from the clipboard.
 You can use "live" messages for your contacts to see as you type them without having to tap ⬆️ (send) button until it's completed. It can be useful in these following scenarios:
 
 1. Real-time conversation, like talking in person or in a discussion club. You can retract what you wrote, but your recipients would see it. Also people don’t need to guess what you’re typing. This allows to avoid interrupting the flow of conversation and still send longer messages.
-2. An activist doing live reporting when there is a risk of losing the phone or connection at any moment. This feature allows to send as much as possible, up to the last word, without having to send only very short messages.
+2. An activist doing live reporting when there is a risk of losing their phone or connection at any moment. This feature allows typing as many words as possible until the last word, without having to send only very short messages.
 
 #### To send a "live" message:
 

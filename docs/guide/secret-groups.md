@@ -22,7 +22,7 @@ Secret groups are anonymous and private; they are designed to be hard to track b
 
 <img src="../../blog/images/20220808-group1.png" width="330"> <img src="../../blog/images/20220808-group2.png" width="330"> <img src="../../blog/images/20220808-group3.png" width="330">
 
-1. On Android, tap on the floating pencil button at the bottom-right corner of the screen. On iOS, tap on the pencil button at the top-right corner of the screen.
+1. On Android, tap on the floating pencil button in the bottom-right corner of the screen. On iOS, tap on the pencil button in the top-right corner of the screen.
 2. Tap **Create secret group**.
 3. Enter desired group display name and full name (optional).
 4. Tap **Create**.

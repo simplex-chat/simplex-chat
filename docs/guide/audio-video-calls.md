@@ -14,18 +14,18 @@ SimpleX Chat allows you to make end-to-end encrypted audio and video calls with 
 ### How to make a video call
 
 1. Tap on a contact.
-2. Tap on the three vertical dots on the top right-hand corner of the screen to access more options.
+2. Tap on the three vertical dots in the top-right corner of the screen to access more options.
 3. Choose **Video call**.
 
 ### Accepting calls
 
-When there is an incoming call you have three options:
+When there is an incoming call, you have three options:
 
-- `accept` - to answer the call.
-- `reject` - to reject the call, _without_ notifying the caller.
-- `ignore` - to temporarily dismiss the call, but in a way that it can be accepted later, if the caller is still waiting, via the **Answer call** message in the conversation with this contact.
+- `accept` - to accept the call.
+- `reject` - to reject the call without notifying the caller.
+- `ignore` - To temporarily ignore the call, so that it can be accepted later. If the caller is still waiting, tap the **Answer call** message in your conversation with them.
 
-There is no time limit that the call invitation can remain active - as long as the caller is still waiting, you can accept the call any time later.
+There is no time limit for the call invitation to remain active - as long as the caller is still waiting, you can accept the call at any time.
 
 Calls can be accepted from the lock screen, both on Android (it needs to be enabled via options) and on iOS (by default, using native iOS call interface that can be disabled).
 
@@ -36,11 +36,11 @@ SimpleX Chat shows an incoming call on your device's lock screen by default. How
 1. [Open app settings](./app-settings.md#opening-app-settings).
 2. Tap **Audio and Video calls**.
 3. On the **Calls on lock screen** drop-down list, choose from the following three options:
-   - `disable` - the call will show as a notification.
-   - `show` - the call will show on the lock screen, you need to unlock the device and the app to accept it.
-   - `accept` - the call can be accepted or rejected directly from the lock screen, without opening the app.
+   - `disable` - the incoming call will show as a notification.
+   - `show` - The incoming call will show on the lock screen. You need to unlock both the device and the app to accept it.
+   - `accept` - the incoming call can be accepted or rejected directly from the lock screen. 
 
-**Please note**: some Android systems/devices prohibit full screen views on lock screen - in this case the call will show as a usual notification.
+**Please note**: some Android systems/devices prohibit full screen views on lock screen - in this case the incoming call will show as a usual notification.
 
 ### Calls on lock screen on iOS
 
@@ -52,7 +52,7 @@ By default, SimpleX Chat uses native iOS call interface, where allowed, to show 
 2. Tap **Audio and Video calls**.
 3. Toggle **Use iOS call interface** off.
 
-**Please note**: iOS call interface allows accepting the calls without unlocking the device and the app. If this is undesirable, please disable it – the calls will show as notifications in this case.
+**Please note**: iOS call interface allows accepting incoming calls without having to unlock the device and the app. If this is undesirable, please disable it – the incoming calls will show as notifications in this case.
 
 Please read [this blog post](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#improved-audiovideo-calls) for more details.
 

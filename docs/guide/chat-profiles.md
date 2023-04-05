@@ -2,7 +2,7 @@
 
 ## Creating additional chat profiles
 
-SimpleX Chat allows creating as many chat profiles as you like. As with the first profile, they are only stored locally on your device.
+SimpleX Chat allows you to create as many chat profiles as you like. As with the first profile, they are only stored locally on your device.
 
 <img src="../../blog/images/20230204-profiles2.png" width="288">
 
@@ -10,7 +10,7 @@ SimpleX Chat allows creating as many chat profiles as you like. As with the firs
 
 1. [Open app settings](./app-settings.md#opening-app-settings).
 2. Under the **"You""** section, tap **Your chat profiles**.
-3. Confirm with fingerprint or PIN, in case you have [SimpleX Lock](./app-settings.md#simplex-lock) enabled.
+3. Confirm with a fingerprint or PIN, in case you have [SimpleX Lock](./app-settings.md#simplex-lock) toggled on.
 4. Tap **+ Add profile**.
 5. Create a new profile by entering your desired display name and full name (optional).
 6. Tap **Create**.
@@ -29,7 +29,7 @@ To reveal hidden profiles, enter the full password into the search bar.
 
 <img src="../../blog/images/20230204-profiles1.png" width="288">
 
-1. Tap on your user profile picture in the top left-hand corner of the screen.
+1. Tap on your user profile picture in the top-left corner of the screen.
 2. Select which profile you want to use.
 
 Note: You can also switch profile via **Your chat profiles** in app settings.
@@ -68,24 +68,26 @@ SimpleX Chat stores all user data locally on client devices, using a portable en
 
 1. [Open app settings](./app-settings.md#opening-app-settings).
 2. Under the **"Settings"** section, tap **Database passphrase & export**.
-3. Toggle **Chat is running** off to stop chat.(tap "Stop” in the confirmation dialog).
-4. Confirm it with fingerprint or PIN, in case you have [SimpleX Lock](./app-settings.md#simplex-lock) enabled.
-5. If you didn't set it before, [set a passphrase](./managing-data.md#database-passphrase) in "Database passphrase". Initially, the database is encrypted with a random passphrase that is stored in KeyChain (iOS) or with KeyStore (Android).
-6. Tap **Export database** - it won't allow exporting unless you have set a passphrase.
-7. Save the file on your device or share it via any available option.
+3. Toggle **Chat is running** off to stop chat. 
+4. Tap **Stop** in the confirmation dialog.
+5. Confirm it with a fingerprint or PIN, in case you have [SimpleX Lock](./app-settings.md#simplex-lock) toggled on.
+6. If you didn't set it before, [set a passphrase](./managing-data.md#database-passphrase) in "Database passphrase". Initially, the database is encrypted with a random passphrase that is stored in KeyChain (iOS) or with KeyStore (Android).
+7. Tap **Export database** - it won't allow exporting unless you have set a passphrase.
+8. Save the file on your device or share it via any available option.
 
 #### To import your SimpleX Chat data in the app on another device:
 
 1. [Install SimpleX Chat](./README.md#install-simplex-chat) on the new device.
-2. Transfer the exported database file to the new device.
-3. Create chat profile with any name by following the steps in [Create your first chat profile](#create-your-first-chat-profile) – you will replace it soon.
+2. Migrate the exported .zip file over to the new device.
+3. Create a chat profile with any name by following the steps in [Create your first chat profile](#create-your-first-chat-profile) – you will replace it soon.
 4. [Open app settings](./app-settings.md#opening-app-settings).
 5. Under the **"Settings"** section, tap **Database passphrase & export**.
 6. Toggle **Chat is running** off to stop chat.
-7. Tap **Import database**.
-8. Select the .zip file of your exported SimpleX Chat data.
-9. Tap **Import** in the confirmation dialog.
-10. Toggle **Chat is running** on to start the chat or close and restart the app – you will be prompted to enter the passphrase for your chat database.
+7. Tap **Stop** in the confirmation dialog.
+8. Tap **Import database**.
+9. Select the .zip file containing your exported SimpleX Chat data.
+10. Tap **Import** in the confirmation dialog.
+11. Toggle **Chat is running** on to start the chat or close and restart the app – you will be prompted to enter the passphrase for your chat database.
 
 **Please note:**
 

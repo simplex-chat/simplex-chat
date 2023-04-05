@@ -5,7 +5,7 @@
 #### To open app settings:
 
 1. Open the app.
-2. Tap on your chat profile picture in the upper left-hand corner of the screen.
+2. Tap on your chat profile picture in the top-left corner of the screen.
 3. If you have more than one profile, tap the current profile again or choose **Settings**.
 
 ## Your profile settings
@@ -142,7 +142,7 @@ If your network is slow, and your connections to the servers keep failing (you w
 
 #### SimpleX Lock
 
-When enabled, SimpleX Lock requires to pass the device authentication when you open the app or use some security- or privacy-sensitive features.
+When toggled on, SimpleX Lock requires you to confirm your device credentials when you open the app or use some security- or privacy-sensitive features.
 
 You will be offered to enable it after you open the app a few times.
 
@@ -151,15 +151,15 @@ To enable it later:
 1. [Open app settings](./app-settings.md#opening-app-settings).
 2. Tap on **Privacy & security**.
 3. Toggle **SimpleX Lock** on.
-4. Confirm your phone credentials.
+4. Confirm your device credentials.
 
-Done! Now you will be required to authenticate when you either start or resume the app after 30 seconds in background.
+Done! Now you will be required to authenticate when you start or resume the app after 30 seconds in background.
 
 #### Protect app screen
 
 <img src="../../blog/images/20221206-protect.png" width="330">
 
-This option hides the app's screen in recent apps. It is enabled by default. It also prevents screenshots on Android.
+This option hides the app's screen in the recent apps list  - it's enabled by default. It also prevents screenshots on Android.
 
 #### Auto Accept Images
 
@@ -189,7 +189,7 @@ Please read [this blog post](../../blog/20221206-simplex-chat-v4.3-voice-message
 
 ### Appearance
 
-This page allows you to configure the app language, app icon, and accent color.
+This page allows you to configure the app language, app icon, app theme, and accent color.
 
 ### Database passphrase & export
 
@@ -199,7 +199,7 @@ Please read [Managing Data](./managing-data.md) for more details.
 
 ## Help & feedback
 
-This section has information on how to use the app and the links to connect to the team. Please use [Send questions and ideas](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion) to connect to us via the chat to ask any questions, make any suggestions and report any issues.
+This section has information on how to use the app and the links to connect to the team. Please tap [Send questions and ideas](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion) to connect to us via the chat to ask any questions, make any suggestions and report any issues.
 
 ## Support SimpleX Chat
 
@@ -219,9 +219,9 @@ This page has options that are only needed for app developers and can be used to
 
 Here you can see and use console commands with the chat core. None of this information is sent over the network; this is an internal communication between different parts of the app.
 
-**Warning:** some of the commands can stop the app from functioning; only use them if you know what you are doing or were instructed by the team.
+**WARNING:** some of the console commands can stop the app from functioning; only use them if you know what you are doing or were instructed by the team.
 
-**Please note**: The log in console can contain what looks like errors. Unless you experience any issues in the app UI, these errors should not be considered as the app malfunction - they are likely to be normal and expected behavior.
+**Please note**: The chat console can contain what looks like errors. Unless you experience any issues in the app's UI, these "errors" should not be considered a sign of app malfunction - they are likely to be normal and expected behavior.
 
 ### Confirm database upgrades
 
