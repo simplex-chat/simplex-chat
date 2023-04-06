@@ -164,7 +164,7 @@ struct ComposeVoiceView: View {
 
     private func startPlayback() {
         startingPlayback = true
-        chatModel.stopPreviousRecPlay.toggle()
+        chatModel.stopPreviousRecPlay = getAppFilePath(recordingFileName)
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {

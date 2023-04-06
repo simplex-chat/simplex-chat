@@ -2289,6 +2289,7 @@ public enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
+    case video(text: String, image: String, duration: Int)
     case voice(text: String, duration: Int)
     case file(String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
@@ -2299,6 +2300,7 @@ public enum MsgContent {
         case let .text(text): return text
         case let .link(text, _): return text
         case let .image(text, _): return text
+        case let .video(text, _, _): return text
         case let .voice(text, _): return text
         case let .file(text): return text
         case let .unknown(_, text): return text
@@ -2322,6 +2324,13 @@ public enum MsgContent {
     public var isImage: Bool {
         switch self {
         case .image: return true
+        default: return false
+        }
+    }
+
+    public var isVideo: Bool {
+        switch self {
+        case .video: return true
         default: return false
         }
     }
@@ -2356,6 +2365,11 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let image = try container.decode(String.self, forKey: CodingKeys.image)
                 self = .image(text: text, image: image)
+            case "video":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let image = try container.decode(String.self, forKey: CodingKeys.image)
+                let duration = try container.decode(Int.self, forKey: CodingKeys.duration)
+                self = .video(text: text, image: image, duration: duration)
             case "voice":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let duration = try container.decode(Int.self, forKey: CodingKeys.duration)
@@ -2388,6 +2402,11 @@ extension MsgContent: Encodable {
             try container.encode("image", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(image, forKey: .image)
+        case let .video(text, image, duration):
+            try container.encode("video", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(image, forKey: .image)
+            try container.encode(duration, forKey: .duration)
         case let .voice(text, duration):
             try container.encode("voice", forKey: .type)
             try container.encode(text, forKey: .text)
