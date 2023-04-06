@@ -101,6 +101,7 @@ struct CIVideoView: View {
                 .onChange(of: ChatModel.shared.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
+                        videoPlaying = false
                     }
                 }
                 .fullScreenCover(isPresented: $showFullScreenPlayer) {
@@ -110,6 +111,7 @@ struct CIVideoView: View {
                     switch player.timeControlStatus {
                     case .playing:
                         player.pause()
+                        videoPlaying = false
                     case .paused:
                         showFullScreenPlayer = true
                     default: ()
@@ -130,8 +132,9 @@ struct CIVideoView: View {
             addObserver(player, url)
         }
         .onDisappear {
-            player.pause()
             removeObserver()
+            player.pause()
+            videoPlaying = false
         }
     }
 
@@ -277,20 +280,16 @@ struct CIVideoView: View {
     }
 
     private func addObserver(_ player: AVPlayer, _ url: URL) {
-        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1 / 30.0, preferredTimescale: Int32(NSEC_PER_SEC)), queue: .main) { time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.01, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), queue: .main) { time in
             if let item = player.currentItem {
                 let dur = CMTimeGetSeconds(item.duration)
                 if !dur.isInfinite && !dur.isNaN {
                     duration = Int(dur)
                 }
                 progress = Int(CMTimeGetSeconds(player.currentTime()))
-                let wasPlaying = videoPlaying
                 // `if` prevents showing Play button while the playback seeks to start and then plays
                 if player.currentTime() != player.currentItem?.duration && player.currentTime() != .zero {
                     videoPlaying = player.timeControlStatus == .playing || player.timeControlStatus == .waitingToPlayAtSpecifiedRate
-                }
-                if wasPlaying != videoPlaying && videoPlaying {
-                    ChatModel.shared.stopPreviousRecPlay = url
                 }
             }
         }
