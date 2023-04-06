@@ -33,8 +33,6 @@ final class ChatModel: ObservableObject {
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: UserContactLink?
-    @Published var userSMPServers: [ServerCfg]?
-    @Published var presetSMPServers: [String]?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
     @Published var deviceToken: DeviceToken?

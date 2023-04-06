@@ -760,6 +760,12 @@ struct SMPServersConfig: Encodable {
     var smpServers: [ServerCfg]
 }
 
+public enum ServerProtocol: String {
+    case smp
+    case xftp
+    case ntf
+}
+
 public struct ServerCfg: Identifiable, Equatable, Codable {
     public var server: String
     public var preset: Bool
