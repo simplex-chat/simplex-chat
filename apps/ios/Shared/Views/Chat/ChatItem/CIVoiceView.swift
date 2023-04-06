@@ -203,7 +203,7 @@ struct VoiceMessagePlayer: View {
 
     private func startPlayback(_ recordingFileName: String) {
         startingPlayback = true
-        chatModel.stopPreviousRecPlay.toggle()
+        chatModel.stopPreviousRecPlay = getAppFilePath(recordingFileName)
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {

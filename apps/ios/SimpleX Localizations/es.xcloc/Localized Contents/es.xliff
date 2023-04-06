@@ -3082,8 +3082,8 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Enviar mensaje directo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send files via XFTP" xml:space="preserve">
-        <source>Send files via XFTP</source>
+      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
+        <source>Send videos and files via XFTP</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">

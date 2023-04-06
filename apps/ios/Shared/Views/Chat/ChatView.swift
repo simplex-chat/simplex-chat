@@ -78,6 +78,7 @@ struct ChatView: View {
             if chatModel.chatId == nil { dismiss() }
         }
         .onDisappear {
+            VideoPlayerView.players.removeAll()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
                 chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {

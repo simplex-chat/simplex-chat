@@ -35,5 +35,5 @@ SELECT
 DROP TABLE smp_servers;
 ALTER TABLE new_smp_servers RENAME TO smp_servers;
 
-CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
+CREATE INDEX idx_smp_servers_user_id ON "smp_servers"(user_id);
 |]

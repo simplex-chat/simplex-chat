@@ -391,30 +391,22 @@ func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserSMPServers() throws -> ([ServerCfg], [String]) {
-    let userId = try currentUserId("getUserSMPServers")
-    return try userSMPServersResponse(chatSendCmdSync(.apiGetUserSMPServers(userId: userId)))
-}
-
-func getUserSMPServersAsync() async throws -> ([ServerCfg], [String]) {
-    let userId = try currentUserId("getUserSMPServersAsync")
-    return try userSMPServersResponse(await chatSendCmd(.apiGetUserSMPServers(userId: userId)))
-}
-
-private func userSMPServersResponse(_ r: ChatResponse) throws -> ([ServerCfg], [String]) {
-    if case let .userSMPServers(_, smpServers, presetServers) = r { return (smpServers, presetServers) }
+func getUserProtoServers(_ serverProtocol: ServerProtocol) throws -> UserProtoServers {
+    let userId = try currentUserId("getUserProtoServers")
+    let r = chatSendCmdSync(.apiGetUserProtoServers(userId: userId, serverProtocol: serverProtocol))
+    if case let .userProtoServers(_, servers) = r { return servers }
     throw r
 }
 
-func setUserSMPServers(smpServers: [ServerCfg]) async throws {
-    let userId = try currentUserId("setUserSMPServers")
-    try await sendCommandOkResp(.apiSetUserSMPServers(userId: userId, smpServers: smpServers))
+func setUserProtoServers(_ serverProtocol: ServerProtocol, servers: [ServerCfg]) async throws {
+    let userId = try currentUserId("setUserProtoServers")
+    try await sendCommandOkResp(.apiSetUserProtoServers(userId: userId, serverProtocol: serverProtocol, servers: servers))
 }
 
-func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
-    let userId = try currentUserId("testSMPServer")
-    let r = await chatSendCmd(.apiTestSMPServer(userId: userId, smpServer: smpServer))
-    if case let .smpTestResult(_, testFailure) = r {
+func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFailure> {
+    let userId = try currentUserId("testProtoServer")
+    let r = await chatSendCmd(.apiTestProtoServer(userId: userId, server: server))
+    if case let .serverTestResult(_, _, testFailure) = r {
         if let t = testFailure {
             return .failure(t)
         }
@@ -1098,7 +1090,6 @@ func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
 func getUserChatData() throws {
     let m = ChatModel.shared
     m.userAddress = try apiGetUserAddress()
-    (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
     m.chats = chats.map { Chat.init($0) }
@@ -1106,13 +1097,11 @@ func getUserChatData() throws {
 
 private func getUserChatDataAsync() async throws {
     let userAddress = try await apiGetUserAddressAsync()
-    let servers = try await getUserSMPServersAsync()
     let chatItemTTL = try await getChatItemTTLAsync()
     let chats = try await apiGetChatsAsync()
     await MainActor.run {
         let m = ChatModel.shared
         m.userAddress = userAddress
-        (m.userSMPServers, m.presetSMPServers) = servers
         m.chatItemTTL = chatItemTTL
         m.chats = chats.map { Chat.init($0) }
     }
@@ -1359,6 +1348,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileCompleteXFTP(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
+            let cItem = aChatItem.chatItem
+            let mc = cItem.content.msgContent
+            if case .file = mc,
+               let fileName = cItem.file?.filePath {
+                removeFile(fileName)
+            }
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)

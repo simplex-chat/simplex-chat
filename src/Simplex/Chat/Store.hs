@@ -178,6 +178,7 @@ module Simplex.Chat.Store
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
     appendRcvFD,
+    getRcvFileDescrByFileId,
     updateRcvFileAgentId,
     getRcvFileTransferById,
     getRcvFileTransfer,
@@ -245,8 +246,6 @@ module Simplex.Chat.Store
     updateGroupChatItemsRead,
     getGroupUnreadTimedItems,
     setGroupChatItemDeleteAt,
-    getSMPServers,
-    overwriteSMPServers,
     getProtocolServers,
     overwriteProtocolServers,
     createCall,
@@ -296,7 +295,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
@@ -364,6 +363,7 @@ import Simplex.Chat.Migrations.M20230317_hidden_profiles
 import Simplex.Chat.Migrations.M20230318_file_description
 import Simplex.Chat.Migrations.M20230321_agent_file_deleted
 import Simplex.Chat.Migrations.M20230328_files_protocol
+import Simplex.Chat.Migrations.M20230402_protocol_servers
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -371,8 +371,9 @@ import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, Invitation
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, MigrationError, SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), pattern SMPServer)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..))
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
@@ -434,7 +435,8 @@ schemaMigrations =
     ("20230317_hidden_profiles", m20230317_hidden_profiles, Just down_m20230317_hidden_profiles),
     ("20230318_file_description", m20230318_file_description, Just down_m20230318_file_description),
     ("20230321_agent_file_deleted", m20230321_agent_file_deleted, Just down_m20230321_agent_file_deleted),
-    ("20230328_files_protocol", m20230328_files_protocol, Just down_m20230328_files_protocol)
+    ("20230328_files_protocol", m20230328_files_protocol, Just down_m20230328_files_protocol),
+    ("20230402_protocol_servers", m20230402_protocol_servers, Just down_m20230402_protocol_servers)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -2781,7 +2783,6 @@ getSndFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMs
       (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, groupMemberId, recipientDisplayName = n, connId, agentConnId})
         <$> (contactName_ <|> memberName_)
 
-
 createSndFileTransferXFTP :: DB.Connection -> User -> ContactOrGroup -> FilePath -> FileInvitation -> AgentSndFileId -> Integer -> IO FileTransferMeta
 createSndFileTransferXFTP db User {userId} contactOrGroup filePath FileInvitation {fileName, fileSize} agentSndFileId chunkSize = do
   currentTs <- getCurrentTime
@@ -3056,6 +3057,12 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
             (fileDescrText', fileDescrPartNo, fileDescrComplete, fileDescrId)
         pure RcvFileDescr {fileDescrId, fileDescrText = fileDescrText', fileDescrPartNo, fileDescrComplete}
 
+getRcvFileDescrByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
+getRcvFileDescrByFileId db fileId = do
+  liftIO (getRcvFileDescrByFileId_ db fileId) >>= \case
+    Nothing -> throwError $ SERcvFileDescrNotFound fileId
+    Just rfd -> pure rfd
+
 getRcvFileDescrByFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe RcvFileDescr)
 getRcvFileDescrByFileId_ db fileId =
   maybeFirstRow toRcvFileDescr $
@@ -3074,7 +3081,7 @@ getRcvFileDescrByFileId_ db fileId =
     toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete) =
       RcvFileDescr {fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete}
 
-updateRcvFileAgentId :: DB.Connection -> FileTransferId -> AgentRcvFileId -> IO ()
+updateRcvFileAgentId :: DB.Connection -> FileTransferId -> Maybe AgentRcvFileId -> IO ()
 updateRcvFileAgentId db fileId aFileId = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE rcv_files SET agent_rcv_file_id = ?, updated_at = ? WHERE file_id = ?" (aFileId, currentTs, fileId)
@@ -4287,8 +4294,8 @@ deleteChatItemMessages_ db itemId =
     |]
     (Only itemId)
 
-markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> MessageId -> IO AChatItem
-markDirectChatItemDeleted db User {userId} ct@Contact {contactId} (CChatItem msgDir ci) msgId = do
+markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> MessageId -> IO ()
+markDirectChatItemDeleted db User {userId} Contact {contactId} (CChatItem _ ci) msgId = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
   insertChatItemMessage_ db itemId msgId currentTs
@@ -4300,7 +4307,6 @@ markDirectChatItemDeleted db User {userId} ct@Contact {contactId} (CChatItem msg
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     |]
     (currentTs, userId, contactId, itemId)
-  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {meta = (meta ci) {itemDeleted = Just (CIDeleted @'CTDirect), editable = False}})
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> User -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
@@ -4417,13 +4423,13 @@ updateGroupChatItemModerated db User {userId} gInfo@GroupInfo {groupId} (CChatIt
       (groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
   pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated m)}, formattedText = Nothing})
 
-markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> Maybe GroupMember -> IO AChatItem
-markGroupChatItemDeleted db User {userId} gInfo@GroupInfo {groupId} (CChatItem msgDir ci) msgId byGroupMember_ = do
+markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> Maybe GroupMember -> IO ()
+markGroupChatItemDeleted db User {userId} GroupInfo {groupId} (CChatItem _ ci) msgId byGroupMember_ = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
-      (deletedByGroupMemberId, ciDeleted) = case byGroupMember_ of
-        Just m@GroupMember {groupMemberId} -> (Just groupMemberId, CIModerated m)
-        _ -> (Nothing, CIDeleted)
+      deletedByGroupMemberId = case byGroupMember_ of
+        Just GroupMember {groupMemberId} -> Just groupMemberId
+        _ -> Nothing
   insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db
@@ -4433,7 +4439,6 @@ markGroupChatItemDeleted db User {userId} gInfo@GroupInfo {groupId} (CChatItem m
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (deletedByGroupMemberId, currentTs, userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {meta = (meta ci) {itemDeleted = Just ciDeleted, editable = False}})
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do
@@ -4845,49 +4850,42 @@ toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just
   either (const []) (: []) $ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. memberRow_ :. (quoteRow :. quotedMemberRow_) :. deletedByGroupMemberRow_)
 toGroupChatItemList _ _ _ _ = []
 
-getSMPServers :: DB.Connection -> User -> IO [ServerCfg 'PSMP]
-getSMPServers db User {userId} =
+getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
+getProtocolServers db User {userId} =
   map toServerCfg
     <$> DB.query
       db
       [sql|
         SELECT host, port, key_hash, basic_auth, preset, tested, enabled
-        FROM smp_servers
-        WHERE user_id = ?;
+        FROM protocol_servers
+        WHERE user_id = ? AND protocol = ?;
       |]
-      (Only userId)
+      (userId, decodeLatin1 $ strEncode protocol)
   where
-    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg 'PSMP
+    protocol = protocolTypeI @p
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg p
     toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
-      let server = ProtoServerWithAuth (SMPServer host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+      let server = ProtoServerWithAuth (ProtocolServer protocol host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
        in ServerCfg {server, preset, tested, enabled}
 
-overwriteSMPServers :: DB.Connection -> User -> [ServerCfg 'PSMP] -> ExceptT StoreError IO ()
-overwriteSMPServers db User {userId} servers =
+overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
+overwriteProtocolServers db User {userId} servers =
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
-    DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
+    DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND protocol = ? " (userId, protocol)
     forM_ servers $ \ServerCfg {server, preset, tested, enabled} -> do
       let ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_ = server
       DB.execute
         db
         [sql|
-          INSERT INTO smp_servers
-            (host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?)
+          INSERT INTO protocol_servers
+            (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?)
         |]
-        (host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, preset, tested, enabled, userId, currentTs, currentTs)
+        ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, enabled, userId, currentTs, currentTs))
     pure $ Right ()
-
-getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
-getProtocolServers db user = case protocolTypeI @p of
-  SPSMP -> getSMPServers db user
-  _ -> pure [] -- TODO read from the new table of all servers (alternatively, we could migrate data)
-
-overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
-overwriteProtocolServers db user servers = case protocolTypeI @p of
-  SPSMP -> overwriteSMPServers db user servers
-  _ -> pure () -- TODO write the new table of all servers
+  where
+    protocol = decodeLatin1 $ strEncode $ protocolTypeI @p
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
@@ -5201,6 +5199,7 @@ data StoreError
   | SESndFileNotFound {fileId :: FileTransferId}
   | SESndFileInvalid {fileId :: FileTransferId}
   | SERcvFileNotFound {fileId :: FileTransferId}
+  | SERcvFileDescrNotFound {fileId :: FileTransferId}
   | SEFileNotFound {fileId :: FileTransferId}
   | SERcvFileInvalid {fileId :: FileTransferId}
   | SERcvFileInvalidDescrPart

@@ -1440,8 +1440,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
-      is CR.SndFileCompleteXFTP ->
+      is CR.SndFileCompleteXFTP -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
+        val cItem = r.chatItem.chatItem
+        val mc = cItem.content.msgContent
+        val fileName = cItem.file?.fileName
+        if (
+          mc is MsgContent.MCFile
+          && fileName != null
+        ) {
+          removeFile(appContext, fileName)
+        }
+      }
       is CR.CallInvitation -> {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation)
       }

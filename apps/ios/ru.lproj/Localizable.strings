@@ -2125,7 +2125,7 @@
 "Send direct message" = "Отправить сообщение";
 
 /* No comment provided by engineer. */
-"Send files via XFTP" = "Отправлять файлы через XFTP";
+"Send videos and files via XFTP" = "Отправлять видео и файлы через XFTP";
 
 /* No comment provided by engineer. */
 "Send link previews" = "Отправлять картинки ссылок";
