@@ -891,13 +891,13 @@ public struct ProtocolTestFailure: Decodable, Error, Equatable {
 }
 
 public struct ServerAddress: Decodable {
-    public var serverProtocol: ServerProtocol
+    public var serverProtocol: ServerProtocol?
     public var hostnames: [String]
     public var port: String
     public var keyHash: String
     public var basicAuth: String
 
-    public init(serverProtocol: ServerProtocol, hostnames: [String], port: String, keyHash: String, basicAuth: String = "") {
+    public init(serverProtocol: ServerProtocol?, hostnames: [String], port: String, keyHash: String, basicAuth: String = "") {
         self.serverProtocol = serverProtocol
         self.hostnames = hostnames
         self.port = port
@@ -906,7 +906,7 @@ public struct ServerAddress: Decodable {
     }
 
     public var uri: String {
-        "\(serverProtocol)://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
+        "\(serverProtocol?.rawValue ?? "smp")://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
     }
 
     public var valid: Bool {
