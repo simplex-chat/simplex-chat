@@ -23,7 +23,9 @@ struct CIVideoView: View {
     @State private var preview: UIImage? = nil
     @State private var player: AVPlayer?
     @State private var url: URL?
-    @State private var showFullScreenImage = false
+    @State private var showFullScreenPlayer = false
+    @State private var timeObserver: Any? = nil
+    @State private var fullScreenTimeObserver: Any? = nil
 
     init(chatItem: ChatItem, image: String, duration: Int, maxWidth: CGFloat, videoWidth: Binding<CGFloat?>, scrollProxy: ScrollViewProxy?) {
         self.chatItem = chatItem
@@ -96,20 +98,26 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 VideoPlayerView(player: player, url: url, showControls: false)
                 .frame(width: w, height: w * preview.size.height / preview.size.width)
-                .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenMediaView(chatItem: chatItem, image: nil, player: VideoPlayerView.getOrCreatePlayer(url, true), url: url, showView: $showFullScreenImage, scrollProxy: scrollProxy)
+                .onChange(of: ChatModel.shared.stopPreviousRecPlay) { playingUrl in
+                    if playingUrl != url {
+                        player.pause()
+                    }
+                }
+                .fullScreenCover(isPresented: $showFullScreenPlayer) {
+                    fullScreenPlayer(url)
                 }
                 .onTapGesture {
                     switch player.timeControlStatus {
                     case .playing:
                         player.pause()
                     case .paused:
-                        showFullScreenImage = true
+                        showFullScreenPlayer = true
                     default: ()
                     }
                 }
                 if !videoPlaying {
                     Button {
+                        ChatModel.shared.stopPreviousRecPlay = url
                         player.play()
                     } label: {
                         playPauseIcon("play.fill")
@@ -223,8 +231,55 @@ struct CIVideoView: View {
         }
     }
 
+    private func fullScreenPlayer(_ url: URL) -> some View {
+        //VideoPlayerViewController(player: VideoPlayerView.getOrCreatePlayer(url, true), url: url, showControls: true, showFullScreen: $showFullScreen)
+        //FullScreenMediaView(chatItem: chatItem, image: nil, player: VideoPlayerView.getOrCreatePlayer(url, true), url: url, showView: $showFullScreen, scrollProxy: scrollProxy)
+        VideoPlayer(player: createFullScreenPlayerAndPlay(url)) {}
+        .overlay(alignment: .topLeading, content: {
+            Button(action: { showFullScreenPlayer = false },
+                label: {
+                    Image(systemName: "multiply")
+                    .resizable()
+                    .tint(.white)
+                    .frame(width: 15, height: 15)
+                    .padding(.leading, 15)
+                    .padding(.top, 13)
+                }
+            )
+        })
+        .gesture(
+            DragGesture(minimumDistance: 80)
+            .onChanged { gesture in
+                let t = gesture.translation
+                let w = abs(t.width)
+                if t.height > 60 && t.height > w * 2 {
+                    showFullScreenPlayer = false
+                }
+            }
+        )
+        .onDisappear {
+            if let fullScreenTimeObserver = fullScreenTimeObserver {
+                NotificationCenter.default.removeObserver(fullScreenTimeObserver)
+            }
+            fullScreenTimeObserver = nil
+        }
+    }
+
+    private func createFullScreenPlayerAndPlay(_ url: URL) -> AVPlayer {
+        let player = AVPlayer(url: url)
+        DispatchQueue.main.asyncAfter(deadline: .now()) {
+            ChatModel.shared.stopPreviousRecPlay = url
+            player.play()
+            fullScreenTimeObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { _ in
+                player.seek(to: CMTime.zero)
+                player.play()
+            }
+        }
+        return player
+    }
+
     private func addObserver(_ player: AVPlayer, _ url: URL) {
-        player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1 / 30.0, preferredTimescale: Int32(NSEC_PER_SEC)), queue: nil) { time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1 / 30.0, preferredTimescale: Int32(NSEC_PER_SEC)), queue: .main) { time in
             if let item = player.currentItem {
                 let dur = CMTimeGetSeconds(item.duration)
                 if !dur.isInfinite && !dur.isNaN {
@@ -237,13 +292,16 @@ struct CIVideoView: View {
                     videoPlaying = player.timeControlStatus == .playing || player.timeControlStatus == .waitingToPlayAtSpecifiedRate
                 }
                 if wasPlaying != videoPlaying && videoPlaying {
-                    NotificationCenter.default.post(name: .MediaStartedPlaying, object: nil, userInfo: ["url": url])
+                    ChatModel.shared.stopPreviousRecPlay = url
                 }
             }
         }
     }
 
     private func removeObserver() {
-        NotificationCenter.default.removeObserver(self)
+        if let timeObserver = timeObserver {
+            player?.removeTimeObserver(timeObserver)
+        }
+        timeObserver = nil
     }
 }

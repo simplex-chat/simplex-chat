@@ -748,8 +748,8 @@ struct ComposeView: View {
 
     private func startVoiceMessageRecording() async {
         startingRecording = true
-        chatModel.stopPreviousRecPlay.toggle()
         let fileName = generateNewFileName("voice", "m4a")
+        chatModel.stopPreviousRecPlay = getAppFilePath(fileName)
         audioRecorder = AudioRecorder(
             onTimer: { voiceMessageRecordingTime = $0 },
             onFinishRecording: {

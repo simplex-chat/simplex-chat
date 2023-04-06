@@ -55,7 +55,7 @@ final class ChatModel: ObservableObject {
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
-    @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
+    @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
 

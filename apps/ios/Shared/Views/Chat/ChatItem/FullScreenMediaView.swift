@@ -139,16 +139,18 @@ struct FullScreenMediaView: View {
         if case .image = ci.content.msgContent,
            let img = getLoadedImage(ci.file) {
             return (ci, img, nil)
-        } else if case .video = ci.content.msgContent,
+        }
+        // Currently, video support in gallery is not enabled
+         /*else if case .video = ci.content.msgContent,
            let url = getLoadedVideo(ci.file) {
             return (ci, nil, url)
-        }
+        }*/
         return nil
     }
 
     private func startPlayerAndNotify() {
-        if let player = player, let url = url {
-            NotificationCenter.default.post(name: .MediaStartedPlaying, object: nil, userInfo: ["url": url])
+        if let player = player {
+            ChatModel.shared.stopPreviousRecPlay = url
             player.play()
         }
     }

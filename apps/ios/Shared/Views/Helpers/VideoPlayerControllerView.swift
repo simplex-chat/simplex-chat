@@ -7,7 +7,7 @@ import Foundation
 import SwiftUI
 import AVKit
 
-struct VideoPlayerView: UIViewRepresentable {
+struct VideoPlayerViewController: UIViewControllerRepresentable {
 
     static var players: [String: AVPlayer] = [:]
     static func getOrCreatePlayer(_ url: URL, _ gallery: Bool) -> AVPlayer {
@@ -20,29 +20,39 @@ struct VideoPlayerView: UIViewRepresentable {
         }
     }
 
-    typealias UIViewType = UIView
+    typealias UIViewControllerType = UIViewController
     let player: AVPlayer
     let url: URL
     let showControls: Bool
+    @Binding var showFullScreen: Bool
+    private let controller = AVPlayerViewController()
 
-    func makeUIView(context: UIViewRepresentableContext<VideoPlayerView>) -> UIView {
-        let controller = AVPlayerViewController()
+    func makeUIViewController(context: Context) -> UIViewController {
+        controller.entersFullScreenWhenPlaybackBegins = true
+        controller.exitsFullScreenWhenPlaybackEnds = true
         controller.showsPlaybackControls = showControls
-        if #available(iOS 16.0, *) {
-            controller.speeds = []
-        }
+        controller.modalPresentationStyle = .fullScreen
+        controller.player = player
         context.coordinator.controller = controller
         context.coordinator.timeObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { _ in
             player.seek(to: CMTime.zero)
             player.play()
         }
-        return controller.view
+//        player.play()
+        return controller
     }
 
-    func updateUIView(_ uiView: UIView, context: UIViewRepresentableContext<VideoPlayerView>) {
+    func removeFromView() {
+        controller.willMove(toParent: nil)
+        controller.view.removeFromSuperview()
+        controller.removeFromParent()
+
     }
 
-    func makeCoordinator() -> VideoPlayerView.Coordinator {
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+    }
+
+    func makeCoordinator() -> VideoPlayerViewController.Coordinator {
         Coordinator()
     }
 
