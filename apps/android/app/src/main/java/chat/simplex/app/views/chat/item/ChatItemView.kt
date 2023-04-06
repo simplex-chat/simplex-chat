@@ -213,7 +213,7 @@ fun ChatItemView(
             EmojiItemView(cItem, cInfo.timedMessagesTTL)
             MsgContentItemDropdownMenu()
           } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
-            CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, longClick = { onLinkLongClick("") })
+            CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, longClick = { onLinkLongClick("") }, receiveFile)
             MsgContentItemDropdownMenu()
           } else {
             framedItemView()

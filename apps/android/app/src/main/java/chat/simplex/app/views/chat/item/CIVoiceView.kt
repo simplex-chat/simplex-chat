@@ -36,6 +36,7 @@ fun CIVoiceView(
   ci: ChatItem,
   timedMessagesTTL: Int?,
   longClick: () -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   Row(
     Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = 6.dp, end = 6.dp),
@@ -64,9 +65,9 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick)
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick, receiveFile)
     } else {
-      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
+      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick, receiveFile)
       val metaReserve = if (edited)
         "                     "
       else
@@ -90,12 +91,13 @@ private fun VoiceLayout(
   timedMessagesTTL: Int?,
   play: () -> Unit,
   pause: () -> Unit,
-  longClick: () -> Unit
+  longClick: () -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   when {
     hasText -> {
       Spacer(Modifier.width(6.dp))
-      VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
+      VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
       DurationText(text, PaddingValues(start = 12.dp))
     }
     sent -> {
@@ -105,7 +107,7 @@ private fun VoiceLayout(
           DurationText(text, PaddingValues(end = 12.dp))
         }
         Column {
-          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
+          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
           Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
             CIMetaView(ci, timedMessagesTTL)
           }
@@ -115,7 +117,7 @@ private fun VoiceLayout(
     else -> {
       Row {
         Column {
-          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
+          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
           Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
             CIMetaView(ci, timedMessagesTTL)
           }
@@ -191,7 +193,8 @@ private fun VoiceMsgIndicator(
   error: Boolean,
   play: () -> Unit,
   pause: () -> Unit,
-  longClick: () -> Unit
+  longClick: () -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
@@ -210,8 +213,9 @@ private fun VoiceMsgIndicator(
       PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
     }
   } else {
-    if (file?.fileStatus is CIFileStatus.RcvInvitation
-      || file?.fileStatus is CIFileStatus.RcvTransfer
+    if (file?.fileStatus is CIFileStatus.RcvInvitation) {
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick)
+    } else if (file?.fileStatus is CIFileStatus.RcvTransfer
       || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {
       Box(

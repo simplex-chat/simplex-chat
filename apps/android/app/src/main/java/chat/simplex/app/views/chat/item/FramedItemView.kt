@@ -220,7 +220,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, longClick = { onLinkLongClick("") })
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, longClick = { onLinkLongClick("") }, receiveFile)
                 if (mc.text != "") {
                   CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler)
                 }
