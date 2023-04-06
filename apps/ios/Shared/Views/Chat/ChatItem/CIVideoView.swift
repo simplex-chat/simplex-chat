@@ -261,34 +261,38 @@ struct CIVideoView: View {
     }
 
     private func fullScreenPlayer(_ url: URL) -> some View {
-        VideoPlayer(player: createFullScreenPlayerAndPlay(url)) {}
-        .overlay(alignment: .topLeading, content: {
-            Button(action: { showFullScreenPlayer = false },
-                label: {
-                    Image(systemName: "multiply")
-                    .resizable()
-                    .tint(.white)
-                    .frame(width: 15, height: 15)
-                    .padding(.leading, 15)
-                    .padding(.top, 13)
+        ZStack {
+            Color.black.edgesIgnoringSafeArea(.all)
+            VideoPlayer(player: createFullScreenPlayerAndPlay(url)) {
+            }
+            .overlay(alignment: .topLeading, content: {
+                Button(action: { showFullScreenPlayer = false },
+                    label: {
+                        Image(systemName: "multiply")
+                        .resizable()
+                        .tint(.white)
+                        .frame(width: 15, height: 15)
+                        .padding(.leading, 15)
+                        .padding(.top, 13)
+                    }
+                )
+            })
+            .gesture(
+                DragGesture(minimumDistance: 80)
+                .onChanged { gesture in
+                    let t = gesture.translation
+                    let w = abs(t.width)
+                    if t.height > 60 && t.height > w * 2 {
+                        showFullScreenPlayer = false
+                    }
                 }
             )
-        })
-        .gesture(
-            DragGesture(minimumDistance: 80)
-            .onChanged { gesture in
-                let t = gesture.translation
-                let w = abs(t.width)
-                if t.height > 60 && t.height > w * 2 {
-                    showFullScreenPlayer = false
+            .onDisappear {
+                if let fullScreenTimeObserver = fullScreenTimeObserver {
+                    NotificationCenter.default.removeObserver(fullScreenTimeObserver)
                 }
+                fullScreenTimeObserver = nil
             }
-        )
-        .onDisappear {
-            if let fullScreenTimeObserver = fullScreenTimeObserver {
-                NotificationCenter.default.removeObserver(fullScreenTimeObserver)
-            }
-            fullScreenTimeObserver = nil
         }
     }
 
