@@ -233,6 +233,7 @@ private func dropPrefix(_ s: String, _ prefix: String) -> String {
 extension AVAsset {
     func generatePreview() -> (UIImage, Int)? {
         let generator = AVAssetImageGenerator(asset: self)
+        generator.appliesPreferredTrackTransform = true
         var actualTime = CMTimeMake(value: 0, timescale: 0)
         if let image = try? generator.copyCGImage(at: CMTimeMakeWithSeconds(0.0, preferredTimescale: 1), actualTime: &actualTime) {
             return (UIImage(cgImage: image), Int(duration.seconds))

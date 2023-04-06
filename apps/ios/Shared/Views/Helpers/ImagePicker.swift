@@ -110,7 +110,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
 
         func loadVideo(url: URL?, error: Error? = nil) {
             if let error = error {
-                logger.error("LibraryMediaListPicker: couldn't load image with error: \(error.localizedDescription)")
+                logger.error("LibraryMediaListPicker: couldn't load video with error: \(error.localizedDescription)")
             } else if let url = url as URL?, let video = UploadContent.loadVideoFromURL(url: url) {
                 media.append(video)
             }

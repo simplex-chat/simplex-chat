@@ -194,8 +194,11 @@ struct CIVideoView: View {
                 case .xftp: progressView()
                 case .smp: EmptyView()
                 }
-            case .sndTransfer:
-                progressView()
+            case let .sndTransfer(sndProgress, sndTotal):
+                switch file.fileProtocol {
+                case .xftp: progressCircle(sndProgress, sndTotal)
+                case .smp: progressView()
+                }
             case .sndComplete:
                 Image(systemName: "checkmark")
                 .resizable()
@@ -203,6 +206,13 @@ struct CIVideoView: View {
                 .frame(width: 10, height: 10)
                 .foregroundColor(.white)
                 .padding(13)
+            case .rcvInvitation:
+                Image(systemName: "arrow.down")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 14, height: 14)
+                .foregroundColor(.white)
+                .padding(11)
             case .rcvAccepted:
                 Image(systemName: "ellipsis")
                 .resizable()
@@ -210,8 +220,12 @@ struct CIVideoView: View {
                 .frame(width: 14, height: 14)
                 .foregroundColor(.white)
                 .padding(11)
-            case .rcvTransfer:
-                progressView()
+            case let .rcvTransfer(rcvProgress, rcvTotal):
+                if file.fileProtocol == .xftp && rcvProgress < rcvTotal {
+                    progressCircle(rcvProgress, rcvTotal)
+                } else {
+                    progressView()
+                }
             default: EmptyView()
             }
         }
@@ -220,9 +234,21 @@ struct CIVideoView: View {
     private func progressView() -> some View {
         ProgressView()
         .progressViewStyle(.circular)
-        .frame(width: 20, height: 20)
+        .frame(width: 16, height: 16)
         .tint(.white)
-        .padding(8)
+        .padding(11)
+    }
+
+    private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
+        Circle()
+        .trim(from: 0, to: Double(progress) / Double(total))
+        .stroke(
+            Color(uiColor: .white),
+            style: StrokeStyle(lineWidth: 2)
+        )
+        .rotationEffect(.degrees(-90))
+        .frame(width: 16, height: 16)
+        .padding([.trailing, .top], 11)
     }
 
     private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64) async -> Void) {
