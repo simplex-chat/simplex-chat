@@ -21,7 +21,8 @@ struct ProtocolServersView: View {
     @State private var servers: [ServerCfg] = []
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
-    @State private var showScanSMPServer = false
+    @State private var showScanProtoServer = false
+    @State private var justOpened = true
     @State private var testing = false
     @State private var alert: ServerAlert? = nil
     @State private var showSaveDialog = false
@@ -38,7 +39,7 @@ struct ProtocolServersView: View {
     }
 
     enum ServerAlert: Identifiable {
-        case testsFailed(failures: [String: SMPTestFailure])
+        case testsFailed(failures: [String: ProtocolTestFailure])
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -87,16 +88,17 @@ struct ProtocolServersView: View {
                 servers.append(ServerCfg.empty)
                 selectedServer = servers.last?.id
             }
-            Button("Scan server QR code") { showScanSMPServer = true }
+            Button("Scan server QR code") { showScanProtoServer = true }
             Button("Add preset servers", action: addAllPresets)
                 .disabled(hasAllPresets())
         }
-        .sheet(isPresented: $showScanSMPServer) {
+        .sheet(isPresented: $showScanProtoServer) {
             ScanProtocolServer(servers: $servers)
         }
         .modifier(BackButton {
             if saveDisabled {
                 dismiss()
+                justOpened = false
             } else {
                 showSaveDialog = true
             }
@@ -105,6 +107,7 @@ struct ProtocolServersView: View {
             Button("Save") {
                 saveServers()
                 dismiss()
+                justOpened = false
             }
             Button("Exit without saving") { dismiss() }
         }
@@ -125,8 +128,12 @@ struct ProtocolServersView: View {
             }
         }
         .onAppear {
+            // this condition is needed to prevent re-setting the servers when exiting single server view
+            if !justOpened { return }
             do {
-                (currServers, presetServers) = try getUserProtocolServers(serverProtocol)
+                let r = try getUserProtoServers(serverProtocol)
+                currServers = r.protoServers
+                presetServers = r.presetServers
                 servers = currServers
             } catch let error {
                 alert = .error(
@@ -134,6 +141,7 @@ struct ProtocolServersView: View {
                     error: "Error: \(responseError(error))"
                 )
             }
+            justOpened = false
         }
     }
 
@@ -158,7 +166,7 @@ struct ProtocolServersView: View {
         let srv = server.wrappedValue
         return NavigationLink(tag: srv.id, selection: $selectedServer) {
             ProtocolServerView(
-                serverProtocol: .smp,
+                serverProtocol: serverProtocol,
                 server: server,
                 serverToEdit: srv
             )
@@ -258,8 +266,8 @@ struct ProtocolServersView: View {
         }
     }
 
-    private func runServersTest() async -> [String: SMPTestFailure] {
-        var fs: [String: SMPTestFailure] = [:]
+    private func runServersTest() async -> [String: ProtocolTestFailure] {
+        var fs: [String: ProtocolTestFailure] = [:]
         for i in 0..<servers.count {
             if servers[i].enabled {
                 if let f = await testServerConnection(server: $servers[i]) {
@@ -273,7 +281,7 @@ struct ProtocolServersView: View {
     func saveServers() {
         Task {
             do {
-                try await setUserProtocolServers(serverProtocol, servers: servers)
+                try await setUserProtoServers(serverProtocol, servers: servers)
                 await MainActor.run {
                     currServers = servers
                     editMode?.wrappedValue = .inactive
