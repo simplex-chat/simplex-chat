@@ -916,7 +916,7 @@
     <string name="allow_your_contacts_irreversibly_delete">Zezwól swoim kontaktom na nieodwracalne usuwanie wysłanych wiadomości.</string>
     <string name="about_simplex_chat">O <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="above_then_preposition_continuation">powyżej, wtedy:</string>
-    <string name="accept_connection_request__question">Zaakceptować prośbę połączenia\?</string>
+    <string name="accept_connection_request__question">Zaakceptować prośbę o połączenie\?</string>
     <string name="color_primary">Akcent</string>
     <string name="all_group_members_will_remain_connected">Wszyscy członkowie grupy pozostaną połączeni.</string>
     <string name="allow_disappearing_messages_only_if">Zezwalaj na znikające wiadomości tylko wtedy, gdy Twój kontakt na to pozwala.</string>
