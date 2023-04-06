@@ -232,8 +232,6 @@ struct CIVideoView: View {
     }
 
     private func fullScreenPlayer(_ url: URL) -> some View {
-        //VideoPlayerViewController(player: VideoPlayerView.getOrCreatePlayer(url, true), url: url, showControls: true, showFullScreen: $showFullScreen)
-        //FullScreenMediaView(chatItem: chatItem, image: nil, player: VideoPlayerView.getOrCreatePlayer(url, true), url: url, showView: $showFullScreen, scrollProxy: scrollProxy)
         VideoPlayer(player: createFullScreenPlayerAndPlay(url)) {}
         .overlay(alignment: .topLeading, content: {
             Button(action: { showFullScreenPlayer = false },
