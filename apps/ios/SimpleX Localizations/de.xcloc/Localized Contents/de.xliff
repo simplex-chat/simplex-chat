@@ -2794,9 +2794,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Bewerten Sie die App</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read" xml:space="preserve">
+      <trans-unit id="Read" xml:space="preserve" approved="no">
         <source>Read</source>
-        <target>Lesen</target>
+        <target state="translated">Gelesen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
