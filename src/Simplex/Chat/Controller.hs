@@ -697,7 +697,7 @@ data ParsedServerAddress = ParsedServerAddress
 instance ToJSON ParsedServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ServerAddress = ServerAddress
-  { protocol :: AProtocolType,
+  { serverProtocol :: AProtocolType,
     hostnames :: NonEmpty String,
     port :: String,
     keyHash :: String,
