@@ -21,7 +21,7 @@ interface Recorder {
   fun stop(): Int
 }
 
-class RecorderNative(private val recordedBytesLimit: Long): Recorder {
+class RecorderNative(): Recorder {
   companion object {
     // Allows to stop the recorder from outside without having the recorder in a variable
     var stopRecording: (() -> Unit)? = null
@@ -50,7 +50,6 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     rec.setAudioSamplingRate(16000)
     rec.setAudioEncodingBitRate(16000)
     rec.setMaxDuration(MAX_VOICE_MILLIS_FOR_SENDING)
-    rec.setMaxFileSize(recordedBytesLimit)
     val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
     val fileToSave = File.createTempFile(generateNewFileName(SimplexApp.context, "voice", "${extension}_"), ".tmp", tmpDir)
     fileToSave.deleteOnExit()

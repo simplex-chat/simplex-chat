@@ -305,7 +305,7 @@ private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) 
 
 @Composable
 private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNextClick: MutableState<Boolean>) {
-  val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
+  val rec: Recorder = remember { RecorderNative() }
   DisposableEffect(Unit) { onDispose { rec.stop() } }
   val stopRecordingAndAddAudio: () -> Unit = {
     recState.value.filePathNullable?.let {
