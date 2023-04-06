@@ -22,9 +22,9 @@ public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824
 
 public let MAX_FILE_SIZE_SMP: Int64 = 8000000
 
-public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(30)
+public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(600)
 
-public let MAX_VOICE_MESSAGE_SIZE_INLINE_SEND: Int64 = 94680
+public let MAX_VOICE_MESSAGE_SIZE_INLINE_SEND: Int64 = 1321116
 
 private let CHAT_DB: String = "_chat.db"
 
