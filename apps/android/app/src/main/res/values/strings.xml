@@ -60,7 +60,11 @@
 
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
+  <string name="error_saving_xftp_servers">Error saving XFTP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="ensure_xftp_server_address_are_correct_format_and_unique">Make sure XFTP server addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="error_loading_smp_servers">Error loading SMP servers</string>
+  <string name="error_loading_xftp_servers">Error loading XFTP servers</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
@@ -96,12 +100,18 @@
   <string name="error_changing_address">Error changing address</string>
   <string name="error_smp_test_failed_at_step">Test failed at step %s.</string>
   <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password</string>
+  <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password</string>
   <string name="error_smp_test_certificate">Possibly, certificate fingerprint in server address is incorrect</string>
   <string name="smp_server_test_connect">Connect</string>
+  <string name="smp_server_test_disconnect">Disconnect</string>
   <string name="smp_server_test_create_queue">Create queue</string>
   <string name="smp_server_test_secure_queue">Secure queue</string>
   <string name="smp_server_test_delete_queue">Delete queue</string>
-  <string name="smp_server_test_disconnect">Disconnect</string>
+  <string name="smp_server_test_create_file">Create file</string>
+  <string name="smp_server_test_upload_file">Upload file</string>
+  <string name="smp_server_test_download_file">Download file</string>
+  <string name="smp_server_test_compare_file">Compare file</string>
+  <string name="smp_server_test_delete_file">Delete file</string>
   <string name="error_deleting_user">Error deleting user profile</string>
   <string name="error_updating_user_privacy">Error updating user privacy</string>
 
@@ -476,12 +486,14 @@
   <string name="smp_servers_delete_server">Delete server</string>
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
   <string name="smp_save_servers_question">Save servers?</string>
+  <string name="xftp_servers">XFTP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
   <string name="rate_the_app">Rate the app</string>
   <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
   <string name="your_SMP_servers">Your SMP servers</string>
+  <string name="your_XFTP_servers">Your XFTP servers</string>
   <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
   <string name="how_to">How to</string>
   <string name="how_to_use_your_servers">How to use your servers</string>
@@ -732,7 +744,7 @@
   <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
-  <string name="settings_section_title_messages">MESSAGES</string>
+  <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
   <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
