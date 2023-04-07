@@ -61,7 +61,7 @@
     "terminal-cli": "终端命令行",
     "simplex-explained-tab-1-p-1": "您可以像在任何其他即时通讯软件中一样创建联系人和群组，并进行双向对话。",
     "hero-p-1": "其他应用需要用户 ID：Signal、Matrix、Session、Briar、Jami、Cwtch 等。<br>SimpleX 不需要，<strong>甚至不需要随机数</strong>。<br>这从根本上改善了您的隐私。",
-    "hero-subheader": "首个不使用用户ID的即时通讯软件id",
+    "hero-subheader": "首个不使用用户ID的即时通讯软件",
     "hero-overlay-2-textlink": "SimpleX 是如何工作的？",
     "hero-2-header-desc": "该视频向您展示如何通过一次性二维码、当面或通过视频链接来连接到您的朋友。您还可以通过共享邀请链接来建立连接。",
     "hero-overlay-1-title": "SimpleX 是如何工作的？",
