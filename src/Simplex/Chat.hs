@@ -1542,7 +1542,7 @@ processChatCommand = \case
         (Just contact, _) -> pure $ CRContactAlreadyExists user contact
         (_, xContactId_) -> procCmd $ do
           let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-          when (isJust groupLinkId) $ throwChatError CEConnReqMessageProhibited
+          when (isJust groupLinkId && isJust mc_) $ throwChatError CEConnReqMessageProhibited
           let randomXContactId = XContactId <$> drgRandomBytes 16
           xContactId <- maybe randomXContactId pure xContactId_
           -- [incognito] generate profile to send
