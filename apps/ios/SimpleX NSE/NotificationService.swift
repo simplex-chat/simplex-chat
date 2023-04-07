@@ -292,6 +292,18 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             }
          }
         return cItem.showMutableNotification ? (aChatItem.chatId, .nse(notification: createMessageReceivedNtf(user, cInfo, cItem))) : nil
+    case let .rcvFileSndCancelled(_, aChatItem, _):
+        cleanupFile(aChatItem)
+        return nil
+    case let .sndFileComplete(_, aChatItem, _):
+        cleanupDirectFile(aChatItem)
+        return nil
+    case let .sndFileRcvCancelled(_, aChatItem, _):
+        cleanupDirectFile(aChatItem)
+        return nil
+    case let .sndFileCompleteXFTP(_, aChatItem, _):
+        cleanupFile(aChatItem)
+        return nil
     case let .callInvitation(invitation):
         // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
         return (

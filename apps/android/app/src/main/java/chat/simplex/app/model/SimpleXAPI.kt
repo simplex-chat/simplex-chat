@@ -1002,6 +1002,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     val chatItem = apiCancelFile(fileId)
     if (chatItem != null) {
       chatItemSimpleUpdate(user, chatItem)
+      cleanupFile(chatItem)
     }
   }
 
@@ -1417,40 +1418,27 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.RcvFileComplete ->
         chatItemSimpleUpdate(r.user, r.chatItem)
-      is CR.RcvFileSndCancelled ->
+      is CR.RcvFileSndCancelled -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
+        cleanupFile(r.chatItem)
+      }
       is CR.RcvFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileStart ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileComplete -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
-        val cItem = r.chatItem.chatItem
-        val mc = cItem.content.msgContent
-        val fileName = cItem.file?.fileName
-        if (
-          r.chatItem.chatInfo.chatType == ChatType.Direct
-          && mc is MsgContent.MCFile
-          && fileName != null
-        ) {
-          removeFile(appContext, fileName)
-        }
+        cleanupDirectFile(r.chatItem)
       }
-      is CR.SndFileRcvCancelled ->
+      is CR.SndFileRcvCancelled -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
+        cleanupDirectFile(r.chatItem)
+      }
       is CR.SndFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileCompleteXFTP -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
-        val cItem = r.chatItem.chatItem
-        val mc = cItem.content.msgContent
-        val fileName = cItem.file?.fileName
-        if (
-          mc is MsgContent.MCFile
-          && fileName != null
-        ) {
-          removeFile(appContext, fileName)
-        }
+        cleanupFile(r.chatItem)
       }
       is CR.CallInvitation -> {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation)
@@ -1499,6 +1487,24 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
+    }
+  }
+
+  private fun cleanupDirectFile(aChatItem: AChatItem) {
+    if (aChatItem.chatInfo.chatType == ChatType.Direct) {
+      cleanupFile(aChatItem)
+    }
+  }
+
+  private fun cleanupFile(aChatItem: AChatItem) {
+    val cItem = aChatItem.chatItem
+    val mc = cItem.content.msgContent
+    val fileName = cItem.file?.fileName
+    if (
+      mc is MsgContent.MCFile
+      && fileName != null
+    ) {
+      removeFile(appContext, fileName)
     }
   }
 
