@@ -2269,7 +2269,7 @@ data class ProtocolTestFailure(
 
 @Serializable
 data class ServerAddress(
-  val serverProtocol: FileProtocol? = null,
+  val serverProtocol: FileProtocol,
   val hostnames: List<String>,
   val port: String,
   val keyHash: String,
@@ -2277,7 +2277,7 @@ data class ServerAddress(
 ) {
   val uri: String
     get() =
-      "${serverProtocol ?: "smp"}://${keyHash}${if (basicAuth.isEmpty()) "" else ":$basicAuth"}@${hostnames.joinToString(",")}"
+      "${serverProtocol}://${keyHash}${if (basicAuth.isEmpty()) "" else ":$basicAuth"}@${hostnames.joinToString(",")}"
 
   val valid: Boolean
     get() = hostnames.isNotEmpty() && hostnames.toSet().size == hostnames.size
