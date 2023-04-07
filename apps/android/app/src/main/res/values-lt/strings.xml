@@ -298,4 +298,64 @@
     <string name="update_database">Atnaujinti</string>
     <string name="unknown_error">Nežinoma klaida</string>
     <string name="add_contact_or_create_group">Pradėti naują pokalbį</string>
+    <string name="callstate_waiting_for_answer">laukiama, kol bus atsiliepta…</string>
+    <string name="callstate_waiting_for_confirmation">laukiama patvirtinimo…</string>
+    <string name="icon_descr_video_off">Išjungti vaizdą</string>
+    <string name="icon_descr_video_on">Įjungti vaizdą</string>
+    <string name="your_privacy">Jūsų privatumas</string>
+    <string name="settings_section_title_you">JŪS</string>
+    <string name="wrong_passphrase_title">Neteisinga slaptafrazė!</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="sender_you_pronoun">jūs</string>
+    <string name="description_via_group_link">per grupės nuorodą</string>
+    <string name="description_via_contact_address_link">per adresato adreso nuorodą</string>
+    <string name="description_via_one_time_link">per vienkartinę nuorodą</string>
+    <string name="simplex_link_connection">per <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_mode_browser">Per naršyklę</string>
+    <string name="waiting_for_file">Laukiama failo</string>
+    <string name="voice_message_with_duration">Balso žinutė (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_send_text">Balso žinutė…</string>
+    <string name="view_security_code">Rodyti saugumo kodą</string>
+    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> adresas</string>
+    <string name="your_SMP_servers">Jūsų SMP serveriai</string>
+    <string name="your_ICE_servers">Jūsų ICE serveriai</string>
+    <string name="users_add">Pridėti profilį</string>
+    <string name="users_delete_all_chats_deleted">Visi pokalbiai ir žinutės bus ištrinti – to neįmanoma bus atšaukti!</string>
+    <string name="welcome">Sveiki!</string>
+    <string name="attach">Pridėti</string>
+    <string name="observer_cant_send_message_title">Jūs negalite siųsti žinučių!</string>
+    <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> logotipas</string>
+    <string name="your_settings">Jūsų nustatymai</string>
+    <string name="smp_servers_your_server">Jūsų serveris</string>
+    <string name="smp_servers_your_server_address">Jūsų serverio adresas</string>
+    <string name="smp_servers_add_to_another_device">Pridėti į kitą įrenginį</string>
+    <string name="using_simplex_chat_servers">Naudojami <xliff:g id="appNameFull">SimpleX Chat</xliff:g> serveriai.</string>
+    <string name="network_settings">Išplėstiniai tinklo nustatymai</string>
+    <string name="your_current_profile">Jūsų dabartinis profilis</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Jūsų profilis yra saugomas jūsų įrenginyje ir bendrinamas tik su jūsų adresatais.
+\n
+\n<xliff:g id="appName">SimpleX</xliff:g> serveriai negali matyti jūsų profilio.</string>
+    <string name="icon_descr_video_call">vaizdo skambutis</string>
+    <string name="your_calls">Jūsų skambučiai</string>
+    <string name="webrtc_ice_servers">WebRTC ICE serveriai</string>
+    <string name="your_ice_servers">Jūsų ICE serveriai</string>
+    <string name="snd_group_event_user_left">jūs išėjote</string>
+    <string name="group_member_role_admin">administratorius</string>
+    <string name="incognito_random_profile">Jūsų atsitiktinis profilis</string>
+    <string name="chat_preferences_you_allow">Jūs leidžiate</string>
+    <string name="your_preferences">Jūsų nuostatos</string>
+    <string name="v4_3_voice_messages">Balso žinutės</string>
+    <string name="voice_messages">Balso žinutės</string>
+    <string name="chat_preferences_yes">taip</string>
+    <string name="you_joined_this_group">Jūs prisijungėte prie šios grupės</string>
+    <string name="database_downgrade_warning">Įspėjimas: galite prarasti tam tikrus duomenis!</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Jūs nustosite gauti žinutes iš šios grupės. Pokalbio istorija bus išsaugota.</string>
+    <string name="group_info_member_you">jūs: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="personal_welcome">Sveiki, <xliff:g>%1$s</xliff:g>!</string>
+    <string name="your_chats">Jūsų pokalbiai</string>
+    <string name="wrong_passphrase">Neteisinga duomenų bazės slaptafrazė</string>
+    <string name="icon_descr_video_snd_complete">Vaizdo įrašas išsiųstas</string>
+    <string name="voice_message">Balso žinutė</string>
+    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> komanda</string>
+    <string name="whats_new">Kas naujo</string>
 </resources>
