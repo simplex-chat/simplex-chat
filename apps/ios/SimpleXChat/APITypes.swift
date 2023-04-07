@@ -602,7 +602,7 @@ public enum ChatResponse: Decodable, Error {
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
             case let .apiChat(u, chat): return withUser(u, String(describing: chat))
             case let .userProtoServers(u, servers): return withUser(u, "servers: \(String(describing: servers))")
-            case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\result: \(String(describing: testFailure))")
+            case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
             case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(u, contact, connectionStats, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))")
@@ -891,13 +891,13 @@ public struct ProtocolTestFailure: Decodable, Error, Equatable {
 }
 
 public struct ServerAddress: Decodable {
-    public var serverProtocol: ServerProtocol?
+    public var serverProtocol: ServerProtocol
     public var hostnames: [String]
     public var port: String
     public var keyHash: String
     public var basicAuth: String
 
-    public init(serverProtocol: ServerProtocol?, hostnames: [String], port: String, keyHash: String, basicAuth: String = "") {
+    public init(serverProtocol: ServerProtocol, hostnames: [String], port: String, keyHash: String, basicAuth: String = "") {
         self.serverProtocol = serverProtocol
         self.hostnames = hostnames
         self.port = port
@@ -906,7 +906,7 @@ public struct ServerAddress: Decodable {
     }
 
     public var uri: String {
-        "\(serverProtocol?.rawValue ?? "smp")://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
+        "\(serverProtocol)://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
     }
 
     public var valid: Bool {

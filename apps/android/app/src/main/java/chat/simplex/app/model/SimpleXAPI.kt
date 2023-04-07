@@ -337,9 +337,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun getUserChatData() {
     chatModel.userAddress.value = apiGetUserAddress()
-    val smpServers = getUserSMPServers()
-    chatModel.userSMPServers.value = smpServers?.first
-    chatModel.presetSMPServers.value = smpServers?.second
     chatModel.chatItemTTL.value = getChatItemTTL()
     val chats = apiGetChats()
     chatModel.updateChats(chats)
@@ -579,38 +576,44 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  private suspend fun getUserSMPServers(): Pair<List<ServerCfg>, List<String>>? {
-    val userId = kotlin.runCatching { currentUserId("getUserSMPServers") }.getOrElse { return null }
-    val r = sendCmd(CC.APIGetUserSMPServers(userId))
-    if (r is CR.UserSMPServers) return r.smpServers to r.presetSMPServers
-    Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
-    return null
+  suspend fun getUserProtoServers(serverProtocol: ServerProtocol): UserProtocolServers? {
+    val userId = kotlin.runCatching { currentUserId("getUserProtoServers") }.getOrElse { return null }
+    val r = sendCmd(CC.APIGetUserProtoServers(userId, serverProtocol))
+    return if (r is CR.UserProtoServers) r.servers
+    else {
+      Log.e(TAG, "getUserProtoServers bad response: ${r.responseType} ${r.details}")
+      AlertManager.shared.showAlertMsg(
+        generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.error_loading_smp_servers else R.string.error_loading_xftp_servers),
+        "${r.responseType}: ${r.details}"
+      )
+      null
+    }
   }
 
-  suspend fun setUserSMPServers(smpServers: List<ServerCfg>): Boolean {
-    val userId = kotlin.runCatching { currentUserId("setUserSMPServers") }.getOrElse { return false }
-    val r = sendCmd(CC.APISetUserSMPServers(userId, smpServers))
+  suspend fun setUserProtoServers(serverProtocol: ServerProtocol, servers: List<ServerCfg>): Boolean {
+    val userId = kotlin.runCatching { currentUserId("setUserProtoServers") }.getOrElse { return false }
+    val r = sendCmd(CC.APISetUserProtoServers(userId, serverProtocol, servers))
     return when (r) {
       is CR.CmdOk -> true
       else -> {
-        Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
+        Log.e(TAG, "setUserProtoServers bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.error_saving_smp_servers),
-          generalGetString(R.string.ensure_smp_server_address_are_correct_format_and_unique)
+          generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.error_saving_smp_servers else R.string.error_saving_xftp_servers),
+          generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.ensure_smp_server_address_are_correct_format_and_unique else R.string.ensure_xftp_server_address_are_correct_format_and_unique)
         )
         false
       }
     }
   }
 
-  suspend fun testSMPServer(smpServer: String): SMPTestFailure? {
-    val userId = currentUserId("testSMPServer")
-    val r = sendCmd(CC.APITestSMPServer(userId, smpServer))
+  suspend fun testProtoServer(server: String): ProtocolTestFailure? {
+    val userId = currentUserId("testProtoServer")
+    val r = sendCmd(CC.APITestProtoServer(userId, server))
     return when (r) {
-      is CR.SmpTestResult -> r.smpTestFailure
+      is CR.ServerTestResult -> r.testFailure
       else -> {
-        Log.e(TAG, "testSMPServer bad response: ${r.responseType} ${r.details}")
-        throw Exception("testSMPServer bad response: ${r.responseType} ${r.details}")
+        Log.e(TAG, "testProtoServer bad response: ${r.responseType} ${r.details}")
+        throw Exception("testProtoServer bad response: ${r.responseType} ${r.details}")
       }
     }
   }
@@ -1002,6 +1005,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     val chatItem = apiCancelFile(fileId)
     if (chatItem != null) {
       chatItemSimpleUpdate(user, chatItem)
+      cleanupFile(chatItem)
     }
   }
 
@@ -1417,40 +1421,27 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.RcvFileComplete ->
         chatItemSimpleUpdate(r.user, r.chatItem)
-      is CR.RcvFileSndCancelled ->
+      is CR.RcvFileSndCancelled -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
+        cleanupFile(r.chatItem)
+      }
       is CR.RcvFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileStart ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileComplete -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
-        val cItem = r.chatItem.chatItem
-        val mc = cItem.content.msgContent
-        val fileName = cItem.file?.fileName
-        if (
-          r.chatItem.chatInfo.chatType == ChatType.Direct
-          && mc is MsgContent.MCFile
-          && fileName != null
-        ) {
-          removeFile(appContext, fileName)
-        }
+        cleanupDirectFile(r.chatItem)
       }
-      is CR.SndFileRcvCancelled ->
+      is CR.SndFileRcvCancelled -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
+        cleanupDirectFile(r.chatItem)
+      }
       is CR.SndFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileCompleteXFTP -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
-        val cItem = r.chatItem.chatItem
-        val mc = cItem.content.msgContent
-        val fileName = cItem.file?.fileName
-        if (
-          mc is MsgContent.MCFile
-          && fileName != null
-        ) {
-          removeFile(appContext, fileName)
-        }
+        cleanupFile(r.chatItem)
       }
       is CR.CallInvitation -> {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation)
@@ -1499,6 +1490,24 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
+    }
+  }
+
+  private fun cleanupDirectFile(aChatItem: AChatItem) {
+    if (aChatItem.chatInfo.chatType == ChatType.Direct) {
+      cleanupFile(aChatItem)
+    }
+  }
+
+  private fun cleanupFile(aChatItem: AChatItem) {
+    val cItem = aChatItem.chatItem
+    val mc = cItem.content.msgContent
+    val fileName = cItem.file?.fileName
+    if (
+      mc is MsgContent.MCFile
+      && fileName != null
+    ) {
+      removeFile(appContext, fileName)
     }
   }
 
@@ -1859,9 +1868,9 @@ sealed class CC {
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
-  class APIGetUserSMPServers(val userId: Long): CC()
-  class APISetUserSMPServers(val userId: Long, val smpServers: List<ServerCfg>): CC()
-  class APITestSMPServer(val userId: Long, val smpServer: String): CC()
+  class APIGetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol): CC()
+  class APISetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol, val servers: List<ServerCfg>): CC()
+  class APITestProtoServer(val userId: Long, val server: String): CC()
   class APISetChatItemTTL(val userId: Long, val seconds: Long?): CC()
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
@@ -1943,9 +1952,9 @@ sealed class CC {
     is APIGroupLinkMemberRole -> "/_set link role #$groupId ${memberRole.name.lowercase()}"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
-    is APIGetUserSMPServers -> "/_smp $userId"
-    is APISetUserSMPServers -> "/_smp $userId ${smpServersStr(smpServers)}"
-    is APITestSMPServer -> "/_smp test $userId $smpServer"
+    is APIGetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()}"
+    is APISetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()} ${protoServersStr(servers)}"
+    is APITestProtoServer -> "/_server test $userId $server"
     is APISetChatItemTTL -> "/_ttl $userId ${chatItemTTLStr(seconds)}"
     is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
@@ -2028,9 +2037,9 @@ sealed class CC {
     is APIGroupLinkMemberRole -> "apiGroupLinkMemberRole"
     is APIDeleteGroupLink -> "apiDeleteGroupLink"
     is APIGetGroupLink -> "apiGetGroupLink"
-    is APIGetUserSMPServers -> "apiGetUserSMPServers"
-    is APISetUserSMPServers -> "apiSetUserSMPServers"
-    is APITestSMPServer -> "testSMPServer"
+    is APIGetUserProtoServers -> "apiGetUserProtoServers"
+    is APISetUserProtoServers -> "apiSetUserProtoServers"
+    is APITestProtoServer -> "testProtoServer"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"
@@ -2107,7 +2116,7 @@ sealed class CC {
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
-    fun smpServersStr(smpServers: List<ServerCfg>) = if (smpServers.isEmpty()) "default" else json.encodeToString(SMPServersConfig(smpServers))
+    fun protoServersStr(servers: List<ServerCfg>) = json.encodeToString(ProtoServersConfig(servers))
   }
 }
 
@@ -2142,8 +2151,21 @@ class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = 
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
 @Serializable
-data class SMPServersConfig(
-  val smpServers: List<ServerCfg>
+enum class ServerProtocol {
+  @SerialName("smp") SMP,
+  @SerialName("xftp") XFTP;
+}
+
+@Serializable
+data class ProtoServersConfig(
+  val servers: List<ServerCfg>
+)
+
+@Serializable
+data class UserProtocolServers(
+  val serverProtocol: ServerProtocol,
+  val protoServers: List<ServerCfg>,
+  val presetServers: List<String>,
 )
 
 @Serializable
@@ -2197,29 +2219,39 @@ data class ServerCfg(
 }
 
 @Serializable
-enum class SMPTestStep {
+enum class ProtocolTestStep {
   @SerialName("connect") Connect,
+  @SerialName("disconnect") Disconnect,
   @SerialName("createQueue") CreateQueue,
   @SerialName("secureQueue") SecureQueue,
   @SerialName("deleteQueue") DeleteQueue,
-  @SerialName("disconnect") Disconnect;
+  @SerialName("createFile") CreateFile,
+  @SerialName("uploadFile") UploadFile,
+  @SerialName("downloadFile") DownloadFile,
+  @SerialName("compareFile") CompareFile,
+  @SerialName("deleteFile") DeleteFile;
 
   val text: String get() = when (this) {
     Connect -> generalGetString(R.string.smp_server_test_connect)
+    Disconnect -> generalGetString(R.string.smp_server_test_disconnect)
     CreateQueue -> generalGetString(R.string.smp_server_test_create_queue)
     SecureQueue -> generalGetString(R.string.smp_server_test_secure_queue)
     DeleteQueue -> generalGetString(R.string.smp_server_test_delete_queue)
-    Disconnect -> generalGetString(R.string.smp_server_test_disconnect)
+    CreateFile -> generalGetString(R.string.smp_server_test_create_file)
+    UploadFile -> generalGetString(R.string.smp_server_test_upload_file)
+    DownloadFile -> generalGetString(R.string.smp_server_test_download_file)
+    CompareFile -> generalGetString(R.string.smp_server_test_compare_file)
+    DeleteFile -> generalGetString(R.string.smp_server_test_delete_file)
   }
 }
 
 @Serializable
-data class SMPTestFailure(
-  val testStep: SMPTestStep,
+data class ProtocolTestFailure(
+  val testStep: ProtocolTestStep,
   val testError: AgentErrorType
 ) {
   override fun equals(other: Any?): Boolean {
-    if (other !is SMPTestFailure) return false
+    if (other !is ProtocolTestFailure) return false
     return other.testStep == this.testStep
   }
 
@@ -2232,6 +2264,8 @@ data class SMPTestFailure(
     return when  {
       testError is AgentErrorType.SMP && testError.smpErr is SMPErrorType.AUTH ->
         err + " " + generalGetString(R.string.error_smp_test_server_auth)
+      testError is AgentErrorType.XFTP && testError.xftpErr is XFTPErrorType.AUTH ->
+        err + " " + generalGetString(R.string.error_xftp_test_server_auth)
       testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK ->
         err + " " + generalGetString(R.string.error_smp_test_certificate)
       else -> err
@@ -2241,6 +2275,7 @@ data class SMPTestFailure(
 
 @Serializable
 data class ServerAddress(
+  val serverProtocol: ServerProtocol,
   val hostnames: List<String>,
   val port: String,
   val keyHash: String,
@@ -2248,19 +2283,21 @@ data class ServerAddress(
 ) {
   val uri: String
     get() =
-      "smp://${keyHash}${if (basicAuth.isEmpty()) "" else ":$basicAuth"}@${hostnames.joinToString(",")}"
+      "${serverProtocol}://${keyHash}${if (basicAuth.isEmpty()) "" else ":$basicAuth"}@${hostnames.joinToString(",")}"
 
   val valid: Boolean
     get() = hostnames.isNotEmpty() && hostnames.toSet().size == hostnames.size
 
   companion object {
-    val empty = ServerAddress(
+    fun empty(serverProtocol: ServerProtocol) = ServerAddress(
+      serverProtocol = serverProtocol,
       hostnames = emptyList(),
       port = "",
       keyHash = "",
       basicAuth = ""
     )
     val sampleData = ServerAddress(
+      serverProtocol = ServerProtocol.SMP,
       hostnames = listOf("smp.simplex.im", "1234.onion"),
       port = "",
       keyHash = "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=",
@@ -3005,8 +3042,8 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: User, val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val user: User, val chat: Chat): CR()
-  @Serializable @SerialName("userSMPServers") class UserSMPServers(val user: User, val smpServers: List<ServerCfg>, val presetSMPServers: List<String>): CR()
-  @Serializable @SerialName("smpTestResult") class SmpTestResult(val user: User, val smpTestFailure: SMPTestFailure? = null): CR()
+  @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: User, val servers: UserProtocolServers): CR()
+  @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: User, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: User, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: User, val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
@@ -3113,8 +3150,8 @@ sealed class CR {
     is ChatStopped -> "chatStopped"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
-    is UserSMPServers -> "userSMPServers"
-    is SmpTestResult -> "smpTestResult"
+    is UserProtoServers -> "userProtoServers"
+    is ServerTestResult -> "serverTestResult"
     is ChatItemTTL -> "chatItemTTL"
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
@@ -3219,8 +3256,8 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, json.encodeToString(chat))
-    is UserSMPServers -> withUser(user, "$smpServers: ${json.encodeToString(smpServers)}\n$presetSMPServers: ${json.encodeToString(presetSMPServers)}")
-    is SmpTestResult -> withUser(user, json.encodeToString(smpTestFailure))
+    is UserProtoServers -> withUser(user, "servers: ${json.encodeToString(servers)}")
+    is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
@@ -3453,6 +3490,7 @@ sealed class AgentErrorType {
     is CMD -> "CMD ${cmdErr.string}"
     is CONN -> "CONN ${connErr.string}"
     is SMP -> "SMP ${smpErr.string}"
+    is XFTP -> "XFTP ${xftpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
@@ -3460,6 +3498,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
+  @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
@@ -3527,7 +3566,7 @@ sealed class SMPErrorType {
   }
   @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
   @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
-  @Serializable @SerialName("CMD") class CMD(val cmdErr: SMPCommandError): SMPErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): SMPErrorType()
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
   @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
@@ -3536,7 +3575,7 @@ sealed class SMPErrorType {
 }
 
 @Serializable
-sealed class SMPCommandError {
+sealed class ProtocolCommandError {
   val string: String get() = when (this) {
     is UNKNOWN -> "UNKNOWN"
     is SYNTAX -> "SYNTAX"
@@ -3544,11 +3583,11 @@ sealed class SMPCommandError {
     is HAS_AUTH -> "HAS_AUTH"
     is NO_QUEUE -> "NO_QUEUE"
   }
-  @Serializable @SerialName("UNKNOWN") class UNKNOWN: SMPCommandError()
-  @Serializable @SerialName("SYNTAX") class SYNTAX: SMPCommandError()
-  @Serializable @SerialName("NO_AUTH") class NO_AUTH: SMPCommandError()
-  @Serializable @SerialName("HAS_AUTH") class HAS_AUTH: SMPCommandError()
-  @Serializable @SerialName("NO_QUEUE") class NO_QUEUE: SMPCommandError()
+  @Serializable @SerialName("UNKNOWN") class UNKNOWN: ProtocolCommandError()
+  @Serializable @SerialName("SYNTAX") class SYNTAX: ProtocolCommandError()
+  @Serializable @SerialName("NO_AUTH") class NO_AUTH: ProtocolCommandError()
+  @Serializable @SerialName("HAS_AUTH") class HAS_AUTH: ProtocolCommandError()
+  @Serializable @SerialName("NO_QUEUE") class NO_QUEUE: ProtocolCommandError()
 }
 
 @Serializable
@@ -3589,4 +3628,34 @@ sealed class SMPAgentError {
   @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED: SMPAgentError()
   @Serializable @SerialName("A_VERSION") class A_VERSION: SMPAgentError()
   @Serializable @SerialName("A_ENCRYPTION") class A_ENCRYPTION: SMPAgentError()
+}
+
+@Serializable
+sealed class XFTPErrorType {
+  val string: String get() = when (this) {
+    is BLOCK -> "BLOCK"
+    is SESSION -> "SESSION"
+    is CMD -> "CMD ${cmdErr.string}"
+    is AUTH -> "AUTH"
+    is SIZE -> "SIZE"
+    is QUOTA -> "QUOTA"
+    is DIGEST -> "DIGEST"
+    is CRYPTO -> "CRYPTO"
+    is NO_FILE -> "NO_FILE"
+    is HAS_FILE -> "HAS_FILE"
+    is FILE_IO -> "FILE_IO"
+    is INTERNAL -> "INTERNAL"
+  }
+  @Serializable @SerialName("BLOCK") object BLOCK: XFTPErrorType()
+  @Serializable @SerialName("SESSION") object SESSION: XFTPErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): XFTPErrorType()
+  @Serializable @SerialName("AUTH") object AUTH: XFTPErrorType()
+  @Serializable @SerialName("SIZE") object SIZE: XFTPErrorType()
+  @Serializable @SerialName("QUOTA") object QUOTA: XFTPErrorType()
+  @Serializable @SerialName("DIGEST") object DIGEST: XFTPErrorType()
+  @Serializable @SerialName("CRYPTO") object CRYPTO: XFTPErrorType()
+  @Serializable @SerialName("NO_FILE") object NO_FILE: XFTPErrorType()
+  @Serializable @SerialName("HAS_FILE") object HAS_FILE: XFTPErrorType()
+  @Serializable @SerialName("FILE_IO") object FILE_IO: XFTPErrorType()
+  @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
 }

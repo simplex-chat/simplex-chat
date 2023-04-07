@@ -745,6 +745,7 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil) async -> AChatItem? {
 func cancelFile(user: User, fileId: Int64) async {
     if let chatItem = await apiCancelFile(fileId: fileId) {
         DispatchQueue.main.async { chatItemSimpleUpdate(user, chatItem) }
+        cleanupFile(chatItem)
     }
 }
 
@@ -1329,31 +1330,22 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileSndCancelled(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
+            cleanupFile(aChatItem)
         case let .rcvFileProgressXFTP(user, aChatItem, _, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileStart(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileComplete(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
-            let cItem = aChatItem.chatItem
-            let mc = cItem.content.msgContent
-            if aChatItem.chatInfo.chatType == .direct,
-               case .file = mc,
-               let fileName = cItem.file?.filePath {
-                removeFile(fileName)
-            }
+            cleanupDirectFile(aChatItem)
         case let .sndFileRcvCancelled(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
+            cleanupDirectFile(aChatItem)
         case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileCompleteXFTP(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
-            let cItem = aChatItem.chatItem
-            let mc = cItem.content.msgContent
-            if case .file = mc,
-               let fileName = cItem.file?.filePath {
-                removeFile(fileName)
-            }
+            cleanupFile(aChatItem)
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)

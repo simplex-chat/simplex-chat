@@ -177,7 +177,7 @@ struct ProtocolServersView: View {
             HStack {
                 Group {
                     if let address = address {
-                        if !address.valid {
+                        if !address.valid || address.serverProtocol != serverProtocol {
                             invalidServer()
                         } else if !uniqueAddress(srv, address) {
                             Image(systemName: "exclamationmark.circle").foregroundColor(.red)
