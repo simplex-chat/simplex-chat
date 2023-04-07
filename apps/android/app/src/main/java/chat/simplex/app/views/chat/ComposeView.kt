@@ -9,12 +9,11 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.graphics.drawable.AnimatedImageDrawable
-import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.webkit.MimeTypeMap
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -49,8 +48,7 @@ import java.nio.file.Files
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
-  @Serializable class ImagePreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
-  @Serializable class VideoPreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
+  @Serializable class MediaPreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
   @Serializable data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String, val uri: Uri): ComposePreview()
 }
@@ -96,8 +94,7 @@ data class ComposeState(
   val sendEnabled: () -> Boolean
     get() = {
       val hasContent = when (preview) {
-        is ComposePreview.ImagePreview -> true
-        is ComposePreview.VideoPreview -> true
+        is ComposePreview.MediaPreview -> true
         is ComposePreview.VoicePreview -> true
         is ComposePreview.FilePreview -> true
         else -> message.isNotEmpty() || liveMessage != null
@@ -110,8 +107,7 @@ data class ComposeState(
   val linkPreviewAllowed: Boolean
     get() =
       when (preview) {
-        is ComposePreview.ImagePreview -> false
-        is ComposePreview.VideoPreview -> false
+        is ComposePreview.MediaPreview -> false
         is ComposePreview.VoicePreview -> false
         is ComposePreview.FilePreview -> false
         else -> useLinkPreviews
@@ -161,8 +157,8 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCText -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
     // TODO: include correct type
-    is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
-    is MsgContent.MCVideo -> ComposePreview.VideoPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
+    is MsgContent.MCImage -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
+    is MsgContent.MCVideo -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
     is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
     is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
     is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
@@ -192,7 +188,7 @@ fun ComposeView(
       val bitmap: Bitmap? = getBitmapFromUri(uri)
       if (bitmap != null) {
         val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-        composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview), listOf(UploadContent.SimpleImage(uri))))
+        composeState.value = composeState.value.copy(preview = ComposePreview.MediaPreview(listOf(imagePreview), listOf(UploadContent.SimpleImage(uri))))
       }
     }
   }
@@ -203,52 +199,50 @@ fun ComposeView(
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
-  val processPickedImage = { uris: List<Uri>, text: String? ->
+  val processPickedMedia = { uris: List<Uri>, text: String? ->
     val content = ArrayList<UploadContent>()
     val imagesPreview = ArrayList<String>()
     uris.forEach { uri ->
-      val drawable = getDrawableFromUri(uri)
-      var bitmap: Bitmap? = if (drawable != null) getBitmapFromUri(uri) else null
-      val isAnimNewApi = Build.VERSION.SDK_INT >= 28 && drawable is AnimatedImageDrawable
-      val isAnimOldApi = Build.VERSION.SDK_INT < 28 &&
-          (getFileName(SimplexApp.context, uri)?.endsWith(".gif") == true || getFileName(SimplexApp.context, uri)?.endsWith(".webp") == true)
-      if (isAnimNewApi || isAnimOldApi) {
-        // It's a gif or webp
-        val fileSize = getFileSize(context, uri)
-        if (fileSize != null && fileSize <= maxFileSize) {
-          content.add(UploadContent.AnimatedImage(uri))
-        } else {
-          bitmap = null
-          AlertManager.shared.showAlertMsg(
-            generalGetString(R.string.large_file),
-            String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
-          )
+      var bitmap: Bitmap? = null
+      val isImage = MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileName(SimplexApp.context, uri)?.split(".")?.last())?.contains("image/") == true
+      when {
+        isImage -> {
+          // Image
+          val drawable = getDrawableFromUri(uri)
+          bitmap = if (drawable != null) getBitmapFromUri(uri) else null
+          val isAnimNewApi = Build.VERSION.SDK_INT >= 28 && drawable is AnimatedImageDrawable
+          val isAnimOldApi = Build.VERSION.SDK_INT < 28 &&
+              (getFileName(SimplexApp.context, uri)?.endsWith(".gif") == true || getFileName(SimplexApp.context, uri)?.endsWith(".webp") == true)
+          if (isAnimNewApi || isAnimOldApi) {
+            // It's a gif or webp
+            val fileSize = getFileSize(context, uri)
+            if (fileSize != null && fileSize <= maxFileSize) {
+              content.add(UploadContent.AnimatedImage(uri))
+            } else {
+              bitmap = null
+              AlertManager.shared.showAlertMsg(
+                generalGetString(R.string.large_file),
+                String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
+              )
+            }
+          } else {
+            content.add(UploadContent.SimpleImage(uri))
+          }
         }
-      } else {
-        content.add(UploadContent.SimpleImage(uri))
+        else -> {
+          // Video
+          val res = getBitmapFromVideo(uri)
+          bitmap = res.preview
+          val durationMs = res.duration
+          content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))
+        }
       }
       if (bitmap != null) {
         imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
       }
     }
-
     if (imagesPreview.isNotEmpty()) {
-      composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.ImagePreview(imagesPreview, content))
-    }
-  }
-  val processPickedVideo = { uris: List<Uri>, text: String? ->
-    val content = ArrayList<UploadContent>()
-    val imagesPreview = ArrayList<String>()
-    uris.forEach { uri ->
-      val (bitmap: Bitmap?, durationMs: Long?) = getBitmapFromVideo(uri)
-      content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))
-      if (bitmap != null) {
-        imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
-      }
-    }
-
-    if (imagesPreview.isNotEmpty()) {
-      composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.VideoPreview(imagesPreview, content))
+      composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
     }
   }
   val processPickedFile = { uri: Uri?, text: String? ->
@@ -267,10 +261,7 @@ fun ComposeView(
       }
     }
   }
-  val galleryImageLauncher = rememberLauncherForActivityResult(contract = PickMultipleImagesFromGallery()) { processPickedImage(it, null) }
-  val galleryImageLauncherFallback = rememberGetMultipleContentsLauncher { processPickedImage(it, null) }
-  val galleryVideoLauncher = rememberLauncherForActivityResult(contract = PickMultipleVideosFromGallery()) { processPickedVideo(it, null) }
-  val galleryVideoLauncherFallback = rememberGetMultipleContentsLauncher { processPickedVideo(it, null) }
+  val galleryMediaLauncherWithFiles = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
   val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
@@ -287,20 +278,8 @@ fun ComposeView(
         }
         attachmentOption.value = null
       }
-      AttachmentOption.PickImage -> {
-        try {
-          galleryImageLauncher.launch(0)
-        } catch (e: ActivityNotFoundException) {
-          galleryImageLauncherFallback.launch("image/*")
-        }
-        attachmentOption.value = null
-      }
-      AttachmentOption.PickVideo -> {
-        try {
-          galleryVideoLauncher.launch(0)
-        } catch (e: ActivityNotFoundException) {
-          galleryVideoLauncherFallback.launch("video/*")
-        }
+      AttachmentOption.PickMedia -> {
+        galleryMediaLauncherWithFiles.launch("image/*;video/*")
         attachmentOption.value = null
       }
       AttachmentOption.PickFile -> {
@@ -460,28 +439,20 @@ fun ComposeView(
       when (val preview = cs.preview) {
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
-        is ComposePreview.ImagePreview -> {
+        is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
             val file = when (it) {
               is UploadContent.SimpleImage -> saveImage(context, it.uri)
               is UploadContent.AnimatedImage -> saveAnimImage(context, it.uri)
-              else -> return@forEachIndexed
-            }
-            if (file != null) {
-              files.add(file)
-              msgs.add(MsgContent.MCImage(if (preview.content.lastIndex == index) msgText else "", preview.images[index]))
-            }
-          }
-        }
-        is ComposePreview.VideoPreview -> {
-          preview.content.forEachIndexed { index, it ->
-            val file = when (it) {
               is UploadContent.Video -> saveFileFromUri(context, it.uri)
-              else -> return@forEachIndexed
             }
             if (file != null) {
               files.add(file)
-              msgs.add(MsgContent.MCVideo(if (preview.content.lastIndex == index) msgText else "", preview.images[index], it.duration))
+              if (it is UploadContent.Video) {
+                msgs.add(MsgContent.MCVideo(if (preview.content.lastIndex == index) msgText else "", preview.images[index], it.duration))
+              } else {
+                msgs.add(MsgContent.MCImage(if (preview.content.lastIndex == index) msgText else "", preview.images[index]))
+              }
             }
           }
         }
@@ -516,8 +487,7 @@ fun ComposeView(
         )
       }
       if (sent == null &&
-        (cs.preview is ComposePreview.ImagePreview ||
-            cs.preview is ComposePreview.VideoPreview ||
+        (cs.preview is ComposePreview.MediaPreview ||
             cs.preview is ComposePreview.FilePreview ||
             cs.preview is ComposePreview.VoicePreview)
         ) {
@@ -642,13 +612,8 @@ fun ComposeView(
     when (val preview = composeState.value.preview) {
       ComposePreview.NoPreview -> {}
       is ComposePreview.CLinkPreview -> ComposeLinkView(preview.linkPreview, ::cancelLinkPreview)
-      is ComposePreview.ImagePreview -> ComposeImageView(
-        preview.images,
-        ::cancelImages,
-        cancelEnabled = !composeState.value.editing
-      )
-      is ComposePreview.VideoPreview -> ComposeImageView(
-        preview.images,
+      is ComposePreview.MediaPreview -> ComposeImageView(
+        preview,
         ::cancelImages,
         cancelEnabled = !composeState.value.editing
       )
@@ -686,7 +651,7 @@ fun ComposeView(
 
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
-      is SharedContent.Images -> processPickedImage(shared.uris, shared.text)
+      is SharedContent.Images -> processPickedMedia(shared.uris, shared.text)
       is SharedContent.File -> processPickedFile(shared.uri, shared.text)
       null -> {}
     }

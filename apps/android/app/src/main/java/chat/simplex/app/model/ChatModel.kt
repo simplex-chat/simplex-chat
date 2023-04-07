@@ -2042,7 +2042,7 @@ enum class CICallStatus {
   }
 }
 
-fun durationText(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
+fun durationText(sec: Int): String = if (sec < 3600) "%02d:%02d".format(sec / 60, sec % 60) else "%02d:%02d:%02d".format(sec / 3600, sec % 3600 / 60, sec % 60)
 
 @Serializable
 sealed class MsgErrorType() {

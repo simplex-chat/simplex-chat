@@ -174,7 +174,18 @@ fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLaunche
 
 @Composable
 fun rememberGetMultipleContentsLauncher(cb: (List<Uri>) -> Unit): ManagedActivityResultLauncher<String, List<Uri>> =
-  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetMultipleContents(), cb)
+  rememberLauncherForActivityResult(contract = GetMultipleContentsAndMimeTypes(), cb)
+
+class GetMultipleContentsAndMimeTypes: ActivityResultContracts.GetMultipleContents() {
+  override fun createIntent(context: Context, input: String): Intent {
+    val mimeTypes = input.split(";")
+    return super.createIntent(context, mimeTypes[0]).apply {
+      if (mimeTypes.isNotEmpty()) {
+        putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
+      }
+    }
+  }
+}
 
 fun ManagedActivityResultLauncher<Void?, Uri?>.launchWithFallback() {
   try {
