@@ -32,7 +32,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
-fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: FileProtocol, onUpdate: (ServerCfg) -> Unit, onDelete: () -> Unit) {
+fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerProtocol, onUpdate: (ServerCfg) -> Unit, onDelete: () -> Unit) {
   var testing by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
   ProtocolServerLayout(
@@ -72,7 +72,7 @@ fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: FileProt
 private fun ProtocolServerLayout(
   testing: Boolean,
   server: ServerCfg,
-  serverProtocol: FileProtocol,
+  serverProtocol: ServerProtocol,
   testServer: () -> Unit,
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
@@ -121,7 +121,7 @@ private fun PresetServer(
 private fun CustomServer(
   testing: Boolean,
   server: ServerCfg,
-  serverProtocol: FileProtocol,
+  serverProtocol: ServerProtocol,
   testServer: () -> Unit,
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,

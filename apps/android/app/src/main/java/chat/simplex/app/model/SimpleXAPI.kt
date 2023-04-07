@@ -576,21 +576,21 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun getUserProtoServers(serverProtocol: FileProtocol): UserProtocolServers? {
+  suspend fun getUserProtoServers(serverProtocol: ServerProtocol): UserProtocolServers? {
     val userId = kotlin.runCatching { currentUserId("getUserProtoServers") }.getOrElse { return null }
     val r = sendCmd(CC.APIGetUserProtoServers(userId, serverProtocol))
     return if (r is CR.UserProtoServers) r.servers
     else {
       Log.e(TAG, "getUserProtoServers bad response: ${r.responseType} ${r.details}")
       AlertManager.shared.showAlertMsg(
-        generalGetString(if (serverProtocol == FileProtocol.SMP) R.string.error_loading_smp_servers else R.string.error_loading_xftp_servers),
+        generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.error_loading_smp_servers else R.string.error_loading_xftp_servers),
         "${r.responseType}: ${r.details}"
       )
       null
     }
   }
 
-  suspend fun setUserProtoServers(serverProtocol: FileProtocol, servers: List<ServerCfg>): Boolean {
+  suspend fun setUserProtoServers(serverProtocol: ServerProtocol, servers: List<ServerCfg>): Boolean {
     val userId = kotlin.runCatching { currentUserId("setUserProtoServers") }.getOrElse { return false }
     val r = sendCmd(CC.APISetUserProtoServers(userId, serverProtocol, servers))
     return when (r) {
@@ -598,8 +598,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       else -> {
         Log.e(TAG, "setUserProtoServers bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
-          generalGetString(if (serverProtocol == FileProtocol.SMP) R.string.error_saving_smp_servers else R.string.error_saving_xftp_servers),
-          generalGetString(if (serverProtocol == FileProtocol.SMP) R.string.ensure_smp_server_address_are_correct_format_and_unique else R.string.ensure_xftp_server_address_are_correct_format_and_unique)
+          generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.error_saving_smp_servers else R.string.error_saving_xftp_servers),
+          generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.ensure_smp_server_address_are_correct_format_and_unique else R.string.ensure_xftp_server_address_are_correct_format_and_unique)
         )
         false
       }
@@ -1868,8 +1868,8 @@ sealed class CC {
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
-  class APIGetUserProtoServers(val userId: Long, val serverProtocol: FileProtocol): CC()
-  class APISetUserProtoServers(val userId: Long, val serverProtocol: FileProtocol, val servers: List<ServerCfg>): CC()
+  class APIGetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol): CC()
+  class APISetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol, val servers: List<ServerCfg>): CC()
   class APITestProtoServer(val userId: Long, val server: String): CC()
   class APISetChatItemTTL(val userId: Long, val seconds: Long?): CC()
   class APIGetChatItemTTL(val userId: Long): CC()
@@ -2151,13 +2151,19 @@ class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = 
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
 @Serializable
+enum class ServerProtocol {
+  @SerialName("smp") SMP,
+  @SerialName("xftp") XFTP;
+}
+
+@Serializable
 data class ProtoServersConfig(
   val servers: List<ServerCfg>
 )
 
 @Serializable
 data class UserProtocolServers(
-  val serverProtocol: FileProtocol,
+  val serverProtocol: ServerProtocol,
   val protoServers: List<ServerCfg>,
   val presetServers: List<String>,
 )
@@ -2269,7 +2275,7 @@ data class ProtocolTestFailure(
 
 @Serializable
 data class ServerAddress(
-  val serverProtocol: FileProtocol,
+  val serverProtocol: ServerProtocol,
   val hostnames: List<String>,
   val port: String,
   val keyHash: String,
@@ -2283,7 +2289,7 @@ data class ServerAddress(
     get() = hostnames.isNotEmpty() && hostnames.toSet().size == hostnames.size
 
   companion object {
-    fun empty(serverProtocol: FileProtocol) = ServerAddress(
+    fun empty(serverProtocol: ServerProtocol) = ServerAddress(
       serverProtocol = serverProtocol,
       hostnames = emptyList(),
       port = "",
@@ -2291,7 +2297,7 @@ data class ServerAddress(
       basicAuth = ""
     )
     val sampleData = ServerAddress(
-      serverProtocol = FileProtocol.SMP,
+      serverProtocol = ServerProtocol.SMP,
       hostnames = listOf("smp.simplex.im", "1234.onion"),
       port = "",
       keyHash = "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=",

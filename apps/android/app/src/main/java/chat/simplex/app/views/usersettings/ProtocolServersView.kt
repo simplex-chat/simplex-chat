@@ -27,7 +27,7 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.launch
 
 @Composable
-fun ProtocolServersView(m: ChatModel, serverProtocol: FileProtocol, close: () -> Unit) {
+fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () -> Unit) {
   var presetServers by remember { mutableStateOf(emptyList<String>()) }
   var servers by remember {
     mutableStateOf(m.userSMPServersUnsaved.value ?: emptyList())
@@ -177,7 +177,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: FileProtocol, close: () ->
 
 @Composable
 private fun ProtocolServersLayout(
-  serverProtocol: FileProtocol,
+  serverProtocol: ServerProtocol,
   testing: Boolean,
   servers: List<ServerCfg>,
   serversUnchanged: Boolean,
@@ -196,9 +196,9 @@ private fun ProtocolServersLayout(
       .verticalScroll(rememberScrollState())
       .padding(bottom = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(if (serverProtocol == FileProtocol.SMP) R.string.your_SMP_servers else R.string.your_XFTP_servers))
+    AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) R.string.your_SMP_servers else R.string.your_XFTP_servers))
 
-    SectionView(stringResource(if (serverProtocol == FileProtocol.SMP) R.string.smp_servers else R.string.xftp_servers).uppercase()) {
+    SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) R.string.smp_servers else R.string.xftp_servers).uppercase()) {
       for (srv in servers) {
         SectionItemView({ showServer(srv) }, disabled = testing) {
           ProtocolServerView(serverProtocol, srv, servers, testing)
@@ -248,7 +248,7 @@ private fun ProtocolServersLayout(
 }
 
 @Composable
-private fun ProtocolServerView(serverProtocol: FileProtocol, srv: ServerCfg, servers: List<ServerCfg>, disabled: Boolean) {
+private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, servers: List<ServerCfg>, disabled: Boolean) {
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
@@ -347,7 +347,7 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
   return fs
 }
 
-private fun saveServers(protocol: FileProtocol, currServers: MutableState<List<ServerCfg>>, servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
+private fun saveServers(protocol: ServerProtocol, currServers: MutableState<List<ServerCfg>>, servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
   withApi {
     if (m.controller.setUserProtoServers(protocol, servers)) {
       currServers.value = servers
