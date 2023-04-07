@@ -27,17 +27,19 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.launch
 
 @Composable
-fun SMPServersView(m: ChatModel, close: () -> Unit) {
+fun ProtocolServersView(m: ChatModel, serverProtocol: FileProtocol, close: () -> Unit) {
+  var presetServers by remember { mutableStateOf(emptyList<String>()) }
   var servers by remember {
-    mutableStateOf(m.userSMPServersUnsaved.value ?: m.userSMPServers.value ?: emptyList())
+    mutableStateOf(m.userSMPServersUnsaved.value ?: emptyList())
   }
+  val currServers = remember { mutableStateOf(servers) }
   val testing = rememberSaveable { mutableStateOf(false) }
-  val serversUnchanged = remember { derivedStateOf { servers == m.userSMPServers.value || testing.value } }
+  val serversUnchanged = remember { derivedStateOf { servers == currServers.value || testing.value } }
   val allServersDisabled = remember { derivedStateOf { servers.all { !it.enabled } } }
   val saveDisabled = remember {
     derivedStateOf {
       servers.isEmpty() ||
-      servers == m.userSMPServers.value ||
+      servers == currServers.value ||
       testing.value ||
       !servers.all { srv ->
         val address = parseServerAddress(srv.server)
@@ -47,13 +49,25 @@ fun SMPServersView(m: ChatModel, close: () -> Unit) {
     }
   }
 
+  LaunchedEffect(Unit) {
+    val res = m.controller.getUserProtoServers(serverProtocol)
+    if (res != null) {
+      currServers.value = res.protoServers
+      presetServers = res.presetServers
+      if (servers.isEmpty()) {
+        servers = currServers.value
+      }
+    }
+  }
+
   fun showServer(server: ServerCfg) {
     ModalManager.shared.showModalCloseable(true) { close ->
       var old by remember { mutableStateOf(server) }
       val index = servers.indexOf(old)
-      SMPServerView(
+      ProtocolServerView(
         m,
         old,
+        serverProtocol,
         onUpdate = { updated ->
           val newServers = ArrayList(servers)
           newServers.removeAt(index)
@@ -75,11 +89,12 @@ fun SMPServersView(m: ChatModel, close: () -> Unit) {
   ModalView(
     close = {
       if (saveDisabled.value) close()
-      else showUnsavedChangesAlert({ saveSMPServers(servers, m, close) }, close)
+      else showUnsavedChangesAlert({ saveServers(serverProtocol, currServers, servers, m, close) }, close)
     },
     background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
-    SMPServersLayout(
+    ProtocolServersLayout(
+      serverProtocol,
       testing = testing.value,
       servers = servers,
       serversUnchanged = serversUnchanged.value,
@@ -102,7 +117,7 @@ fun SMPServersView(m: ChatModel, close: () -> Unit) {
               SectionItemView({
                 AlertManager.shared.hideAlert()
                 ModalManager.shared.showModalCloseable { close ->
-                  ScanSMPServer {
+                  ScanProtocolServer {
                     close()
                     servers = servers + it
                     m.userSMPServersUnsaved.value = servers
@@ -112,11 +127,11 @@ fun SMPServersView(m: ChatModel, close: () -> Unit) {
               ) {
                 Text(stringResource(R.string.smp_servers_scan_qr))
               }
-              val hasAllPresets = hasAllPresets(servers, m)
+              val hasAllPresets = hasAllPresets(presetServers, servers, m)
               if (!hasAllPresets) {
                 SectionItemView({
                   AlertManager.shared.hideAlert()
-                  servers = (servers + addAllPresets(servers, m)).sortedByDescending { it.preset }
+                  servers = (servers + addAllPresets(presetServers, servers, m)).sortedByDescending { it.preset }
                 }) {
                   Text(stringResource(R.string.smp_servers_preset_add), color = MaterialTheme.colors.onBackground)
                 }
@@ -134,11 +149,11 @@ fun SMPServersView(m: ChatModel, close: () -> Unit) {
         }
       },
       resetServers = {
-        servers = m.userSMPServers.value ?: emptyList()
+        servers = currServers.value ?: emptyList()
         m.userSMPServersUnsaved.value = null
       },
       saveSMPServers = {
-        saveSMPServers(servers, m)
+        saveServers(serverProtocol, currServers, servers, m)
       },
       showServer = ::showServer,
     )
@@ -161,7 +176,8 @@ fun SMPServersView(m: ChatModel, close: () -> Unit) {
 }
 
 @Composable
-private fun SMPServersLayout(
+private fun ProtocolServersLayout(
+  serverProtocol: FileProtocol,
   testing: Boolean,
   servers: List<ServerCfg>,
   serversUnchanged: Boolean,
@@ -180,12 +196,12 @@ private fun SMPServersLayout(
       .verticalScroll(rememberScrollState())
       .padding(bottom = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(R.string.your_SMP_servers))
+    AppBarTitle(stringResource(if (serverProtocol == FileProtocol.SMP) R.string.your_SMP_servers else R.string.your_XFTP_servers))
 
-    SectionView(stringResource(R.string.smp_servers).uppercase()) {
+    SectionView(stringResource(if (serverProtocol == FileProtocol.SMP) R.string.smp_servers else R.string.xftp_servers).uppercase()) {
       for (srv in servers) {
         SectionItemView({ showServer(srv) }, disabled = testing) {
-          SmpServerView(srv, servers, testing)
+          ProtocolServerView(serverProtocol, srv, servers, testing)
         }
         SectionDivider()
       }
@@ -232,10 +248,10 @@ private fun SMPServersLayout(
 }
 
 @Composable
-private fun SmpServerView(srv: ServerCfg, servers: List<ServerCfg>, disabled: Boolean) {
+private fun ProtocolServerView(serverProtocol: FileProtocol, srv: ServerCfg, servers: List<ServerCfg>, disabled: Boolean) {
   val address = parseServerAddress(srv.server)
   when {
-    address == null || !address.valid || !uniqueAddress(srv, address, servers) -> InvalidServer()
+    address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
     !srv.enabled -> Icon(Icons.Outlined.DoNotDisturb, null, tint = HighOrLowlight)
     else -> ShowTestStatus(srv)
   }
@@ -271,12 +287,12 @@ private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<Se
   }
 }
 
-private fun hasAllPresets(servers: List<ServerCfg>, m: ChatModel): Boolean =
-  m.presetSMPServers.value?.all { hasPreset(it, servers) } ?: true
+private fun hasAllPresets(presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): Boolean =
+  presetServers.all { hasPreset(it, servers) } ?: true
 
-private fun addAllPresets(servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
+private fun addAllPresets(presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
   val toAdd = ArrayList<ServerCfg>()
-  for (srv in m.presetSMPServers.value ?: emptyList()) {
+  for (srv in presetServers) {
     if (!hasPreset(srv, servers)) {
       toAdd.add(ServerCfg(srv, preset = true, tested = null, enabled = true))
     }
@@ -313,8 +329,8 @@ private fun resetTestStatus(servers: List<ServerCfg>): List<ServerCfg> {
   return copy
 }
 
-private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpdated: (List<ServerCfg>) -> Unit): Map<String, SMPTestFailure> {
-  val fs: MutableMap<String, SMPTestFailure> = mutableMapOf()
+private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpdated: (List<ServerCfg>) -> Unit): Map<String, ProtocolTestFailure> {
+  val fs: MutableMap<String, ProtocolTestFailure> = mutableMapOf()
   val updatedServers = ArrayList<ServerCfg>(servers)
   for ((index, server) in servers.withIndex()) {
     if (server.enabled) {
@@ -331,10 +347,10 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
   return fs
 }
 
-private fun saveSMPServers(servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
+private fun saveServers(protocol: FileProtocol, currServers: MutableState<List<ServerCfg>>, servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
   withApi {
-    if (m.controller.setUserSMPServers(servers)) {
-      m.userSMPServers.value = servers
+    if (m.controller.setUserProtoServers(protocol, servers)) {
+      currServers.value = servers
       m.userSMPServersUnsaved.value = null
     }
     afterSave()

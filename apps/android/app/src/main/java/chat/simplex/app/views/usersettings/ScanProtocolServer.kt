@@ -2,7 +2,6 @@ package chat.simplex.app.views.usersettings
 
 import android.Manifest
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
@@ -17,16 +16,16 @@ import chat.simplex.app.views.newchat.QRCodeScanner
 import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
-fun ScanSMPServer(onNext: (ServerCfg) -> Unit) {
+fun ScanProtocolServer(onNext: (ServerCfg) -> Unit) {
   val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
   LaunchedEffect(Unit) {
     cameraPermissionState.launchPermissionRequest()
   }
-  ScanSMPServerLayout(onNext)
+  ScanProtocolServerLayout(onNext)
 }
 
 @Composable
-private fun ScanSMPServerLayout(onNext: (ServerCfg) -> Unit) {
+private fun ScanProtocolServerLayout(onNext: (ServerCfg) -> Unit) {
   Column(
     Modifier
       .fillMaxSize()
