@@ -5,6 +5,7 @@ import SectionItemView
 import SectionItemWithValue
 import SectionView
 import SectionViewSelectable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -163,7 +164,7 @@ fun NetworkAndServersView(
       }
 
       SectionItemView {
-        UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
+        UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy, showSettingsModal)
       }
       SectionDivider()
       UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
@@ -184,7 +185,8 @@ fun NetworkAndServersView(
 @Composable
 fun UseSocksProxySwitch(
   networkUseSocksProxy: MutableState<Boolean>,
-  toggleSocksProxy: (Boolean) -> Unit
+  toggleSocksProxy: (Boolean) -> Unit,
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   Row(
     Modifier.fillMaxWidth(),
@@ -201,7 +203,15 @@ fun UseSocksProxySwitch(
         stringResource(R.string.network_socks_toggle),
         tint = HighOrLowlight
       )
-      Text(stringResource(R.string.network_socks_toggle))
+      if (networkUseSocksProxy.value) {
+        Row {
+          Text("Use SOCKS proxy (")
+          Text("port 9050", Modifier.clickable { showSettingsModal { SockProxySettings(it) } }, color = MaterialTheme.colors.primary)
+          Text(")")
+        }
+      } else {
+        Text(stringResource(R.string.network_socks_toggle))
+      }
     }
     Switch(
       checked = networkUseSocksProxy.value,
@@ -211,6 +221,15 @@ fun UseSocksProxySwitch(
         uncheckedThumbColor = HighOrLowlight
       ),
     )
+  }
+}
+
+@Composable fun SockProxySettings(m: ChatModel) {
+  AppBarTitle("SOCKS proxy settings")
+  SectionView {
+    // Host: localhost
+    // Port: 9050
+    // Save / reset
   }
 }
 
