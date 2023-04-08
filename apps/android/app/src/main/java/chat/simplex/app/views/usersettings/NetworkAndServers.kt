@@ -175,6 +175,7 @@ fun NetworkAndServersView(
       }
       SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
+    // footer (when SOCKS proxy enabled): Set **Use .onion hosts** to **No** if SOCKS proxy does not support .onion hosts.
     Spacer(Modifier.height(8.dp))
     SectionView(generalGetString(R.string.settings_section_title_calls)) {
       SettingsActionItem(Icons.Outlined.ElectricalServices, stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
