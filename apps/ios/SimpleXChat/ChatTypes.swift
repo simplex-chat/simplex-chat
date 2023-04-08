@@ -2542,7 +2542,11 @@ public enum CICallStatus: String, Decodable {
 }
 
 public func durationText(_ sec: Int) -> String {
-    sec < 3600 ? String(format: "%02d:%02d", sec / 60, sec % 60) : String(format: "%02d:%02d:%02d", sec / 3600, sec % 3600 / 60, sec % 60)
+    let s = sec % 60
+    let m = sec / 60
+    return m < 60
+        ? String(format: "%02d:%02d", m, s)
+        : String(format: "%02d:%02d:%02d", m / 60, m % 60, s)
 }
 
 public enum MsgErrorType: Decodable {
