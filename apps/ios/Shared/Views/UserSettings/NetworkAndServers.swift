@@ -25,6 +25,7 @@ private enum NetworkAlert: Identifiable {
 
 struct NetworkAndServers: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: groupDefaults) private var xftpSendEnabled = false
     @State private var cfgLoaded = false
     @State private var currentNetCfg = NetCfg.defaults
     @State private var netCfg = NetCfg.defaults
@@ -37,10 +38,19 @@ struct NetworkAndServers: View {
             List {
                 Section {
                     NavigationLink {
-                        SMPServersView()
+                        ProtocolServersView(serverProtocol: .smp)
                             .navigationTitle("Your SMP servers")
                     } label: {
                         Text("SMP servers")
+                    }
+
+                    if xftpSendEnabled {
+                        NavigationLink {
+                            ProtocolServersView(serverProtocol: .xftp)
+                                .navigationTitle("Your XFTP servers")
+                        } label: {
+                            Text("XFTP servers")
+                        }
                     }
 
                     Picker("Use .onion hosts", selection: $onionHosts) {
@@ -62,7 +72,7 @@ struct NetworkAndServers: View {
                         Text("Advanced network settings")
                     }
                 } header: {
-                    Text("Messages")
+                    Text("Messages & files")
                 } footer: {
                     Text("Using .onion hosts requires compatible VPN provider.")
                 }

@@ -77,6 +77,11 @@
         <target>%@ est vérifié·e</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ servers" xml:space="preserve">
+        <source>%@ servers</source>
+        <target>Serveurs %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
         <source>%@ wants to connect!</source>
         <target>%@ veut se connecter !</target>
@@ -755,6 +760,10 @@
         <target>Couleurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Compare file" xml:space="preserve">
+        <source>Compare file</source>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Compare security codes with your contacts." xml:space="preserve">
         <source>Compare security codes with your contacts.</source>
         <target>Comparez les codes de sécurité avec vos contacts.</target>
@@ -929,6 +938,10 @@
         <source>Create address</source>
         <target>Créer une adresse</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create file" xml:space="preserve">
+        <source>Create file</source>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Create group link" xml:space="preserve">
         <source>Create group link</source>
@@ -1148,6 +1161,10 @@
         <target>Supprimer la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete file" xml:space="preserve">
+        <source>Delete file</source>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Delete files and media?" xml:space="preserve">
         <source>Delete files and media?</source>
         <target>Supprimer les fichiers et médias ?</target>
@@ -1348,6 +1365,10 @@
         <target>Rétrograder et ouvrir le chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Download file" xml:space="preserve">
+        <source>Download file</source>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
         <source>Duplicate display name!</source>
         <target>Nom d'affichage en double !</target>
@@ -1425,6 +1446,7 @@
       </trans-unit>
       <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
         <source>Encrypted message: database migration error</source>
+        <target>Message chiffré : erreur de migration de la base de données</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
@@ -1582,6 +1604,10 @@
         <target>Erreur lors de la liaison avec le groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error loading %@ servers" xml:space="preserve">
+        <source>Error loading %@ servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
         <target>Erreur lors de la réception du fichier</target>
@@ -1592,14 +1618,14 @@
         <target>Erreur lors de la suppression d'un membre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving %@ servers" xml:space="preserve">
+        <source>Error saving %@ servers</source>
+        <target>Erreur lors de la sauvegarde des serveurs %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving ICE servers" xml:space="preserve">
         <source>Error saving ICE servers</source>
         <target>Erreur lors de la sauvegarde des serveurs ICE</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error saving SMP servers" xml:space="preserve">
-        <source>Error saving SMP servers</source>
-        <target>Erreur lors de la sauvegarde des serveurs SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve">
@@ -1684,6 +1710,7 @@
       </trans-unit>
       <trans-unit id="Experimental" xml:space="preserve">
         <source>Experimental</source>
+        <target>Expérimental</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -1713,7 +1740,6 @@
       </trans-unit>
       <trans-unit id="File transfer will be cancelled. If it's in progress it will be stoppped." xml:space="preserve">
         <source>File transfer will be cancelled. If it's in progress it will be stoppped.</source>
-        <target>Le transfert de fichiers sera annulé. S'il est en cours, il sera interrompu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
@@ -2243,9 +2269,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Rendre un profil privé !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
-        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
-        <target>Assurez-vous que les adresses des serveurs SMP sont au bon format et ne sont pas dupliquées, un par ligne.</target>
+      <trans-unit id="Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
+        <source>Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target>Assurez-vous que les adresses des serveurs %@ sont au bon format et ne sont pas dupliquées, un par ligne (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -2323,6 +2349,11 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Messages &amp; files" xml:space="preserve">
+        <source>Messages &amp; files</source>
+        <target>Messages</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating database archive..." xml:space="preserve">
         <source>Migrating database archive...</source>
         <target>Migration de l'archive de la base de données...</target>
@@ -2345,6 +2376,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Migrations: %@" xml:space="preserve">
         <source>Migrations: %@</source>
+        <target>Migrations : %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -3081,10 +3113,6 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Envoi de message direct</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send files via XFTP" xml:space="preserve">
-        <source>Send files via XFTP</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
         <source>Send link previews</source>
         <target>Envoi d'aperçus de liens</target>
@@ -3115,6 +3143,11 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Envoyez-les depuis la phototèque ou des claviers personnalisés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
+        <source>Send videos and files via XFTP</source>
+        <target>Envoi de fichiers via XFTP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>L'expéditeur a annulé le transfert de fichiers.</target>
@@ -3143,6 +3176,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
         <target>Le serveur requiert une autorisation pour créer des files d'attente, vérifiez le mot de passe</target>
+        <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
+        <source>Server requires authorization to upload, check password</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -3734,6 +3771,10 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Mettre à niveau et ouvrir le chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Upload file" xml:space="preserve">
+        <source>Upload file</source>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
         <source>Use .onion hosts</source>
         <target>Utiliser les hôtes .onions</target>
@@ -3799,6 +3840,14 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Appel vidéo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
+        <source>Video will be received when your contact completes uploading it.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
+        <source>Video will be received when your contact is online, please wait or check later!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
         <source>View security code</source>
         <target>Afficher le code de sécurité</target>
@@ -3837,6 +3886,10 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       <trans-unit id="Waiting for image" xml:space="preserve">
         <source>Waiting for image</source>
         <target>En attente de l'image</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Waiting for video" xml:space="preserve">
+        <source>Waiting for video</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
@@ -3887,6 +3940,11 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       <trans-unit id="Wrong passphrase!" xml:space="preserve">
         <source>Wrong passphrase!</source>
         <target>Mauvaise phrase secrète !</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="XFTP servers" xml:space="preserve">
+        <source>XFTP servers</source>
+        <target>Serveurs XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">
@@ -4076,6 +4134,11 @@ SimpleX Lock doit être activé.</target>
         <target>Vous utilisez un profil incognito pour ce groupe - pour éviter de partager votre profil principal ; inviter des contacts n'est pas possible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your %@ servers" xml:space="preserve">
+        <source>Your %@ servers</source>
+        <target>Vos serveurs %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your ICE servers" xml:space="preserve">
         <source>Your ICE servers</source>
         <target>Vos serveurs ICE</target>
@@ -4089,6 +4152,11 @@ SimpleX Lock doit être activé.</target>
       <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
         <target>Votre adresse de contact SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your XFTP servers" xml:space="preserve">
+        <source>Your XFTP servers</source>
+        <target>Vos serveurs XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -4402,6 +4470,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
         <source>database version is newer than the app, but no down migration for: %@</source>
+        <target>la base de données a une version plus récente que celle de l'application, mais il n'y a pas de rétrogradation pour : %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -4421,6 +4490,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
         <source>different migration in the app/database: %@ / %@</source>
+        <target>migration différente dans l'app/la base de données : %@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">

@@ -11,8 +11,8 @@ android {
         applicationId "chat.simplex.app"
         minSdk 26
         targetSdk 32
-        versionCode 110
-        versionName "4.6.1-beta.1"
+        versionCode 111
+        versionName "4.6.1-beta.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -153,19 +153,12 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
 }
 
-def buildType = "unknown"
 // Don't do anything if no compression is needed
 if (compression_level != "0") {
     tasks.whenTaskAdded { task ->
         if (task.name == 'packageDebug') {
-            task.doLast {
-                buildType = "debug"
-            }
             task.finalizedBy compressApk
         } else if (task.name == 'packageRelease') {
-            task.doLast {
-                buildType = "release"
-            }
             task.finalizedBy compressApk
         }
     }
@@ -173,6 +166,13 @@ if (compression_level != "0") {
 
 tasks.register("compressApk") {
     doLast {
+        def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
+        def buildType
+        if (isRelease) {
+            buildType = "release"
+        } else {
+            buildType = "debug"
+        }
         def javaHome = System.properties['java.home'] ?: org.gradle.internal.jvm.Jvm.current().getJavaHome()
         def sdkDir = android.getSdkDirectory().getAbsolutePath()
         def keyAlias = ""

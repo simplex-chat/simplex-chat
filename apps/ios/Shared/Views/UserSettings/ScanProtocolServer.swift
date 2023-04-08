@@ -1,5 +1,5 @@
 //
-//  ScanSMPServer.swift
+//  ScanProtocolServer.swift
 //  SimpleX (iOS)
 //
 //  Created by Evgeny on 19/11/2022.
@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 import CodeScanner
 
-struct ScanSMPServer: View {
+struct ScanProtocolServer: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var servers: [ServerCfg]
     @State private var showAddressError = false
@@ -47,14 +47,14 @@ struct ScanSMPServer: View {
                 showAddressError = true
             }
         case let .failure(e):
-            logger.error("ScanSMPServer.processQRCode QR code error: \(e.localizedDescription)")
+            logger.error("ScanProtocolServer.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()
         }
     }
 }
 
-struct ScanSMPServer_Previews: PreviewProvider {
+struct ScanProtocolServer_Previews: PreviewProvider {
     static var previews: some View {
-        ScanSMPServer(servers: Binding.constant([]))
+        ScanProtocolServer(servers: Binding.constant([]))
     }
 }

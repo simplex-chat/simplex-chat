@@ -29,6 +29,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
+import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
@@ -57,7 +58,6 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (diffInMicros, diffInSeconds)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..))
@@ -73,7 +73,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
@@ -183,26 +183,31 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
     agentServers :: ChatConfig -> IO InitialAgentServers
     agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
       users <- withTransaction chatStore getUsers
-      smp' <- getUserServers users smp
-      xftp' <- getUserServers users xftp
+      smp' <- getUserServers users SPSMP
+      xftp' <- getUserServers users SPXFTP
       pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
       where
-        getUserServers :: forall p. ProtocolTypeI p => [User] -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p)) -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
-        getUserServers users srvSel = case users of
-          [] -> pure $ M.fromList [(1, srvSel defServers)]
+        getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
+        getUserServers users protocol = case users of
+          [] -> pure $ M.fromList [(1, cfgServers protocol defServers)]
           _ -> M.fromList <$> initialServers
           where
             initialServers :: IO [(UserId, NonEmpty (ProtoServerWithAuth p))]
             initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
             userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
-            userServers user' = activeAgentServers config srvSel <$> withTransaction chatStore (`getProtocolServers` user')
+            userServers user' = activeAgentServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
-activeAgentServers :: ChatConfig -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p)) -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
-activeAgentServers ChatConfig {defaultServers} srvSel =
-  fromMaybe (srvSel defaultServers)
+activeAgentServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
+activeAgentServers ChatConfig {defaultServers} p =
+  fromMaybe (cfgServers p defaultServers)
     . nonEmpty
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
+
+cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p))
+cfgServers = \case
+  SPSMP -> smp
+  SPXFTP -> xftp
 
 startChatController :: forall m. ChatMonad' m => Bool -> Bool -> m (Async ())
 startChatController subConns enableExpireCIs = do
@@ -295,33 +300,37 @@ processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser p@Profile {displayName} sameServers -> do
     u <- asks currentUser
-    (smp, smpServers) <- chooseServers
+    (smp, smpServers) <- chooseServers SPSMP
+    (xftp, xftpServers) <- chooseServers SPXFTP
     auId <-
       withStore' getUsers >>= \case
         [] -> pure 1
         users -> do
           when (any (\User {localDisplayName = n} -> n == displayName) users) $
             throwChatError $ CEUserExists displayName
-          withAgent (`createUser` smp)
+          withAgent (\a -> createUser a smp xftp)
     user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
-    unless (null smpServers) $
-      withStore $ \db -> overwriteSMPServers db user smpServers
+    storeServers user smpServers
+    storeServers user xftpServers
     setActive ActiveNone
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
-      chooseServers :: m (NonEmpty SMPServerWithAuth, [ServerCfg 'PSMP])
-      chooseServers
+      chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> m (NonEmpty (ProtoServerWithAuth p), [ServerCfg p])
+      chooseServers protocol
         | sameServers =
           asks currentUser >>= readTVarIO >>= \case
             Nothing -> throwChatError CENoActiveUser
             Just user -> do
-              smpServers <- withStore' (`getSMPServers` user)
+              smpServers <- withStore' (`getProtocolServers` user)
               cfg <- asks config
-              pure (activeAgentServers cfg smp smpServers, smpServers)
+              pure (activeAgentServers cfg protocol smpServers, smpServers)
         | otherwise = do
-          DefaultAgentServers {smp} <- asks $ defaultServers . config
-          pure (smp, [])
+          defServers <- asks $ defaultServers . config
+          pure (cfgServers protocol defServers, [])
+      storeServers user servers =
+        unless (null servers) $
+          withStore $ \db -> overwriteProtocolServers db user servers
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
   APISetActiveUser userId' viewPwd_ -> withUser $ \user -> do
     user' <- privateGetUser userId'
@@ -903,30 +912,29 @@ processChatCommand = \case
       pure user_ $>>= \user ->
         withStore (\db -> Just <$> getConnectionEntity db user agentConnId) `catchError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
     pure CRNtfMessages {user_, connEntity, msgTs = msgTs', ntfMessages}
-  APIGetUserSMPServers userId -> withUserId userId $ \user -> do
-    ChatConfig {defaultServers = DefaultAgentServers {smp = defaultSMPServers}} <- asks config
-    smpServers <- withStore' (`getSMPServers` user)
-    let smpServers' = fromMaybe (L.map toServerCfg defaultSMPServers) $ nonEmpty smpServers
-    pure $ CRUserSMPServers user smpServers' defaultSMPServers
+  APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
+    ChatConfig {defaultServers} <- asks config
+    servers <- withStore' (`getProtocolServers` user)
+    let defServers = cfgServers p defaultServers
+        servers' = fromMaybe (L.map toServerCfg defServers) $ nonEmpty servers
+    pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p servers' defServers
     where
       toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = True}
-  GetUserSMPServers -> withUser $ \User {userId} ->
-    processChatCommand $ APIGetUserSMPServers userId
-  APISetUserSMPServers userId (SMPServersConfig smpServers) -> withUserId userId $ \user -> withChatLock "setUserSMPServers" $ do
-    withStore $ \db -> overwriteSMPServers db user smpServers
-    cfg <- asks config
-    withAgent $ \a -> setSMPServers a (aUserId user) $ activeAgentServers cfg smp smpServers
-    ok user
-  SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
-    processChatCommand $ APISetUserSMPServers userId smpServersConfig
-  APIGetUserServers _ -> pure $ chatCmdError Nothing "TODO"
-  GetUserServers -> pure $ chatCmdError Nothing "TODO"
-  APISetUserServers _ _ -> pure $ chatCmdError Nothing "TODO"
-  SetUserServers _ -> pure $ chatCmdError Nothing "TODO"
-  APITestSMPServer userId smpServer -> withUserId userId $ \user ->
-    CRSmpTestResult user <$> withAgent (\a -> testSMPServerConnection a (aUserId user) smpServer)
-  TestSMPServer smpServer -> withUser $ \User {userId} ->
-    processChatCommand $ APITestSMPServer userId smpServer
+  GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
+    processChatCommand $ APIGetUserProtoServers userId aProtocol
+  APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $
+    withChatLock "setUserSMPServers" $ do
+      withStore $ \db -> overwriteProtocolServers db user servers
+      cfg <- asks config
+      withAgent $ \a -> setProtocolServers a (aUserId user) $ activeAgentServers cfg p servers
+      ok user
+  SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
+    processChatCommand $ APISetUserProtoServers userId serversConfig
+  APITestProtoServer userId srv@(AProtoServerWithAuth p server) -> withUserId userId $ \user ->
+    withServerProtocol p $
+      CRServerTestResult user srv <$> withAgent (\a -> testProtocolServer a (aUserId user) server)
+  TestProtoServer srv -> withUser $ \User {userId} ->
+    processChatCommand $ APITestProtoServer userId srv
   APISetChatItemTTL userId newTTL_ -> withUser' $ \user -> do
     checkSameUser userId user
     checkStoreNotChanged $
@@ -1401,13 +1409,27 @@ processChatCommand = \case
               _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
             ci <- withStore $ \db -> getChatItemByFileId db user fileId
             pure $ CRSndFileCancelled user ci ftm fts
-        FTRcv ftr@RcvFileTransfer {cancelled, fileStatus}
+        FTRcv ftr@RcvFileTransfer {cancelled, fileStatus, xftpRcvFile}
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
           | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
-          | otherwise -> do
-            cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
-            ci <- withStore $ \db -> getChatItemByFileId db user fileId
-            pure $ CRRcvFileCancelled user ci ftr
+          | otherwise -> case xftpRcvFile of
+            Nothing -> do
+              cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
+              ci <- withStore $ \db -> getChatItemByFileId db user fileId
+              pure $ CRRcvFileCancelled user ci ftr
+            Just XFTPRcvFile {agentRcvFileId} -> do
+              forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
+                fsFilePath <- toFSFilePath filePath
+                removeFile fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+              forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
+                withAgent $ \a -> xftpDeleteRcvFile a (aUserId user) aFileId
+              ci <- withStore $ \db -> do
+                liftIO $ do
+                  updateCIFileStatus db user fileId CIFSRcvInvitation
+                  updateRcvFileStatus db fileId FSNew
+                  updateRcvFileAgentId db fileId Nothing
+                getChatItemByFileId db user fileId
+              pure $ CRRcvFileCancelled user ci ftr
   FileStatus fileId -> withUser $ \user -> do
     fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
     pure $ CRFileTransferStatus user fileStatus
@@ -1648,6 +1670,10 @@ processChatCommand = \case
                   atomically $ TM.delete ctId calls
               ok user
             | otherwise -> throwChatError $ CECallContact contactId
+    withServerProtocol :: ProtocolTypeI p => SProtocolType p -> (UserProtocol p => m a) -> m a
+    withServerProtocol p action = case userProtocol p of
+      Just Dict -> action
+      _ -> throwChatError $ CEServerProtocol $ AProtocolType p
     forwardFile :: ChatName -> FileTransferId -> (ChatName -> FilePath -> ChatCommand) -> m ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
       withStore (\db -> getFileTransfer db user fileId) >>= \case
@@ -1764,7 +1790,7 @@ startExpireCIThread user@User {userId} = do
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           ttl <- withStore' (`getChatItemTTL` user)
           forM_ ttl $ \t -> expireChatItems user t False
-        threadDelay interval
+        liftIO $ threadDelay' interval
 
 setExpireCIFlag :: ChatMonad' m => User -> Bool -> m ()
 setExpireCIFlag User {userId} b = do
@@ -1787,12 +1813,26 @@ deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m [ConnId]
 deleteFile user fileInfo = deleteFile' user fileInfo False
 
 deleteFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m [ConnId]
-deleteFile' user CIFileInfo {filePath, fileId, fileStatus} sendCancel = do
-  aConnIds <- case fileStatus of
-    Just fStatus -> cancel' fStatus `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
-    Nothing -> pure []
+deleteFile' user ciFileInfo@CIFileInfo {filePath} sendCancel = do
+  aConnIds <- cancelFile' user ciFileInfo sendCancel
   delete `catchError` (toView . CRChatError (Just user))
   pure aConnIds
+  where
+    delete :: m ()
+    delete = withFilesFolder $ \filesFolder ->
+      forM_ filePath $ \fPath -> do
+        let fsFilePath = filesFolder </> fPath
+        removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+          removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+    -- perform an action only if filesFolder is set (i.e. on mobile devices)
+    withFilesFolder :: (FilePath -> m ()) -> m ()
+    withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
+
+cancelFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m [ConnId]
+cancelFile' user CIFileInfo {fileId, fileStatus} sendCancel =
+  case fileStatus of
+    Just fStatus -> cancel' fStatus `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
+    Nothing -> pure []
   where
     cancel' :: ACIFileStatus -> m [ConnId]
     cancel' (AFS dir status) =
@@ -1805,15 +1845,6 @@ deleteFile' user CIFileInfo {filePath, fileId, fileStatus} sendCancel = do
           SMDRcv -> do
             ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
             if cancelled then pure [] else maybeToList <$> cancelRcvFileTransfer user ft
-    delete :: m ()
-    delete = withFilesFolder $ \filesFolder ->
-      forM_ filePath $ \fPath -> do
-        let fsFilePath = filesFolder <> "/" <> fPath
-        removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-          removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
-    -- perform an action only if filesFolder is set (i.e. on mobile devices)
-    withFilesFolder :: (FilePath -> m ()) -> m ()
-    withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
 
 updateCallItemStatus :: ChatMonad m => User -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
 updateCallItemStatus user ct Call {chatItemId} receivedStatus msgId_ = do
@@ -1873,10 +1904,15 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
     -- XFTP
-    (Just XFTPRcvFile {rcvFileDescription}, _) -> do
+    (Just _xftpRcvFile, _) -> do
       filePath <- getRcvFilePath fileId filePath_ fName False
-      ci <- withStore $ \db -> xftpAcceptRcvFT db user fileId filePath
-      receiveViaCompleteFD user fileId rcvFileDescription
+      (ci, rfd) <- withStore $ \db -> do
+        -- marking file as accepted and reading description in the same transaction
+        -- to prevent race condition with appending description
+        ci <- xftpAcceptRcvFT db user fileId filePath
+        rfd <- getRcvFileDescrByFileId db fileId
+        pure (ci, rfd)
+      receiveViaCompleteFD user fileId rfd
       pure ci
     -- group & direct file protocol
     _ -> do
@@ -1925,7 +1961,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     rd <- parseRcvFileDescription fileDescrText
     aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd
     startReceivingFile user fileId
-    withStore' $ \db -> updateRcvFileAgentId db fileId (AgentRcvFileId aFileId)
+    withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
 
 startReceivingFile :: ChatMonad m => User -> FileTransferId -> m ()
 startReceivingFile user fileId = do
@@ -2150,7 +2186,7 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-cleanupManagerInterval :: Int
+cleanupManagerInterval :: Int64
 cleanupManagerInterval = 1800 -- 30 minutes
 
 cleanupManager :: forall m. ChatMonad m => m ()
@@ -2162,7 +2198,7 @@ cleanupManager = do
       let (us, us') = partition activeUser users
       forM_ us cleanupUser
       forM_ us' cleanupUser
-    threadDelay $ cleanupManagerInterval * 1000000
+    liftIO $ threadDelay' $ cleanupManagerInterval * 1000000
   where
     cleanupUser user =
       cleanupTimedItems user `catchError` (toView . CRChatError (Just user))
@@ -2196,7 +2232,7 @@ startTimedItemThread user itemRef deleteAt = do
 deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
-  threadDelay $ diffInMicros deleteAt ts
+  liftIO $ threadDelay' $ diffInMicros deleteAt ts
   waitChatStarted
   case cType of
     CTDirect -> do
@@ -3065,13 +3101,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
-        rfd <- appendRcvFD db userId fileId fileDescr
-        ft <- getRcvFileTransfer db user fileId
-        pure (rfd, ft)
-      case fileStatus of
-        RFSAccepted _ -> receiveViaCompleteFD user fileId rfd
-        _ -> pure ()
+      RcvFileTransfer {cancelled} <- withStore $ \db -> getRcvFileTransfer db user fileId
+      unless cancelled $ do
+        (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
+          rfd <- appendRcvFD db userId fileId fileDescr
+          -- reading second time in the same transaction as appending description
+          -- to prevent race condition with accept
+          ft <- getRcvFileTransfer db user fileId
+          pure (rfd, ft)
+        case fileStatus of
+          RFSAccepted _ -> receiveViaCompleteFD user fileId rfd
+          _ -> pure ()
 
     cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
     cancelMessageFile ct _sharedMsgId msgMeta = do
@@ -4079,14 +4119,31 @@ deleteCIFile user file =
     deleteAgentConnectionsAsync user fileAgentConnIds
 
 markDirectCIDeleted :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> MessageId -> Bool -> m ChatResponse
-markDirectCIDeleted user ct ci@(CChatItem msgDir deletedItem) msgId byUser = do
-  toCi <- withStore' $ \db -> markDirectChatItemDeleted db user ct ci msgId
-  pure $ CRChatItemDeleted user (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) (Just toCi) byUser False
+markDirectCIDeleted user ct@Contact {contactId} ci@(CChatItem _ ChatItem {file}) msgId byUser = do
+  cancelCIFile user file
+  toCi <- withStore $ \db -> do
+    liftIO $ markDirectChatItemDeleted db user ct ci msgId
+    getDirectChatItem db user contactId (cchatItemId ci)
+  pure $ CRChatItemDeleted user (ctItem ci) (Just $ ctItem toCi) byUser False
+  where
+    ctItem (CChatItem msgDir ci') = AChatItem SCTDirect msgDir (DirectChat ct) ci'
 
 markGroupCIDeleted :: ChatMonad m => User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> Bool -> Maybe GroupMember -> m ChatResponse
-markGroupCIDeleted user gInfo ci@(CChatItem msgDir deletedItem) msgId byUser byGroupMember_ = do
-  toCi <- withStore' $ \db -> markGroupChatItemDeleted db user gInfo ci msgId byGroupMember_
-  pure $ CRChatItemDeleted user (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) (Just toCi) byUser False
+markGroupCIDeleted user gInfo@GroupInfo {groupId} ci@(CChatItem _ ChatItem {file}) msgId byUser byGroupMember_ = do
+  cancelCIFile user file
+  toCi <- withStore $ \db -> do
+    liftIO $ markGroupChatItemDeleted db user gInfo ci msgId byGroupMember_
+    getGroupChatItem db user groupId (cchatItemId ci)
+  pure $ CRChatItemDeleted user (gItem ci) (Just $ gItem toCi) byUser False
+  where
+    gItem (CChatItem msgDir ci') = AChatItem SCTGroup msgDir (GroupChat gInfo) ci'
+
+cancelCIFile :: (ChatMonad m, MsgDirectionI d) => User -> Maybe (CIFile d) -> m ()
+cancelCIFile user file =
+  forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
+    let fileInfo = CIFileInfo {fileId, fileStatus = Just $ AFS msgDirection fileStatus, filePath}
+    fileAgentConnIds <- cancelFile' user fileInfo True
+    deleteAgentConnectionsAsync user fileAgentConnIds
 
 createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode = do
@@ -4364,7 +4421,7 @@ chatCommandP =
       "/_temp_folder " *> (SetTempFolder <$> filePath),
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
-      "/xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
+      "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
@@ -4413,17 +4470,17 @@ chatCommandP =
       "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
-      -- /smp_servers is deprecated, use /smp and /_smp
-      "/smp_servers default" $> SetUserSMPServers (SMPServersConfig []),
-      "/smp_servers " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
-      "/smp_servers" $> GetUserSMPServers,
-      "/smp default" $> SetUserSMPServers (SMPServersConfig []),
-      "/_smp test " *> (APITestSMPServer <$> A.decimal <* A.space <*> strP),
-      "/smp test " *> (TestSMPServer <$> strP),
-      "/_smp " *> (APISetUserSMPServers <$> A.decimal <* A.space <*> jsonP),
-      "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
-      "/_smp " *> (APIGetUserSMPServers <$> A.decimal),
-      "/smp" $> GetUserSMPServers,
+      "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
+      "/smp test " *> (TestProtoServer . AProtoServerWithAuth SPSMP <$> strP),
+      "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
+      "/_servers " *> (APISetUserProtoServers <$> A.decimal <* A.space <*> srvCfgP),
+      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
+      "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig []),
+      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
+      "/xftp default" $> SetUserProtoServers (APSC SPXFTP $ ProtoServersConfig []),
+      "/_servers " *> (APIGetUserProtoServers <$> A.decimal <* A.space <*> strP),
+      "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
+      "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
       "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> ciTTLDecimal),
       "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
@@ -4627,10 +4684,7 @@ chatCommandP =
       logErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout logErrors
-    xftpCfgP = do
-      minFileSize <- "minFileSize=" *> fileSizeP
-      pure $ XFTPFileConfig {minFileSize}
-    -- TODO move to Utils in simplexmq
+    xftpCfgP = XFTPFileConfig <$> (" size=" *> fileSizeP <|> pure 0)
     fileSizeP =
       A.choice
         [ gb <$> A.decimal <* "gb",
@@ -4645,6 +4699,7 @@ chatCommandP =
         onOffP
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
+    srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
 

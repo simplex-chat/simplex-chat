@@ -103,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ è verificato/a";
 
+/* No comment provided by engineer. */
+"%@ servers" = "Server %@";
+
 /* notification title */
 "%@ wants to connect!" = "%@ si vuole connettere!";
 
@@ -741,6 +744,9 @@
 "Database upgrade" = "Aggiornamento del database";
 
 /* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "la versione del database è più recente di quella dell'app, ma nessuna migrazione downgrade per: %@";
+
+/* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "Il database verrà crittografato e la password conservata nel portachiavi.\n";
 
 /* No comment provided by engineer. */
@@ -882,6 +888,9 @@
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "L'autenticazione del dispositivo non è abilitata. Puoi attivare SimpleX Lock tramite le impostazioni, dopo aver abilitato l'autenticazione del dispositivo.";
 
 /* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "migrazione diversa nell'app/nel database: %@ / %@";
+
+/* No comment provided by engineer. */
 "Different names, avatars and transport isolation." = "Nomi e avatar diversi, isolamento del trasporto.";
 
 /* connection level description */
@@ -985,6 +994,9 @@
 
 /* notification */
 "Encrypted message: database error" = "Messaggio crittografato: errore del database";
+
+/* notification */
+"Encrypted message: database migration error" = "Messaggio crittografato: errore di migrazione del database";
 
 /* notification */
 "Encrypted message: keychain error" = "Messaggio crittografato: errore del portachiavi";
@@ -1095,6 +1107,9 @@
 "Error removing member" = "Errore nella rimozione del membro";
 
 /* No comment provided by engineer. */
+"Error saving %@ servers" = "Errore nel salvataggio dei server %@";
+
+/* No comment provided by engineer. */
 "Error saving group profile" = "Errore nel salvataggio del profilo del gruppo";
 
 /* No comment provided by engineer. */
@@ -1102,9 +1117,6 @@
 
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Errore nel salvataggio della password nel portachiavi";
-
-/* No comment provided by engineer. */
-"Error saving SMP servers" = "Errore nel salvataggio dei server SMP";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "Errore nel salvataggio della password utente";
@@ -1147,6 +1159,9 @@
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Esci senza salvare";
+
+/* No comment provided by engineer. */
+"Experimental" = "Sperimentale";
 
 /* No comment provided by engineer. */
 "Export database" = "Esporta database";
@@ -1533,7 +1548,7 @@
 "Make profile private!" = "Rendi privato il profilo!";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Assicurati che gli indirizzi dei server SMP siano nel formato corretto, uno per riga e non doppi (%@).";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Assicurati che gli indirizzi dei server %@ siano nel formato corretto, uno per riga e non doppi (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Assicurati che gli indirizzi dei server WebRTC ICE siano nel formato corretto, uno per riga e non doppi.";
@@ -1593,6 +1608,9 @@
 "Messages" = "Messaggi";
 
 /* No comment provided by engineer. */
+"Messages & files" = "Messaggi";
+
+/* No comment provided by engineer. */
 "Migrating database archive..." = "Migrazione archivio del database...";
 
 /* No comment provided by engineer. */
@@ -1603,6 +1621,9 @@
 
 /* No comment provided by engineer. */
 "Migration is completed" = "La migrazione è completata";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "Migrazioni: %@";
 
 /* call status */
 "missed call" = "chiamata persa";
@@ -2128,6 +2149,9 @@
 "Send them from gallery or custom keyboards." = "Inviali dalla galleria o dalle tastiere personalizzate.";
 
 /* No comment provided by engineer. */
+"Send videos and files via XFTP" = "Invia file tramite XFTP";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Il mittente ha annullato il trasferimento del file.";
 
 /* No comment provided by engineer. */
@@ -2637,6 +2661,9 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Password sbagliata!";
 
+/* No comment provided by engineer. */
+"XFTP servers" = "Server XFTP";
+
 /* pref value */
 "yes" = "sì";
 
@@ -2785,6 +2812,9 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Stai usando un profilo in incognito per questo gruppo: per impedire la condivisione del tuo profilo principale non è consentito invitare contatti";
 
 /* No comment provided by engineer. */
+"Your %@ servers" = "I tuoi server %@";
+
+/* No comment provided by engineer. */
 "Your calls" = "Le tue chiamate";
 
 /* No comment provided by engineer. */
@@ -2861,4 +2891,7 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "I tuoi server SMP";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "I tuoi server XFTP";
 

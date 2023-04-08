@@ -33,8 +33,6 @@ final class ChatModel: ObservableObject {
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: UserContactLink?
-    @Published var userSMPServers: [ServerCfg]?
-    @Published var presetSMPServers: [String]?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
     @Published var deviceToken: DeviceToken?
@@ -55,13 +53,13 @@ final class ChatModel: ObservableObject {
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
-    @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
+    @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
-    var filesToDelete: [String] = []
+    var filesToDelete: Set<URL> = []
 
     static let shared = ChatModel()
 
