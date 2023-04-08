@@ -1423,8 +1423,9 @@
         <target>Versleuteld bericht: database fout</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database migration error" xml:space="preserve" approved="no">
         <source>Encrypted message: database migration error</source>
+        <target>Versleuteld bericht: fout bij databasemigratie</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
@@ -1682,8 +1683,9 @@
         <target>Afsluiten zonder opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Experimental" xml:space="preserve">
+      <trans-unit id="Experimental" xml:space="preserve" approved="no">
         <source>Experimental</source>
+        <target>Experimenteel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -2343,8 +2345,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Migratie is voltooid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
+      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
         <source>Migrations: %@</source>
+        <target>Migraties: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -3083,6 +3086,7 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
         <source>Send videos and files via XFTP</source>
+        <target>Bestanden verzenden via XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
@@ -4400,8 +4404,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>creator</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
+        <target>databaseversie is nieuwer dan de app, maar geen downmigratie voor: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -4419,8 +4424,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>verwijderde groep</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
+      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve" approved="no">
         <source>different migration in the app/database: %@ / %@</source>
+        <target>verschillende migratie in de app/database: %@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">
