@@ -308,7 +308,7 @@
     <string name="files_and_media_section">文件和媒体</string>
     <string name="current_passphrase">现有密码……</string>
     <string name="encrypt_database">加密</string>
-    <string name="encrypted_database">加密的数据库</string>
+    <string name="encrypted_database">加密数据库</string>
     <string name="enter_correct_passphrase">输入正确密码。</string>
     <string name="icon_descr_group_inactive">不活跃群组</string>
     <string name="group_member_status_creator">创建者</string>
