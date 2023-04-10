@@ -1022,7 +1022,7 @@
     <string name="group_welcome_title">Message d\'accueil</string>
     <string name="you_can_hide_or_mute_user_profile">Vous pouvez masquer ou mettre en sourdine un profil d\'utilisateur - maintenez-le enfoncé pour accéder au menu.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu\'ils sont actifs.</string>
-    <string name="settings_send_files_via_xftp">Envoi de fichiers via XFTP</string>
+    <string name="settings_send_files_via_xftp">Envoi de vidéos et de fichiers via XFTP</string>
     <string name="database_downgrade">Rétrogradation de la base de données</string>
     <string name="database_upgrade">Mise à niveau de la base de données</string>
     <string name="incompatible_database_version">Version de la base de données incompatible</string>
@@ -1049,4 +1049,13 @@
     <string name="cancel_file__question">Annuler le transfert de fichiers \?</string>
     <string name="file_transfer_will_be_cancelled_warning">Le transfert de fichiers sera annulé. S\'il est en cours, il sera interrompu.</string>
     <string name="profile_password">Mot de passe de profil</string>
+    <string name="videos_limit_title">Trop de vidéos !</string>
+    <string name="video_descr">Vidéo</string>
+    <string name="icon_descr_video_snd_complete">Vidéo envoyée</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">La vidéo ne sera reçue que lorsque votre contact aura fini de la transférer.</string>
+    <string name="icon_descr_waiting_for_video">En attente de la vidéo</string>
+    <string name="waiting_for_video">En attente de la vidéo</string>
+    <string name="video_will_be_received_when_contact_is_online">La vidéo ne sera reçue que lorsque votre contact sera en ligne. Veuillez patienter ou vérifier plus tard !</string>
+    <string name="icon_descr_video_asked_to_receive">Requête de réception de la vidéo</string>
+    <string name="videos_limit_desc">Seulement 10 vidéos peuvent être envoyées en même temps</string>
 </resources>
