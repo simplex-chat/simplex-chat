@@ -534,6 +534,7 @@
   <string name="network_session_mode_user_description">A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.</string>
   <string name="network_session_mode_entity_description">A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
+  <string name="disable_onion_hosts_when_not_supported">Set <b>Use .onion hosts</b> to <b>No</b> if SOCKS proxy does not support them.</string>
   <string name="appearance_settings">Appearance</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>

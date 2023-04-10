@@ -4,6 +4,8 @@ import SectionCustomFooter
 import SectionDivider
 import SectionItemView
 import SectionItemWithValue
+import SectionSpacer
+import SectionTextFooter
 import SectionView
 import SectionViewSelectable
 import androidx.compose.foundation.*
@@ -182,8 +184,10 @@ fun NetworkAndServersView(
       }
       SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
-    // footer (when SOCKS proxy enabled): Set **Use .onion hosts** to **No** if SOCKS proxy does not support .onion hosts.
-    Spacer(Modifier.height(8.dp))
+    if (networkUseSocksProxy.value) {
+      SectionCustomFooter { Text(annotatedStringResource(R.string.disable_onion_hosts_when_not_supported)) }
+    }
+    Spacer(Modifier.height(16.dp))
     SectionView(generalGetString(R.string.settings_section_title_calls)) {
       SettingsActionItem(Icons.Outlined.ElectricalServices, stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
     }
