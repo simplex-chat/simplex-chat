@@ -28,7 +28,9 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.database.PassphraseStrength
 import chat.simplex.app.views.database.validKey
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -167,7 +169,6 @@ fun DefaultConfigurableTextField(
       ),
     onValueChange = {
       state.value = it
-      valid = isValid(it.text)
     },
     cursorBrush = SolidColor(colors.cursorColor(false).value),
     visualTransformation = if (showKey || keyboardType != KeyboardType.Password)
@@ -209,10 +210,19 @@ fun DefaultConfigurableTextField(
     }
   )
   LaunchedEffect(Unit) {
-    snapshotFlow { dependsOn?.value }
-      .distinctUntilChanged()
-      .collect {
-        valid = isValid(state.value.text)
-      }
+    launch {
+      snapshotFlow { state.value }
+        .distinctUntilChanged()
+        .collect {
+          valid = isValid(it.text)
+        }
+    }
+    launch {
+      snapshotFlow { dependsOn?.value }
+        .distinctUntilChanged()
+        .collect {
+          valid = isValid(state.value.text)
+        }
+    }
   }
 }
