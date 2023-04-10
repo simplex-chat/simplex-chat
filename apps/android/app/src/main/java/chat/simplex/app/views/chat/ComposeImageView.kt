@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,20 +41,19 @@ fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Uni
       itemsIndexed(media.images) { index, item ->
         val content = media.content[index]
         if (content is UploadContent.Video) {
-          Box(contentAlignment = Alignment.TopCenter) {
+          Box(contentAlignment = Alignment.Center) {
             val imageBitmap = base64ToBitmap(item).asImageBitmap()
             Image(
               imageBitmap,
               "preview video",
               modifier = Modifier.widthIn(max = 80.dp).height(60.dp)
             )
-            Text(
-              durationText(content.duration),
+            Icon(
+              Icons.Default.Videocam,
+              "preview video",
               Modifier
-                .background(Color.Black)
-                .padding(5.dp),
-              fontSize = 10.sp,
-              color = Color.White
+                .size(20.dp),
+              tint = Color.White
             )
           }
         } else {
