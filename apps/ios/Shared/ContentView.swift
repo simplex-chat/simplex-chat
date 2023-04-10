@@ -23,23 +23,40 @@ struct ContentView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
+    @State private var laRequestPassed = false
     @State private var showWhatsNew = false
 
     var body: some View {
-        ZStack {
+        let v = ZStack {
             contentView()
             if chatModel.showCallView, let call = chatModel.activeCall {
                 callView(call)
             }
         }
         .onAppear {
-            if prefPerformLA { requestNtfAuthorization() }
-            initAuthenticate()
+            if laRequestPassed  {
+                laRequestPassed = false
+            } else {
+                if prefPerformLA { requestNtfAuthorization() }
+                initAuthenticate()
+            }
         }
         .onChange(of: doAuthenticate) { _ in
             initAuthenticate()
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+
+        if let la = chatModel.laRequest {
+            GeometryReader { g in
+                let s = g.size
+                v.overlay {
+                    LocalAuthView(authRequest: la).frame(width: s.width, height: s.height)
+                }
+                .frame(width: s.width, height: s.height)
+            }
+        } else {
+            v
+        }
     }
 
     @ViewBuilder private func contentView() -> some View {
@@ -132,6 +149,7 @@ struct ContentView: View {
     }
 
     private func initAuthenticate() {
+        logger.debug("initAuthenticate")
         if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {
             userAuthorized = false
         } else if doAuthenticate {
@@ -153,11 +171,16 @@ struct ContentView: View {
     private func justAuthenticate() {
         userAuthorized = false
         authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
+            logger.debug("authenticate callback: \(String(describing: laResult))")
             switch (laResult) {
             case .success:
                 userAuthorized = true
                 canConnectCall = true
                 lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
+                if chatModel.laRequest != nil {
+                    laRequestPassed = true
+                    chatModel.laRequest = nil
+                }
             case .failed:
                 break
             case .unavailable:

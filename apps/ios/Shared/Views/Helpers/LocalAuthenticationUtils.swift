@@ -8,6 +8,7 @@
 
 import SwiftUI
 import LocalAuthentication
+import SimpleXChat
 
 enum LAResult {
     case success
@@ -25,7 +26,30 @@ func authorize(_ text: String, _ authorized: Binding<Bool>) {
     }
 }
 
+struct LocalAuthRequest {
+    var reason: String
+    var password: String
+    var completed: (LAResult) -> Void
+
+    static var sample = LocalAuthRequest(reason: "Authenticate", password: "", completed: { _ in })
+}
+
 func authenticate(reason: String, completed: @escaping (LAResult) -> Void) {
+    logger.debug("authenticate")
+    switch privacyLocalAuthModeDefault.get() {
+    case .system: systemAuthenticate(reason, completed)
+    case .password:
+        if let password = kcAppPassword.get() {
+            DispatchQueue.main.async {
+                ChatModel.shared.laRequest = LocalAuthRequest(reason: reason, password: password, completed: completed)
+            }
+        } else {
+            completed(.unavailable(authError: NSLocalizedString("No app password", comment: "Authentication unavailable")))
+        }
+    }
+}
+
+func systemAuthenticate(_ reason: String, _ completed: @escaping (LAResult) -> Void) {
     let laContext = LAContext()
     var authAvailabilityError: NSError?
     if laContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authAvailabilityError) {

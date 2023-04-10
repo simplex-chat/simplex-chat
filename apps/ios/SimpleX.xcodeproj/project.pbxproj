@@ -105,6 +105,8 @@
 		5CB634A529E1EE550066AD6B /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB634A029E1EE550066AD6B /* libgmpxx.a */; };
 		5CB634A629E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB634A129E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq-ghc8.10.7.a */; };
 		5CB634A829E437960066AD6B /* DigitalPasswordEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB634A729E437960066AD6B /* DigitalPasswordEntry.swift */; };
+		5CB634AD29E46CF70066AD6B /* LocalAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB634AC29E46CF70066AD6B /* LocalAuthView.swift */; };
+		5CB634AF29E4BB7D0066AD6B /* SetAppPaswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB634AE29E4BB7D0066AD6B /* SetAppPaswordView.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
 		5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E327A8683A00ACCCDD /* UserAddress.swift */; };
@@ -362,6 +364,8 @@
 		5CB634A029E1EE550066AD6B /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5CB634A129E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq-ghc8.10.7.a"; sourceTree = "<group>"; };
 		5CB634A729E437960066AD6B /* DigitalPasswordEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalPasswordEntry.swift; sourceTree = "<group>"; };
+		5CB634AC29E46CF70066AD6B /* LocalAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAuthView.swift; sourceTree = "<group>"; };
+		5CB634AE29E4BB7D0066AD6B /* SetAppPaswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetAppPaswordView.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		5CB924E327A8683A00ACCCDD /* UserAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddress.swift; sourceTree = "<group>"; };
@@ -511,6 +515,7 @@
 				5CB9250B27A942F300ACCCDD /* ChatList */,
 				5CB924DD27A8622200ACCCDD /* NewChat */,
 				5CFA59C22860B04D00863A68 /* Database */,
+				5CB634AB29E46CDB0066AD6B /* LocalAuth */,
 				5CB924DF27A8678B00ACCCDD /* UserSettings */,
 				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
 			);
@@ -591,7 +596,6 @@
 				18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */,
 				5CCB939B297EFCB100399E78 /* NavStackCompat.swift */,
 				18415DAAAD1ADBEDB0EDA852 /* VideoPlayerView.swift */,
-				5CB634A729E437960066AD6B /* DigitalPasswordEntry.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -660,6 +664,16 @@
 				5CBD285B29575B8E00EC2CF4 /* WhatsNewView.swift */,
 			);
 			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		5CB634AB29E46CDB0066AD6B /* LocalAuth */ = {
+			isa = PBXGroup;
+			children = (
+				5CB634AC29E46CF70066AD6B /* LocalAuthView.swift */,
+				5CB634A729E437960066AD6B /* DigitalPasswordEntry.swift */,
+				5CB634AE29E4BB7D0066AD6B /* SetAppPaswordView.swift */,
+			);
+			path = LocalAuth;
 			sourceTree = "<group>";
 		};
 		5CB924DD27A8622200ACCCDD /* NewChat */ = {
@@ -1057,6 +1071,7 @@
 				644EFFE2292D089800525D5B /* FramedCIVoiceView.swift in Sources */,
 				5C4B3B0A285FB130003915F2 /* DatabaseView.swift in Sources */,
 				5CB2084F28DA4B4800D024EC /* RTCServers.swift in Sources */,
+				5CB634AF29E4BB7D0066AD6B /* SetAppPaswordView.swift in Sources */,
 				5C10D88828EED12E00E58BF0 /* ContactConnectionInfo.swift in Sources */,
 				5CBE6C12294487F7002D9531 /* VerifyCodeView.swift in Sources */,
 				3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */,
@@ -1152,6 +1167,7 @@
 				1841560FD1CD447955474C1D /* UserProfilesView.swift in Sources */,
 				18415C6C56DBCEC2CBBD2F11 /* WebRTCClient.swift in Sources */,
 				184152CEF68D2336FC2EBCB0 /* CallViewRenderers.swift in Sources */,
+				5CB634AD29E46CF70066AD6B /* LocalAuthView.swift in Sources */,
 				18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */,
 				18415F9A2D551F9757DA4654 /* CIVideoView.swift in Sources */,
 				184158C131FDB829D8A117EA /* VideoPlayerView.swift in Sources */,

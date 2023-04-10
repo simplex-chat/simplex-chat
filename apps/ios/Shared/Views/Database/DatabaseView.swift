@@ -355,7 +355,7 @@ struct DatabaseView: View {
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         try await apiImportArchive(config: config)
-                        _ = removeDatabaseKey()
+                        _ = kcDatabasePassword.remove()
                         await operationEnded(.archiveImported)
                     } catch let error {
                         await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
@@ -375,7 +375,7 @@ struct DatabaseView: View {
         Task {
             do {
                 try await apiDeleteStorage()
-                _ = removeDatabaseKey()
+                _ = kcDatabasePassword.remove()
                 storeDBPassphraseGroupDefault.set(true)
                 await operationEnded(.chatDeleted)
                 appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())

@@ -9,7 +9,9 @@
 import SwiftUI
 
 struct DigitalPasswordEntry: View {
-    @Binding var password: String
+    @EnvironmentObject var m: ChatModel
+    var submit: (String) -> Void
+    @State private var password = ""
     @State private var showPassword = false
 
     var body: some View {
@@ -47,16 +49,12 @@ struct DigitalPasswordEntry: View {
             digitsRow(s, 7, 8, 9)
             Divider()
             HStack(spacing: 0) {
-                Button("Clear") {
-                    password = ""
-                }
+                Button("Clear") { password = "" }
                 .frame(width: s)
                 Divider()
                 passwordDigit(s, 0)
                 Divider()
-                Button("Submit") {
-
-                }
+                Button("Submit") { submit(password) }
                 .frame(width: s)
             }
             .frame(height: s)
@@ -96,6 +94,6 @@ struct DigitalPasswordEntry: View {
 
 struct DigitalPasswordEntry_Previews: PreviewProvider {
     static var previews: some View {
-        DigitalPasswordEntry(password: Binding.constant(""))
+        DigitalPasswordEntry(submit: { _ in })
     }
 }
