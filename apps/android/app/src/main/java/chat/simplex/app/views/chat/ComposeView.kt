@@ -261,7 +261,7 @@ fun ComposeView(
       }
     }
   }
-  val galleryMediaLauncherWithFiles = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
+  val mediaLauncherWithFiles = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
   val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
@@ -279,7 +279,7 @@ fun ComposeView(
         attachmentOption.value = null
       }
       AttachmentOption.PickMedia -> {
-        galleryMediaLauncherWithFiles.launch("image/*;video/*")
+        mediaLauncherWithFiles.launch(if (xftpSendEnabled) "image/*;video/*" else "image/*")
         attachmentOption.value = null
       }
       AttachmentOption.PickFile -> {
