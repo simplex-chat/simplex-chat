@@ -1782,8 +1782,9 @@
         <target>Échec de la suppression de la phrase secrète</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File transfer will be cancelled. If it's in progress it will be stoppped." xml:space="preserve">
+      <trans-unit id="File transfer will be cancelled. If it's in progress it will be stoppped." xml:space="preserve" approved="no">
         <source>File transfer will be cancelled. If it's in progress it will be stoppped.</source>
+        <target state="translated">Le transfert de fichiers sera annulé. S'il est en cours, il sera interrompu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
@@ -5031,6 +5032,16 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
         <target>\~barré~</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve" approved="no">
+        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target state="translated">Assurez-vous que les adresses des serveurs SMP sont au bon format et ne sont pas dupliquées, une par ligne (%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving SMP servers" xml:space="preserve" approved="no">
+        <source>Error saving SMP servers</source>
+        <target state="translated">Erreur lors de la sauvegarde des serveurs SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
