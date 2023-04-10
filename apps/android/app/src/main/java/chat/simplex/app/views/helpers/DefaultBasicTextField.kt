@@ -128,7 +128,7 @@ fun DefaultConfigurableTextField(
   showPasswordStrength: Boolean = false,
   isValid: (String) -> Boolean,
   keyboardActions: KeyboardActions = KeyboardActions(),
-  password: Boolean = false,
+  keyboardType: KeyboardType = KeyboardType.Text,
   dependsOn: State<Any?>? = null,
 ) {
   var valid by remember { mutableStateOf(validKey(state.value.text)) }
@@ -142,8 +142,8 @@ fun DefaultConfigurableTextField(
   val keyboard = LocalSoftwareKeyboardController.current
   val keyboardOptions = KeyboardOptions(
     imeAction = if (keyboardActions.onNext != null) ImeAction.Next else ImeAction.Done,
-    autoCorrect = false,
-    keyboardType = KeyboardType.Password
+    autoCorrect = keyboardType != KeyboardType.Password,
+    keyboardType = keyboardType
   )
   val enabled = true
   val colors = TextFieldDefaults.textFieldColors(
@@ -170,7 +170,7 @@ fun DefaultConfigurableTextField(
       valid = isValid(it.text)
     },
     cursorBrush = SolidColor(colors.cursorColor(false).value),
-    visualTransformation = if (showKey || !password)
+    visualTransformation = if (showKey || keyboardType != KeyboardType.Password)
       VisualTransformation.None
     else
       VisualTransformation { TransformedText(AnnotatedString(it.text.map { "*" }.joinToString(separator = "")), OffsetMapping.Identity) },
@@ -195,7 +195,7 @@ fun DefaultConfigurableTextField(
         enabled = enabled,
         isError = !valid,
         trailingIcon = {
-          if (password || !valid) {
+          if (keyboardType == KeyboardType.Password || !valid) {
             IconButton({ showKey = !showKey }) {
               Icon(icon, null, tint = iconColor)
             }

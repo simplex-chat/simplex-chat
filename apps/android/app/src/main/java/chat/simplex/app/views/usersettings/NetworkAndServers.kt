@@ -18,8 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -282,6 +281,7 @@ fun SockProxySettings(m: ChatModel) {
           modifier = Modifier,
           isValid = ::validHost,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
+          keyboardType = KeyboardType.Text,
         )
       }
       SectionDivider()
@@ -292,6 +292,7 @@ fun SockProxySettings(m: ChatModel) {
           modifier = Modifier,
           isValid = ::validPort,
           keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done); save() }),
+          keyboardType = KeyboardType.Number,
         )
       }
     }
