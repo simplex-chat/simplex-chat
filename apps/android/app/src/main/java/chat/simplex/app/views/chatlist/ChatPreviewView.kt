@@ -86,7 +86,7 @@ fun ChatPreviewView(
     fun attachment(): Pair<ImageVector, String?>? =
       when (draft.preview) {
         is ComposePreview.FilePreview -> Icons.Filled.InsertDriveFile to draft.preview.fileName
-        is ComposePreview.ImagePreview -> Icons.Outlined.Image to null
+        is ComposePreview.MediaPreview -> Icons.Outlined.Image to null
         is ComposePreview.VoicePreview -> Icons.Filled.PlayArrow to durationText(draft.preview.durationMs / 1000)
         else -> null
       }
