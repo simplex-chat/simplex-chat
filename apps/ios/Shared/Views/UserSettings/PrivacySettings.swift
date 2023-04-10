@@ -19,7 +19,14 @@ struct PrivacySettings: View {
         VStack {
             List {
                 Section("Device") {
-                    SimplexLockSetting()
+                    NavigationLink {
+                        SimplexLockView()
+                            .navigationTitle("SimpleX Lock")
+                    } label: {
+                        settingsRow("lock") {
+                            Text("SimpleX Lock")
+                        }
+                    }
                     settingsRow("eye.slash") {
                         Toggle("Protect app screen", isOn: $protectScreen)
                     }
@@ -58,12 +65,20 @@ struct PrivacySettings: View {
     }
 }
 
-struct SimplexLockSetting: View {
+enum SimplexLockMode: String, Identifiable, CaseIterable {
+    case device, digital
+
+    public var id: Self { self }
+}
+
+struct SimplexLockView: View {
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State var performLA: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var performLAToggleReset = false
     @State var laAlert: laSettingViewAlert? = nil
+    @State private var lockMode: SimplexLockMode = .device
+    @State private var lockPassword = ""
 
     enum laSettingViewAlert: Identifiable {
         case laTurnedOnAlert
@@ -75,8 +90,25 @@ struct SimplexLockSetting: View {
     }
 
     var body: some View {
-        settingsRow("lock") {
-            Toggle("SimpleX Lock", isOn: $performLA)
+        VStack {
+            List {
+                Section {
+                    Toggle("Enable", isOn: $performLA)
+                    Picker("Lock mode", selection: $lockMode) {
+                        ForEach(SimplexLockMode.allCases) { mode in
+                            Text("\(mode.rawValue)")
+                        }
+                    }
+                    NavigationLink {
+                        DigitalPasswordEntry(password: $lockPassword)
+                            .navigationTitle("SimpleX Lock")
+                    } label: {
+                        settingsRow("lock") {
+                            Text("Set password")
+                        }
+                    }
+                }
+            }
         }
         .onChange(of: performLA) { performLAToggle in
             prefLANoticeShown = true

@@ -104,6 +104,7 @@
 		5CB634A429E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB6349F29E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq.a */; };
 		5CB634A529E1EE550066AD6B /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB634A029E1EE550066AD6B /* libgmpxx.a */; };
 		5CB634A629E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CB634A129E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq-ghc8.10.7.a */; };
+		5CB634A829E437960066AD6B /* DigitalPasswordEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB634A729E437960066AD6B /* DigitalPasswordEntry.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
 		5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E327A8683A00ACCCDD /* UserAddress.swift */; };
@@ -360,6 +361,7 @@
 		5CB6349F29E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq.a"; sourceTree = "<group>"; };
 		5CB634A029E1EE550066AD6B /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5CB634A129E1EE550066AD6B /* libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.6.1.2-C345n6sAXGM3veVcbT76Lq-ghc8.10.7.a"; sourceTree = "<group>"; };
+		5CB634A729E437960066AD6B /* DigitalPasswordEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalPasswordEntry.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		5CB924E327A8683A00ACCCDD /* UserAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddress.swift; sourceTree = "<group>"; };
@@ -589,6 +591,7 @@
 				18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */,
 				5CCB939B297EFCB100399E78 /* NavStackCompat.swift */,
 				18415DAAAD1ADBEDB0EDA852 /* VideoPlayerView.swift */,
+				5CB634A729E437960066AD6B /* DigitalPasswordEntry.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1048,6 +1051,7 @@
 				5CBE6C142944CC12002D9531 /* ScanCodeView.swift in Sources */,
 				5CC036E029C488D500C0EF20 /* HiddenProfileView.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
+				5CB634A829E437960066AD6B /* DigitalPasswordEntry.swift in Sources */,
 				5CFA59C42860BC6200863A68 /* MigrateToAppGroupView.swift in Sources */,
 				648010AB281ADD15009009B9 /* CIFileView.swift in Sources */,
 				644EFFE2292D089800525D5B /* FramedCIVoiceView.swift in Sources */,
