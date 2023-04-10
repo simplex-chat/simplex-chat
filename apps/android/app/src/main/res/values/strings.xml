@@ -508,6 +508,11 @@
   <string name="network_settings">Advanced network settings</string>
   <string name="network_settings_title">Network settings</string>
   <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
+  <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
+  <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
+  <string name="network_proxy_port">port %d</string>
+  <string name="host_verb">Host</string>
+  <string name="port_verb">Port</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
   <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>

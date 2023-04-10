@@ -366,7 +366,7 @@ fun PassphraseField(
   showStrength: Boolean = false,
   isValid: (String) -> Boolean,
   keyboardActions: KeyboardActions = KeyboardActions(),
-  dependsOn: MutableState<String>? = null,
+  dependsOn: State<Any?>? = null,
 ) {
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
@@ -479,7 +479,7 @@ private fun passphraseEntropy(s: String): Double {
   return s.length * log2(poolSize.toDouble())
 }
 
-private enum class PassphraseStrength(val color: Color) {
+enum class PassphraseStrength(val color: Color) {
   VERY_WEAK(Color.Red), WEAK(WarningOrange), REASONABLE(WarningYellow), STRONG(SimplexGreen);
 
   companion object {
