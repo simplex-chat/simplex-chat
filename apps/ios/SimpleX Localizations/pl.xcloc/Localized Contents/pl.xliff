@@ -4845,6 +4845,11 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
         <target state="translated">\~strajk~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send videos and files via XFTP" xml:space="preserve" approved="no">
+        <source>Send videos and files via XFTP</source>
+        <target state="translated">Wysyłaj filmy i pliki przez XFTP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pl" datatype="plaintext">
