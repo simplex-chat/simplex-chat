@@ -15,7 +15,7 @@
     <string name="smp_servers_preset_add">Añadir servidores predefinidos</string>
     <string name="all_group_members_will_remain_connected">Todos los miembros del grupo permanecerán conectados.</string>
     <string name="allow_irreversible_message_deletion_only_if">Permitir la eliminación irreversible de mensajes sólo si tu contacto también lo permite.</string>
-    <string name="keychain_allows_to_receive_ntfs">Android Keystore se usará para almacenar de forma segura la frase de contraseña después de reiniciar la aplicación o cambiar la frase de contraseña - permitirá recibir notificaciones.</string>
+    <string name="keychain_allows_to_receive_ntfs">Android Keystore se usará para almacenar de forma segura la contraseña después de reiniciar la aplicación o cambiar la frase de contraseña - permitirá recibir notificaciones.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permitir a tus contactos enviar mensajes temporales</string>
     <string name="allow_your_contacts_to_send_voice_messages">Permitir a tus contactos enviar mensajes de voz.</string>
     <string name="chat_preferences_always">siempre</string>
@@ -47,7 +47,7 @@
     <string name="accept">Aceptar</string>
     <string name="audio_call_no_encryption">llamada de audio (sin cifrado e2e)</string>
     <string name="icon_descr_audio_call">llamada de audio</string>
-    <string name="settings_audio_video_calls">Llamadas y videollamadas</string>
+    <string name="settings_audio_video_calls">Llamadas y Videollamadas</string>
     <string name="icon_descr_audio_off">Audio desactivado</string>
     <string name="icon_descr_audio_on">Audio activado</string>
     <string name="integrity_msg_bad_id">ID de mensaje erróneo</string>
@@ -55,7 +55,7 @@
     <string name="users_delete_all_chats_deleted">Se eliminarán todos los chats y mensajes. ¡No puede deshacerse!</string>
     <string name="accept_feature">Aceptar</string>
     <string name="allow_to_send_disappearing">Permitir enviar mensajes temporales.</string>
-    <string name="keychain_is_storing_securely">Android Keystore se utiliza para almacenar de forma segura la frase de contraseña - permite que el servicio de notificación funcione.</string>
+    <string name="keychain_is_storing_securely">Android Keystore se utiliza para almacenar de forma segura la contraseña - permite que el servicio de notificación funcione.</string>
     <string name="users_add">Añadir perfil</string>
     <string name="incognito_random_profile_description">Se enviará un perfil aleatorio a tu contacto</string>
     <string name="color_primary">Acento</string>
@@ -250,8 +250,8 @@
     <string name="icon_descr_email">Email</string>
     <string name="connect_button">Conectar</string>
     <string name="connect_via_link">Conectar mediante enlace</string>
-    <string name="database_passphrase_and_export">Base de datos
-\ny frase de contraseña</string>
+    <string name="database_passphrase_and_export">Base de Datos
+\ny Contraseña</string>
     <string name="contribute">Contribuye</string>
     <string name="core_build_timestamp">Core compilado: %s</string>
     <string name="core_version">Core versión: v%s</string>
@@ -407,7 +407,7 @@
     <string name="v4_4_french_interface">Interfaz en francés</string>
     <string name="image_descr">Imagen</string>
     <string name="file_not_found">Archivo no encontrado</string>
-    <string name="how_to_use_simplex_chat">Guia de uso</string>
+    <string name="how_to_use_simplex_chat">Guía de uso</string>
     <string name="full_name_optional__prompt">Nombre completo (opcional)</string>
     <string name="callstate_ended">finalizado</string>
     <string name="settings_section_title_help">AYUDA</string>
@@ -540,7 +540,7 @@
     <string name="ok">OK</string>
     <string name="only_stored_on_members_devices">(sólo almacenado por miembros del grupo)</string>
     <string name="markdown_help">Ayuda sintaxis markdown</string>
-    <string name="network_and_servers">Redes y servidores</string>
+    <string name="network_and_servers">Redes y Servidores</string>
     <string name="network_use_onion_hosts_prefer_desc">Se usarán hosts .onion cuando estén disponibles.</string>
     <string name="italic">cursiva</string>
     <string name="incoming_audio_call">Llamada entrante</string>
@@ -677,7 +677,7 @@
     <string name="reject">Rechazar</string>
     <string name="open_verb">Abrir</string>
     <string name="icon_descr_call_pending_sent">Llamada pendiente</string>
-    <string name="privacy_and_security">Privacidad y seguridad</string>
+    <string name="privacy_and_security">Privacidad y Seguridad</string>
     <string name="store_passphrase_securely_without_recover">Guarda la contraseña de forma segura, NO podrás acceder al chat si la pierdes.</string>
     <string name="save_archive">Guardar archivo</string>
     <string name="restore_database_alert_desc">Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</string>
@@ -812,7 +812,7 @@
     <string name="is_not_verified">%s no está verificado</string>
     <string name="smp_servers_test_server">Probar servidor</string>
     <string name="smp_servers_test_servers">Probar servidores</string>
-    <string name="star_on_github">Comienza en GitHub</string>
+    <string name="star_on_github">Dar Estrella en GitHub</string>
     <string name="smp_servers_per_user">Los servidores para nuevas conexiones de tu perfil de Chat actual</string>
     <string name="network_disable_socks">¿Usar conexión directa a Internet\?</string>
     <string name="update_onion_hosts_settings_question">¿Actualizar la configuración de los hosts .onion\?</string>
@@ -1023,18 +1023,18 @@
 \n- borrar mensajes de los miembros.
 \n- desactivar el rol a miembros (a rol \"observador\")</string>
     <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página Tus perfiles Chat.</string>
-    <string name="settings_send_files_via_xftp">Enviar archivos mediante XFTP</string>
+    <string name="settings_send_files_via_xftp">Enviar vídeos y archivos mediante XFTP</string>
     <string name="database_upgrade">Actualización de la base de datos</string>
-    <string name="database_downgrade">Degradación de la base de datos</string>
+    <string name="database_downgrade">Volviendo a versión anterior de la base de datos</string>
     <string name="invalid_migration_confirmation">Confirmación de migración no válida</string>
     <string name="upgrade_and_open_chat">Actualizar y abrir Chat</string>
     <string name="database_migrations">Migraciones: %s</string>
     <string name="mtr_error_different">migración diferente en la aplicación/base de datos: %s / %s</string>
-    <string name="downgrade_and_open_chat">Degradar y abrir Chat</string>
+    <string name="downgrade_and_open_chat">Volver a versión anterior y abrir Chat</string>
     <string name="database_downgrade_warning">Atención: ¡puedes perder algunos datos!</string>
     <string name="incompatible_database_version">Versión de base de datos incompatible</string>
     <string name="confirm_database_upgrades">Confirmar actualizaciones de la bases de datos</string>
-    <string name="mtr_error_no_down_migration">la versión de la base de datos es más reciente que la aplicación, pero no hay migración hacia abajo para: %s</string>
+    <string name="mtr_error_no_down_migration">la versión de la base de datos es más reciente que la aplicación, pero no hay migración hacia versión anterior para: %s</string>
     <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
     <string name="developer_options">ID de base de datos y opción de aislamiento de transporte.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">El archivo se recibirá cuando tu contacto termine de subirlo.</string>
@@ -1050,4 +1050,13 @@
     <string name="unhide_chat_profile">Mostrar perfil de chat</string>
     <string name="unhide_profile">Mostrar perfil</string>
     <string name="delete_profile">Eliminar perfil</string>
+    <string name="video_descr">Vídeo</string>
+    <string name="video_will_be_received_when_contact_is_online">El vídeo se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
+    <string name="waiting_for_video">Esperando el vídeo</string>
+    <string name="icon_descr_video_asked_to_receive">Ha pedido recibir el video</string>
+    <string name="videos_limit_title">¡Demasiados vídeos!</string>
+    <string name="icon_descr_video_snd_complete">Vídeo enviado</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">El vídeo se recibirá cuando tu contacto termine de subirlo.</string>
+    <string name="videos_limit_desc">Solo se pueden enviar 10 vídeos de forma simultánea</string>
+    <string name="icon_descr_waiting_for_video">Esperando el vídeo</string>
 </resources>

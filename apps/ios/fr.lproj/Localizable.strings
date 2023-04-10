@@ -103,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ est vérifié·e";
 
+/* No comment provided by engineer. */
+"%@ servers" = "Serveurs %@";
+
 /* notification title */
 "%@ wants to connect!" = "%@ veut se connecter !";
 
@@ -741,6 +744,9 @@
 "Database upgrade" = "Mise à niveau de la base de données";
 
 /* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "la base de données a une version plus récente que celle de l'application, mais il n'y a pas de rétrogradation pour : %@";
+
+/* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "La base de données sera chiffrée et la phrase secrète sera stockée dans la keychain.\n";
 
 /* No comment provided by engineer. */
@@ -882,6 +888,9 @@
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "L'authentification de l'appareil n'est pas activée. Vous pouvez activer SimpleX Lock via Paramètres, une fois que vous avez activé l'authentification de l'appareil.";
 
 /* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "migration différente dans l'app/la base de données : %@ / %@";
+
+/* No comment provided by engineer. */
 "Different names, avatars and transport isolation." = "Différents noms, avatars et mode d'isolation de transport.";
 
 /* connection level description */
@@ -985,6 +994,9 @@
 
 /* notification */
 "Encrypted message: database error" = "Message chiffrée : erreur de base de données";
+
+/* notification */
+"Encrypted message: database migration error" = "Message chiffré : erreur de migration de la base de données";
 
 /* notification */
 "Encrypted message: keychain error" = "Message chiffrée : erreur de keychain";
@@ -1095,6 +1107,9 @@
 "Error removing member" = "Erreur lors de la suppression d'un membre";
 
 /* No comment provided by engineer. */
+"Error saving %@ servers" = "Erreur lors de la sauvegarde des serveurs %@";
+
+/* No comment provided by engineer. */
 "Error saving group profile" = "Erreur lors de la sauvegarde du profil de groupe";
 
 /* No comment provided by engineer. */
@@ -1102,9 +1117,6 @@
 
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Erreur lors de l'enregistrement de la phrase de passe dans la keychain";
-
-/* No comment provided by engineer. */
-"Error saving SMP servers" = "Erreur lors de la sauvegarde des serveurs SMP";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "Erreur d'enregistrement du mot de passe de l'utilisateur";
@@ -1149,6 +1161,9 @@
 "Exit without saving" = "Quitter sans sauvegarder";
 
 /* No comment provided by engineer. */
+"Experimental" = "Expérimental";
+
+/* No comment provided by engineer. */
 "Export database" = "Exporter la base de données";
 
 /* No comment provided by engineer. */
@@ -1162,9 +1177,6 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Échec de la suppression de la phrase secrète";
-
-/* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "Le transfert de fichiers sera annulé. S'il est en cours, il sera interrompu.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Le fichier sera reçu lorsque votre contact aura terminé de le mettre en ligne.";
@@ -1533,7 +1545,7 @@
 "Make profile private!" = "Rendre un profil privé !";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Assurez-vous que les adresses des serveurs SMP sont au bon format et ne sont pas dupliquées, un par ligne.";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Assurez-vous que les adresses des serveurs %@ sont au bon format et ne sont pas dupliquées, un par ligne (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.";
@@ -1593,6 +1605,9 @@
 "Messages" = "Messages";
 
 /* No comment provided by engineer. */
+"Messages & files" = "Messages";
+
+/* No comment provided by engineer. */
 "Migrating database archive..." = "Migration de l'archive de la base de données...";
 
 /* No comment provided by engineer. */
@@ -1603,6 +1618,9 @@
 
 /* No comment provided by engineer. */
 "Migration is completed" = "La migration est terminée";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "Migrations : %@";
 
 /* call status */
 "missed call" = "appel manqué";
@@ -2128,6 +2146,9 @@
 "Send them from gallery or custom keyboards." = "Envoyez-les depuis la phototèque ou des claviers personnalisés.";
 
 /* No comment provided by engineer. */
+"Send videos and files via XFTP" = "Envoi de fichiers via XFTP";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "L'expéditeur a annulé le transfert de fichiers.";
 
 /* No comment provided by engineer. */
@@ -2637,6 +2658,9 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Mauvaise phrase secrète !";
 
+/* No comment provided by engineer. */
+"XFTP servers" = "Serveurs XFTP";
+
 /* pref value */
 "yes" = "oui";
 
@@ -2785,6 +2809,9 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Vous utilisez un profil incognito pour ce groupe - pour éviter de partager votre profil principal ; inviter des contacts n'est pas possible";
 
 /* No comment provided by engineer. */
+"Your %@ servers" = "Vos serveurs %@";
+
+/* No comment provided by engineer. */
 "Your calls" = "Vos appels";
 
 /* No comment provided by engineer. */
@@ -2861,4 +2888,7 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Vos serveurs SMP";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "Vos serveurs XFTP";
 
