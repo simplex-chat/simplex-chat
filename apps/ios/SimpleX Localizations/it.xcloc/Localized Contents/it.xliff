@@ -4910,6 +4910,16 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>\~barrato~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve" approved="no">
+        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target state="translated">Assicurati che gli indirizzi del server SMP siano nel formato corretto, uno per riga e non doppi (%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving SMP servers" xml:space="preserve" approved="no">
+        <source>Error saving SMP servers</source>
+        <target state="translated">Errore nel salvataggio dei server SMP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="it" datatype="plaintext">
