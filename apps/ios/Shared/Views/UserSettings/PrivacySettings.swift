@@ -96,9 +96,10 @@ enum LAMode: String, Identifiable, CaseIterable {
 }
 
 struct SimplexLockView: View {
-    @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @Binding var prefPerformLA: Bool
     @Binding var currentLAMode: LAMode
+    @EnvironmentObject var m: ChatModel
+    @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @State private var laMode: LAMode = privacyLocalAuthModeDefault.get()
     @AppStorage(DEFAULT_LA_LOCK_DELAY) private var laLockDelay = 30
     @State var performLA: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
@@ -207,34 +208,45 @@ struct SimplexLockView: View {
             switch a {
             case .enableAuth:
                 SetAppPaswordView {
+                    laLockDelay = 30
                     prefPerformLA = true
                     showChangePassword = true
-                    laAlert = .laPasswordSetAlert
+                    showLAAlert(.laPasswordSetAlert)
                 } cancel: {
                     prefPerformLA = false
-                    withAnimation() { performLA = false }
+                    withAnimation { performLA = false }
                     performLAToggleReset = true
                 }
             case .toggleMode:
                 SetAppPaswordView {
+                    laLockDelay = 30
                     currentLAMode = laMode
                     privacyLocalAuthModeDefault.set(laMode)
                     showChangePassword = true
-                    laAlert = .laPasswordSetAlert
+                    showLAAlert(.laPasswordSetAlert)
                 } cancel: {
-                    withAnimation() { laMode = currentLAMode }
+                    withAnimation { laMode = currentLAMode }
                     performLAModeReset = true
                 }
             case .changePassword:
                 SetAppPaswordView {
-                    laAlert = .laPasswordChangedAlert
+                    showLAAlert(.laPasswordChangedAlert)
                 } cancel: {
-                    laAlert = .laPasswordNotChangedAlert
+                    showLAAlert(.laPasswordNotChangedAlert)
                 }
             }
         }
         .onAppear {
             showChangePassword = prefPerformLA && currentLAMode == .password
+        }
+        .onDisappear() {
+            m.laRequest = nil
+        }
+    }
+
+    private func  showLAAlert(_ a: LASettingViewAlert) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            laAlert = a
         }
     }
 
@@ -280,7 +292,7 @@ struct SimplexLockView: View {
                 laAlert = .laTurnedOnAlert
             case .failed:
                 prefPerformLA = false
-                withAnimation() { performLA = false }
+                withAnimation { performLA = false }
                 performLAToggleReset = true
                 laAlert = .laFailedAlert
             case .unavailable:
@@ -291,7 +303,7 @@ struct SimplexLockView: View {
 
     private func disableUnavailableLA() {
         prefPerformLA = false
-        withAnimation() { performLA = false }
+        withAnimation { performLA = false }
         performLAToggleReset = true
         privacyLocalAuthModeDefault.set(.system)
         laMode = .system
@@ -306,9 +318,7 @@ struct SimplexLockView: View {
                 resetLA()
             case .failed:
                 prefPerformLA = true
-                withAnimation() {
-                    performLA = true
-                }
+                withAnimation { performLA = true }
                 performLAToggleReset = true
                 laAlert = .laFailedAlert
             case .unavailable:

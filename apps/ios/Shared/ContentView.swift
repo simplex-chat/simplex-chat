@@ -212,7 +212,6 @@ struct ContentView: View {
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
-                // show set password
                 prefPerformLA = true
                 alertManager.showAlert(laTurnedOnAlert())
             case .failed:

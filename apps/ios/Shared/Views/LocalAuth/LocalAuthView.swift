@@ -16,10 +16,10 @@ struct LocalAuthView: View {
     var body: some View {
         GeometryReader { g in
             VStack {
-                Text(authRequest.title).font(.title).bold().padding(.top, 24)
+                Text(authRequest.title).font(.title).bold().padding(.top, 16)
                 Text(authRequest.reason)
                 DigitalPasswordEntry(width: g.size.width, password: $password)
-                    .padding(.bottom, 48)
+                    .padding(.bottom, 36)
                 HStack(spacing: 48) {
                     Button {
                         m.laRequest = nil
@@ -42,7 +42,7 @@ struct LocalAuthView: View {
             }
         }
         .padding()
-        .padding(.horizontal)
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemBackground))
     }

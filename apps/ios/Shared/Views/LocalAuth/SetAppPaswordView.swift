@@ -21,7 +21,7 @@ struct SetAppPaswordView: View {
     var body: some View {
         ZStack {
             if confirming {
-                setPasswordView("Confirm password") {
+                setPasswordView(title: "Confirm password", label: "Confirm") {
                     if password == enteredPassword {
                         if kcAppPassword.set(password) {
                             enteredPassword = ""
@@ -34,7 +34,7 @@ struct SetAppPaswordView: View {
                     }
                 }
             } else {
-                setPasswordView("Set password") {
+                setPasswordView(title: "Set password", label: "Set password") {
                     enteredPassword = password
                     password = ""
                     confirming = true
@@ -45,16 +45,16 @@ struct SetAppPaswordView: View {
             mkAlert(title: "KeyChain error", message: "Error saving password")
         }
         .padding()
-        .padding(.horizontal)
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func setPasswordView(_ title: LocalizedStringKey, submit: @escaping () -> Void) -> some View {
+    private func setPasswordView(title: LocalizedStringKey, label: LocalizedStringKey, submit: @escaping () -> Void) -> some View {
         GeometryReader { g in
             VStack {
-                Text(title).font(.title).bold().padding(.top, 24)
+                Text(title).font(.title).bold().padding(.top, 16)
                 DigitalPasswordEntry(width: g.size.width, password: $password)
-                    .padding(.bottom, 48)
+                    .padding(.bottom, 36)
                 HStack(spacing: 48) {
                     Button {
                         dismiss()
@@ -63,7 +63,7 @@ struct SetAppPaswordView: View {
                         Label("Cancel", systemImage: "multiply")
                     }
                     Button(action: submit) {
-                        Label("Set password", systemImage: "checkmark")
+                        Label(label, systemImage: "checkmark")
                     }
                     .disabled(password.count < 4 || !(enteredPassword == "" || password == enteredPassword))
                 }
