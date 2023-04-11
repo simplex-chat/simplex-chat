@@ -22,6 +22,7 @@ struct LocalAuthView: View {
                     .padding(.bottom, 48)
                 HStack(spacing: 48) {
                     Button {
+                        m.laRequest = nil
                         authRequest.completed(.failed(authError: NSLocalizedString("Authentication cancelled", comment: "PIN entry")))
                     } label: {
                         Label("Cancel", systemImage: "multiply")
@@ -30,9 +31,7 @@ struct LocalAuthView: View {
                         let r: LAResult = password == authRequest.password
                                         ? .success
                                         : .failed(authError: NSLocalizedString("Incorrect password", comment: "PIN entry"))
-                        if case .success = r {
-                            m.laRequest = nil
-                        }
+                        m.laRequest = nil
                         authRequest.completed(r)
                     } label: {
                         Label("Submit", systemImage: "checkmark")
