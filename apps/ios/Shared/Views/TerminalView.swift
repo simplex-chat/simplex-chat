@@ -20,6 +20,7 @@ struct TerminalView: View {
     @State var composeState: ComposeState = ComposeState()
     @FocusState private var keyboardVisible: Bool
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var terminalItem: TerminalItem?
 
     var body: some View {
         if authorized {
@@ -38,19 +39,8 @@ struct TerminalView: View {
                 ScrollView {
                     LazyVStack {
                         ForEach(chatModel.terminalItems) { item in
-                            NavigationLink {
-                                let s = item.details
-                                ScrollView {
-                                    Text(s.prefix(maxItemSize))
-                                        .padding()
-                                }
-                                .toolbar {
-                                    ToolbarItem(placement: .navigationBarTrailing) {
-                                        Button { showShareSheet(items: [s]) } label: {
-                                            Image(systemName: "square.and.arrow.up")
-                                        }
-                                    }
-                                }
+                            Button {
+                                terminalItem = item
                             } label: {
                                 HStack {
                                     Text(item.id.formatted(date: .omitted, time: .standard))
@@ -70,6 +60,11 @@ struct TerminalView: View {
                                 }
                             }
                         }
+                        .background(NavigationLink(
+                            isActive: Binding(get: { terminalItem != nil }, set: { _ in }),
+                            destination: terminalItemView,
+                            label: { EmptyView() }
+                        ))
                     }
                 }
 
@@ -79,7 +74,7 @@ struct TerminalView: View {
                     composeState: $composeState,
                     sendMessage: sendMessage,
                     showVoiceMessageButton: false,
-                    onImagesAdded: { _ in },
+                    onMediaAdded: { _ in },
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.horizontal, 12)
@@ -96,11 +91,27 @@ struct TerminalView: View {
             }
         }
     }
+
+    func terminalItemView() -> some View {
+        let s = terminalItem?.details ?? ""
+        return ScrollView {
+            Text(s.prefix(maxItemSize))
+                .padding()
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showShareSheet(items: [s]) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
+        .onDisappear { terminalItem = nil }
+    }
     
     func sendMessage() {
         let cmd = ChatCommand.string(composeState.message)
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
-            let resp = ChatResponse.chatCmdError(user: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
+            let resp = ChatResponse.chatCmdError(user_: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
             DispatchQueue.main.async {
                 ChatModel.shared.addTerminalItem(.cmd(.now, cmd))
                 ChatModel.shared.addTerminalItem(.resp(.now, resp))

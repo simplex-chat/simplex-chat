@@ -9,7 +9,7 @@ active_home: true
 
 {% include "hero.html" %}
 
-<section class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5 lg:h-[888px]">
+<section id="why-privacy" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5 lg:h-[888px]">
     <div class="container">
         <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">{{ "privacy-matters-section-header" | i18n({}, lang ) | safe }}</p>
         <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">{{ "privacy-matters-section-subheader" | i18n({}, lang ) | safe }}</p>
@@ -84,10 +84,16 @@ active_home: true
                 {% endfor %}
             </div>
 
-            <img class="fixed left-[-3px] top-[55%] swiper-button-prev private-swiper-button-prev hidden md:inline-block dark:hidden" src="/img/new/arrow-left.svg" alt="">
-            <img class="fixed right-[-6px] top-[55%] swiper-button-next private-swiper-button-next hidden md:inline-block dark:hidden" src="/img/new/arrow-right.svg" alt="">
-            <img class="fixed left-[-3px] top-[55%] swiper-button-prev private-swiper-button-prev hidden dark:md:inline-block" src="/img/new/arrow-left-dark.svg" alt="">
-            <img class="fixed right-[-6px] top-[55%] swiper-button-next private-swiper-button-next hidden dark:md:inline-block" src="/img/new/arrow-right-dark.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-prev private-swiper-button-prev md:inline-block rtl:!hidden dark:!hidden" src="/img/new/arrow-left.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-next private-swiper-button-next md:inline-block rtl:!hidden dark:!hidden" src="/img/new/arrow-right.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-prev private-swiper-button-prev hidden dark:md:inline-block rtl:!hidden" src="/img/new/arrow-left-dark.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-next private-swiper-button-next hidden dark:md:inline-block rtl:!hidden" src="/img/new/arrow-right-dark.svg" alt="">
+
+            <img class="fixed left-[-3px] top-[52%] swiper-button-next private-swiper-button-next md:rtl:inline-block ltr:!hidden dark:!hidden" src="/img/new/arrow-left.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-prev private-swiper-button-prev md:rtl:inline-block ltr:!hidden dark:!hidden" src="/img/new/arrow-right.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-next private-swiper-button-next hidden md:dark:inline-block ltr:!hidden" src="/img/new/arrow-left-dark.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-prev private-swiper-button-prev hidden md:dark:inline-block ltr:!hidden" src="/img/new/arrow-right-dark.svg" alt="">
+
             <div class="swiper-scrollbar dark:bg-grey-black dark:bg-opacity-[0.2]"></div>
         </div>
     </div>

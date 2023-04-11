@@ -11,7 +11,7 @@ module Simplex.Chat.Options
     chatOptsP,
     coreChatOptsP,
     getChatOpts,
-    smpServersP,
+    protocolServersP,
     fullNetworkConfig,
   )
 where
@@ -25,7 +25,7 @@ import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, ver
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (SMPServerWithAuth)
+import Simplex.Messaging.Protocol (ProtocolTypeI, ProtoServerWithAuth, SMPServerWithAuth, XFTPServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
 import System.FilePath (combine)
 
@@ -43,6 +43,7 @@ data CoreChatOpts = CoreChatOpts
   { dbFilePrefix :: String,
     dbKey :: String,
     smpServers :: [SMPServerWithAuth],
+    xftpServers :: [XFTPServerWithAuth],
     networkConfig :: NetworkConfig,
     logLevel :: ChatLogLevel,
     logConnections :: Bool,
@@ -81,11 +82,19 @@ coreChatOptsP appDir defaultDbFileName = do
       )
   smpServers <-
     option
-      parseSMPServers
+      parseProtocolServers
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
           <> help "Semicolon-separated list of SMP server(s) to use (each server can have more than one hostname)"
+          <> value []
+      )
+  xftpServers <-
+    option
+      parseProtocolServers
+      ( long "xftp-server"
+          <> metavar "SERVER"
+          <> help "Semicolon-separated list of XFTP server(s) to use (each server can have more than one hostname)"
           <> value []
       )
   socksProxy <-
@@ -156,6 +165,7 @@ coreChatOptsP appDir defaultDbFileName = do
       { dbFilePrefix,
         dbKey,
         smpServers,
+        xftpServers,
         networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
@@ -233,8 +243,8 @@ fullNetworkConfig socksProxy tcpTimeout logTLSErrors =
   let tcpConnectTimeout = (tcpTimeout * 3) `div` 2
    in defaultNetworkConfig {socksProxy, tcpTimeout, tcpConnectTimeout, logTLSErrors}
 
-parseSMPServers :: ReadM [SMPServerWithAuth]
-parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
+parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]
+parseProtocolServers = eitherReader $ parseAll protocolServersP . B.pack
 
 parseSocksProxy :: ReadM (Maybe SocksProxy)
 parseSocksProxy = eitherReader $ parseAll strP . B.pack
@@ -245,8 +255,8 @@ parseServerPort = eitherReader $ parseAll serverPortP . B.pack
 serverPortP :: A.Parser (Maybe String)
 serverPortP = Just . B.unpack <$> A.takeWhile A.isDigit
 
-smpServersP :: A.Parser [SMPServerWithAuth]
-smpServersP = strP `A.sepBy1` A.char ';'
+protocolServersP :: ProtocolTypeI p => A.Parser [ProtoServerWithAuth p]
+protocolServersP = strP `A.sepBy1` A.char ';'
 
 parseLogLevel :: ReadM ChatLogLevel
 parseLogLevel = eitherReader $ \case

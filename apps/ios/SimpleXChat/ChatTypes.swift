@@ -22,7 +22,16 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
 
+    public var showNtfs: Bool
+    public var viewPwdHash: UserPwdHash?
+
     public var id: Int64 { userId }
+
+    public var hidden: Bool { viewPwdHash != nil }
+
+    public var showNotifications: Bool {
+        activeUser || showNtfs
+    }
 
     public static let sampleData = User(
         userId: 1,
@@ -30,8 +39,14 @@ public struct User: Decodable, NamedChat, Identifiable {
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
-        activeUser: true
+        activeUser: true,
+        showNtfs: true
     )
+}
+
+public struct UserPwdHash: Decodable {
+    public var hash: String
+    public var salt: String
 }
 
 public struct UserInfo: Decodable, Identifiable {
@@ -1517,7 +1532,7 @@ public struct GroupMember: Identifiable, Decodable {
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if !canBeRemoved(groupInfo: groupInfo) { return nil }
         let userRole = groupInfo.membership.memberRole
-        return GroupMemberRole.allCases.filter { $0 <= userRole && $0 != .observer }
+        return GroupMemberRole.allCases.filter { $0 <= userRole }
     }
 
     public var memberIncognito: Bool {
@@ -1722,6 +1737,8 @@ public struct ChatItem: Identifiable, Decodable {
         switch content {
         case .sndDeleted: return true
         case .rcvDeleted: return true
+        case .sndModerated: return true
+        case .rcvModerated: return true
         default: return false
         }
     }
@@ -1786,6 +1803,17 @@ public struct ChatItem: Identifiable, Decodable {
             } else {
                 return nil
             }
+        }
+    }
+
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
+        switch (chatInfo, chatDir) {
+        case let (.group(groupInfo), .groupRcv(groupMember)):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
+                    ? (groupInfo, groupMember)
+                    : nil
+        default: return nil
         }
     }
 
@@ -2187,9 +2215,10 @@ public struct CIFile: Decodable {
     public var fileSize: Int64
     public var filePath: String?
     public var fileStatus: CIFileStatus
+    public var fileProtocol: FileProtocol
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
-        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
+        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus, fileProtocol: .xftp)
     }
 
     public var loaded: Bool {
@@ -2207,24 +2236,60 @@ public struct CIFile: Decodable {
             }
         }
     }
+
+    public var cancellable: Bool {
+        get {
+            switch self.fileStatus {
+            case .sndStored: return self.fileProtocol != .xftp // TODO true - enable when XFTP send supports cancel
+            case .sndTransfer: return self.fileProtocol != .xftp // TODO true
+            case .sndComplete: return false
+            case .sndCancelled: return false
+            case .rcvInvitation: return false
+            case .rcvAccepted: return true
+            case .rcvTransfer: return true
+            case .rcvCancelled: return false
+            case .rcvComplete: return false
+            }
+        }
+    }
 }
 
-public enum CIFileStatus: String, Decodable {
-    case sndStored = "snd_stored"
-    case sndTransfer = "snd_transfer"
-    case sndComplete = "snd_complete"
-    case sndCancelled = "snd_cancelled"
-    case rcvInvitation = "rcv_invitation"
-    case rcvAccepted = "rcv_accepted"
-    case rcvTransfer = "rcv_transfer"
-    case rcvComplete = "rcv_complete"
-    case rcvCancelled = "rcv_cancelled"
+public enum FileProtocol: String, Decodable {
+    case smp = "smp"
+    case xftp = "xftp"
+}
+
+public enum CIFileStatus: Decodable {
+    case sndStored
+    case sndTransfer(sndProgress: Int64, sndTotal: Int64)
+    case sndComplete
+    case sndCancelled
+    case rcvInvitation
+    case rcvAccepted
+    case rcvTransfer(rcvProgress: Int64, rcvTotal: Int64)
+    case rcvComplete
+    case rcvCancelled
+
+    var id: String {
+        switch self {
+        case .sndStored: return "sndStored"
+        case let .sndTransfer(sndProgress, sndTotal): return "sndTransfer \(sndProgress) \(sndTotal)"
+        case .sndComplete: return "sndComplete"
+        case .sndCancelled: return "sndCancelled"
+        case .rcvInvitation: return "rcvInvitation"
+        case .rcvAccepted: return "rcvAccepted"
+        case let .rcvTransfer(rcvProgress, rcvTotal): return "rcvTransfer \(rcvProgress) \(rcvTotal)"
+        case .rcvComplete: return "rcvComplete"
+        case .rcvCancelled: return "rcvCancelled"
+        }
+    }
 }
 
 public enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
+    case video(text: String, image: String, duration: Int)
     case voice(text: String, duration: Int)
     case file(String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
@@ -2235,6 +2300,7 @@ public enum MsgContent {
         case let .text(text): return text
         case let .link(text, _): return text
         case let .image(text, _): return text
+        case let .video(text, _, _): return text
         case let .voice(text, _): return text
         case let .file(text): return text
         case let .unknown(_, text): return text
@@ -2258,6 +2324,13 @@ public enum MsgContent {
     public var isImage: Bool {
         switch self {
         case .image: return true
+        default: return false
+        }
+    }
+
+    public var isVideo: Bool {
+        switch self {
+        case .video: return true
         default: return false
         }
     }
@@ -2292,6 +2365,11 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let image = try container.decode(String.self, forKey: CodingKeys.image)
                 self = .image(text: text, image: image)
+            case "video":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let image = try container.decode(String.self, forKey: CodingKeys.image)
+                let duration = try container.decode(Int.self, forKey: CodingKeys.duration)
+                self = .video(text: text, image: image, duration: duration)
             case "voice":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let duration = try container.decode(Int.self, forKey: CodingKeys.duration)
@@ -2324,6 +2402,11 @@ extension MsgContent: Encodable {
             try container.encode("image", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(image, forKey: .image)
+        case let .video(text, image, duration):
+            try container.encode("video", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(image, forKey: .image)
+            try container.encode(duration, forKey: .duration)
         case let .voice(text, duration):
             try container.encode("voice", forKey: .type)
             try container.encode(text, forKey: .text)
@@ -2459,7 +2542,11 @@ public enum CICallStatus: String, Decodable {
 }
 
 public func durationText(_ sec: Int) -> String {
-    String(format: "%02d:%02d", sec / 60, sec % 60)
+    let s = sec % 60
+    let m = sec / 60
+    return m < 60
+        ? String(format: "%02d:%02d", m, s)
+        : String(format: "%02d:%02d:%02d", m / 60, m % 60, s)
 }
 
 public enum MsgErrorType: Decodable {

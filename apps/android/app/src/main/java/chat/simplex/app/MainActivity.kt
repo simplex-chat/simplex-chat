@@ -3,9 +3,7 @@ package chat.simplex.app
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Parcelable
+import android.os.*
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import android.view.WindowManager
@@ -41,9 +39,8 @@ import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
   companion object {
@@ -68,6 +65,7 @@ class MainActivity: FragmentActivity() {
     super.onCreate(savedInstanceState)
     // testJson()
     val m = vm.chatModel
+    applyAppLocale(m.controller.appPrefs.appLanguage)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
@@ -110,8 +108,8 @@ class MainActivity: FragmentActivity() {
     processExternalIntent(intent, vm.chatModel)
   }
 
-  override fun onStart() {
-    super.onStart()
+  override fun onResume() {
+    super.onResume()
     val enteredBackgroundVal = enteredBackground.value
     if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30_000) {
       runAuthenticate()
@@ -130,6 +128,7 @@ class MainActivity: FragmentActivity() {
 
   override fun onStop() {
     super.onStop()
+    VideoPlayer.stopAll()
     enteredBackground.value = elapsedRealtime()
   }
 
@@ -161,25 +160,31 @@ class MainActivity: FragmentActivity() {
     } else {
       userAuthorized.value = false
       ModalManager.shared.closeModals()
-      authenticate(
-        generalGetString(R.string.auth_unlock),
-        generalGetString(R.string.auth_log_in_using_credential),
-        this@MainActivity,
-        completed = { laResult ->
-          when (laResult) {
-            LAResult.Success ->
-              userAuthorized.value = true
-            is LAResult.Error, LAResult.Failed ->
-              laFailed.value = true
-            LAResult.Unavailable -> {
-              userAuthorized.value = true
-              m.performLA.value = false
-              m.controller.appPrefs.performLA.set(false)
-              laUnavailableTurningOffAlert()
+      // To make Main thread free in order to allow to Compose to show blank view that hiding content underneath of it faster on slow devices
+      CoroutineScope(Dispatchers.Default).launch {
+        delay(50)
+        withContext(Dispatchers.Main) {
+          authenticate(
+            generalGetString(R.string.auth_unlock),
+            generalGetString(R.string.auth_log_in_using_credential),
+            this@MainActivity,
+            completed = { laResult ->
+              when (laResult) {
+                LAResult.Success ->
+                  userAuthorized.value = true
+                is LAResult.Error, LAResult.Failed ->
+                  laFailed.value = true
+                LAResult.Unavailable -> {
+                  userAuthorized.value = true
+                  m.performLA.value = false
+                  m.controller.appPrefs.performLA.set(false)
+                  laUnavailableTurningOffAlert()
+                }
+              }
             }
-          }
+          )
         }
-      )
+      }
     }
   }
 
@@ -262,14 +267,6 @@ fun MainPage(
   setPerformLA: (Boolean) -> Unit,
   showLANotice: () -> Unit
 ) {
-  // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
-  var chatsAccessAuthorized by rememberSaveable { mutableStateOf(false) }
-  LaunchedEffect(userAuthorized.value) {
-    if (chatModel.controller.appPrefs.performLA.get()) {
-      delay(500L)
-    }
-    chatsAccessAuthorized = userAuthorized.value == true
-  }
   var showChatDatabaseError by rememberSaveable {
     mutableStateOf(chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null)
   }
@@ -328,7 +325,7 @@ fun MainPage(
         }
       }
       onboarding == null || userCreated == null -> SplashView()
-      !chatsAccessAuthorized -> {
+      userAuthorized.value != true -> {
         if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
           authView()
         } else {
@@ -405,8 +402,9 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processNotificationIntent: OpenChatAction $chatId")
       if (chatId != null) {
         withBGApi {
-          if (userId != null && userId != chatModel.currentUser.value?.userId) {
-            chatModel.controller.changeActiveUser(userId)
+          awaitChatStartedIfNeeded(chatModel)
+          if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+            chatModel.controller.changeActiveUser(userId, null)
           }
           val cInfo = chatModel.getChat(chatId)?.chatInfo
           chatModel.clearOverlays.value = true
@@ -417,8 +415,9 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
     NtfManager.ShowChatsAction -> {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
       withBGApi {
-        if (userId != null && userId != chatModel.currentUser.value?.userId) {
-          chatModel.controller.changeActiveUser(userId)
+        awaitChatStartedIfNeeded(chatModel)
+        if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+          chatModel.controller.changeActiveUser(userId, null)
         }
         chatModel.chatId.value = null
         chatModel.clearOverlays.value = true
@@ -508,6 +507,20 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
     }
   }
 }
+
+suspend fun awaitChatStartedIfNeeded(chatModel: ChatModel, timeout: Long = 30_000) {
+  // Still decrypting database
+  if (chatModel.chatRunning.value == null) {
+    val step = 50L
+    for (i in 0..(timeout / step)) {
+      if (chatModel.chatRunning.value == true || chatModel.onboardingStage.value == OnboardingStage.Step1_SimpleXInfo) {
+        break
+      }
+      delay(step)
+    }
+  }
+}
+
 //fun testJson() {
 //  val str: String = """
 //  """.trimIndent()

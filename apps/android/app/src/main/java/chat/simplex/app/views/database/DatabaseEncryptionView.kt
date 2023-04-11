@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
@@ -25,13 +26,13 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.Clock
 import kotlin.math.log2
 
@@ -161,7 +162,9 @@ fun DatabaseEncryptionLayout(
       }
 
       if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
-        DatabaseKeyField(
+        SectionDivider()
+
+        PassphraseField(
           currentKey,
           generalGetString(R.string.current_passphrase),
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
@@ -170,7 +173,9 @@ fun DatabaseEncryptionLayout(
         )
       }
 
-      DatabaseKeyField(
+      SectionDivider()
+
+      PassphraseField(
         newKey,
         generalGetString(R.string.new_passphrase),
         modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
@@ -201,7 +206,9 @@ fun DatabaseEncryptionLayout(
           !validKey(newKey.value) ||
           progressIndicator.value
 
-      DatabaseKeyField(
+      SectionDivider()
+
+      PassphraseField(
         confirmNewKey,
         generalGetString(R.string.confirm_new_passphrase),
         modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
@@ -212,7 +219,9 @@ fun DatabaseEncryptionLayout(
         }),
       )
 
-      SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled) {
+      SectionDivider()
+
+      SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
         Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
       }
     }
@@ -285,9 +294,10 @@ fun SavePassphraseSetting(
   initialRandomDBPassphrase: Boolean,
   storedKey: Boolean,
   progressIndicator: Boolean,
+  minHeight: Dp = TextFieldDefaults.MinHeight,
   onCheckedChange: (Boolean) -> Unit,
 ) {
-  SectionItemView {
+  SectionItemView(minHeight = minHeight) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
         if (storedKey) Icons.Filled.VpnKey else Icons.Filled.VpnKeyOff,
@@ -349,13 +359,14 @@ private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun DatabaseKeyField(
+fun PassphraseField(
   key: MutableState<String>,
   placeholder: String,
   modifier: Modifier = Modifier,
   showStrength: Boolean = false,
   isValid: (String) -> Boolean,
   keyboardActions: KeyboardActions = KeyboardActions(),
+  dependsOn: State<Any?>? = null,
 ) {
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
@@ -436,6 +447,13 @@ fun DatabaseKeyField(
       )
     }
   )
+  LaunchedEffect(Unit) {
+    snapshotFlow { dependsOn?.value }
+      .distinctUntilChanged()
+      .collect {
+        valid = isValid(state.value.text)
+      }
+  }
 }
 
 // based on https://generatepasswords.org/how-to-calculate-entropy/
@@ -461,7 +479,7 @@ private fun passphraseEntropy(s: String): Double {
   return s.length * log2(poolSize.toDouble())
 }
 
-private enum class PassphraseStrength(val color: Color) {
+enum class PassphraseStrength(val color: Color) {
   VERY_WEAK(Color.Red), WEAK(WarningOrange), REASONABLE(WarningYellow), STRONG(SimplexGreen);
 
   companion object {

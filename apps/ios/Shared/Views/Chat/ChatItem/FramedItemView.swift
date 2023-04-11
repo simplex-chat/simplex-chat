@@ -23,14 +23,19 @@ struct FramedItemView: View {
     @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
     @State var imgWidth: CGFloat? = nil
+    @State var videoWidth: CGFloat? = nil
     @State var metaColor = Color.secondary
     @State var showFullScreenImage = false
     
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                if chatItem.meta.itemDeleted != nil {
-                    framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
+                if let di = chatItem.meta.itemDeleted {
+                    if case let .moderated(byGroupMember) = di {
+                        framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.chatViewName)").italic())
+                    } else {
+                        framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
+                    }
                 } else if chatItem.meta.isLive {
                     framedItemHeader(caption: Text("LIVE"))
                 }
@@ -60,7 +65,7 @@ struct FramedItemView: View {
                     .overlay(DetermineWidth())
             }
         }
-            .background(chatItemFrameColorMaybeImage(chatItem, colorScheme))
+            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
         
@@ -96,6 +101,19 @@ struct FramedItemView: View {
                             key: MetaColorPreferenceKey.self,
                             value: .white
                         )
+                } else {
+                    ciMsgContentView (chatItem, showMember)
+                }
+            case let .video(text, image, duration):
+                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, videoWidth: $videoWidth, scrollProxy: scrollProxy)
+                .overlay(DetermineWidth())
+                if text == "" && !chatItem.meta.isLive {
+                    Color.clear
+                    .frame(width: 0, height: 0)
+                    .preference(
+                        key: MetaColorPreferenceKey.self,
+                        value: .white
+                    )
                 } else {
                     ciMsgContentView (chatItem, showMember)
                 }
@@ -148,8 +166,8 @@ struct FramedItemView: View {
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
         .background(chatItemFrameContextColor(chatItem, colorScheme))
-        if let imgWidth = imgWidth, imgWidth < maxWidth {
-            v.frame(maxWidth: imgWidth, alignment: .leading)
+        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
             v
         }
@@ -171,6 +189,19 @@ struct FramedItemView: View {
                 } else {
                     ciQuotedMsgView(qi)
                 }
+            case let .video(_, image, _):
+                if let data = Data(base64Encoded: dropImagePrefix(image)),
+                   let uiImage = UIImage(data: data) {
+                    ciQuotedMsgView(qi)
+                    .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
+                    Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 68, height: 68)
+                    .clipped()
+                } else {
+                    ciQuotedMsgView(qi)
+                }
             case .file:
                 ciQuotedMsgView(qi)
                     .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
@@ -186,9 +217,9 @@ struct FramedItemView: View {
             .overlay(DetermineWidth())
             .frame(minWidth: msgWidth, alignment: .leading)
             .background(chatItemFrameContextColor(chatItem, colorScheme))
-        
-        if let imgWidth = imgWidth, imgWidth < maxWidth {
-            v.frame(maxWidth: imgWidth, alignment: .leading)
+
+        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
             v
         }
@@ -239,9 +270,9 @@ struct FramedItemView: View {
         .overlay(DetermineWidth())
         .frame(minWidth: 0, alignment: .leading)
         .textSelection(.enabled)
-        
-        if let imgWidth = imgWidth, imgWidth < maxWidth {
-            v.frame(maxWidth: imgWidth, alignment: .leading)
+
+        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
             v
         }
@@ -252,6 +283,16 @@ struct FramedItemView: View {
             .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem, showMember)
+        }
+    }
+
+    private func maxMediaWidth() -> CGFloat? {
+        if let imgWidth = imgWidth, let videoWidth = videoWidth {
+            return imgWidth > videoWidth ? imgWidth : videoWidth
+        } else if let imgWidth = imgWidth {
+            return imgWidth
+        } else {
+            return videoWidth
         }
     }
 }
@@ -270,15 +311,17 @@ private struct MetaColorPreferenceKey: PreferenceKey {
     }
 }
 
-func onlyImage(_ ci: ChatItem) -> Bool {
+func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     if case let .image(text, _) = ci.content.msgContent {
+        return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
+    } else if case let .video(text, _, _) = ci.content.msgContent {
         return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && text == ""
     }
     return false
 }
 
-func chatItemFrameColorMaybeImage(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
-    onlyImage(ci)
+func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+    onlyImageOrVideo(ci)
     ? Color.clear
     : chatItemFrameColor(ci, colorScheme)
 }

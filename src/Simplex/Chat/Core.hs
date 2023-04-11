@@ -11,18 +11,22 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Types
+import System.Exit (exitFailure)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {yesToMigrations} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} sendToast chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} sendToast chat =
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = do
-      db@ChatDatabase {chatStore} <- createChatDatabase dbFilePrefix dbKey yesToMigrations
+    initRun = createChatDatabase dbFilePrefix dbKey confirmMigrations >>= either exit run
+    exit e = do
+      putStrLn $ "Error opening database: " <> show e
+      exitFailure
+    run db@ChatDatabase {chatStore} = do
       u <- getCreateActiveUser chatStore
       cc <- newChatController db (Just u) cfg opts sendToast
       runSimplexChat opts u cc chat

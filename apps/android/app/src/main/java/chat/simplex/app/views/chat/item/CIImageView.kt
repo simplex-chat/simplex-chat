@@ -2,6 +2,7 @@ package chat.simplex.app.views.chat.item
 
 import android.graphics.Bitmap
 import android.os.Build.VERSION.SDK_INT
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -9,8 +10,7 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.ArrowDownward
-import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
@@ -27,8 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.model.CIFile
-import chat.simplex.app.model.CIFileStatus
+import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.*
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
@@ -46,6 +46,25 @@ fun CIImageView(
   receiveFile: (Long) -> Unit
 ) {
   @Composable
+  fun progressIndicator() {
+    CircularProgressIndicator(
+      Modifier.size(16.dp),
+      color = Color.White,
+      strokeWidth = 2.dp
+    )
+  }
+
+  @Composable
+  fun fileIcon(icon: ImageVector, @StringRes stringId: Int) {
+    Icon(
+      icon,
+      stringResource(stringId),
+      Modifier.fillMaxSize(),
+      tint = Color.White
+    )
+  }
+
+  @Composable
   fun loadingIndicator() {
     if (file != null) {
       Box(
@@ -55,39 +74,18 @@ fun CIImageView(
         contentAlignment = Alignment.Center
       ) {
         when (file.fileStatus) {
-          CIFileStatus.SndTransfer ->
-            CircularProgressIndicator(
-              Modifier.size(16.dp),
-              color = Color.White,
-              strokeWidth = 2.dp
-            )
-          CIFileStatus.SndComplete ->
-            Icon(
-              Icons.Filled.Check,
-              stringResource(R.string.icon_descr_image_snd_complete),
-              Modifier.fillMaxSize(),
-              tint = Color.White
-            )
-          CIFileStatus.RcvAccepted ->
-            Icon(
-              Icons.Outlined.MoreHoriz,
-              stringResource(R.string.icon_descr_waiting_for_image),
-              Modifier.fillMaxSize(),
-              tint = Color.White
-            )
-          CIFileStatus.RcvTransfer ->
-            CircularProgressIndicator(
-              Modifier.size(16.dp),
-              color = Color.White,
-              strokeWidth = 2.dp
-            )
-          CIFileStatus.RcvInvitation ->
-            Icon(
-              Icons.Outlined.ArrowDownward,
-              stringResource(R.string.icon_descr_asked_to_receive),
-              Modifier.fillMaxSize(),
-              tint = Color.White
-            )
+          is CIFileStatus.SndStored ->
+            when (file.fileProtocol) {
+              FileProtocol.XFTP -> progressIndicator()
+              FileProtocol.SMP -> {}
+            }
+          is CIFileStatus.SndTransfer -> progressIndicator()
+          is CIFileStatus.SndComplete -> fileIcon(Icons.Filled.Check, R.string.icon_descr_image_snd_complete)
+          is CIFileStatus.SndCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
+          is CIFileStatus.RcvInvitation -> fileIcon(Icons.Outlined.ArrowDownward, R.string.icon_descr_asked_to_receive)
+          is CIFileStatus.RcvAccepted -> fileIcon(Icons.Outlined.MoreHoriz, R.string.icon_descr_waiting_for_image)
+          is CIFileStatus.RcvTransfer -> progressIndicator()
+          is CIFileStatus.RcvCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
           else -> {}
         }
       }
@@ -136,7 +134,7 @@ fun CIImageView(
 
   fun fileSizeValid(): Boolean {
     if (file != null) {
-      return file.fileSize <= MAX_FILE_SIZE
+      return file.fileSize <= getMaxFileSize(file.fileProtocol)
     }
     return false
   }
@@ -179,15 +177,23 @@ fun CIImageView(
               } else {
                 AlertManager.shared.showAlertMsg(
                   generalGetString(R.string.large_file),
-                  String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(MAX_FILE_SIZE))
+                  String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
                 )
               }
             CIFileStatus.RcvAccepted ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(R.string.waiting_for_image),
-                generalGetString(R.string.image_will_be_received_when_contact_is_online)
-              )
-            CIFileStatus.RcvTransfer -> {} // ?
+              when (file.fileProtocol) {
+                FileProtocol.XFTP ->
+                  AlertManager.shared.showAlertMsg(
+                    generalGetString(R.string.waiting_for_image),
+                    generalGetString(R.string.image_will_be_received_when_contact_completes_uploading)
+                  )
+                FileProtocol.SMP ->
+                  AlertManager.shared.showAlertMsg(
+                    generalGetString(R.string.waiting_for_image),
+                    generalGetString(R.string.image_will_be_received_when_contact_is_online)
+                  )
+              }
+            CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
             CIFileStatus.RcvComplete -> {} // ?
             CIFileStatus.RcvCancelled -> {} // TODO
             else -> {}

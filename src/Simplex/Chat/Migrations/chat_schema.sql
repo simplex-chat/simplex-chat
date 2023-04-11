@@ -1,6 +1,7 @@
 CREATE TABLE migrations(
   name TEXT NOT NULL,
   ts TEXT NOT NULL,
+  down TEXT,
   PRIMARY KEY(name)
 );
 CREATE TABLE contact_profiles(
@@ -30,7 +31,10 @@ CREATE TABLE users(
   active_user INTEGER NOT NULL DEFAULT 0,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  agent_user_id INTEGER CHECK(agent_user_id NOT NULL), -- 1 for active user
+  agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
+  view_pwd_hash BLOB,
+  view_pwd_salt BLOB,
+  show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -193,7 +197,11 @@ CREATE TABLE files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   cancelled INTEGER,
   ci_file_status TEXT,
-  file_inline TEXT
+  file_inline TEXT,
+  agent_snd_file_id BLOB NULL,
+  private_snd_file_descr TEXT NULL,
+  agent_snd_file_deleted INTEGER DEFAULT 0 CHECK(agent_snd_file_deleted NOT NULL),
+  protocol TEXT NOT NULL DEFAULT 'smp'
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -204,6 +212,8 @@ CREATE TABLE snd_files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   file_inline TEXT,
   last_inline_msg_delivery_id INTEGER,
+  file_descr_id INTEGER NULL
+  REFERENCES xftp_file_descriptions ON DELETE SET NULL,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
 CREATE TABLE rcv_files(
@@ -215,7 +225,11 @@ CREATE TABLE rcv_files(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   rcv_file_inline TEXT,
-  file_inline TEXT
+  file_inline TEXT,
+  file_descr_id INTEGER NULL
+  REFERENCES xftp_file_descriptions ON DELETE SET NULL,
+  agent_rcv_file_id BLOB NULL,
+  agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL)
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
@@ -533,7 +547,7 @@ CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
 CREATE INDEX idx_snd_files_group_member_id ON snd_files(group_member_id);
 CREATE INDEX idx_snd_files_connection_id ON snd_files(connection_id);
 CREATE INDEX idx_snd_files_file_id ON snd_files(file_id);
-CREATE TABLE IF NOT EXISTS "smp_servers"(
+CREATE TABLE IF NOT EXISTS "protocol_servers"(
   smp_server_id INTEGER PRIMARY KEY,
   host TEXT NOT NULL,
   port TEXT NOT NULL,
@@ -545,9 +559,21 @@ CREATE TABLE IF NOT EXISTS "smp_servers"(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  protocol TEXT NOT NULL DEFAULT 'smp',
   UNIQUE(user_id, host, port)
 );
-CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
+CREATE INDEX idx_smp_servers_user_id ON "protocol_servers"(user_id);
 CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON chat_items(
   item_deleted_by_group_member_id
 );
+CREATE TABLE xftp_file_descriptions(
+  file_descr_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  file_descr_text TEXT NOT NULL,
+  file_descr_part_no INTEGER NOT NULL DEFAULT(0),
+  file_descr_complete INTEGER NOT NULL DEFAULT(0),
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE INDEX idx_snd_files_file_descr_id ON snd_files(file_descr_id);
+CREATE INDEX idx_rcv_files_file_descr_id ON rcv_files(file_descr_id);

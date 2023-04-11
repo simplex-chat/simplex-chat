@@ -16,13 +16,19 @@ public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
     case listUsers
-    case apiSetActiveUser(userId: Int64)
-    case apiDeleteUser(userId: Int64, delSMPQueues: Bool)
+    case apiSetActiveUser(userId: Int64, viewPwd: String?)
+    case apiHideUser(userId: Int64, viewPwd: String)
+    case apiUnhideUser(userId: Int64, viewPwd: String)
+    case apiMuteUser(userId: Int64)
+    case apiUnmuteUser(userId: Int64)
+    case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
     case startChat(subscribe: Bool, expire: Bool)
     case apiStopChat
     case apiActivateChat
     case apiSuspendChat(timeoutMicroseconds: Int)
+    case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
+    case apiSetXFTPConfig(config: XFTPFileConfig?)
     case setIncognito(incognito: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
@@ -33,6 +39,7 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
+    case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -50,9 +57,9 @@ public enum ChatCommand {
     case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
-    case apiGetUserSMPServers(userId: Int64)
-    case apiSetUserSMPServers(userId: Int64, smpServers: [ServerCfg])
-    case apiTestSMPServer(userId: Int64, smpServer: String)
+    case apiGetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol)
+    case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [ServerCfg])
+    case apiTestProtoServer(userId: Int64, server: String)
     case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
@@ -93,6 +100,7 @@ public enum ChatCommand {
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, inline: Bool?)
+    case cancelFile(fileId: Int64)
     case showVersion
     case string(String)
 
@@ -102,13 +110,23 @@ public enum ChatCommand {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/create user \(profile.displayName) \(profile.fullName)"
             case .listUsers: return "/users"
-            case let .apiSetActiveUser(userId): return "/_user \(userId)"
-            case let .apiDeleteUser(userId, delSMPQueues): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))"
+            case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
+            case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
+            case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
+            case let .apiMuteUser(userId): return "/_mute user \(userId)"
+            case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
+            case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
             case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
+            case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
+            case let .apiSetXFTPConfig(cfg): if let cfg = cfg {
+                return "/_xftp on \(encodeJSON(cfg))"
+            } else {
+                return "/_xftp off"
+            }
             case let .setIncognito(incognito): return "/incognito \(onOff(incognito))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
@@ -122,6 +140,7 @@ public enum ChatCommand {
                 return "/_send \(ref(type, id)) live=\(onOff(live)) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
+            case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -139,9 +158,9 @@ public enum ChatCommand {
             case let .apiGroupLinkMemberRole(groupId, memberRole): return "/_set link role #\(groupId) \(memberRole)"
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
-            case let .apiGetUserSMPServers(userId): return "/_smp \(userId)"
-            case let .apiSetUserSMPServers(userId, smpServers): return "/_smp \(userId) \(smpServersStr(smpServers: smpServers))"
-            case let .apiTestSMPServer(userId, smpServer): return "/_smp test \(userId) \(smpServer)"
+            case let .apiGetUserProtoServers(userId, serverProtocol): return "/_servers \(userId) \(serverProtocol)"
+            case let .apiSetUserProtoServers(userId, serverProtocol, servers): return "/_servers \(userId) \(serverProtocol) \(protoServersStr(servers))"
+            case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
@@ -187,6 +206,7 @@ public enum ChatCommand {
                     return "/freceive \(fileId) inline=\(onOff(inline))"
                 }
                 return "/freceive \(fileId)"
+            case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case .showVersion: return "/version"
             case let .string(str): return str
             }
@@ -200,12 +220,18 @@ public enum ChatCommand {
             case .createActiveUser: return "createActiveUser"
             case .listUsers: return "listUsers"
             case .apiSetActiveUser: return "apiSetActiveUser"
+            case .apiHideUser: return "apiHideUser"
+            case .apiUnhideUser: return "apiUnhideUser"
+            case .apiMuteUser: return "apiMuteUser"
+            case .apiUnmuteUser: return "apiUnmuteUser"
             case .apiDeleteUser: return "apiDeleteUser"
             case .startChat: return "startChat"
             case .apiStopChat: return "apiStopChat"
             case .apiActivateChat: return "apiActivateChat"
             case .apiSuspendChat: return "apiSuspendChat"
+            case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
+            case .apiSetXFTPConfig: return "apiSetXFTPConfig"
             case .setIncognito: return "setIncognito"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
@@ -216,6 +242,7 @@ public enum ChatCommand {
             case .apiSendMessage: return "apiSendMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
+            case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
@@ -233,9 +260,9 @@ public enum ChatCommand {
             case .apiGroupLinkMemberRole: return "apiGroupLinkMemberRole"
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
             case .apiGetGroupLink: return "apiGetGroupLink"
-            case .apiGetUserSMPServers: return "apiGetUserSMPServers"
-            case .apiSetUserSMPServers: return "apiSetUserSMPServers"
-            case .apiTestSMPServer: return "testSMPServer"
+            case .apiGetUserProtoServers: return "apiGetUserProtoServers"
+            case .apiSetUserProtoServers: return "apiSetUserProtoServers"
+            case .apiTestProtoServer: return "apiTestProtoServer"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
@@ -275,6 +302,7 @@ public enum ChatCommand {
             case .apiChatRead: return "apiChatRead"
             case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
+            case .cancelFile: return "cancelFile"
             case .showVersion: return "showVersion"
             case .string: return "console command"
             }
@@ -285,8 +313,8 @@ public enum ChatCommand {
         "\(type.rawValue)\(id)"
     }
 
-    func smpServersStr(smpServers: [ServerCfg]) -> String {
-        smpServers.isEmpty ? "default" : encodeJSON(SMPServersConfig(smpServers: smpServers))
+    func protoServersStr(_ servers: [ServerCfg]) -> String {
+        encodeJSON(ProtoServersConfig(servers: servers))
     }
 
     func chatItemTTLStr(seconds: Int64?) -> String {
@@ -301,6 +329,14 @@ public enum ChatCommand {
         switch self {
         case let .apiStorageEncryption(cfg):
             return .apiStorageEncryption(config: DBEncryptionConfig(currentKey: obfuscate(cfg.currentKey), newKey: obfuscate(cfg.newKey)))
+        case let .apiSetActiveUser(userId, viewPwd):
+            return .apiSetActiveUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiHideUser(userId, viewPwd):
+            return .apiHideUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiUnhideUser(userId, viewPwd):
+            return .apiUnhideUser(userId: userId, viewPwd: obfuscate(viewPwd))
+        case let .apiDeleteUser(userId, delSMPQueues, viewPwd):
+            return .apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: obfuscate(viewPwd))
         default: return self
         }
     }
@@ -309,8 +345,19 @@ public enum ChatCommand {
         s == "" ? "" : "***"
     }
 
+    private func obfuscate(_ s: String?) -> String? {
+        if let s = s {
+            return obfuscate(s)
+        }
+        return nil
+    }
+
     private func onOff(_ b: Bool) -> String {
         b ? "on" : "off"
+    }
+
+    private func maybePwd(_ pwd: String?) -> String {
+        pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
     }
 }
 
@@ -328,8 +375,8 @@ public enum ChatResponse: Decodable, Error {
     case chatSuspended
     case apiChats(user: User, chats: [ChatData])
     case apiChat(user: User, chat: ChatData)
-    case userSMPServers(user: User, smpServers: [ServerCfg], presetSMPServers: [String])
-    case smpTestResult(user: User, smpTestFailure: SMPTestFailure?)
+    case userProtoServers(user: User, servers: UserProtoServers)
+    case serverTestResult(user: User, testServer: String, testFailure: ProtocolTestFailure?)
     case chatItemTTL(user: User, chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: User, contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
@@ -345,6 +392,7 @@ public enum ChatResponse: Decodable, Error {
     case chatCleared(user: User, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile)
+    case userPrivacy(user: User, updatedUser: User)
     case contactAliasUpdated(user: User, toContact: Contact)
     case connectionAliasUpdated(user: User, toConnection: PendingContactConnection)
     case contactPrefsUpdated(user: User, fromContact: Contact, toContact: Contact)
@@ -401,13 +449,17 @@ public enum ChatResponse: Decodable, Error {
     case rcvFileAccepted(user: User, chatItem: AChatItem)
     case rcvFileAcceptedSndCancelled(user: User, rcvFileTransfer: RcvFileTransfer)
     case rcvFileStart(user: User, chatItem: AChatItem)
+    case rcvFileProgressXFTP(user: User, chatItem: AChatItem, receivedSize: Int64, totalSize: Int64)
     case rcvFileComplete(user: User, chatItem: AChatItem)
+    case rcvFileCancelled(user: User, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileSndCancelled(user: User, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
     // sending file events
     case sndFileStart(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileComplete(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
-    case sndFileCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
+    case sndFileCancelled(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
     case sndFileRcvCancelled(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
-    case sndGroupFileCancelled(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
+    case sndFileProgressXFTP(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sentSize: Int64, totalSize: Int64)
+    case sndFileCompleteXFTP(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
     case callInvitation(callInvitation: RcvCallInvitation)
     case callOffer(user: User, contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
     case callAnswer(user: User, contact: Contact, answer: WebRTCSession)
@@ -419,10 +471,10 @@ public enum ChatResponse: Decodable, Error {
     case ntfMessages(user_: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(user: User, connection: PendingContactConnection)
     case contactConnectionDeleted(user: User, connection: PendingContactConnection)
-    case versionInfo(versionInfo: CoreVersionInfo)
+    case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: User?)
-    case chatCmdError(user: User?, chatError: ChatError)
-    case chatError(user: User?, chatError: ChatError)
+    case chatCmdError(user_: User?, chatError: ChatError)
+    case chatError(user_: User?, chatError: ChatError)
 
     public var responseType: String {
         get {
@@ -436,8 +488,8 @@ public enum ChatResponse: Decodable, Error {
             case .chatSuspended: return "chatSuspended"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
-            case .userSMPServers: return "userSMPServers"
-            case .smpTestResult: return "smpTestResult"
+            case .userProtoServers: return "userProtoServers"
+            case .serverTestResult: return "serverTestResult"
             case .chatItemTTL: return "chatItemTTL"
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
@@ -453,6 +505,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
+            case .userPrivacy: return "userPrivacy"
             case .contactAliasUpdated: return "contactAliasUpdated"
             case .connectionAliasUpdated: return "connectionAliasUpdated"
             case .contactPrefsUpdated: return "contactPrefsUpdated"
@@ -507,12 +560,16 @@ public enum ChatResponse: Decodable, Error {
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileAcceptedSndCancelled: return "rcvFileAcceptedSndCancelled"
             case .rcvFileStart: return "rcvFileStart"
+            case .rcvFileProgressXFTP: return "rcvFileProgressXFTP"
             case .rcvFileComplete: return "rcvFileComplete"
+            case .rcvFileCancelled: return "rcvFileCancelled"
+            case .rcvFileSndCancelled: return "rcvFileSndCancelled"
             case .sndFileStart: return "sndFileStart"
             case .sndFileComplete: return "sndFileComplete"
             case .sndFileCancelled: return "sndFileCancelled"
             case .sndFileRcvCancelled: return "sndFileRcvCancelled"
-            case .sndGroupFileCancelled: return "sndGroupFileCancelled"
+            case .sndFileProgressXFTP: return "sndFileProgressXFTP"
+            case .sndFileCompleteXFTP: return "sndFileCompleteXFTP"
             case .callInvitation: return "callInvitation"
             case .callOffer: return "callOffer"
             case .callAnswer: return "callAnswer"
@@ -544,8 +601,8 @@ public enum ChatResponse: Decodable, Error {
             case .chatSuspended: return noDetails
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
             case let .apiChat(u, chat): return withUser(u, String(describing: chat))
-            case let .userSMPServers(u, smpServers, presetServers): return withUser(u, "smpServers: \(String(describing: smpServers))\npresetServers: \(String(describing: presetServers))")
-            case let .smpTestResult(u, smpTestFailure): return withUser(u, String(describing: smpTestFailure))
+            case let .userProtoServers(u, servers): return withUser(u, "servers: \(String(describing: servers))")
+            case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
             case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(u, contact, connectionStats, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))")
@@ -561,6 +618,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(u, _, toProfile): return withUser(u, String(describing: toProfile))
+            case let .userPrivacy(u, updatedUser): return withUser(u, String(describing: updatedUser))
             case let .contactAliasUpdated(u, toContact): return withUser(u, String(describing: toContact))
             case let .connectionAliasUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .contactPrefsUpdated(u, fromContact, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))")
@@ -615,12 +673,16 @@ public enum ChatResponse: Decodable, Error {
             case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
             case .rcvFileAcceptedSndCancelled: return noDetails
             case let .rcvFileStart(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .rcvFileProgressXFTP(u, chatItem, receivedSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nreceivedSize: \(receivedSize)\ntotalSize: \(totalSize)")
             case let .rcvFileComplete(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .rcvFileCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .sndFileCancelled(chatItem, _): return String(describing: chatItem)
+            case let .sndFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
             case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .sndGroupFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
+            case let .sndFileProgressXFTP(u, chatItem, _, sentSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nsentSize: \(sentSize)\ntotalSize: \(totalSize)")
+            case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .callInvitation(inv): return String(describing: inv)
             case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")
             case let .callAnswer(u, contact, answer): return withUser(u, "contact: \(contact.id)\nanswer: \(String(describing: answer))")
@@ -632,7 +694,7 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
             case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
-            case let .versionInfo(versionInfo): return String(describing: versionInfo)
+            case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
@@ -670,6 +732,10 @@ struct ComposedMessage: Encodable {
     var msgContent: MsgContent
 }
 
+public struct XFTPFileConfig: Encodable {
+    var minFileSize: Int64
+}
+
 public struct ArchiveConfig: Encodable {
     var archivePath: String
     var disableCompression: Bool?
@@ -692,6 +758,21 @@ public struct DBEncryptionConfig: Codable {
 
 struct SMPServersConfig: Encodable {
     var smpServers: [ServerCfg]
+}
+
+public enum ServerProtocol: String, Decodable {
+    case smp
+    case xftp
+}
+
+public struct ProtoServersConfig: Codable {
+    public var servers: [ServerCfg]
+}
+
+public struct UserProtoServers: Decodable {
+    public var serverProtocol: ServerProtocol
+    public var protoServers: [ServerCfg]
+    public var presetServers: [String]
 }
 
 public struct ServerCfg: Identifiable, Equatable, Codable {
@@ -758,29 +839,39 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
     }
 }
 
-public enum SMPTestStep: String, Decodable, Equatable {
+public enum ProtocolTestStep: String, Decodable, Equatable {
     case connect
+    case disconnect
     case createQueue
     case secureQueue
     case deleteQueue
-    case disconnect
+    case createFile
+    case uploadFile
+    case downloadFile
+    case compareFile
+    case deleteFile
 
     var text: String {
         switch self {
         case .connect: return NSLocalizedString("Connect", comment: "server test step")
+        case .disconnect: return NSLocalizedString("Disconnect", comment: "server test step")
         case .createQueue: return NSLocalizedString("Create queue", comment: "server test step")
         case .secureQueue: return NSLocalizedString("Secure queue", comment: "server test step")
         case .deleteQueue: return NSLocalizedString("Delete queue", comment: "server test step")
-        case .disconnect: return NSLocalizedString("Disconnect", comment: "server test step")
+        case .createFile: return NSLocalizedString("Create file", comment: "server test step")
+        case .uploadFile: return NSLocalizedString("Upload file", comment: "server test step")
+        case .downloadFile: return NSLocalizedString("Download file", comment: "server test step")
+        case .compareFile: return NSLocalizedString("Compare file", comment: "server test step")
+        case .deleteFile: return NSLocalizedString("Delete file", comment: "server test step")
         }
     }
 }
 
-public struct SMPTestFailure: Decodable, Error, Equatable {
-    var testStep: SMPTestStep
+public struct ProtocolTestFailure: Decodable, Error, Equatable {
+    var testStep: ProtocolTestStep
     var testError: AgentErrorType
 
-    public static func == (l: SMPTestFailure, r: SMPTestFailure) -> Bool {
+    public static func == (l: ProtocolTestFailure, r: ProtocolTestFailure) -> Bool {
         l.testStep == r.testStep
     }
 
@@ -789,6 +880,8 @@ public struct SMPTestFailure: Decodable, Error, Equatable {
         switch testError {
         case .SMP(.AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
+        case .XFTP(.AUTH):
+            return err + " " + NSLocalizedString("Server requires authorization to upload, check password", comment: "server test error")
         case .BROKER(_, .NETWORK):
             return err + " " + NSLocalizedString("Possibly, certificate fingerprint in server address is incorrect", comment: "server test error")
         default:
@@ -798,12 +891,14 @@ public struct SMPTestFailure: Decodable, Error, Equatable {
 }
 
 public struct ServerAddress: Decodable {
+    public var serverProtocol: ServerProtocol
     public var hostnames: [String]
     public var port: String
     public var keyHash: String
     public var basicAuth: String
 
-    public init(hostnames: [String], port: String, keyHash: String, basicAuth: String = "") {
+    public init(serverProtocol: ServerProtocol, hostnames: [String], port: String, keyHash: String, basicAuth: String = "") {
+        self.serverProtocol = serverProtocol
         self.hostnames = hostnames
         self.port = port
         self.keyHash = keyHash
@@ -811,21 +906,25 @@ public struct ServerAddress: Decodable {
     }
 
     public var uri: String {
-        "smp://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
+        "\(serverProtocol)://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
     }
 
     public var valid: Bool {
         hostnames.count > 0 && Set(hostnames).count == hostnames.count
     }
 
-    static public var empty = ServerAddress(
-        hostnames: [],
-        port: "",
-        keyHash: "",
-        basicAuth: ""
-    )
+    static func empty(_ serverProtocol: ServerProtocol) -> ServerAddress {
+        ServerAddress(
+            serverProtocol: serverProtocol,
+            hostnames: [],
+            port: "",
+            keyHash: "",
+            basicAuth: ""
+        )
+    }
 
     static public var sampleData = ServerAddress(
+        serverProtocol: .smp,
         hostnames: ["smp.simplex.im", "1234.onion"],
         port: "",
         keyHash: "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=",
@@ -1080,6 +1179,7 @@ public enum ChatError: Decodable {
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
     case errorDatabase(databaseError: DatabaseError)
+    case invalidJSON(json: String)
 }
 
 public enum ChatErrorType: Decodable {
@@ -1169,6 +1269,7 @@ public enum AgentErrorType: Decodable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
     case SMP(smpErr: ProtocolErrorType)
+    case XFTP(xftpErr: XFTPErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
@@ -1207,6 +1308,21 @@ public enum ProtocolErrorType: Decodable {
     case QUOTA
     case NO_MSG
     case LARGE_MSG
+    case INTERNAL
+}
+
+public enum XFTPErrorType: Decodable {
+    case BLOCK
+    case SESSION
+    case CMD(cmdErr: ProtocolCommandError)
+    case AUTH
+    case SIZE
+    case QUOTA
+    case DIGEST
+    case CRYPTO
+    case NO_FILE
+    case HAS_FILE
+    case FILE_IO
     case INTERNAL
 }
 

@@ -4,9 +4,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -19,7 +21,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -45,16 +47,16 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
-import Simplex.Messaging.Agent.Client (AgentLocks, SMPTestFailure)
+import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer, QueueId)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -101,21 +103,25 @@ coreVersionInfo buildTimestamp simplexmqCommit =
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
-    yesToMigrations :: Bool,
+    confirmMigrations :: MigrationConfirmation,
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
+    xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
+    xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
+    tempDir :: Maybe FilePath,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
     testView :: Bool,
-    ciExpirationInterval :: Int -- microseconds
+    ciExpirationInterval :: Int64 -- microseconds
   }
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty SMPServerWithAuth,
     ntf :: [NtfServer],
+    xftp :: NonEmpty XFTPServerWithAuth,
     netCfg :: NetworkConfig
   }
 
@@ -167,10 +173,12 @@ data ChatController = ChatController
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
+    userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
+    tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -181,18 +189,29 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile Bool
   | ListUsers
-  | APISetActiveUser UserId
-  | SetActiveUser UserName
-  | APIDeleteUser UserId Bool
-  | DeleteUser UserName Bool
+  | APISetActiveUser UserId (Maybe UserPwd)
+  | SetActiveUser UserName (Maybe UserPwd)
+  | APIHideUser UserId UserPwd
+  | APIUnhideUser UserId UserPwd
+  | APIMuteUser UserId
+  | APIUnmuteUser UserId
+  | HideUser UserPwd
+  | UnhideUser UserPwd
+  | MuteUser
+  | UnmuteUser
+  | APIDeleteUser UserId Bool (Maybe UserPwd)
+  | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
+  | SetTempFolder FilePath
   | SetFilesFolder FilePath
+  | APISetXFTPConfig (Maybe XFTPFileConfig)
   | SetIncognito Bool
   | APIExportArchive ArchiveConfig
+  | ExportArchive
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
@@ -241,12 +260,12 @@ data ChatCommand
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
-  | APIGetUserSMPServers UserId
-  | GetUserSMPServers
-  | APISetUserSMPServers UserId SMPServersConfig
-  | SetUserSMPServers SMPServersConfig
-  | APITestSMPServer UserId SMPServerWithAuth
-  | TestSMPServer SMPServerWithAuth
+  | APIGetUserProtoServers UserId AProtocolType
+  | GetUserProtoServers AProtocolType
+  | APISetUserProtoServers UserId AProtoServersConfig
+  | SetUserProtoServers AProtoServersConfig
+  | APITestProtoServer UserId AProtoServerWithAuth
+  | TestProtoServer AProtoServerWithAuth
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
@@ -332,6 +351,7 @@ data ChatCommand
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
+  | SendFileDescription ChatName FilePath
   | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -364,8 +384,8 @@ data ChatResponse
   | CRChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserSMPServers {user :: User, smpServers :: NonEmpty ServerCfg, presetSMPServers :: NonEmpty SMPServerWithAuth}
-  | CRSmpTestResult {user :: User, smpTestFailure :: Maybe SMPTestFailure}
+  | CRUserProtoServers {user :: User, servers :: AUserProtoServers}
+  | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
@@ -399,7 +419,8 @@ data ChatResponse
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
-  | CRVersionInfo {versionInfo :: CoreVersionInfo}
+  | CRUserPrivacy {user :: User, updatedUser :: User}
+  | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
@@ -415,17 +436,23 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
+  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
   | CRRcvFileStart {user :: User, chatItem :: AChatItem}
+  | CRRcvFileProgressXFTP {user :: User, chatItem :: AChatItem, receivedSize :: Int64, totalSize :: Int64}
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
-  | CRRcvFileCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndGroupFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileProgressXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
+  | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
@@ -515,6 +542,16 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
+newtype UserPwd = UserPwd {unUserPwd :: Text}
+  deriving (Eq, Show)
+
+instance FromJSON UserPwd where
+  parseJSON v = UserPwd <$> parseJSON v
+
+instance ToJSON UserPwd where
+  toJSON (UserPwd p) = toJSON p
+  toEncoding (UserPwd p) = toEncoding p
+
 newtype AgentQueueId = AgentQueueId QueueId
   deriving (Eq, Show)
 
@@ -527,8 +564,31 @@ instance ToJSON AgentQueueId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data SMPServersConfig = SMPServersConfig {smpServers :: [ServerCfg]}
+data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
   deriving (Show, Generic, FromJSON)
+
+data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
+
+deriving instance Show AProtoServersConfig
+
+data UserProtoServers p = UserProtoServers
+  { serverProtocol :: SProtocolType p,
+    protoServers :: NonEmpty (ServerCfg p),
+    presetServers :: NonEmpty (ProtoServerWithAuth p)
+  }
+  deriving (Show, Generic)
+
+instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (UserProtoServers p)
+
+instance ToJSON AUserProtoServers where
+  toJSON (AUPS s) = J.genericToJSON J.defaultOptions s
+  toEncoding (AUPS s) = J.genericToEncoding J.defaultOptions s
+
+deriving instance Show AUserProtoServers
 
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show, Generic, FromJSON)
@@ -599,6 +659,18 @@ instance ToJSON ComposedMessage where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data XFTPFileConfig = XFTPFileConfig
+  { minFileSize :: Integer
+  }
+  deriving (Show, Generic, FromJSON)
+
+defaultXFTPFileConfig :: XFTPFileConfig
+defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0}
+
+instance ToJSON XFTPFileConfig where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
 data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
   deriving (Show, Generic)
 
@@ -625,7 +697,8 @@ data ParsedServerAddress = ParsedServerAddress
 instance ToJSON ParsedServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ServerAddress = ServerAddress
-  { hostnames :: NonEmpty String,
+  { serverProtocol :: AProtocolType,
+    hostnames :: NonEmpty String,
     port :: String,
     keyHash :: String,
     basicAuth :: String
@@ -659,6 +732,11 @@ data CoreVersionInfo = CoreVersionInfo
 
 instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
+data SendFileMode
+  = SendFileSMP (Maybe InlineFileMode)
+  | SendFileXFTP
+  deriving (Show, Generic)
+
 data ChatError
   = ChatError {errorType :: ChatErrorType}
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
@@ -673,11 +751,19 @@ instance ToJSON ChatError where
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
+  | CENoSndFileUser {agentSndFileId :: AgentSndFileId}
+  | CENoRcvFileUser {agentRcvFileId :: AgentRcvFileId}
+  | CEUserUnknown
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
+  | CECantHideLastUser {userId :: UserId}
+  | CEHiddenUserAlwaysMuted {userId :: UserId}
+  | CEEmptyUserPassword {userId :: UserId}
+  | CEUserAlreadyHidden {userId :: UserId}
+  | CEUserNotHidden {userId :: UserId}
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged
@@ -703,6 +789,7 @@ data ChatErrorType
   | CEFileNotFound {message :: String}
   | CEFileAlreadyReceiving {message :: String}
   | CEFileCancelled {message :: String}
+  | CEFileCancel {fileId :: FileTransferId, message :: String}
   | CEFileAlreadyExists {filePath :: FilePath}
   | CEFileRead {filePath :: FilePath, message :: String}
   | CEFileWrite {filePath :: FilePath, message :: String}
@@ -712,6 +799,8 @@ data ChatErrorType
   | CEFileImageType {filePath :: FilePath}
   | CEFileImageSize {filePath :: FilePath}
   | CEFileNotReceived {fileId :: FileTransferId}
+  | CEXFTPRcvFile {fileId :: FileTransferId, agentRcvFileId :: AgentRcvFileId, agentError :: AgentErrorType}
+  | CEXFTPSndFile {fileId :: FileTransferId, agentSndFileId :: AgentSndFileId, agentError :: AgentErrorType}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
@@ -724,7 +813,9 @@ data ChatErrorType
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
+  | CEServerProtocol {serverProtocol :: AProtocolType}
   | CEAgentCommandError {message :: String}
+  | CEInvalidFileDescription {message :: String}
   | CEInternalError {message :: String}
   deriving (Show, Exception, Generic)
 
@@ -754,7 +845,9 @@ instance ToJSON SQLiteError where
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
-type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
+type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
+
+type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError

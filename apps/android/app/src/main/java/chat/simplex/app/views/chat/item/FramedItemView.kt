@@ -7,6 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.util.fastMap
@@ -75,10 +77,7 @@ fun FramedItemView(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
         .fillMaxWidth()
-        .padding(start = 8.dp)
-        .padding(end = 12.dp)
-        .padding(top = 6.dp)
-        .padding(bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
+        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
       if (icon != null) {
@@ -96,6 +95,8 @@ fun FramedItemView(
           }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
       )
     }
   }
@@ -120,6 +121,18 @@ fun FramedItemView(
           Image(
             imageBitmap,
             contentDescription = stringResource(R.string.image_descr),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(68.dp).clipToBounds()
+          )
+        }
+        is MsgContent.MCVideo -> {
+          Box(Modifier.fillMaxWidth().weight(1f)) {
+            ciQuotedMsgView(qi)
+          }
+          val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
+          Image(
+            imageBitmap,
+            contentDescription = stringResource(R.string.video_descr),
             contentScale = ContentScale.Crop,
             modifier = Modifier.size(68.dp).clipToBounds()
           )
@@ -150,7 +163,8 @@ fun FramedItemView(
     }
   }
 
-  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage) && !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
+  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
+      !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
 
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
@@ -166,7 +180,11 @@ fun FramedItemView(
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
-            FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+            if (ci.meta.itemDeleted is CIDeleted.Moderated) {
+              FramedItemHeader(String.format(stringResource(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, Icons.Outlined.Flag)
+            } else {
+              FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+            }
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(R.string.live), false)
           }
@@ -187,6 +205,14 @@ fun FramedItemView(
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
                 CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
+                if (mc.text == "" && !ci.meta.isLive) {
+                  metaColor = Color.White
+                } else {
+                  CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler)
+                }
+              }
+              is MsgContent.MCVideo -> {
+                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {

@@ -31,6 +31,7 @@
       android:extractNativeLibs="${extract_native_libs}"
       android:supportsRtl="true"
       android:theme="@style/Theme.SimpleX">
+    <!--      android:localeConfig="@xml/locales_config"-->
 
     <!-- Main activity -->
     <activity

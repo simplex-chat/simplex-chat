@@ -198,27 +198,42 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       deleteMessage = { itemId, mode ->
         withApi {
           val cInfo = chat.chatInfo
-          val r = chatModel.controller.apiDeleteChatItem(
-            type = cInfo.chatType,
-            id = cInfo.apiId,
-            itemId = itemId,
-            mode = mode
-          )
-          if (r != null) {
-            val toChatItem = r.toChatItem
-            if (toChatItem == null) {
-              chatModel.removeChatItem(cInfo, r.deletedChatItem.chatItem)
-            } else {
-              chatModel.upsertChatItem(cInfo, toChatItem.chatItem)
-            }
+          val toDeleteItem = chatModel.chatItems.firstOrNull { it.id == itemId }
+          val toModerate = toDeleteItem?.memberToModerate(chat.chatInfo)
+          val groupInfo = toModerate?.first
+          val groupMember = toModerate?.second
+          val deletedChatItem: ChatItem?
+          val toChatItem: ChatItem?
+          if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
+            val r = chatModel.controller.apiDeleteMemberChatItem(
+              groupId = groupInfo.groupId,
+              groupMemberId = groupMember.groupMemberId,
+              itemId = itemId
+            )
+            deletedChatItem = r?.first
+            toChatItem = r?.second
+          } else {
+            val r = chatModel.controller.apiDeleteChatItem(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              itemId = itemId,
+              mode = mode
+            )
+            deletedChatItem = r?.deletedChatItem?.chatItem
+            toChatItem = r?.toChatItem?.chatItem
+          }
+          if (toChatItem == null && deletedChatItem != null) {
+            chatModel.removeChatItem(cInfo, deletedChatItem)
+          } else if (toChatItem != null) {
+            chatModel.upsertChatItem(cInfo, toChatItem)
           }
         }
       },
       receiveFile = { fileId ->
-        val user = chatModel.currentUser.value
-        if (user != null) {
-          withApi { chatModel.controller.receiveFile(user, fileId) }
-        }
+        withApi { chatModel.controller.receiveFile(user, fileId) }
+      },
+      cancelFile = { fileId ->
+        withApi { chatModel.controller.cancelFile(user, fileId) }
       },
       joinGroup = { groupId ->
         withApi { chatModel.controller.apiJoinGroup(groupId) }
@@ -298,6 +313,7 @@ fun ChatLayout(
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -342,7 +358,7 @@ fun ChatLayout(
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
-              receiveFile, joinGroup, acceptCall, acceptFeature, markRead, setFloatingButton, onComposed,
+              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, markRead, setFloatingButton, onComposed,
             )
           }
         }
@@ -515,6 +531,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
@@ -561,6 +578,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
           stopListening = true
       }
   }
+  DisposableEffectOnGone(
+    whenGone = {
+      VideoPlayer.releaseAll()
+    }
+  )
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems, key = { _, item -> item.id}) { i, cItem ->
       CompositionLocalProvider(
@@ -580,10 +602,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
           LaunchedEffect(Unit) {
             scope.launch {
-              if (composeState.value.editing) {
-                composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-              } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-                composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+              if (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) {
+                if (composeState.value.editing) {
+                  composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+                } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                  composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+                }
               }
             }
           }
@@ -623,11 +647,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           } else {
             Box(Modifier.padding(start = 104.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           }
         } else { // direct message
@@ -638,7 +662,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
           }
         }
 
@@ -918,21 +942,26 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
   }
 }
 
+sealed class ProviderMedia {
+  data class Image(val uri: Uri, val image: Bitmap): ProviderMedia()
+  data class Video(val uri: Uri, val preview: String): ProviderMedia()
+}
+
 private fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
-  fun canShowImage(item: ChatItem): Boolean =
-    item.content.msgContent is MsgContent.MCImage && item.file?.loaded == true && getLoadedFilePath(SimplexApp.context, item.file) != null
+  fun canShowMedia(item: ChatItem): Boolean =
+    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && getLoadedFilePath(SimplexApp.context, item.file) != null)
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
     val indexOfFirst = chatItems.indexOfFirst { it.id == initialChatId }
     for (chatItemsIndex in if (skipInternalIndex >= 0) indexOfFirst downTo 0 else indexOfFirst..chatItems.lastIndex) {
       val item = chatItems[chatItemsIndex]
-      if (canShowImage(item)) {
+      if (canShowMedia(item)) {
         processedInternalIndex += skipInternalIndex.sign
       }
       if (processedInternalIndex == skipInternalIndex) {
@@ -946,16 +975,28 @@ private fun providerForGallery(
   var initialChatId = cItemId
   return object: ImageGalleryProvider {
     override val initialIndex: Int = initialIndex
-    override val totalImagesSize = mutableStateOf(Int.MAX_VALUE)
-    override fun getImage(index: Int): Pair<Bitmap, Uri>? {
+    override val totalMediaSize = mutableStateOf(Int.MAX_VALUE)
+    override fun getMedia(index: Int): ProviderMedia? {
       val internalIndex = initialIndex - index
-      val file = item(internalIndex, initialChatId)?.second?.file
-      val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, file)
-      val filePath = getLoadedFilePath(SimplexApp.context, file)
-      return if (imageBitmap != null && filePath != null) {
-        val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
-        imageBitmap to uri
-      } else null
+      val item = item(internalIndex, initialChatId)?.second ?: return null
+      return when (item.content.msgContent) {
+        is MsgContent.MCImage -> {
+          val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, item.file)
+          val filePath = getLoadedFilePath(SimplexApp.context, item.file)
+          if (imageBitmap != null && filePath != null) {
+            val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+            ProviderMedia.Image(uri, imageBitmap)
+          } else null
+        }
+        is MsgContent.MCVideo -> {
+          val filePath = getLoadedFilePath(SimplexApp.context, item.file)
+          if (filePath != null) {
+            val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+            ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)
+          } else null
+        }
+        else -> null
+      }
     }
 
     override fun currentPageChanged(index: Int) {
@@ -967,7 +1008,7 @@ private fun providerForGallery(
 
     override fun scrollToStart() {
       initialIndex = 0
-      initialChatId = chatItems.first { canShowImage(it) }.id
+      initialChatId = chatItems.first { canShowMedia(it) }.id
     }
 
     override fun onDismiss(index: Int) {
@@ -1045,6 +1086,7 @@ fun PreviewChatLayout() {
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      cancelFile = {},
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
@@ -1104,6 +1146,7 @@ fun PreviewGroupChatLayout() {
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      cancelFile = {},
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
