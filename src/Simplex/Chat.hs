@@ -604,8 +604,6 @@ processChatCommand = \case
                   withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
               saveMemberFD _ = pure ()
         pure (fInv, ciFile, ft)
-      roundedFDCount :: Int -> Int
-      roundedFDCount n = max 4 $ fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
@@ -1774,6 +1772,9 @@ assertDirectAllowed user dir ct event =
       XGrpInv_ -> False
       XCallInv_ -> False
       _ -> True
+
+roundedFDCount :: Int -> Int
+roundedFDCount n = max 4 $ fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
 
 startExpireCIThread :: forall m. ChatMonad' m => User -> m ()
 startExpireCIThread user@User {userId} = do
