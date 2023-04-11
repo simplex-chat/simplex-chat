@@ -589,7 +589,7 @@ processChatCommand = \case
             fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
             fInv = xftpFileInvitation fileName fileSize fileDescr
         fsFilePath <- toFSFilePath file
-        let nRounded = min 4 $ roundToPowerOfTwo n
+        let nRounded = max 4 $ roundToPowerOfTwo n
         aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) fsFilePath nRounded
         -- TODO CRSndFileStart event for XFTP
         chSize <- asks $ fileChunkSize . config
