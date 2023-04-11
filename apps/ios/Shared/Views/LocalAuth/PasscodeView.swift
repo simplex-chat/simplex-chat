@@ -27,9 +27,9 @@ struct PasscodeView: View {
                 if let reason = reason {
                     Text(reason).padding(.top, 4)
                 }
+                Spacer()
                 PasscodeEntry(width: g.size.width, password: $passcode)
-                    .padding(.top, 8)
-                    .padding(.bottom, 27)
+                Spacer()
                 HStack(spacing: 48) {
                     Button(action: cancel) {
                         Label("Cancel", systemImage: "multiply")
@@ -41,8 +41,8 @@ struct PasscodeView: View {
                 }
             }
         }
-        .padding()
-        .padding(.horizontal, 24)
+        .padding(.vertical, 32)
+        .padding(.horizontal, 40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemBackground))
     }
