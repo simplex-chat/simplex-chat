@@ -589,8 +589,7 @@ processChatCommand = \case
             fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
             fInv = xftpFileInvitation fileName fileSize fileDescr
         fsFilePath <- toFSFilePath file
-        let nRounded = max 4 $ roundToPowerOfTwo n
-        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) fsFilePath nRounded
+        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) fsFilePath (roundedFDCount n)
         -- TODO CRSndFileStart event for XFTP
         chSize <- asks $ fileChunkSize . config
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv (AgentSndFileId aFileId) chSize
@@ -605,8 +604,8 @@ processChatCommand = \case
                   withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
               saveMemberFD _ = pure ()
         pure (fInv, ciFile, ft)
-      roundToPowerOfTwo :: Int -> Int
-      roundToPowerOfTwo n = fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
+      roundedFDCount :: Int -> Int
+      roundedFDCount n = max 4 $ fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
