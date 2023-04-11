@@ -1047,10 +1047,9 @@
         <target>Contraseña de la base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase &amp; export" xml:space="preserve">
+      <trans-unit id="Database passphrase &amp; export" xml:space="preserve" approved="no">
         <source>Database passphrase &amp; export</source>
-        <target>Base de datos
-y Contraseña</target>
+        <target state="translated">Base de datos y contraseña</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
@@ -4910,6 +4909,16 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
         <target>\~strike~</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve" approved="no">
+        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target state="translated">Asegúrate de que las direcciones del servidor SMP tienen el formato correcto, están separadas por líneas y no están duplicadas (%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving SMP servers" xml:space="preserve" approved="no">
+        <source>Error saving SMP servers</source>
+        <target state="translated">Error guardando servidores SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
