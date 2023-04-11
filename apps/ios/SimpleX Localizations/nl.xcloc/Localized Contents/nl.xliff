@@ -652,9 +652,9 @@
         <target>Kan bestand niet ontvangen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change" xml:space="preserve">
+      <trans-unit id="Change" xml:space="preserve" approved="no">
         <source>Change</source>
-        <target>Wijziging</target>
+        <target state="translated">Veranderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change Passcode" xml:space="preserve">
@@ -5032,6 +5032,16 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
         <target>\~staking~</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving SMP servers" xml:space="preserve" approved="no">
+        <source>Error saving SMP servers</source>
+        <target state="translated">Fout bij opslaan van SMP servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve" approved="no">
+        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target state="translated">Zorg ervoor dat SMPserveradressen de juiste indeling hebben, regel gescheiden zijn en niet worden gedupliceerd (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
