@@ -33,6 +33,9 @@ struct ContentView: View {
             if chatModel.showCallView, let call = chatModel.activeCall {
                 callView(call)
             }
+            if !showSettings, let la = chatModel.laRequest {
+                LocalAuthView(authRequest: la)
+            }
         }
         .onAppear {
             if prefPerformLA { requestNtfAuthorization() }
@@ -52,9 +55,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder private func contentView() -> some View {
-        if !showSettings, let la = chatModel.laRequest {
-            LocalAuthView(authRequest: la)
-        } else if prefPerformLA && userAuthorized != true {
+        if prefPerformLA && userAuthorized != true {
             lockButton()
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)

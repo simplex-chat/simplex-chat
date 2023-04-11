@@ -233,6 +233,9 @@ struct SimplexLockView: View {
                 }
             }
         }
+        .onAppear {
+            showChangePassword = prefPerformLA && currentLAMode == .password
+        }
     }
 
     private func toggleLAMode() {

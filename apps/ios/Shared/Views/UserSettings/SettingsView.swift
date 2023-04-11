@@ -117,10 +117,11 @@ struct SettingsView: View {
     @State private var settingsSheet: SettingsSheet?
 
     var body: some View {
-        if let la = chatModel.laRequest {
-            LocalAuthView(authRequest: la)
-        } else {
+        ZStack {
             settingsView()
+            if let la = chatModel.laRequest {
+                LocalAuthView(authRequest: la)
+            }
         }
     }
 
