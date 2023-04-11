@@ -262,7 +262,7 @@ struct SimplexLockView: View {
     }
 
     private func changeLAPassword() {
-        authenticate(reason: NSLocalizedString("Change password", comment: "authentication reason")) { laResult in
+        authenticate(title: "Enter current password", reason: NSLocalizedString("Changing password", comment: "authentication reason")) { laResult in
             switch laResult {
             case .failed: laAlert = .laFailedAlert
             case .success: showPasswordAction = .changePassword
