@@ -1,6 +1,6 @@
 # Secret groups
 
-Secret groups are anonymous and private; they are designed to be hard to track by outsiders. Every message and file gets sent separately to every member in the group, which makes secret groups only fit for smaller groups with less than 100 members.
+Secret groups are anonymous and private; they are designed to be hard to track by outsiders. Every message and file gets sent separately to each member of the group, which makes secret groups only fit for smaller groups with less than 100 members.
 
 ## Member roles and permissions
 
@@ -22,7 +22,7 @@ Secret groups are anonymous and private; they are designed to be hard to track b
 
 <img src="../../blog/images/20220808-group1.png" width="330"> <img src="../../blog/images/20220808-group2.png" width="330"> <img src="../../blog/images/20220808-group3.png" width="330">
 
-1. On Android, tap on the floating pencil button in the bottom-right corner of the screen. On iOS, tap on the pencil button in the top-right corner of the screen.
+1. On Android, tap the 🖉 (pencil) button in the bottom-right corner of the screen. On iOS, tap the 🖉 (pencil) button in the top-right corner of the screen.
 2. Tap **Create secret group**.
 3. Enter desired group display name and full name (optional).
 4. Tap **Create**.

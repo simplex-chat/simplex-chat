@@ -80,7 +80,7 @@ Tell your friends to download SimpleX Chat [here](https://simplex.chat). While t
 3. Tap **Share invitation link** to share it with your friend from a distance. Or, you can show your QR code in person for your friend to scan. 
 4. (Optional) Go back to your list of chats and then tap on an invitation to set a contact name.
 
-Now that you've set up your invitations, tell your friends to tap on the new chat button and then tap **Connect via link / QR code**. They can either scan your QR code or paste your link to connect with you. If they opened your link in the browser, they will need to tap on the **Open in mobile app** button on the page to connect with you.
+Now that you've set up your invitations, tell your friends to tap on the **new chat** button and then tap **Connect via link / QR code**. They can either scan your QR code or paste your link to connect with you. If they opened your link in the browser, they will need to tap on the **Open in mobile app** button on the page to connect with you.
 
 Watch the short video on [the website](https://simplex.chat) to see how it works.
 
@@ -90,6 +90,6 @@ You can also create a [SimpleX contact address](./app-settings.md#your-simplex-c
 
 Most of the app settings are shared between all chat profiles, but some are set to a specific chat profile.
 
-Read more in the [App settings](./app-settings.md) page.
+Please visit the [App settings](./app-settings.md) page for more details.
 
 Many conversation actions are available via a long-press or swipe – try them!

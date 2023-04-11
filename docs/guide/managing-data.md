@@ -17,11 +17,11 @@ Here you can choose to delete messages from your local chat database after a set
 
 <img src="../../blog/images/20220928-passphrase.png" width="330">
 
-The chat database passphrase is random by default, so you have to set it manually to be able to export it.
+SimpleX Chat's database is initially encrypted with a random passphrase by default, so you have to manually set a new one to export it.
 
 ### App data backup
 
-Here you can allow the system to back up app data, wherever it is configured. A database passphrase must be set to use this.
+Here you can allow the system to back up app data, wherever it is configured. A new database passphrase must be set to use this.
 
 ### Export database
 
@@ -33,7 +33,7 @@ Here you can import the chat database from a file.
 
 ### Delete database
 
-Here you can delete your chat database. WARNING: Results in a loss of all your SimpleX Chat data! Unless you have just exported the chat database.
+Here you can delete your chat database. WARNING: Unless you have exported it, this results in a loss of all your SimpleX Chat data!
 
 ## Delete files and media
 

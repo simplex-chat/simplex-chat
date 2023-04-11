@@ -2,7 +2,7 @@
 
 ## Creating additional chat profiles
 
-SimpleX Chat allows you to create as many chat profiles as you like. As with the first profile, they are only stored locally on your device.
+SimpleX Chat allows for creating as many chat profiles as you like. As with the first chat profile, they are only stored locally on your device.
 
 <img src="../../blog/images/20230204-profiles2.png" width="288">
 
@@ -12,7 +12,7 @@ SimpleX Chat allows you to create as many chat profiles as you like. As with the
 2. Under the **"You""** section, tap **Your chat profiles**.
 3. Confirm with a fingerprint or PIN, in case you have [SimpleX Lock](./app-settings.md#simplex-lock) toggled on.
 4. Tap **+ Add profile**.
-5. Create a new profile by entering your desired display name and full name (optional).
+5. Create a new chat profile by entering your desired display name and full name (optional).
 6. Tap **Create**.
 
 ## Hiding and muting chat profiles
@@ -23,16 +23,16 @@ v4.6 added the ability to mute and to hide chat profiles.
 
 These actions are available via long-press (Android) or swipe (iOS) on the profile in the list.
 
-To reveal hidden profiles, enter the full password into the search bar.
+To reveal hidden chat profiles, enter the full password into the search bar.
 
-## Switching between profiles
+## Switching between chat profiles
 
 <img src="../../blog/images/20230204-profiles1.png" width="288">
 
-1. Tap on your user profile picture in the top-left corner of the screen.
-2. Select which profile you want to use.
+1. Tap on your profile picture in the top-left corner of the screen.
+2. Select which chat profile you want to use.
 
-Note: You can also switch profile via **Your chat profiles** in app settings.
+**Tip:** You can also switch to another chat profile via the [Your chat profiles](./app-settings.md#your-chat-profiles) screen in app settings.
 
 ## Incognito mode
 
@@ -47,12 +47,12 @@ When **Incognito** mode is toggled on, your current profile name and picture are
 1. [Open app settings](./app-settings.md#opening-app-settings).
 2. Toggle on/off incognito mode by toggling the **Incognito** switch.
 
-## Edit your profile
+## Edit your chat profile
 
-#### To edit your profile:
+#### To edit your chat profile:
 
 1. [Open app settings](./app-settings.md#opening-app-settings).
-2. Select your profile.
+2. Tap on your avatar/name.
 3. Tap **Edit**.
 4. Options:
    - Choose a new display name. 

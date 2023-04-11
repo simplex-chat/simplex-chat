@@ -5,30 +5,31 @@
 #### To open app settings:
 
 1. Open the app.
-2. Tap on your chat profile picture in the top-left corner of the screen.
-3. If you have more than one profile, tap the current profile again or choose **Settings**.
+2. Tap on your profile picture in the top-left corner of the screen.
+3. If you have more than one chat profile, tap on your selected chat profile or choose **Settings**.
 
 ## Your profile settings
 
 This section is labelled **"You"** in the app settings.
+[asdf](#your-chat-profiles)
 
-### Your active profile
+### Your active chat profile
 
 Tap on your avatar/name to update your current display name, full name, and profile picture.
 
-Display names cannot have any spaces. It is recommended to use latin characters and numbers to make it easier to type these names to the users who use [SimpleX Chat for the terminal](../CLI.md) (CLI).
+Display names cannot have any spaces. It is recommended to use Latin characters and numbers to make it easier for users who use [SimpleX Chat for the terminal](../CLI.md) (CLI) to type them.
 
-**Please note**: When you save edits to your profile, they will be sent to all your contacts (excluding those you've shared your incognito profiles with). If you have a large number of contacts, this can take several seconds.
+**Please note**: When you save edits to your chat profile, they will be sent to all your contacts (excluding those you've shared your incognito profiles with). If you have a large number of contacts, this can take several seconds.
 
 ### Your chat profiles
 
-This page allows for adding and configuring your chat profiles. Please read [Your chat profiles](./chat-profiles.md) for more details.
+This screen allows you to add and configure your chat profiles. Please visit the [Your chat profiles](./chat-profiles.md) page for more details.
 
-### Incognito
+### Incognito mode
 
 This feature is unique to SimpleX Chat – it is independent from chat profiles.
 
-When **Incognito** mode is toggled on, your current profile name and picture are NOT shared with your new contacts. Instead a new random profile name is generated for each connection you make or group you join via link, allowing you to have as many anonymous connections with other people without any shared data between them.
+When **Incognito mode** is toggled on, your current profile name and picture are NOT shared with your new contacts. Instead a new random profile name is generated for each connection you make or group you join via link, allowing you to have as many anonymous connections with other people without any shared data between them.
 
 Please read [this blog post](../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode) for more details.
 
@@ -36,17 +37,17 @@ Please read [this blog post](../../blog/20220901-simplex-chat-v3.2-incognito-mod
 
 <img src="../../blog/images/20221108-address1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-address2.png" width="288">
 
-This page allows you to create a long-term address that can be used by other people to connect with you. Unlike one-time invitations: it can be used multiple times, making it very useful for publishing on your personal website or social media platforms for example. Please note that you can only create one address per chat profile.
+This screen allows you to create a long-term contact address that can be used by other people to connect with you. Unlike one-time invitations, it can be used multiple times.  Please note that you can only create one contact address per chat profile. You can publish it on your personal website or social media platforms for example.
 
-When people connect with you via your address, you will receive a contact request that you can either accept or reject. Optionally, you can configure your address to automatically accept future contact requests with a welcome message that will be sent to new contacts when they connect with you.
+When people connect with you via your contact address, you will receive a connection request that you can either accept or reject. Optionally, you can configure your contact address to automatically accept future connection requests with a welcome message that will be sent to new contacts when they connect with you.
 
-If you start receiving too many contact requests via this address, you can always delete it. All connections made via this address will remain active, as it is not used to send messages.
+If you start receiving too many connection requests via your contact address, you can always delete it. All connections made via your contact address will remain active, as it is not used to send messages.
 
 Please read [this blog post](../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#auto-accept-contact-requests) for more details. 
 
 ### Chat preferences
 
-This page allows you to configure your default set of chat preferences for all your contacts. These can also be adjusted individually for each contact.
+This screen allows you to configure your default set of chat preferences for all your contacts. These can also be adjusted individually for each contact.
 
 - `disappearing messages` - to allow disappearing messages in your conversation as long as your contacts allow them.
 - `delete for everyone` - to allow irreversible message deletion (messages are marked as deleted by default). 
@@ -76,7 +77,7 @@ This section is labelled **"Settings"** in the app settings.
 
 ### Notifications
 
-This page allows you to configure the app's notifications mode: instant, periodic, or only when the app is running. There are some differences in how these options work on iOS and Android. Please read [this blog post](../../blog/20220404-simplex-chat-instant-notifications.md) for more details.
+This screen allows you to configure how you want to receive push notifications: instant, periodic, or only when the app is running. There are some differences in how these options work on iOS and Android. Please read [this blog post](../../blog/20220404-simplex-chat-instant-notifications.md) for more details.
 
 You can also configure how notifications look when a new message arrives via the following options:
 
@@ -84,13 +85,13 @@ You can also configure how notifications look when a new message arrives via the
 - `contact name` - show only contact name.
 - `hidden` - hide both contact name and message.
 
-**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimisation when prompted by the app, or later via the app settings. Also, some variants of Android system require additional settings, for example MIU system on Xiaomi phones requires to enable "Auto start" for the app for the notification service to work. Please read [Don't kill my app](https://dontkillmyapp.com/) guide for any settings that may be required on your device.
+**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the app settings. Also, some variants of Android require additional settings. For example, MIUI on Xiaomi phones require you to enable "Auto start" for the notification service to work. Please read the [Don't kill my app](https://dontkillmyapp.com/) guide for any additional settings that may be required on your device.
 
 Also, instant notifications have the highest battery consumption - we are working to reduce it to be less or the same as for periodic notifications.
 
 ### Network & servers
 
-This page allows you to configure your own SMP relays and change other network settings.
+This screen allows you to configure your own SMP relays and change other network settings.
 
 <img src="../../blog/images/20230204-transport.png" width="288">
 
@@ -136,7 +137,7 @@ Please read [this blog post](../../blog/20230204-simplex-chat-v4-5-user-chat-pro
 
 <img src="../../blog/images/20220808-network.png" width="330">
 
-If your network is slow, and your connections to the servers keep failing (you would see a spinner on your contacts), please increase TCP and protocol timeouts in this page.
+If your network is slow, and your connections to the servers keep failing (you would see a spinner on your contacts), please increase TCP and protocol timeouts on this screen.
 
 ### Privacy and security
 
@@ -148,7 +149,7 @@ You will be offered to enable it after you open the app a few times.
 
 To enable it later:
 
-1. [Open app settings](./app-settings.md#opening-app-settings).
+1. [Open app settings](#opening-app-settings).
 2. Tap on **Privacy & security**.
 3. Toggle **SimpleX Lock** on.
 4. Confirm your device credentials.
@@ -159,13 +160,13 @@ Done! Now you will be required to authenticate when you start or resume the app 
 
 <img src="../../blog/images/20221206-protect.png" width="330">
 
-This option hides the app's screen in the recent apps list  - it's enabled by default. It also prevents screenshots on Android.
+This option hides the app's screen in the recent apps list - it's enabled by default. It also prevents screenshots on Android.
 
 #### Auto Accept Images
 
 Auto-accepting images may reduce privacy – your contacts will know you are online.
 
-1. [Open app settings](./app-settings.md#opening-app-settings).
+1. [Open app settings](#opening-app-settings).
 2. Tap on **Privacy & security**.
 3. Toggle **Auto-accept images** on.
 
@@ -173,7 +174,7 @@ Auto-accepting images may reduce privacy – your contacts will know you are onl
 
 Enabling sending link previews may reduce privacy – your app will be loading link preview from the website.
 
-1. [Open app settings](./app-settings.md#opening-app-settings).
+1. [Open app settings](#opening-app-settings).
 2. Tap **Privacy & security**.
 3. Toggle **Send link previews** on.
 
@@ -189,17 +190,17 @@ Please read [this blog post](../../blog/20221206-simplex-chat-v4.3-voice-message
 
 ### Appearance
 
-This page allows you to configure the app language, app icon, app theme, and accent color.
+This screen allows you to configure the app language, app icon, app theme, and accent color.
 
 ### Database passphrase & export
 
-This page allows you to change the app's database passphrase, export and import the database, and configure the message retention period.
+This screen allows you to change the app's database passphrase, export and import the database, and configure the message retention period.
 
-Please read [Managing Data](./managing-data.md) for more details.
+Please visit the [Managing Data](./managing-data.md) page for more details.
 
 ## Help & feedback
 
-This section has information on how to use the app and the links to connect to the team. Please tap [Send questions and ideas](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion) to connect to us via the chat to ask any questions, make any suggestions and report any issues.
+This section has information on how to use the app and the links to connect with the team. Please tap [Send questions and ideas](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion) to connect with us via the chat to ask any questions, make any suggestions, and report any issues.
 
 ## Support SimpleX Chat
 
@@ -213,19 +214,19 @@ Thank you for your support!
 
 ## Developer tools
 
-This page has options that are only needed for app developers and can be used to debug the app in case something is not working.
+This screen has options that are only needed for app developers and can be used to debug the app in case something is not working.
 
 ### Chat console
 
 Here you can see and use console commands with the chat core. None of this information is sent over the network; this is an internal communication between different parts of the app.
 
-**WARNING:** some of the console commands can stop the app from functioning; only use them if you know what you are doing or were instructed by the team.
+**WARNING:** Some of the console commands can stop the app from functioning! Only use them if you know what you are doing or were instructed by the team.
 
 **Please note**: The chat console can contain what looks like errors. Unless you experience any issues in the app's UI, these "errors" should not be considered a sign of app malfunction - they are likely to be normal and expected behavior.
 
 ### Confirm database upgrades
 
-This option is turned off by default - the app's database is migrated to the new version without any confirmations. Starting from v4.6.2 these migrations are reversible - you can rollback to the previous version(s) of the app (not earlier than v4.6.1). If you want to be asked a confirmation every time database is upgraded, you may enable this option - this is not recommended, as it happens almost on every app update, and should not cause any concerns.
+This option is toggled off by default - the app's database is migrated to the new version without any confirmations. Starting from v4.6.2 these migrations are reversible - you can rollback to the previous version(s) of the app (not earlier than v4.6.1). If you want to be asked a confirmation every time the app's database is upgraded, you may enable this option - this is not recommended, as it happens almost on every app update, and should not cause any concerns.
 
 ### Show developer options
 

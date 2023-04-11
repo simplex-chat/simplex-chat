@@ -35,11 +35,11 @@ When installed, the app generates a random passphrase for the chat database and 
 
 ## Incognito mode
 
-This feature generates a random profile name for each new contact. Read more in [Incognito](./app-settings.md#incognito).
+This feature generates a random profile name for each new contact. Please read the [Incognito](./app-settings.md#incognito) section for more details.
 
 ## Hidden profiles
 
-This feature allows to hide some of your chat profiles with the password. Read more in [Hiding and muting chat profiles](./chat-profiles.md#hiding-and-muting-chat-profiles).
+This feature allows to hide some of your chat profiles with a password. Please read the [Hiding and muting chat profiles](./chat-profiles.md#hiding-and-muting-chat-profiles) section for more details.
 
 ## Network settings
 
@@ -51,8 +51,8 @@ This feature allows to hide some of your chat profiles with the password. Read m
 
 To connect to SMP relays (messaging servers) via Tor, you need to install Orbot app.
 
-Android: use Orbot app as SOCKS proxy on port 9050 (default) and enable [Use SOCKS proxy](./app-settings.md#use-socks-proxy-android-only).
+**Android:** use Orbot app as SOCKS proxy on port 9050 (default) and enable [Use SOCKS proxy](./app-settings.md#use-socks-proxy-android-only).
 
-iOS: use Orbot app as VPN provider and enable VPN.
+**iOS:** use Orbot app as VPN provider and enable VPN.
 
 You can also change which server addresses are used with [Use .onion hosts option](./app-settings.md#use-onion-hosts).

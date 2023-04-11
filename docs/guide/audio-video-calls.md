@@ -1,8 +1,6 @@
 # Audio and Video Calls
 
-SimpleX Chat allows you to make end-to-end encrypted audio and video calls with your contacts via WebRTC. 
-
-**Please note**: group calls are not supported at this time.
+SimpleX Chat allows you to make end-to-end encrypted audio and video calls with your contacts via WebRTC. Please note that group calls are not supported at this time.
 
 ## Making and accepting calls
 
@@ -27,7 +25,7 @@ When there is an incoming call, you have three options:
 
 There is no time limit for the call invitation to remain active - as long as the caller is still waiting, you can accept the call at any time.
 
-Calls can be accepted from the lock screen, both on Android (it needs to be enabled via options) and on iOS (by default, using native iOS call interface that can be disabled).
+Calls can be accepted from the lock screen, both on Android (it needs to be enabled via options) and on iOS (by default, using the native iOS call interface that can be disabled).
 
 ### Calls on lock screen on Android
 
@@ -46,13 +44,13 @@ SimpleX Chat shows an incoming call on your device's lock screen by default. How
 
 <img src="../../blog/images/20230328-call1.png" width="288">
 
-By default, SimpleX Chat uses native iOS call interface, where allowed, to show incoming calls on the lock screen. You can disable it:
+By default, SimpleX Chat uses the native iOS call interface, where allowed, to show incoming calls on the lock screen. You can disable it:
 
 1. [Open app settings](./app-settings.md#opening-app-settings).
 2. Tap **Audio and Video calls**.
 3. Toggle **Use iOS call interface** off.
 
-**Please note**: iOS call interface allows accepting incoming calls without having to unlock the device and the app. If this is undesirable, please disable it – the incoming calls will show as notifications in this case.
+**Please note**: iOS call interface allows accepting incoming calls without having to unlock the device and the app. If this behavior is undesirable, please disable it – the incoming calls will show as notifications in this case.
 
 Please read [this blog post](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#improved-audiovideo-calls) for more details.
 
