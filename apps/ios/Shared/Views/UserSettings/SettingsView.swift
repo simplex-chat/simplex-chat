@@ -117,8 +117,15 @@ struct SettingsView: View {
     @State private var settingsSheet: SettingsSheet?
 
     var body: some View {
-        let user: User = chatModel.currentUser!
+        if let la = chatModel.laRequest {
+            LocalAuthView(authRequest: la)
+        } else {
+            settingsView()
+        }
+    }
 
+    @ViewBuilder func settingsView() -> some View {
+        let user: User = chatModel.currentUser!
         NavigationView {
             List {
                 Section("You") {

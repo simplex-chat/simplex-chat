@@ -10,28 +10,71 @@ import SwiftUI
 import SimpleXChat
 
 struct SetAppPaswordView: View {
+    var submit: () -> Void
+    var cancel: () -> Void
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var showKeychainError = false
+    @State private var password = ""
+    @State private var enteredPassword = ""
+    @State private var confirming = false
 
     var body: some View {
-        VStack {
-            Text("Enter password")
-            DigitalPasswordEntry { pwd in
-                if kcAppPassword.set(pwd) {
-                    dismiss()
-                } else {
-                    showKeychainError = true
+        ZStack {
+            if confirming {
+                setPasswordView("Confirm password") {
+                    if password == enteredPassword {
+                        if kcAppPassword.set(password) {
+                            enteredPassword = ""
+                            password = ""
+                            dismiss()
+                            submit()
+                        } else {
+                            showKeychainError = true
+                        }
+                    }
+                }
+            } else {
+                setPasswordView("Set password") {
+                    enteredPassword = password
+                    password = ""
+                    confirming = true
                 }
             }
         }
         .alert(isPresented: $showKeychainError) {
             mkAlert(title: "KeyChain error", message: "Error saving password")
         }
+        .padding()
+        .padding(.horizontal)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func setPasswordView(_ title: LocalizedStringKey, submit: @escaping () -> Void) -> some View {
+        GeometryReader { g in
+            VStack {
+                Text(title).font(.title).bold().padding(.top, 24)
+                DigitalPasswordEntry(width: g.size.width, password: $password)
+                    .padding(.bottom, 48)
+                HStack(spacing: 48) {
+                    Button {
+                        dismiss()
+                        cancel()
+                    } label: {
+                        Label("Cancel", systemImage: "multiply")
+                    }
+                    Button(action: submit) {
+                        Label("Set password", systemImage: "checkmark")
+                    }
+                    .disabled(password.count < 4 || !(enteredPassword == "" || password == enteredPassword))
+                }
+                .font(.title2)
+            }
+        }
     }
 }
 
 struct SetAppPaswordView_Previews: PreviewProvider {
     static var previews: some View {
-        SetAppPaswordView()
+        SetAppPaswordView(submit: {}, cancel: {})
     }
 }

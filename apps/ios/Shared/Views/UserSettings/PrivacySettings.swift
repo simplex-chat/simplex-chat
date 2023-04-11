@@ -14,17 +14,25 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @State private var currentLAMode = privacyLocalAuthModeDefault.get()
 
     var body: some View {
         VStack {
             List {
                 Section("Device") {
                     NavigationLink {
-                        SimplexLockView()
+                        SimplexLockView(prefPerformLA: $prefPerformLA, currentLAMode: $currentLAMode)
                             .navigationTitle("SimpleX Lock")
                     } label: {
-                        settingsRow("lock") {
-                            Text("SimpleX Lock")
+                        if prefPerformLA {
+                            settingsRow("lock.fill", color: .green) {
+                                simplexLockRow(currentLAMode.text)
+                            }
+                        } else {
+                            settingsRow("lock") {
+                                simplexLockRow("Off")
+                            }
                         }
                     }
                     settingsRow("eye.slash") {
@@ -63,6 +71,14 @@ struct PrivacySettings: View {
             }
         }
     }
+
+    private func simplexLockRow(_ value: LocalizedStringKey) -> some View {
+        HStack {
+            Text("SimpleX Lock")
+            Spacer()
+            Text(value)
+        }
+    }
 }
 
 enum LAMode: String, Identifiable, CaseIterable {
@@ -81,36 +97,47 @@ enum LAMode: String, Identifiable, CaseIterable {
 
 struct SimplexLockView: View {
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
-    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @Binding var prefPerformLA: Bool
+    @Binding var currentLAMode: LAMode
+    @State private var laMode: LAMode = privacyLocalAuthModeDefault.get()
     @AppStorage(DEFAULT_LA_LOCK_DELAY) private var laLockDelay = 30
     @State var performLA: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var performLAToggleReset = false
+    @State private var performLAModeReset = false
+    @State private var showPasswordAction: PasswordAction? = nil
+    @State private var showChangePassword = false
     @State var laAlert: LASettingViewAlert? = nil
-    @State private var laMode: LAMode = privacyLocalAuthModeDefault.get()
-    @State private var currentLAMode: LAMode = privacyLocalAuthModeDefault.get()
-    @State private var showSetPassword = false
 
     enum LASettingViewAlert: Identifiable {
         case laTurnedOnAlert
         case laFailedAlert
         case laUnavailableInstructionAlert
         case laUnavailableTurningOffAlert
+        case laPasswordSetAlert
+        case laPasswordChangedAlert
+        case laPasswordNotChangedAlert
 
         var id: Self { self }
     }
 
-    let laDelays: [Int] = [30, 60, 120, 180, 300, 0]
+    enum PasswordAction: Identifiable {
+        case enableAuth
+        case toggleMode
+        case changePassword
+
+        var id: Self { self }
+    }
+
+    let laDelays: [Int] = [10, 30, 60, 180, 0]
 
     func laDelayText(_ t: Int) -> LocalizedStringKey {
         let m = t / 60
         let s = t % 60
         return t == 0
             ? "Immediately"
-            : m == 0
-            ? "\(s) seconds"
-            : s == 0
-            ? "\(m) minutes"
-            : "\(m) minutes \(s) seconds"
+            : m == 0 || s != 0
+            ? "\(s) seconds" // there are no options where both minutes and seconds are needed
+            : "\(m) minutes"
     }
 
     var body: some View {
@@ -118,18 +145,19 @@ struct SimplexLockView: View {
             List {
                 Section("") {
                     Toggle("Enable lock", isOn: $performLA)
+                    Picker("Lock mode", selection: $laMode) {
+                        ForEach(LAMode.allCases) { mode in
+                            Text(mode.text)
+                        }
+                    }
                     if performLA {
                         Picker("Lock after", selection: $laLockDelay) {
-                            ForEach(laDelays, id: \.self) { t in
+                            let delays = laDelays.contains(laLockDelay) ? laDelays : [laLockDelay] + laDelays
+                            ForEach(delays, id: \.self) { t in
                                 Text(laDelayText(t))
                             }
                         }
-                        Picker("Lock mode", selection: $laMode) {
-                            ForEach(LAMode.allCases) { mode in
-                                Text(mode.text)
-                            }
-                        }
-                        if case .password = laMode {
+                        if showChangePassword && laMode == .password {
                             Button("Change password") {
                                 changeLAPassword()
                             }
@@ -142,16 +170,27 @@ struct SimplexLockView: View {
             prefLANoticeShown = true
             if performLAToggleReset {
                 performLAToggleReset = false
-            } else {
-                if performLAToggle {
+            } else if performLAToggle {
+                switch currentLAMode {
+                case .system:
                     enableLA()
-                } else {
-                    disableLA()
+                case .password:
+                    resetLA()
+                    showPasswordAction = .enableAuth
                 }
+            } else {
+                disableLA()
             }
         }
         .onChange(of: laMode) { _ in
-            toggleLAMode()
+            if performLAModeReset {
+                performLAModeReset = false
+            } else if performLA {
+                toggleLAMode()
+            } else {
+                privacyLocalAuthModeDefault.set(laMode)
+                currentLAMode = laMode
+            }
         }
         .alert(item: $laAlert) { alertItem in
             switch alertItem {
@@ -159,21 +198,44 @@ struct SimplexLockView: View {
             case .laFailedAlert: return laFailedAlert()
             case .laUnavailableInstructionAlert: return laUnavailableInstructionAlert()
             case .laUnavailableTurningOffAlert: return laUnavailableTurningOffAlert()
+            case .laPasswordSetAlert: return passwordAlert("Password set!")
+            case .laPasswordChangedAlert: return passwordAlert("Password changed!")
+            case .laPasswordNotChangedAlert: return mkAlert(title: "Password not changed!")
             }
         }
-        .sheet(isPresented: $showSetPassword) {
-            SetAppPaswordView()
+        .sheet(item: $showPasswordAction) { a in
+            switch a {
+            case .enableAuth:
+                SetAppPaswordView {
+                    prefPerformLA = true
+                    showChangePassword = true
+                    laAlert = .laPasswordSetAlert
+                } cancel: {
+                    prefPerformLA = false
+                    withAnimation() { performLA = false }
+                    performLAToggleReset = true
+                }
+            case .toggleMode:
+                SetAppPaswordView {
+                    currentLAMode = laMode
+                    privacyLocalAuthModeDefault.set(laMode)
+                    showChangePassword = true
+                    laAlert = .laPasswordSetAlert
+                } cancel: {
+                    withAnimation() { laMode = currentLAMode }
+                    performLAModeReset = true
+                }
+            case .changePassword:
+                SetAppPaswordView {
+                    laAlert = .laPasswordChangedAlert
+                } cancel: {
+                    laAlert = .laPasswordNotChangedAlert
+                }
+            }
         }
     }
 
     private func toggleLAMode() {
-        if currentLAMode == .password {
-            // TODO remove this branch
-            currentLAMode = laMode
-            privacyLocalAuthModeDefault.set(laMode)
-            _ = kcAppPassword.set("")
-            return
-        }
         authenticate(reason: NSLocalizedString("Change authentication mode", comment: "authentication reason")) { laResult in
             switch laResult {
             case .failed:
@@ -181,11 +243,14 @@ struct SimplexLockView: View {
                 performLAToggleReset = true
                 laAlert = .laFailedAlert
             case .success:
-                currentLAMode = laMode
-                privacyLocalAuthModeDefault.set(laMode)
                 switch laMode {
-                case .system: _ = kcAppPassword.set("")
-                case .password: showSetPassword = true
+                case .system:
+                    currentLAMode = laMode
+                    privacyLocalAuthModeDefault.set(laMode)
+                    _ = kcAppPassword.remove()
+                    enableLA()
+                case .password:
+                    showPasswordAction = .toggleMode
                 }
             case .unavailable:
                 disableUnavailableLA()
@@ -194,22 +259,17 @@ struct SimplexLockView: View {
     }
 
     private func changeLAPassword() {
-        // TODO request auth
-        DispatchQueue.main.async {
-            showSetPassword = true
+        authenticate(reason: NSLocalizedString("Change password", comment: "authentication reason")) { laResult in
+            switch laResult {
+            case .failed: laAlert = .laFailedAlert
+            case .success: showPasswordAction = .changePassword
+            case .unavailable: disableUnavailableLA()
+            }
         }
-//        authenticate(reason: NSLocalizedString("Change password", comment: "authentication reason")) { laResult in
-//            switch laResult {
-//            case .failed: laAlert = .laFailedAlert
-//            case .success: showSetPassword = true
-//            case .unavailable: disableUnavailableLA()
-//            }
-//        }
     }
 
     private func enableLA() {
-        privacyLocalAuthModeDefault.set(.system)
-        laMode = .system
+        resetLA()
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
@@ -240,8 +300,7 @@ struct SimplexLockView: View {
             switch (laResult) {
             case .success:
                 prefPerformLA = false
-                privacyLocalAuthModeDefault.set(.system)
-                laMode = .system
+                resetLA()
             case .failed:
                 prefPerformLA = true
                 withAnimation() {
@@ -254,6 +313,16 @@ struct SimplexLockView: View {
                 laAlert = .laUnavailableTurningOffAlert
             }
         }
+    }
+
+    private func resetLA() {
+        _ = kcAppPassword.remove()
+        laLockDelay = 30
+        showChangePassword = false
+    }
+
+    private func passwordAlert(_ title: LocalizedStringKey) -> Alert {
+        mkAlert(title: title, message: "Please remember or store it securely - there is no way to recover a lost password!")
     }
 }
 

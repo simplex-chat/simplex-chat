@@ -10,27 +10,23 @@ import SwiftUI
 
 struct DigitalPasswordEntry: View {
     @EnvironmentObject var m: ChatModel
-    var submit: (String) -> Void
-    @State private var password = ""
+    var width: CGFloat
+    @Binding var password: String
     @State private var showPassword = false
 
     var body: some View {
         VStack {
             passwordView()
-            GeometryReader { g in
-                passwordGrid(size: g.size.width)
-            }
+            passwordGrid(width)
+            .frame(minHeight: 0)
         }
-        .padding()
     }
 
     @ViewBuilder private func passwordView() -> some View {
         Text(
             password == ""
             ? " "
-            : showPassword
-            ? password
-            : String(repeating: "●", count: password.count)
+            : splitPassword()
         )
         .font(showPassword ? .title2 : .body)
         .onTapGesture {
@@ -39,9 +35,18 @@ struct DigitalPasswordEntry: View {
         .frame(height: 30)
     }
 
-    private func passwordGrid(size: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            let s = size / 3
+    private func splitPassword() -> String {
+        let n = password.count < 8 ? 8 : 4
+        return password.enumerated().reduce("") { acc, c in
+            acc
+            + (showPassword ? String(c.element) : "●")
+            + ((c.offset + 1) % n == 0 ? " " : "")
+        }
+    }
+
+    private func passwordGrid(_ width: CGFloat) -> some View {
+        let s = width / 3
+        return VStack(spacing: 0) {
             digitsRow(s, 1, 2, 3)
             Divider()
             digitsRow(s, 4, 5, 6)
@@ -49,17 +54,19 @@ struct DigitalPasswordEntry: View {
             digitsRow(s, 7, 8, 9)
             Divider()
             HStack(spacing: 0) {
-                Button("Clear") { password = "" }
-                .frame(width: s)
+                passwordEdit(s, image: "multiply") {
+                    password = ""
+                }
                 Divider()
                 passwordDigit(s, 0)
                 Divider()
-                Button("Submit") { submit(password) }
-                .frame(width: s)
+                passwordEdit(s, image: "delete.backward") {
+                    if password != "" { password.removeLast() }
+                }
             }
             .frame(height: s)
         }
-        .frame(width: size, height: size * 4 / 3)
+        .frame(width: width, height: s * 4)
     }
 
     private func digitsRow(_ size: CGFloat, _ d1: Int, _ d2: Int, _ d3: Int) -> some View {
@@ -73,18 +80,31 @@ struct DigitalPasswordEntry: View {
         .frame(height: size)
     }
 
+
     private func passwordDigit(_ size: CGFloat, _ d: Int) -> some View {
         let s = String(describing: d)
-        return Button {
-            password = password + s
+        return passwordButton(size) {
+            if password.count < 16 {
+                password = password + s
+            }
         } label: {
+            Text(s).font(.title)
+        }
+    }
+
+    private func passwordEdit(_ size: CGFloat, image: String, action: @escaping () -> Void) -> some View {
+        passwordButton(size, action: action) {
+            Image(systemName: image).scaleEffect(1.5)
+        }
+    }
+
+    private func passwordButton<V: View>(_ size: CGFloat, action: @escaping () -> Void, label: () -> V) -> some View {
+        return Button(action: action) {
             ZStack {
                 Circle()
                     .frame(width: size, height: size)
                     .foregroundColor(Color(uiColor: .systemBackground))
-                Text(s)
-                    .font(.title)
-                    .bold()
+                label()
             }
         }
         .foregroundColor(.secondary)
@@ -94,6 +114,6 @@ struct DigitalPasswordEntry: View {
 
 struct DigitalPasswordEntry_Previews: PreviewProvider {
     static var previews: some View {
-        DigitalPasswordEntry(submit: { _ in })
+        DigitalPasswordEntry(width: 360, password: Binding.constant(""))
     }
 }

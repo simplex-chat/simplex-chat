@@ -96,3 +96,4 @@ func laUnavailableTurningOffAlert() -> Alert {
         message: "Device authentication is disabled. Turning off SimpleX Lock."
     )
 }
+
