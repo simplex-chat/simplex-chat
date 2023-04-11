@@ -2346,14 +2346,16 @@ processAgentMsgSndFile _corrId aFileId msg =
                 -- TODO either update database status or move to SFPROG
                 toView $ CRSndFileProgressXFTP user ci ft 1 1
                 case (rfds, sfts, d, cInfo) of
-                  (rfd : _extraRfds, sft : _, SMDSnd, DirectChat ct) -> do
-                    -- TODO save extra recipient file descriptions
+                  (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
+                    withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                     msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
                     withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
                   (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
-                    -- TODO save extra recipient file descriptions
                     ms <- withStore' $ \db -> getGroupMembers db user g
-                    forM_ (zip rfds $ memberFTs ms) $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
+                    let rfdsMemberFTs = zip rfds $ memberFTs ms
+                        extraRFDs = drop (length rfdsMemberFTs) rfds
+                    withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
+                    forM_ rfdsMemberFTs $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
                     ci' <- withStore $ \db -> do
                       liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                       getChatItemByFileId db user fileId
@@ -2379,9 +2381,10 @@ processAgentMsgSndFile _corrId aFileId msg =
           -- agentXFTPDeleteSndFile
           throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
       where
+        fileDescrText = safeDecodeUtf8 . strEncode
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
-          let rfdText = safeDecodeUtf8 $ strEncode rfd
+          let rfdText = fileDescrText rfd
           withStore' $ \db -> updateSndFTDescrXFTP db user sft rfdText
           partSize <- asks $ xftpDescrPartSize . config
           sendParts 1 partSize rfdText
