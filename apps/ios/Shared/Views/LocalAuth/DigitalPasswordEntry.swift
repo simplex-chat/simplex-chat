@@ -90,6 +90,7 @@ struct DigitalPasswordEntry: View {
         } label: {
             Text(s).font(.title)
         }
+        .disabled(password.count >= 16)
     }
 
     private func passwordEdit(_ size: CGFloat, image: String, action: @escaping () -> Void) -> some View {
