@@ -589,7 +589,8 @@ processChatCommand = \case
             fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
             fInv = xftpFileInvitation fileName fileSize fileDescr
         fsFilePath <- toFSFilePath file
-        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) fsFilePath n
+        let nRounded = min 4 $ roundToPowerOfTwo n
+        aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) fsFilePath nRounded
         -- TODO CRSndFileStart event for XFTP
         chSize <- asks $ fileChunkSize . config
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv (AgentSndFileId aFileId) chSize
@@ -604,6 +605,8 @@ processChatCommand = \case
                   withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
               saveMemberFD _ = pure ()
         pure (fInv, ciFile, ft)
+      roundToPowerOfTwo :: Int -> Int
+      roundToPowerOfTwo n = fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
@@ -2334,6 +2337,7 @@ processAgentMsgSndFile _corrId aFileId msg =
             toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
         SFDONE _sndDescr rfds ->
           unless cancelled $ do
+            -- TODO save sender file description
             ci@(AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
               withStore $ \db -> getChatItemByFileId db user fileId
             case (msgId_, itemDeleted) of
@@ -2342,10 +2346,12 @@ processAgentMsgSndFile _corrId aFileId msg =
                 -- TODO either update database status or move to SFPROG
                 toView $ CRSndFileProgressXFTP user ci ft 1 1
                 case (rfds, sfts, d, cInfo) of
-                  (rfd : _, sft : _, SMDSnd, DirectChat ct) -> do
+                  (rfd : _extraRfds, sft : _, SMDSnd, DirectChat ct) -> do
+                    -- TODO save extra recipient file descriptions
                     msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
                     withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
                   (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
+                    -- TODO save extra recipient file descriptions
                     ms <- withStore' $ \db -> getGroupMembers db user g
                     forM_ (zip rfds $ memberFTs ms) $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
                     ci' <- withStore $ \db -> do
