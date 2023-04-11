@@ -176,7 +176,7 @@
     <string name="onboarding_notifications_mode_off_desc"><b>배터리에 가장 좋음</b>. 앱이 실행 중일 때만 알림을 받게 되며 백그라운드에서 실행되지 않습니다.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>설정을 통해 비활성화할 수 있어요.</b> – 앱이 실행되는 동안 알림이 표시되요.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">나와 대화 상대 모두 자동 삭제되는 메시지를 보낼 수 있어요.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QR 코드 스캔</b>: QR 코드를 보여주는 사람과 연결해요.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QR 코드 스캔</b>: QR 코드를 보여주는 사람과 연결할 수 있어요.</string>
     <string name="cannot_access_keychain">데이터베이스 암호를 저장하고 있는 암호키 저장소에 접근할 수 없습니다</string>
     <string name="onboarding_notifications_mode_service_desc"><b>배터리 많이 사용</b>! 백그라운드에서 항상 실행돼요. 메시지를 수신하자마자 알림이 떠요.</string>
     <string name="callstatus_ended">통화 종료됨 <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
@@ -764,4 +764,38 @@
     <string name="people_can_connect_only_via_links_you_share">공유한 링크를 통해서만 나에게 연결할 수 있어요.</string>
     <string name="rcv_group_event_updated_group_profile">그룹 프로필 업데이트됨</string>
     <string name="profile_password">프로필 비밀번호</string>
+    <string name="reveal_verb">보이기</string>
+    <string name="save_verb">저장하기</string>
+    <string name="scan_QR_code">QR 코드 스캔하기</string>
+    <string name="reply_verb">답장</string>
+    <string name="reset_verb">초기화</string>
+    <string name="save_servers_button">저장하기</string>
+    <string name="save_and_notify_contacts">저장하고 모든 대화 상대에게 알리기</string>
+    <string name="save_and_notify_group_members">저장하고 그룹 멤버들에게 알리기</string>
+    <string name="save_and_notify_contact">저장하고 대화 상대에게 알리기</string>
+    <string name="remove_passphrase">지우기</string>
+    <string name="save_archive">아카이브 저장하기</string>
+    <string name="save_color">색상 저장하기</string>
+    <string name="save_passphrase_in_keychain">암호 저장소에 비밀번호 저장하기</string>
+    <string name="restore_database">데이터베이스 백업 복원하기</string>
+    <string name="restore_database_alert_desc">데이터베이스 백업을 복원한 후 이전 비밀번호를 입력해 주세요. 이 작업은 되돌릴 수 없어요.</string>
+    <string name="restore_database_alert_title">데이터베이스 백업을 복원할까요\?</string>
+    <string name="restore_passphrase_not_found_desc">키스토어에서 암호를 찾을 수 없어요. 직접 입력해 주세요. 백업 도구를 사용하여 복원했을 때 이 문제가 발생할 수 있는데, 그런 경우가 아니라면 개발자에게 알려주세요.</string>
+    <string name="save_and_update_group_profile">저장하고 그룹 프로필 업데이트하기</string>
+    <string name="save_welcome_message_question">환영 메시지를 저장할까요\?</string>
+    <string name="save_group_profile">그룹 프로필 저장하기</string>
+    <string name="reset_color">색상 초기화</string>
+    <string name="remove_member_confirmation">강퇴하기</string>
+    <string name="scan_code">코드 스캔하기</string>
+    <string name="scan_code_from_contacts_app">대화 상대의 앱에서 보안 코드를 스캔해 주세요.</string>
+    <string name="saved_ICE_servers_will_be_removed">저장된 WebRTC ICE 서버가 제거될 거예요.</string>
+    <string name="save_passphrase_and_open_chat">비밀번호 저장하고 채팅 열기</string>
+    <string name="role_in_group">역할</string>
+    <string name="save_preferences_question">설정을 저장할까요\?</string>
+    <string name="save_profile_password">프로필 비밀번호 저장하기</string>
+    <string name="restart_the_app_to_use_imported_chat_database">가져온 채팅 데이터베이스를 사용하려면 앱을 다시 실행해 주세요.</string>
+    <string name="restart_the_app_to_create_a_new_chat_profile">새 프로필을 만드려면 앱을 다시 실행해 주세요.</string>
+    <string name="remove_passphrase_from_keychain">암호 저장소에서 비밀번호를 삭제할까요\?</string>
+    <string name="run_chat_section">채팅 기능 실행하기</string>
+    <string name="restore_database_alert_confirm">복원하기</string>
 </resources>
