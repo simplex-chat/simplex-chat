@@ -1,5 +1,5 @@
 //
-//  DigitalPasswordEntry.swift
+//  PasscodeEntry.swift
 //  SimpleX (iOS)
 //
 //  Created by Evgeny on 10/04/2023.
@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct DigitalPasswordEntry: View {
+struct PasscodeEntry: View {
     @EnvironmentObject var m: ChatModel
     var width: CGFloat
     @Binding var password: String
@@ -17,8 +17,9 @@ struct DigitalPasswordEntry: View {
     var body: some View {
         VStack {
             passwordView()
+                .padding(.bottom, 4)
             passwordGrid(width)
-            .frame(minHeight: 0)
+                .frame(minHeight: 0)
         }
     }
 
@@ -28,7 +29,7 @@ struct DigitalPasswordEntry: View {
             ? " "
             : splitPassword()
         )
-        .font(showPassword ? .title2 : .body)
+        .font(showPassword ? .title2.monospacedDigit() : .body)
         .onTapGesture {
             showPassword = !showPassword
         }
@@ -77,7 +78,7 @@ struct DigitalPasswordEntry: View {
             Divider()
             passwordDigit(size, d3)
         }
-        .frame(height: size)
+        .frame(height: size * 0.97)
     }
 
 
@@ -95,26 +96,27 @@ struct DigitalPasswordEntry: View {
 
     private func passwordEdit(_ size: CGFloat, image: String, action: @escaping () -> Void) -> some View {
         passwordButton(size, action: action) {
-            Image(systemName: image).scaleEffect(1.5)
+            Image(systemName: image)
         }
     }
 
     private func passwordButton<V: View>(_ size: CGFloat, action: @escaping () -> Void, label: () -> V) -> some View {
+        let h = size * 0.97
         return Button(action: action) {
             ZStack {
                 Circle()
-                    .frame(width: size, height: size)
+                    .frame(width: h, height: h)
                     .foregroundColor(Color(uiColor: .systemBackground))
                 label()
             }
         }
         .foregroundColor(.secondary)
-        .frame(width: size, height: size)
+        .frame(width: size, height: h)
     }
 }
 
-struct DigitalPasswordEntry_Previews: PreviewProvider {
+struct PasscodeEntry_Previews: PreviewProvider {
     static var previews: some View {
-        DigitalPasswordEntry(width: 360, password: Binding.constant(""))
+        PasscodeEntry(width: 360, password: Binding.constant(""))
     }
 }

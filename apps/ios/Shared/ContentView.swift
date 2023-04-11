@@ -50,7 +50,7 @@ struct ContentView: View {
         }
         .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode) {
             Button("System authentication") { enableLA(.system) }
-            Button("Password") { enableLA(.password) }
+            Button("Passcode entry") { enableLA(.passcode) }
         }
     }
 
@@ -166,7 +166,7 @@ struct ContentView: View {
     private func justAuthenticate() {
         userAuthorized = false
         let laMode = privacyLocalAuthModeDefault.get()
-        authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
+        authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason")) { laResult in
             logger.debug("authenticate callback: \(String(describing: laResult))")
             switch (laResult) {
             case .success:
@@ -174,7 +174,7 @@ struct ContentView: View {
                 canConnectCall = true
                 lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
             case .failed:
-                if laMode == .password {
+                if laMode == .passcode {
                     AlertManager.shared.showAlert(laFailedAlert())
                 }
             case .unavailable:
