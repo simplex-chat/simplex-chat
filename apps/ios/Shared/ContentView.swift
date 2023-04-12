@@ -45,7 +45,7 @@ struct ContentView: View {
                 } cancel: {
                     prefPerformLA = false
                     showSetPasscode = false
-                    alertManager.showAlert(laNotEnabledAlert())
+                    alertManager.showAlert(laPasscodeNotSetAlert())
                 }
             }
         }

@@ -77,9 +77,9 @@ func laTurnedOnAlert() -> Alert {
     )
 }
 
-func laNotEnabledAlert() -> Alert {
+func laPasscodeNotSetAlert() -> Alert {
     mkAlert(
-        title: "Passcode not enabled!",
+        title: "SimpleX Lock not enabled!",
         message: "You can turn on SimpleX Lock via Settings."
     )
 }

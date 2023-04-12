@@ -11,6 +11,7 @@ import SwiftUI
 struct PasscodeEntry: View {
     @EnvironmentObject var m: ChatModel
     var width: CGFloat
+    var height: CGFloat
     @Binding var password: String
     @State private var showPassword = false
 
@@ -18,8 +19,11 @@ struct PasscodeEntry: View {
         VStack {
             passwordView()
                 .padding(.bottom, 4)
-            passwordGrid(width)
-                .frame(minHeight: 0)
+            if width < height * 2 / 3 {
+                verticalPasswordGrid()
+            } else {
+                horizontalPasswordGrid()
+            }
         }
     }
 
@@ -45,7 +49,7 @@ struct PasscodeEntry: View {
         }
     }
 
-    private func passwordGrid(_ width: CGFloat) -> some View {
+    private func verticalPasswordGrid() -> some View {
         let s = width / 3
         return VStack(spacing: 0) {
             digitsRow(s, 1, 2, 3)
@@ -67,7 +71,29 @@ struct PasscodeEntry: View {
             }
             .frame(height: s)
         }
-        .frame(width: width, height: s * 4)
+        .frame(width: width, height: s * 4 * 0.97)
+    }
+
+    private func horizontalPasswordGrid() -> some View {
+        let s = height / 5
+        return VStack(spacing: 0) {
+            horizontalDigitsRow(s, 1, 2, 3) {
+                passwordEdit(s, image: "multiply") {
+                    password = ""
+                }
+            }
+            Divider()
+            horizontalDigitsRow(s, 4, 5, 6) {
+                passwordDigit(s, 0)
+            }
+            Divider()
+            horizontalDigitsRow(s, 7, 8, 9) {
+                passwordEdit(s, image: "delete.backward") {
+                    if password != "" { password.removeLast() }
+                }
+            }
+        }
+        .frame(width: s * 4, height: s * 3 * 0.97)
     }
 
     private func digitsRow(_ size: CGFloat, _ d1: Int, _ d2: Int, _ d3: Int) -> some View {
@@ -81,6 +107,14 @@ struct PasscodeEntry: View {
         .frame(height: size * 0.97)
     }
 
+    private func horizontalDigitsRow<V: View>(_ size: CGFloat, _ d1: Int, _ d2: Int, _ d3: Int, _ button: @escaping () -> V) -> some View {
+        HStack(spacing: 0) {
+            digitsRow(size, d1, d2, d3)
+            Divider()
+            button()
+        }
+        .frame(height: size * 0.97)
+    }
 
     private func passwordDigit(_ size: CGFloat, _ d: Int) -> some View {
         let s = String(describing: d)
@@ -117,6 +151,6 @@ struct PasscodeEntry: View {
 
 struct PasscodeEntry_Previews: PreviewProvider {
     static var previews: some View {
-        PasscodeEntry(width: 360, password: Binding.constant(""))
+        PasscodeEntry(width: 800, height: 420, password: Binding.constant(""))
     }
 }

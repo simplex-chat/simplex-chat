@@ -114,9 +114,9 @@ struct SimplexLockView: View {
         case laFailedAlert
         case laUnavailableInstructionAlert
         case laUnavailableTurningOffAlert
-        case laPasswordSetAlert
-        case laPasswordChangedAlert
-        case laPasswordNotChangedAlert
+        case laPasscodeSetAlert
+        case laPasscodeChangedAlert
+        case laPasscodeNotChangedAlert
 
         var id: Self { self }
     }
@@ -198,9 +198,9 @@ struct SimplexLockView: View {
             case .laFailedAlert: return laFailedAlert()
             case .laUnavailableInstructionAlert: return laUnavailableInstructionAlert()
             case .laUnavailableTurningOffAlert: return laUnavailableTurningOffAlert()
-            case .laPasswordSetAlert: return passwordAlert("Passcode set!")
-            case .laPasswordChangedAlert: return passwordAlert("Passcode changed!")
-            case .laPasswordNotChangedAlert: return mkAlert(title: "Passcode not changed!")
+            case .laPasscodeSetAlert: return passcodeAlert("Passcode set!")
+            case .laPasscodeChangedAlert: return passcodeAlert("Passcode changed!")
+            case .laPasscodeNotChangedAlert: return mkAlert(title: "Passcode not changed!")
             }
         }
         .sheet(item: $showPasswordAction) { a in
@@ -210,7 +210,7 @@ struct SimplexLockView: View {
                     laLockDelay = 30
                     prefPerformLA = true
                     showChangePassword = true
-                    showLAAlert(.laPasswordSetAlert)
+                    showLAAlert(.laPasscodeSetAlert)
                 } cancel: {
                     resetLAEnabled(false)
                 }
@@ -219,15 +219,15 @@ struct SimplexLockView: View {
                     laLockDelay = 30
                     updateLAMode()
                     showChangePassword = true
-                    showLAAlert(.laPasswordSetAlert)
+                    showLAAlert(.laPasscodeSetAlert)
                 } cancel: {
                     revertLAMode()
                 }
             case .changePassword:
                 SetAppPasscodeView {
-                    showLAAlert(.laPasswordChangedAlert)
+                    showLAAlert(.laPasscodeChangedAlert)
                 } cancel: {
-                    showLAAlert(.laPasswordNotChangedAlert)
+                    showLAAlert(.laPasscodeNotChangedAlert)
                 }
             }
         }
@@ -347,7 +347,7 @@ struct SimplexLockView: View {
         privacyLocalAuthModeDefault.set(laMode)
     }
 
-    private func passwordAlert(_ title: LocalizedStringKey) -> Alert {
+    private func passcodeAlert(_ title: LocalizedStringKey) -> Alert {
         mkAlert(title: title, message: "Please remember or store it securely - there is no way to recover a lost passcode!")
     }
 }
