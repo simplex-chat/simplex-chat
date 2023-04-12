@@ -272,6 +272,9 @@ getInAnyOrder f cc ls = do
 (<#) :: HasCallStack => TestCC -> String -> Expectation
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 
+(*<#) :: HasCallStack => [TestCC] -> String -> Expectation
+ccs *<# line = concurrentlyN_ $ map (<# line) ccs
+
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
 cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 

@@ -17,9 +17,11 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (authErrDisableCount, sameVerificationCode, verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
+import System.FilePath ((</>))
 import Test.Hspec
 
 chatDirectTests :: SpecWith FilePath
@@ -79,6 +81,8 @@ chatDirectTests = do
       sameVerificationCode "123 456 789" "12345 6789" `shouldBe` True
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
+  describe "message errors" $ do
+    it "show message decryption error and update count" testGroupMsgDecryptError
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -1763,3 +1767,49 @@ testMarkGroupMemberVerified =
       alice <## "member ID: 2"
       alice <## "receiving messages via: localhost"
       alice <## "sending messages via: localhost"
+
+testGroupMsgDecryptError :: HasCallStack => FilePath -> IO ()
+testGroupMsgDecryptError tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+    copyDb "bob" "bob_old"
+    withTestChat tmp "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      bob #> "@alice hello too"
+      alice <# "bob> hello too"
+    withTestChat tmp "bob_old" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      alice #> "@bob 1"
+      bob <# "alice> decryption error, possibly due to the device change (header)"
+      alice #> "@bob 2"
+      alice #> "@bob 3"
+      (bob </)
+      bob ##> "/tail @alice 1"
+      bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
+      bob #> "@alice 1"
+      alice <# "bob> decryption error, possibly due to the device change (header)"
+      bob #> "@alice 2"
+      bob #> "@alice 3"
+      (alice </)
+      alice ##> "/tail @bob 1"
+      alice <# "bob> decryption error, possibly due to the device change (header, 3 messages)"
+      alice #> "@bob 4"
+      bob <# "alice> decryption error, possibly due to the device change (header)"
+    withTestChat tmp "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      alice #> "@bob hello again"
+      bob <# "alice> skipped message ID 5..8"
+      bob <# "alice> hello again"
+      bob #> "@alice received!"
+      alice <# "bob> received!"
+  where
+    copyDb from to = do
+      copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
+      copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)

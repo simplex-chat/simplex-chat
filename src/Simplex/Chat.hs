@@ -47,6 +47,7 @@ import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
+import Data.Word (Word32)
 import qualified Database.SQLite.Simple as DB
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
@@ -2616,16 +2617,19 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-          when (err == AGENT A_RATCHET_HEADER || err == AGENT A_RATCHET_SKIPPED) $ do
+          forM_ (agentMsgDecryptError err) $ \e@(mde, n) -> do
             ci_ <- withStore $ \db ->
-              getDirectChatItemsLast db user contactId 1 "" >>= \case
-                CChatItem _ (ci@ChatItem {content = CIRcvDecryptionError count}) : _ ->
-                  let content' = CIRcvDecryptionError $ count + 1
-                   in liftIO $ Just <$> updateDirectChatItem' db user contactId ci content' False Nothing
-                _ -> pure Nothing
+              getDirectChatItemsLast db user contactId 1 ""
+                >>= liftIO
+                  . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing)
+                  . (mdeUpdatedCI e <=< headMaybe)
             case ci_ of
               Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-              _ -> createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError 1) Nothing
+              _ -> createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n) Nothing
+          where
+            headMaybe = \case
+              x : _ -> Just x
+              _ -> Nothing
         -- TODO add debugging output
         _ -> pure ()
 
@@ -2787,18 +2791,37 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        when (err == AGENT A_RATCHET_HEADER || err == AGENT A_RATCHET_SKIPPED) $ do
+        forM_ (agentMsgDecryptError err) $ \e@(mde, n) -> do
           ci_ <- withStore $ \db ->
-            getGroupMemberChatItemLast db user groupId (groupMemberId' m) >>= \case
-              CChatItem _ (ci@ChatItem {content = CIRcvDecryptionError count}) ->
-                let content' = CIRcvDecryptionError $ count + 1
-                 in liftIO $ Just <$> updateGroupChatItem db user groupId ci content' False Nothing
-              _ -> pure Nothing
+            getGroupMemberChatItemLast db user groupId (groupMemberId' m)
+              >>= liftIO
+                . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False Nothing)
+                . mdeUpdatedCI e
           case ci_ of
             Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
-            _ -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError 1) Nothing
+            _ -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError mde n) Nothing
       -- TODO add debugging output
       _ -> pure ()
+
+    agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
+    agentMsgDecryptError = \case
+      AGENT (A_CRYPTO RATCHET_HEADER) -> Just (MDERatchetHeader, 1)
+      AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Just (MDEEarlier, n)
+      AGENT A_DUPLICATE -> Just (MDEDuplicate, 1)
+      AGENT (A_CRYPTO (RATCHET_SKIPPED n)) -> Just (MDETooManySkipped, n)
+      _ -> Nothing
+
+    mdeUpdatedCI :: (MsgDecryptError, Word32) -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
+    mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
+      | mde == mde' = case mde of
+        MDERatchetHeader -> r (n + n')
+        MDEEarlier -> r n' -- the numbers are not added as it's the number of messages to receive to catch up
+        MDEDuplicate -> r (n + n')
+        MDETooManySkipped -> r n' -- the numbers are not added as sequential MDETooManySkipped will have it incremented by 1
+      | otherwise = Nothing
+      where
+        r n'' = Just (ci, CIRcvDecryptionError mde n'')
+    mdeUpdatedCI _ _ = Nothing
 
     processSndFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg connEntity conn ft@SndFileTransfer {fileId, fileName, fileStatus} =

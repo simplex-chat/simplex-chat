@@ -9,7 +9,10 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (when)
 import qualified Data.Text as T
+import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
+import System.Directory (copyFile)
+import System.FilePath ((</>))
 import Test.Hspec
 
 chatGroupTests :: SpecWith FilePath
@@ -48,6 +51,8 @@ chatGroupTests = do
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
     it "group link member role" testGroupLinkMemberRole
     it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
+  describe "group message errors" $ do
+    it "show message decryption error and update count" testGroupMsgDecryptError
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup
@@ -1986,3 +1991,78 @@ testGroupLinkLeaveDelete =
       bob ##> "/contacts"
       bob <## "alice (Alice)"
       bob <## "cath (Catherine)"
+
+testGroupMsgDecryptError :: HasCallStack => FilePath -> IO ()
+testGroupMsgDecryptError tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+      withNewTestChat tmp "bob" bobProfile $ \bob -> do
+        createGroup3 "team" alice bob cath
+        alice #> "#team hi"
+        [bob, cath] *<# "#team alice> hi"
+        bob #> "#team hey"
+        [alice, cath] *<# "#team bob> hey"
+      copyDb "bob" "bob_old"
+      withTestChat tmp "bob" $ \bob -> do
+        bob <## "2 contacts connected (use /cs for the list)"
+        bob <## "#team: connected to server(s)"
+        alice #> "#team hello"
+        [bob, cath] *<# "#team alice> hello"
+        bob #> "#team hello too"
+        [alice, cath] *<# "#team bob> hello too"
+      withTestChat tmp "bob_old" $ \bob -> do
+        bob <## "2 contacts connected (use /cs for the list)"
+        bob <## "#team: connected to server(s)"
+        alice #> "#team 1"
+        bob <# "#team alice> decryption error, possibly due to the device change (header)"
+        cath <# "#team alice> 1"
+        alice #> "#team 2"
+        cath <# "#team alice> 2"
+        alice #> "#team 3"
+        cath <# "#team alice> 3"
+        (bob </)
+        bob ##> "/tail #team 1"
+        bob <# "#team alice> decryption error, possibly due to the device change (header, 3 messages)"
+        bob #> "#team 1"
+        alice <# "#team bob> decryption error, possibly due to the device change (header)"
+        -- cath <# "#team bob> 1"
+        bob #> "#team 2"
+        cath <# "#team bob> decryption error, possibly due to the device change (duplicate message)"
+        cath <# "#team bob> incorrect message hash"
+        cath <# "#team bob> 2"
+        bob #> "#team 3"
+        cath <# "#team bob> 3"
+        (alice </)
+        alice ##> "/tail #team 1"
+        alice <# "#team bob> decryption error, possibly due to the device change (header, 3 messages)"
+        alice #> "#team 4"
+        (bob </)
+        cath <# "#team alice> 4"
+        bob ##> "/tail #team 4"
+        bob
+          <##? [ "#team alice> decryption error, possibly due to the device change (header, 4 messages)",
+                 "#team 1",
+                 "#team 2",
+                 "#team 3"
+               ]
+      withTestChat tmp "bob" $ \bob -> do
+        bob <## "2 contacts connected (use /cs for the list)"
+        bob <## "#team: connected to server(s)"
+        alice #> "#team hello again"
+        bob <# "#team alice> skipped message ID 8..11"
+        [bob, cath] *<# "#team alice> hello again"
+        bob #> "#team received!"
+        alice <# "#team bob> received!"
+        bob #> "#team 4"
+        alice <# "#team bob> 4"
+        bob #> "#team 5"
+        cath <# "#team bob> decryption error, possibly due to the device change (earlier message)"
+        cath <# "#team bob> decryption error, possibly due to the device change (duplicate message)"
+        cath <# "#team bob> incorrect message hash"
+        [alice, cath] *<# "#team bob> 5"
+        bob #> "#team 6"
+        [alice, cath] *<# "#team bob> 6"
+  where
+    copyDb from to = do
+      copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
+      copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
