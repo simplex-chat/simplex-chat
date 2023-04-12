@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
+    @State private var showSetPasscode = false
 
     var body: some View {
         ZStack {
@@ -35,6 +36,17 @@ struct ContentView: View {
             }
             if !showSettings, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
+            } else if showSetPasscode {
+                SetAppPasscodeView {
+                    prefPerformLA = true
+                    showSetPasscode = false
+                    privacyLocalAuthModeDefault.set(.passcode)
+                    alertManager.showAlert(laTurnedOnAlert())
+                } cancel: {
+                    prefPerformLA = false
+                    showSetPasscode = false
+                    alertManager.showAlert(laNotEnabledAlert())
+                }
             }
         }
         .onAppear {
@@ -48,9 +60,9 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)
         }
-        .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode) {
-            Button("System authentication") { enableLA(.system) }
-            Button("Passcode entry") { enableLA(.passcode) }
+        .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode, titleVisibility: .visible) {
+            Button("System authentication") { initialEnableLA() }
+            Button("Passcode entry") { showSetPasscode = true }
         }
     }
 
@@ -207,8 +219,8 @@ struct ContentView: View {
          )
     }
 
-    private func enableLA (_ laMode: LAMode) {
-        privacyLocalAuthModeDefault.set(laMode)
+    private func initialEnableLA () {
+        privacyLocalAuthModeDefault.set(.system)
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
