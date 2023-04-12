@@ -1062,7 +1062,7 @@
     <string name="smp_server_test_upload_file">上传文件</string>
     <string name="xftp_servers">XFTP 服务器</string>
     <string name="your_XFTP_servers">您的 XFTP 服务器</string>
-    <string name="disable_onion_hosts_when_not_supported">如果 SOCKS 代理不支持它们，请将 <i>Use .onion hosts</i> 设置为 No。</string>
+    <string name="disable_onion_hosts_when_not_supported">如果 SOCKS 代理不支持它们，请将 <i>Use .onion hosts</i> 设置为否。</string>
     <string name="network_socks_toggle_use_socks_proxy">使用 SOCKS 代理</string>
     <string name="port_verb">端口</string>
     <string name="smp_server_test_delete_file">删除文件</string>
