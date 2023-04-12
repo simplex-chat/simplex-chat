@@ -365,6 +365,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIDirectRcv -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
+        CIRcvDecryptionError count -> viewRcvDecryptionError from count ts meta
         CIRcvGroupEvent {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
@@ -381,6 +382,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIGroupRcv m -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
+        CIRcvDecryptionError count -> viewRcvDecryptionError from count ts meta
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
@@ -492,17 +494,11 @@ msgPreview = msgPlain . preview . msgContentText
 viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta с 'MDRcv -> [StyledString]
 viewRcvIntegrityError from msgErr ts meta = receivedWithTime_ ts from [] meta (viewMsgIntegrityError msgErr) False
 
+viewRcvDecryptionError :: StyledString -> Int -> CurrentTime -> CIMeta с 'MDRcv -> [StyledString]
+viewRcvDecryptionError from count ts meta = receivedWithTime_ ts from [] meta [ttyError $ msgDecryptionError count] False
+
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
-viewMsgIntegrityError err = msgError $ case err of
-  MsgSkipped fromId toId ->
-    "skipped message ID " <> show fromId
-      <> if fromId == toId then "" else ".." <> show toId
-  MsgBadId msgId -> "unexpected message ID " <> show msgId
-  MsgBadHash -> "incorrect message hash"
-  MsgDuplicate -> "duplicate message ID"
-  where
-    msgError :: String -> [StyledString]
-    msgError s = [ttyError s]
+viewMsgIntegrityError err = [ttyError $ msgIntegrityError err]
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =

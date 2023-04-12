@@ -80,7 +80,7 @@ buildTimestampQ = do
 
 simplexmqCommitQ :: Q Exp
 simplexmqCommitQ = do
-  s <- either error B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
+  s <- either (const "") B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
   [|fromString s|]
   where
     commitHashP :: A.Parser ByteString

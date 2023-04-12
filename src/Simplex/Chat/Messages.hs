@@ -39,7 +39,7 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgErrorType (..), MsgMeta 
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, tshow, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord, Generic)
@@ -907,7 +907,7 @@ ciContentToText = \case
   CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
   CIRcvIntegrityError err -> msgIntegrityError err
-  CIRcvDecryptionError _ -> "decryption error, possibly due to device change"
+  CIRcvDecryptionError count -> msgDecryptionError count
   CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
   CIRcvGroupEvent event -> rcvGroupEventToText event
@@ -927,12 +927,16 @@ ciContentToText = \case
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
-  MsgSkipped fromId toId
-    | fromId == toId -> "1 skipped message"
-    | otherwise -> T.pack (show $ toId - fromId + 1) <> " skipped messages"
-  MsgBadId msgId -> "unexpected message ID " <> T.pack (show msgId)
+  MsgSkipped fromId toId ->
+    "skipped message ID " <> tshow fromId
+      <> if fromId == toId then "" else ".." <> tshow toId
+  MsgBadId msgId -> "unexpected message ID " <> tshow msgId
   MsgBadHash -> "incorrect message hash"
   MsgDuplicate -> "duplicate message ID"
+
+msgDecryptionError :: Int -> Text
+msgDecryptionError 1 = "decryption error, possibly due to device change"
+msgDecryptionError count = "decryption error, possibly due to device change (" <> tshow count <> " messages)"
 
 msgDirToModeratedContent_ :: SMsgDirection d -> CIContent d
 msgDirToModeratedContent_ = \case
@@ -1060,7 +1064,7 @@ data DBJSONCIContent
   | DBJCISndCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
-  | DBJCIRcvDecryptionError {count :: Int}
+  | DBJCIRcvDecryptionError {msgCount :: Int}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}

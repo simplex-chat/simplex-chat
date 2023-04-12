@@ -2616,6 +2616,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+          when (err == AGENT A_RATCHET_HEADER || err == AGENT A_RATCHET_SKIPPED) $ do
+            ci_ <- withStore $ \db ->
+              getDirectChatItemsLast db user contactId 1 "" >>= \case
+                CChatItem _ (ci@ChatItem {content = CIRcvDecryptionError count}) : _ ->
+                  let content' = CIRcvDecryptionError $ count + 1
+                   in liftIO $ Just <$> updateDirectChatItem' db user contactId ci content' False Nothing
+                _ -> pure Nothing
+            case ci_ of
+              Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
+              _ -> createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError 1) Nothing
         -- TODO add debugging output
         _ -> pure ()
 
@@ -2777,6 +2787,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        when (err == AGENT A_RATCHET_HEADER || err == AGENT A_RATCHET_SKIPPED) $ do
+          ci_ <- withStore $ \db ->
+            getGroupMemberChatItemLast db user groupId (groupMemberId' m) >>= \case
+              CChatItem _ (ci@ChatItem {content = CIRcvDecryptionError count}) ->
+                let content' = CIRcvDecryptionError $ count + 1
+                 in liftIO $ Just <$> updateGroupChatItem db user groupId ci content' False Nothing
+              _ -> pure Nothing
+          case ci_ of
+            Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
+            _ -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError 1) Nothing
       -- TODO add debugging output
       _ -> pure ()
 
@@ -3455,9 +3475,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
       MsgOk -> pure ()
-      MsgError e -> case e of
-        MsgSkipped {} -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
-        _ -> toView $ CRMsgIntegrityError user e
+      MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
