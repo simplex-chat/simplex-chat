@@ -711,6 +711,7 @@ data CIContent (d :: MsgDirection) where
   CISndCall :: CICallStatus -> Int -> CIContent 'MDSnd
   CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
   CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
+  CIRcvDecryptionError :: Int -> CIContent 'MDRcv
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
@@ -741,6 +742,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvDeleted _ -> True
     CIRcvCall {} -> True
     CIRcvIntegrityError _ -> True
+    CIRcvDecryptionError _ -> True
     CIRcvGroupInvitation {} -> True
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
@@ -905,6 +907,7 @@ ciContentToText = \case
   CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
   CIRcvIntegrityError err -> msgIntegrityError err
+  CIRcvDecryptionError _ -> "decryption error, possibly due to device change"
   CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
   CIRcvGroupEvent event -> rcvGroupEventToText event
@@ -968,6 +971,7 @@ data JSONCIContent
   | JCISndCall {status :: CICallStatus, duration :: Int} -- duration in seconds
   | JCIRcvCall {status :: CICallStatus, duration :: Int}
   | JCIRcvIntegrityError {msgError :: MsgErrorType}
+  | JCIRcvDecryptionError {msgCount :: Int}
   | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCIRcvGroupEvent {rcvGroupEvent :: RcvGroupEvent}
@@ -1002,6 +1006,7 @@ jsonCIContent = \case
   CISndCall status duration -> JCISndCall {status, duration}
   CIRcvCall status duration -> JCIRcvCall {status, duration}
   CIRcvIntegrityError err -> JCIRcvIntegrityError err
+  CIRcvDecryptionError count -> JCIRcvDecryptionError count
   CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rcvGroupEvent -> JCIRcvGroupEvent {rcvGroupEvent}
@@ -1028,6 +1033,7 @@ aciContentJSON = \case
   JCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   JCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
+  JCIRcvDecryptionError count -> ACIContent SMDRcv $ CIRcvDecryptionError count
   JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   JCIRcvGroupEvent {rcvGroupEvent} -> ACIContent SMDRcv $ CIRcvGroupEvent rcvGroupEvent
@@ -1054,6 +1060,7 @@ data DBJSONCIContent
   | DBJCISndCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
+  | DBJCIRcvDecryptionError {count :: Int}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
@@ -1088,6 +1095,7 @@ dbJsonCIContent = \case
   CISndCall status duration -> DBJCISndCall {status, duration}
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
   CIRcvIntegrityError err -> DBJCIRcvIntegrityError $ DBME err
+  CIRcvDecryptionError count -> DBJCIRcvDecryptionError count
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
@@ -1114,6 +1122,7 @@ aciContentDBJSON = \case
   DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   DBJCIRcvIntegrityError (DBME err) -> ACIContent SMDRcv $ CIRcvIntegrityError err
+  DBJCIRcvDecryptionError count -> ACIContent SMDRcv $ CIRcvDecryptionError count
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
