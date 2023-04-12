@@ -4910,6 +4910,16 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>\~删去~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve" approved="no">
+        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target state="translated">确保 SMP 服务器地址的格式正确，以行分隔并且不重复（%@）。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving SMP servers" xml:space="preserve" approved="no">
+        <source>Error saving SMP servers</source>
+        <target state="translated">保存 SMP 服务器错误</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="zh-Hans" datatype="plaintext">
