@@ -186,7 +186,7 @@ struct SimplexLockView: View {
         .onChange(of: laMode) { _ in
             if performLAModeReset {
                 performLAModeReset = false
-            } else if performLA {
+            } else if prefPerformLA {
                 toggleLAMode()
             } else {
                 updateLAMode()
