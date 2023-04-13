@@ -163,11 +163,6 @@ private fun SimplexLockView(
     laUnavailableInstructionAlert()
   }
 
-  fun resetLA() {
-    ksAppPassword.remove()
-    laLockDelay.set(30)
-  }
-
   fun revertLAMode() {
     laMode.value = currentLAMode.get()
   }
@@ -262,7 +257,6 @@ private fun SimplexLockView(
               setPerformLA(true, activity)
             }
             LAMode.PASSCODE -> {
-              resetLA()
               ModalManager.shared.showCustomModal { close ->
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
                   SetAppPasscodeView(
