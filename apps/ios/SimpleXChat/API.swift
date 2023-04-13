@@ -30,7 +30,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
             logger.debug("chatMigrateInit generating a random DB key")
             dbKey = randomDatabasePassword()
             initialRandomDBPassphraseGroupDefault.set(true)
-        } else if let key = getDatabaseKey() {
+        } else if let key = kcDatabasePassword.get() {
             dbKey = key
         }
     }
@@ -44,7 +44,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     let cjson = chat_migrate_init(&cPath, &cKey, &cConfirm, &chatController)!
     let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
-    let keychainErr = dbRes == .ok && useKeychain && encrypted && !setDatabaseKey(dbKey)
+    let keychainErr = dbRes == .ok && useKeychain && encrypted && !kcDatabasePassword.set(dbKey)
     let result = (encrypted, keychainErr ? .errorKeychain : dbRes)
     migrationResult = result
     return result

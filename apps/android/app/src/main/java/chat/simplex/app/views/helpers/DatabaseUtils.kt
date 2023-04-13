@@ -3,6 +3,7 @@ package chat.simplex.app.views.helpers
 import android.util.Log
 import chat.simplex.app.*
 import chat.simplex.app.model.AppPreferences
+import chat.simplex.app.model.SharedPreference
 import chat.simplex.app.views.usersettings.Cryptor
 import kotlinx.serialization.*
 import java.io.File
@@ -16,29 +17,35 @@ object DatabaseUtils {
   }
 
   private const val DATABASE_PASSWORD_ALIAS: String = "databasePassword"
+  private const val APP_PASSWORD_ALIAS: String = "appPassword"
+
+  val ksDatabasePassword = KeyStoreItem(DATABASE_PASSWORD_ALIAS, appPreferences.encryptedDBPassphrase, appPreferences.initializationVectorDBPassphrase)
+  val ksAppPassword = KeyStoreItem(APP_PASSWORD_ALIAS, appPreferences.encryptedAppPassphrase, appPreferences.initializationVectorAppPassphrase)
+
+  class KeyStoreItem(private val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
+    fun get(): String? {
+      return cryptor.decryptData(
+        passphrase.get()?.toByteArrayFromBase64() ?: return null,
+        initVector.get()?.toByteArrayFromBase64() ?: return null,
+        alias,
+      )
+    }
+
+    fun set(key: String) {
+      val data = cryptor.encryptText(key, alias)
+      passphrase.set(data.first.toBase64String())
+      initVector.set(data.second.toBase64String())
+    }
+
+    fun remove() {
+      cryptor.deleteKey(alias)
+      passphrase.set(null)
+      initVector.set(null)
+    }
+  }
 
   private fun hasDatabase(rootDir: String): Boolean =
     File(rootDir + File.separator + "files_chat.db").exists() && File(rootDir + File.separator + "files_agent.db").exists()
-
-  fun getDatabaseKey(): String? {
-    return cryptor.decryptData(
-      appPreferences.encryptedDBPassphrase.get()?.toByteArrayFromBase64() ?: return null,
-      appPreferences.initializationVectorDBPassphrase.get()?.toByteArrayFromBase64() ?: return null,
-      DATABASE_PASSWORD_ALIAS,
-    )
-  }
-
-  fun setDatabaseKey(key: String) {
-    val data = cryptor.encryptText(key, DATABASE_PASSWORD_ALIAS)
-    appPreferences.encryptedDBPassphrase.set(data.first.toBase64String())
-    appPreferences.initializationVectorDBPassphrase.set(data.second.toBase64String())
-  }
-
-  fun removeDatabaseKey() {
-    cryptor.deleteKey(DATABASE_PASSWORD_ALIAS)
-    appPreferences.encryptedDBPassphrase.set(null)
-    appPreferences.initializationVectorDBPassphrase.set(null)
-  }
 
   fun useDatabaseKey(): String {
     Log.d(TAG, "useDatabaseKey ${appPreferences.storeDBPassphrase.get()}")
@@ -47,10 +54,10 @@ object DatabaseUtils {
     if (useKeychain) {
       if (!hasDatabase(SimplexApp.context.dataDir.absolutePath)) {
         dbKey = randomDatabasePassword()
-        setDatabaseKey(dbKey)
+        ksDatabasePassword.set(dbKey)
         appPreferences.initialRandomDBPassphrase.set(true)
       } else {
-        dbKey = getDatabaseKey() ?: ""
+        dbKey = ksDatabasePassword.get() ?: ""
       }
     }
     return dbKey

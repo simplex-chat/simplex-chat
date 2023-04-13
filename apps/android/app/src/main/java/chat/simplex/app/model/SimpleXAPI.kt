@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
@@ -84,6 +83,8 @@ class AppPreferences(val context: Context) {
     set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) }
   )
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
+  val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.SYSTEM) { LAMode.values().firstOrNull { it.name == this } }
+  val laLockDelay = mkIntPreference(SHARED_PREFS_LA_LOCK_DELAY, 30)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
   val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
@@ -108,6 +109,7 @@ class AppPreferences(val context: Context) {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
+  val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
   private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
   val networkSessionMode: SharedPreference<TransportSessionMode> = SharedPreference(
     get = fun(): TransportSessionMode {
@@ -141,6 +143,8 @@ class AppPreferences(val context: Context) {
   val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
   val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
   val initializationVectorDBPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE, null)
+  val encryptedAppPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_APP_PASSPHRASE, null)
+  val initializationVectorAppPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_APP_PASSPHRASE, null)
   val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null, true)
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
 
@@ -183,6 +187,12 @@ class AppPreferences(val context: Context) {
       set = fun(value) = sharedPreferences.edit().putString(prefName, value).apply()
     )
 
+  private fun <T> mkEnumPreference(prefName: String, default: T, construct: String.() -> T?): SharedPreference<T> =
+    SharedPreference(
+      get = fun() = sharedPreferences.getString(prefName, default.toString())?.construct() ?: default,
+      set = fun(value) = sharedPreferences.edit().putString(prefName, value.toString()).apply()
+    )
+
   /**
   * Provide `[commit] = true` to save preferences right now, not after some unknown period of time.
   * So in case of a crash this value will be saved 100%
@@ -209,6 +219,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
     private const val SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN = "CallsOnLockScreen"
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
+    private const val SHARED_PREFS_LA_MODE = "LocalAuthenticationMode"
+    private const val SHARED_PREFS_LA_LOCK_DELAY = "LocalAuthenticationLockDelay"
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
     private const val SHARED_PREFS_PRIVACY_PROTECT_SCREEN = "PrivacyProtectScreen"
@@ -224,6 +236,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
+    private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
     private const val SHARED_PREFS_NETWORK_SESSION_MODE = "NetworkSessionMode"
     private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
@@ -244,6 +257,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE = "InitialRandomDBPassphrase"
     private const val SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE = "EncryptedDBPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE = "InitializationVectorDBPassphrase"
+    private const val SHARED_PREFS_ENCRYPTED_APP_PASSPHRASE = "EncryptedAppPassphrase"
+    private const val SHARED_PREFS_INITIALIZATION_VECTOR_APP_PASSPHRASE = "InitializationVectorAppPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
@@ -1705,43 +1720,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     )
   }
 
-  fun showLANotice(activity: FragmentActivity) {
-    Log.d(TAG, "showLANotice")
-    if (!appPrefs.laNoticeShown.get()) {
-      appPrefs.laNoticeShown.set(true)
-      AlertManager.shared.showAlertDialog(
-        title = generalGetString(R.string.la_notice_title_simplex_lock),
-        text = generalGetString(R.string.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
-        confirmText = generalGetString(R.string.la_notice_turn_on),
-        onConfirm = {
-          authenticate(
-            generalGetString(R.string.auth_enable_simplex_lock),
-            generalGetString(R.string.auth_confirm_credential),
-            activity,
-            completed = { laResult ->
-              when (laResult) {
-                LAResult.Success -> {
-                  chatModel.performLA.value = true
-                  appPrefs.performLA.set(true)
-                  laTurnedOnAlert()
-                }
-                is LAResult.Error, LAResult.Failed -> {
-                  chatModel.performLA.value = false
-                  appPrefs.performLA.set(false)
-                }
-                LAResult.Unavailable -> {
-                  chatModel.performLA.value = false
-                  appPrefs.performLA.set(false)
-                  chatModel.showAdvertiseLAUnavailableAlert.value = true
-                }
-              }
-            }
-          )
-        }
-      )
-    }
-  }
-
   fun isIgnoringBatteryOptimizations(context: Context): Boolean {
     val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
@@ -1765,7 +1743,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
-    val socksProxy = if (useSocksProxy) ":9050" else null
+    val proxyHostPort  = appPrefs.networkProxyHostPort.get()
+    val socksProxy = if (useSocksProxy) {
+      if (proxyHostPort?.startsWith("localhost:") == true) {
+        proxyHostPort.removePrefix("localhost")
+      } else {
+        proxyHostPort ?: ":9050"
+      }
+    } else {
+      null
+    }
     val hostMode = HostMode.valueOf(appPrefs.networkHostMode.get()!!)
     val requiredHostMode = appPrefs.networkRequiredHostMode.get()
     val sessionMode = appPrefs.networkSessionMode.get()

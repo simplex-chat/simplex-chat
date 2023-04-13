@@ -160,6 +160,7 @@ module Simplex.Chat.Store
     createSndFileTransferXFTP,
     createSndFTDescrXFTP,
     updateSndFTDescrXFTP,
+    createExtraSndFTDescrs,
     updateSndFTDeliveryXFTP,
     getXFTPSndFileDBId,
     getXFTPRcvFileDBId,
@@ -364,6 +365,7 @@ import Simplex.Chat.Migrations.M20230318_file_description
 import Simplex.Chat.Migrations.M20230321_agent_file_deleted
 import Simplex.Chat.Migrations.M20230328_files_protocol
 import Simplex.Chat.Migrations.M20230402_protocol_servers
+import Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -436,7 +438,8 @@ schemaMigrations =
     ("20230318_file_description", m20230318_file_description, Just down_m20230318_file_description),
     ("20230321_agent_file_deleted", m20230321_agent_file_deleted, Just down_m20230321_agent_file_deleted),
     ("20230328_files_protocol", m20230328_files_protocol, Just down_m20230328_files_protocol),
-    ("20230402_protocol_servers", m20230402_protocol_servers, Just down_m20230402_protocol_servers)
+    ("20230402_protocol_servers", m20230402_protocol_servers, Just down_m20230402_protocol_servers),
+    ("20230411_extra_xftp_file_descriptions", m20230411_extra_xftp_file_descriptions, Just down_m20230411_extra_xftp_file_descriptions)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -2810,16 +2813,26 @@ createSndFTDescrXFTP db User {userId} m Connection {connId} FileTransferMeta {fi
 
 updateSndFTDescrXFTP :: DB.Connection -> User -> SndFileTransfer -> Text -> IO ()
 updateSndFTDescrXFTP db user@User {userId} sft@SndFileTransfer {fileId, fileDescrId} rfdText = do
+  currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE xftp_file_descriptions
-      SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?
+      SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?, updated_at = ?
       WHERE user_id = ? AND file_descr_id = ?
     |]
-    (rfdText, 1 :: Int, True, userId, fileDescrId)
+    (rfdText, 1 :: Int, True, currentTs, userId, fileDescrId)
   updateCIFileStatus db user fileId $ CIFSSndTransfer 1 1
   updateSndFileStatus db sft FSConnected
+
+createExtraSndFTDescrs :: DB.Connection -> User -> FileTransferId -> [Text] -> IO ()
+createExtraSndFTDescrs db User {userId} fileId rfdTexts = do
+  currentTs <- getCurrentTime
+  forM_ rfdTexts $ \rfdText ->
+    DB.execute
+      db
+      "INSERT INTO extra_xftp_file_descriptions (file_id, user_id, file_descr_text, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (fileId, userId, rfdText, currentTs, currentTs)
 
 updateSndFTDeliveryXFTP :: DB.Connection -> SndFileTransfer -> Int64 -> IO ()
 updateSndFTDeliveryXFTP db SndFileTransfer {connId, fileId, fileDescrId} msgDeliveryId =

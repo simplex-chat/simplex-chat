@@ -42,9 +42,9 @@ fun DatabaseEncryptionView(m: ChatModel) {
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val initialRandomDBPassphrase = remember { mutableStateOf(prefs.initialRandomDBPassphrase.get()) }
-  val storedKey = remember { val key = DatabaseUtils.getDatabaseKey(); mutableStateOf(key != null && key != "") }
+  val storedKey = remember { val key = DatabaseUtils.ksDatabasePassword.get(); mutableStateOf(key != null && key != "") }
   // Do not do rememberSaveable on current key to prevent saving it on disk in clear text
-  val currentKey = remember { mutableStateOf(if (initialRandomDBPassphrase.value) DatabaseUtils.getDatabaseKey() ?: "" else "") }
+  val currentKey = remember { mutableStateOf(if (initialRandomDBPassphrase.value) DatabaseUtils.ksDatabasePassword.get() ?: "" else "") }
   val newKey = rememberSaveable { mutableStateOf("") }
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
 
@@ -89,7 +89,7 @@ fun DatabaseEncryptionView(m: ChatModel) {
                 prefs.initialRandomDBPassphrase.set(false)
                 initialRandomDBPassphrase.value = false
                 if (useKeychain.value) {
-                  DatabaseUtils.setDatabaseKey(newKey.value)
+                  DatabaseUtils.ksDatabasePassword.set(newKey.value)
                 }
                 resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
                 operationEnded(m, progressIndicator) {
@@ -150,7 +150,7 @@ fun DatabaseEncryptionLayout(
             text = generalGetString(R.string.notifications_will_be_hidden) + "\n" + storeSecurelyDanger(),
             confirmText = generalGetString(R.string.remove_passphrase),
             onConfirm = {
-              DatabaseUtils.removeDatabaseKey()
+              DatabaseUtils.ksDatabasePassword.remove()
               setUseKeychain(false, useKeychain, prefs)
               storedKey.value = false
             },
@@ -366,7 +366,7 @@ fun PassphraseField(
   showStrength: Boolean = false,
   isValid: (String) -> Boolean,
   keyboardActions: KeyboardActions = KeyboardActions(),
-  dependsOn: MutableState<String>? = null,
+  dependsOn: State<Any?>? = null,
 ) {
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
@@ -479,7 +479,7 @@ private fun passphraseEntropy(s: String): Double {
   return s.length * log2(poolSize.toDouble())
 }
 
-private enum class PassphraseStrength(val color: Color) {
+enum class PassphraseStrength(val color: Color) {
   VERY_WEAK(Color.Red), WEAK(WarningOrange), REASONABLE(WarningYellow), STRONG(SimplexGreen);
 
   companion object {

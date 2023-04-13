@@ -13,7 +13,7 @@ struct DatabaseErrorView: View {
     @EnvironmentObject var m: ChatModel
     @State var status: DBMigrationResult
     @State private var dbKey = ""
-    @State private var storedDBKey = getDatabaseKey()
+    @State private var storedDBKey = kcDatabasePassword.get()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var showRestoreDbButton = false
     @State private var starting = false
@@ -131,7 +131,7 @@ struct DatabaseErrorView: View {
     }
 
     private func saveAndRunChat() {
-        if setDatabaseKey(dbKey) {
+        if kcDatabasePassword.set(dbKey) {
             storeDBPassphraseGroupDefault.set(true)
             initialRandomDBPassphraseGroupDefault.set(false)
         }

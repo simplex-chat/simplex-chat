@@ -577,3 +577,20 @@ CREATE TABLE xftp_file_descriptions(
 );
 CREATE INDEX idx_snd_files_file_descr_id ON snd_files(file_descr_id);
 CREATE INDEX idx_rcv_files_file_descr_id ON rcv_files(file_descr_id);
+CREATE TABLE extra_xftp_file_descriptions(
+  extra_file_descr_id INTEGER PRIMARY KEY,
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  file_descr_text TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE INDEX idx_extra_xftp_file_descriptions_file_id ON extra_xftp_file_descriptions(
+  file_id
+);
+CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON extra_xftp_file_descriptions(
+  user_id
+);
+CREATE INDEX idx_xftp_file_descriptions_user_id ON xftp_file_descriptions(
+  user_id
+);
