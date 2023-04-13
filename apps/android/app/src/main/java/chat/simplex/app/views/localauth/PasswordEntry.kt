@@ -40,7 +40,7 @@ fun PasscodeEntry(
 }
 
 @Composable
-private fun PasscodeView(password: MutableState<String>) {
+fun PasscodeView(password: MutableState<String>) {
   var showPasscode by rememberSaveable { mutableStateOf(false) }
   Text(
     if (password.value.isEmpty()) " " else remember(password.value, showPasscode) { splitPassword(showPasscode, password.value) },
@@ -75,7 +75,7 @@ private fun BoxWithConstraintsScope.VerticalPasswordGrid(password: MutableState<
 
 @Composable
 private fun BoxWithConstraintsScope.HorizontalPasswordGrid(password: MutableState<String>) {
-  val s = minOf(maxWidth, maxHeight) / 4 - 1.dp
+  val s = minOf(maxWidth, maxHeight) / 3.5f - 1.dp
   Column(Modifier.width(IntrinsicSize.Min)) {
     Row(Modifier.height(IntrinsicSize.Min)) {
       DigitsRow(s, 1, 2, 3, password);
