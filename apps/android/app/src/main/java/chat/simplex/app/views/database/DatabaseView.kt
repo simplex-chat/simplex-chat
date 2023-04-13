@@ -446,6 +446,7 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>, context:
             stopChat(m, runChat, context)
           }
           is LAResult.Error -> {
+            runChat.value = true
           }
           is LAResult.Failed -> {
             runChat.value = true

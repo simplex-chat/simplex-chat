@@ -183,7 +183,8 @@ class MainActivity: FragmentActivity() {
               when (laResult) {
                 LAResult.Success ->
                   userAuthorized.value = true
-                is LAResult.Error, is LAResult.Failed -> {
+                is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
+                is LAResult.Error -> {
                   laFailed.value = true
                   if (m.controller.appPrefs.laMode.get() == LAMode.PASSCODE) {
                     laFailedAlert()
@@ -254,7 +255,8 @@ class MainActivity: FragmentActivity() {
             appPrefs.performLA.set(true)
             laTurnedOnAlert()
           }
-          is LAResult.Error, is LAResult.Failed -> {
+          is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
+          is LAResult.Error -> {
             m.performLA.value = false
             appPrefs.performLA.set(false)
             laFailedAlert()
@@ -320,7 +322,8 @@ class MainActivity: FragmentActivity() {
             prefPerformLA.set(true)
             laTurnedOnAlert()
           }
-          is LAResult.Error, is LAResult.Failed -> {
+          is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
+          is LAResult.Error -> {
             m.performLA.value = false
             prefPerformLA.set(false)
             laFailedAlert()
@@ -355,7 +358,8 @@ class MainActivity: FragmentActivity() {
             prefPerformLA.set(false)
             ksAppPassword.remove()
           }
-          is LAResult.Error, is LAResult.Failed -> {
+          is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
+          is LAResult.Error -> {
             m.performLA.value = true
             prefPerformLA.set(true)
             laFailedAlert()
