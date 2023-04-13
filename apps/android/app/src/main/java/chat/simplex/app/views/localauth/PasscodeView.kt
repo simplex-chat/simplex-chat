@@ -78,9 +78,7 @@ fun PasscodeView(
           if (reason != null) {
             Text("", Modifier.padding(top = 5.dp), style = MaterialTheme.typography.subtitle1)
           }
-          Spacer(Modifier.height(10.dp))
           PasscodeView(remember { mutableStateOf("") })
-          Spacer(Modifier.height(10.dp))
         }
         BoxWithConstraints {
           val s = minOf(maxWidth, maxHeight) / 3.5f

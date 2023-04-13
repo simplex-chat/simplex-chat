@@ -26,9 +26,7 @@ fun PasscodeEntry(
   vertical: Boolean,
 ) {
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Spacer(Modifier.height(10.dp))
     PasscodeView(password)
-    Spacer(Modifier.height(10.dp))
     BoxWithConstraints {
       if (vertical) {
         VerticalPasswordGrid(password)
@@ -44,7 +42,7 @@ fun PasscodeView(password: MutableState<String>) {
   var showPasscode by rememberSaveable { mutableStateOf(false) }
   Text(
     if (password.value.isEmpty()) " " else remember(password.value, showPasscode) { splitPassword(showPasscode, password.value) },
-    Modifier.clickable { showPasscode = !showPasscode },
+    Modifier.padding(vertical = 10.dp).clickable { showPasscode = !showPasscode },
     style = MaterialTheme.typography.body1
   )
 }
