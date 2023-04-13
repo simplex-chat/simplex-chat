@@ -139,7 +139,7 @@ private fun PasswordDigit(size: Dp, d: Int, password: MutableState<String>) {
 @Composable
 private fun PasswordEdit(size: Dp, image: ImageVector, action: () -> Unit) {
   PasswordButton(size, action) {
-    Icon(image, null)
+    Icon(image, null, tint = HighOrLowlight)
   }
 }
 
