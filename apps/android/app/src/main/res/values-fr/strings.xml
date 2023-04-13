@@ -1070,4 +1070,10 @@
     <string name="smp_server_test_download_file">Télécharger le fichier</string>
     <string name="error_loading_smp_servers">Erreur lors du chargement des serveurs SMP</string>
     <string name="error_loading_xftp_servers">Erreur lors du chargement des serveurs XFTP</string>
+    <string name="host_verb">Héberger</string>
+    <string name="port_verb">Port</string>
+    <string name="network_proxy_port">port %d</string>
+    <string name="network_socks_proxy_settings">Paramètres de proxy SOCKS</string>
+    <string name="network_socks_toggle_use_socks_proxy">Utiliser un proxy SOCKS</string>
+    <string name="disable_onion_hosts_when_not_supported">Définissez <i>Utiliser les hôtes .onion</i> sur Non si le proxy SOCKS ne les prend pas en charge.</string>
 </resources>
