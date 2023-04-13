@@ -15,9 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.*
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.ui.theme.HighOrLowlight
 
 @Composable
 fun PasscodeEntry(
@@ -122,7 +124,15 @@ private fun PasswordDigit(size: Dp, d: Int, password: MutableState<String>) {
       password.value += s
     }
   }) {
-    Text(s, style = MaterialTheme.typography.h2)
+    Text(
+      s,
+      style = TextStyle(
+        fontWeight = FontWeight.Normal,
+        fontSize = 30.sp,
+        letterSpacing = (-0.5).sp
+      ),
+      color = HighOrLowlight
+    )
   }
 }
 
