@@ -250,14 +250,8 @@ class MainActivity: FragmentActivity() {
     val appPrefs = m.controller.appPrefs
     m.controller.appPrefs.laMode.set(LAMode.SYSTEM)
     authenticate(
-      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(R.string.auth_enable_simplex_lock)
-      else
-        generalGetString(R.string.new_passcode),
-      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(R.string.auth_confirm_credential)
-      else
-        "",
+      generalGetString(R.string.auth_enable_simplex_lock),
+      generalGetString(R.string.auth_confirm_credential),
       activity,
       completed = { laResult ->
         when (laResult) {
@@ -269,6 +263,7 @@ class MainActivity: FragmentActivity() {
           is LAResult.Error, is LAResult.Failed -> {
             m.performLA.value = false
             appPrefs.performLA.set(false)
+            laFailedAlert()
           }
           is LAResult.Unavailable -> {
             m.performLA.value = false
@@ -334,6 +329,7 @@ class MainActivity: FragmentActivity() {
           is LAResult.Error, is LAResult.Failed -> {
             m.performLA.value = false
             prefPerformLA.set(false)
+            laFailedAlert()
           }
           is LAResult.Unavailable -> {
             m.performLA.value = false
@@ -368,6 +364,7 @@ class MainActivity: FragmentActivity() {
           is LAResult.Error, is LAResult.Failed -> {
             m.performLA.value = true
             prefPerformLA.set(true)
+            laFailedAlert()
           }
           is LAResult.Unavailable -> {
             m.performLA.value = false
