@@ -103,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ 已认证";
 
+/* No comment provided by engineer. */
+"%@ servers" = "%@ 服务器";
+
 /* notification title */
 "%@ wants to connect!" = "%@ 要连接！";
 
@@ -741,6 +744,9 @@
 "Database upgrade" = "数据库升级";
 
 /* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "数据库版本比应用程序更新，但无法降级迁移：%@";
+
+/* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "数据库将被加密，密码保存在钥匙串中。\n";
 
 /* No comment provided by engineer. */
@@ -882,6 +888,9 @@
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "没有启用设备认证。一旦启用设备认证，您可以通过设置打开 SimpleX 锁定。";
 
 /* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "应用程序/数据库中的不同迁移：%@ / %@";
+
+/* No comment provided by engineer. */
 "Different names, avatars and transport isolation." = "不同的名字、头像和传输隔离。";
 
 /* connection level description */
@@ -978,16 +987,19 @@
 "Encrypt database?" = "加密数据库？";
 
 /* No comment provided by engineer. */
-"Encrypted database" = "加密的数据库";
+"Encrypted database" = "加密数据库";
 
 /* notification */
-"Encrypted message or another event" = "加密消息或其他项目";
+"Encrypted message or another event" = "加密消息或其他事件";
 
 /* notification */
 "Encrypted message: database error" = "加密消息：数据库错误";
 
 /* notification */
-"Encrypted message: keychain error" = "加密信息：钥匙串错误";
+"Encrypted message: database migration error" = "加密信息：数据库迁移错误";
+
+/* notification */
+"Encrypted message: keychain error" = "加密消息：钥匙串错误";
 
 /* notification */
 "Encrypted message: no passphrase" = "加密消息：没有密码";
@@ -1095,6 +1107,9 @@
 "Error removing member" = "删除成员错误";
 
 /* No comment provided by engineer. */
+"Error saving %@ servers" = "保存 %@ 服务器错误";
+
+/* No comment provided by engineer. */
 "Error saving group profile" = "保存群组资料错误";
 
 /* No comment provided by engineer. */
@@ -1102,9 +1117,6 @@
 
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "保存密码到钥匙串错误";
-
-/* No comment provided by engineer. */
-"Error saving SMP servers" = "保存 SMP 服务器错误";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "保存用户密码时出错";
@@ -1134,6 +1146,9 @@
 "Error updating user privacy" = "更新用户隐私时出错";
 
 /* No comment provided by engineer. */
+"Error: " = "错误： ";
+
+/* No comment provided by engineer. */
 "Error: %@" = "错误： ％@";
 
 /* No comment provided by engineer. */
@@ -1144,6 +1159,9 @@
 
 /* No comment provided by engineer. */
 "Exit without saving" = "退出而不保存";
+
+/* No comment provided by engineer. */
+"Experimental" = "实验性";
 
 /* No comment provided by engineer. */
 "Export database" = "导出数据库";
@@ -1530,7 +1548,7 @@
 "Make profile private!" = "将个人资料设为私密！";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "请确保 SMP服 务器地址格式正确，每行一个地址并且不重复 (%@)。";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "请确保 %@服 务器地址格式正确，每行一个地址并且不重复 (%@)。";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。";
@@ -1590,6 +1608,9 @@
 "Messages" = "消息";
 
 /* No comment provided by engineer. */
+"Messages & files" = "消息";
+
+/* No comment provided by engineer. */
 "Migrating database archive..." = "迁移数据库档案中……";
 
 /* No comment provided by engineer. */
@@ -1600,6 +1621,9 @@
 
 /* No comment provided by engineer. */
 "Migration is completed" = "迁移完成";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "迁移：%@";
 
 /* call status */
 "missed call" = "未接来电";
@@ -2125,6 +2149,9 @@
 "Send them from gallery or custom keyboards." = "发送它们来自图库或自定义键盘。";
 
 /* No comment provided by engineer. */
+"Send videos and files via XFTP" = "通过 XFTP 发送文件";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "发送人已取消文件传输。";
 
 /* No comment provided by engineer. */
@@ -2634,6 +2661,9 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "密码错误！";
 
+/* No comment provided by engineer. */
+"XFTP servers" = "XFTP 服务器";
+
 /* pref value */
 "yes" = "是";
 
@@ -2782,6 +2812,9 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "您正在为该群组使用隐身个人资料——为防止共享您的主要个人资料，不允许邀请联系人";
 
 /* No comment provided by engineer. */
+"Your %@ servers" = "您的 %@ 服务器";
+
+/* No comment provided by engineer. */
 "Your calls" = "您的通话";
 
 /* No comment provided by engineer. */
@@ -2858,4 +2891,7 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "您的 SMP 服务器";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "您的 XFTP 服务器";
 

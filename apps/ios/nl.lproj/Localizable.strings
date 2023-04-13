@@ -103,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ is geverifieerd";
 
+/* No comment provided by engineer. */
+"%@ servers" = "%@ servers";
+
 /* notification title */
 "%@ wants to connect!" = "%@ wil verbinding maken!";
 
@@ -741,6 +744,9 @@
 "Database upgrade" = "Database upgrade";
 
 /* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "databaseversie is nieuwer dan de app, maar geen downmigratie voor: %@";
+
+/* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "De database wordt versleuteld en het wachtwoord wordt opgeslagen in de keychain.\n";
 
 /* No comment provided by engineer. */
@@ -882,6 +888,9 @@
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "Apparaatverificatie is niet ingeschakeld. Je kunt SimpleX Vergrendelen inschakelen via Instellingen zodra je apparaatverificatie hebt ingeschakeld.";
 
 /* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "verschillende migratie in de app/database: %@ / %@";
+
+/* No comment provided by engineer. */
 "Different names, avatars and transport isolation." = "Verschillende namen, avatars en transportisolatie.";
 
 /* connection level description */
@@ -985,6 +994,9 @@
 
 /* notification */
 "Encrypted message: database error" = "Versleuteld bericht: database fout";
+
+/* notification */
+"Encrypted message: database migration error" = "Versleuteld bericht: fout bij databasemigratie";
 
 /* notification */
 "Encrypted message: keychain error" = "Versleuteld bericht: keychain fout";
@@ -1095,6 +1107,9 @@
 "Error removing member" = "Fout bij verwijderen van gebruiker";
 
 /* No comment provided by engineer. */
+"Error saving %@ servers" = "Fout bij opslaan van %@ servers";
+
+/* No comment provided by engineer. */
 "Error saving group profile" = "Fout bij opslaan van groep profiel";
 
 /* No comment provided by engineer. */
@@ -1102,9 +1117,6 @@
 
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Fout bij opslaan van wachtwoord in de keychain";
-
-/* No comment provided by engineer. */
-"Error saving SMP servers" = "Fout bij opslaan van SMP servers";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "Fout bij opslaan gebruikers wachtwoord";
@@ -1147,6 +1159,9 @@
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Afsluiten zonder opslaan";
+
+/* No comment provided by engineer. */
+"Experimental" = "Experimenteel";
 
 /* No comment provided by engineer. */
 "Export database" = "Database exporteren";
@@ -1533,7 +1548,7 @@
 "Make profile private!" = "Profiel privé maken!";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Zorg ervoor dat SMP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn (%@).";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Zorg ervoor dat %@ server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Zorg ervoor dat WebRTC ICE server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.";
@@ -1593,6 +1608,9 @@
 "Messages" = "Berichten";
 
 /* No comment provided by engineer. */
+"Messages & files" = "Berichten";
+
+/* No comment provided by engineer. */
 "Migrating database archive..." = "Database archief migreren...";
 
 /* No comment provided by engineer. */
@@ -1603,6 +1621,9 @@
 
 /* No comment provided by engineer. */
 "Migration is completed" = "Migratie is voltooid";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "Migraties: %@";
 
 /* call status */
 "missed call" = "gemiste oproep";
@@ -2128,6 +2149,9 @@
 "Send them from gallery or custom keyboards." = "Stuur ze vanuit de galerij of aangepaste toetsenborden.";
 
 /* No comment provided by engineer. */
+"Send videos and files via XFTP" = "Bestanden verzenden via XFTP";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Afzender heeft bestandsoverdracht geannuleerd.";
 
 /* No comment provided by engineer. */
@@ -2637,6 +2661,9 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Verkeerd wachtwoord!";
 
+/* No comment provided by engineer. */
+"XFTP servers" = "XFTP servers";
+
 /* pref value */
 "yes" = "Ja";
 
@@ -2785,6 +2812,9 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Je gebruikt een incognito profiel voor deze groep. Om te voorkomen dat je je hoofdprofiel deelt, is het niet toegestaan om contacten uit te nodigen";
 
 /* No comment provided by engineer. */
+"Your %@ servers" = "Uw %@ servers";
+
+/* No comment provided by engineer. */
 "Your calls" = "Uw oproepen";
 
 /* No comment provided by engineer. */
@@ -2861,4 +2891,7 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Uw SMP servers";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "Uw XFTP servers";
 

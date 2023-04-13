@@ -12,17 +12,26 @@ import Security
 private let ACCESS_POLICY: CFString = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
 private let ACCESS_GROUP: String = "5NN7GUYB6T.chat.simplex.app"
 private let DATABASE_PASSWORD_ITEM: String = "databasePassword"
+private let APP_PASSWORD_ITEM: String = "appPassword"
 
-public func getDatabaseKey() -> String? {
-    getItemString(forKey: DATABASE_PASSWORD_ITEM)
-}
+public let kcDatabasePassword = KeyChainItem(forKey: DATABASE_PASSWORD_ITEM)
 
-public func setDatabaseKey(_ key: String) -> Bool {
-    setItemString(key, forKey: DATABASE_PASSWORD_ITEM)
-}
+public let kcAppPassword = KeyChainItem(forKey: APP_PASSWORD_ITEM)
 
-public func removeDatabaseKey() -> Bool {
-    deleteItem(forKey: DATABASE_PASSWORD_ITEM)
+public struct KeyChainItem {
+    var forKey: String
+
+    public func get() -> String? {
+        getItemString(forKey: forKey)
+    }
+
+    public func set(_ value: String) -> Bool {
+        setItemString(value, forKey: forKey)
+    }
+
+    public func remove() -> Bool {
+        deleteItem(forKey: forKey)
+    }
 }
 
 func randomDatabasePassword() -> String {
