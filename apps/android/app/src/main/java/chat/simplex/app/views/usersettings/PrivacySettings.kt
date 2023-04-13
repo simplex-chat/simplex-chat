@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -142,7 +141,7 @@ private fun SimplexLockView(
   setPerformLA: (Boolean, FragmentActivity) -> Unit
 ) {
   val performLA = remember { chatModel.performLA }
-  val laMode = rememberSaveable { mutableStateOf(chatModel.controller.appPrefs.laMode.get()) }
+  val laMode = remember { chatModel.controller.appPrefs.laMode.state }
   val laLockDelay = remember { chatModel.controller.appPrefs.laLockDelay }
   val showChangePasscode = remember { derivedStateOf { performLA.value && currentLAMode.state.value == LAMode.PASSCODE } }
   val activity = LocalContext.current as FragmentActivity
@@ -152,24 +151,15 @@ private fun SimplexLockView(
     chatModel.performLA.value = onOff
   }
 
-  fun updateLAMode() {
-    currentLAMode.set(laMode.value)
-  }
-
   fun disableUnavailableLA() {
     resetLAEnabled(false)
-    laMode.value = LAMode.SYSTEM
-    updateLAMode()
+    currentLAMode.set(LAMode.SYSTEM)
     laUnavailableInstructionAlert()
   }
 
-  fun revertLAMode() {
-    laMode.value = currentLAMode.get()
-  }
-
-  fun toggleLAMode() {
+  fun toggleLAMode(toLAMode: LAMode) {
     authenticate(
-      if (laMode.value == LAMode.SYSTEM) {
+      if (toLAMode == LAMode.SYSTEM) {
         generalGetString(R.string.la_enter_app_passcode)
       } else {
         generalGetString(R.string.chat_lock)
@@ -177,22 +167,19 @@ private fun SimplexLockView(
       generalGetString(R.string.change_lock_mode), activity) { laResult ->
       when (laResult) {
         is LAResult.Failed, is LAResult.Error -> {
-          revertLAMode()
           laFailedAlert()
         }
         LAResult.Success -> {
-          when (laMode.value) {
+          when (toLAMode) {
             LAMode.SYSTEM -> {
-              updateLAMode()
-              authenticate(generalGetString(R.string.auth_enable_simplex_lock), promptSubtitle = "", activity) { laResult ->
+              authenticate(generalGetString(R.string.auth_enable_simplex_lock), promptSubtitle = "", activity, toLAMode) { laResult ->
                 when (laResult) {
                   LAResult.Success -> {
+                    currentLAMode.set(toLAMode)
                     ksAppPassword.remove()
                     laTurnedOnAlert()
                   }
                   is LAResult.Failed, is LAResult.Unavailable, is LAResult.Error -> {
-                    currentLAMode.set(LAMode.PASSCODE)
-                    revertLAMode()
                     laFailedAlert()
                   }
                 }
@@ -204,11 +191,10 @@ private fun SimplexLockView(
                   SetAppPasscodeView(
                     submit = {
                       laLockDelay.set(30)
-                      updateLAMode()
+                      currentLAMode.set(toLAMode)
                       passcodeAlert(generalGetString(R.string.passcode_set))
-                    }, cancel = {
-                      revertLAMode()
-                    }, close
+                    }, cancel = {},
+                    close
                   )
                 }
               }
@@ -279,13 +265,12 @@ private fun SimplexLockView(
       }
       SectionDivider()
       SectionItemView {
-        LockModeSelector(laMode) {
-          if (laMode.value == it) return@LockModeSelector
-          laMode.value = it
+        LockModeSelector(laMode) { newLAMode ->
+          if (laMode.value == newLAMode) return@LockModeSelector
           if (chatModel.controller.appPrefs.performLA.get()) {
-            toggleLAMode()
+            toggleLAMode(newLAMode)
           } else {
-            updateLAMode()
+            currentLAMode.set(newLAMode)
           }
         }
       }
@@ -295,7 +280,7 @@ private fun SimplexLockView(
         SectionItemView {
           LockDelaySelector(remember { laLockDelay.state }) { laLockDelay.set(it) }
         }
-        if (showChangePasscode.value && remember { currentLAMode.state }.value == LAMode.PASSCODE) {
+        if (showChangePasscode.value && laMode.value == LAMode.PASSCODE) {
           SectionDivider()
           SectionItemView({ changeLAPassword() }) {
             Text(generalGetString(R.string.la_change_app_passcode))

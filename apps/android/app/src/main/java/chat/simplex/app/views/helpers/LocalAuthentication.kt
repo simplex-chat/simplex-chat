@@ -38,9 +38,10 @@ fun authenticate(
   promptTitle: String,
   promptSubtitle: String,
   activity: FragmentActivity,
+  usingLAMode: LAMode = SimplexApp.context.chatModel.controller.appPrefs.laMode.get(),
   completed: (LAResult) -> Unit
 ) {
-  when (SimplexApp.context.chatModel.controller.appPrefs.laMode.get()) {
+  when (usingLAMode) {
     LAMode.SYSTEM -> when {
       SDK_INT in 28..29 ->
         // KeyguardManager.isDeviceSecure()? https://developer.android.com/training/sign-in/biometric-auth#declare-supported-authentication-types

@@ -52,7 +52,7 @@ fun DatabaseView(
 ) {
   val context = LocalContext.current
   val progressIndicator = remember { mutableStateOf(false) }
-  val runChat = remember { mutableStateOf(m.chatRunning.value ?: true) }
+  val runChat = remember { m.chatRunning }
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val chatArchiveName = remember { mutableStateOf(prefs.chatArchiveName.get()) }
@@ -76,7 +76,7 @@ fun DatabaseView(
   ) {
     DatabaseLayout(
       progressIndicator.value,
-      runChat.value,
+      runChat.value != false,
       m.chatDbChanged.value,
       useKeychain.value,
       m.chatDbEncrypted.value,
@@ -388,7 +388,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) R.string.old_database_archive else R.string.new_database_archive)
 }
 
-private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
+private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
   withApi {
     try {
       if (chatDbChanged.value) {
@@ -417,7 +417,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStar
   }
 }
 
-private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
+private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.stop_chat_question),
     text = generalGetString(R.string.stop_chat_to_export_import_or_delete_chat_database),
@@ -434,7 +434,7 @@ private fun exportProhibitedAlert() {
   )
 }
 
-private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
+private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(R.string.auth_stop_chat),
@@ -458,7 +458,7 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean>, context: 
   }
 }
 
-private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
+private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
   withApi {
     try {
       m.controller.apiStopChat()
