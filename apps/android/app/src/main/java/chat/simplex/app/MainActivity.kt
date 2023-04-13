@@ -1,5 +1,6 @@
 package chat.simplex.app
 
+import SectionItemView
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
@@ -12,8 +13,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.*
@@ -25,8 +25,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.NtfManager
+import chat.simplex.app.MainActivity.Companion.enteredBackground
+import chat.simplex.app.model.*
 import chat.simplex.app.model.NtfManager.Companion.getUserIdFromIntent
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -37,8 +37,11 @@ import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
+import chat.simplex.app.views.localauth.SetAppPasscodeView
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
+import chat.simplex.app.views.usersettings.LAMode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -93,7 +96,7 @@ class MainActivity: FragmentActivity() {
             laFailed,
             ::runAuthenticate,
             ::setPerformLA,
-            showLANotice = { m.controller.showLANotice(this) }
+            showLANotice = { showLANotice(m.controller.appPrefs.laNoticeShown, this) }
           )
         }
       }
@@ -111,7 +114,8 @@ class MainActivity: FragmentActivity() {
   override fun onResume() {
     super.onResume()
     val enteredBackgroundVal = enteredBackground.value
-    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30_000) {
+    val delay = vm.chatModel.controller.appPrefs.laLockDelay.get()
+    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= delay * 1000) {
       runAuthenticate()
     }
   }
@@ -172,9 +176,13 @@ class MainActivity: FragmentActivity() {
               when (laResult) {
                 LAResult.Success ->
                   userAuthorized.value = true
-                is LAResult.Error, LAResult.Failed ->
+                is LAResult.Error, is LAResult.Failed -> {
                   laFailed.value = true
-                LAResult.Unavailable -> {
+                  if (m.controller.appPrefs.laMode.get() == LAMode.PASSCODE) {
+                    laFailedAlert()
+                  }
+                }
+                is LAResult.Unavailable -> {
                   userAuthorized.value = true
                   m.performLA.value = false
                   m.controller.appPrefs.performLA.set(false)
@@ -184,6 +192,101 @@ class MainActivity: FragmentActivity() {
             }
           )
         }
+      }
+    }
+  }
+
+  private fun showLANotice(laNoticeShown: SharedPreference<Boolean>, activity: FragmentActivity) {
+    Log.d(TAG, "showLANotice")
+    if (!laNoticeShown.get()) {
+      laNoticeShown.set(true)
+      AlertManager.shared.showAlertDialog(
+        title = generalGetString(R.string.la_notice_title_simplex_lock),
+        text = generalGetString(R.string.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
+        confirmText = generalGetString(R.string.la_notice_turn_on),
+        onConfirm = {
+          withBGApi { // to remove this call, change ordering of onConfirm call in AlertManager
+            showChooseLAMode(laNoticeShown, activity)
+          }
+        }
+      )
+    }
+  }
+
+  private fun showChooseLAMode(laNoticeShown: SharedPreference<Boolean>, activity: FragmentActivity) {
+    Log.d(TAG, "showLANotice")
+    laNoticeShown.set(true)
+    AlertManager.shared.showAlertDialogButtonsColumn(
+      title = generalGetString(R.string.la_lock_mode),
+      text = null,
+      buttons = {
+        Column {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            initialEnableLA(activity)
+          }) {
+            Text(stringResource(R.string.la_lock_mode_system))
+          }
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            setPasscode()
+          }
+          ) {
+            Text(stringResource(R.string.la_lock_mode_passcode))
+          }
+        }
+      }
+    )
+  }
+
+  private fun initialEnableLA(activity: FragmentActivity) {
+    val chatModel = vm.chatModel
+    val appPrefs = chatModel.controller.appPrefs
+    chatModel.controller.appPrefs.laMode.set(LAMode.SYSTEM)
+    authenticate(
+      generalGetString(R.string.auth_enable_simplex_lock),
+      generalGetString(R.string.auth_confirm_credential),
+      activity,
+      completed = { laResult ->
+        when (laResult) {
+          LAResult.Success -> {
+            chatModel.performLA.value = true
+            appPrefs.performLA.set(true)
+            laTurnedOnAlert()
+          }
+          is LAResult.Error, is LAResult.Failed -> {
+            chatModel.performLA.value = false
+            appPrefs.performLA.set(false)
+          }
+          is LAResult.Unavailable -> {
+            chatModel.performLA.value = false
+            appPrefs.performLA.set(false)
+            chatModel.showAdvertiseLAUnavailableAlert.value = true
+          }
+        }
+      }
+    )
+  }
+
+  private fun setPasscode() {
+    val chatModel = vm.chatModel
+    val appPrefs = chatModel.controller.appPrefs
+    ModalManager.shared.showCustomModal { close ->
+      Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+        SetAppPasscodeView(
+          chatModel,
+          submit = {
+            chatModel.performLA.value = true
+            appPrefs.performLA.set(true)
+            appPrefs.laMode.set(LAMode.PASSCODE)
+            laTurnedOnAlert()
+          },
+          cancel = {
+            chatModel.performLA.value = false
+            appPrefs.performLA.set(false)
+            laPasscodeNotSetAlert()
+          },
+          close)
       }
     }
   }
@@ -211,11 +314,11 @@ class MainActivity: FragmentActivity() {
             prefPerformLA.set(true)
             laTurnedOnAlert()
           }
-          is LAResult.Error, LAResult.Failed -> {
+          is LAResult.Error, is LAResult.Failed -> {
             m.performLA.value = false
             prefPerformLA.set(false)
           }
-          LAResult.Unavailable -> {
+          is LAResult.Unavailable -> {
             m.performLA.value = false
             prefPerformLA.set(false)
             laUnavailableInstructionAlert()
@@ -237,12 +340,13 @@ class MainActivity: FragmentActivity() {
           LAResult.Success -> {
             m.performLA.value = false
             prefPerformLA.set(false)
+            ksAppPassword.remove()
           }
-          is LAResult.Error, LAResult.Failed -> {
+          is LAResult.Error, is LAResult.Failed -> {
             m.performLA.value = true
             prefPerformLA.set(true)
           }
-          LAResult.Unavailable -> {
+          is LAResult.Unavailable -> {
             m.performLA.value = false
             prefPerformLA.set(false)
             laUnavailableTurningOffAlert()
@@ -391,6 +495,14 @@ fun MainPage(
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
+  }
+
+  DisposableEffectOnRotate {
+    // When using lock delay = 0 and screen rotates, the app will be locked which is not useful.
+    // Let's prolong the unlocked period to 3 sec for screen rotation to take place
+    if (chatModel.controller.appPrefs.laLockDelay.get() == 0) {
+      enteredBackground.value = elapsedRealtime() + 3000
+    }
   }
 }
 

@@ -174,7 +174,7 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it) }, disabled = stopped)
         SectionDivider()
@@ -292,33 +292,6 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
     }),
     disabled = stopped
   )
-}
-
-@Composable fun ChatLockItem(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
-  SectionItemView() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(
-        Icons.Outlined.Lock,
-        contentDescription = stringResource(R.string.chat_lock),
-        tint = HighOrLowlight,
-      )
-      Spacer(Modifier.padding(horizontal = 4.dp))
-      Text(
-        stringResource(R.string.chat_lock), Modifier
-          .padding(end = 24.dp)
-          .fillMaxWidth()
-          .weight(1F)
-      )
-      Switch(
-        checked = performLA.value,
-        onCheckedChange = { setPerformLA(it) },
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        )
-      )
-    }
-  }
 }
 
 @Composable private fun ContributeItem(uriHandler: UriHandler) {
@@ -517,7 +490,7 @@ private fun runAuth(context: Context, onFinish: (success: Boolean) -> Unit) {
     generalGetString(R.string.auth_log_in_using_credential),
     context as FragmentActivity,
     completed = { laResult ->
-      onFinish(laResult == LAResult.Success || laResult == LAResult.Unavailable)
+      onFinish(laResult == LAResult.Success || laResult is LAResult.Unavailable)
     }
   )
 }

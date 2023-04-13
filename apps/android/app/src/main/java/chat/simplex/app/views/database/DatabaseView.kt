@@ -442,12 +442,12 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean>, context: 
       context as FragmentActivity,
       completed = { laResult ->
         when (laResult) {
-          LAResult.Success, LAResult.Unavailable -> {
+          LAResult.Success, is LAResult.Unavailable -> {
             stopChat(m, runChat, context)
           }
           is LAResult.Error -> {
           }
-          LAResult.Failed -> {
+          is LAResult.Failed -> {
             runChat.value = true
           }
         }
@@ -592,7 +592,7 @@ private fun importArchive(
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
           m.controller.apiImportArchive(config)
-          DatabaseUtils.removeDatabaseKey()
+          DatabaseUtils.ksDatabasePassword.remove()
           appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
           operationEnded(m, progressIndicator) {
             AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
@@ -647,7 +647,7 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
     try {
       m.controller.apiDeleteStorage()
       m.chatDbDeleted.value = true
-      DatabaseUtils.removeDatabaseKey()
+      DatabaseUtils.ksDatabasePassword.remove()
       m.controller.appPrefs.storeDBPassphrase.set(true)
       operationEnded(m, progressIndicator) {
         AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_deleted), generalGetString(R.string.restart_the_app_to_create_a_new_chat_profile))

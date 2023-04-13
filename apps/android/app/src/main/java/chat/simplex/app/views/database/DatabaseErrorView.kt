@@ -38,7 +38,7 @@ fun DatabaseErrorView(
 ) {
   val progressIndicator = remember { mutableStateOf(false) }
   val dbKey = remember { mutableStateOf("") }
-  var storedDBKey by remember { mutableStateOf(DatabaseUtils.getDatabaseKey()) }
+  var storedDBKey by remember { mutableStateOf(DatabaseUtils.ksDatabasePassword.get()) }
   var useKeychain by remember { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
   val context = LocalContext.current
   val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences, context)) }
@@ -49,7 +49,7 @@ fun DatabaseErrorView(
   }
 
   fun saveAndRunChatOnClick() {
-    DatabaseUtils.setDatabaseKey(dbKey.value)
+    DatabaseUtils.ksDatabasePassword.set(dbKey.value)
     storedDBKey = dbKey.value
     appPreferences.storeDBPassphrase.set(true)
     useKeychain = true

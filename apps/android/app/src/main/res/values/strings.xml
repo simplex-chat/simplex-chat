@@ -165,6 +165,20 @@
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
   <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled.</string>
   <string name="la_notice_turn_on">Turn on</string>
+  <string name="la_lock_mode">SimpleX Lock mode</string>
+  <string name="la_lock_mode_system">System authentication</string>
+  <string name="la_lock_mode_passcode">Passcode entry</string>
+  <string name="la_auth_failed">Authentication failed</string>
+  <string name="la_could_not_be_verified">You could not be verified; please try again.</string>
+  <string name="la_no_app_password">No app passcode</string>
+  <string name="la_enter_app_password">Enter passcode</string>
+  <string name="la_current_app_passcode">Current Passcode</string>
+  <string name="la_change_app_passcode">Change passcode</string>
+  <string name="la_authenticate">Authenticate</string>
+  <string name="la_immediately">Immediately</string>
+  <string name="la_seconds">%d seconds</string>
+  <string name="la_minutes">%d minutes</string>
+  <string name="la_please_remember_to_store_password">Please remember or store it securely - there is no way to recover a lost password!</string>
 
   <!-- LocalAuthentication.kt -->
   <string name="auth_simplex_lock_turned_on">SimpleX Lock turned on</string>
@@ -179,6 +193,8 @@
   <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
+  <string name="lock_not_enabled">SimpleX Lock not enabled!</string>
+  <string name="you_can_turn_on_lock">You can turn on SimpleX Lock via Settings.</string>
 
   <!-- Chat Alerts - ChatItemView.kt -->
   <string name="message_delivery_error_title">Message delivery error</string>
@@ -735,6 +751,20 @@
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="full_backup">App data backup</string>
+  <string name="enable_lock">Enable lock</string>
+  <string name="lock_mode">Lock mode</string>
+  <string name="lock_after">Lock after</string>
+  <string name="submit_passcode">Submit</string>
+  <string name="confirm_passcode">Confirm Passcode</string>
+  <string name="incorrect_passcode">Incorrect passcode</string>
+  <string name="new_passcode">New Passcode</string>
+  <string name="authentication_cancelled">Authentication cancelled</string>
+  <string name="la_mode_system">System</string>
+  <string name="la_mode_passcode">Passcode</string>
+  <string name="passcode_set">Passcode set!</string>
+  <string name="passcode_changed">Passcode changed!</string>
+  <string name="passcode_not_changed">Passcode not changed!</string>
+  <string name="change_lock_mode">Change lock mode</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>

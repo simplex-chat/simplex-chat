@@ -641,3 +641,19 @@ fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}
     }
   }
 }
+
+@Composable
+fun DisposableEffectOnRotate(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenRotate: () -> Unit) {
+  val context = LocalContext.current
+  DisposableEffect(Unit) {
+    always()
+    val activity = context as? Activity ?: return@DisposableEffect onDispose {}
+    val orientation = activity.resources.configuration.orientation
+    onDispose {
+      whenDispose()
+      if (orientation != activity.resources.configuration.orientation) {
+        whenRotate()
+      }
+    }
+  }
+}
