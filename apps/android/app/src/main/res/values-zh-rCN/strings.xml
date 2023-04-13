@@ -103,7 +103,7 @@
     <string name="app_version_name">应用程序版本：v%s</string>
     <string name="notifications_mode_off_desc">仅在运行时应用程序可以接受通知，不会启动后台服务</string>
     <string name="incognito_random_profile_description">一个随机资料将发送给您的联系人</string>
-    <string name="auth_unavailable">身份验证不可用</string>
+    <string name="auth_unavailable">身份认证不可用</string>
     <string name="auto_accept_images">自动接受图像</string>
     <string name="attach">附件</string>
     <string name="icon_descr_audio_call">语音通话</string>
@@ -1058,7 +1058,7 @@
     <string name="icon_descr_video_snd_complete">视频已发送</string>
     <string name="icon_descr_video_asked_to_receive">要求接收视频</string>
     <string name="video_will_be_received_when_contact_completes_uploading">视频将在您的联系人完成上传后收到。</string>
-    <string name="error_xftp_test_server_auth">服务器需要授权来上传，请检查密码</string>
+    <string name="error_xftp_test_server_auth">服务器需要授权来上传，检查密码</string>
     <string name="smp_server_test_upload_file">上传文件</string>
     <string name="xftp_servers">XFTP 服务器</string>
     <string name="your_XFTP_servers">您的 XFTP 服务器</string>
