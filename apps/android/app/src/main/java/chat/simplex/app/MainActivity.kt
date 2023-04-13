@@ -223,25 +223,18 @@ class MainActivity: FragmentActivity() {
   private fun showChooseLAMode(laNoticeShown: SharedPreference<Boolean>, activity: FragmentActivity) {
     Log.d(TAG, "showLANotice")
     laNoticeShown.set(true)
-    AlertManager.shared.showAlertDialogButtonsColumn(
+    AlertManager.shared.showAlertDialogStacked(
       title = generalGetString(R.string.la_lock_mode),
       text = null,
-      buttons = {
-        Column {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            initialEnableLA(activity)
-          }) {
-            Text(stringResource(R.string.la_lock_mode_system))
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            setPasscode()
-          }
-          ) {
-            Text(stringResource(R.string.la_lock_mode_passcode))
-          }
-        }
+      confirmText = generalGetString(R.string.la_lock_mode_passcode),
+      dismissText = generalGetString(R.string.la_lock_mode_system),
+      onConfirm = {
+        AlertManager.shared.hideAlert()
+        setPasscode()
+      },
+      onDismiss = {
+        AlertManager.shared.hideAlert()
+        initialEnableLA(activity)
       }
     )
   }
