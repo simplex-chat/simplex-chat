@@ -294,6 +294,33 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   )
 }
 
+@Composable
+fun ChatLockItem(
+  chatModel: ChatModel,
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  setPerformLA: (Boolean, FragmentActivity) -> Unit
+) {
+  val performLA = remember { chatModel.performLA }
+  val currentLAMode = remember { chatModel.controller.appPrefs.laMode }
+  SectionItemView(showSettingsModal { SimplexLockView(chatModel, currentLAMode, setPerformLA) }) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Icon(
+        if (performLA.value) Icons.Filled.Lock else Icons.Outlined.Lock,
+        contentDescription = stringResource(R.string.chat_lock),
+        tint = if (performLA.value) SimplexGreen else HighOrLowlight,
+      )
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      Text(
+        stringResource(R.string.chat_lock), Modifier
+          .padding(end = 24.dp)
+          .fillMaxWidth()
+          .weight(1F)
+      )
+      Text(if (performLA.value) remember { currentLAMode.state }.value.text else generalGetString(androidx.compose.ui.R.string.off), color = HighOrLowlight)
+    }
+  }
+}
+
 @Composable private fun ContributeItem(uriHandler: UriHandler) {
   SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat#contribute") }) {
     Icon(
