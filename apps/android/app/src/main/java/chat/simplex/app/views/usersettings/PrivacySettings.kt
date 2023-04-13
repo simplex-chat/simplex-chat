@@ -164,7 +164,8 @@ private fun SimplexLockView(
       } else {
         generalGetString(R.string.chat_lock)
       },
-      generalGetString(R.string.change_lock_mode), activity) { laResult ->
+      generalGetString(R.string.change_lock_mode), activity
+    ) { laResult ->
       when (laResult) {
         is LAResult.Failed, is LAResult.Error -> {
           laFailedAlert()
@@ -193,7 +194,8 @@ private fun SimplexLockView(
                       laLockDelay.set(30)
                       currentLAMode.set(toLAMode)
                       passcodeAlert(generalGetString(R.string.passcode_set))
-                    }, cancel = {},
+                    },
+                    cancel = {},
                     close
                   )
                 }
