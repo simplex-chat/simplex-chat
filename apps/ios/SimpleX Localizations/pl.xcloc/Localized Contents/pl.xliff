@@ -4850,6 +4850,246 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
         <target state="translated">Wysyłaj filmy i pliki przez XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
+        <source>%@ servers</source>
+        <target state="translated">%@ serwery</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lld minutes" xml:space="preserve" approved="no">
+        <source>%lld minutes</source>
+        <target state="translated">%lld minut</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lld seconds" xml:space="preserve" approved="no">
+        <source>%lld seconds</source>
+        <target state="translated">%lld sekund</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Authentication cancelled" xml:space="preserve" approved="no">
+        <source>Authentication cancelled</source>
+        <target state="translated">Uwierzytelnianie anulowane</target>
+        <note>PIN entry</note>
+      </trans-unit>
+      <trans-unit id="Change Passcode" xml:space="preserve" approved="no">
+        <source>Change Passcode</source>
+        <target state="translated">Zmień kod dostępu</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change lock mode" xml:space="preserve" approved="no">
+        <source>Change lock mode</source>
+        <target state="translated">Zmień tryb blokady</target>
+        <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Change passcode" xml:space="preserve" approved="no">
+        <source>Change passcode</source>
+        <target state="translated">Zmień pin</target>
+        <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Compare file" xml:space="preserve" approved="no">
+        <source>Compare file</source>
+        <target state="translated">Porównaj plik</target>
+        <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
+        <source>Confirm Passcode</source>
+        <target state="translated">Potwierdź Pin</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create file" xml:space="preserve" approved="no">
+        <source>Create file</source>
+        <target state="translated">Utwórz plik</target>
+        <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Current Passcode" xml:space="preserve" approved="no">
+        <source>Current Passcode</source>
+        <target state="translated">Aktualny Pin</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete file" xml:space="preserve" approved="no">
+        <source>Delete file</source>
+        <target state="translated">Usuń plik</target>
+        <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Download file" xml:space="preserve" approved="no">
+        <source>Download file</source>
+        <target state="translated">Pobierz plik</target>
+        <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Enable lock" xml:space="preserve" approved="no">
+        <source>Enable lock</source>
+        <target state="translated">Włącz blokadę</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enter Passcode" xml:space="preserve" approved="no">
+        <source>Enter Passcode</source>
+        <target state="translated">Wprowadź Pin</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error loading %@ servers" xml:space="preserve" approved="no">
+        <source>Error loading %@ servers</source>
+        <target state="translated">Błąd ładowania %@ serwerów</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving %@ servers" xml:space="preserve" approved="no">
+        <source>Error saving %@ servers</source>
+        <target state="translated">Błąd zapisu %@ serwerów</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving passcode" xml:space="preserve" approved="no">
+        <source>Error saving passcode</source>
+        <target state="translated">Błąd zapisu pinu</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Immediately" xml:space="preserve" approved="no">
+        <source>Immediately</source>
+        <target state="translated">Natychmiast</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="KeyChain error" xml:space="preserve" approved="no">
+        <source>KeyChain error</source>
+        <target state="translated">Błąd pęku kluczy</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Lock after" xml:space="preserve" approved="no">
+        <source>Lock after</source>
+        <target state="translated">Zablokuj po</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Lock mode" xml:space="preserve" approved="no">
+        <source>Lock mode</source>
+        <target state="translated">Tryb blokady</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve" approved="no">
+        <source>Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target state="translated">Upewnij się, że adresy serwerów %@ są w poprawnym formacie, rozdzielone liniami i nie są zduplikowane (%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages &amp; files" xml:space="preserve" approved="no">
+        <source>Messages &amp; files</source>
+        <target state="translated">Wiadomości i pliki</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New Passcode" xml:space="preserve" approved="no">
+        <source>New Passcode</source>
+        <target state="translated">Nowy Pin</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No app password" xml:space="preserve" approved="no">
+        <source>No app password</source>
+        <target state="translated">Brak hasła aplikacji</target>
+        <note>Authentication unavailable</note>
+      </trans-unit>
+      <trans-unit id="Off" xml:space="preserve" approved="no">
+        <source>Off</source>
+        <target state="translated">Wyłączony</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode" xml:space="preserve" approved="no">
+        <source>Passcode</source>
+        <target state="translated">Pin</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode changed!" xml:space="preserve" approved="no">
+        <source>Passcode changed!</source>
+        <target state="translated">Pin zmieniony!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode entry" xml:space="preserve" approved="no">
+        <source>Passcode entry</source>
+        <target state="translated">Wpis pinu</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode not changed!" xml:space="preserve" approved="no">
+        <source>Passcode not changed!</source>
+        <target state="translated">Pin nie został zmieniony!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode set!" xml:space="preserve" approved="no">
+        <source>Passcode set!</source>
+        <target state="translated">Pin ustawiony!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve" approved="no">
+        <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
+        <target state="translated">Prosimy o jego zapamiętanie lub bezpieczne przechowywanie - nie ma możliwości odzyskania utraconego pinu!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve" approved="no">
+        <source>Server requires authorization to upload, check password</source>
+        <target state="translated">Serwer wymaga autoryzacji do przesłania, sprawdź hasło</target>
+        <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Lock mode" xml:space="preserve" approved="no">
+        <source>SimpleX Lock mode</source>
+        <target state="translated">Tryb blokady SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve" approved="no">
+        <source>SimpleX Lock not enabled!</source>
+        <target state="translated">Blokada SimpleX wyłączona!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Submit" xml:space="preserve" approved="no">
+        <source>Submit</source>
+        <target state="translated">Zatwierdź</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="System authentication" xml:space="preserve" approved="no">
+        <source>System authentication</source>
+        <target state="translated">Uwierzytelnianie systemu</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unlock app" xml:space="preserve" approved="no">
+        <source>Unlock app</source>
+        <target state="translated">Odblokuj aplikację</target>
+        <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Upload file" xml:space="preserve" approved="no">
+        <source>Upload file</source>
+        <target state="translated">Prześlij plik</target>
+        <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve" approved="no">
+        <source>Video will be received when your contact completes uploading it.</source>
+        <target state="translated">Film zostanie odebrany, gdy kontakt zakończy jego przesyłanie.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
+        <source>Video will be received when your contact is online, please wait or check later!</source>
+        <target state="translated">Film zostanie odebrany, gdy kontakt będzie online, poczekaj lub sprawdź później!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Waiting for video" xml:space="preserve" approved="no">
+        <source>Waiting for video</source>
+        <target state="translated">Oczekiwanie na film</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="XFTP servers" xml:space="preserve" approved="no">
+        <source>XFTP servers</source>
+        <target state="translated">Serwery XFTP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
+        <source>You can turn on SimpleX Lock via Settings.</source>
+        <target state="translated">Możesz włączyć blokadę SimpleX poprzez Ustawienia.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your %@ servers" xml:space="preserve" approved="no">
+        <source>Your %@ servers</source>
+        <target state="translated">Twoje serwery %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your XFTP servers" xml:space="preserve" approved="no">
+        <source>Your XFTP servers</source>
+        <target state="translated">Twoje serwery XFTP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incorrect passcode" xml:space="preserve" approved="no">
+        <source>Incorrect passcode</source>
+        <target state="translated">Nieprawidłowy pin</target>
+        <note>PIN entry</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pl" datatype="plaintext">
