@@ -54,10 +54,8 @@ class ChatModel(val controller: ChatController) {
 
   val terminalItems = mutableStateListOf<TerminalItem>()
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
-  val userSMPServers = mutableStateOf<(List<ServerCfg>)?>(null)
   // Allows to temporary save servers that are being edited on multiple screens
   val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
-  val presetSMPServers = mutableStateOf<(List<String>)?>(null)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent
@@ -2044,7 +2042,11 @@ enum class CICallStatus {
   }
 }
 
-fun durationText(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
+fun durationText(sec: Int): String {
+  val s = sec % 60
+  val m = sec / 60
+  return if (m < 60) "%02d:%02d".format(m, s) else "%02d:%02d:%02d".format(m / 60, m % 60, s)
+}
 
 @Serializable
 sealed class MsgErrorType() {

@@ -75,7 +75,7 @@ fun SendMsgView(
 ) {
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
-    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.VideoPreview || cs.preview is ComposePreview.FilePreview)
+    val showProgress = cs.inProgress && (cs.preview is ComposePreview.MediaPreview || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }

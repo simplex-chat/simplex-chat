@@ -21,6 +21,7 @@ final class ChatModel: ObservableObject {
     @Published var chatDbChanged = false
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
+    @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // map of connections network statuses, key is agent connection id

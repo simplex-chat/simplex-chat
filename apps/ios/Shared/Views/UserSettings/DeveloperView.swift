@@ -38,6 +38,8 @@ struct DeveloperView: View {
                     settingsRow("chevron.left.forwardslash.chevron.right") {
                         Toggle("Show developer options", isOn: $developerTools)
                     }
+                } header: {
+                    Text("")
                 } footer: {
                     (developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option.")
                 }

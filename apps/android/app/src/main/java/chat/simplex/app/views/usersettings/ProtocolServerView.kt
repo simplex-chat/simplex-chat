@@ -32,12 +32,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
-fun SMPServerView(m: ChatModel, server: ServerCfg, onUpdate: (ServerCfg) -> Unit, onDelete: () -> Unit) {
+fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerProtocol, onUpdate: (ServerCfg) -> Unit, onDelete: () -> Unit) {
   var testing by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
-  SMPServerLayout(
+  ProtocolServerLayout(
     testing,
     server,
+    serverProtocol,
     testServer = {
       testing = true
       scope.launch {
@@ -68,9 +69,10 @@ fun SMPServerView(m: ChatModel, server: ServerCfg, onUpdate: (ServerCfg) -> Unit
 }
 
 @Composable
-private fun SMPServerLayout(
+private fun ProtocolServerLayout(
   testing: Boolean,
   server: ServerCfg,
+  serverProtocol: ServerProtocol,
   testServer: () -> Unit,
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
@@ -86,7 +88,7 @@ private fun SMPServerLayout(
     if (server.preset) {
       PresetServer(testing, server, testServer, onUpdate, onDelete)
     } else {
-      CustomServer(testing, server, testServer, onUpdate, onDelete)
+      CustomServer(testing, server, serverProtocol, testServer, onUpdate, onDelete)
     }
   }
 }
@@ -119,12 +121,19 @@ private fun PresetServer(
 private fun CustomServer(
   testing: Boolean,
   server: ServerCfg,
+  serverProtocol: ServerProtocol,
   testServer: () -> Unit,
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
   val serverAddress = remember { mutableStateOf(server.server) }
-  val valid = remember { derivedStateOf { parseServerAddress(serverAddress.value)?.valid == true } }
+  val valid = remember {
+    derivedStateOf {
+      with(parseServerAddress(serverAddress.value)) {
+        this?.valid == true && this.serverProtocol == serverProtocol
+      }
+    }
+  }
   SectionView(
     stringResource(R.string.smp_servers_your_server_address).uppercase(),
     icon = Icons.Outlined.ErrorOutline,
@@ -187,9 +196,9 @@ fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
     else -> Icon(Icons.Outlined.Check, null, modifier, tint = Color.Transparent)
   }
 
-suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, SMPTestFailure?> =
+suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, ProtocolTestFailure?> =
   try {
-    val r = m.controller.testSMPServer(server.server)
+    val r = m.controller.testProtoServer(server.server)
     server.copy(tested = r == null) to r
   } catch (e: Exception) {
     Log.e(TAG, "testServerConnection ${e.stackTraceToString()}")
