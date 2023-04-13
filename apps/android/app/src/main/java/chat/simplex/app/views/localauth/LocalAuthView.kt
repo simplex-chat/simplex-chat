@@ -11,7 +11,7 @@ import chat.simplex.app.views.helpers.*
 @Composable
 fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
   val passcode = rememberSaveable { mutableStateOf("") }
-  PasscodeView(passcode, authRequest.title ?: stringResource(R.string.la_enter_app_password), authRequest.reason, stringResource(R.string.submit_passcode),
+  PasscodeView(passcode, authRequest.title ?: stringResource(R.string.la_enter_app_passcode), authRequest.reason, stringResource(R.string.submit_passcode),
     submit = {
       val r: LAResult = if (passcode.value == authRequest.password) LAResult.Success else LAResult.Failed(generalGetString(R.string.incorrect_passcode))
       authRequest.completed(r)

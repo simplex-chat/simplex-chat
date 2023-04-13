@@ -169,8 +169,14 @@ class MainActivity: FragmentActivity() {
         delay(50)
         withContext(Dispatchers.Main) {
           authenticate(
-            generalGetString(R.string.auth_unlock),
-            generalGetString(R.string.auth_log_in_using_credential),
+            if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+              generalGetString(R.string.auth_unlock)
+            else
+              generalGetString(R.string.la_enter_app_passcode),
+            if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+              generalGetString(R.string.auth_log_in_using_credential)
+            else
+              generalGetString(R.string.auth_unlock),
             this@MainActivity,
             completed = { laResult ->
               when (laResult) {
@@ -240,28 +246,34 @@ class MainActivity: FragmentActivity() {
   }
 
   private fun initialEnableLA(activity: FragmentActivity) {
-    val chatModel = vm.chatModel
-    val appPrefs = chatModel.controller.appPrefs
-    chatModel.controller.appPrefs.laMode.set(LAMode.SYSTEM)
+    val m = vm.chatModel
+    val appPrefs = m.controller.appPrefs
+    m.controller.appPrefs.laMode.set(LAMode.SYSTEM)
     authenticate(
-      generalGetString(R.string.auth_enable_simplex_lock),
-      generalGetString(R.string.auth_confirm_credential),
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_enable_simplex_lock)
+      else
+        generalGetString(R.string.new_passcode),
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_confirm_credential)
+      else
+        "",
       activity,
       completed = { laResult ->
         when (laResult) {
           LAResult.Success -> {
-            chatModel.performLA.value = true
+            m.performLA.value = true
             appPrefs.performLA.set(true)
             laTurnedOnAlert()
           }
           is LAResult.Error, is LAResult.Failed -> {
-            chatModel.performLA.value = false
+            m.performLA.value = false
             appPrefs.performLA.set(false)
           }
           is LAResult.Unavailable -> {
-            chatModel.performLA.value = false
+            m.performLA.value = false
             appPrefs.performLA.set(false)
-            chatModel.showAdvertiseLAUnavailableAlert.value = true
+            m.showAdvertiseLAUnavailableAlert.value = true
           }
         }
       }
@@ -302,8 +314,14 @@ class MainActivity: FragmentActivity() {
   private fun enableLA() {
     val m = vm.chatModel
     authenticate(
-      generalGetString(R.string.auth_enable_simplex_lock),
-      generalGetString(R.string.auth_confirm_credential),
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_enable_simplex_lock)
+      else
+        generalGetString(R.string.new_passcode),
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_confirm_credential)
+      else
+        "",
       this@MainActivity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
@@ -330,8 +348,14 @@ class MainActivity: FragmentActivity() {
   private fun disableLA() {
     val m = vm.chatModel
     authenticate(
-      generalGetString(R.string.auth_disable_simplex_lock),
-      generalGetString(R.string.auth_confirm_credential),
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_disable_simplex_lock)
+      else
+        generalGetString(R.string.la_enter_app_passcode),
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_confirm_credential)
+      else
+        generalGetString(R.string.auth_disable_simplex_lock),
       this@MainActivity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA

@@ -171,7 +171,7 @@
   <string name="la_auth_failed">Authentication failed</string>
   <string name="la_could_not_be_verified">You could not be verified; please try again.</string>
   <string name="la_no_app_password">No app passcode</string>
-  <string name="la_enter_app_password">Enter passcode</string>
+  <string name="la_enter_app_passcode">Enter passcode</string>
   <string name="la_current_app_passcode">Current Passcode</string>
   <string name="la_change_app_passcode">Change passcode</string>
   <string name="la_authenticate">Authenticate</string>

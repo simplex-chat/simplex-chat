@@ -30,7 +30,7 @@ data class LocalAuthRequest (
   val completed: (LAResult) -> Unit
 ) {
   companion object {
-    val sample = LocalAuthRequest(generalGetString(R.string.la_enter_app_password), generalGetString(R.string.la_authenticate), "") { }
+    val sample = LocalAuthRequest(generalGetString(R.string.la_enter_app_passcode), generalGetString(R.string.la_authenticate), "") { }
   }
 }
 
