@@ -140,9 +140,10 @@ fun SimplexLockView(
       generalGetString(R.string.change_lock_mode), activity
     ) { laResult ->
       when (laResult) {
-        is LAResult.Failed, is LAResult.Error -> {
+        is LAResult.Error -> {
           laFailedAlert()
         }
+        is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
         LAResult.Success -> {
           when (toLAMode) {
             LAMode.SYSTEM -> {
@@ -153,9 +154,10 @@ fun SimplexLockView(
                     ksAppPassword.remove()
                     laTurnedOnAlert()
                   }
-                  is LAResult.Failed, is LAResult.Unavailable, is LAResult.Error -> {
+                  is LAResult.Unavailable, is LAResult.Error -> {
                     laFailedAlert()
                   }
+                  is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
                 }
               }
             }
@@ -184,7 +186,6 @@ fun SimplexLockView(
   fun changeLAPassword() {
     authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.la_change_app_passcode), activity) { laResult ->
       when (laResult) {
-        is LAResult.Failed -> laFailedAlert()
         LAResult.Success -> {
           ModalManager.shared.showCustomModal { close ->
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
@@ -198,6 +199,8 @@ fun SimplexLockView(
             }
           }
         }
+        is LAResult.Error -> laFailedAlert()
+        is LAResult.Failed -> {}
         is LAResult.Unavailable -> disableUnavailableLA()
       }
     }
