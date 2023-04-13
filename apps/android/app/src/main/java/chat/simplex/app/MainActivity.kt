@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
@@ -297,16 +298,16 @@ class MainActivity: FragmentActivity() {
     }
   }
 
-  private fun setPerformLA(on: Boolean) {
+  private fun setPerformLA(on: Boolean, activity: FragmentActivity) {
     vm.chatModel.controller.appPrefs.laNoticeShown.set(true)
     if (on) {
-      enableLA()
+      enableLA(activity)
     } else {
-      disableLA()
+      disableLA(activity)
     }
   }
 
-  private fun enableLA() {
+  private fun enableLA(activity: FragmentActivity) {
     val m = vm.chatModel
     authenticate(
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
@@ -317,7 +318,7 @@ class MainActivity: FragmentActivity() {
         generalGetString(R.string.auth_confirm_credential)
       else
         "",
-      this@MainActivity,
+      activity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         when (laResult) {
@@ -341,7 +342,7 @@ class MainActivity: FragmentActivity() {
     )
   }
 
-  private fun disableLA() {
+  private fun disableLA(activity: FragmentActivity) {
     val m = vm.chatModel
     authenticate(
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
@@ -352,7 +353,7 @@ class MainActivity: FragmentActivity() {
         generalGetString(R.string.auth_confirm_credential)
       else
         generalGetString(R.string.auth_disable_simplex_lock),
-      this@MainActivity,
+      activity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         when (laResult) {
@@ -388,7 +389,7 @@ fun MainPage(
   userAuthorized: MutableState<Boolean?>,
   laFailed: MutableState<Boolean>,
   runAuthenticate: () -> Unit,
-  setPerformLA: (Boolean) -> Unit,
+  setPerformLA: (Boolean, FragmentActivity) -> Unit,
   showLANotice: () -> Unit
 ) {
   var showChatDatabaseError by rememberSaveable {

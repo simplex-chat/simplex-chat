@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +42,7 @@ enum class LAMode {
 fun PrivacySettingsView(
   chatModel: ChatModel,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  setPerformLA: (Boolean) -> Unit
+  setPerformLA: (Boolean, FragmentActivity) -> Unit
 ) {
   Column(
     Modifier.fillMaxWidth(),
@@ -109,7 +110,7 @@ private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onS
 fun ChatLockItem(
   chatModel: ChatModel,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  setPerformLA: (Boolean) -> Unit
+  setPerformLA: (Boolean, FragmentActivity) -> Unit
 ) {
   val performLA = remember { chatModel.performLA }
   val currentLAMode = remember { chatModel.controller.appPrefs.laMode }
@@ -138,19 +139,19 @@ private val laDelays = listOf(10, 30, 60, 180, 0)
 private fun SimplexLockView(
   chatModel: ChatModel,
   currentLAMode: SharedPreference<LAMode>,
-  setPerformLA: (Boolean) -> Unit
+  setPerformLA: (Boolean, FragmentActivity) -> Unit
 ) {
   val performLA = remember { chatModel.performLA }
-  val laMode = remember { mutableStateOf(chatModel.controller.appPrefs.laMode.get()) }
+  val laMode = rememberSaveable { mutableStateOf(chatModel.controller.appPrefs.laMode.get()) }
   val laLockDelay = remember { chatModel.controller.appPrefs.laLockDelay }
   val showChangePasscode = remember { derivedStateOf { performLA.value && currentLAMode.state.value == LAMode.PASSCODE } }
-  val performLAToggleReset = remember { mutableStateOf(false) }
+//  val performLAToggleReset = rememberSaveable { mutableStateOf(false) }
 //  val performLAModeReset = remember { mutableStateOf(false) }
   val activity = LocalContext.current as FragmentActivity
 
   fun resetLAEnabled(onOff: Boolean) {
     chatModel.controller.appPrefs.performLA.set(onOff)
-    performLAToggleReset.value = true
+//    performLAToggleReset.value = true
     chatModel.performLA.value = onOff
   }
 
@@ -253,13 +254,13 @@ private fun SimplexLockView(
       EnableLock(performLA) { performLAToggle ->
         performLA.value = performLAToggle
         chatModel.controller.appPrefs.laNoticeShown.set(true)
-        if (performLAToggleReset.value) {
+        /*if (performLAToggleReset.value) {
           performLAToggleReset.value = false
-        } else if (performLAToggle) {
+        } else */if (performLAToggle) {
           when (currentLAMode.state.value) {
             LAMode.SYSTEM -> {
 //              resetLA()
-              setPerformLA(true)
+              setPerformLA(true, activity)
             }
             LAMode.PASSCODE -> {
               resetLA()
@@ -280,17 +281,17 @@ private fun SimplexLockView(
             }
           }
         } else {
-          setPerformLA(false)
+          setPerformLA(false, activity)
         }
       }
       SectionDivider()
       SectionItemView {
-        LockModeSelector(remember { laMode }) {
+        LockModeSelector(laMode) {
           if (laMode.value == it) return@LockModeSelector
           laMode.value = it
 //          if (performLAModeReset.value) {
 //            performLAModeReset.value = false
-          /*} else */if (performLA.value) {
+          /*} else */if (chatModel.controller.appPrefs.performLA.get()) {
             toggleLAMode()
           } else {
             updateLAMode()

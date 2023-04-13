@@ -42,7 +42,7 @@ import chat.simplex.app.views.onboarding.SimpleXInfo
 import chat.simplex.app.views.onboarding.WhatsNewView
 
 @Composable
-fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity) -> Unit) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
 
@@ -126,7 +126,7 @@ fun SettingsLayout(
   incognito: MutableState<Boolean>,
   incognitoPref: SharedPreference<Boolean>,
   userDisplayName: String,
-  setPerformLA: (Boolean) -> Unit,
+  setPerformLA: (Boolean, FragmentActivity) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
@@ -511,7 +511,7 @@ fun PreviewSettingsLayout() {
       incognito = remember { mutableStateOf(false) },
       incognitoPref = SharedPreference({ false }, {}),
       userDisplayName = "Alice",
-      setPerformLA = {},
+      setPerformLA = { _, _ -> },
       showModal = { {} },
       showSettingsModal = { {} },
       showSettingsModalWithSearch = { },
