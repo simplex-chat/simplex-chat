@@ -2502,7 +2502,7 @@
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать еще одну ссылку и проверьте Ваше соединение с сетью.";
 
-/* authentication reason */
+/* No comment provided by engineer. */
 "Unlock" = "Разблокировать";
 
 /* No comment provided by engineer. */
