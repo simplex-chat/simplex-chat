@@ -13,14 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.views.helpers.*
 
 @Composable
 fun PasscodeView(
-  m: ChatModel,
   passcode: MutableState<String>,
   title: String,
   reason: String? = null,
@@ -41,7 +39,7 @@ fun PasscodeView(
           Text(reason, Modifier.padding(top = 5.dp), style = MaterialTheme.typography.subtitle1)
         }
       }
-      PasscodeEntry(m, passcode, true)
+      PasscodeEntry(passcode, true)
       Row {
         SimpleButton(generalGetString(R.string.cancel_verb), icon = Icons.Default.Close, click = cancel)
         Spacer(Modifier.size(20.dp))
@@ -64,7 +62,7 @@ fun PasscodeView(
             Text(reason, Modifier.padding(top = 5.dp), style = MaterialTheme.typography.subtitle1)
           }
         }
-        PasscodeEntry(m, passcode, false)
+        PasscodeEntry(passcode, false)
       }
 
       Column(

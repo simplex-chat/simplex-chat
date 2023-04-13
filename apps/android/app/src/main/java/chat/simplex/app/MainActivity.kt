@@ -274,7 +274,6 @@ class MainActivity: FragmentActivity() {
     ModalManager.shared.showCustomModal { close ->
       Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
         SetAppPasscodeView(
-          chatModel,
           submit = {
             chatModel.performLA.value = true
             appPrefs.performLA.set(true)

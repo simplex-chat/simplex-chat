@@ -203,7 +203,7 @@ private fun SimplexLockView(
             LAMode.PASSCODE -> {
               ModalManager.shared.showCustomModal { close ->
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-                  SetAppPasscodeView(chatModel,
+                  SetAppPasscodeView(
                     submit = {
                       laLockDelay.set(30)
                       updateLAMode()
@@ -229,7 +229,7 @@ private fun SimplexLockView(
         LAResult.Success -> {
           ModalManager.shared.showCustomModal { close ->
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-              SetAppPasscodeView(chatModel,
+              SetAppPasscodeView(
                 submit = {
                   passcodeAlert(generalGetString(R.string.passcode_changed))
                 }, cancel = {
@@ -266,7 +266,6 @@ private fun SimplexLockView(
               ModalManager.shared.showCustomModal { close ->
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
                   SetAppPasscodeView(
-                    chatModel,
                     submit = {
                       laLockDelay.set(30)
                       chatModel.controller.appPrefs.performLA.set(true)

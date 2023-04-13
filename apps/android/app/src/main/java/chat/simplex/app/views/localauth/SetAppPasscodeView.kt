@@ -3,13 +3,11 @@ package chat.simplex.app.views.localauth
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun SetAppPasscodeView(
-  chatModel: ChatModel,
   submit: () -> Unit,
   cancel: () -> Unit,
   close: () -> Unit
@@ -20,7 +18,7 @@ fun SetAppPasscodeView(
 
   @Composable
   fun SetPasswordView(title: String, submitLabel: String, submitEnabled: (((String) -> Boolean))? = null, submit: () -> Unit) {
-    PasscodeView(chatModel, passcode, title = title, submitLabel = submitLabel, submitEnabled = submitEnabled, submit = submit) {
+    PasscodeView(passcode, title = title, submitLabel = submitLabel, submitEnabled = submitEnabled, submit = submit) {
       close()
       cancel()
     }

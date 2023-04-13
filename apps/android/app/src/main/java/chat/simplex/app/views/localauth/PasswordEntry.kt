@@ -21,7 +21,6 @@ import chat.simplex.app.model.ChatModel
 
 @Composable
 fun PasscodeEntry(
-  m: ChatModel,
   password: MutableState<String>,
   vertical: Boolean,
 ) {
