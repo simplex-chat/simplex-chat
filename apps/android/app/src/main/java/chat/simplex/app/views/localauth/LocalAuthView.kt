@@ -20,4 +20,3 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
       authRequest.completed(LAResult.Failed(generalGetString(R.string.authentication_cancelled)))
     })
 }
-
