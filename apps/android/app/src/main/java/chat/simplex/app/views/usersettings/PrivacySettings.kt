@@ -145,13 +145,10 @@ private fun SimplexLockView(
   val laMode = rememberSaveable { mutableStateOf(chatModel.controller.appPrefs.laMode.get()) }
   val laLockDelay = remember { chatModel.controller.appPrefs.laLockDelay }
   val showChangePasscode = remember { derivedStateOf { performLA.value && currentLAMode.state.value == LAMode.PASSCODE } }
-//  val performLAToggleReset = rememberSaveable { mutableStateOf(false) }
-//  val performLAModeReset = remember { mutableStateOf(false) }
   val activity = LocalContext.current as FragmentActivity
 
   fun resetLAEnabled(onOff: Boolean) {
     chatModel.controller.appPrefs.performLA.set(onOff)
-//    performLAToggleReset.value = true
     chatModel.performLA.value = onOff
   }
 
@@ -172,12 +169,17 @@ private fun SimplexLockView(
   }
 
   fun revertLAMode() {
-//    performLAModeReset.value = true
     laMode.value = currentLAMode.get()
   }
 
   fun toggleLAMode() {
-    authenticate(generalGetString(R.string.change_lock_mode), "", activity) { laResult ->
+    authenticate(
+      if (laMode.value == LAMode.SYSTEM) {
+        generalGetString(R.string.la_enter_app_passcode)
+      } else {
+        generalGetString(R.string.chat_lock)
+      },
+      generalGetString(R.string.change_lock_mode), activity) { laResult ->
       when (laResult) {
         is LAResult.Failed, is LAResult.Error -> {
           revertLAMode()
@@ -254,12 +256,9 @@ private fun SimplexLockView(
       EnableLock(performLA) { performLAToggle ->
         performLA.value = performLAToggle
         chatModel.controller.appPrefs.laNoticeShown.set(true)
-        /*if (performLAToggleReset.value) {
-          performLAToggleReset.value = false
-        } else */if (performLAToggle) {
+        if (performLAToggle) {
           when (currentLAMode.state.value) {
             LAMode.SYSTEM -> {
-//              resetLA()
               setPerformLA(true, activity)
             }
             LAMode.PASSCODE -> {
@@ -289,9 +288,7 @@ private fun SimplexLockView(
         LockModeSelector(laMode) {
           if (laMode.value == it) return@LockModeSelector
           laMode.value = it
-//          if (performLAModeReset.value) {
-//            performLAModeReset.value = false
-          /*} else */if (chatModel.controller.appPrefs.performLA.get()) {
+          if (chatModel.controller.appPrefs.performLA.get()) {
             toggleLAMode()
           } else {
             updateLAMode()
