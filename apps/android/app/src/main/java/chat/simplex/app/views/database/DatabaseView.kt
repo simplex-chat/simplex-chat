@@ -52,7 +52,7 @@ fun DatabaseView(
 ) {
   val context = LocalContext.current
   val progressIndicator = remember { mutableStateOf(false) }
-  val runChat = remember { mutableStateOf(m.chatRunning.value ?: true) }
+  val runChat = remember { m.chatRunning }
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val chatArchiveName = remember { mutableStateOf(prefs.chatArchiveName.get()) }
@@ -76,7 +76,7 @@ fun DatabaseView(
   ) {
     DatabaseLayout(
       progressIndicator.value,
-      runChat.value,
+      runChat.value != false,
       m.chatDbChanged.value,
       useKeychain.value,
       m.chatDbEncrypted.value,
@@ -388,7 +388,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) R.string.old_database_archive else R.string.new_database_archive)
 }
 
-private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
+private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
   withApi {
     try {
       if (chatDbChanged.value) {
@@ -417,7 +417,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStar
   }
 }
 
-private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
+private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.stop_chat_question),
     text = generalGetString(R.string.stop_chat_to_export_import_or_delete_chat_database),
@@ -434,7 +434,7 @@ private fun exportProhibitedAlert() {
   )
 }
 
-private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
+private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(R.string.auth_stop_chat),
@@ -442,12 +442,13 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean>, context: 
       context as FragmentActivity,
       completed = { laResult ->
         when (laResult) {
-          LAResult.Success, LAResult.Unavailable -> {
+          LAResult.Success, is LAResult.Unavailable -> {
             stopChat(m, runChat, context)
           }
           is LAResult.Error -> {
+            runChat.value = true
           }
-          LAResult.Failed -> {
+          is LAResult.Failed -> {
             runChat.value = true
           }
         }
@@ -458,7 +459,7 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean>, context: 
   }
 }
 
-private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
+private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
   withApi {
     try {
       m.controller.apiStopChat()
@@ -592,7 +593,7 @@ private fun importArchive(
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
           m.controller.apiImportArchive(config)
-          DatabaseUtils.removeDatabaseKey()
+          DatabaseUtils.ksDatabasePassword.remove()
           appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
           operationEnded(m, progressIndicator) {
             AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
@@ -647,7 +648,7 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
     try {
       m.controller.apiDeleteStorage()
       m.chatDbDeleted.value = true
-      DatabaseUtils.removeDatabaseKey()
+      DatabaseUtils.ksDatabasePassword.remove()
       m.controller.appPrefs.storeDBPassphrase.set(true)
       operationEnded(m, progressIndicator) {
         AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_deleted), generalGetString(R.string.restart_the_app_to_create_a_new_chat_profile))

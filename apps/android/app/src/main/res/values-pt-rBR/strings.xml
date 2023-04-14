@@ -664,7 +664,6 @@
     <string name="network_use_onion_hosts_required_desc">Os hosts Onion serão necessários para a conexão.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Os hosts Onion serão necessários para a conexão.</string>
     <string name="core_version">Versão principal: v%s</string>
-    <string name="core_build_timestamp">Núcleo construído em: %s</string>
     <string name="read_more_in_github_with_link">Leia mais no nosso<font color="#0088ff"> repositório do GitHub</font>.</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser mudado mais tarde via configurações.</string>
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> quer se conectar com você via</string>

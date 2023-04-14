@@ -1000,7 +1000,6 @@
     <string name="app_version_code">App Build: %s</string>
     <string name="app_version_title">App Version</string>
     <string name="app_version_name">App Version: v%s</string>
-    <string name="core_build_timestamp">Core übersetzt am: %s</string>
     <string name="core_version">Core Version: v%s</string>
     <string name="users_add">Profil hinzufügen</string>
     <string name="users_delete_all_chats_deleted">Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!</string>

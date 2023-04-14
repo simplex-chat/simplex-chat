@@ -159,9 +159,11 @@ module Simplex.Chat.Store
     getSndFTViaMsgDelivery,
     createSndFileTransferXFTP,
     createSndFTDescrXFTP,
+    setSndFTPrivateSndDescr,
     updateSndFTDescrXFTP,
     createExtraSndFTDescrs,
     updateSndFTDeliveryXFTP,
+    setSndFTAgentDeleted,
     getXFTPSndFileDBId,
     getXFTPRcvFileDBId,
     updateFileCancelled,
@@ -2789,7 +2791,7 @@ getSndFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMs
 createSndFileTransferXFTP :: DB.Connection -> User -> ContactOrGroup -> FilePath -> FileInvitation -> AgentSndFileId -> Integer -> IO FileTransferMeta
 createSndFileTransferXFTP db User {userId} contactOrGroup filePath FileInvitation {fileName, fileSize} agentSndFileId chunkSize = do
   currentTs <- getCurrentTime
-  let xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing}
+  let xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing, agentSndFileDeleted = False}
   DB.execute
     db
     "INSERT INTO files (contact_id, group_id, user_id, file_name, file_path, file_size, chunk_size, agent_snd_file_id, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -2810,6 +2812,14 @@ createSndFTDescrXFTP db User {userId} m Connection {connId} FileTransferMeta {fi
     db
     "INSERT INTO snd_files (file_id, file_status, file_descr_id, group_member_id, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (fileId, fileStatus, fileDescrId, groupMemberId' <$> m, connId, currentTs, currentTs)
+
+setSndFTPrivateSndDescr :: DB.Connection -> User -> FileTransferId -> Text -> IO ()
+setSndFTPrivateSndDescr db User {userId} fileId sfdText = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE files SET private_snd_file_descr = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (sfdText, currentTs, userId, fileId)
 
 updateSndFTDescrXFTP :: DB.Connection -> User -> SndFileTransfer -> Text -> IO ()
 updateSndFTDescrXFTP db user@User {userId} sft@SndFileTransfer {fileId, fileDescrId} rfdText = do
@@ -2840,6 +2850,14 @@ updateSndFTDeliveryXFTP db SndFileTransfer {connId, fileId, fileDescrId} msgDeli
     db
     "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_descr_id = ?"
     (msgDeliveryId, connId, fileId, fileDescrId)
+
+setSndFTAgentDeleted :: DB.Connection -> User -> FileTransferId -> IO ()
+setSndFTAgentDeleted db User {userId} fileId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE files SET agent_snd_file_deleted = 1, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (currentTs, userId, fileId)
 
 getXFTPSndFileDBId :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
 getXFTPSndFileDBId db User {userId} aSndFileId =
@@ -3330,15 +3348,15 @@ getFileTransferMeta db User {userId} fileId =
     DB.query
       db
       [sql|
-        SELECT file_name, file_size, chunk_size, file_path, file_inline, agent_snd_file_id, private_snd_file_descr, cancelled
+        SELECT file_name, file_size, chunk_size, file_path, file_inline, agent_snd_file_id, agent_snd_file_deleted, private_snd_file_descr, cancelled
         FROM files
         WHERE user_id = ? AND file_id = ?
       |]
       (userId, fileId)
   where
-    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe AgentSndFileId, Maybe Text, Maybe Bool) -> FileTransferMeta
-    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileInline, aSndFileId_, privateSndFileDescr, cancelled_) =
-      let xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr}) <$> aSndFileId_
+    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe AgentSndFileId, Bool, Maybe Text, Maybe Bool) -> FileTransferMeta
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileInline, aSndFileId_, agentSndFileDeleted, privateSndFileDescr, cancelled_) =
+      let xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted}) <$> aSndFileId_
        in FileTransferMeta {fileId, xftpSndFile, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
 
 getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]

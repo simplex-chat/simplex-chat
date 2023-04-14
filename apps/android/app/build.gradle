@@ -77,7 +77,7 @@ android {
     def isBundle = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("bundle") }) != null
 //    if (isRelease) {
         // Comma separated list of languages that will be included in the apk
-    android.defaultConfig.resConfigs("en", "cs", "de", "es", "fr", "it", "nl", "ru", "zh-rCN")
+    android.defaultConfig.resConfigs("en", "cs", "de", "es", "fr", "it", "nl", "pl", "ru", "zh-rCN")
 //    }
     if (isBundle) {
         defaultConfig.ndk.abiFilters 'arm64-v8a', 'armeabi-v7a'

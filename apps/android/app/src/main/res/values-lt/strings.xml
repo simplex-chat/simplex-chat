@@ -159,7 +159,6 @@
     <string name="incorrect_code">Neteisingas saugumo kodas!</string>
     <string name="smp_servers_save">Įrašyti serverius</string>
     <string name="smp_save_servers_question">Įrašyti serverius\?</string>
-    <string name="core_build_timestamp">Branduolys sudarytas: %s</string>
     <string name="create_address">Sukurti adresą</string>
     <string name="delete_address">Ištrinti adresą</string>
     <string name="error_saving_user_password">Klaida įrašant naudotojo slaptažodį</string>

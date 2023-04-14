@@ -1240,10 +1240,10 @@ instance ToJSON WCallCommand where
   toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
 
 viewVersionInfo :: ChatLogLevel -> CoreVersionInfo -> [StyledString]
-viewVersionInfo logLevel CoreVersionInfo {version, buildTimestamp, simplexmqVersion, simplexmqCommit} =
+viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCommit} =
   map plain $
     if logLevel <= CLLInfo
-      then [versionString version <> parens buildTimestamp, updateStr, "simplexmq: " <> simplexmqVersion <> parens simplexmqCommit]
+      then [versionString version, updateStr, "simplexmq: " <> simplexmqVersion <> parens simplexmqCommit]
       else [versionString version, updateStr]
   where
     parens s = " (" <> s <> ")"

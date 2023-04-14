@@ -1737,8 +1737,8 @@ instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaul
 
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
-    privateSndFileDescr :: Maybe Text
-    -- TODO agentSndFileDeleted :: Bool
+    privateSndFileDescr :: Maybe Text,
+    agentSndFileDeleted :: Bool
   }
   deriving (Eq, Show, Generic)
 
