@@ -728,7 +728,7 @@
     <string name="import_database_question">Importare il database della chat\?</string>
     <string name="import_database">Importa database</string>
     <string name="settings_section_title_incognito">Modalità incognito</string>
-    <string name="settings_section_title_messages">MESSAGGI</string>
+    <string name="settings_section_title_messages">MESSAGGI E FILE</string>
     <string name="new_database_archive">Nuovo archivio database</string>
     <string name="old_database_archive">Vecchio archivio del database</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Riavvia l\'app per creare un profilo di chat nuovo.</string>
@@ -927,7 +927,6 @@
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="app_version_code">Build dell\'app: %s</string>
     <string name="app_version_name">Versione app: v%s</string>
-    <string name="core_build_timestamp">Core compilato il: %s</string>
     <string name="smp_servers_per_user">I server per le nuove connessioni del profilo di chat attuale</string>
     <string name="users_add">Aggiungi profilo</string>
     <string name="users_delete_question">Eliminare il profilo di chat\?</string>
@@ -1022,7 +1021,7 @@
     <string name="user_hide">Nascondi</string>
     <string name="v4_6_group_welcome_message_descr">Imposta il messaggio mostrato ai nuovi membri!</string>
     <string name="user_unmute">Riattiva audio</string>
-    <string name="settings_send_files_via_xftp">Invia file via XFTP</string>
+    <string name="settings_send_files_via_xftp">Invia video e file via XFTP</string>
     <string name="database_downgrade">Downgrade del database</string>
     <string name="database_upgrade">Aggiornamento del database</string>
     <string name="incompatible_database_version">Versione del database incompatibile</string>
@@ -1049,4 +1048,31 @@
     <string name="delete_chat_profile">Elimina il profilo di chat</string>
     <string name="delete_profile">Elimina profilo</string>
     <string name="profile_password">Password del profilo</string>
+    <string name="videos_limit_desc">È possibile inviare solo 10 video contemporaneamente</string>
+    <string name="videos_limit_title">Troppi video!</string>
+    <string name="icon_descr_video_asked_to_receive">Richiesta di ricevere il video</string>
+    <string name="video_descr">Video</string>
+    <string name="icon_descr_video_snd_complete">Video inviato</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Il video verrà ricevuto quando il tuo contatto completerà l\'invio.</string>
+    <string name="video_will_be_received_when_contact_is_online">Il video verrà ricevuto quando il tuo contatto sarà in linea, attendi o controlla più tardi!</string>
+    <string name="icon_descr_waiting_for_video">In attesa del video</string>
+    <string name="waiting_for_video">In attesa del video</string>
+    <string name="error_loading_xftp_servers">Errore nel caricamento dei server XFTP</string>
+    <string name="error_saving_xftp_servers">Errore nel salvataggio dei server XFTP</string>
+    <string name="error_xftp_test_server_auth">Il server richiede l\'autorizzazione per l\'invio, controlla la password</string>
+    <string name="smp_server_test_compare_file">Confronta file</string>
+    <string name="smp_server_test_create_file">Crea file</string>
+    <string name="smp_server_test_download_file">Scarica file</string>
+    <string name="smp_server_test_upload_file">Invia file</string>
+    <string name="xftp_servers">Server XFTP</string>
+    <string name="your_XFTP_servers">I tuoi server XFTP</string>
+    <string name="network_socks_proxy_settings">Impostazioni proxy SOCKS</string>
+    <string name="network_socks_toggle_use_socks_proxy">Usa proxy SOCKS</string>
+    <string name="host_verb">Host</string>
+    <string name="port_verb">Porta</string>
+    <string name="network_proxy_port">porta %d</string>
+    <string name="disable_onion_hosts_when_not_supported">Imposta <i>Usa gli host .onion</i> su No se il proxy SOCKS non li supporta.</string>
+    <string name="smp_server_test_delete_file">Elimina file</string>
+    <string name="error_loading_smp_servers">Errore nel caricamento dei server SMP</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Assicurati che gli indirizzi del server XFTP siano nel formato corretto, uno per riga e non doppi.</string>
 </resources>

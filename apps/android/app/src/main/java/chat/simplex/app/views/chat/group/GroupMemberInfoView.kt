@@ -5,7 +5,6 @@ import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionView
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -13,7 +12,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,7 +21,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
@@ -54,20 +51,15 @@ fun GroupMemberInfoView(
       developerTools,
       connectionCode,
       getContactChat = { chatModel.getContactChat(it) },
-      knownDirectChat = {
-        withApi {
-          chatModel.chatItems.clear()
-          chatModel.chatItems.addAll(it.chatItems)
-          chatModel.chatId.value = it.chatInfo.id
-          closeAll()
-        }
-      },
-      newDirectChat = {
+      openDirectChat = {
         withApi {
           val c = chatModel.controller.apiGetChat(ChatType.Direct, it)
           if (c != null) {
-            chatModel.addChat(c)
+            if (chatModel.getContactChat(it) == null) {
+              chatModel.addChat(c)
+            }
             chatModel.chatItems.clear()
+            chatModel.chatItems.addAll(c.chatItems)
             chatModel.chatId.value = c.id
             closeAll()
           }
@@ -150,8 +142,7 @@ fun GroupMemberInfoLayout(
   developerTools: Boolean,
   connectionCode: String?,
   getContactChat: (Long) -> Chat?,
-  knownDirectChat: (Chat) -> Unit,
-  newDirectChat: (Long) -> Unit,
+  openDirectChat: (Long) -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
@@ -176,13 +167,8 @@ fun GroupMemberInfoLayout(
       if (contactId != null) {
         SectionView {
           val chat = getContactChat(contactId)
-          if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
-            OpenChatButton(onClick = { knownDirectChat(chat) })
-            if (connectionCode != null) {
-              SectionDivider()
-            }
-          } else if (groupInfo.fullGroupPreferences.directMessages.on) {
-            OpenChatButton(onClick = { newDirectChat(contactId) })
+          if ((chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) || groupInfo.fullGroupPreferences.directMessages.on) {
+            OpenChatButton(onClick = { openDirectChat(contactId) })
             if (connectionCode != null) {
               SectionDivider()
             }
@@ -364,8 +350,7 @@ fun PreviewGroupMemberInfoLayout() {
       developerTools = false,
       connectionCode = "123",
       getContactChat = { Chat.sampleData },
-      knownDirectChat = {},
-      newDirectChat = {},
+      openDirectChat = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},

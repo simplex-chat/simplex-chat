@@ -174,7 +174,6 @@
     <string name="contribute">Bijdragen</string>
     <string name="configure_ICE_servers">ICE servers configureren</string>
     <string name="network_session_mode_entity">Verbinding</string>
-    <string name="core_build_timestamp">Core gebouwd op: %s</string>
     <string name="core_version">Core versie: v%s</string>
     <string name="callstate_connected">verbonden</string>
     <string name="callstate_connecting">Verbinden…</string>
@@ -494,7 +493,7 @@
     <string name="group_member_role_member">Gebruiker</string>
     <string name="image_descr_link_preview">link voorbeeld afbeelding</string>
     <string name="member_info_section_title_member">GEBRUIKER</string>
-    <string name="settings_section_title_messages">BERICHTEN</string>
+    <string name="settings_section_title_messages">BERICHTEN EN BESTANDEN</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobiel: tik op <b>Openen in mobiele app</b> en tik vervolgens op <b>Verbinden</b> in de app.</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Gebruiker wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="message_delivery_error_title">Fout bij bezorging van bericht</string>
@@ -1057,4 +1056,22 @@
     <string name="waiting_for_video">Wachten op video</string>
     <string name="video_descr">Video</string>
     <string name="video_will_be_received_when_contact_completes_uploading">De video wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</string>
+    <string name="error_saving_xftp_servers">Fout bij opslaan van XFTP-servers</string>
+    <string name="error_loading_xftp_servers">Fout bij het laden van XFTP servers</string>
+    <string name="error_xftp_test_server_auth">Server vereist autorisatie om te uploaden, wachtwoord controleren</string>
+    <string name="smp_server_test_compare_file">Bestand vergelijken</string>
+    <string name="smp_server_test_delete_file">Bestand verwijderen</string>
+    <string name="smp_server_test_download_file">Bestand downloaden</string>
+    <string name="smp_server_test_upload_file">Upload bestand</string>
+    <string name="xftp_servers">XFTP servers</string>
+    <string name="your_XFTP_servers">Uw XFTP servers</string>
+    <string name="host_verb">Host</string>
+    <string name="port_verb">Poort</string>
+    <string name="network_socks_proxy_settings">SOCKS proxy instellingen</string>
+    <string name="network_socks_toggle_use_socks_proxy">Gebruik SOCKS proxy</string>
+    <string name="disable_onion_hosts_when_not_supported">Stel <i>Use .onion hosts</i> in op Nee als de SOCKS-proxy deze niet ondersteunt.</string>
+    <string name="smp_server_test_create_file">Bestand maken</string>
+    <string name="error_loading_smp_servers">Fout bij het laden van SMP servers</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Zorg ervoor dat XFTP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
+    <string name="network_proxy_port">poort %d</string>
 </resources>

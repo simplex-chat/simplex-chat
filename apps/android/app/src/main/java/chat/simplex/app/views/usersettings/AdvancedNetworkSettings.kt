@@ -102,15 +102,6 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     saveCfg(newCfg)
   }
 
-  fun updateSettingsDialog(action: () -> Unit) {
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(R.string.update_network_settings_question),
-      text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
-      confirmText = generalGetString(R.string.update_network_settings_confirmation),
-      onConfirm = action
-    )
-  }
-
   AdvancedNetworkSettingsLayout(
     networkTCPConnectTimeout,
     networkTCPTimeout,
@@ -121,10 +112,10 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPKeepIntvl,
     networkTCPKeepCnt,
     resetDisabled = if (currentCfg.value.useSocksProxy) currentCfg.value == NetCfg.proxyDefaults else currentCfg.value == NetCfg.defaults,
-    reset = { updateSettingsDialog(::reset) },
+    reset = { showUpdateNetworkSettingsDialog(::reset) },
     footerDisabled = buildCfg() == currentCfg.value,
     revert = { updateView(currentCfg.value) },
-    save = { updateSettingsDialog { saveCfg(buildCfg()) } }
+    save = { showUpdateNetworkSettingsDialog { saveCfg(buildCfg()) } }
   )
 }
 
@@ -413,6 +404,15 @@ fun FooterButton(icon: ImageVector, title: String, action: () -> Unit, disabled:
       )
     }
   }
+}
+
+fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.update_network_settings_question),
+    text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+    confirmText = generalGetString(R.string.update_network_settings_confirmation),
+    onConfirm = action
+  )
 }
 
 @Preview(showBackground = true)

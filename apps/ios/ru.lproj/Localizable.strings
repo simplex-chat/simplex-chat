@@ -103,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ подтверждён";
 
+/* No comment provided by engineer. */
+"%@ servers" = "%@ серверы";
+
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
 
@@ -654,9 +657,6 @@
 "Copy" = "Скопировать";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "Ядро скомпилировано: %@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "Версия ядра: v%@";
 
 /* No comment provided by engineer. */
@@ -1104,6 +1104,9 @@
 "Error removing member" = "Ошибка при удалении члена группы";
 
 /* No comment provided by engineer. */
+"Error saving %@ servers" = "Ошибка при сохранении %@ серверов";
+
+/* No comment provided by engineer. */
 "Error saving group profile" = "Ошибка при сохранении профиля группы";
 
 /* No comment provided by engineer. */
@@ -1111,9 +1114,6 @@
 
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Ошибка сохранения пароля в Keychain";
-
-/* No comment provided by engineer. */
-"Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "Ошибка при сохранении пароля пользователя";
@@ -1545,7 +1545,7 @@
 "Make profile private!" = "Сделайте профиль скрытым!";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется (%@).";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Пожалуйста, проверьте, что адреса %@ серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
@@ -1603,6 +1603,9 @@
 
 /* No comment provided by engineer. */
 "Messages" = "Сообщения";
+
+/* No comment provided by engineer. */
+"Messages & files" = "Сообщения";
 
 /* No comment provided by engineer. */
 "Migrating database archive..." = "Данные чата перемещаются...";
@@ -2125,9 +2128,6 @@
 "Send direct message" = "Отправить сообщение";
 
 /* No comment provided by engineer. */
-"Send files via XFTP" = "Отправлять файлы через XFTP";
-
-/* No comment provided by engineer. */
 "Send link previews" = "Отправлять картинки ссылок";
 
 /* No comment provided by engineer. */
@@ -2144,6 +2144,9 @@
 
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "Отправьте из галереи или из дополнительных клавиатур.";
+
+/* No comment provided by engineer. */
+"Send videos and files via XFTP" = "Отправлять видео и файлы через XFTP";
 
 /* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Отправитель отменил передачу файла.";
@@ -2496,7 +2499,7 @@
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать еще одну ссылку и проверьте Ваше соединение с сетью.";
 
-/* authentication reason */
+/* No comment provided by engineer. */
 "Unlock" = "Разблокировать";
 
 /* No comment provided by engineer. */
@@ -2655,6 +2658,9 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Неправильный пароль!";
 
+/* No comment provided by engineer. */
+"XFTP servers" = "XFTP серверы";
+
 /* pref value */
 "yes" = "да";
 
@@ -2803,6 +2809,9 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Вы используете инкогнито профиль для этой группы - чтобы предотвратить раскрытие Вашего основного профиля, приглашать контакты не разрешено";
 
 /* No comment provided by engineer. */
+"Your %@ servers" = "Ваши %@ серверы";
+
+/* No comment provided by engineer. */
 "Your calls" = "Ваши звонки";
 
 /* No comment provided by engineer. */
@@ -2879,4 +2888,7 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Ваши SMP серверы";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "Ваши XFTP серверы";
 

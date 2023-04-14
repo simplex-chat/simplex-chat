@@ -18,10 +18,12 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
@@ -38,14 +40,15 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Client (SMPTestFailure (..), SMPTestStep (..))
+import qualified Simplex.FileTransfer.Protocol as XFTP
+import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtocolType, ProtocolServer (..), ProtocolTypeI)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
@@ -68,8 +71,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRChats chats -> viewChats ts chats
   CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
-  CRUserSMPServers u smpServers _ -> ttyUser u $ viewSMPServers (L.toList smpServers) testView
-  CRSmpTestResult u testFailure -> ttyUser u $ viewSMPTestResult testFailure
+  CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
+  CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
@@ -748,36 +751,46 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
   ]
 
 -- TODO make more generic messages or split
-viewSMPServers :: ProtocolTypeI p => [ServerCfg p] -> Bool -> [StyledString]
-viewSMPServers servers testView =
+viewUserServers :: AUserProtoServers -> Bool -> [StyledString]
+viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers}) testView =
   if testView
     then [customServers]
     else
       [ customServers,
         "",
-        "use " <> highlight' "/smp test <srv>" <> " to test SMP server connection",
-        "use " <> highlight' "/smp set <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
-        "use " <> highlight' "/smp default" <> " to remove custom SMP servers and use default",
-        "(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"
+        "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
+        "use " <> highlight (srvCmd <> " set <srv1[,srv2,...]>") <> " to switch to custom " <> pName <> " servers",
+        "use " <> highlight (srvCmd <> " default") <> " to remove custom " <> pName <> " servers and use default"
       ]
+        <> case p of
+          SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
+          SPXFTP -> ["(chat option " <> highlight' "-xftp-servers" <> " has precedence over saved XFTP servers for chat session)"]
   where
+    srvCmd = "/" <> strEncode p
+    pName = protocolName p
     customServers =
-      if null servers
+      if null protoServers
         then "no custom SMP servers saved"
-        else viewServers servers
+        else viewServers protoServers
 
-viewSMPTestResult :: Maybe SMPTestFailure -> [StyledString]
-viewSMPTestResult = \case
-  Just SMPTestFailure {testStep, testError} ->
+protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
+protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
+
+viewServerTestResult :: AProtoServerWithAuth -> Maybe ProtocolTestFailure -> [StyledString]
+viewServerTestResult (AProtoServerWithAuth p _) = \case
+  Just ProtocolTestFailure {testStep, testError} ->
     result
-      <> ["Server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
-      <> ["Possibly, certificate fingerprint in server address is incorrect" | testStep == TSConnect && brokerErr]
+      <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
+      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && testError == XFTP XFTP.AUTH]
+      <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
     where
-      result = ["SMP server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
+      result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
       brokerErr = case testError of
         BROKER _ NETWORK -> True
         _ -> False
-  _ -> ["SMP server test passed"]
+  _ -> [pName <> " server test passed"]
+  where
+    pName = protocolName p
 
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
@@ -825,8 +838,8 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
   ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
     <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
-viewServers :: ProtocolTypeI p => [ServerCfg p] -> StyledString
-viewServers = plain . intercalate ", " . map (B.unpack . strEncode . (\ServerCfg {server} -> server))
+viewServers :: ProtocolTypeI p => NonEmpty (ServerCfg p) -> StyledString
+viewServers = plain . intercalate ", " . map (B.unpack . strEncode . (\ServerCfg {server} -> server)) . L.toList
 
 viewServerHosts :: [SMPServer] -> StyledString
 viewServerHosts = plain . intercalate ", " . map showSMPServer
@@ -1227,10 +1240,10 @@ instance ToJSON WCallCommand where
   toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
 
 viewVersionInfo :: ChatLogLevel -> CoreVersionInfo -> [StyledString]
-viewVersionInfo logLevel CoreVersionInfo {version, buildTimestamp, simplexmqVersion, simplexmqCommit} =
+viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCommit} =
   map plain $
     if logLevel <= CLLInfo
-      then [versionString version <> parens buildTimestamp, updateStr, "simplexmq: " <> simplexmqVersion <> parens simplexmqCommit]
+      then [versionString version, updateStr, "simplexmq: " <> simplexmqVersion <> parens simplexmqCommit]
       else [versionString version, updateStr]
   where
     parens s = " (" <> s <> ")"
@@ -1304,6 +1317,7 @@ viewChatError logLevel = \case
     CEDirectMessagesProhibited dir ct -> viewDirectMessagesProhibited dir ct
     CEAgentVersion -> ["unsupported agent version"]
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
+    CEServerProtocol p -> [plain $ "Servers for protocol " <> strEncode p <> " cannot be configured by the users"]
     CECommandError e -> ["bad chat command: " <> plain e]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]

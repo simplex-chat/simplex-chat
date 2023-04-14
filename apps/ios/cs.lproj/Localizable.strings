@@ -103,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ je ověřený";
 
+/* No comment provided by engineer. */
+"%@ servers" = "%@ servery";
+
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
 
@@ -654,9 +657,6 @@
 "Copy" = "Kopírovat";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "Jádro sestavené na: %@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "Verze jádra: v%@";
 
 /* No comment provided by engineer. */
@@ -739,6 +739,9 @@
 
 /* No comment provided by engineer. */
 "Database upgrade" = "Aktualizace databáze";
+
+/* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "verze databáze je novější než aplikace, ale žádný přechod dolů pro: %@";
 
 /* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "Databáze bude zašifrována a heslo bude uloženo v klíčence.\n";
@@ -882,6 +885,9 @@
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "Ověřování zařízení není povoleno. Jakmile povolíte ověřování zařízení, můžete zámek SimpleX Lock zapnout prostřednictvím Nastavení.";
 
 /* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "různé migrace v aplikaci/databázi: %@ / %@";
+
+/* No comment provided by engineer. */
 "Different names, avatars and transport isolation." = "Různá jména, avatary a dopravní izolace.";
 
 /* connection level description */
@@ -985,6 +991,9 @@
 
 /* notification */
 "Encrypted message: database error" = "Šifrovaná zpráva: chyba databáze";
+
+/* notification */
+"Encrypted message: database migration error" = "Šifrovaná zpráva: chyba migrace databáze";
 
 /* notification */
 "Encrypted message: keychain error" = "Zašifrovaná zpráva: chyba klíčenky";
@@ -1095,6 +1104,9 @@
 "Error removing member" = "Chyba při odebrání člena";
 
 /* No comment provided by engineer. */
+"Error saving %@ servers" = "Chyba při ukládání serverů %@";
+
+/* No comment provided by engineer. */
 "Error saving group profile" = "Chyba při ukládání profilu skupiny";
 
 /* No comment provided by engineer. */
@@ -1102,9 +1114,6 @@
 
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Při ukládání přístupové fráze do klíčenky došlo k chybě";
-
-/* No comment provided by engineer. */
-"Error saving SMP servers" = "Chyba při ukládání serverů SMP";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "Chyba ukládání hesla uživatele";
@@ -1147,6 +1156,9 @@
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Ukončit bez uložení";
+
+/* No comment provided by engineer. */
+"Experimental" = "Pokusný";
 
 /* No comment provided by engineer. */
 "Export database" = "Export databáze";
@@ -1533,7 +1545,7 @@
 "Make profile private!" = "Změnit profil na soukromý!";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Ujistěte se, že adresy SMP serverů jsou ve správném formátu, oddělené řádky a nejsou duplicitní (%@).";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Ujistěte se, že adresy %@ serverů jsou ve správném formátu, oddělené řádky a nejsou duplicitní (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Ujistěte se, že adresy serverů WebRTC ICE jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.";
@@ -1593,6 +1605,9 @@
 "Messages" = "Zprávy";
 
 /* No comment provided by engineer. */
+"Messages & files" = "Zprávy";
+
+/* No comment provided by engineer. */
 "Migrating database archive..." = "Přenášení archivu databáze...";
 
 /* No comment provided by engineer. */
@@ -1603,6 +1618,9 @@
 
 /* No comment provided by engineer. */
 "Migration is completed" = "Přenesení dokončeno";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "Migrace: %@";
 
 /* call status */
 "missed call" = "zmeškané volání";
@@ -2128,6 +2146,9 @@
 "Send them from gallery or custom keyboards." = "Odeslat je z galerie nebo vlastní klávesnice.";
 
 /* No comment provided by engineer. */
+"Send videos and files via XFTP" = "Odeslat soubory přes XFTP";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Odesílatel zrušil přenos souboru.";
 
 /* No comment provided by engineer. */
@@ -2478,7 +2499,7 @@
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji.\nChcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.";
 
-/* authentication reason */
+/* No comment provided by engineer. */
 "Unlock" = "Odemknout";
 
 /* No comment provided by engineer. */
@@ -2637,6 +2658,9 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Špatná přístupová fráze!";
 
+/* No comment provided by engineer. */
+"XFTP servers" = "XFTP servery";
+
 /* pref value */
 "yes" = "ano";
 
@@ -2783,6 +2807,9 @@
 
 /* No comment provided by engineer. */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Pro tuto skupinu používáte inkognito profil - abyste zabránili sdílení svého hlavního profilu, není pozvání kontaktů povoleno";
+
+/* No comment provided by engineer. */
+"Your %@ servers" = "Vaše servery %@";
 
 /* No comment provided by engineer. */
 "Your calls" = "Vaše hovory";

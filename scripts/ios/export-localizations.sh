@@ -2,7 +2,7 @@
 
 set -e
 
-langs=( cs de es fr it nl ru zh-Hans )
+langs=( cs de es fr it nl pl ru zh-Hans )
 
 for lang in "${langs[@]}"; do
   echo "***"
@@ -10,8 +10,8 @@ for lang in "${langs[@]}"; do
   echo "***"
   echo "*** Exporting $lang"
   xcodebuild -exportLocalizations \
-            -project ./apps/ios/SimpleX.xcodeproj
-            -localizationPath ./apps/ios/SimpleX\ Localizations
+            -project ./apps/ios/SimpleX.xcodeproj \
+            -localizationPath ./apps/ios/SimpleX\ Localizations \
             -exportLanguage $lang
   sleep 2
 done

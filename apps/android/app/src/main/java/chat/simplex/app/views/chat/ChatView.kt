@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat
 
-import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
@@ -134,7 +133,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       linkMode = chatModel.simplexLinkMode.value,
-      allowVideoAttachment = chatModel.controller.appPrefs.xftpSendEnabled.get(),
       chatModelIncognito = chatModel.incognito.value,
       back = {
         hideKeyboard(view)
@@ -308,7 +306,6 @@ fun ChatLayout(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  allowVideoAttachment: Boolean,
   chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
@@ -340,7 +337,6 @@ fun ChatLayout(
         sheetContent = {
           ChooseAttachmentView(
             attachmentOption,
-            allowVideoAttachment,
             hide = { scope.launch { attachmentBottomSheetState.hide() } }
           )
         },
@@ -606,10 +602,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
           LaunchedEffect(Unit) {
             scope.launch {
-              if (composeState.value.editing) {
-                composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-              } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-                composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+              if (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) {
+                if (composeState.value.editing) {
+                  composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+                } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                  composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+                }
               }
             }
           }
@@ -1081,7 +1079,6 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      allowVideoAttachment = true,
       chatModelIncognito = false,
       back = {},
       info = {},
@@ -1142,7 +1139,6 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      allowVideoAttachment = true,
       chatModelIncognito = false,
       back = {},
       info = {},

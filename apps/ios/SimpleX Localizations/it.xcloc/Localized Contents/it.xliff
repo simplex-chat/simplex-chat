@@ -77,6 +77,11 @@
         <target>%@ è verificato/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ servers" xml:space="preserve">
+        <source>%@ servers</source>
+        <target>Server %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
         <source>%@ wants to connect!</source>
         <target>%@ si vuole connettere!</target>
@@ -137,9 +142,19 @@
         <target>%lld membri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lld minutes" xml:space="preserve">
+        <source>%lld minutes</source>
+        <target>%lld minuti</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
         <source>%lld second(s)</source>
         <target>%lld secondo/i</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lld seconds" xml:space="preserve">
+        <source>%lld seconds</source>
+        <target>%lld secondi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
@@ -535,6 +550,11 @@
         <target>Chiamate audio e video</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Authentication cancelled" xml:space="preserve">
+        <source>Authentication cancelled</source>
+        <target>Autenticazione annullata</target>
+        <note>PIN entry</note>
+      </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
         <source>Authentication failed</source>
         <target>Autenticazione fallita</target>
@@ -640,15 +660,30 @@
         <target>Cambia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change Passcode" xml:space="preserve">
+        <source>Change Passcode</source>
+        <target>Cambia codice di accesso</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
         <source>Change database passphrase?</source>
         <target>Cambiare password del database?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change lock mode" xml:space="preserve">
+        <source>Change lock mode</source>
+        <target>Cambia modalità di blocco</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
         <target>Cambiare ruolo del membro?</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change passcode" xml:space="preserve">
+        <source>Change passcode</source>
+        <target>Cambia codice di accesso</target>
+        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
         <source>Change receiving address</source>
@@ -755,6 +790,11 @@
         <target>Colori</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Compare file" xml:space="preserve">
+        <source>Compare file</source>
+        <target>Confronta file</target>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Compare security codes with your contacts." xml:space="preserve">
         <source>Compare security codes with your contacts.</source>
         <target>Confronta i codici di sicurezza con i tuoi contatti.</target>
@@ -768,6 +808,11 @@
       <trans-unit id="Confirm" xml:space="preserve">
         <source>Confirm</source>
         <target>Conferma</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm Passcode" xml:space="preserve">
+        <source>Confirm Passcode</source>
+        <target>Conferma il codice di accesso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
@@ -910,11 +955,6 @@
         <target>Copia</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Core built at: %@" xml:space="preserve">
-        <source>Core built at: %@</source>
-        <target>Core compilato il: %@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
         <source>Core version: v%@</source>
         <target>Versione core: v%@</target>
@@ -929,6 +969,11 @@
         <source>Create address</source>
         <target>Crea indirizzo</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create file" xml:space="preserve">
+        <source>Create file</source>
+        <target>Crea file</target>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Create group link" xml:space="preserve">
         <source>Create group link</source>
@@ -963,6 +1008,11 @@
       <trans-unit id="Created on %@" xml:space="preserve">
         <source>Created on %@</source>
         <target>Creato il %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Current Passcode" xml:space="preserve">
+        <source>Current Passcode</source>
+        <target>Codice di accesso attuale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current passphrase…" xml:space="preserve">
@@ -1147,6 +1197,11 @@
         <source>Delete database</source>
         <target>Elimina database</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete file" xml:space="preserve">
+        <source>Delete file</source>
+        <target>Elimina file</target>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Delete files and media?" xml:space="preserve">
         <source>Delete files and media?</source>
@@ -1348,6 +1403,11 @@
         <target>Esegui downgrade e apri chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Download file" xml:space="preserve">
+        <source>Download file</source>
+        <target>Scarica file</target>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
         <source>Duplicate display name!</source>
         <target>Nome da mostrare doppio!</target>
@@ -1388,6 +1448,11 @@
         <target>Attivare le notifiche istantanee?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable lock" xml:space="preserve">
+        <source>Enable lock</source>
+        <target>Attiva blocco</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable notifications" xml:space="preserve">
         <source>Enable notifications</source>
         <target>Attiva le notifiche</target>
@@ -1425,6 +1490,7 @@
       </trans-unit>
       <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
         <source>Encrypted message: database migration error</source>
+        <target>Messaggio crittografato: errore di migrazione del database</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
@@ -1441,6 +1507,11 @@
         <source>Encrypted message: unexpected error</source>
         <target>Messaggio crittografato: errore imprevisto</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Enter Passcode" xml:space="preserve">
+        <source>Enter Passcode</source>
+        <target>Inserisci il codice di accesso</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">
         <source>Enter correct passphrase.</source>
@@ -1582,6 +1653,11 @@
         <target>Errore di ingresso nel gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error loading %@ servers" xml:space="preserve">
+        <source>Error loading %@ servers</source>
+        <target>Errore nel caricamento dei server %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
         <target>Errore nella ricezione del file</target>
@@ -1592,19 +1668,24 @@
         <target>Errore nella rimozione del membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving %@ servers" xml:space="preserve">
+        <source>Error saving %@ servers</source>
+        <target>Errore nel salvataggio dei server %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving ICE servers" xml:space="preserve">
         <source>Error saving ICE servers</source>
         <target>Errore nel salvataggio dei server ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving SMP servers" xml:space="preserve">
-        <source>Error saving SMP servers</source>
-        <target>Errore nel salvataggio dei server SMP</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve">
         <source>Error saving group profile</source>
         <target>Errore nel salvataggio del profilo del gruppo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving passcode" xml:space="preserve">
+        <source>Error saving passcode</source>
+        <target>Errore nel salvataggio del codice di accesso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
@@ -1684,6 +1765,7 @@
       </trans-unit>
       <trans-unit id="Experimental" xml:space="preserve">
         <source>Experimental</source>
+        <target>Sperimentale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -1981,6 +2063,11 @@
         <target>L'immagine verrà ricevuta quando il tuo contatto sarà in linea, aspetta o controlla più tardi!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Immediately" xml:space="preserve">
+        <source>Immediately</source>
+        <target>Immediatamente</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Immune to spam and abuse" xml:space="preserve">
         <source>Immune to spam and abuse</source>
         <target>Immune a spam e abusi</target>
@@ -2050,6 +2137,11 @@
         <source>Incompatible database version</source>
         <target>Versione del database incompatibile</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incorrect passcode" xml:space="preserve">
+        <source>Incorrect passcode</source>
+        <target>Codice di accesso errato</target>
+        <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Incorrect security code!" xml:space="preserve">
         <source>Incorrect security code!</source>
@@ -2173,6 +2265,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Ingresso nel gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="KeyChain error" xml:space="preserve">
+        <source>KeyChain error</source>
+        <target>Errore del portachiavi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve">
         <source>Keychain error</source>
         <target>Errore del portachiavi</target>
@@ -2233,6 +2330,16 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Solo dati del profilo locale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Lock after" xml:space="preserve">
+        <source>Lock after</source>
+        <target>Blocca dopo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Lock mode" xml:space="preserve">
+        <source>Lock mode</source>
+        <target>Modalità di blocco</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
         <source>Make a private connection</source>
         <target>Crea una connessione privata</target>
@@ -2243,9 +2350,9 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Rendi privato il profilo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
-        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
-        <target>Assicurati che gli indirizzi dei server SMP siano nel formato corretto, uno per riga e non doppi (%@).</target>
+      <trans-unit id="Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
+        <source>Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target>Assicurati che gli indirizzi dei server %@ siano nel formato corretto, uno per riga e non doppi (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -2323,6 +2430,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Messages &amp; files" xml:space="preserve">
+        <source>Messages &amp; files</source>
+        <target>Messaggi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating database archive..." xml:space="preserve">
         <source>Migrating database archive...</source>
         <target>Migrazione archivio del database...</target>
@@ -2345,6 +2457,7 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       </trans-unit>
       <trans-unit id="Migrations: %@" xml:space="preserve">
         <source>Migrations: %@</source>
+        <target>Migrazioni: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -2397,6 +2510,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Stato della rete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New Passcode" xml:space="preserve">
+        <source>New Passcode</source>
+        <target>Nuovo codice di accesso</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
         <source>New contact request</source>
         <target>Nuova richiesta di contatto</target>
@@ -2436,6 +2554,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <source>No</source>
         <target>No</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No app password" xml:space="preserve">
+        <source>No app password</source>
+        <target>Nessuna password dell'app</target>
+        <note>Authentication unavailable</note>
       </trans-unit>
       <trans-unit id="No contacts selected" xml:space="preserve">
         <source>No contacts selected</source>
@@ -2484,6 +2607,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Ora gli amministratori possono:
 - eliminare i messaggi dei membri.
 - disattivare i membri (ruolo "osservatore")</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Off" xml:space="preserve">
+        <source>Off</source>
+        <target>Off</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve">
@@ -2611,6 +2739,31 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Intervallo PING</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Passcode" xml:space="preserve">
+        <source>Passcode</source>
+        <target>Codice di accesso</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode changed!" xml:space="preserve">
+        <source>Passcode changed!</source>
+        <target>Codice di accesso cambiato!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode entry" xml:space="preserve">
+        <source>Passcode entry</source>
+        <target>Inserimento del codice di accesso</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode not changed!" xml:space="preserve">
+        <source>Passcode not changed!</source>
+        <target>Codice di accesso non cambiato!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode set!" xml:space="preserve">
+        <source>Passcode set!</source>
+        <target>Codice di accesso impostato!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
         <source>Password to show</source>
         <target>Password per mostrare</target>
@@ -2679,6 +2832,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve">
         <source>Please enter the previous password after restoring database backup. This action can not be undone.</source>
         <target>Inserisci la password precedente dopo aver ripristinato il backup del database. Questa azione non può essere annullata.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve">
+        <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
+        <target>Ricordalo o conservalo in modo sicuro: non c'è modo di recuperare un codice di accesso perso!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
@@ -3081,10 +3239,6 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Invia messaggio diretto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send files via XFTP" xml:space="preserve">
-        <source>Send files via XFTP</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
         <source>Send link previews</source>
         <target>Invia anteprime dei link</target>
@@ -3115,6 +3269,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Inviali dalla galleria o dalle tastiere personalizzate.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
+        <source>Send videos and files via XFTP</source>
+        <target>Invia file tramite XFTP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>Il mittente ha annullato il trasferimento del file.</target>
@@ -3143,6 +3302,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
         <target>Il server richiede l'autorizzazione di creare code, controlla la password</target>
+        <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
+        <source>Server requires authorization to upload, check password</source>
+        <target>Il server richiede l'autorizzazione per il caricamento, controllare la password</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -3245,6 +3409,16 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>SimpleX Lock</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="SimpleX Lock mode" xml:space="preserve">
+        <source>SimpleX Lock mode</source>
+        <target>Modalità di SimpleX Lock</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve">
+        <source>SimpleX Lock not enabled!</source>
+        <target>SimpleX Lock non attivato!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
         <source>SimpleX Lock turned on</source>
         <target>SimpleX Lock attivato</target>
@@ -3330,6 +3504,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Fermare la chat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Submit" xml:space="preserve">
+        <source>Submit</source>
+        <target>Invia</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
         <source>Support SimpleX Chat</source>
         <target>Supporta SimpleX Chat</target>
@@ -3338,6 +3517,11 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       <trans-unit id="System" xml:space="preserve">
         <source>System</source>
         <target>Sistema</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="System authentication" xml:space="preserve">
+        <source>System authentication</source>
+        <target>Autenticazione di sistema</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -3682,6 +3866,11 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       <trans-unit id="Unlock" xml:space="preserve">
         <source>Unlock</source>
         <target>Sblocca</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unlock app" xml:space="preserve">
+        <source>Unlock app</source>
+        <target>Sblocca l'app</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Unmute" xml:space="preserve">
@@ -3733,6 +3922,11 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <source>Upgrade and open chat</source>
         <target>Aggiorna e apri chat</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upload file" xml:space="preserve">
+        <source>Upload file</source>
+        <target>Invia file</target>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
         <source>Use .onion hosts</source>
@@ -3799,6 +3993,16 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Videochiamata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
+        <source>Video will be received when your contact completes uploading it.</source>
+        <target>Il video verrà ricevuto quando il tuo contatto completerà l'invio.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
+        <source>Video will be received when your contact is online, please wait or check later!</source>
+        <target>Il video verrà ricevuto quando il tuo contatto sarà in linea, attendi o controlla più tardi!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
         <source>View security code</source>
         <target>Vedi codice di sicurezza</target>
@@ -3837,6 +4041,11 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       <trans-unit id="Waiting for image" xml:space="preserve">
         <source>Waiting for image</source>
         <target>In attesa dell'immagine</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Waiting for video" xml:space="preserve">
+        <source>Waiting for video</source>
+        <target>In attesa del video</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
@@ -3887,6 +4096,11 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       <trans-unit id="Wrong passphrase!" xml:space="preserve">
         <source>Wrong passphrase!</source>
         <target>Password sbagliata!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="XFTP servers" xml:space="preserve">
+        <source>XFTP servers</source>
+        <target>Server XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">
@@ -3964,6 +4178,11 @@ SimpleX Lock deve essere attivato.</target>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
         <source>You can start chat via app Settings / Database or by restarting the app</source>
         <target>Puoi avviare la chat via Impostazioni / Database o riavviando l'app</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
+        <source>You can turn on SimpleX Lock via Settings.</source>
+        <target>Puoi attivare SimpleX Lock tramite le impostazioni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -4076,6 +4295,11 @@ SimpleX Lock deve essere attivato.</target>
         <target>Stai usando un profilo in incognito per questo gruppo: per impedire la condivisione del tuo profilo principale non è consentito invitare contatti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your %@ servers" xml:space="preserve">
+        <source>Your %@ servers</source>
+        <target>I tuoi server %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your ICE servers" xml:space="preserve">
         <source>Your ICE servers</source>
         <target>I tuoi server ICE</target>
@@ -4089,6 +4313,11 @@ SimpleX Lock deve essere attivato.</target>
       <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
         <target>Il tuo indirizzo di contatto SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your XFTP servers" xml:space="preserve">
+        <source>Your XFTP servers</source>
+        <target>I tuoi server XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -4402,6 +4631,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
         <source>database version is newer than the app, but no down migration for: %@</source>
+        <target>la versione del database è più recente di quella dell'app, ma nessuna migrazione downgrade per: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -4421,6 +4651,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
         <source>different migration in the app/database: %@ / %@</source>
+        <target>migrazione diversa nell'app/nel database: %@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">

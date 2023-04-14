@@ -277,6 +277,12 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
               privacyAcceptImagesGroupDefault.get() {
                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
            }
+        } else if case .video = cItem.content.msgContent {
+            if let file = cItem.file,
+               file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV,
+               privacyAcceptImagesGroupDefault.get() {
+                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+            }
         } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
             if let file = cItem.file,
                file.fileSize <= MAX_IMAGE_SIZE,
@@ -286,6 +292,18 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             }
          }
         return cItem.showMutableNotification ? (aChatItem.chatId, .nse(notification: createMessageReceivedNtf(user, cInfo, cItem))) : nil
+    case let .rcvFileSndCancelled(_, aChatItem, _):
+        cleanupFile(aChatItem)
+        return nil
+    case let .sndFileComplete(_, aChatItem, _):
+        cleanupDirectFile(aChatItem)
+        return nil
+    case let .sndFileRcvCancelled(_, aChatItem, _):
+        cleanupDirectFile(aChatItem)
+        return nil
+    case let .sndFileCompleteXFTP(_, aChatItem, _):
+        cleanupFile(aChatItem)
+        return nil
     case let .callInvitation(invitation):
         // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
         return (

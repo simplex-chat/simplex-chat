@@ -44,7 +44,7 @@
 "[Send us email](mailto:chat@simplex.chat)" = "[Contacta por email](mailto:chat@simplex.chat)";
 
 /* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Comienza en GitHub] (https://github.com/simplex-chat/simplex-chat)";
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Dar Estrella en GitHub] (https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Añadir nuevo contacto**: para crear tu código QR o enlace de un uso para tu contacto.";
@@ -103,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ está verificado";
 
+/* No comment provided by engineer. */
+"%@ servers" = "Servidores %@";
+
 /* notification title */
 "%@ wants to connect!" = "%@ ¡quiere conectar!";
 
@@ -140,7 +143,13 @@
 "%lld members" = "%lld miembros";
 
 /* No comment provided by engineer. */
+"%lld minutes" = "%lld minutos";
+
+/* No comment provided by engineer. */
 "%lld second(s)" = "%lld segundo(s)";
+
+/* No comment provided by engineer. */
+"%lld seconds" = "%lld segundos";
 
 /* No comment provided by engineer. */
 "%lldd" = "%lldd";
@@ -339,13 +348,16 @@
 "Attach" = "Adjuntar";
 
 /* No comment provided by engineer. */
-"Audio & video calls" = "Llamadas y videollamadas";
+"Audio & video calls" = "Llamadas y Videollamadas";
 
 /* No comment provided by engineer. */
 "Audio and video calls" = "Llamadas y videollamadas";
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "llamada de audio (sin cifrado e2e)";
+
+/* PIN entry */
+"Authentication cancelled" = "Autenticación cancelada";
 
 /* No comment provided by engineer. */
 "Authentication failed" = "Autenticación fallida";
@@ -434,8 +446,17 @@
 /* No comment provided by engineer. */
 "Change database passphrase?" = "¿Cambiar contraseña de la base de datos?";
 
+/* authentication reason */
+"Change lock mode" = "Cambiar el modo de bloqueo";
+
 /* No comment provided by engineer. */
 "Change member role?" = "¿Cambiar el rol del miembro?";
+
+/* authentication reason */
+"Change passcode" = "Cambiar contraseña";
+
+/* No comment provided by engineer. */
+"Change Passcode" = "Cambiar contraseña";
 
 /* No comment provided by engineer. */
 "Change receiving address" = "Cambiar la dirección de recepción";
@@ -518,6 +539,9 @@
 /* No comment provided by engineer. */
 "Colors" = "Colores";
 
+/* server test step */
+"Compare file" = "Comparar archivo";
+
 /* No comment provided by engineer. */
 "Compare security codes with your contacts." = "Compare los códigos de seguridad con sus contactos.";
 
@@ -535,6 +559,9 @@
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Confirme nueva contraseña…";
+
+/* No comment provided by engineer. */
+"Confirm Passcode" = "Confirmar contraseña";
 
 /* No comment provided by engineer. */
 "Confirm password" = "Confirmar contraseña";
@@ -654,9 +681,6 @@
 "Copy" = "Copiar";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "Core compilado en: %@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "Versión Core: v%@";
 
 /* No comment provided by engineer. */
@@ -664,6 +688,9 @@
 
 /* No comment provided by engineer. */
 "Create address" = "Crear dirección";
+
+/* server test step */
+"Create file" = "Crear archivo";
 
 /* No comment provided by engineer. */
 "Create group link" = "Crear enlace de grupo";
@@ -688,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "creator" = "creador";
+
+/* No comment provided by engineer. */
+"Current Passcode" = "Contraseña actual";
 
 /* No comment provided by engineer. */
 "Current passphrase…" = "Contraseña actual…";
@@ -729,7 +759,7 @@
 "Database passphrase" = "Contraseña de la base de datos";
 
 /* No comment provided by engineer. */
-"Database passphrase & export" = "Base de datos\ny frase de contraseña";
+"Database passphrase & export" = "Base de datos y contraseña";
 
 /* No comment provided by engineer. */
 "Database passphrase is different from saved in the keychain." = "La contraseña es distinta a la almacenada en Keychain.";
@@ -739,6 +769,9 @@
 
 /* No comment provided by engineer. */
 "Database upgrade" = "Actualización de la base de datos";
+
+/* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "la versión de la base de datos es más reciente que la aplicación, pero no hay migración hacía versión anterior para: %@";
 
 /* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "La base de datos será cifrada y la contraseña se guardará en Keychain.\n";
@@ -796,6 +829,9 @@
 
 /* No comment provided by engineer. */
 "Delete database" = "Eliminar base de datos";
+
+/* server test step */
+"Delete file" = "Eliminar archivo";
 
 /* No comment provided by engineer. */
 "Delete files and media?" = "Eliminar archivos y multimedia?";
@@ -882,6 +918,9 @@
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "Autenticación de dispositivo desactivada. Puedes habilitar SimpleX Lock en Configuración, después de activar la autenticación de dispositivo.";
 
 /* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "migración diferente en la aplicación/base de datos: %@ / %@";
+
+/* No comment provided by engineer. */
 "Different names, avatars and transport isolation." = "Nombre y avatar diferentes, aislamiento de transporte.";
 
 /* connection level description */
@@ -926,6 +965,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Degradar y abrir Chat";
 
+/* server test step */
+"Download file" = "Descargar archivo";
+
 /* No comment provided by engineer. */
 "Duplicate display name!" = "¡Nombre mostrado duplicado!";
 
@@ -949,6 +991,9 @@
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "¿Activar notificación instantánea?";
+
+/* No comment provided by engineer. */
+"Enable lock" = "Activar bloqueo";
 
 /* No comment provided by engineer. */
 "Enable notifications" = "Activar notificaciones";
@@ -987,6 +1032,9 @@
 "Encrypted message: database error" = "Mensaje cifrado: error en base de datos";
 
 /* notification */
+"Encrypted message: database migration error" = "Mensaje cifrado: error de migración de base de datos";
+
+/* notification */
 "Encrypted message: keychain error" = "Mensaje cifrado: error en Keychain";
 
 /* notification */
@@ -1003,6 +1051,9 @@
 
 /* No comment provided by engineer. */
 "Enter correct passphrase." = "Introduce la contraseña correcta.";
+
+/* No comment provided by engineer. */
+"Enter Passcode" = "Introducir contraseña";
 
 /* No comment provided by engineer. */
 "Enter passphrase…" = "Introduce la contraseña…";
@@ -1089,10 +1140,16 @@
 "Error joining group" = "Error uniéndose al grupo";
 
 /* No comment provided by engineer. */
+"Error loading %@ servers" = "Error al cargar servidores %@";
+
+/* No comment provided by engineer. */
 "Error receiving file" = "Error recibiendo archivo";
 
 /* No comment provided by engineer. */
 "Error removing member" = "Error eliminando miembro";
+
+/* No comment provided by engineer. */
+"Error saving %@ servers" = "Error guardando servidores %@";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "Error guardando perfil de grupo";
@@ -1101,10 +1158,10 @@
 "Error saving ICE servers" = "Error guardando servidores ICE";
 
 /* No comment provided by engineer. */
-"Error saving passphrase to keychain" = "Error guardando contraseña en Keychain";
+"Error saving passcode" = "Error al guardar contraseña";
 
 /* No comment provided by engineer. */
-"Error saving SMP servers" = "Error guardando servidores SMP";
+"Error saving passphrase to keychain" = "Error guardando contraseña en Keychain";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "Error guardando la contraseña de usuario";
@@ -1147,6 +1204,9 @@
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Salir sin guardar";
+
+/* No comment provided by engineer. */
+"Experimental" = "Experimental";
 
 /* No comment provided by engineer. */
 "Export database" = "Exportar base de datos";
@@ -1305,7 +1365,7 @@
 "How to" = "Cómo";
 
 /* No comment provided by engineer. */
-"How to use it" = "Guia de uso";
+"How to use it" = "Guía de uso";
 
 /* No comment provided by engineer. */
 "How to use your servers" = "Cómo usar tus servidores";
@@ -1330,6 +1390,9 @@
 
 /* No comment provided by engineer. */
 "Image will be received when your contact is online, please wait or check later!" = "La imagen se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde.";
+
+/* No comment provided by engineer. */
+"Immediately" = "Inmediatamente";
 
 /* No comment provided by engineer. */
 "Immune to spam and abuse" = "Inmune a spam y abuso";
@@ -1381,6 +1444,9 @@
 
 /* No comment provided by engineer. */
 "Incompatible database version" = "Versión de base de datos incompatible";
+
+/* PIN entry */
+"Incorrect passcode" = "Contraseña incorrecta";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "¡Código de seguridad incorrecto!";
@@ -1491,6 +1557,9 @@
 "Keychain error" = "Error en Keychain";
 
 /* No comment provided by engineer. */
+"KeyChain error" = "Error en Keychain";
+
+/* No comment provided by engineer. */
 "Large file!" = "¡Archivo grande!";
 
 /* No comment provided by engineer. */
@@ -1527,13 +1596,19 @@
 "Local profile data only" = "Sólo datos del perfil local";
 
 /* No comment provided by engineer. */
+"Lock after" = "Bloquear después de";
+
+/* No comment provided by engineer. */
+"Lock mode" = "Modo de bloqueo";
+
+/* No comment provided by engineer. */
 "Make a private connection" = "Establecer una conexión privada";
 
 /* No comment provided by engineer. */
 "Make profile private!" = "¡Hacer un perfil privado!";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Asegúrate de que las direcciones del servidor SMP tienen el formato correcto, están separadas por líneas y no duplicadas (%@).";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Asegúrate de que las direcciones del servidor %@ tienen el formato correcto, están separadas por líneas y no duplicadas (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Asegúrate de que las direcciones del servidor WebRTC ICE tienen el formato correcto, están separadas por líneas y no duplicadas.";
@@ -1593,6 +1668,9 @@
 "Messages" = "Mensajes";
 
 /* No comment provided by engineer. */
+"Messages & files" = "Mensajes";
+
+/* No comment provided by engineer. */
 "Migrating database archive..." = "Migrando la base de datos...";
 
 /* No comment provided by engineer. */
@@ -1603,6 +1681,9 @@
 
 /* No comment provided by engineer. */
 "Migration is completed" = "Migración completada";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "Migraciones: %@";
 
 /* call status */
 "missed call" = "llamada perdida";
@@ -1635,7 +1716,7 @@
 "Name" = "Nombre";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Redes y servidores";
+"Network & servers" = "Redes y Servidores";
 
 /* No comment provided by engineer. */
 "Network settings" = "Configuración de red";
@@ -1668,6 +1749,9 @@
 "New message" = "mensaje nuevo";
 
 /* No comment provided by engineer. */
+"New Passcode" = "Nueva contraseña";
+
+/* No comment provided by engineer. */
 "New passphrase…" = "Contraseña nueva…";
 
 /* pref value */
@@ -1675,6 +1759,9 @@
 
 /* No comment provided by engineer. */
 "No" = "No";
+
+/* Authentication unavailable */
+"No app password" = "Sin contraseña de la aplicación";
 
 /* No comment provided by engineer. */
 "No contacts selected" = "Ningún contacto seleccionado";
@@ -1712,6 +1799,9 @@
 /* enabled status
    group pref value */
 "off" = "apagado";
+
+/* No comment provided by engineer. */
+"Off" = "Apagado";
 
 /* No comment provided by engineer. */
 "Off (Local)" = "Apagado (Local)";
@@ -1798,6 +1888,21 @@
 "owner" = "propietario";
 
 /* No comment provided by engineer. */
+"Passcode" = "Contraseña";
+
+/* No comment provided by engineer. */
+"Passcode changed!" = "¡Contraseña cambiada!";
+
+/* No comment provided by engineer. */
+"Passcode entry" = "Entrada de contraseña";
+
+/* No comment provided by engineer. */
+"Passcode not changed!" = "¡Contraseña no cambiada!";
+
+/* No comment provided by engineer. */
+"Passcode set!" = "¡Contraseña guardada!";
+
+/* No comment provided by engineer. */
 "Password to show" = "Contraseña para hacerlo visible";
 
 /* No comment provided by engineer. */
@@ -1849,6 +1954,9 @@
 "Please enter the previous password after restoring database backup. This action can not be undone." = "Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.";
 
 /* No comment provided by engineer. */
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Por favor, recuerda y guarda la contraseña en un lugar seguro. ¡No hay manera de recuperar una contraseña perdida!";
+
+/* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Reinicia la aplicación y migra la base de datos para activar las notificaciones automáticas.";
 
 /* No comment provided by engineer. */
@@ -1870,7 +1978,7 @@
 "Preset server address" = "Dirección del servidor predefinida";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Privacidad y seguridad";
+"Privacy & security" = "Privacidad y Seguridad";
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "Privacidad redefinida";
@@ -2128,6 +2236,9 @@
 "Send them from gallery or custom keyboards." = "Envíalos desde la galería o desde teclados personalizados.";
 
 /* No comment provided by engineer. */
+"Send videos and files via XFTP" = "Enviar archivos vía XFTP";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "El remitente ha cancelado la transferencia de archivos.";
 
 /* No comment provided by engineer. */
@@ -2144,6 +2255,9 @@
 
 /* server test error */
 "Server requires authorization to create queues, check password" = "El servidor requiere autorización para crear colas, comprueba la contraseña";
+
+/* server test error */
+"Server requires authorization to upload, check password" = "El servidor requiere autorización para subir, comprueba la contraseña";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "¡Error en prueba del servidor!";
@@ -2218,6 +2332,12 @@
 "SimpleX Lock" = "Bloqueo SimpleX";
 
 /* No comment provided by engineer. */
+"SimpleX Lock mode" = "Modo Bloqueo SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX Lock not enabled!" = "¡Bloqueo SimpleX no activado!";
+
+/* No comment provided by engineer. */
 "SimpleX Lock turned on" = "Bloqueo SimpleX activado";
 
 /* simplex link type */
@@ -2266,10 +2386,16 @@
 "strike" = "tachado";
 
 /* No comment provided by engineer. */
+"Submit" = "Enviar";
+
+/* No comment provided by engineer. */
 "Support SimpleX Chat" = "Soporte SimpleX Chat";
 
 /* No comment provided by engineer. */
 "System" = "Sistema";
+
+/* No comment provided by engineer. */
+"System authentication" = "Autenticación del sistema";
 
 /* No comment provided by engineer. */
 "Take picture" = "Tomar foto";
@@ -2320,7 +2446,7 @@
 "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "Gracias a los usuarios: [contribuye vía Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#traducir-el-aplicaciones)!";
 
 /* No comment provided by engineer. */
-"Thanks to the users – contribute via Weblate!" = "Gracias a los usuarios: ¡contribuye a través de Weblate!";
+"Thanks to the users – contribute via Weblate!" = "Agradecimientos a los usuarios. ¡Contribuye a través de Weblate!";
 
 /* No comment provided by engineer. */
 "The 1st platform without any user identifiers – private by design." = "La primera plataforma sin identificadores de usuario: diseñada para la privacidad.";
@@ -2341,7 +2467,7 @@
 "The created archive is available via app Settings / Database / Old database archive." = "El archivo creado está disponible a través de Configuración / Base de datos / Archivo de base de datos antigua.";
 
 /* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "El grupo está totalmente descentralizado: sólo es visible para los miembros.";
+"The group is fully decentralized – it is visible only to the members." = "El grupo está totalmente descentralizado y sólo es visible para los miembros.";
 
 /* No comment provided by engineer. */
 "The message will be deleted for all members." = "El mensaje se eliminará para todos los miembros.";
@@ -2478,8 +2604,11 @@
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "A menos que tu contacto haya eliminado la conexión o\nque este enlace ya se haya utilizado, podría tratarse de un error. Por favor, notifícalo.\nPara conectarte, pide a tu contacto que cree otro enlace de conexión y comprueba que tienes buena conexión de red.";
 
-/* authentication reason */
+/* No comment provided by engineer. */
 "Unlock" = "Desbloquear";
+
+/* authentication reason */
+"Unlock app" = "Desbloquear aplicación";
 
 /* No comment provided by engineer. */
 "Unmute" = "Activar audio";
@@ -2513,6 +2642,9 @@
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Actualizar y abrir Chat";
+
+/* server test step */
+"Upload file" = "Subir archivo";
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Usar hosts .onion";
@@ -2575,6 +2707,12 @@
 "video call (not e2e encrypted)" = "videollamada (sin cifrado e2e)";
 
 /* No comment provided by engineer. */
+"Video will be received when your contact completes uploading it." = "El video se recibirá cuando tu contacto termine de subirlo.";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact is online, please wait or check later!" = "El vídeo se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde.";
+
+/* No comment provided by engineer. */
 "View security code" = "Ver código de seguridad";
 
 /* No comment provided by engineer. */
@@ -2603,6 +2741,9 @@
 
 /* No comment provided by engineer. */
 "Waiting for image" = "Esperando imagen";
+
+/* No comment provided by engineer. */
+"Waiting for video" = "Esperando el vídeo";
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "¡quiere contactar contigo!";
@@ -2636,6 +2777,9 @@
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "¡Contraseña incorrecta!";
+
+/* No comment provided by engineer. */
+"XFTP servers" = "Servidores XFTP";
 
 /* pref value */
 "yes" = "sí";
@@ -2689,7 +2833,10 @@
 "You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo. Si lo eliminas más tarde tus contactos no se perderán.";
 
 /* No comment provided by engineer. */
-"You can start chat via app Settings / Database or by restarting the app" = "Puede iniciar Chat a través de la Configuración / base de datos de la aplicación o reiniciando la aplicación";
+"You can start chat via app Settings / Database or by restarting the app" = "Puede iniciar Chat a través de la Configuración / Base de datos de la aplicación o reiniciando la aplicación";
+
+/* No comment provided by engineer. */
+"You can turn on SimpleX Lock via Settings." = "Puedes activar el bloqueo de SimpleX a través de Configuración.";
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Puedes usar sintaxis markdown para dar formato a los mensajes:";
@@ -2785,6 +2932,9 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Estás utilizando un perfil incógnito para este grupo. Para evitar compartir tu perfil principal, invitar contactos no está permitido";
 
 /* No comment provided by engineer. */
+"Your %@ servers" = "Tus servidores %@";
+
+/* No comment provided by engineer. */
 "Your calls" = "Tus llamadas";
 
 /* No comment provided by engineer. */
@@ -2861,4 +3011,7 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Tus servidores SMP";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "Tus servidores XFTP";
 

@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        4.6.1.0
+version:        5.0.0.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -89,6 +89,8 @@ library
       Simplex.Chat.Migrations.M20230318_file_description
       Simplex.Chat.Migrations.M20230321_agent_file_deleted
       Simplex.Chat.Migrations.M20230328_files_protocol
+      Simplex.Chat.Migrations.M20230402_protocol_servers
+      Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
@@ -117,6 +119,7 @@ library
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -164,6 +167,7 @@ executable simplex-bot
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -212,6 +216,7 @@ executable simplex-bot-advanced
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -261,6 +266,7 @@ executable simplex-broadcast-bot
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -310,6 +316,7 @@ executable simplex-chat
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -372,6 +379,7 @@ test-suite simplex-chat-test
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , deepseq ==1.4.*
@@ -389,6 +397,7 @@ test-suite simplex-chat-test
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , silently ==1.2.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0

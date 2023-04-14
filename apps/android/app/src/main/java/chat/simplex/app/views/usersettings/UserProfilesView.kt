@@ -52,7 +52,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     },
     activateUser = { user ->
       withBGApi {
-        m.controller.changeActiveUser(user.userId, userViewPassword(user, searchTextOrPassword.value))
+        m.controller.changeActiveUser(user.userId, userViewPassword(user, searchTextOrPassword.value.trim()))
       }
     },
     removeUser = { user ->
@@ -71,13 +71,13 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
             Column {
               SectionItemView({
                 AlertManager.shared.hideAlert()
-                removeUser(m, user, users, true, searchTextOrPassword.value)
+                removeUser(m, user, users, true, searchTextOrPassword.value.trim())
               }) {
                 Text(stringResource(R.string.users_delete_with_connections), color = Color.Red)
               }
               SectionItemView({
                 AlertManager.shared.hideAlert()
-                removeUser(m, user, users, false, searchTextOrPassword.value)
+                removeUser(m, user, users, false, searchTextOrPassword.value.trim())
               }
               ) {
                 Text(stringResource(R.string.users_delete_data_only), color = Color.Red)
@@ -107,7 +107,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
           }
         }
       } else {
-        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, searchTextOrPassword.value) } }
+        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, searchTextOrPassword.value.trim()) } }
       }
     },
     muteUser = { user ->
@@ -173,7 +173,7 @@ private fun UserProfilesView(
         UserView(user, users, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
         SectionDivider()
       }
-      if (searchTextOrPassword.value.isEmpty()) {
+      if (searchTextOrPassword.value.trim().isEmpty()) {
         SectionItemView(addUser, minHeight = 68.dp) {
           Icon(Icons.Outlined.Add, stringResource(R.string.users_add), tint = MaterialTheme.colors.primary)
           Spacer(Modifier.padding(horizontal = 4.dp))
@@ -324,10 +324,10 @@ private fun correctPassword(user: User, pwd: String): Boolean {
 }
 
 private fun userViewPassword(user: User, searchTextOrPassword: String): String? =
-  if (user.hidden) searchTextOrPassword else null
+  if (user.hidden) searchTextOrPassword.trim() else null
 
 private fun passwordEntryRequired(user: User, searchTextOrPassword: String): Boolean =
-  user.hidden && user.activeUser && !correctPassword(user, searchTextOrPassword)
+  user.hidden && user.activeUser && !correctPassword(user, searchTextOrPassword.trim())
 
 private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues: Boolean, searchTextOrPassword: String) {
   if (passwordEntryRequired(user, searchTextOrPassword)) {
@@ -340,7 +340,7 @@ private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues
       }
     }
   } else {
-    withBGApi { doRemoveUser(m, user, users, delSMPQueues, userViewPassword(user, searchTextOrPassword)) }
+    withBGApi { doRemoveUser(m, user, users, delSMPQueues, userViewPassword(user, searchTextOrPassword.trim())) }
   }
 }
 

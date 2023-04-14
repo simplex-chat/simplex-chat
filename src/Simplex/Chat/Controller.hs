@@ -4,9 +4,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -31,8 +33,7 @@ import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
 import Data.Time (ZonedTime)
-import Data.Time.Clock (UTCTime, getCurrentTime)
-import Data.Time.Format (defaultTimeLocale, formatTime, iso8601DateFormat)
+import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Language.Haskell.TH (Exp, Q, runIO)
@@ -45,7 +46,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
-import Simplex.Messaging.Agent.Client (AgentLocks, SMPTestFailure)
+import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -54,7 +55,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer, ProtocolType (..), QueueId, XFTPServerWithAuth)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -71,11 +72,6 @@ versionString version = "SimpleX Chat v" <> version
 updateStr :: String
 updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
-buildTimestampQ :: Q Exp
-buildTimestampQ = do
-  s <- formatTime defaultTimeLocale (iso8601DateFormat $ Just "%H:%M:%S") <$> runIO getCurrentTime
-  [|fromString s|]
-
 simplexmqCommitQ :: Q Exp
 simplexmqCommitQ = do
   s <- either error B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
@@ -90,11 +86,10 @@ simplexmqCommitQ = do
         *> "tag: "
         *> A.takeWhile (A.notInClass " \r\n")
 
-coreVersionInfo :: String -> String -> CoreVersionInfo
-coreVersionInfo buildTimestamp simplexmqCommit =
+coreVersionInfo :: String -> CoreVersionInfo
+coreVersionInfo simplexmqCommit =
   CoreVersionInfo
     { version = versionNumber,
-      buildTimestamp,
       simplexmqVersion = simplexMQVersion,
       simplexmqCommit
     }
@@ -113,7 +108,7 @@ data ChatConfig = ChatConfig
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
     testView :: Bool,
-    ciExpirationInterval :: Int -- microseconds
+    ciExpirationInterval :: Int64 -- microseconds
   }
 
 data DefaultAgentServers = DefaultAgentServers
@@ -258,16 +253,12 @@ data ChatCommand
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
-  | APIGetUserSMPServers UserId
-  | GetUserSMPServers
-  | APISetUserSMPServers UserId SMPServersConfig
-  | SetUserSMPServers SMPServersConfig
-  | APIGetUserServers UserId
-  | GetUserServers
-  | APISetUserServers UserId ServersConfig
-  | SetUserServers ServersConfig
-  | APITestSMPServer UserId SMPServerWithAuth
-  | TestSMPServer SMPServerWithAuth
+  | APIGetUserProtoServers UserId AProtocolType
+  | GetUserProtoServers AProtocolType
+  | APISetUserProtoServers UserId AProtoServersConfig
+  | SetUserProtoServers AProtoServersConfig
+  | APITestProtoServer UserId AProtoServerWithAuth
+  | TestProtoServer AProtoServerWithAuth
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
@@ -386,8 +377,8 @@ data ChatResponse
   | CRChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserSMPServers {user :: User, smpServers :: NonEmpty (ServerCfg 'PSMP), presetSMPServers :: NonEmpty SMPServerWithAuth}
-  | CRSmpTestResult {user :: User, smpTestFailure :: Maybe SMPTestFailure}
+  | CRUserProtoServers {user :: User, servers :: AUserProtoServers}
+  | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
@@ -566,11 +557,31 @@ instance ToJSON AgentQueueId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data SMPServersConfig = SMPServersConfig {smpServers :: [ServerCfg 'PSMP]}
+data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
   deriving (Show, Generic, FromJSON)
 
-data ServersConfig = ServersConfig {servers :: [AServerCfg]}
-  deriving (Show, Generic, FromJSON)
+data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
+
+deriving instance Show AProtoServersConfig
+
+data UserProtoServers p = UserProtoServers
+  { serverProtocol :: SProtocolType p,
+    protoServers :: NonEmpty (ServerCfg p),
+    presetServers :: NonEmpty (ProtoServerWithAuth p)
+  }
+  deriving (Show, Generic)
+
+instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (UserProtoServers p)
+
+instance ToJSON AUserProtoServers where
+  toJSON (AUPS s) = J.genericToJSON J.defaultOptions s
+  toEncoding (AUPS s) = J.genericToEncoding J.defaultOptions s
+
+deriving instance Show AUserProtoServers
 
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show, Generic, FromJSON)
@@ -679,7 +690,8 @@ data ParsedServerAddress = ParsedServerAddress
 instance ToJSON ParsedServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ServerAddress = ServerAddress
-  { hostnames :: NonEmpty String,
+  { serverProtocol :: AProtocolType,
+    hostnames :: NonEmpty String,
     port :: String,
     keyHash :: String,
     basicAuth :: String
@@ -705,7 +717,6 @@ data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
 
 data CoreVersionInfo = CoreVersionInfo
   { version :: String,
-    buildTimestamp :: String,
     simplexmqVersion :: String,
     simplexmqCommit :: String
   }
@@ -794,6 +805,7 @@ data ChatErrorType
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
+  | CEServerProtocol {serverProtocol :: AProtocolType}
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEInternalError {message :: String}

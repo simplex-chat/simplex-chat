@@ -106,7 +106,8 @@ struct SimpleXApp: App {
 
     private func authenticationExpired() -> Bool {
         if let enteredBackground = enteredBackground {
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
+            let delay = Double(UserDefaults.standard.integer(forKey: DEFAULT_LA_LOCK_DELAY))
+            return ProcessInfo.processInfo.systemUptime - enteredBackground >= delay
         } else {
             return true
         }

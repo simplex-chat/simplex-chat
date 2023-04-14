@@ -1000,7 +1000,6 @@
     <string name="app_version_code">App Build: %s</string>
     <string name="app_version_title">App Version</string>
     <string name="app_version_name">App Version: v%s</string>
-    <string name="core_build_timestamp">Core übersetzt am: %s</string>
     <string name="core_version">Core Version: v%s</string>
     <string name="users_add">Profil hinzufügen</string>
     <string name="users_delete_all_chats_deleted">Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!</string>
@@ -1073,7 +1072,7 @@
     <string name="enter_password_to_show">Für die Anzeige das Passwort im Suchfeld eingeben</string>
     <string name="make_profile_private">Privates Profil erzeugen!</string>
     <string name="user_mute">Stummschalten</string>
-    <string name="tap_to_activate_profile">Tippen Sie, um das Profil zu aktivieren.</string>
+    <string name="tap_to_activate_profile">Tippen Sie auf das Profil um es zu aktivieren.</string>
     <string name="should_be_at_least_one_profile">Es muss mindestens ein Benutzer-Profil vorhanden sein.</string>
     <string name="should_be_at_least_one_visible_profile">Es muss mindestens ein sichtbares Benutzer-Profil vorhanden sein.</string>
     <string name="user_unmute">Stummschaltung aufheben</string>
@@ -1105,10 +1104,10 @@
     <string name="settings_section_title_experimenta">EXPERIMENTELL</string>
     <string name="database_upgrade">Datenbank-Aktualisierung</string>
     <string name="mtr_error_different">Unterschiedlicher Migrationsstand in der App/Datenbank: %s / %s</string>
-    <string name="downgrade_and_open_chat">Herabstufen und den Chat öffnen</string>
+    <string name="downgrade_and_open_chat">Datenbank herabstufen und den Chat öffnen</string>
     <string name="incompatible_database_version">Inkompatible Datenbank-Version</string>
     <string name="database_downgrade_warning">Warnung: Sie könnten einige Daten verlieren!</string>
-    <string name="database_downgrade">Datenbank-Herabstufung</string>
+    <string name="database_downgrade">Datenbank auf alte Version herabstufen</string>
     <string name="developer_options">Datenbank-IDs und Transport-Isolationsoption.</string>
     <string name="mtr_error_no_down_migration">Die Datenbank-Version ist neuer als die App, keine Abwärts-Migration für: %s</string>
     <string name="hide_dev_options">Verberge:</string>

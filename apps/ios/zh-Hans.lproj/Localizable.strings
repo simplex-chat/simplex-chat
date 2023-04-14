@@ -103,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ 已认证";
 
+/* No comment provided by engineer. */
+"%@ servers" = "%@ 服务器";
+
 /* notification title */
 "%@ wants to connect!" = "%@ 要连接！";
 
@@ -140,7 +143,13 @@
 "%lld members" = "%lld 成员";
 
 /* No comment provided by engineer. */
+"%lld minutes" = "%lld 分钟";
+
+/* No comment provided by engineer. */
 "%lld second(s)" = "%lld 秒";
+
+/* No comment provided by engineer. */
+"%lld seconds" = "%lld 秒";
 
 /* No comment provided by engineer. */
 "%lldd" = "%lldd";
@@ -347,14 +356,17 @@
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "语音通话（非端到端加密）";
 
+/* PIN entry */
+"Authentication cancelled" = "身份验证已取消";
+
 /* No comment provided by engineer. */
-"Authentication failed" = "认证失败";
+"Authentication failed" = "身份认证失败";
 
 /* No comment provided by engineer. */
 "Authentication is required before the call is connected, but you may miss calls." = "通话接通前需要进行认证，但您可能会错过来电。";
 
 /* No comment provided by engineer. */
-"Authentication unavailable" = "认证不可用";
+"Authentication unavailable" = "身份认证不可用";
 
 /* No comment provided by engineer. */
 "Auto-accept contact requests" = "自动接受联系人请求";
@@ -434,8 +446,17 @@
 /* No comment provided by engineer. */
 "Change database passphrase?" = "更改数据库密码？";
 
+/* authentication reason */
+"Change lock mode" = "更改锁定模式";
+
 /* No comment provided by engineer. */
 "Change member role?" = "更改成员角色？";
+
+/* authentication reason */
+"Change passcode" = "更改密码";
+
+/* No comment provided by engineer. */
+"Change Passcode" = "更改密码";
 
 /* No comment provided by engineer. */
 "Change receiving address" = "更改接收地址";
@@ -518,6 +539,9 @@
 /* No comment provided by engineer. */
 "Colors" = "颜色";
 
+/* server test step */
+"Compare file" = "对比文件";
+
 /* No comment provided by engineer. */
 "Compare security codes with your contacts." = "与您的联系人比较安全码。";
 
@@ -535,6 +559,9 @@
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "确认新密码……";
+
+/* No comment provided by engineer. */
+"Confirm Passcode" = "确认密码";
 
 /* No comment provided by engineer. */
 "Confirm password" = "确认密码";
@@ -654,9 +681,6 @@
 "Copy" = "复制";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "核心构建于：%@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "核心版本: v%@";
 
 /* No comment provided by engineer. */
@@ -664,6 +688,9 @@
 
 /* No comment provided by engineer. */
 "Create address" = "创建地址";
+
+/* server test step */
+"Create file" = "创建文件";
 
 /* No comment provided by engineer. */
 "Create group link" = "创建群组链接";
@@ -688,6 +715,9 @@
 
 /* No comment provided by engineer. */
 "creator" = "创建者";
+
+/* No comment provided by engineer. */
+"Current Passcode" = "当前密码";
 
 /* No comment provided by engineer. */
 "Current passphrase…" = "现有密码……";
@@ -739,6 +769,9 @@
 
 /* No comment provided by engineer. */
 "Database upgrade" = "数据库升级";
+
+/* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "数据库版本比应用程序更新，但无法降级迁移：%@";
 
 /* No comment provided by engineer. */
 "Database will be encrypted and the passphrase stored in the keychain.\n" = "数据库将被加密，密码保存在钥匙串中。\n";
@@ -796,6 +829,9 @@
 
 /* No comment provided by engineer. */
 "Delete database" = "删除数据库";
+
+/* server test step */
+"Delete file" = "删除文件";
 
 /* No comment provided by engineer. */
 "Delete files and media?" = "删除文件和媒体文件吗？";
@@ -882,6 +918,9 @@
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "没有启用设备认证。一旦启用设备认证，您可以通过设置打开 SimpleX 锁定。";
 
 /* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "应用程序/数据库中的不同迁移：%@ / %@";
+
+/* No comment provided by engineer. */
 "Different names, avatars and transport isolation." = "不同的名字、头像和传输隔离。";
 
 /* connection level description */
@@ -926,6 +965,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "降级并打开聊天";
 
+/* server test step */
+"Download file" = "下载文件";
+
 /* No comment provided by engineer. */
 "Duplicate display name!" = "重复的显示名！";
 
@@ -949,6 +991,9 @@
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "启用即时通知？";
+
+/* No comment provided by engineer. */
+"Enable lock" = "启用锁定";
 
 /* No comment provided by engineer. */
 "Enable notifications" = "启用通知";
@@ -978,16 +1023,19 @@
 "Encrypt database?" = "加密数据库？";
 
 /* No comment provided by engineer. */
-"Encrypted database" = "加密的数据库";
+"Encrypted database" = "加密数据库";
 
 /* notification */
-"Encrypted message or another event" = "加密消息或其他项目";
+"Encrypted message or another event" = "加密消息或其他事件";
 
 /* notification */
 "Encrypted message: database error" = "加密消息：数据库错误";
 
 /* notification */
-"Encrypted message: keychain error" = "加密信息：钥匙串错误";
+"Encrypted message: database migration error" = "加密信息：数据库迁移错误";
+
+/* notification */
+"Encrypted message: keychain error" = "加密消息：钥匙串错误";
 
 /* notification */
 "Encrypted message: no passphrase" = "加密消息：没有密码";
@@ -1003,6 +1051,9 @@
 
 /* No comment provided by engineer. */
 "Enter correct passphrase." = "输入正确密码。";
+
+/* No comment provided by engineer. */
+"Enter Passcode" = "输入密码";
 
 /* No comment provided by engineer. */
 "Enter passphrase…" = "输入密码……";
@@ -1089,10 +1140,16 @@
 "Error joining group" = "加入群组错误";
 
 /* No comment provided by engineer. */
+"Error loading %@ servers" = "加载 %@ 服务器错误";
+
+/* No comment provided by engineer. */
 "Error receiving file" = "接收文件错误";
 
 /* No comment provided by engineer. */
 "Error removing member" = "删除成员错误";
+
+/* No comment provided by engineer. */
+"Error saving %@ servers" = "保存 %@ 服务器错误";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "保存群组资料错误";
@@ -1101,10 +1158,10 @@
 "Error saving ICE servers" = "保存 ICE 服务器错误";
 
 /* No comment provided by engineer. */
-"Error saving passphrase to keychain" = "保存密码到钥匙串错误";
+"Error saving passcode" = "保存密码错误";
 
 /* No comment provided by engineer. */
-"Error saving SMP servers" = "保存 SMP 服务器错误";
+"Error saving passphrase to keychain" = "保存密码到钥匙串错误";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "保存用户密码时出错";
@@ -1134,6 +1191,9 @@
 "Error updating user privacy" = "更新用户隐私时出错";
 
 /* No comment provided by engineer. */
+"Error: " = "错误： ";
+
+/* No comment provided by engineer. */
 "Error: %@" = "错误： ％@";
 
 /* No comment provided by engineer. */
@@ -1144,6 +1204,9 @@
 
 /* No comment provided by engineer. */
 "Exit without saving" = "退出而不保存";
+
+/* No comment provided by engineer. */
+"Experimental" = "实验性";
 
 /* No comment provided by engineer. */
 "Export database" = "导出数据库";
@@ -1329,6 +1392,9 @@
 "Image will be received when your contact is online, please wait or check later!" = "图片将在您的联系人在线时收到，请稍等或稍后查看！";
 
 /* No comment provided by engineer. */
+"Immediately" = "立即";
+
+/* No comment provided by engineer. */
 "Immune to spam and abuse" = "不受垃圾和骚扰消息影响";
 
 /* No comment provided by engineer. */
@@ -1378,6 +1444,9 @@
 
 /* No comment provided by engineer. */
 "Incompatible database version" = "数据库版本不兼容";
+
+/* PIN entry */
+"Incorrect passcode" = "密码错误";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "安全码不正确！";
@@ -1488,6 +1557,9 @@
 "Keychain error" = "钥匙串错误";
 
 /* No comment provided by engineer. */
+"KeyChain error" = "钥匙串错误";
+
+/* No comment provided by engineer. */
 "Large file!" = "大文件！";
 
 /* No comment provided by engineer. */
@@ -1524,13 +1596,19 @@
 "Local profile data only" = "仅本地配置文件数据";
 
 /* No comment provided by engineer. */
+"Lock after" = "在此后锁定";
+
+/* No comment provided by engineer. */
+"Lock mode" = "锁定模式";
+
+/* No comment provided by engineer. */
 "Make a private connection" = "建立私密连接";
 
 /* No comment provided by engineer. */
 "Make profile private!" = "将个人资料设为私密！";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "请确保 SMP服 务器地址格式正确，每行一个地址并且不重复 (%@)。";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "请确保 %@服 务器地址格式正确，每行一个地址并且不重复 (%@)。";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。";
@@ -1590,6 +1668,9 @@
 "Messages" = "消息";
 
 /* No comment provided by engineer. */
+"Messages & files" = "消息";
+
+/* No comment provided by engineer. */
 "Migrating database archive..." = "迁移数据库档案中……";
 
 /* No comment provided by engineer. */
@@ -1600,6 +1681,9 @@
 
 /* No comment provided by engineer. */
 "Migration is completed" = "迁移完成";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "迁移：%@";
 
 /* call status */
 "missed call" = "未接来电";
@@ -1665,6 +1749,9 @@
 "New message" = "新消息";
 
 /* No comment provided by engineer. */
+"New Passcode" = "新密码";
+
+/* No comment provided by engineer. */
 "New passphrase…" = "新密码……";
 
 /* pref value */
@@ -1672,6 +1759,9 @@
 
 /* No comment provided by engineer. */
 "No" = "否";
+
+/* Authentication unavailable */
+"No app password" = "没有应用程序密码";
 
 /* No comment provided by engineer. */
 "No contacts selected" = "未选择联系人";
@@ -1709,6 +1799,9 @@
 /* enabled status
    group pref value */
 "off" = "关闭";
+
+/* No comment provided by engineer. */
+"Off" = "关闭";
 
 /* No comment provided by engineer. */
 "Off (Local)" = "关闭（本地）";
@@ -1795,6 +1888,21 @@
 "owner" = "群主";
 
 /* No comment provided by engineer. */
+"Passcode" = "密码";
+
+/* No comment provided by engineer. */
+"Passcode changed!" = "密码已更改！";
+
+/* No comment provided by engineer. */
+"Passcode entry" = "密码输入";
+
+/* No comment provided by engineer. */
+"Passcode not changed!" = "密码未更改！";
+
+/* No comment provided by engineer. */
+"Passcode set!" = "密码已设置！";
+
+/* No comment provided by engineer. */
 "Password to show" = "显示密码";
 
 /* No comment provided by engineer. */
@@ -1844,6 +1952,9 @@
 
 /* No comment provided by engineer. */
 "Please enter the previous password after restoring database backup. This action can not be undone." = "恢复数据库备份后请输入之前的密码。 此操作无法撤消。";
+
+/* No comment provided by engineer. */
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "请牢记或妥善保管——丢失的密码将无法恢复！";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "请重新启动应用程序并迁移数据库以启用推送通知。";
@@ -2125,6 +2236,9 @@
 "Send them from gallery or custom keyboards." = "发送它们来自图库或自定义键盘。";
 
 /* No comment provided by engineer. */
+"Send videos and files via XFTP" = "通过 XFTP 发送文件";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "发送人已取消文件传输。";
 
 /* No comment provided by engineer. */
@@ -2141,6 +2255,9 @@
 
 /* server test error */
 "Server requires authorization to create queues, check password" = "服务器需要授权才能创建队列，检查密码";
+
+/* server test error */
+"Server requires authorization to upload, check password" = "服务器需要授权来上传，检查密码";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "服务器测试失败！";
@@ -2215,6 +2332,12 @@
 "SimpleX Lock" = "SimpleX 锁定";
 
 /* No comment provided by engineer. */
+"SimpleX Lock mode" = "SimpleX 锁定模式";
+
+/* No comment provided by engineer. */
+"SimpleX Lock not enabled!" = "未启用 SimpleX 锁定！";
+
+/* No comment provided by engineer. */
 "SimpleX Lock turned on" = "已开启 SimpleX 锁定";
 
 /* simplex link type */
@@ -2263,10 +2386,16 @@
 "strike" = "删去";
 
 /* No comment provided by engineer. */
+"Submit" = "提交";
+
+/* No comment provided by engineer. */
 "Support SimpleX Chat" = "支持 SimpleX Chat";
 
 /* No comment provided by engineer. */
 "System" = "系统";
+
+/* No comment provided by engineer. */
+"System authentication" = "系统认证";
 
 /* No comment provided by engineer. */
 "Take picture" = "拍照";
@@ -2475,8 +2604,11 @@
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。\n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。";
 
-/* authentication reason */
+/* No comment provided by engineer. */
 "Unlock" = "解锁";
+
+/* authentication reason */
+"Unlock app" = "解锁应用程序";
 
 /* No comment provided by engineer. */
 "Unmute" = "取消静音";
@@ -2510,6 +2642,9 @@
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "升级并打开聊天";
+
+/* server test step */
+"Upload file" = "上传文件";
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "使用 .onion 主机";
@@ -2572,6 +2707,12 @@
 "video call (not e2e encrypted)" = "视频通话（非端到端加密）";
 
 /* No comment provided by engineer. */
+"Video will be received when your contact completes uploading it." = "视频将在您的联系人完成上传后收到。";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact is online, please wait or check later!" = "视频将在您的联系人在线时收到，请稍等或稍后查看！";
+
+/* No comment provided by engineer. */
 "View security code" = "查看安全码";
 
 /* No comment provided by engineer. */
@@ -2600,6 +2741,9 @@
 
 /* No comment provided by engineer. */
 "Waiting for image" = "等待图像中";
+
+/* No comment provided by engineer. */
+"Waiting for video" = "等待视频中";
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "想要与您连接！";
@@ -2633,6 +2777,9 @@
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "密码错误！";
+
+/* No comment provided by engineer. */
+"XFTP servers" = "XFTP 服务器";
 
 /* pref value */
 "yes" = "是";
@@ -2687,6 +2834,9 @@
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "您可以通过应用程序设置/数据库或重新启动应用程序开始聊天";
+
+/* No comment provided by engineer. */
+"You can turn on SimpleX Lock via Settings." = "您可以通过设置开启 SimpleX 锁定。";
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "您可以使用 markdown 来编排消息格式：";
@@ -2782,6 +2932,9 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "您正在为该群组使用隐身个人资料——为防止共享您的主要个人资料，不允许邀请联系人";
 
 /* No comment provided by engineer. */
+"Your %@ servers" = "您的 %@ 服务器";
+
+/* No comment provided by engineer. */
 "Your calls" = "您的通话";
 
 /* No comment provided by engineer. */
@@ -2858,4 +3011,7 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "您的 SMP 服务器";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "您的 XFTP 服务器";
 
