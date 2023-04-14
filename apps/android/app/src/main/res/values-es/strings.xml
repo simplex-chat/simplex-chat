@@ -253,7 +253,6 @@
     <string name="database_passphrase_and_export">Base de Datos y
 \nContraseña</string>
     <string name="contribute">Contribuye</string>
-    <string name="core_build_timestamp">Core compilado: %s</string>
     <string name="core_version">Core versión: v%s</string>
     <string name="contact_requests">Solicitud del contacto</string>
     <string name="delete_image">Eliminar imagen</string>

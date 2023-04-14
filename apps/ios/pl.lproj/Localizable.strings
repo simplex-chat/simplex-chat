@@ -681,9 +681,6 @@
 "Copy" = "Kopiuj";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "Kompilacja rdzenia: %@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "Wersja rdzenia: v%@";
 
 /* No comment provided by engineer. */

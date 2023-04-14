@@ -657,9 +657,6 @@
 "Copy" = "Kopírovat";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "Jádro sestavené na: %@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "Verze jádra: v%@";
 
 /* No comment provided by engineer. */

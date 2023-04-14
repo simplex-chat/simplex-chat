@@ -1467,7 +1467,7 @@ processChatCommand = \case
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
-    let versionInfo = coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
+    let versionInfo = coreVersionInfo $(simplexmqCommitQ)
     chatMigrations <- map upMigration <$> withStore' Migrations.getCurrent
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}

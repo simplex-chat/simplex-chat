@@ -955,11 +955,6 @@
         <target>Copy</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Core built at: %@" xml:space="preserve">
-        <source>Core built at: %@</source>
-        <target>Core built at: %@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
         <source>Core version: v%@</source>
         <target>Core version: v%@</target>

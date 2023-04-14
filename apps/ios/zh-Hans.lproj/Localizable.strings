@@ -681,9 +681,6 @@
 "Copy" = "复制";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "核心构建于：%@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "核心版本: v%@";
 
 /* No comment provided by engineer. */

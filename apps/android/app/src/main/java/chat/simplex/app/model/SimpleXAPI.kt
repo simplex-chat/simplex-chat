@@ -3398,7 +3398,6 @@ class AutoAccept(val acceptIncognito: Boolean, val autoReply: MsgContent?) {
 @Serializable
 data class CoreVersionInfo(
   val version: String,
-  val buildTimestamp: String,
   val simplexmqVersion: String,
   val simplexmqCommit: String
 )
