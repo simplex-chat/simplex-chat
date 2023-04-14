@@ -62,7 +62,7 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -2378,9 +2378,10 @@ processAgentMsgSndFile _corrId aFileId msg =
                   _ -> pure ()
               _ -> pure () -- TODO error?
         SFERR e -> do
-          -- update chat item status
-          -- send status to view
-          agentXFTPDeleteSndFileInternal user aFileId
+          unless (temporaryAgentError e) $ do
+            -- update chat item status
+            -- send status to view
+            agentXFTPDeleteSndFileInternal user aFileId
           throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
@@ -2435,9 +2436,10 @@ processAgentMsgRcvFile _corrId aFileId msg =
                 agentXFTPDeleteRcvFile user aFileId fileId
                 toView $ CRRcvFileComplete user ci
         RFERR e -> do
-          -- update chat item status
-          -- send status to view
-          agentXFTPDeleteRcvFile user aFileId fileId
+          unless (temporaryAgentError e) $ do
+            -- update chat item status
+            -- send status to view
+            agentXFTPDeleteRcvFile user aFileId fileId
           throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
