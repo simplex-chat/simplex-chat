@@ -60,7 +60,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
-import Simplex.FileTransfer.Protocol (FileParty (..))
+import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
@@ -1961,7 +1961,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
 receiveViaCompleteFD :: ChatMonad m => User -> FileTransferId -> RcvFileDescr -> m ()
 receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} =
   when fileDescrComplete $ do
-    rd <- parseRcvFileDescription fileDescrText
+    rd <- parseFileDescription fileDescrText
     aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd
     startReceivingFile user fileId
     withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
@@ -2335,9 +2335,9 @@ processAgentMsgSndFile _corrId aFileId msg =
               liftIO $ updateCIFileStatus db user fileId status
               getChatItemByFileId db user fileId
             toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
-        SFDONE _sndDescr rfds ->
+        SFDONE sndDescr rfds ->
           unless cancelled $ do
-            -- TODO save sender file description
+            withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
             ci@(AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
               withStore $ \db -> getChatItemByFileId db user fileId
             case (msgId_, itemDeleted) of
@@ -2350,6 +2350,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                     withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                     msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
                     withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+                    agentXFTPDeleteSndFileInternal user aFileId
                   (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
                     ms <- withStore' $ \db -> getGroupMembers db user g
                     let rfdsMemberFTs = zip rfds $ memberFTs ms
@@ -2359,6 +2360,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                     ci' <- withStore $ \db -> do
                       liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                       getChatItemByFileId db user fileId
+                    agentXFTPDeleteSndFileInternal user aFileId
                     toView $ CRSndFileCompleteXFTP user ci' ft
                     where
                       memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
@@ -2378,9 +2380,10 @@ processAgentMsgSndFile _corrId aFileId msg =
         SFERR e -> do
           -- update chat item status
           -- send status to view
-          -- agentXFTPDeleteSndFile
+          agentXFTPDeleteSndFileInternal user aFileId
           throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
       where
+        fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
         sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
         sendFileDescription sft rfd msgId sendMsg = do
@@ -3810,8 +3813,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
-parseRcvFileDescription :: ChatMonad m => Text -> m (ValidFileDescription 'FRecipient)
-parseRcvFileDescription =
+parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
+parseFileDescription =
   liftEither . first (ChatError . CEInvalidFileDescription) . (strDecode . encodeUtf8)
 
 sendDirectFileInline :: ChatMonad m => Contact -> FileTransferMeta -> SharedMsgId -> m ()
@@ -3939,11 +3942,9 @@ cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
   case xftpSndFile of
     Nothing ->
       catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
-    Just _patternAgentSndFileId -> do
+    Just xsf -> do
       forM_ fts (\ft -> cancelSndFileTransfer user ft False)
-      -- TODO unless agentSndFileDeleted, do agentXFTPDeleteSndFile:
-      -- TODO   - with agent xftpDeleteSndFile
-      -- TODO   - with store setSndFTAgentDeleted
+      agentXFTPDeleteSndFileRemote user xsf fileId `catchError` (toView . CRChatError (Just user))
       pure []
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe ConnId)
@@ -4191,6 +4192,18 @@ agentXFTPDeleteRcvFile :: ChatMonad m => User -> RcvFileId -> FileTransferId -> 
 agentXFTPDeleteRcvFile user aFileId fileId = do
   withAgent $ \a -> xftpDeleteRcvFile a (aUserId user) aFileId
   withStore' $ \db -> setRcvFTAgentDeleted db fileId
+
+agentXFTPDeleteSndFileInternal :: ChatMonad m => User -> SndFileId -> m ()
+agentXFTPDeleteSndFileInternal user aFileId = do
+  withAgent (\a -> xftpDeleteSndFileInternal a (aUserId user) aFileId) `catchError` (toView . CRChatError (Just user))
+
+agentXFTPDeleteSndFileRemote :: ChatMonad m => User -> XFTPSndFile -> FileTransferId -> m ()
+agentXFTPDeleteSndFileRemote user XFTPSndFile {agentSndFileId = AgentSndFileId aFileId, privateSndFileDescr, agentSndFileDeleted} fileId =
+  unless agentSndFileDeleted $
+    forM_ privateSndFileDescr $ \sfdText -> do
+      sd <- parseFileDescription sfdText
+      withAgent $ \a -> xftpDeleteSndFileRemote a (aUserId user) aFileId sd
+      withStore' $ \db -> setSndFTAgentDeleted db user fileId
 
 userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct =
