@@ -18,7 +18,6 @@ struct VersionView: View {
             Text("App build: \(appBuild ?? "?")")
             if let info = versionInfo {
                 Text("Core version: v\(info.version)")
-                Text("Core built at: \(info.buildTimestamp)")
                 if let v = try? AttributedString(markdown: "simplexmq: v\(info.simplexmqVersion) ([\(info.simplexmqCommit.prefix(7))](https://github.com/simplex-chat/simplexmq/commit/\(info.simplexmqCommit)))") {
                     Text(v)
                 }

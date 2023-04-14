@@ -8,6 +8,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import qualified Data.ByteString.Char8 as B
+import Simplex.Chat (roundedFDCount)
 import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFileConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
@@ -54,6 +55,7 @@ chatFileTests = do
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "file transfer over XFTP" $ do
+    it "round file description count" $ const testXFTPRoundFDCount
     it "send and receive file" testXFTPFileTransfer
     it "send and receive file, accepting after upload" testXFTPAcceptAfterUpload
     it "send and receive file in group" testXFTPGroupFileTransfer
@@ -959,6 +961,16 @@ testAsyncGroupFileTransfer tmp = do
   dest `shouldBe` src
   dest2 <- B.readFile "./tests/tmp/test_1.jpg"
   dest2 `shouldBe` src
+
+testXFTPRoundFDCount :: Expectation
+testXFTPRoundFDCount = do
+  roundedFDCount 1 `shouldBe` 4
+  roundedFDCount 2 `shouldBe` 4
+  roundedFDCount 4 `shouldBe` 4
+  roundedFDCount 5 `shouldBe` 8
+  roundedFDCount 20 `shouldBe` 32
+  roundedFDCount 128 `shouldBe` 128
+  roundedFDCount 500 `shouldBe` 512
 
 testXFTPFileTransfer :: HasCallStack => FilePath -> IO ()
 testXFTPFileTransfer =

@@ -56,4 +56,3 @@ fun DeveloperView(
     }
   }
 }
-

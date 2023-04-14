@@ -344,7 +344,6 @@
 \n<b>Uwaga</b>: jeśli masz wiele połączeń, zużycie baterii i ruchu może być znacznie wyższe, a niektóre połączenia mogą się nie udać.</string>
     <string name="network_session_mode_user">Profil czatu</string>
     <string name="network_session_mode_entity">Połączenie</string>
-    <string name="core_build_timestamp">Kompilacja rdzenia: %s</string>
     <string name="core_version">Wersja rdzenia: v%s</string>
     <string name="error_saving_ICE_servers">Błąd zapisu serwerów ICE</string>
     <string name="enter_one_ICE_server_per_line">Serwery ICE (po jednym na linię)</string>
@@ -536,7 +535,7 @@
     <string name="settings_section_title_help">POMOC</string>
     <string name="import_database">Importuj bazę danych</string>
     <string name="settings_section_title_incognito">Tryb incognito</string>
-    <string name="settings_section_title_messages">WIADOMOŚCI</string>
+    <string name="settings_section_title_messages">WIADOMOŚCI I PLIKI</string>
     <string name="new_database_archive">Nowe archiwum bazy danych</string>
     <string name="old_database_archive">Stare archiwum bazy danych</string>
     <string name="protect_app_screen">Chroń ekran aplikacji</string>
@@ -1058,4 +1057,22 @@
     <string name="you_will_join_group">Dołączysz do grupy, do której odnosi się ten link i połączysz się z jej członkami.</string>
     <string name="your_SMP_servers">Twoje serwery SMP</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Zostaniesz połączony, gdy Twoje żądanie połączenia zostanie zaakceptowane, proszę czekać lub sprawdzić później!</string>
+    <string name="error_loading_smp_servers">Błąd ładowania serwerów SMP</string>
+    <string name="error_loading_xftp_servers">Błąd ładowania serwerów XFTP</string>
+    <string name="error_saving_xftp_servers">Błąd zapisu serwerów XFTP</string>
+    <string name="smp_server_test_create_file">Utwórz plik</string>
+    <string name="smp_server_test_download_file">Pobierz plik</string>
+    <string name="error_xftp_test_server_auth">Serwer wymaga autoryzacji do przesłania, sprawdź hasło</string>
+    <string name="smp_server_test_upload_file">Prześlij plik</string>
+    <string name="smp_server_test_compare_file">Porównaj plik</string>
+    <string name="smp_server_test_delete_file">Usuń plik</string>
+    <string name="xftp_servers">Serwery XFTP</string>
+    <string name="your_XFTP_servers">Twoje serwery XFTP</string>
+    <string name="host_verb">Host</string>
+    <string name="port_verb">Port</string>
+    <string name="network_proxy_port">port %d</string>
+    <string name="disable_onion_hosts_when_not_supported">Ustaw <i>Użyj hostów .onion</i> na Nie jeśli proxy SOCKS ich nie obsługuje.</string>
+    <string name="network_socks_proxy_settings">Ustawienia PROXY SOCKS</string>
+    <string name="network_socks_toggle_use_socks_proxy">Użyj proxy SOCKS</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Upewnij się, że adresy serwerów XFTP są w poprawnym formacie, rozdzielone liniami i nie są zduplikowane.</string>
 </resources>

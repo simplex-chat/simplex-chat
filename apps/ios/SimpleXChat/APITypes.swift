@@ -1153,7 +1153,6 @@ public enum NotificationPreviewMode: String, SelectableItem {
 
 public struct CoreVersionInfo: Decodable {
     public var version: String
-    public var buildTimestamp: String
     public var simplexmqVersion: String
     public var simplexmqCommit: String
 }

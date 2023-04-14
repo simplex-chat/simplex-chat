@@ -425,7 +425,6 @@
     <string name="delete_address">刪除地址</string>
     <string name="colored">顏色</string>
     <string name="how_to_use_your_servers">如何使用你的伺服器</string>
-    <string name="core_build_timestamp">核心建立於：%s</string>
     <string name="to_connect_via_link_title">使用連結連接</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 桌面版：於應用程式內掃描一個已存在的二維碼，透過二維碼掃描。</string>
     <string name="icon_descr_settings">設定</string>

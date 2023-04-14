@@ -657,9 +657,6 @@
 "Copy" = "Kopieren";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "Core übersetzt am: %@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "Core Version: v%@";
 
 /* No comment provided by engineer. */
@@ -2502,7 +2499,7 @@
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.";
 
-/* authentication reason */
+/* No comment provided by engineer. */
 "Unlock" = "Entsperren";
 
 /* No comment provided by engineer. */

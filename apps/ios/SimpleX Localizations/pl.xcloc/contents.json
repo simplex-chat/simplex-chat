@@ -1,0 +1,12 @@
+{
+  "developmentRegion" : "en",
+  "project" : "SimpleX.xcodeproj",
+  "targetLocale" : "pl",
+  "toolInfo" : {
+    "toolBuildNumber" : "14C18",
+    "toolID" : "com.apple.dt.xcode",
+    "toolName" : "Xcode",
+    "toolVersion" : "14.2"
+  },
+  "version" : "1.0"
+}
