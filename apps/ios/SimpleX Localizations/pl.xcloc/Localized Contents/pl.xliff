@@ -2215,9 +2215,9 @@
         <target>Nieodwracalne usuwanie wiadomości jest w tej grupie zabronione.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
+      <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve" approved="no">
         <source>It allows having many anonymous connections without any shared data between them in a single chat profile.</source>
-        <target>Pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w jednym profilu czatu.</target>
+        <target state="translated">To pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w pojedynczym profilu czatu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates about the servers.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
@@ -3878,9 +3878,9 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
         <target>Wyłącz wyciszenie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unread" xml:space="preserve">
+      <trans-unit id="Unread" xml:space="preserve" approved="no">
         <source>Unread</source>
-        <target>Oznacz jako nieprzeczytane</target>
+        <target state="translated">Nieprzeczytane</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
