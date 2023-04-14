@@ -2834,9 +2834,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Voer het vorige wachtwoord in na het herstellen van de database back-up. Deze actie kan niet ongedaan gemaakt worden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve">
+      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve" approved="no">
         <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
-        <target>Onthoud het of bewaar het veilig - er is geen manier om een verloren toegangscode te herstellen!</target>
+        <target state="translated">Onthoud of bewaar het veilig - er is geen manier om een verloren toegangscode te herstellen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
