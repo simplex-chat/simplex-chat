@@ -363,7 +363,6 @@
     <string name="encrypted_audio_call">端到端加密语音通话</string>
     <string name="enter_one_ICE_server_per_line">ICE 服务器（每行一个）</string>
     <string name="create_address">创建地址</string>
-    <string name="core_build_timestamp">核心构建于：%s</string>
     <string name="core_version">核心版本: v%s</string>
     <string name="display_name__field">显示名：</string>
     <string name="full_name__field">全名：</string>

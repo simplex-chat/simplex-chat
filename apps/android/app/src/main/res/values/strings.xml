@@ -556,7 +556,6 @@
   <string name="app_version_name">App version: v%s</string>
   <string name="app_version_code">App build: %s</string>
   <string name="core_version">Core version: v%s</string>
-  <string name="core_build_timestamp">Core built at: %s</string>
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
   <string name="show_dev_options">Show:</string>
   <string name="hide_dev_options">Hide:</string>

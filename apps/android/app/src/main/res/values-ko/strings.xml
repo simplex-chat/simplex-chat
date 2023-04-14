@@ -206,7 +206,6 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">대화 상대와 메시지가 삭제돼요. 삭제 후 되돌릴 수 없어요!</string>
     <string name="status_contact_has_e2e_encryption">대화 상대와 종단간 암호화됨</string>
     <string name="alert_title_contact_connection_pending">대화 상대와 아직 연결되지 않았어요!</string>
-    <string name="core_build_timestamp">코어 빌드: %s</string>
     <string name="archive_created_on_ts"><xliff:g id="archive_ts">%1$s</xliff:g>에 생성 완료</string>
     <string name="create_one_time_link">일회용 초대 링크 생성</string>
     <string name="create_secret_group_title">비밀 그룹 생성</string>

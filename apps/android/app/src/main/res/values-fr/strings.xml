@@ -925,7 +925,6 @@
     <string name="core_simplexmq_version">simplexmq : v%s (%2s)</string>
     <string name="app_version_code">Build de l\'app : %s</string>
     <string name="app_version_name">Version de l\'app : v%s</string>
-    <string name="core_build_timestamp">Cœur compilé le : %s</string>
     <string name="core_version">Version du cœur : v%s</string>
     <string name="network_option_ping_count">Nombre de PING</string>
     <string name="users_delete_all_chats_deleted">Toutes les discussions et tous les messages seront supprimés - il est impossible de revenir en arrière !</string>

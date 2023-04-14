@@ -655,7 +655,6 @@
     <string name="app_version_title">Verze aplikace</string>
     <string name="app_version_name">Verze aplikace: v%s</string>
     <string name="core_version">Verze jádra: v%s</string>
-    <string name="core_build_timestamp">Jádro sestaveno: %s</string>
     <string name="delete_address__question">Smazat adresu\?</string>
     <string name="all_your_contacts_will_remain_connected">Všechny vaše kontakty zůstanou připojeny.</string>
     <string name="contact_requests">Žádosti o kontakt</string>

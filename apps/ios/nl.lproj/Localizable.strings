@@ -681,9 +681,6 @@
 "Copy" = "Kopiëren";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "Core built at: %@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "Core versie: v% @";
 
 /* No comment provided by engineer. */
