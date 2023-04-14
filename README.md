@@ -90,7 +90,7 @@ Join our translators to help SimpleX grow!
 |🇷🇺 ru|Русский   ||[![android app](https://hosted.weblate.org/widgets/simplex-chat/ru/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/ru/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/ru/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/ru/)|||
 |🇨🇳 zh-CHS|简体中文|[sith-on-mars](https://github.com/sith-on-mars)<br><br>[Float-hu](https://github.com/Float-hu)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/zh_Hans/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/zh_Hans/)<br>&nbsp;|<br><br>[![website](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/zh_Hans/)||
 
-Languages in progress: Arabic, Hindi, Japanese, Spanish and [many others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages, review the [translation guide](./docs/TRANSLATIONS.md) and get in touch with us!
+Languages in progress: Arabic, Japanese, Korean, Portuguese and [others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages, review the [translation guide](./docs/TRANSLATIONS.md) and get in touch with us!
 
 ## Contribute
 
