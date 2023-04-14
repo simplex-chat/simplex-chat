@@ -3944,7 +3944,7 @@ cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
       catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
     Just xsf -> do
       forM_ fts (\ft -> cancelSndFileTransfer user ft False)
-      agentXFTPDeleteSndFileRemote user xsf fileId
+      agentXFTPDeleteSndFileRemote user xsf fileId `catchError` (toView . CRChatError (Just user))
       pure []
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe ConnId)
