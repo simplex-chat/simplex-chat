@@ -1,20 +1,6 @@
 #!/bin/bash
 
 cp -R docs website/src
-cp "README.md" "website/src/docs"
-
-base_directory="website/src/docs"
-old_file_name="README.md"
-new_file_name="index.md"
-
-# Find and rename all occurrences of README.md to index.md in the base directory and its subfolders
-find "$base_directory" -type f -name "$old_file_name" -exec sh -c '
-  old_path="{}";
-  new_path=$(dirname "$old_path")/"'"$new_file_name"'";
-  mv "$old_path" "$new_path";
-  sed -i "/^| .* |$/d" "$new_path";
-' \;
-
 cp -R blog website/src
 cp -R images website/src
 rm website/src/blog/README.md
