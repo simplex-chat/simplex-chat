@@ -42,7 +42,7 @@ import chat.simplex.app.views.onboarding.SimpleXInfo
 import chat.simplex.app.views.onboarding.WhatsNewView
 
 @Composable
-fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity) -> Unit) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
 
@@ -126,7 +126,7 @@ fun SettingsLayout(
   incognito: MutableState<Boolean>,
   incognitoPref: SharedPreference<Boolean>,
   userDisplayName: String,
-  setPerformLA: (Boolean) -> Unit,
+  setPerformLA: (Boolean, FragmentActivity) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
@@ -174,7 +174,7 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it) }, disabled = stopped)
         SectionDivider()
@@ -294,13 +294,20 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   )
 }
 
-@Composable fun ChatLockItem(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
-  SectionItemView() {
+@Composable
+fun ChatLockItem(
+  chatModel: ChatModel,
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  setPerformLA: (Boolean, FragmentActivity) -> Unit
+) {
+  val performLA = remember { chatModel.performLA }
+  val currentLAMode = remember { chatModel.controller.appPrefs.laMode }
+  SectionItemView(showSettingsModal { SimplexLockView(chatModel, currentLAMode, setPerformLA) }) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
-        Icons.Outlined.Lock,
+        if (performLA.value) Icons.Filled.Lock else Icons.Outlined.Lock,
         contentDescription = stringResource(R.string.chat_lock),
-        tint = HighOrLowlight,
+        tint = if (performLA.value) SimplexGreen else HighOrLowlight,
       )
       Spacer(Modifier.padding(horizontal = 4.dp))
       Text(
@@ -309,14 +316,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
           .fillMaxWidth()
           .weight(1F)
       )
-      Switch(
-        checked = performLA.value,
-        onCheckedChange = { setPerformLA(it) },
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        )
-      )
+      Text(if (performLA.value) remember { currentLAMode.state }.value.text else generalGetString(androidx.compose.ui.R.string.off), color = HighOrLowlight)
     }
   }
 }
@@ -517,7 +517,7 @@ private fun runAuth(context: Context, onFinish: (success: Boolean) -> Unit) {
     generalGetString(R.string.auth_log_in_using_credential),
     context as FragmentActivity,
     completed = { laResult ->
-      onFinish(laResult == LAResult.Success || laResult == LAResult.Unavailable)
+      onFinish(laResult == LAResult.Success || laResult is LAResult.Unavailable)
     }
   )
 }
@@ -538,7 +538,7 @@ fun PreviewSettingsLayout() {
       incognito = remember { mutableStateOf(false) },
       incognitoPref = SharedPreference({ false }, {}),
       userDisplayName = "Alice",
-      setPerformLA = {},
+      setPerformLA = { _, _ -> },
       showModal = { {} },
       showSettingsModal = { {} },
       showSettingsModalWithSearch = { },

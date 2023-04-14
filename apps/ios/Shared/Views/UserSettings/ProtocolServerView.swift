@@ -9,13 +9,16 @@
 import SwiftUI
 import SimpleXChat
 
-struct SMPServerView: View {
+struct ProtocolServerView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    let serverProtocol: ServerProtocol
     @Binding var server: ServerCfg
     @State var serverToEdit: ServerCfg
     @State private var showTestFailure = false
     @State private var testing = false
-    @State private var testFailure: SMPTestFailure?
+    @State private var testFailure: ProtocolTestFailure?
+
+    var proto: String { serverProtocol.rawValue.uppercased() }
 
     var body: some View {
         ZStack {
@@ -28,7 +31,7 @@ struct SMPServerView: View {
                 ProgressView().scaleEffect(2)
             }
         }
-        .modifier(BackButton(label: "Your SMP servers") {
+        .modifier(BackButton(label: "Your \(proto) servers") {
             server = serverToEdit
             dismiss()
         })
@@ -57,7 +60,8 @@ struct SMPServerView: View {
 
     private func customServer() -> some View {
         VStack {
-            let valid = parseServerAddress(serverToEdit.server)?.valid == true
+            let serverAddress = parseServerAddress(serverToEdit.server)
+            let valid = serverAddress?.valid == true && serverAddress?.serverProtocol == serverProtocol
             List {
                 Section {
                     TextEditor(text: $serverToEdit.server)
@@ -144,18 +148,17 @@ struct BackButton: ViewModifier {
     }
 }
 
-func testServerConnection(server: Binding<ServerCfg>) async -> SMPTestFailure? {
+func testServerConnection(server: Binding<ServerCfg>) async -> ProtocolTestFailure? {
     do {
-        let r = try await testSMPServer(smpServer: server.wrappedValue.server)
-
-            switch r {
-            case .success:
-                await MainActor.run { server.wrappedValue.tested = true }
-                return nil
-            case let .failure(f):
-                await MainActor.run { server.wrappedValue.tested = false }
-                return f
-            }
+        let r = try await testProtoServer(server: server.wrappedValue.server)
+        switch r {
+        case .success:
+            await MainActor.run { server.wrappedValue.tested = true }
+            return nil
+        case let .failure(f):
+            await MainActor.run { server.wrappedValue.tested = false }
+            return f
+        }
     } catch let error {
         logger.error("testServerConnection \(responseError(error))")
         await MainActor.run {
@@ -169,8 +172,12 @@ func serverHostname(_ srv: String) -> String {
     parseServerAddress(srv)?.hostnames.first ?? srv
 }
 
-struct SMPServerView_Previews: PreviewProvider {
+struct ProtocolServerView_Previews: PreviewProvider {
     static var previews: some View {
-        SMPServerView(server: Binding.constant(ServerCfg.sampleData.custom), serverToEdit: ServerCfg.sampleData.custom)
+        ProtocolServerView(
+            serverProtocol: .smp,
+            server: Binding.constant(ServerCfg.sampleData.custom),
+            serverToEdit: ServerCfg.sampleData.custom
+        )
     }
 }

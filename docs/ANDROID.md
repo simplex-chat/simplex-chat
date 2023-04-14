@@ -7,7 +7,7 @@ supportedLangsForDoc:
     - cs
 ---
 
-| Updated 07.02.2023 | Languages: EN, [CZ](/docs/lang/cs/ANDROID.md) |
+| 07.02.2023 | EN, [CZ](/docs/lang/cs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md) |
 
 # Accessing files in Android app
 

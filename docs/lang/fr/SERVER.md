@@ -7,7 +7,7 @@ supportedLangsForDoc:
     - cs
     - fr
 ---
-| Updated 07.02.2023 | Languages: [EN](/docs/SERVER.md), FR |
+| 31.01.2023 | FR, [EN](/docs/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
 
 # Héberger votre propre serveur SMP
 

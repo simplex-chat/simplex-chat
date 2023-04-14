@@ -7,7 +7,7 @@ supportedLangsForDoc:
     - cs
     - fr
 ---
-| Updated 31.01.2023 | Languages: [EN](/docs/CONTRIBUTING.md), FR |
+| 31.01.2023 | FR, [EN](/docs/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md) |
 
 # Guide pour contribuer
 

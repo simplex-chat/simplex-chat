@@ -77,6 +77,11 @@
         <target>%@ 已认证</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ servers" xml:space="preserve">
+        <source>%@ servers</source>
+        <target>%@ 服务器</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
         <source>%@ wants to connect!</source>
         <target>%@ 要连接！</target>
@@ -137,8 +142,18 @@
         <target>%lld 成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lld minutes" xml:space="preserve">
+        <source>%lld minutes</source>
+        <target>%lld 分钟</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
         <source>%lld second(s)</source>
+        <target>%lld 秒</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lld seconds" xml:space="preserve">
+        <source>%lld seconds</source>
         <target>%lld 秒</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -535,9 +550,14 @@
         <target>音视频通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Authentication cancelled" xml:space="preserve">
+        <source>Authentication cancelled</source>
+        <target>身份验证已取消</target>
+        <note>PIN entry</note>
+      </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
         <source>Authentication failed</source>
-        <target>认证失败</target>
+        <target>身份认证失败</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
@@ -547,7 +567,7 @@
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
         <source>Authentication unavailable</source>
-        <target>认证不可用</target>
+        <target>身份认证不可用</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept contact requests" xml:space="preserve">
@@ -618,6 +638,11 @@
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>取消</target>
+        <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Cancel file transfer?" xml:space="preserve">
+        <source>Cancel file transfer?</source>
+        <target>取消文件传输？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
@@ -635,15 +660,30 @@
         <target>更改</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change Passcode" xml:space="preserve">
+        <source>Change Passcode</source>
+        <target>更改密码</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
         <source>Change database passphrase?</source>
         <target>更改数据库密码？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change lock mode" xml:space="preserve">
+        <source>Change lock mode</source>
+        <target>更改锁定模式</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
         <target>更改成员角色？</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change passcode" xml:space="preserve">
+        <source>Change passcode</source>
+        <target>更改密码</target>
+        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
         <source>Change receiving address</source>
@@ -750,6 +790,11 @@
         <target>颜色</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Compare file" xml:space="preserve">
+        <source>Compare file</source>
+        <target>对比文件</target>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Compare security codes with your contacts." xml:space="preserve">
         <source>Compare security codes with your contacts.</source>
         <target>与您的联系人比较安全码。</target>
@@ -763,6 +808,16 @@
       <trans-unit id="Confirm" xml:space="preserve">
         <source>Confirm</source>
         <target>确认</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm Passcode" xml:space="preserve">
+        <source>Confirm Passcode</source>
+        <target>确认密码</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm database upgrades" xml:space="preserve">
+        <source>Confirm database upgrades</source>
+        <target>确认数据库升级</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm new passphrase…" xml:space="preserve">
@@ -920,6 +975,11 @@
         <target>创建地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create file" xml:space="preserve">
+        <source>Create file</source>
+        <target>创建文件</target>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Create group link" xml:space="preserve">
         <source>Create group link</source>
         <target>创建群组链接</target>
@@ -955,6 +1015,11 @@
         <target>创建于 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Current Passcode" xml:space="preserve">
+        <source>Current Passcode</source>
+        <target>当前密码</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Current passphrase…" xml:space="preserve">
         <source>Current passphrase…</source>
         <target>现有密码……</target>
@@ -973,6 +1038,16 @@
       <trans-unit id="Database ID" xml:space="preserve">
         <source>Database ID</source>
         <target>数据库 ID</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
+        <source>Database IDs and Transport isolation option.</source>
+        <target>数据库 ID 和传输隔离选项。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database downgrade" xml:space="preserve">
+        <source>Database downgrade</source>
+        <target>数据库降级</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -1027,6 +1102,11 @@
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
         <source>Database passphrase is required to open chat.</source>
         <target>打开聊天需要数据库密码。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database upgrade" xml:space="preserve">
+        <source>Database upgrade</source>
+        <target>数据库升级</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve">
@@ -1093,6 +1173,11 @@
         <target>删除聊天档案？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete chat profile" xml:space="preserve">
+        <source>Delete chat profile</source>
+        <target>删除聊天资料</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete chat profile?" xml:space="preserve">
         <source>Delete chat profile?</source>
         <target>删除聊天资料？</target>
@@ -1117,6 +1202,11 @@
         <source>Delete database</source>
         <target>删除数据库</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete file" xml:space="preserve">
+        <source>Delete file</source>
+        <target>删除文件</target>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Delete files and media?" xml:space="preserve">
         <source>Delete files and media?</source>
@@ -1201,6 +1291,11 @@
       <trans-unit id="Delete pending connection?" xml:space="preserve">
         <source>Delete pending connection?</source>
         <target>删除待定连接？</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete profile" xml:space="preserve">
+        <source>Delete profile</source>
+        <target>删除个人资料</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete queue" xml:space="preserve">
@@ -1308,6 +1403,16 @@
         <target>不再显示</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Downgrade and open chat" xml:space="preserve">
+        <source>Downgrade and open chat</source>
+        <target>降级并打开聊天</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Download file" xml:space="preserve">
+        <source>Download file</source>
+        <target>下载文件</target>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
         <source>Duplicate display name!</source>
         <target>重复的显示名！</target>
@@ -1348,6 +1453,11 @@
         <target>启用即时通知？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable lock" xml:space="preserve">
+        <source>Enable lock</source>
+        <target>启用锁定</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable notifications" xml:space="preserve">
         <source>Enable notifications</source>
         <target>启用通知</target>
@@ -1370,12 +1480,12 @@
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
         <source>Encrypted database</source>
-        <target>加密的数据库</target>
+        <target>加密数据库</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted message or another event" xml:space="preserve">
         <source>Encrypted message or another event</source>
-        <target>加密消息或其他项目</target>
+        <target>加密消息或其他事件</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
@@ -1383,9 +1493,14 @@
         <target>加密消息：数据库错误</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Encrypted message: database migration error" xml:space="preserve">
+        <source>Encrypted message: database migration error</source>
+        <target>加密信息：数据库迁移错误</target>
+        <note>notification</note>
+      </trans-unit>
       <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
         <source>Encrypted message: keychain error</source>
-        <target>加密信息：钥匙串错误</target>
+        <target>加密消息：钥匙串错误</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: no passphrase" xml:space="preserve">
@@ -1397,6 +1512,11 @@
         <source>Encrypted message: unexpected error</source>
         <target>加密消息：意外错误</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Enter Passcode" xml:space="preserve">
+        <source>Enter Passcode</source>
+        <target>输入密码</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">
         <source>Enter correct passphrase.</source>
@@ -1538,6 +1658,11 @@
         <target>加入群组错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error loading %@ servers" xml:space="preserve">
+        <source>Error loading %@ servers</source>
+        <target>加载 %@ 服务器错误</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
         <target>接收文件错误</target>
@@ -1548,19 +1673,24 @@
         <target>删除成员错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving %@ servers" xml:space="preserve">
+        <source>Error saving %@ servers</source>
+        <target>保存 %@ 服务器错误</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving ICE servers" xml:space="preserve">
         <source>Error saving ICE servers</source>
         <target>保存 ICE 服务器错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving SMP servers" xml:space="preserve">
-        <source>Error saving SMP servers</source>
-        <target>保存 SMP 服务器错误</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve">
         <source>Error saving group profile</source>
         <target>保存群组资料错误</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving passcode" xml:space="preserve">
+        <source>Error saving passcode</source>
+        <target>保存密码错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
@@ -1613,6 +1743,11 @@
         <target>更新用户隐私时出错</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error: " xml:space="preserve">
+        <source>Error: </source>
+        <target>错误： </target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
         <target>错误： ％@</target>
@@ -1631,6 +1766,11 @@
       <trans-unit id="Exit without saving" xml:space="preserve">
         <source>Exit without saving</source>
         <target>退出而不保存</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Experimental" xml:space="preserve">
+        <source>Experimental</source>
+        <target>实验性</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -1656,6 +1796,16 @@
       <trans-unit id="Failed to remove passphrase" xml:space="preserve">
         <source>Failed to remove passphrase</source>
         <target>移除密码失败</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File transfer will be cancelled. If it's in progress it will be stoppped." xml:space="preserve">
+        <source>File transfer will be cancelled. If it's in progress it will be stoppped.</source>
+        <target>文件传输将被取消。文件传输将被终止如果它正在进行中。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
+        <source>File will be received when your contact completes uploading it.</source>
+        <target>文件将在您的联系人完成上传后收到。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -1853,6 +2003,11 @@
         <target>隐藏个人资料</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Hide:" xml:space="preserve">
+        <source>Hide:</source>
+        <target>隐藏：</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
         <target>SimpleX的工作原理</target>
@@ -1903,9 +2058,19 @@
         <target>忽视</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
+        <source>Image will be received when your contact completes uploading it.</source>
+        <target>图片将在您的联系人完成上传后收到。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>Image will be received when your contact is online, please wait or check later!</source>
         <target>图片将在您的联系人在线时收到，请稍等或稍后查看！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Immediately" xml:space="preserve">
+        <source>Immediately</source>
+        <target>立即</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Immune to spam and abuse" xml:space="preserve">
@@ -1972,6 +2137,16 @@
         <source>Incoming video call</source>
         <target>视频通话来电</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Incompatible database version" xml:space="preserve">
+        <source>Incompatible database version</source>
+        <target>数据库版本不兼容</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incorrect passcode" xml:space="preserve">
+        <source>Incorrect passcode</source>
+        <target>密码错误</target>
+        <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Incorrect security code!" xml:space="preserve">
         <source>Incorrect security code!</source>
@@ -2095,6 +2270,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>加入群组</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="KeyChain error" xml:space="preserve">
+        <source>KeyChain error</source>
+        <target>钥匙串错误</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve">
         <source>Keychain error</source>
         <target>钥匙串错误</target>
@@ -2155,6 +2335,16 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>仅本地配置文件数据</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Lock after" xml:space="preserve">
+        <source>Lock after</source>
+        <target>在此后锁定</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Lock mode" xml:space="preserve">
+        <source>Lock mode</source>
+        <target>锁定模式</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
         <source>Make a private connection</source>
         <target>建立私密连接</target>
@@ -2165,9 +2355,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>将个人资料设为私密！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
-        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
-        <target>请确保 SMP服 务器地址格式正确，每行一个地址并且不重复 (%@)。</target>
+      <trans-unit id="Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
+        <source>Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target>请确保 %@服 务器地址格式正确，每行一个地址并且不重复 (%@)。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -2245,6 +2435,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>消息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Messages &amp; files" xml:space="preserve">
+        <source>Messages &amp; files</source>
+        <target>消息</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrating database archive..." xml:space="preserve">
         <source>Migrating database archive...</source>
         <target>迁移数据库档案中……</target>
@@ -2263,6 +2458,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Migration is completed" xml:space="preserve">
         <source>Migration is completed</source>
         <target>迁移完成</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migrations: %@" xml:space="preserve">
+        <source>Migrations: %@</source>
+        <target>迁移：%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -2315,6 +2515,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>网络状态</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New Passcode" xml:space="preserve">
+        <source>New Passcode</source>
+        <target>新密码</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
         <source>New contact request</source>
         <target>新联系人请求</target>
@@ -2354,6 +2559,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>No</source>
         <target>否</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No app password" xml:space="preserve">
+        <source>No app password</source>
+        <target>没有应用程序密码</target>
+        <note>Authentication unavailable</note>
       </trans-unit>
       <trans-unit id="No contacts selected" xml:space="preserve">
         <source>No contacts selected</source>
@@ -2402,6 +2612,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>现在管理员可以：
 - 删除成员的消息。
 - 禁用成员（“观察员”角色）</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Off" xml:space="preserve">
+        <source>Off</source>
+        <target>关闭</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve">
@@ -2529,6 +2744,31 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>PING 间隔</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Passcode" xml:space="preserve">
+        <source>Passcode</source>
+        <target>密码</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode changed!" xml:space="preserve">
+        <source>Passcode changed!</source>
+        <target>密码已更改！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode entry" xml:space="preserve">
+        <source>Passcode entry</source>
+        <target>密码输入</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode not changed!" xml:space="preserve">
+        <source>Passcode not changed!</source>
+        <target>密码未更改！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode set!" xml:space="preserve">
+        <source>Passcode set!</source>
+        <target>密码已设置！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
         <source>Password to show</source>
         <target>显示密码</target>
@@ -2599,6 +2839,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>恢复数据库备份后请输入之前的密码。 此操作无法撤消。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve">
+        <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
+        <target>请牢记或妥善保管——丢失的密码将无法恢复！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
         <source>Please restart the app and migrate the database to enable push notifications.</source>
         <target>请重新启动应用程序并迁移数据库以启用推送通知。</target>
@@ -2657,6 +2902,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Profile image" xml:space="preserve">
         <source>Profile image</source>
         <target>资料图片</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Profile password" xml:space="preserve">
+        <source>Profile password</source>
+        <target>个人资料密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -3024,6 +3274,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>发送它们来自图库或自定义键盘。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
+        <source>Send videos and files via XFTP</source>
+        <target>通过 XFTP 发送文件</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>发送人已取消文件传输。</target>
@@ -3052,6 +3307,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
         <target>服务器需要授权才能创建队列，检查密码</target>
+        <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
+        <source>Server requires authorization to upload, check password</source>
+        <target>服务器需要授权来上传，检查密码</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -3129,9 +3389,19 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>在电话历史记录中显示通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Show developer options" xml:space="preserve">
+        <source>Show developer options</source>
+        <target>显示开发者选项</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
         <target>显示预览</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show:" xml:space="preserve">
+        <source>Show:</source>
+        <target>显示：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve">
@@ -3142,6 +3412,16 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="SimpleX Lock" xml:space="preserve">
         <source>SimpleX Lock</source>
         <target>SimpleX 锁定</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Lock mode" xml:space="preserve">
+        <source>SimpleX Lock mode</source>
+        <target>SimpleX 锁定模式</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve">
+        <source>SimpleX Lock not enabled!</source>
+        <target>未启用 SimpleX 锁定！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
@@ -3229,6 +3509,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>停止聊天程序？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Submit" xml:space="preserve">
+        <source>Submit</source>
+        <target>提交</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
         <source>Support SimpleX Chat</source>
         <target>支持 SimpleX Chat</target>
@@ -3237,6 +3522,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="System" xml:space="preserve">
         <source>System</source>
         <target>系统</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="System authentication" xml:space="preserve">
+        <source>System authentication</source>
+        <target>系统认证</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -3541,6 +3831,16 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>取消隐藏</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unhide chat profile" xml:space="preserve">
+        <source>Unhide chat profile</source>
+        <target>取消隐藏聊天资料</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unhide profile" xml:space="preserve">
+        <source>Unhide profile</source>
+        <target>取消隐藏个人资料</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
         <source>Unknown caller</source>
         <target>未知来电者</target>
@@ -3571,6 +3871,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Unlock" xml:space="preserve">
         <source>Unlock</source>
         <target>解锁</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unlock app" xml:space="preserve">
+        <source>Unlock app</source>
+        <target>解锁应用程序</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Unmute" xml:space="preserve">
@@ -3617,6 +3922,16 @@ To connect, please ask your contact to create another connection link and check 
         <source>Updating this setting will re-connect the client to all servers.</source>
         <target>更新此设置将重新连接客户端到所有服务器。</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade and open chat" xml:space="preserve">
+        <source>Upgrade and open chat</source>
+        <target>升级并打开聊天</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upload file" xml:space="preserve">
+        <source>Upload file</source>
+        <target>上传文件</target>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
         <source>Use .onion hosts</source>
@@ -3683,6 +3998,16 @@ To connect, please ask your contact to create another connection link and check 
         <target>视频通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
+        <source>Video will be received when your contact completes uploading it.</source>
+        <target>视频将在您的联系人完成上传后收到。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
+        <source>Video will be received when your contact is online, please wait or check later!</source>
+        <target>视频将在您的联系人在线时收到，请稍等或稍后查看！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
         <source>View security code</source>
         <target>查看安全码</target>
@@ -3721,6 +4046,16 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Waiting for image" xml:space="preserve">
         <source>Waiting for image</source>
         <target>等待图像中</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Waiting for video" xml:space="preserve">
+        <source>Waiting for video</source>
+        <target>等待视频中</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
+        <source>Warning: you may lose some data!</source>
+        <target>警告：您可能会丢失部分数据！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WebRTC ICE servers" xml:space="preserve">
@@ -3766,6 +4101,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Wrong passphrase!" xml:space="preserve">
         <source>Wrong passphrase!</source>
         <target>密码错误！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="XFTP servers" xml:space="preserve">
+        <source>XFTP servers</source>
+        <target>XFTP 服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">
@@ -3843,6 +4183,11 @@ SimpleX Lock must be enabled.</source>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
         <source>You can start chat via app Settings / Database or by restarting the app</source>
         <target>您可以通过应用程序设置/数据库或重新启动应用程序开始聊天</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
+        <source>You can turn on SimpleX Lock via Settings.</source>
+        <target>您可以通过设置开启 SimpleX 锁定。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -3955,6 +4300,11 @@ SimpleX Lock must be enabled.</source>
         <target>您正在为该群组使用隐身个人资料——为防止共享您的主要个人资料，不允许邀请联系人</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your %@ servers" xml:space="preserve">
+        <source>Your %@ servers</source>
+        <target>您的 %@ 服务器</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your ICE servers" xml:space="preserve">
         <source>Your ICE servers</source>
         <target>您的 ICE 服务器</target>
@@ -3968,6 +4318,11 @@ SimpleX Lock must be enabled.</source>
       <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
         <target>您的 SimpleX 联系人地址</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your XFTP servers" xml:space="preserve">
+        <source>Your XFTP servers</source>
+        <target>您的 XFTP 服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -4279,6 +4634,11 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>创建者</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+        <source>database version is newer than the app, but no down migration for: %@</source>
+        <target>数据库版本比应用程序更新，但无法降级迁移：%@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
         <source>default (%@)</source>
         <target>默认 (%@)</target>
@@ -4293,6 +4653,11 @@ SimpleX 服务器无法看到您的资料。</target>
         <source>deleted group</source>
         <target>已删除群组</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
+        <source>different migration in the app/database: %@ / %@</source>
+        <target>应用程序/数据库中的不同迁移：%@ / %@</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">
         <source>direct</source>
@@ -4598,6 +4963,11 @@ SimpleX 服务器无法看到您的资料。</target>
       <trans-unit id="v%@ (%@)" xml:space="preserve">
         <source>v%@ (%@)</source>
         <target>v%@ (%@)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="v4.6.1+ is required to receive via XFTP." xml:space="preserve">
+        <source>v4.6.1+ is required to receive via XFTP.</source>
+        <target>通过 XFTP 接收需要 v4.6.1 以上版本。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="via contact address link" xml:space="preserve">

@@ -54,10 +54,8 @@ class ChatModel(val controller: ChatController) {
 
   val terminalItems = mutableStateListOf<TerminalItem>()
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
-  val userSMPServers = mutableStateOf<(List<ServerCfg>)?>(null)
   // Allows to temporary save servers that are being edited on multiple screens
   val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
-  val presetSMPServers = mutableStateOf<(List<String>)?>(null)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent
@@ -192,10 +190,13 @@ class ChatModel(val controller: ChatController) {
     // add to current chat
     if (chatId.value == cInfo.id) {
       withContext(Dispatchers.Main) {
-        if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-          chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
-        } else {
-          chatItems.add(cItem)
+        // Prevent situation when chat item already in the list received from backend
+        if (chatItems.none { it.id == cItem.id }) {
+          if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+            chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
+          } else {
+            chatItems.add(cItem)
+          }
         }
       }
     }
@@ -222,19 +223,19 @@ class ChatModel(val controller: ChatController) {
       res = true
     }
     // update current chat
-    if (chatId.value == cInfo.id) {
-      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
-      if (itemIndex >= 0) {
-        chatItems[itemIndex] = cItem
-        return false
-      } else {
-        withContext(Dispatchers.Main) {
+    return if (chatId.value == cInfo.id) {
+      withContext(Dispatchers.Main) {
+        val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+        if (itemIndex >= 0) {
+          chatItems[itemIndex] = cItem
+          false
+        } else {
           chatItems.add(cItem)
+          true
         }
-        return true
       }
     } else {
-      return res
+      res
     }
   }
 
@@ -2041,7 +2042,11 @@ enum class CICallStatus {
   }
 }
 
-fun durationText(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
+fun durationText(sec: Int): String {
+  val s = sec % 60
+  val m = sec / 60
+  return if (m < 60) "%02d:%02d".format(m, s) else "%02d:%02d:%02d".format(m / 60, m % 60, s)
+}
 
 @Serializable
 sealed class MsgErrorType() {

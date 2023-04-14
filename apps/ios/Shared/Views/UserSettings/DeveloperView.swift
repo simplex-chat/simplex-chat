@@ -38,13 +38,15 @@ struct DeveloperView: View {
                     settingsRow("chevron.left.forwardslash.chevron.right") {
                         Toggle("Show developer options", isOn: $developerTools)
                     }
+                } header: {
+                    Text("")
                 } footer: {
                     (developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option.")
                 }
 
                 Section {
                     settingsRow("arrow.up.doc") {
-                        Toggle("Send files via XFTP", isOn: $xftpSendEnabled)
+                        Toggle("Send videos and files via XFTP", isOn: $xftpSendEnabled)
                             .onChange(of: xftpSendEnabled) { _ in
                                 do {
                                     try setXFTPConfig(getXFTPCfg())

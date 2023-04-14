@@ -179,6 +179,9 @@ instance ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
 
+cchatItemId :: CChatItem c -> ChatItemId
+cchatItemId (CChatItem _ ci) = chatItemId' ci
+
 chatItemId' :: ChatItem c d -> ChatItemId
 chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
 

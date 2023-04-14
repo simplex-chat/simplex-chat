@@ -23,13 +23,30 @@ struct ContentView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
+    @State private var showSettings = false
     @State private var showWhatsNew = false
+    @State private var showChooseLAMode = false
+    @State private var showSetPasscode = false
 
     var body: some View {
         ZStack {
             contentView()
             if chatModel.showCallView, let call = chatModel.activeCall {
                 callView(call)
+            }
+            if !showSettings, let la = chatModel.laRequest {
+                LocalAuthView(authRequest: la)
+            } else if showSetPasscode {
+                SetAppPasscodeView {
+                    prefPerformLA = true
+                    showSetPasscode = false
+                    privacyLocalAuthModeDefault.set(.passcode)
+                    alertManager.showAlert(laTurnedOnAlert())
+                } cancel: {
+                    prefPerformLA = false
+                    showSetPasscode = false
+                    alertManager.showAlert(laPasscodeNotSetAlert())
+                }
             }
         }
         .onAppear {
@@ -40,6 +57,13 @@ struct ContentView: View {
             initAuthenticate()
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(showSettings: $showSettings)
+        }
+        .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode, titleVisibility: .visible) {
+            Button("System authentication") { initialEnableLA() }
+            Button("Passcode entry") { showSetPasscode = true }
+        }
     }
 
     @ViewBuilder private func contentView() -> some View {
@@ -82,7 +106,7 @@ struct ContentView: View {
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
-            ChatListView().privacySensitive(protectScreen)
+            ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
             .onAppear {
                 if !prefPerformLA { requestNtfAuthorization() }
                 // Local Authentication notice is to be shown on next start after onboarding is complete
@@ -132,6 +156,7 @@ struct ContentView: View {
     }
 
     private func initAuthenticate() {
+        logger.debug("initAuthenticate")
         if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {
             userAuthorized = false
         } else if doAuthenticate {
@@ -152,14 +177,18 @@ struct ContentView: View {
 
     private func justAuthenticate() {
         userAuthorized = false
-        authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
+        let laMode = privacyLocalAuthModeDefault.get()
+        authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason")) { laResult in
+            logger.debug("authenticate callback: \(String(describing: laResult))")
             switch (laResult) {
             case .success:
                 userAuthorized = true
                 canConnectCall = true
                 lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
             case .failed:
-                break
+                if laMode == .passcode {
+                    AlertManager.shared.showAlert(laFailedAlert())
+                }
             case .unavailable:
                 userAuthorized = true
                 prefPerformLA = false
@@ -185,23 +214,26 @@ struct ContentView: View {
         Alert(
             title: Text("SimpleX Lock"),
             message: Text("To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled."),
-            primaryButton: .default(Text("Turn on")) {
-                authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
-                    switch laResult {
-                    case .success:
-                        prefPerformLA = true
-                        alertManager.showAlert(laTurnedOnAlert())
-                    case .failed:
-                        prefPerformLA = false
-                        alertManager.showAlert(laFailedAlert())
-                    case .unavailable:
-                        prefPerformLA = false
-                        alertManager.showAlert(laUnavailableInstructionAlert())
-                    }
-                }
-            },
+            primaryButton: .default(Text("Turn on")) { showChooseLAMode = true },
             secondaryButton: .cancel()
          )
+    }
+
+    private func initialEnableLA () {
+        privacyLocalAuthModeDefault.set(.system)
+        authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
+            switch laResult {
+            case .success:
+                prefPerformLA = true
+                alertManager.showAlert(laTurnedOnAlert())
+            case .failed:
+                prefPerformLA = false
+                alertManager.showAlert(laFailedAlert())
+            case .unavailable:
+                prefPerformLA = false
+                alertManager.showAlert(laUnavailableInstructionAlert())
+            }
+        }
     }
 
     func notificationAlert() -> Alert {

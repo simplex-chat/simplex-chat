@@ -44,7 +44,7 @@ import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..), SMPServerWithAuth)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.Timeout (timeout)
 
@@ -194,11 +194,11 @@ chatParseMarkdown = LB.unpack . J.encode . ParsedMarkdown . parseMaybeMarkdownLi
 chatParseServer :: String -> JSONString
 chatParseServer = LB.unpack . J.encode . toServerAddress . strDecode . B.pack
   where
-    toServerAddress :: Either String SMPServerWithAuth -> ParsedServerAddress
+    toServerAddress :: Either String AProtoServerWithAuth -> ParsedServerAddress
     toServerAddress = \case
-      Right (ProtoServerWithAuth ProtocolServer {host, port, keyHash = C.KeyHash kh} auth) ->
+      Right (AProtoServerWithAuth protocol (ProtoServerWithAuth ProtocolServer {host, port, keyHash = C.KeyHash kh} auth)) ->
         let basicAuth = maybe "" (\(BasicAuth a) -> enc a) auth
-         in ParsedServerAddress (Just ServerAddress {hostnames = L.map enc host, port, keyHash = enc kh, basicAuth}) ""
+         in ParsedServerAddress (Just ServerAddress {serverProtocol = AProtocolType protocol, hostnames = L.map enc host, port, keyHash = enc kh, basicAuth}) ""
       Left e -> ParsedServerAddress Nothing e
     enc :: StrEncoding a => a -> String
     enc = B.unpack . strEncode

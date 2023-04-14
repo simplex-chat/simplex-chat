@@ -24,7 +24,7 @@ struct CIImageView: View {
             if let uiImage = getLoadedImage(file) {
                 imageView(uiImage)
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenImageView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
+                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
                 }
                 .onTapGesture { showFullScreenImage = true }
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),

@@ -60,7 +60,11 @@
 
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
+  <string name="error_saving_xftp_servers">Error saving XFTP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="ensure_xftp_server_address_are_correct_format_and_unique">Make sure XFTP server addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="error_loading_smp_servers">Error loading SMP servers</string>
+  <string name="error_loading_xftp_servers">Error loading XFTP servers</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
@@ -96,12 +100,18 @@
   <string name="error_changing_address">Error changing address</string>
   <string name="error_smp_test_failed_at_step">Test failed at step %s.</string>
   <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password</string>
+  <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password</string>
   <string name="error_smp_test_certificate">Possibly, certificate fingerprint in server address is incorrect</string>
   <string name="smp_server_test_connect">Connect</string>
+  <string name="smp_server_test_disconnect">Disconnect</string>
   <string name="smp_server_test_create_queue">Create queue</string>
   <string name="smp_server_test_secure_queue">Secure queue</string>
   <string name="smp_server_test_delete_queue">Delete queue</string>
-  <string name="smp_server_test_disconnect">Disconnect</string>
+  <string name="smp_server_test_create_file">Create file</string>
+  <string name="smp_server_test_upload_file">Upload file</string>
+  <string name="smp_server_test_download_file">Download file</string>
+  <string name="smp_server_test_compare_file">Compare file</string>
+  <string name="smp_server_test_delete_file">Delete file</string>
   <string name="error_deleting_user">Error deleting user profile</string>
   <string name="error_updating_user_privacy">Error updating user privacy</string>
 
@@ -155,6 +165,20 @@
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
   <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled.</string>
   <string name="la_notice_turn_on">Turn on</string>
+  <string name="la_lock_mode">SimpleX Lock mode</string>
+  <string name="la_lock_mode_system">System authentication</string>
+  <string name="la_lock_mode_passcode">Passcode entry</string>
+  <string name="la_auth_failed">Authentication failed</string>
+  <string name="la_could_not_be_verified">You could not be verified; please try again.</string>
+  <string name="la_no_app_password">No app passcode</string>
+  <string name="la_enter_app_passcode">Enter Passcode</string>
+  <string name="la_current_app_passcode">Current Passcode</string>
+  <string name="la_change_app_passcode">Change passcode</string>
+  <string name="la_authenticate">Authenticate</string>
+  <string name="la_immediately">Immediately</string>
+  <string name="la_seconds">%d seconds</string>
+  <string name="la_minutes">%d minutes</string>
+  <string name="la_please_remember_to_store_password">Please remember or store it securely - there is no way to recover a lost password!</string>
 
   <!-- LocalAuthentication.kt -->
   <string name="auth_simplex_lock_turned_on">SimpleX Lock turned on</string>
@@ -169,6 +193,8 @@
   <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
+  <string name="lock_not_enabled">SimpleX Lock not enabled!</string>
+  <string name="you_can_turn_on_lock">You can turn on SimpleX Lock via Settings.</string>
 
   <!-- Chat Alerts - ChatItemView.kt -->
   <string name="message_delivery_error_title">Message delivery error</string>
@@ -476,12 +502,14 @@
   <string name="smp_servers_delete_server">Delete server</string>
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
   <string name="smp_save_servers_question">Save servers?</string>
+  <string name="xftp_servers">XFTP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
   <string name="rate_the_app">Rate the app</string>
   <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
   <string name="your_SMP_servers">Your SMP servers</string>
+  <string name="your_XFTP_servers">Your XFTP servers</string>
   <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
   <string name="how_to">How to</string>
   <string name="how_to_use_your_servers">How to use your servers</string>
@@ -496,6 +524,11 @@
   <string name="network_settings">Advanced network settings</string>
   <string name="network_settings_title">Network settings</string>
   <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
+  <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
+  <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
+  <string name="network_proxy_port">port %d</string>
+  <string name="host_verb">Host</string>
+  <string name="port_verb">Port</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
   <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
@@ -517,6 +550,7 @@
   <string name="network_session_mode_user_description">A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.</string>
   <string name="network_session_mode_entity_description">A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
+  <string name="disable_onion_hosts_when_not_supported">Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.</string>
   <string name="appearance_settings">Appearance</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
@@ -717,6 +751,20 @@
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="full_backup">App data backup</string>
+  <string name="enable_lock">Enable lock</string>
+  <string name="lock_mode">Lock mode</string>
+  <string name="lock_after">Lock after</string>
+  <string name="submit_passcode">Submit</string>
+  <string name="confirm_passcode">Confirm Passcode</string>
+  <string name="incorrect_passcode">Incorrect passcode</string>
+  <string name="new_passcode">New Passcode</string>
+  <string name="authentication_cancelled">Authentication cancelled</string>
+  <string name="la_mode_system">System</string>
+  <string name="la_mode_passcode">Passcode</string>
+  <string name="passcode_set">Passcode set!</string>
+  <string name="passcode_changed">Passcode changed!</string>
+  <string name="passcode_not_changed">Passcode not changed!</string>
+  <string name="change_lock_mode">Change lock mode</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -732,7 +780,7 @@
   <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
-  <string name="settings_section_title_messages">MESSAGES</string>
+  <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
   <string name="settings_section_title_experimenta">EXPERIMENTAL</string>

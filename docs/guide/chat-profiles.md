@@ -75,29 +75,24 @@ SimpleX Chat stores all user data only on client devices using a portable encryp
 To export your SimpleX Chat data:
 
 - [Open the app settings](./app-settings.md#opening-the-app-settings).
-- Tap on your user profile image in the upper right-hand of the screen.
-- If you have more than one profile, tap it again or choose Settings
 - Select "Database passphrase & export".
-- Stop chat by toggling "Chat is running".
-- Click on "Stop” on the prompt window.
-- Confirm it with fingerprint or PIN.
-- If you didn't set it before, set a passphrase on "Database passphrase". Initially, the database is encrypted with a random passphrase that is stored in KeyChain (iOS) or with KeyStore (Android).
-- Tap on "Export database" - it won't allow exporting unless you choose a passphrase.
-- Save the file on your device or share it via any available option, e.g. via AirDrop on iOS.
+- Stop chat by toggling "Chat is running" (tap "Stop” in the confirmation dialog).
+- Confirm it with fingerprint or PIN, in case you have [SimpleX Lock](./app-settings.md#simplex-lock) enabled.
+- If you didn't set it before, [set a passphrase](./managing-data.md#database-passphrase) in "Database passphrase". Initially, the database is encrypted with a random passphrase that is stored in KeyChain (iOS) or with KeyStore (Android).
+- Tap on "Export database" - it won't allow exporting unless you have set a passphrase.
+- Save the file on your device or share it via any available option.
 
 To import your SimpleX Chat data in the app on another device:
 
-- Transfer the database file to this device.
-- Download SimpleX and install it on your new device.
-- Create chat profile by following the steps in [Create your first chat profile](#create-yout-first-chat-profile).
-- Tap on your user profile image in the upper right-hand corner of the screen to open Settings.
+- Transfer the database file to the new device.
+- Install SimpleX Chat app.
+- Create chat profile with any name by following the steps in [Create your first chat profile](#create-yout-first-chat-profile) – you will replace it soon.
+- Open the app settings
 - Select "Database passphrase & export".
-- Disable chat by tapping the switch on "Chat is running".
-- Click on "Stop” on the prompt window.
-- Confirm it with fingerprint or PIN.
+- Stop chat by tapping the switch on "Chat is running".
 - Tap "Import database".
 - Select the .zip file of the exported chat data.
-- Tap "Import” on the pop-up prompt.
+- Tap "Import” in the confirmation dialog.
 - Start chat via toggle or close and start the app – you will be prompted to enter the passphrase for your chat database.
 
 **Please note**:

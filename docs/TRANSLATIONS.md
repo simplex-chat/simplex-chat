@@ -7,7 +7,7 @@ supportedLangsForDoc:
     - cs
 ---
 
-| Updated 07.02.2023 | Languages: EN, [CZ](/docs/lang/cs/TRANSLATIONS.md) |
+| 19.03.2023 | EN, [CZ](/docs/lang/cs/TRANSLATIONS.md), [FR](/docs/lang/fr/TRANSLATIONS.md) |
 
 # Contributing translations to SimpleX Chat
 
