@@ -78,18 +78,17 @@ struct UserProfilesView: View {
             }
             Section {
                 let users = filteredUsers()
-                ForEach(users) { u in
-                    userView(u.user)
+                let v = ForEach(users) { u in
+                    userView(u.user, allowDelete: users.count > 1)
                 }
-                .onDelete { indexSet in
-                    if let i = indexSet.first {
-                        if m.users.count > 1 && (m.users[i].user.hidden || visibleUsersCount > 1) {
-                            showDeleteConfirmation = true
-                            userToDelete = users[i].user
-                        } else {
-                            alert = .cantDeleteLastUser
+                if #available(iOS 16, *) {
+                    v.onDelete { indexSet in
+                        if let i = indexSet.first {
+                            confirmDeleteUser(users[i].user)
                         }
                     }
+                } else {
+                    v
                 }
 
                 if trimmedSearchTextOrPassword == "" {
@@ -108,7 +107,11 @@ struct UserProfilesView: View {
 
             }
         }
-        .toolbar { EditButton() }
+        .toolbar {
+            if #available(iOS 16, *) {
+                EditButton()
+            }
+        }
         .navigationTitle("Your chat profiles")
         .searchable(text: $searchTextOrPassword, placement: .navigationBarDrawer(displayMode: .always))
         .autocorrectionDisabled(true)
@@ -293,8 +296,8 @@ struct UserProfilesView: View {
         }
     }
 
-    private func userView(_ user: User) -> some View {
-        Button {
+    @ViewBuilder private func userView(_ user: User, allowDelete: Bool) -> some View {
+        let v = Button {
             Task {
                 do {
                     try await changeActiveUserAsync_(user.userId, viewPwd: userViewPassword(user))
@@ -323,7 +326,7 @@ struct UserProfilesView: View {
         }
         .disabled(user.activeUser)
         .foregroundColor(.primary)
-        .deleteDisabled(m.users.count <= 1)
+        .deleteDisabled(!allowDelete)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if user.hidden {
                 Button("Unhide") {
@@ -356,6 +359,26 @@ struct UserProfilesView: View {
                 }
                 .tint(.accentColor)
             }
+        }
+        if #available(iOS 16, *) {
+            v
+        } else if !allowDelete {
+            v
+        } else {
+            v.swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button("Delete", role: .destructive) {
+                    confirmDeleteUser(user)
+                }
+            }
+        }
+    }
+
+    private func confirmDeleteUser(_ user: User) {
+        if m.users.count > 1 && (user.hidden || visibleUsersCount > 1) {
+            showDeleteConfirmation = true
+            userToDelete = user
+        } else {
+            alert = .cantDeleteLastUser
         }
     }
 
