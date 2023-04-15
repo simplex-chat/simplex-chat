@@ -134,9 +134,9 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
       bob #$> ("/_get chat @2 count=100", chat, [])
     chatsEmpty alice bob = do
-      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
-      bob @@@ [("@alice", "Voice messages: enabled")]
+      bob @@@ [("@alice", lastChatFeature)]
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures)
     chatsOneMessage alice bob = do
       alice @@@ [("@bob", "hello there 🙂")]
@@ -285,7 +285,7 @@ testDirectMessageDelete =
       alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
       alice #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
 
-      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
       -- alice: msg id 1
@@ -305,7 +305,7 @@ testDirectMessageDelete =
 
       -- alice: deletes msg id 1 that was broadcast deleted by bob
       alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
-      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
       -- alice: msg id 1, bob: msg id 3 (quoting message alice deleted locally)
@@ -345,13 +345,13 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/4] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/5] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/5]"
+    bob <# "alice> [LIVE started] use /show [on/off/6]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
@@ -951,7 +951,7 @@ testMultipleUserAddresses =
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice @@@ [("@bob", lastChatFeature)]
       alice <##> bob
 
       alice ##> "/create user alisa"
@@ -969,7 +969,7 @@ testMultipleUserAddresses =
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Voice messages: enabled")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature)])
       alice <##> bob
 
       bob #> "@alice hey alice"
@@ -1000,7 +1000,7 @@ testMultipleUserAddresses =
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", "Voice messages: enabled"), ("@bob", "hey")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey")])
       alice <##> cath
 
       -- first user doesn't have cath as contact
@@ -1581,6 +1581,7 @@ testUserPrivacy =
         <##? [ "bob> Disappearing messages: off",
                "bob> Full deletion: off",
                "bob> Voice messages: enabled",
+               "bob> Audio/video calls: enabled",
                "@bob hello",
                "bob> hey",
                "bob> hello again",
