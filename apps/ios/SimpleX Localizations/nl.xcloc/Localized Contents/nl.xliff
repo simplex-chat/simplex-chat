@@ -4270,9 +4270,9 @@ SimpleX Lock moet ingeschakeld zijn.</target>
         <target>U moet zich authenticeren wanneer u de app na 30 seconden op de achtergrond start of hervat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will join a group this link refers to and connect to its group members." xml:space="preserve">
+      <trans-unit id="You will join a group this link refers to and connect to its group members." xml:space="preserve" approved="no">
         <source>You will join a group this link refers to and connect to its group members.</source>
-        <target>U wordt lid van een groep waarnaar deze link verwijst en maakt verbinding met de groepsleden.</target>
+        <target state="translated">U wordt lid van de groep waar deze link naar verwijst en maakt verbinding met de groepsleden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
