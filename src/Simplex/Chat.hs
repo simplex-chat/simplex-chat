@@ -2820,7 +2820,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
       AGENT (A_CRYPTO RATCHET_HEADER) -> Just (MDERatchetHeader, 1)
-      AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Just (MDEEarlier, n + 1) -- 1 is added to account for the message that has A_DUPLICATE error
+      -- earlier messages may be received in case of redundant delivery, and do not necessarily indicate an error
+      AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Nothing
       AGENT (A_CRYPTO (RATCHET_SKIPPED n)) -> Just (MDETooManySkipped, n)
       -- we are not treating this as decryption error, as in many cases it happens as the result of duplicate or redundant delivery,
       -- and we don't have a way to differentiate.
@@ -2832,7 +2833,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
       | mde == mde' = case mde of
         MDERatchetHeader -> r (n + n')
-        MDEEarlier -> r n -- the first error in a sequence has the largest number – it's the number of messages to receive to catch up, keeping it
+        MDEEarlier -> Nothing
         MDETooManySkipped -> r n' -- the numbers are not added as sequential MDETooManySkipped will have it incremented by 1
       | otherwise = Nothing
       where
