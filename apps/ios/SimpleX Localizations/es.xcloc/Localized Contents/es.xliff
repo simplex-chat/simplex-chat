@@ -344,9 +344,9 @@
         <target>Acerca de SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accent color" xml:space="preserve">
+      <trans-unit id="Accent color" xml:space="preserve" approved="no">
         <source>Accent color</source>
-        <target>Acentuar el color</target>
+        <target state="translated">Color</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
@@ -985,9 +985,9 @@
         <target>Crear enlace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create one-time invitation link" xml:space="preserve">
+      <trans-unit id="Create one-time invitation link" xml:space="preserve" approved="no">
         <source>Create one-time invitation link</source>
-        <target>Crear enlace de invitación de un uso</target>
+        <target state="translated">Crear enlace de invitación de un solo uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create queue" xml:space="preserve">
@@ -1273,9 +1273,9 @@
         <target>Eliminar base de datos antigua</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete old database?" xml:space="preserve">
+      <trans-unit id="Delete old database?" xml:space="preserve" approved="no">
         <source>Delete old database?</source>
-        <target>¿Eliminar base de datos antígua?</target>
+        <target state="translated">¿Eliminar base de datos antigua?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection" xml:space="preserve">
@@ -1323,14 +1323,14 @@
         <target>Dispositivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
+      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve" approved="no">
         <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
-        <target>Autenticación de dispositivo desactivada. SimpleX Lock deshabilitado.</target>
+        <target state="translated">Autenticación de dispositivo desactivada. Bloqueo SimpleX deshabilitado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve" approved="no">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
-        <target>Autenticación de dispositivo desactivada. Puedes habilitar SimpleX Lock en Configuración, después de activar la autenticación de dispositivo.</target>
+        <target state="translated">Autenticación de dispositivo desactivada. Puedes habilitar Bloqueo SimpleX en Configuración, después de activar la autenticación de dispositivo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
@@ -1348,9 +1348,9 @@
         <target>Los mensajes directos entre miembros del grupo no están permitidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Disable SimpleX Lock</source>
-        <target>Desactivar SimpleX Lock</target>
+        <target state="translated">Desactivar Bloqueo SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Disappearing messages" xml:space="preserve">
@@ -1428,9 +1428,9 @@
         <target>Activar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Enable SimpleX Lock</source>
-        <target>Activar SimpleX Lock</target>
+        <target state="translated">Activar Bloqueo SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Enable TCP keep-alive" xml:space="preserve">
@@ -1613,9 +1613,9 @@
         <target>Error eliminando base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting old database" xml:space="preserve">
+      <trans-unit id="Error deleting old database" xml:space="preserve" approved="no">
         <source>Error deleting old database</source>
-        <target>Error eliminando base de datos antígua</target>
+        <target state="translated">Error eliminando base de datos antigua</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting token" xml:space="preserve">
@@ -2624,9 +2624,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Ok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database" xml:space="preserve">
+      <trans-unit id="Old database" xml:space="preserve" approved="no">
         <source>Old database</source>
-        <target>Base de datos antígua</target>
+        <target state="translated">Base de datos antigua</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Old database archive" xml:space="preserve">
@@ -2929,9 +2929,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Proteger la pantalla de la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
+      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve" approved="no">
         <source>Protect your chat profiles with a password!</source>
-        <target>¡Protege tus perfiles Chat con contraseña!</target>
+        <target state="translated">¡Protege tus perfiles con contraseña!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -3749,10 +3749,10 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Para proteger la zona horaria, los archivos de imagen/voz usan la hora UTC.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
-        <target>Para proteger tu información, activa SimpleX Lock.
+        <target state="translated">Para proteger tu información, activa Bloqueo SimpleX.
 Se te pedirá que completes la autenticación antes de activar esta función.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4149,11 +4149,11 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>También puedes conectarte haciendo clic en el enlace. Si se abre en el navegador, haz clic en el botón **Abrir en aplicación móvil**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
+      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve" approved="no">
         <source>You can hide or mute a user profile - swipe it to the right.
 SimpleX Lock must be enabled.</source>
-        <target>Puedes ocultar o silenciar un perfil de usuario: deslízalo hacia la derecha.
-SimpleX Lock debe estar activado.</target>
+        <target state="translated">Puedes ocultar o silenciar un perfil de usuario: deslízalo hacia la derecha.
+Bloqueo SimpleX debe estar activado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -4181,9 +4181,9 @@ SimpleX Lock debe estar activado.</target>
         <target>Puede iniciar Chat a través de la Configuración / Base de datos de la aplicación o reiniciando la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
         <source>You can turn on SimpleX Lock via Settings.</source>
-        <target>Puedes activar el bloqueo de SimpleX a través de Configuración.</target>
+        <target state="translated">Puedes activar el Bloqueo SimpleX a través de Configuración.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -4311,9 +4311,9 @@ SimpleX Lock debe estar activado.</target>
         <target>Tus servidores SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX contact address" xml:space="preserve">
+      <trans-unit id="Your SimpleX contact address" xml:space="preserve" approved="no">
         <source>Your SimpleX contact address</source>
-        <target>Tu dirección de contacto SimpleX</target>
+        <target state="translated">Mi dirección de contacto SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your XFTP servers" xml:space="preserve">
@@ -4346,9 +4346,9 @@ SimpleX Lock debe estar activado.</target>
         <target>Tu perfil Chat será enviado a tu contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat profiles" xml:space="preserve">
+      <trans-unit id="Your chat profiles" xml:space="preserve" approved="no">
         <source>Your chat profiles</source>
-        <target>Tus perfiles Chat</target>
+        <target state="translated">Mis perfiles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve">
@@ -4356,9 +4356,9 @@ SimpleX Lock debe estar activado.</target>
         <target>Tus chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact address" xml:space="preserve">
+      <trans-unit id="Your contact address" xml:space="preserve" approved="no">
         <source>Your contact address</source>
-        <target>Tu dirección de contacto</target>
+        <target state="translated">Mi dirección de contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact can scan it from the app." xml:space="preserve">
@@ -4398,9 +4398,9 @@ Puedes cancelar esta conexión y eliminar el contacto (e intentarlo más tarde c
         <target>Tus preferencias</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your privacy" xml:space="preserve">
+      <trans-unit id="Your privacy" xml:space="preserve" approved="no">
         <source>Your privacy</source>
-        <target>Tu privacidad</target>
+        <target state="translated">Privacidad</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
@@ -4435,9 +4435,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>Dirección de tu servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your settings" xml:space="preserve">
+      <trans-unit id="Your settings" xml:space="preserve" approved="no">
         <source>Your settings</source>
-        <target>Tu configuración</target>
+        <target state="translated">Mi configuración</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
