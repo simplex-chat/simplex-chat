@@ -1943,10 +1943,10 @@ public struct ChatItem: Identifiable, Decodable {
         return item
     }
 
-    public static func invalidJSON(_ json: String) -> ChatItem {
+    public static func invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: String) -> ChatItem {
         ChatItem(
-            chatDir: CIDirection.directSnd,
-            meta: CIMeta.invalidJSON,
+            chatDir: chatDir ?? .directSnd,
+            meta: meta ?? .invalidJSON,
             content: .invalidJSON(json: json),
             quotedItem: nil,
             file: nil
@@ -2178,13 +2178,11 @@ public enum CIContent: Decodable, ItemContent {
 
 public enum MsgDecryptError: String, Decodable {
     case ratchetHeader
-    case earlier
     case tooManySkipped
 
     var text: String {
         switch self {
         case .ratchetHeader: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
-        case .earlier: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
         case .tooManySkipped: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
         }
     }

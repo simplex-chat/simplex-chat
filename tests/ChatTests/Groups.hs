@@ -2055,7 +2055,6 @@ testGroupMsgDecryptError tmp =
         bob #> "#team 4"
         alice <# "#team bob> 4"
         bob #> "#team 5"
-        cath <# "#team bob> decryption error, possibly due to the device change (earlier message, 2 messages)"
         cath <# "#team bob> incorrect message hash"
         [alice, cath] *<# "#team bob> 5"
         bob #> "#team 6"

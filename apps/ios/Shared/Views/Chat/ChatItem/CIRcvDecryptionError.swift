@@ -25,8 +25,6 @@ struct CIRcvDecryptionError: View {
             switch msgDecryptError {
             case .ratchetHeader:
                 message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why + Text("\n") + permanent
-            case .earlier:
-                message = Text("\(msgCount) messages failed to decrypt and won't be shown.") + Text("\n") + why
             case .tooManySkipped:
                 message = Text("\(msgCount) messages skipped.") + Text("\n") + why + Text("\n") + permanent
             }
