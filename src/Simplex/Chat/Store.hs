@@ -3938,7 +3938,7 @@ getDirectChatLast_ db user contactId count search = do
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
-getDirectChatItemsLast :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO [CChatItem 'CTDirect]
+getDirectChatItemsLast :: DB.Connection -> User -> ContactId -> Int -> String -> ExceptT StoreError IO [CChatItem 'CTDirect]
 getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
   tz <- getCurrentTimeZone
   currentTs <- getCurrentTime
@@ -4092,7 +4092,7 @@ getGroupChatLast_ db user@User {userId} groupId count search = do
           |]
           (userId, groupId, search, count)
 
-getGroupMemberChatItemLast :: DB.Connection -> User -> Int64 -> Int64 -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupMemberChatItemLast :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
   chatItemId <-
     ExceptT . firstRow fromOnly (SEChatItemNotFoundByGroupId groupId) $

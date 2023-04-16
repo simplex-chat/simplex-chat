@@ -738,7 +738,6 @@ deriving instance Show (CIContent d)
 data MsgDecryptError
   = MDERatchetHeader
   | MDEEarlier
-  | MDEDuplicate
   | MDETooManySkipped
   deriving (Eq, Show, Generic)
 
@@ -956,7 +955,6 @@ msgDecryptErrorText err n =
     errName = case err of
       MDERatchetHeader -> "header"
       MDEEarlier -> "earlier message"
-      MDEDuplicate -> "duplicate message"
       MDETooManySkipped -> "too many skipped messages"
 
 msgDirToModeratedContent_ :: SMsgDirection d -> CIContent d

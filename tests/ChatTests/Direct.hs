@@ -82,7 +82,7 @@ chatDirectTests = do
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
-    it "show message decryption error and update count" testGroupMsgDecryptError
+    it "show message decryption error and update count" testMsgDecryptError
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -1768,8 +1768,8 @@ testMarkGroupMemberVerified =
       alice <## "receiving messages via: localhost"
       alice <## "sending messages via: localhost"
 
-testGroupMsgDecryptError :: HasCallStack => FilePath -> IO ()
-testGroupMsgDecryptError tmp =
+testMsgDecryptError :: HasCallStack => FilePath -> IO ()
+testMsgDecryptError tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       connectUsers alice bob
