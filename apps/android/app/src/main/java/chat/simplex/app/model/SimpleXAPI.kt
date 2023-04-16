@@ -3011,9 +3011,15 @@ private fun parseChatData(chat: JsonElement): Chat {
     ?: ChatInfo.InvalidJSON(json.encodeToString(chat.jsonObject["chatInfo"]))
   val chatStats = decodeObject(Chat.ChatStats.serializer(), chat.jsonObject["chatStats"])!!
   val chatItems: List<ChatItem> = chat.jsonObject["chatItems"]!!.jsonArray.map {
-    decodeObject(ChatItem.serializer(), it) ?: ChatItem.invalidJSON(json.encodeToString(it))
+    decodeObject(ChatItem.serializer(), it) ?: parseChatItem(it)
   }
- return Chat(chatInfo, chatItems, chatStats)
+  return Chat(chatInfo, chatItems, chatStats)
+}
+
+private fun parseChatItem(j: JsonElement): ChatItem {
+  val chatDir: CIDirection? = decodeObject(CIDirection.serializer(), j.jsonObject["chatDir"])
+  val meta: CIMeta? = decodeObject(CIMeta.serializer(), j.jsonObject["meta"])
+  return ChatItem.invalidJSON(chatDir, meta, json.encodeToString(j))
 }
 
 private fun <T> decodeObject(deserializer: DeserializationStrategy<T>, obj: JsonElement?): T? =

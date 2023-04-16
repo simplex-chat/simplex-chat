@@ -1466,10 +1466,10 @@ data class ChatItem (
         file = null
       )
 
-    fun invalidJSON(json: String): ChatItem =
+    fun invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: String): ChatItem =
       ChatItem(
-        chatDir = CIDirection.DirectSnd(),
-        meta = CIMeta.invalidJSON(),
+        chatDir = chatDir ?: CIDirection.DirectSnd(),
+        meta = meta ?: CIMeta.invalidJSON(),
         content = CIContent.InvalidJSON(json),
         quotedItem = null,
         file = null
@@ -1681,13 +1681,11 @@ sealed class CIContent: ItemContent {
 @Serializable
 enum class MsgDecryptError {
   @SerialName("ratchetHeader") RatchetHeader,
-  @SerialName("earlier") Earlier,
   @SerialName("tooManySkipped") TooManySkipped;
 
   val text: String get() = when (this) {
-    RatchetHeader -> generalGetString(R.string.decryption_error_permanent)
-    Earlier -> generalGetString(R.string.decryption_error)
-    TooManySkipped -> generalGetString(R.string.decryption_error_permanent)
+    RatchetHeader -> generalGetString(R.string.decryption_error)
+    TooManySkipped -> generalGetString(R.string.decryption_error)
   }
 }
 
