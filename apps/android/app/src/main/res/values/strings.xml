@@ -32,6 +32,8 @@
   <string name="moderated_description">moderated</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
+  <string name="decryption_error_permanent">Permanent decryption error</string>
+  <string name="decryption_error">Decryption error</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
   <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
@@ -741,7 +743,17 @@
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
   <string name="alert_title_skipped_messages">Skipped messages</string>
-  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages.</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised.</string>
+  <string name="alert_title_msg_bad_hash">Bad message hash</string>
+  <string name="alert_text_msg_bad_hash">The hash of the previous message is different."</string>
+  <string name="alert_title_msg_bad_id">Bad message ID</string>
+  <string name="alert_text_msg_bad_id">The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised.</string>
+  <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> messages failed to decrypt.</string>
+  <string name="alert_text_decryption_error_earlier"><xliff:g id="message count" example="1">%1$d</xliff:g> messages failed to decrypt and won\'t be shown.</string>
+  <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> messages skipped.</string>
+  <string name="alert_text_fragment_encryption_out_of_sync_old_database">It can happen when you or your connection used the old database backup.</string>
+  <string name="alert_text_fragment_permanent_error_reconnect">This error is permanent for this connection, please re-connect.</string>
+  <string name="alert_text_fragment_please_report_to_developers">Please report it to the developers.</string>
 
   <!-- Privacy settings -->
   <string name="privacy_and_security">Privacy &amp; security</string>

@@ -1970,14 +1970,6 @@ public enum CIDirection: Decodable {
             }
         }
     }
-
-    public var isGroup: Bool {
-        switch self {
-        case .groupRcv: return true
-        case .groupSnd: return true
-        default: return false
-        }
-    }
 }
 
 public struct CIMeta: Decodable {
@@ -2137,7 +2129,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
             case let .rcvIntegrityError(msgError): return msgError.text
-            case let .rcvDecryptionError(msgDecryptError, msgCount): return msgDecryptError.text(msgCount)
+            case let .rcvDecryptionError(msgDecryptError, msgCount): return msgDecryptError.text
             case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
@@ -2189,11 +2181,11 @@ public enum MsgDecryptError: String, Decodable {
     case earlier
     case tooManySkipped
 
-    func text(_ msgCount: UInt32) -> String {
+    var text: String {
         switch self {
-        case .ratchetHeader: return String.localizedStringWithFormat(NSLocalizedString("Permanent decryption error", comment: "message decrypt error item"), msgCount)
-        case .earlier: return String.localizedStringWithFormat(NSLocalizedString("Decryption error", comment: "message decrypt error item"), msgCount)
-        case .tooManySkipped: return String.localizedStringWithFormat(NSLocalizedString("Permanent decryption error", comment: "message decrypt error item"), msgCount)
+        case .ratchetHeader: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
+        case .earlier: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
+        case .tooManySkipped: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
         }
     }
 }
