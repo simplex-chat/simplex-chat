@@ -10,11 +10,11 @@
     <string name="chat_item_ttl_day">un dia</string>
     <string name="chat_item_ttl_month">un mes</string>
     <string name="chat_item_ttl_week">una semana</string>
-    <string name="allow_disappearing_messages_only_if">Permitir mensajes temporales sólo si tu contacto los permite.</string>
+    <string name="allow_disappearing_messages_only_if">Se permiten mensajes temporales sólo si tu contacto también los permite.</string>
     <string name="v4_3_improved_server_configuration_desc">Añadir servidores escaneando códigos QR.</string>
     <string name="smp_servers_preset_add">Añadir servidores predefinidos</string>
     <string name="all_group_members_will_remain_connected">Todos los miembros del grupo permanecerán conectados.</string>
-    <string name="allow_irreversible_message_deletion_only_if">Permitir la eliminación irreversible de mensajes sólo si tu contacto también lo permite.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Se permite la eliminación irreversible de mensajes sólo si tu contacto también lo permite para tí.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore se usará para almacenar de forma segura la contraseña después de reiniciar la aplicación o cambiar la frase de contraseña - permitirá recibir notificaciones.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permitir a tus contactos enviar mensajes temporales</string>
     <string name="allow_your_contacts_to_send_voice_messages">Permitir a tus contactos enviar mensajes de voz.</string>
@@ -59,8 +59,8 @@
     <string name="users_add">Añadir perfil</string>
     <string name="incognito_random_profile_description">Se enviará un perfil aleatorio a tu contacto</string>
     <string name="color_primary">Acento</string>
-    <string name="allow_your_contacts_irreversibly_delete">Permitir a tus contactos eliminar irreversiblemente los mensajes enviados.</string>
-    <string name="allow_voice_messages_only_if">Permitir mensajes de voz sólo si tu contacto los permite.</string>
+    <string name="allow_your_contacts_irreversibly_delete">Permites a tus contactos eliminar irreversiblemente los mensajes enviados.</string>
+    <string name="allow_voice_messages_only_if">Se permiten mensajes de voz sólo si tu contacto también los permite.</string>
     <string name="allow_direct_messages">Permitir el envío de mensajes directos a los miembros.</string>
     <string name="allow_to_delete_messages">Permitir la eliminación irreversible de los mensajes enviados.</string>
     <string name="allow_to_send_voice">Permitir enviar mensajes de voz.</string>
@@ -231,7 +231,7 @@
     <string name="chat_preferences_default">predefinido (%s)</string>
     <string name="full_deletion">Eliminar para todos</string>
     <string name="feature_enabled">activado</string>
-    <string name="contacts_can_mark_messages_for_deletion">El contacto puede marcar los mensajes para eliminar; tu podrás verlos.</string>
+    <string name="contacts_can_mark_messages_for_deletion">El contacto solo puede marcar los mensajes para eliminar. Tu podrás verlos.</string>
     <string name="ttl_w">%ds</string>
     <string name="deleted_description">eliminado</string>
     <string name="connect_via_contact_link">¿Conectar mediante enlace de contacto\?</string>
@@ -444,12 +444,12 @@
     <string name="share_link">Compartir enlace</string>
     <string name="how_it_works">Cómo funciona</string>
     <string name="delete_message_cannot_be_undone_warning">El mensaje se eliminará. ¡No puede deshacerse!</string>
-    <string name="incognito_info_protects">El modo incógnito protege la identidad del perfil principal, por cada contacto nuevo se genera un perfil nuevo aleatorio.</string>
+    <string name="incognito_info_protects">La función del modo incógnito es proteger la identidad del perfil principal: por cada contacto nuevo se genera un perfil aleatorio.</string>
     <string name="turn_off_battery_optimization">Para poder usarse <b>deshabilita la optimización de batería</b> para <xliff:g id="appName">SimpleX</xliff:g> en el siguiente cuadro de diálogo. De lo contrario las notificaciones estarán desactivadas.</string>
     <string name="install_simplex_chat_for_terminal">Instalar <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para terminal</string>
     <string name="group_invitation_item_description">invitación al grupo <xliff:g id="group_name">%1$s</xliff:g></string>
     <string name="rcv_group_event_member_added">invitado <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
-    <string name="incognito_info_allows">Permite tener varias conexiones anónimas sin datos compartidos entre estas en un único perfil de chat.</string>
+    <string name="incognito_info_allows">Permite tener varias conexiones anónimas sin datos compartidos entre estas dentro del mismo perfil.</string>
     <string name="invite_to_group_button">Invitar al grupo</string>
     <string name="to_verify_compare">Para comprobar el cifrado de extremo a extremo con su contacto compare (o escanee) el código en sus dispositivos.</string>
     <string name="database_is_not_encrypted">La base de datos no está cifrada. Escribe una contraseña para protegerla.</string>
@@ -602,7 +602,7 @@
     <string name="reset_color">Restablecer colores</string>
     <string name="only_you_can_send_disappearing">Sólo tú puedes enviar mensajes temporales</string>
     <string name="only_your_contact_can_send_disappearing">Sólo tu contacto puede enviar mensajes temporales.</string>
-    <string name="prohibit_sending_voice">Prohibir el envío de mensajes de voz.</string>
+    <string name="prohibit_sending_voice">Prohibes el envío de mensajes de voz.</string>
     <string name="notifications_mode_off">Se ejecuta cuando la aplicación está abierta</string>
     <string name="auth_open_chat_console">Abrir la consola de chat</string>
     <string name="save_verb">Guardar</string>
@@ -626,7 +626,7 @@
     <string name="restore_database_alert_title">¿Restaurar copia de seguridad de la base de datos\?</string>
     <string name="onboarding_notifications_mode_title">Notificaciones privadas</string>
     <string name="image_descr_profile_image">imagen del perfil</string>
-    <string name="prohibit_sending_voice_messages">Prohibir el envío de mensajes de voz.</string>
+    <string name="prohibit_sending_voice_messages">Prohibes el envío de mensajes de voz.</string>
     <string name="protect_app_screen">Proteger la pantalla de la aplicación</string>
     <string name="read_more_in_github_with_link">Más información en nuestro <font color="#0088ff">repositorio GitHub</font> .</string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
@@ -651,7 +651,7 @@
     <string name="network_options_revert">Revertir</string>
     <string name="network_option_ping_interval">Intervalo PING</string>
     <string name="network_option_ping_count">Contador PING</string>
-    <string name="only_your_contact_can_delete">Sólo tu contacto puede eliminar mensajes de forma irreversible (tu puedes marcar para eliminar).</string>
+    <string name="only_your_contact_can_delete">Sólo tu contacto puede eliminar mensajes de forma irreversible (tu puedes marcarlos para eliminar).</string>
     <string name="v4_5_message_draft_descr">Conserva el último borrador del mensaje con los datos adjuntos.</string>
     <string name="v4_5_private_filenames">Nombres de archivos privados</string>
     <string name="v4_5_reduced_battery_usage">Reducción del uso de la batería</string>
@@ -685,16 +685,16 @@
     <string name="network_option_protocol_timeout">Tiempo de espera del protocolo</string>
     <string name="network_option_seconds_label">seg</string>
     <string name="users_delete_with_connections">Perfil y conexiones de servidor</string>
-    <string name="prohibit_sending_disappearing_messages">Prohibir el envío de mensajes temporales</string>
+    <string name="prohibit_sending_disappearing_messages">Prohibes el envío de mensajes temporales</string>
     <string name="only_you_can_send_voice">Sólo tú puedes enviar mensajes de voz.</string>
     <string name="only_your_contact_can_send_voice">Sólo tu contacto puede enviar mensajes de voz.</string>
     <string name="run_chat_section">EJECUTAR CHAT</string>
     <string name="restart_the_app_to_use_imported_chat_database">Reinicia la aplicación para poder usar la base de datos importada.</string>
     <string name="enter_correct_current_passphrase">Introduce la contraseña actual correcta.</string>
     <string name="feature_received_prohibited">recepción prohibida</string>
-    <string name="only_you_can_delete_messages">Sólo tú puedes eliminar mensajes de forma irreversible (tu contacto puede marcar para eliminar).</string>
+    <string name="only_you_can_delete_messages">Sólo tú puedes eliminar mensajes de forma irreversible (tu contacto puede marcarlos para eliminar).</string>
     <string name="prohibit_direct_messages">Prohibir el envío de mensajes directos a los miembros.</string>
-    <string name="prohibit_sending_disappearing">Prohibir el envío de mensajes temporales</string>
+    <string name="prohibit_sending_disappearing">Prohibes el envío de mensajes temporales</string>
     <string name="v4_2_security_assessment">Evaluación de la seguridad</string>
     <string name="receiving_files_not_yet_supported">la recepción de archivos aún no está disponible</string>
     <string name="sending_files_not_yet_supported">el envío de archivos aún no está disponible</string>
@@ -799,7 +799,7 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">La plataforma de mensajería y aplicaciones que protege tu privacidad y seguridad.</string>
     <string name="first_platform_without_user_ids">La primera plataforma sin identificadores de usuario: diseñada para la privacidad.</string>
     <string name="alert_message_no_group">Este grupo ya no existe.</string>
-    <string name="incognito_info_find">Para encontrar el perfil usado en una conexión en modo incógnito, pulsa el nombre del contacto o del grupo en la parte superior del chat.</string>
+    <string name="incognito_info_find">Para conocer el perfil usado en una conexión en modo incógnito, pulsa el nombre del contacto o del grupo en la parte superior del chat.</string>
     <string name="accept_feature_set_1_day">Establecer 1 día</string>
     <string name="v4_4_french_interface_descr">Agradecimientos a los usuarios. ¡Contribuye a través de Weblate!</string>
     <string name="v4_5_italian_interface_descr">Agradecimientos a los usuarios. ¡Contribuye a través de Weblate!</string>
@@ -915,7 +915,7 @@
     <string name="snd_group_event_member_deleted">has eliminado <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="group_info_member_you">Tú: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puedes compartir un enlace o un código QR: cualquiera podrá unirse al grupo. Si lo eliminas más tarde los miembros del grupo no se perderán.</string>
-    <string name="incognito_info_share">Cuando compartes un perfil incógnito con alguien, este perfil se usará para los grupos a los que te inviten.</string>
+    <string name="incognito_info_share">Cuando compartes un perfil incógnito con alguien, este perfil también se usará para los grupos a los que te inviten.</string>
     <string name="your_preferences">Tus preferencias</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Con mensaje de bienvenida opcional.</string>
     <string name="you_are_observer">Tu rol es observador</string>
@@ -992,7 +992,7 @@
     <string name="user_hide">Ocultar</string>
     <string name="user_mute">Silenciar</string>
     <string name="save_and_update_group_profile">Guardar y actualizar perfil del grupo</string>
-    <string name="tap_to_activate_profile">Pulsa para activar el perfil.</string>
+    <string name="tap_to_activate_profile">Pulsa sobre un perfil para activarlo.</string>
     <string name="should_be_at_least_one_visible_profile">Debe haber al menos un perfil de usuario visible.</string>
     <string name="user_unhide">Mostrar</string>
     <string name="button_welcome_message">Mensaje de bienvenida</string>
