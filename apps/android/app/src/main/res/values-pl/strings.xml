@@ -507,11 +507,9 @@
     <string name="icon_descr_video_on">Wideo włączone</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> wiadomość(i) pominięta(e)</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Może to nastąpić, gdy:
-\n1. Wiadomości wygasają na serwerze, jeśli nie zostały odebrane przez 30 dni,
-\n2. Serwer, którego używasz do odbierania wiadomości od tego kontaktu został zaktualizowany i uruchomiony ponownie.
-\n3. Połączenie jest skompromitowane.
-\nProszę połączyć się z deweloperami przez Ustawienia, aby otrzymać aktualizacje dotyczące serwerów.
-\nBędziemy dodawać redundancję serwerów, aby zapobiec utracie wiadomości.</string>
+\n1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 30 dniach.
+\n2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych.
+\n3. Połączenie zostało skompromitowane.</string>
     <string name="privacy_and_security">Prywatność i bezpieczeństwo</string>
     <string name="alert_title_skipped_messages">Pominięte wiadomości</string>
     <string name="your_privacy">Twoja prywatność</string>
@@ -1105,4 +1103,17 @@
     <string name="la_authenticate">Uwierzytelnij</string>
     <string name="la_immediately">Natychmiast</string>
     <string name="la_please_remember_to_store_password">Prosimy o jego zapamiętanie lub bezpieczne przechowywanie - nie ma możliwości odzyskania utraconego pinu!</string>
+    <string name="decryption_error">Błąd odszyfrowania</string>
+    <string name="decryption_error_permanent">Trwały błąd odszyfrowywania</string>
+    <string name="alert_title_msg_bad_hash">Zły hash wiadomości</string>
+    <string name="alert_title_msg_bad_id">Zły identyfikator wiadomości</string>
+    <string name="alert_text_msg_bad_hash">Hash poprzedniej wiadomości jest inny.</string>
+    <string name="alert_text_msg_bad_id">Identyfikator następnej wiadomości jest nieprawidłowy (mniejszy lub równy poprzedniej).
+\nMoże się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skompromitowane.</string>
+    <string name="alert_text_decryption_error_header">Nie udało się odszyfrować <xliff:g id="message count" example="1">%1$d</xliff:g> wiadomości.</string>
+    <string name="alert_text_decryption_error_earlier">Nie udało się odszyfrować <xliff:g id="message count" example="1">%1$d</xliff:g> wiadomości i nie będą one pokazane.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Ten błąd jest trwały dla tego połączenia, proszę o ponowne połączenie.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> pominiętych wiadomości.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Może się to zdarzyć, gdy Ty lub Twoje połączenie użyło starej kopii zapasowej bazy danych.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Prosimy o zgłaszanie tego do deweloperów.</string>
 </resources>
