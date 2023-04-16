@@ -451,12 +451,10 @@
     <string name="image_descr_link_preview">链接预览图片</string>
     <string name="invalid_QR_code">无效的二维码</string>
     <string name="onboarding_notifications_mode_subtitle">以后可以通过设置进行更改。</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">它可以在以下情况下发生：
-\n1. 如果消息在30天内没有被收到，就会在服务器上过期。
-\n2. 您用于接收来自此联系人的消息的服务器已更新并重新启动。
-\n3. 连接受损。
-\n请通过设置与开发者联系，以接收有关服务器的更新。
-\n我们将添加服务器冗余以防止丢失消息。</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">它可能在以下情况发生：
+\n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。
+\n2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。
+\n3.连接被破坏。</string>
     <string name="leave_group_question">离开群组？</string>
     <string name="rcv_group_event_invited_via_your_group_link">通过您的群组链接邀请</string>
     <string name="info_row_local_name">本地名称</string>
@@ -1105,4 +1103,17 @@
     <string name="authentication_cancelled">身份验证已取消</string>
     <string name="la_current_app_passcode">当前密码</string>
     <string name="la_immediately">立即</string>
+    <string name="alert_title_msg_bad_hash">错误消息散列</string>
+    <string name="alert_title_msg_bad_id">错误消息 ID</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> 消息解密失败。</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> 已跳过消息。</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">此错误对于此连接是永久性的，请重新连接。</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">当您或您的连接使用旧数据库备份时，可能会发生这种情况。</string>
+    <string name="decryption_error">解密错误</string>
+    <string name="decryption_error_permanent">永久解密错误</string>
+    <string name="alert_text_fragment_please_report_to_developers">请向开发者报告。</string>
+    <string name="alert_text_msg_bad_hash">上一条消息的散列不同。</string>
+    <string name="alert_text_msg_bad_id">下一条消息的 ID 不正确（小于或等于上一条）。
+\n它可能是由于某些错误或连接被破坏才发生。</string>
+    <string name="alert_text_decryption_error_earlier"><xliff:g id="message count" example="1">%1$d</xliff:g> 消息解密失败并且不会显示。</string>
 </resources>
