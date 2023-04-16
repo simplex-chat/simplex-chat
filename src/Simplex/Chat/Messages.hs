@@ -735,10 +735,7 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-data MsgDecryptError
-  = MDERatchetHeader
-  | MDEEarlier
-  | MDETooManySkipped
+data MsgDecryptError = MDERatchetHeader | MDETooManySkipped
   deriving (Eq, Show, Generic)
 
 instance ToJSON MsgDecryptError where
@@ -954,7 +951,6 @@ msgDecryptErrorText err n =
   where
     errName = case err of
       MDERatchetHeader -> "header"
-      MDEEarlier -> "earlier message"
       MDETooManySkipped -> "too many skipped messages"
 
 msgDirToModeratedContent_ :: SMsgDirection d -> CIContent d

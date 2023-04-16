@@ -15,8 +15,6 @@ fun CIRcvDecryptionError(msgDecryptError: MsgDecryptError, msgCount: UInt, ci: C
         MsgDecryptError.RatchetHeader -> String.format(generalGetString(R.string.alert_text_decryption_error_header), msgCount.toLong()) + "\n" +
             generalGetString(R.string.alert_text_fragment_encryption_out_of_sync_old_database) + "\n" +
             generalGetString(R.string.alert_text_fragment_permanent_error_reconnect)
-        MsgDecryptError.Earlier -> String.format(generalGetString(R.string.alert_text_decryption_error_earlier), msgCount.toLong()) + "\n" +
-            generalGetString(R.string.alert_text_fragment_encryption_out_of_sync_old_database)
         MsgDecryptError.TooManySkipped -> String.format(generalGetString(R.string.alert_text_decryption_error_too_many_skipped), msgCount.toLong()) + "\n" +
             generalGetString(R.string.alert_text_fragment_encryption_out_of_sync_old_database) + "\n" +
             generalGetString(R.string.alert_text_fragment_permanent_error_reconnect)
