@@ -383,8 +383,8 @@
     <string name="error_deleting_group">Error al eliminar grupo</string>
     <string name="error_deleting_pending_contact_connection">Error al eliminar conexión de contacto pendiente</string>
     <string name="hide_notification">Ocultar</string>
-    <string name="notification_preview_mode_hidden">Oculto</string>
-    <string name="notification_display_mode_hidden_desc">Ocultar contacto y mensaje</string>
+    <string name="notification_preview_mode_hidden">Oculta</string>
+    <string name="notification_display_mode_hidden_desc">Se ocultan el contacto y el mensaje</string>
     <string name="hide_verb">Ocultar</string>
     <string name="for_everybody">Para todos</string>
     <string name="icon_descr_file">Archivo</string>
@@ -736,7 +736,7 @@
     <string name="stop_chat_confirmation">Detener</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Esta acción no se puede deshacer. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</string>
     <string name="skip_inviting_button">Omitir invitación a miembros</string>
-    <string name="settings_notification_preview_mode_title">Mostrar vista previa</string>
+    <string name="settings_notification_preview_mode_title">Vista previa</string>
     <string name="la_notice_turn_on">Activar</string>
     <string name="share_verb">Compartir</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">envío no autorizado</string>
@@ -785,8 +785,8 @@
     <string name="enter_passphrase_notification_desc">Para recibir notificaciones, introduce la contraseña de la base de datos</string>
     <string name="ntf_channel_calls">Llamadas de chat SimpleX</string>
     <string name="notifications_mode_periodic">Se ejecuta periódicamente</string>
-    <string name="notification_preview_mode_message_desc">Mostrar contacto y mensaje</string>
-    <string name="notification_preview_mode_contact_desc">Mostrar sólo contacto</string>
+    <string name="notification_preview_mode_message_desc">Se muestran el nombre del contacto y el mensaje</string>
+    <string name="notification_preview_mode_contact_desc">Se muestra solo el nombre del contacto</string>
     <string name="auth_simplex_lock_turned_on">Bloqueo SimpleX activado</string>
     <string name="auth_stop_chat">Detener chat</string>
     <string name="moderate_message_will_be_deleted_warning">El mensaje se eliminará para todos los miembros.</string>
