@@ -442,12 +442,12 @@
       </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve" approved="no">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
-        <target state="translated">Se permiten mensajes temporales sólo si tu contacto también los permite.</target>
+        <target state="translated">Se permiten mensajes temporales sólo si tu contacto también los permite para tí.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve" approved="no">
         <source>Allow irreversible message deletion only if your contact allows it to you.</source>
-        <target state="translated">Se permite la eliminación irreversible de mensajes sólo si tu contacto también lo permite para tí.</target>
+        <target state="translated">Se permite la eliminación irreversible de mensajes sólo si tu contacto también la permite para tí.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
@@ -455,19 +455,19 @@
         <target>Permitir el envío de mensajes directos a los miembros.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
+      <trans-unit id="Allow sending disappearing messages." xml:space="preserve" approved="no">
         <source>Allow sending disappearing messages.</source>
-        <target>Permitir el envío de mensajes temporales.</target>
+        <target state="translated">Permites el envío de mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
+      <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve" approved="no">
         <source>Allow to irreversibly delete sent messages.</source>
-        <target>Permitir la eliminación irreversible de los mensajes enviados.</target>
+        <target state="translated">Permites la eliminación irreversible de los mensajes enviados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send voice messages." xml:space="preserve">
+      <trans-unit id="Allow to send voice messages." xml:space="preserve" approved="no">
         <source>Allow to send voice messages.</source>
-        <target>Permitir enviar mensajes de voz.</target>
+        <target state="translated">Permites enviar mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve" approved="no">
@@ -475,9 +475,9 @@
         <target state="translated">Se permiten mensajes de voz sólo si tu contacto también los permite.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow voice messages?" xml:space="preserve">
+      <trans-unit id="Allow voice messages?" xml:space="preserve" approved="no">
         <source>Allow voice messages?</source>
-        <target>¿Permitir mensajes de voz?</target>
+        <target state="translated">¿Permites los mensajes de voz?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve" approved="no">
@@ -485,14 +485,14 @@
         <target state="translated">Permites a tus contactos eliminar irreversiblemente los mensajes enviados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve" approved="no">
         <source>Allow your contacts to send disappearing messages.</source>
-        <target>Permitir a tus contactos enviar mensajes temporales.</target>
+        <target state="translated">Permites a tus contactos enviar mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve" approved="no">
         <source>Allow your contacts to send voice messages.</source>
-        <target>Permitir a tus contactos enviar mensajes de voz.</target>
+        <target state="translated">Permites a tus contactos enviar mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Already connected?" xml:space="preserve">
@@ -660,9 +660,9 @@
         <target>Cambiar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change Passcode" xml:space="preserve">
+      <trans-unit id="Change Passcode" xml:space="preserve" approved="no">
         <source>Change Passcode</source>
-        <target>Cambiar contraseña</target>
+        <target state="translated">Cambiar el código de acceso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
@@ -680,9 +680,9 @@
         <target>¿Cambiar el rol del miembro?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change passcode" xml:space="preserve">
+      <trans-unit id="Change passcode" xml:space="preserve" approved="no">
         <source>Change passcode</source>
-        <target>Cambiar contraseña</target>
+        <target state="translated">Cambiar el código de acceso</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
@@ -810,9 +810,9 @@
         <target>Confirmar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm Passcode" xml:space="preserve">
+      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
         <source>Confirm Passcode</source>
-        <target>Confirmar contraseña</target>
+        <target state="translated">Confirmar el código de acceso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
@@ -1010,9 +1010,9 @@
         <target>Creado en %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current Passcode" xml:space="preserve">
+      <trans-unit id="Current Passcode" xml:space="preserve" approved="no">
         <source>Current Passcode</source>
-        <target>Contraseña actual</target>
+        <target state="translated">Código de acceso actual</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current passphrase…" xml:space="preserve">
@@ -1508,9 +1508,9 @@
         <target>Mensaje cifrado: error inesperado</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Enter Passcode" xml:space="preserve">
+      <trans-unit id="Enter Passcode" xml:space="preserve" approved="no">
         <source>Enter Passcode</source>
-        <target>Introducir contraseña</target>
+        <target state="translated">Introducir código de acceso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">
@@ -1683,9 +1683,9 @@
         <target>Error guardando perfil de grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving passcode" xml:space="preserve">
+      <trans-unit id="Error saving passcode" xml:space="preserve" approved="no">
         <source>Error saving passcode</source>
-        <target>Error al guardar contraseña</target>
+        <target state="translated">Error al guardar el código de acceso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
@@ -2138,9 +2138,9 @@
         <target>Versión de base de datos incompatible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incorrect passcode" xml:space="preserve">
+      <trans-unit id="Incorrect passcode" xml:space="preserve" approved="no">
         <source>Incorrect passcode</source>
-        <target>Contraseña incorrecta</target>
+        <target state="translated">Código de acceso incorrecto</target>
         <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Incorrect security code!" xml:space="preserve">
@@ -2510,9 +2510,9 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Estado de la red</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New Passcode" xml:space="preserve">
+      <trans-unit id="New Passcode" xml:space="preserve" approved="no">
         <source>New Passcode</source>
-        <target>Nueva contraseña</target>
+        <target state="translated">Código de acceso nuevo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -2739,29 +2739,29 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
         <target>Intervalo PING</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode" xml:space="preserve">
+      <trans-unit id="Passcode" xml:space="preserve" approved="no">
         <source>Passcode</source>
-        <target>Contraseña</target>
+        <target state="translated">Código de acceso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode changed!" xml:space="preserve">
+      <trans-unit id="Passcode changed!" xml:space="preserve" approved="no">
         <source>Passcode changed!</source>
-        <target>¡Contraseña cambiada!</target>
+        <target state="translated">¡Código de acceso cambiado!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode entry" xml:space="preserve">
+      <trans-unit id="Passcode entry" xml:space="preserve" approved="no">
         <source>Passcode entry</source>
-        <target>Entrada de contraseña</target>
+        <target state="translated">Campo de código de acceso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode not changed!" xml:space="preserve">
+      <trans-unit id="Passcode not changed!" xml:space="preserve" approved="no">
         <source>Passcode not changed!</source>
-        <target>¡Contraseña no cambiada!</target>
+        <target state="translated">¡Código de acceso no cambiado!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode set!" xml:space="preserve">
+      <trans-unit id="Passcode set!" xml:space="preserve" approved="no">
         <source>Passcode set!</source>
-        <target>¡Contraseña guardada!</target>
+        <target state="translated">¡Código de acceso guardado!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
@@ -2836,7 +2836,7 @@ Añadiremos redundancia de servidores para evitar la pérdida de mensajes.</targ
       </trans-unit>
       <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve" approved="no">
         <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
-        <target state="translated">Por favor, recuerda y guarda la contraseña en un lugar seguro. ¡No hay ninguna manera de recuperar una contraseña perdida!</target>
+        <target state="translated">Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay ninguna manera de recuperar un código de acceso perdido!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
@@ -4236,9 +4236,9 @@ SimpleX Lock debe estar activado.</target>
         <target>Debes usar la versión más reciente de tu base de datos ÚNICAMENTE en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve">
+      <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve" approved="no">
         <source>You need to allow your contact to send voice messages to be able to send them.</source>
-        <target>Para poder enviar mensajes de voz debes permitir que tu contacto pueda enviarlos.</target>
+        <target state="translated">Para poder enviar mensajes de voz antes debes permitir que tu contacto pueda enviarlos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You rejected group invitation" xml:space="preserve">
@@ -4286,14 +4286,14 @@ SimpleX Lock debe estar activado.</target>
         <target>Dejarás de recibir mensajes de este grupo. El historial del chat se conservará.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
+      <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve" approved="no">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
-        <target>Estás intentando invitar a un contacto con el que has compartido un perfil incógnito, al grupo en el que utilizas tu perfil principal</target>
+        <target state="translated">Estás intentando invitar a un contacto con el que compartes un perfil incógnito a un grupo en el que usas tu perfil principal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
+      <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve" approved="no">
         <source>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</source>
-        <target>Estás utilizando un perfil incógnito para este grupo. Para evitar compartir tu perfil principal, invitar contactos no está permitido</target>
+        <target state="translated">Estás usando un perfil incógnito para este grupo, por tanto para evitar compartir tu perfil principal no se permite invitar contactos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your %@ servers" xml:space="preserve">
