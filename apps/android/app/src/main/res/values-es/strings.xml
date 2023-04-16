@@ -58,7 +58,7 @@
     <string name="keychain_is_storing_securely">Android Keystore se utiliza para almacenar de forma segura la contraseña - permite que el servicio de notificación funcione.</string>
     <string name="users_add">Añadir perfil</string>
     <string name="incognito_random_profile_description">Se enviará un perfil aleatorio a tu contacto</string>
-    <string name="color_primary">Acento</string>
+    <string name="color_primary">Color</string>
     <string name="allow_your_contacts_irreversibly_delete">Permites a tus contactos eliminar irreversiblemente los mensajes enviados.</string>
     <string name="allow_voice_messages_only_if">Se permiten mensajes de voz sólo si tu contacto también los permite.</string>
     <string name="allow_direct_messages">Permitir el envío de mensajes directos a los miembros.</string>
@@ -85,7 +85,7 @@
     <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes temporales.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Escanear código QR</b>: para conectar con tu contacto que te muestre código QR.</string>
     <string name="create_profile_button">Crear</string>
-    <string name="create_one_time_link">Crear enlace de invitación de un uso.</string>
+    <string name="create_one_time_link">Crear enlace de invitación de un solo uso.</string>
     <string name="create_group">Crear grupo secreto</string>
     <string name="database_passphrase_will_be_updated">La contraseña de cifrado de la base de datos será actualizada.</string>
     <string name="info_row_database_id">ID de la base de datos</string>
@@ -98,7 +98,7 @@
     <string name="rcv_group_event_group_deleted">grupo eliminado</string>
     <string name="delete_group_question">¿Eliminar grupo\?</string>
     <string name="delete_messages_after">Eliminar después de</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Autenticación de dispositivo desactivada. Puedes habilitar SimpleX Lock en Configuración, después de activar la autenticación de dispositivo.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Autenticación de dispositivo desactivada. Puedes habilitar Bloqueo SimpleX en Configuración, después de activar la autenticación de dispositivo.</string>
     <string name="no_call_on_lock_screen">Desactivar</string>
     <string name="disappearing_prohibited_in_this_chat">Los mensajes temporales no están permitidos en este chat.</string>
     <string name="disappearing_messages_are_prohibited">Los mensajes temporales no están permitidos en este grupo.</string>
@@ -108,8 +108,8 @@
     <string name="simplex_link_mode_description">Descripción</string>
     <string name="smp_server_test_connect">Conectar</string>
     <string name="notification_contact_connected">Conectado</string>
-    <string name="auth_disable_simplex_lock">Desactivar SimpleX Lock</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">Autenticación de dispositivo desactivada. SimpleX Lock deshabilitado.</string>
+    <string name="auth_disable_simplex_lock">Desactivar Bloqueo SimpleX</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">Autenticación de dispositivo desactivada. Bloqueo SimpleX deshabilitado.</string>
     <string name="maximum_supported_file_size">El tamaño máximo de archivo admitido es <xliff:g id="maxFileSize">%1$s</xliff:g></string>
     <string name="clear_verification">Eliminar verificación</string>
     <string name="create_profile">Crear perfil</string>
@@ -166,7 +166,7 @@
     <string name="icon_descr_server_status_disconnected">Desconectado</string>
     <string name="icon_descr_server_status_connected">Conectado</string>
     <string name="copied">Copiado en portapapeles</string>
-    <string name="share_one_time_link">Crear enlace de invitación de un uso.</string>
+    <string name="share_one_time_link">Crear enlace de invitación de un solo uso.</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 PC: escanéa el código QR desde la app mediante <b>Escanéo de código QR </b></string>
     <string name="delete_contact_menu_action">Eliminar</string>
     <string name="delete_group_menu_action">Eliminar</string>
@@ -336,7 +336,7 @@
     <string name="error_setting_network_config">Error al actualizar la configuración de red</string>
     <string name="error_creating_address">Error creando dirección</string>
     <string name="error_deleting_user">Error eliminando perfil de usuario</string>
-    <string name="auth_enable_simplex_lock">Activar SimpleX Lock</string>
+    <string name="auth_enable_simplex_lock">Activar Bloqueo SimpleX</string>
     <string name="one_time_link">Enlace de invitación de un uso</string>
     <string name="smp_servers">Servidores SMP</string>
     <string name="settings_experimental_features">Características experimentales</string>
@@ -384,7 +384,7 @@
     <string name="error_deleting_pending_contact_connection">Error al eliminar conexión de contacto pendiente</string>
     <string name="hide_notification">Ocultar</string>
     <string name="notification_preview_mode_hidden">Oculta</string>
-    <string name="notification_display_mode_hidden_desc">Se ocultan el contacto y el mensaje</string>
+    <string name="notification_display_mode_hidden_desc">Se ocultan tanto el contacto como el mensaje</string>
     <string name="hide_verb">Ocultar</string>
     <string name="for_everybody">Para todos</string>
     <string name="icon_descr_file">Archivo</string>
@@ -469,11 +469,9 @@
     <string name="message_deletion_prohibited_in_chat">La eliminación irreversible de mensajes no está permitida en este grupo.</string>
     <string name="v4_3_improved_server_configuration">Configuración del servidor mejorada</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Esto puede suceder cuando:
-\n1. Los mensajes caducan en el servidor si no se han recibido durante 30 días.
-\n2. El servidor que utiliza para recibir los mensajes de este contacto fue actualizado y reiniciado.
-\n3. La conexión está comprometida.
-\nPor favor, contacta con los desarrolladores a través del menú Configuración para recibir actualizaciones sobre los servidores.
-\nAñadiremos redundancia de servidores para evitar la pérdida de mensajes.</string>
+\n1. Los mensajes caducan en el cliente saliente tras 2 días o en el servidor tras 30 días.
+\n2. El descifrado ha fallado porque tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.
+\n3. La conexión ha sido comprometida.</string>
     <string name="notification_preview_mode_message">Texto del mensaje</string>
     <string name="member_info_section_title_member">MIEMBRO</string>
     <string name="chat_item_ttl_none">nunca</string>
@@ -506,7 +504,7 @@
     <string name="invalid_data">datos no válidos</string>
     <string name="invalid_message_format">formato de mensaje no válido</string>
     <string name="live">EN VIVO</string>
-    <string name="moderated_description">moderado</string>
+    <string name="moderated_description">eliminado por el moderador</string>
     <string name="display_name_invited_to_connect">invitado a conectarse</string>
     <string name="service_notifications_disabled">¡Las notificaciones instantáneas están desactivadas!</string>
     <string name="notification_preview_new_message">mensaje nuevo</string>
@@ -774,7 +772,7 @@
     <string name="stop_chat_to_export_import_or_delete_chat_database">Detén Chat para poder exportar, importar o eliminar la base de datos. No puedes recibir ni enviar mensajes mientras Chat esté detenido.</string>
     <string name="thank_you_for_installing_simplex">Gracias por instalar <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger la privacidad, en lugar de los identificadores de usuario que utilizan el resto de plataformas, <xliff:g id="appName">SimpleX</xliff:g> dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa SimpleX Lock.
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa Bloqueo SimpleX.
 \nSe te pedirá que completes la autenticación antes de activar esta función.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Al actualizar la configuración, el cliente se reconectará a todos los servidores.</string>
     <string name="use_simplex_chat_servers__question">¿Usar servidores <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\?</string>
@@ -858,7 +856,7 @@
     <string name="description_via_one_time_link">mediante enlace de un uso</string>
     <string name="your_chats">Tus chats</string>
     <string name="voice_message_send_text">Mensaje de voz…</string>
-    <string name="your_contact_address">Tu dirección de contacto</string>
+    <string name="your_contact_address">Mi dirección de contacto</string>
     <string name="icon_descr_video_off">Desactivar vídeo</string>
     <string name="icon_descr_video_on">Activar vídeo</string>
     <string name="wrong_passphrase">Contraseña de base de datos incorrecta</string>
@@ -924,7 +922,7 @@
     <string name="you_invited_your_contact">Has invitado a tu contacto</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo del anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Tu contacto puede escanear el código QR desde la aplicación.</string>
-    <string name="your_settings">Tu configuración</string>
+    <string name="your_settings">Mi configuración</string>
     <string name="your_SMP_servers">Tus servidores SMP</string>
     <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
     <string name="your_profile_is_stored_on_your_device">Tu perfil, contactos y mensajes entregados se almacenan en tu dispositivo.</string>
@@ -934,8 +932,8 @@
     <string name="icon_descr_video_call">Videollamada</string>
     <string name="your_calls">Tus llamadas</string>
     <string name="your_ice_servers">Tus servidores ICE</string>
-    <string name="your_privacy">Tu privacidad</string>
-    <string name="settings_section_title_you">TU</string>
+    <string name="your_privacy">Privacidad</string>
+    <string name="settings_section_title_you">MIS DATOS</string>
     <string name="your_chat_database">Base de datos Chat</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puedes iniciar el chat en Configuración / Base de datos o reiniciando la aplicación.</string>
     <string name="you_sent_group_invitation">Has enviado una invitación de grupo</string>
@@ -968,8 +966,8 @@
     <string name="image_descr_simplex_logo">Logo <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="icon_descr_simplex_team">Equipo <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="your_profile_will_be_sent">Tu perfil Chat se enviará a tu contacto</string>
-    <string name="your_chat_profiles">Tus perfiles Chat</string>
-    <string name="your_simplex_contact_address">Tu dirección de contacto <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="your_chat_profiles">Mis perfiles</string>
+    <string name="your_simplex_contact_address">Mi dirección de contacto <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
     <string name="section_title_welcome_message">MENSAJE DE BIENVENIDA</string>
@@ -1003,7 +1001,7 @@
     <string name="muted_when_inactive">¡Silenciado cuando está inactivo!</string>
     <string name="v4_6_group_moderation">Moderación de grupos</string>
     <string name="v4_6_hidden_chat_profiles">Perfiles Chat ocultos</string>
-    <string name="v4_6_hidden_chat_profiles_descr">¡Protege tus perfiles Chat con contraseña!</string>
+    <string name="v4_6_hidden_chat_profiles_descr">¡Protege tus perfiles con contraseña!</string>
     <string name="v4_6_audio_video_calls_descr">Soporte bluetooth y otras mejoras.</string>
     <string name="v4_6_group_welcome_message_descr">¡Establece el mensaje mostrado a los miembros nuevos!</string>
     <string name="v4_6_chinese_spanish_interface">Interfaz en chino y español</string>
@@ -1094,7 +1092,7 @@
     <string name="la_immediately">Inmediatamente</string>
     <string name="la_please_remember_to_store_password">Por favor, recuerda y guarda la contraseña en un lugar seguro. ¡No hay ninguna manera de recuperar una contraseña perdida!</string>
     <string name="lock_not_enabled">¡Bloqueo SimpleX no activado!</string>
-    <string name="you_can_turn_on_lock">Puedes activar el bloqueo de SimpleX a través de Configuración.</string>
+    <string name="you_can_turn_on_lock">Puedes activar el Bloqueo SimpleX a través de Configuración.</string>
     <string name="confirm_passcode">Confirmar el código de acceso</string>
     <string name="enable_lock">Activar bloqueo</string>
     <string name="lock_after">Bloquear después de</string>
@@ -1106,4 +1104,15 @@
     <string name="passcode_changed">¡Código de acceso cambiado!</string>
     <string name="passcode_set">¡Código de acceso guardado!</string>
     <string name="la_mode_system">Sistema</string>
+    <string name="decryption_error">Error de descifrado</string>
+    <string name="alert_text_msg_bad_id">El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).
+\nPuede ocurrir por algún bug o cuando la conexión está comprometida.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Por favor, informa a los desarrolladores.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> mensajes omitidos.</string>
+    <string name="alert_title_msg_bad_hash">Hash de mensaje incorrecto</string>
+    <string name="alert_title_msg_bad_id">ID de mensaje incorrecto</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</string>
+    <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">El error es permanente para esta conexión, por favor vuelve a conectarte.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> mensajes no pudieron ser descifrados.</string>
 </resources>
