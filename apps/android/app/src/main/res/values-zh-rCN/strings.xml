@@ -103,7 +103,7 @@
     <string name="app_version_name">应用程序版本：v%s</string>
     <string name="notifications_mode_off_desc">仅在运行时应用程序可以接受通知，不会启动后台服务</string>
     <string name="incognito_random_profile_description">一个随机资料将发送给您的联系人</string>
-    <string name="auth_unavailable">身份认证不可用</string>
+    <string name="auth_unavailable">身份验证不可用</string>
     <string name="auto_accept_images">自动接受图像</string>
     <string name="attach">附件</string>
     <string name="icon_descr_audio_call">语音通话</string>
@@ -429,8 +429,8 @@
     <string name="network_disable_socks_info">如果您确认，消息服务器将能够看到您的 IP 地址和您的提供商——以及您正在连接的服务器。</string>
     <string name="image_descr">图片</string>
     <string name="icon_descr_image_snd_complete">图片已发送</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">设备认证被禁用。关闭 SimpleX 锁定。</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">没有启用设备认证。一旦启用设备认证，您可以通过设置打开 SimpleX 锁定。</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">设备验证被禁用。关闭 SimpleX 锁定。</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">没有启用设备验证。一旦启用设备验证，您可以通过设置打开 SimpleX 锁定。</string>
     <string name="auth_disable_simplex_lock">禁用 SimpleX 锁定</string>
     <string name="maximum_supported_file_size">目前支持的最大文件尺寸是 <xliff:g id="maxFileSize">%1$s</xliff:g>。</string>
     <string name="file_will_be_received_when_contact_is_online">文件将在您的联系人在线时收到，请稍等或稍后再查看！</string>
@@ -1075,4 +1075,34 @@
     <string name="error_saving_xftp_servers">保存 SMP 服务器时出错</string>
     <string name="network_proxy_port">端口 %d</string>
     <string name="network_socks_proxy_settings">SOCKS 代理设置</string>
+    <string name="la_lock_mode">SimpleX 锁定模式</string>
+    <string name="la_lock_mode_system">系统验证</string>
+    <string name="la_minutes">%d 分钟</string>
+    <string name="la_seconds">%d 秒</string>
+    <string name="la_enter_app_passcode">输入密码</string>
+    <string name="la_no_app_password">没有应用程序密码</string>
+    <string name="la_lock_mode_passcode">密码输入</string>
+    <string name="la_please_remember_to_store_password">请牢记或妥善保管——丢失的密码将无法恢复！</string>
+    <string name="you_can_turn_on_lock">您可以通过设置开启 SimpleX 锁定。</string>
+    <string name="la_authenticate">身份验证</string>
+    <string name="la_auth_failed">身份验证失败</string>
+    <string name="la_change_app_passcode">更改密码</string>
+    <string name="submit_passcode">提交</string>
+    <string name="confirm_passcode">确认密码</string>
+    <string name="enable_lock">启用锁定</string>
+    <string name="incorrect_passcode">密码错误</string>
+    <string name="lock_after">在此后锁定</string>
+    <string name="lock_mode">锁定模式</string>
+    <string name="new_passcode">新密码</string>
+    <string name="change_lock_mode">更改锁定模式</string>
+    <string name="la_mode_passcode">密码</string>
+    <string name="passcode_changed">密码已更改！</string>
+    <string name="passcode_not_changed">密码未更改！</string>
+    <string name="passcode_set">密码已设置！</string>
+    <string name="la_mode_system">系统</string>
+    <string name="lock_not_enabled">未启用 SimpleX 锁定！</string>
+    <string name="la_could_not_be_verified">您的身份无法验证，请再试一次。</string>
+    <string name="authentication_cancelled">身份验证已取消</string>
+    <string name="la_current_app_passcode">当前密码</string>
+    <string name="la_immediately">立即</string>
 </resources>
