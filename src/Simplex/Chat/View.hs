@@ -27,6 +27,7 @@ import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
+import Data.Word (Word32)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
@@ -365,6 +366,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIDirectRcv -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
+        CIRcvDecryptionError err n -> viewRcvDecryptionError from err n ts meta
         CIRcvGroupEvent {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
@@ -381,6 +383,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIGroupRcv m -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
+        CIRcvDecryptionError err n -> viewRcvDecryptionError from err n ts meta
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
@@ -489,20 +492,14 @@ msgPreview = msgPlain . preview . msgContentText
       | T.length t <= 120 = t
       | otherwise = T.take 120 t <> "..."
 
-viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta с 'MDRcv -> [StyledString]
+viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta c 'MDRcv -> [StyledString]
 viewRcvIntegrityError from msgErr ts meta = receivedWithTime_ ts from [] meta (viewMsgIntegrityError msgErr) False
 
+viewRcvDecryptionError :: StyledString -> MsgDecryptError -> Word32 -> CurrentTime -> CIMeta c 'MDRcv -> [StyledString]
+viewRcvDecryptionError from err n ts meta = receivedWithTime_ ts from [] meta [ttyError $ msgDecryptErrorText err n] False
+
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
-viewMsgIntegrityError err = msgError $ case err of
-  MsgSkipped fromId toId ->
-    "skipped message ID " <> show fromId
-      <> if fromId == toId then "" else ".." <> show toId
-  MsgBadId msgId -> "unexpected message ID " <> show msgId
-  MsgBadHash -> "incorrect message hash"
-  MsgDuplicate -> "duplicate message ID"
-  where
-    msgError :: String -> [StyledString]
-    msgError s = [ttyError s]
+viewMsgIntegrityError err = [ttyError $ msgIntegrityError err]
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =
