@@ -29,7 +29,6 @@ import qualified Data.ByteString.Char8 as B
 import Data.Char (ord)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
 import Data.Time (ZonedTime)
@@ -155,8 +154,10 @@ data ChatController = ChatController
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
     chatLock :: Lock,
-    sndFiles :: TVar (Map Int64 Handle),
-    rcvFiles :: TVar (Map Int64 Handle),
+    entityChatLocks :: TMap ChatLockEntity Lock,
+    entityLocks :: TVar Int,
+    sndFiles :: TMap Int64 Handle,
+    rcvFiles :: TMap Int64 Handle,
     currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
@@ -170,6 +171,14 @@ data ChatController = ChatController
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath
   }
+
+data ChatLockEntity
+  = CLConnection Int64
+  | CLContact ContactId
+  | CLGroup GroupId
+  | CLUserContact Int64
+  | CLFile Int64
+  deriving (Eq, Ord)
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
