@@ -628,7 +628,7 @@
     <string name="image_descr_profile_image">imagen del perfil</string>
     <string name="prohibit_sending_voice_messages">Prohibir el envío de mensajes de voz.</string>
     <string name="protect_app_screen">Proteger la pantalla de la aplicación</string>
-    <string name="read_more_in_github_with_link">Más información en nuestro <font color="#0088ff">repositorio GitHub</font> .</string>
+    <string name="read_more_in_github_with_link">Más información en nuestro <font color="#0053D0">repositorio GitHub</font> .</string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
     <string name="rcv_group_event_member_deleted">eliminado <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="send_link_previews">Enviar previsualizaciones de enlaces</string>
@@ -887,7 +887,7 @@
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> quiere conectarse contigo mediante</string>
     <string name="failed_to_create_user_duplicate_desc">Tienes un perfil de chat con el mismo nombre mostrado. Debes elegir otro nombre.</string>
     <string name="you_can_also_connect_by_clicking_the_link">También puedes conectarte haciendo clic en el enlace. Si se abre en el navegador, haz clic en <b>Abrir en aplicación móvil</b>.</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0088ff">ponerte en contacto con los desarrolladores de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para consultas y para recibir actualizaciones</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0053D0">ponerte en contacto con los desarrolladores de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para consultas y para recibir actualizaciones</font>.</string>
     <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo. Si lo eliminas más tarde tus contactos no se perderán.</string>
     <string name="observer_cant_send_message_title">¡No puedes enviar mensajes!</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Puedes usar la sintaxis markdown para dar formato a los mensajes:</string>

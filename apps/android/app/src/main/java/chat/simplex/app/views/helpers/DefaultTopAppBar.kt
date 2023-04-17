@@ -45,10 +45,10 @@ fun DefaultTopAppBar(
 }
 
 @Composable
-fun NavigationButtonBack(onButtonClicked: () -> Unit) {
-  IconButton(onButtonClicked) {
+fun NavigationButtonBack(onButtonClicked: (() -> Unit)?) {
+  IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
     Icon(
-      Icons.Outlined.ArrowBackIos, stringResource(R.string.back), tint = MaterialTheme.colors.primary
+      Icons.Outlined.ArrowBackIos, stringResource(R.string.back), tint = if (onButtonClicked != null) MaterialTheme.colors.primary else HighOrLowlight
     )
   }
 }

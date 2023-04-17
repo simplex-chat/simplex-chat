@@ -585,7 +585,7 @@
     <string name="live_message">Živá zpráva!</string>
     <string name="connect_via_link_or_qr">Připojit se prostřednictvím odkazu / QR kódu</string>
     <string name="thank_you_for_installing_simplex">Děkujeme za instalaci <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Můžete se <font color="#0088ff">připojit k <xliff:g id="appNameFull">SimpleX Chat</xliff:g> vývojářům, položit jim případné dotazy a získat aktualizace</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Můžete se <font color="#0053D0">připojit k <xliff:g id="appNameFull">SimpleX Chat</xliff:g> vývojářům, položit jim případné dotazy a získat aktualizace</font>.</string>
     <string name="to_connect_via_link_title">Připojení prostřednictvím odkazu</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Pokud jste dostali <xliff:g id="appName">SimpleX Chat</xliff:g> pozvánku, můžete ji otevřít v prohlížeči:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Pokud zvolíte odmítnutí, odesílatel NEBUDE upozorněn.</string>
@@ -692,7 +692,7 @@
     <string name="many_people_asked_how_can_it_deliver">Mnoho lidí se ptá: <i>když <xliff:g id="appName">SimpleX</xliff:g> nemá žádný identifikátor uživatelů, jak může doručovat zprávy\?</i></string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">Vy určujete, přes které servery <b>přijímat</b> zprávy, vaše kontakty – servery, které používáte k zasílání zpráv.</string>
     <string name="read_more_in_github">Další informace najdete v našem repozitáři na GitHubu.</string>
-    <string name="read_more_in_github_with_link">Další informace najdete v našem <font color="#0088ff">úložišti GitHub</font>.</string>
+    <string name="read_more_in_github_with_link">Další informace najdete v našem <font color="#0053D0">úložišti GitHub</font>.</string>
     <string name="use_chat">Použijte chat</string>
     <string name="onboarding_notifications_mode_subtitle">Lze změnit později v nastavení.</string>
     <string name="onboarding_notifications_mode_off">Když aplikace běží</string>

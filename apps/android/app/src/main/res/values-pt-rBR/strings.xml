@@ -664,7 +664,7 @@
     <string name="network_use_onion_hosts_required_desc">Os hosts Onion serão necessários para a conexão.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Os hosts Onion serão necessários para a conexão.</string>
     <string name="core_version">Versão principal: v%s</string>
-    <string name="read_more_in_github_with_link">Leia mais no nosso<font color="#0088ff"> repositório do GitHub</font>.</string>
+    <string name="read_more_in_github_with_link">Leia mais no nosso<font color="#0053D0"> repositório do GitHub</font>.</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser mudado mais tarde via configurações.</string>
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> quer se conectar com você via</string>
     <string name="status_no_e2e_encryption">sem criptografia ponta-a-ponta</string>
@@ -975,7 +975,7 @@
     <string name="user_unhide">Mostrar</string>
     <string name="user_unmute">Desmutar</string>
     <string name="v4_3_voice_messages">Mensagens de voz</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Você pode <font color="#0088ff">se conectar aos desenvolvedores do<xliff:g id="appNameFull">SimpleX</xliff:g> para fazer qualquer pergunta e receber atualizações</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Você pode <font color="#0053D0">se conectar aos desenvolvedores do<xliff:g id="appNameFull">SimpleX</xliff:g> para fazer qualquer pergunta e receber atualizações</font>.</string>
     <string name="connection_you_accepted_will_be_cancelled">A conexão que você aceitou será cancelada!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">O contato com o qual você compartilhou este link NÃO será capaz de se conectar!</string>
     <string name="icon_descr_simplex_team">Equipe <xliff:g id="appName">SimpleX</xliff:g></string>

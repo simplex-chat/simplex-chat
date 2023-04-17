@@ -113,7 +113,7 @@ fun GroupProfileLayout(
               stringResource(R.string.group_display_name_field),
               Modifier.padding(bottom = 3.dp)
             )
-            ProfileNameField(displayName, focusRequester)
+            ProfileNameField(displayName, "", focusRequester)
             val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
             Text(
               errorText,

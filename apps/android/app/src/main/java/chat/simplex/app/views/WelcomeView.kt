@@ -1,11 +1,13 @@
 package chat.simplex.app.views
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBackIosNew
 import androidx.compose.material.icons.outlined.ArrowForwardIos
@@ -18,7 +20,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
@@ -26,8 +32,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.AppBarTitle
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -47,40 +52,59 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
     Column(
       modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
     ) {
-      AppBarTitle(stringResource(R.string.create_profile), false)
-      ReadableText(R.string.your_profile_is_stored_on_your_device)
-      ReadableText(R.string.profile_is_only_shared_with_your_contacts)
-      Spacer(Modifier.height(10.dp))
-      Text(
-        stringResource(R.string.display_name),
-        style = MaterialTheme.typography.h6,
-        modifier = Modifier.padding(bottom = 3.dp)
-      )
-      ProfileNameField(displayName, focusRequester)
-      val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-      Text(
-        errorText,
-        fontSize = 15.sp,
-        color = MaterialTheme.colors.error
-      )
-      Spacer(Modifier.height(3.dp))
-      Text(
-        stringResource(R.string.full_name_optional__prompt),
-        style = MaterialTheme.typography.h6,
-        modifier = Modifier.padding(bottom = 5.dp)
-      )
-      ProfileNameField(fullName)
+      /*CloseSheetBar(close = {
+        if (chatModel.users.isEmpty()) {
+          chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
+        } else {
+          close()
+        }
+      })*/
+      Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
+        Text(
+          stringResource(R.string.create_profile),
+          Modifier
+            .padding(bottom = DEFAULT_PADDING * 1.5f)
+            .align(Alignment.CenterHorizontally),
+          overflow = TextOverflow.Ellipsis,
+          style = MaterialTheme.typography.h1,
+          color = colors.primary
+        )
+        ReadableText(R.string.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues())
+        ReadableText(R.string.profile_is_only_shared_with_your_contacts, TextAlign.Center)
+        Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
+        Text(
+          stringResource(R.string.display_name),
+          fontWeight = FontWeight.Bold,
+          fontSize = 18.sp,
+          modifier = Modifier.padding(bottom = DEFAULT_PADDING)
+        )
+        ProfileNameField(displayName, generalGetString(R.string.enter_display_name), focusRequester)
+        val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
+        Text(
+          errorText,
+          fontSize = 15.sp,
+          color = MaterialTheme.colors.error
+        )
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        Text(
+          stringResource(R.string.full_name_optional__prompt),
+          fontWeight = FontWeight.Bold,
+          fontSize = 18.sp,
+          modifier = Modifier.padding(bottom = DEFAULT_PADDING)
+        )
+        ProfileNameField(fullName, placeholder = generalGetString(R.string.enter_full_name),)
+      }
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
         if (chatModel.users.isEmpty()) {
-          SimpleButton(
+          SimpleButtonDecorated(
             text = stringResource(R.string.about_simplex),
-            icon = Icons.Outlined.ArrowBackIosNew
+            icon = Icons.Outlined.ArrowBackIosNew,
+            textDecoration = TextDecoration.None,
+            fontWeight = FontWeight.Bold
           ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
         }
-
         Spacer(Modifier.fillMaxWidth().weight(1f))
-
         val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
         val createModifier: Modifier
         val createColor: Color
@@ -93,7 +117,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         }
         Surface(shape = RoundedCornerShape(20.dp)) {
           Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
-            Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor)
+            Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Bold)
             Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = createColor)
           }
         }
@@ -128,24 +152,31 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
 }
 
 @Composable
-fun ProfileNameField(name: MutableState<String>, focusRequester: FocusRequester? = null) {
+fun ProfileNameField(name: MutableState<String>, placeholder: String = "", focusRequester: FocusRequester? = null) {
   val modifier = Modifier
     .fillMaxWidth()
-    .background(MaterialTheme.colors.secondary)
-    .height(40.dp)
-    .clip(RoundedCornerShape(5.dp))
-    .padding(8.dp)
+    .height(55.dp)
+    .border(border = BorderStroke(1.dp, HighOrLowlight.copy(alpha = 0.3f)), shape = RoundedCornerShape(50))
+    .padding(horizontal = 8.dp)
     .navigationBarsWithImePadding()
-  BasicTextField(
+  TextField(
     value = name.value,
     onValueChange = { name.value = it },
     modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
-    textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+    textStyle = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium, color = colors.onBackground),
     keyboardOptions = KeyboardOptions(
       capitalization = KeyboardCapitalization.None,
       autoCorrect = false
     ),
     singleLine = true,
-    cursorBrush = SolidColor(HighOrLowlight)
-  )
+    placeholder = { Text(placeholder, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = HighOrLowlight.copy(alpha = 0.3f)) },
+    shape = RoundedCornerShape(50),
+    colors = TextFieldDefaults.textFieldColors(
+      backgroundColor = Color.Unspecified,
+      textColor = MaterialTheme.colors.onBackground,
+      focusedIndicatorColor = Color.Unspecified,
+      unfocusedIndicatorColor = Color.Unspecified,
+      cursorColor = HighOrLowlight
+    )
+    )
 }

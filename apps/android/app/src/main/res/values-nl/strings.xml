@@ -920,7 +920,7 @@
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Om je privacy te behouden, heeft de app in plaats van push meldingen een <b><xliff:g id="appName">SimpleX</xliff:g> achtergrondservice</b> – deze gebruikt een paar procent van de batterij per dag.</string>
     <string name="chat_preferences_you_allow">Jij staat toe</string>
     <string name="you_are_invited_to_group">Je bent uitgenodigd voor de groep</string>
-    <string name="you_can_connect_to_simplex_chat_founder">U kunt <font color="#0088ff">verbinding maken met <xliff:g id="appNameFull">SimpleX Chat</xliff:g> ontwikkelaars om vragen te stellen en updates te ontvangen</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">U kunt <font color="#0053D0">verbinding maken met <xliff:g id="appNameFull">SimpleX Chat</xliff:g> ontwikkelaars om vragen te stellen en updates te ontvangen</font>.</string>
     <string name="connection_error_auth_desc">Tenzij uw contactpersoon de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
 \nOm verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
     <string name="update_onion_hosts_settings_question">.onion hosts-instelling updaten\?</string>
@@ -962,7 +962,7 @@
     <string name="description_you_shared_one_time_link">je hebt een eenmalige link gedeeld</string>
     <string name="description_you_shared_one_time_link_incognito">je hebt een eenmalige link incognito gedeeld</string>
     <string name="chat_help_tap_button">Tik op de knop</string>
-    <string name="read_more_in_github_with_link">Lees meer in onze <font color="#0088ff">GitHub repository</font>.</string>
+    <string name="read_more_in_github_with_link">Lees meer in onze <font color="#0053D0">GitHub repository</font>.</string>
     <string name="read_more_in_github">Lees meer in onze GitHub repository.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> bericht(en) overgeslagen</string>
     <string name="moderated_description">gemodereerd</string>

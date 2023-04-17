@@ -296,7 +296,7 @@
     <string name="toast_permission_denied">Autorisation refusée !</string>
     <string name="use_camera_button">Utiliser l\'Appareil photo</string>
     <string name="thank_you_for_installing_simplex">Merci d\'avoir installé <xliff:g id="appNameFull">SimpleX Chat</xliff:g> !</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Vous pouvez <font color="#0088ff">vous connecter aux développeurs de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pour leur poser des questions et recevoir des réponses :</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Vous pouvez <font color="#0053D0">vous connecter aux développeurs de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pour leur poser des questions et recevoir des réponses :</font>.</string>
     <string name="above_then_preposition_continuation">ci-dessus, puis :</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Ajouter un nouveau contact</b> : afin de créer un code QR à usage unique pour votre contact.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si vous choisissez de la rejeter, l\'expéditeur·rice NE sera PAS notifié·e.</string>
@@ -469,7 +469,7 @@
     <string name="how_simplex_works">Comment <xliff:g id="appName">SimpleX</xliff:g> fonctionne</string>
     <string name="many_people_asked_how_can_it_deliver">Beaucoup se demandent : <i>si <xliff:g id="appName">SimpleX</xliff:g> n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.</string>
-    <string name="read_more_in_github_with_link">Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.</string>
+    <string name="read_more_in_github_with_link">Pour en savoir plus, consultez notre <font color="#0053D0">GitHub repository</font>.</string>
     <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. Le service de fond vérifie les nouveaux messages toutes les 10 minutes. Vous risquez de manquer des appels et des messages urgents.</string>
     <string name="onboarding_notifications_mode_service_desc"><b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'afficheront dès que les messages seront disponibles.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> message⸱s manqué⸱s</string>

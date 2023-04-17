@@ -20,7 +20,7 @@ val DEFAULT_PADDING_HALF = DEFAULT_PADDING / 2
 val DEFAULT_BOTTOM_PADDING = 48.dp
 
 val DarkColorPalette = darkColors(
-  primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
+  primary = SimplexBlue,  // If this value changes also need to update #0053D0 in string resource files
   primaryVariant = SimplexGreen,
   secondary = DarkGray,
 //  background = Color.Black,
@@ -33,7 +33,7 @@ val DarkColorPalette = darkColors(
 //  onError: Color = Color.Black,
 )
 val LightColorPalette = lightColors(
-  primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
+  primary = SimplexBlue,  // If this value changes also need to update #0053D0 in string resource files
   primaryVariant = SimplexGreen,
   secondary = LightGray,
 //  background = Color.White,

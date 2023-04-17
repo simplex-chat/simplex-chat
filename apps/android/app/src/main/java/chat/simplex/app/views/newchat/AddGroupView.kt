@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -116,7 +117,7 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
             stringResource(R.string.group_display_name_field),
             Modifier.padding(bottom = 3.dp)
           )
-          ProfileNameField(displayName, focusRequester)
+          ProfileNameField(displayName, "", focusRequester)
           val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
           Text(
             errorText,
@@ -163,7 +164,7 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
   ) {
     Surface(shape = RoundedCornerShape(20.dp)) {
       Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = color)
+        Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = color, fontWeight = FontWeight.Bold)
         Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = color)
       }
     }
