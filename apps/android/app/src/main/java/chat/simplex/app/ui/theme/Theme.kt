@@ -18,6 +18,7 @@ val DEFAULT_PADDING = 16.dp
 val DEFAULT_SPACE_AFTER_ICON = 4.dp
 val DEFAULT_PADDING_HALF = DEFAULT_PADDING / 2
 val DEFAULT_BOTTOM_PADDING = 48.dp
+val DEFAULT_BOTTOM_BUTTON_PADDING = 20.dp
 
 val DarkColorPalette = darkColors(
   primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files

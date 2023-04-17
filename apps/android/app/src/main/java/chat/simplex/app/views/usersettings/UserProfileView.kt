@@ -16,18 +16,22 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
+import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.launch
@@ -72,6 +76,7 @@ fun UserProfileLayout(
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
+  val focusRequester = remember { FocusRequester() }
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
@@ -94,13 +99,8 @@ fun UserProfileLayout(
             .padding(horizontal = DEFAULT_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
-          AppBarTitle(stringResource(R.string.your_current_profile), false)
-          Text(
-            stringResource(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
-            Modifier.padding(bottom = 24.dp),
-            color = MaterialTheme.colors.onBackground,
-            lineHeight = 22.sp
-          )
+          AppBarTitleCentered(stringResource(R.string.your_current_profile))
+          ReadableText(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it, TextAlign.Center)
           if (editProfile.value) {
             Column(
               Modifier.fillMaxWidth(),
@@ -122,13 +122,29 @@ fun UserProfileLayout(
                   }
                 }
               }
-              Box {
+              Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                  stringResource(R.string.display_name__field),
+                  fontSize = 16.sp
+                )
                 if (!isValidDisplayName(displayName.value)) {
-                  Icon(Icons.Outlined.Info, tint = Color.Red, contentDescription = stringResource(R.string.display_name_cannot_contain_whitespace))
+                  Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+                  Text(
+                    stringResource(R.string.no_spaces),
+                    fontSize = 16.sp,
+                    color = Color.Red
+                  )
                 }
-                ProfileNameTextField(displayName)
               }
-              ProfileNameTextField(fullName)
+              ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
+              Spacer(Modifier.height(DEFAULT_PADDING))
+              Text(
+                stringResource(R.string.full_name__field),
+                fontSize = 16.sp,
+                modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+              )
+              ProfileNameField(fullName)
+              Spacer(Modifier.height(DEFAULT_PADDING))
               Row {
                 TextButton(stringResource(R.string.cancel_verb)) {
                   displayName.value = profile.displayName
@@ -178,6 +194,7 @@ fun UserProfileLayout(
               TextButton(stringResource(R.string.edit_verb)) { editProfile.value = true }
             }
           }
+          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
           if (savedKeyboardState != keyboardState) {
             LaunchedEffect(keyboardState) {
               scope.launch {

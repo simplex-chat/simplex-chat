@@ -88,13 +88,14 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
 }
 
 @Composable
-fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean = true, onText: String, offText: String) {
+fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean = true, onText: String, offText: String, centered: Boolean = false) {
   if (chatModelIncognito) {
     Row(
       Modifier
         .fillMaxWidth()
         .padding(vertical = 4.dp),
-      verticalAlignment = Alignment.CenterVertically
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
     ) {
       Icon(
         if (supportedIncognito) Icons.Filled.TheaterComedy else Icons.Outlined.Info,
@@ -102,14 +103,15 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
         tint = if (supportedIncognito) Indigo else WarningOrange,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
-      Text(onText, textAlign = TextAlign.Left, style = MaterialTheme.typography.body2)
+      Text(onText, textAlign = if (centered) TextAlign.Center else TextAlign.Left, style = MaterialTheme.typography.body2)
     }
   } else {
     Row(
       Modifier
         .fillMaxWidth()
         .padding(vertical = 4.dp),
-      verticalAlignment = Alignment.CenterVertically
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
     ) {
       Icon(
         Icons.Outlined.Info,
@@ -117,7 +119,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
         tint = HighOrLowlight,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
-      Text(offText, textAlign = TextAlign.Left, style = MaterialTheme.typography.body2)
+      Text(offText, textAlign = if (centered) TextAlign.Center else TextAlign.Left, style = MaterialTheme.typography.body2)
     }
   }
 }
