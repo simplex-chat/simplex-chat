@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,6 +31,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
+import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.launch
@@ -97,13 +99,8 @@ fun UserProfileLayout(
             .padding(horizontal = DEFAULT_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
-          AppBarTitle(stringResource(R.string.your_current_profile), false)
-          Text(
-            stringResource(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
-            Modifier.padding(bottom = 24.dp),
-            color = MaterialTheme.colors.onBackground,
-            lineHeight = 22.sp
-          )
+          AppBarTitleCentered(stringResource(R.string.your_current_profile))
+          ReadableText(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it, TextAlign.Center)
           if (editProfile.value) {
             Column(
               Modifier.fillMaxWidth(),
