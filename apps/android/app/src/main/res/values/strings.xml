@@ -1176,6 +1176,7 @@
   <string name="full_deletion">Delete for everyone</string>
   <string name="voice_messages">Voice messages</string>
   <string name="audio_video_calls">Audio/video calls</string>
+  <string name="available_in_v51">\nAvailable in v5.1</string>
   <string name="feature_enabled">enabled</string>
   <string name="feature_enabled_for_you">enabled for you</string>
   <string name="feature_enabled_for_contact">enabled for contact</string>

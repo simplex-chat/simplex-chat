@@ -398,7 +398,7 @@ fun ChatInfoToolbar(
     })
   }
 
-  if (chat.chatInfo is ChatInfo.Direct) {
+  if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
     barButtons.add {
       IconButton({
         showMenu = false
