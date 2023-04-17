@@ -248,7 +248,7 @@ public struct TimedMessagesPreference: Preference {
     }
 
     public static var ttlValues: [Int?] {
-        [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400]
+        [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
     }
 
     public static func ttlText(_ ttl: Int?) -> String {
@@ -389,13 +389,6 @@ public enum ContactUserPref<P: Preference>: Decodable {
         switch self {
         case let .contact(preference): return preference
         case let .user(preference): return preference
-        }
-    }
-
-    var contactOverride: P? {
-        switch self {
-        case let .contact(preference): return preference
-        case .user: return nil
         }
     }
 }
@@ -671,7 +664,7 @@ public struct ContactFeaturesAllowed: Equatable {
 
 public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactUserPreferences) -> ContactFeaturesAllowed {
     let pref = contactUserPreferences.timedMessages.userPreference
-    let allow = pref.contactOverride?.allow
+    let allow = pref.preference.allow
     return ContactFeaturesAllowed(
         timedMessagesAllowed: allow == .yes || allow == .always,
         timedMessagesTTL: pref.preference.ttl,
@@ -2129,7 +2122,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
             case let .rcvIntegrityError(msgError): return msgError.text
-            case let .rcvDecryptionError(msgDecryptError, msgCount): return msgDecryptError.text
+            case let .rcvDecryptionError(msgDecryptError, _): return msgDecryptError.text
             case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text

@@ -2460,7 +2460,7 @@ data class TimedMessagesPreference(
 ): ChatPreference {
   companion object {
     val ttlValues: List<Int?>
-      get() = listOf(30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400)
+      get() = listOf(30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, null)
 
     fun ttlText(ttl: Int?): String {
       ttl ?: return generalGetString(R.string.feature_off)
@@ -2593,12 +2593,6 @@ sealed class ContactUserPref {
   @Serializable @SerialName("user") data class User(val preference: SimpleChatPreference): ContactUserPref() {
     override val pref get() = preference
   }
-
-  val contactOverride: SimpleChatPreference?
-    get() = when(this) {
-      is Contact -> pref
-      is User -> null
-    }
 }
 
 @Serializable
@@ -2613,12 +2607,6 @@ sealed class ContactUserPrefTimed {
   @Serializable @SerialName("user") data class User(val preference: TimedMessagesPreference): ContactUserPrefTimed() {
     override val pref get() = preference
   }
-
-  val contactOverride: TimedMessagesPreference?
-    get() = when(this) {
-      is Contact -> pref
-      is User -> null
-    }
 }
 
 interface Feature {
@@ -2831,7 +2819,7 @@ data class ContactFeaturesAllowed(
 
 fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed {
   val pref = contactUserPreferences.timedMessages.userPreference
-  val allow = pref.contactOverride?.allow
+  val allow = pref.pref.allow
   return ContactFeaturesAllowed(
     timedMessagesAllowed = allow == FeatureAllowed.YES || allow == FeatureAllowed.ALWAYS,
     timedMessagesTTL = pref.pref.ttl,

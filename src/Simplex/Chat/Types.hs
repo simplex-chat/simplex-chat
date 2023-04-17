@@ -661,7 +661,7 @@ toChatPrefs FullPreferences {fullDelete, voice, timedMessages, calls} =
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = Nothing},
+    { timedMessages = TimedMessagesPreference {allow = FAYes, ttl = Nothing},
       fullDelete = FullDeletePreference {allow = FANo},
       -- receipts = SimplePreference {allow = FANo},
       voice = VoicePreference {allow = FAYes},
