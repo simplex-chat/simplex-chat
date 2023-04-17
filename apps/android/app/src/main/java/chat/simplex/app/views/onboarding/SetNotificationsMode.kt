@@ -29,15 +29,7 @@ fun SetNotificationsMode(m: ChatModel) {
     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
   ) {
     //CloseSheetBar(null)
-    Text(
-      stringResource(R.string.onboarding_notifications_mode_title),
-      Modifier
-        .padding(top = DEFAULT_PADDING * 1.5f, bottom = DEFAULT_PADDING * 1.5f)
-        .align(Alignment.CenterHorizontally),
-      overflow = TextOverflow.Ellipsis,
-      style = MaterialTheme.typography.h1,
-      color = MaterialTheme.colors.primary
-    )
+    AppBarTitleCentered(stringResource(R.string.onboarding_notifications_mode_title))
     val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
     Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
       Text(stringResource(R.string.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)

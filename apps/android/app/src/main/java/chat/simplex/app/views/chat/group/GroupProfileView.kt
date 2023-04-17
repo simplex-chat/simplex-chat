@@ -110,25 +110,26 @@ fun GroupProfileLayout(
                 }
               }
             }
-            Text(
-              stringResource(R.string.group_display_name_field),
-              Modifier.padding(bottom = 3.dp)
-            )
-            ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
-            val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-            if (errorText.isNotEmpty()) {
+            Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
               Text(
-                errorText,
-                Modifier.fillMaxWidth(),
-                fontSize = 15.sp,
-                color = Color.Red,
-                textAlign = TextAlign.Center
+                stringResource(R.string.group_display_name_field),
+                fontSize = 16.sp
               )
+              if (!isValidDisplayName(displayName.value)) {
+                Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+                Text(
+                  stringResource(R.string.no_spaces),
+                  fontSize = 16.sp,
+                  color = Color.Red
+                )
+              }
             }
-            Spacer(Modifier.height(3.dp))
+            ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
+            Spacer(Modifier.height(DEFAULT_PADDING))
             Text(
               stringResource(R.string.group_full_name_field),
-              Modifier.padding(bottom = 5.dp)
+              fontSize = 16.sp,
+              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
             )
             ProfileNameField(fullName)
             Spacer(Modifier.height(16.dp))

@@ -6,9 +6,11 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 
 @Composable
@@ -51,6 +53,19 @@ fun AppBarTitle(title: String, withPadding: Boolean = true) {
       .padding(padding),
     overflow = TextOverflow.Ellipsis,
     style = MaterialTheme.typography.h1
+  )
+}
+
+@Composable
+fun ColumnScope.AppBarTitleCentered(title: String, withPadding: Boolean = true) {
+  Text(
+    title,
+    Modifier
+      .padding(bottom = if (withPadding) DEFAULT_PADDING * 1.5f else 0.dp)
+      .align(Alignment.CenterHorizontally),
+    overflow = TextOverflow.Ellipsis,
+    style = MaterialTheme.typography.h1,
+    color = MaterialTheme.colors.primary
   )
 }
 

@@ -55,42 +55,33 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         }
       })*/
       Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
-        Text(
-          stringResource(R.string.create_profile),
-          Modifier
-            .padding(bottom = DEFAULT_PADDING * 1.5f)
-            .align(Alignment.CenterHorizontally),
-          overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.h1,
-          color = colors.primary
-        )
+        AppBarTitleCentered(stringResource(R.string.create_profile))
         ReadableText(R.string.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues())
         ReadableText(R.string.profile_is_only_shared_with_your_contacts, TextAlign.Center)
         Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
-        Text(
-          stringResource(R.string.display_name),
-          fontSize = 16.sp,
-          modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-        )
-        ProfileNameField(displayName, generalGetString(R.string.enter_display_name), ::isValidDisplayName, focusRequester)
-        val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-        if (errorText.isNotEmpty()) {
-          Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+        Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
           Text(
-            errorText,
-            Modifier.fillMaxWidth(),
-            fontSize = 15.sp,
-            color = Color.Red,
-            textAlign = TextAlign.Center
+            stringResource(R.string.display_name),
+            fontSize = 16.sp,
+            modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
           )
+          if (!isValidDisplayName(displayName.value)) {
+            Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+            Text(
+              stringResource(R.string.no_spaces),
+              fontSize = 16.sp,
+              color = Color.Red
+            )
+          }
         }
+        ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
         Spacer(Modifier.height(DEFAULT_PADDING))
         Text(
           stringResource(R.string.full_name_optional__prompt),
           fontSize = 16.sp,
           modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
         )
-        ProfileNameField(fullName, generalGetString(R.string.enter_full_name), ::isValidDisplayName)
+        ProfileNameField(fullName, "", ::isValidDisplayName)
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
