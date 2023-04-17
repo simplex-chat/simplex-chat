@@ -161,7 +161,11 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
     .navigationBarsWithImePadding()
     .onFocusChanged {
       strokeColor = if (valid) {
-          if (it.isFocused) HighOrLowlight.copy(alpha = 0.6f) else HighOrLowlight.copy(alpha = 0.3f)
+          if (it.isFocused) {
+            HighOrLowlight.copy(alpha = 0.6f)
+          } else {
+            HighOrLowlight.copy(alpha = 0.3f)
+          }
         } else Color.Red
     }
   TextField(
