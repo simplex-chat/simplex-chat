@@ -140,12 +140,16 @@ struct ChatView: View {
                 switch cInfo {
                 case let .direct(contact):
                     HStack {
-                        callButton(contact, .audio, imageName: "phone")
+                        if contact.allowsFeature(.calls) {
+                            callButton(contact, .audio, imageName: "phone")
+                        }
                         Menu {
-                            Button {
-                                CallController.shared.startCall(contact, .video)
-                            } label: {
-                                Label("Video call", systemImage: "video")
+                            if contact.allowsFeature(.calls) {
+                                Button {
+                                    CallController.shared.startCall(contact, .video)
+                                } label: {
+                                    Label("Video call", systemImage: "video")
+                                }
                             }
                             searchButton()
                             toggleNtfsButton(chat)
