@@ -119,7 +119,7 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
     (bob <## "alice (Alice): contact is connected")
     (alice <## "bob (Bob): contact is connected")
   threadDelay 100000
-  alice @@@ [("@bob", "Voice messages: enabled")]
+  alice @@@ [("@bob", lastChatFeature)]
   alice <##> bob
 
   cath ##> ("/c " <> cLink)
@@ -131,7 +131,7 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
     (cath <## "alice (Alice): contact is connected")
     (alice <## "cath (Catherine): contact is connected")
   threadDelay 100000
-  alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
+  alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
   alice <##> cath
 
 testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
@@ -150,7 +150,7 @@ testUserContactLinkAutoAccept =
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice @@@ [("@bob", lastChatFeature)]
       alice <##> bob
 
       alice ##> "/auto_accept on"
@@ -163,7 +163,7 @@ testUserContactLinkAutoAccept =
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
+      alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
 
       alice ##> "/auto_accept off"
@@ -178,7 +178,7 @@ testUserContactLinkAutoAccept =
         (dan <## "alice (Alice): contact is connected")
         (alice <## "dan (Daniel): contact is connected")
       threadDelay 100000
-      alice @@@ [("@dan", "Voice messages: enabled"), ("@cath", "hey"), ("@bob", "hey")]
+      alice @@@ [("@dan", lastChatFeature), ("@cath", "hey"), ("@bob", "hey")]
       alice <##> dan
 
 testDeduplicateContactRequests :: HasCallStack => FilePath -> IO ()
@@ -207,8 +207,8 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
-    alice @@@ [("@bob", "Voice messages: enabled")]
-    bob @@@ [("@alice", "Voice messages: enabled"), (":2", ""), (":1", "")]
+    alice @@@ [("@bob", lastChatFeature)]
+    bob @@@ [("@alice", lastChatFeature), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
     bob <## "connection :1 deleted"
     bob ##> "/_delete :2"
@@ -234,7 +234,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
     threadDelay 100000
-    alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
+    alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
     alice <##> cath
 
 testDeduplicateContactRequestsProfileChange :: HasCallStack => FilePath -> IO ()
@@ -278,8 +278,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
-    alice @@@ [("@robert", "Voice messages: enabled")]
-    bob @@@ [("@alice", "Voice messages: enabled"), (":3", ""), (":2", ""), (":1", "")]
+    alice @@@ [("@robert", lastChatFeature)]
+    bob @@@ [("@alice", lastChatFeature), (":3", ""), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
     bob <## "connection :1 deleted"
     bob ##> "/_delete :2"
@@ -307,7 +307,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
     threadDelay 100000
-    alice @@@ [("@cath", "Voice messages: enabled"), ("@robert", "hey")]
+    alice @@@ [("@cath", lastChatFeature), ("@robert", "hey")]
     alice <##> cath
 
 testRejectContactAndDeleteUserContact :: HasCallStack => FilePath -> IO ()
@@ -954,7 +954,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
     threadDelay 100000
-    alice @@@ [("@bob", "Voice messages: enabled")]
+    alice @@@ [("@bob", lastChatFeature)]
     alice ##> "/contacts"
     alice <## "bob (Bob) (alias: friend)"
 
@@ -976,7 +976,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    let startFeatures = [(0, "Disappearing messages: off"), (0, "Full deletion: off"), (0, "Voice messages: off")]
+    let startFeatures = [(0, "Disappearing messages: off"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
     let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
