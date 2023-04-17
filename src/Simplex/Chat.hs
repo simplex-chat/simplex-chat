@@ -2383,12 +2383,15 @@ processAgentMsgSndFile _corrId aFileId msg =
                         void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
                   _ -> pure ()
               _ -> pure () -- TODO error?
-        SFERR e -> do
-          unless (temporaryAgentError e) $ do
-            -- update chat item status
-            -- send status to view
+        SFERR e
+          | temporaryAgentError e ->
+            throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
+          | otherwise -> do
+            ci <- withStore $ \db -> do
+              liftIO $ updateFileCancelled db user fileId (CIFSSndError $ T.unpack . safeDecodeUtf8 $ strEncode e)
+              getChatItemByFileId db user fileId
             agentXFTPDeleteSndFileInternal user aFileId
-          throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
+            toView $ CRSndFileError user ci
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
@@ -2441,12 +2444,15 @@ processAgentMsgRcvFile _corrId aFileId msg =
                   getChatItemByFileId db user fileId
                 agentXFTPDeleteRcvFile user aFileId fileId
                 toView $ CRRcvFileComplete user ci
-        RFERR e -> do
-          unless (temporaryAgentError e) $ do
-            -- update chat item status
-            -- send status to view
+        RFERR e
+          | temporaryAgentError e ->
+            throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
+          | otherwise -> do
+            ci <- withStore $ \db -> do
+              liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ T.unpack . safeDecodeUtf8 $ strEncode e)
+              getChatItemByFileId db user fileId
             agentXFTPDeleteRcvFile user aFileId fileId
-          throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
+            toView $ CRRcvFileError user ci
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn user _ agentConnId END =
