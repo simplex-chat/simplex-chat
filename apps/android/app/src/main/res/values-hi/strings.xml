@@ -283,4 +283,13 @@
     <string name="v4_6_reduced_battery_usage_descr">अधिक सुधार जल्द ही आ रहे हैं!</string>
     <string name="icon_descr_video_asked_to_receive">वीडियो प्राप्त करने के लिए कहा</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">संपर्क और सभी संदेशों को हटा दिया जाएगा - इसे पूर्ववत नहीं किया जा सकता!</string>
+    <string name="ok">ठीक है</string>
+    <string name="save_servers_button">बचाना</string>
+    <string name="language_system">प्रणाली</string>
+    <string name="theme_system">प्रणाली</string>
+    <string name="network_options_save">बचाना</string>
+    <string name="chat_preferences_on">चालू</string>
+    <string name="la_lock_mode_system">प्रणाली प्रमाणीकरण</string>
+    <string name="la_mode_system">प्रणाली</string>
+    <string name="your_SMP_servers">आपका एसएमपी सर्वर</string>
 </resources>
