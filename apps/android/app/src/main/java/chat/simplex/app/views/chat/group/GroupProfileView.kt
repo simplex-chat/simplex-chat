@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -113,13 +114,17 @@ fun GroupProfileLayout(
               stringResource(R.string.group_display_name_field),
               Modifier.padding(bottom = 3.dp)
             )
-            ProfileNameField(displayName, "", focusRequester)
+            ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
             val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-            Text(
-              errorText,
-              fontSize = 15.sp,
-              color = MaterialTheme.colors.error
-            )
+            if (errorText.isNotEmpty()) {
+              Text(
+                errorText,
+                Modifier.fillMaxWidth(),
+                fontSize = 15.sp,
+                color = MaterialTheme.colors.error,
+                textAlign = TextAlign.Center
+              )
+            }
             Spacer(Modifier.height(3.dp))
             Text(
               stringResource(R.string.group_full_name_field),

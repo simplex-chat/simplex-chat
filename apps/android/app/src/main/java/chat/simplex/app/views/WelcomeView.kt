@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBackIosNew
 import androidx.compose.material.icons.outlined.ArrowForwardIos
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,25 +75,28 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
         Text(
           stringResource(R.string.display_name),
-          fontWeight = FontWeight.Bold,
-          fontSize = 18.sp,
-          modifier = Modifier.padding(bottom = DEFAULT_PADDING)
+          fontSize = 16.sp,
+          modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
         )
-        ProfileNameField(displayName, generalGetString(R.string.enter_display_name), focusRequester)
+        ProfileNameField(displayName, generalGetString(R.string.enter_display_name), ::isValidDisplayName, focusRequester)
         val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-        Text(
-          errorText,
-          fontSize = 15.sp,
-          color = MaterialTheme.colors.error
-        )
-        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        if (errorText.isNotEmpty()) {
+          Spacer(Modifier.size(DEFAULT_PADDING))
+          Text(
+            errorText,
+            Modifier.fillMaxWidth(),
+            fontSize = 15.sp,
+            color = MaterialTheme.colors.error,
+            textAlign = TextAlign.Center
+          )
+        }
+        Spacer(Modifier.height(DEFAULT_PADDING))
         Text(
           stringResource(R.string.full_name_optional__prompt),
-          fontWeight = FontWeight.Bold,
-          fontSize = 18.sp,
-          modifier = Modifier.padding(bottom = DEFAULT_PADDING)
+          fontSize = 16.sp,
+          modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
         )
-        ProfileNameField(fullName, placeholder = generalGetString(R.string.enter_full_name),)
+        ProfileNameField(fullName, generalGetString(R.string.enter_full_name), ::isValidDisplayName)
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
@@ -152,31 +156,34 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
 }
 
 @Composable
-fun ProfileNameField(name: MutableState<String>, placeholder: String = "", focusRequester: FocusRequester? = null) {
+fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isValid: (String) -> Boolean = { true }, focusRequester: FocusRequester? = null) {
+  var valid by rememberSaveable { mutableStateOf(true) }
   val modifier = Modifier
     .fillMaxWidth()
     .height(55.dp)
-    .border(border = BorderStroke(1.dp, HighOrLowlight.copy(alpha = 0.3f)), shape = RoundedCornerShape(50))
+    .border(border = BorderStroke(1.dp, if (valid) HighOrLowlight.copy(alpha = 0.3f) else MaterialTheme.colors.error), shape = RoundedCornerShape(50))
     .padding(horizontal = 8.dp)
     .navigationBarsWithImePadding()
   TextField(
     value = name.value,
-    onValueChange = { name.value = it },
+    onValueChange = { name.value = it; valid = isValid(it) },
     modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
-    textStyle = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium, color = colors.onBackground),
+    textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
     keyboardOptions = KeyboardOptions(
       capitalization = KeyboardCapitalization.None,
       autoCorrect = false
     ),
     singleLine = true,
-    placeholder = { Text(placeholder, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = HighOrLowlight.copy(alpha = 0.3f)) },
+    isError = !valid,
+    placeholder = { Text(placeholder, fontSize = 18.sp, color = HighOrLowlight.copy(alpha = 0.3f)) },
     shape = RoundedCornerShape(50),
     colors = TextFieldDefaults.textFieldColors(
       backgroundColor = Color.Unspecified,
       textColor = MaterialTheme.colors.onBackground,
       focusedIndicatorColor = Color.Unspecified,
       unfocusedIndicatorColor = Color.Unspecified,
-      cursorColor = HighOrLowlight
+      cursorColor = HighOrLowlight,
+      errorIndicatorColor = Color.Unspecified
     )
     )
 }
