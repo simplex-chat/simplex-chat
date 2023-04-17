@@ -160,9 +160,9 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
-  chatLock <- newEmptyTMVarIO
-  entityChatLocks <- atomically TM.empty
-  entityLocks <- newTVarIO 0
+  chatLock <- atomically $ (,) <$> createLock <*> createLock
+  entityLocks <- atomically TM.empty
+  entityLocksCount <- newTVarIO 0
   sndFiles <- atomically TM.empty
   rcvFiles <- atomically TM.empty
   currentCalls <- atomically TM.empty
@@ -190,8 +190,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         outputQ,
         notifyQ,
         chatLock,
-        entityChatLocks,
         entityLocks,
+        entityLocksCount,
         sndFiles,
         rcvFiles,
         currentCalls,
@@ -768,7 +768,7 @@ processChatCommand = \case
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
-      withGroupLock "deleteChat group" chatId . procCmd $ do
+      withFullChatLock "deleteChat group" . procCmd $ do
         deleteFilesAndConns user filesInfo
         when (memberActive membership && isOwner) . void $ sendGroupMessage user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
@@ -1507,7 +1507,7 @@ processChatCommand = \case
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> do
-    chatLockName <- atomically . tryReadTMVar =<< asks chatLock
+    chatLockName <- atomically . tryReadTMVar . fst =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
     pure CRDebugLocks {chatLockName, agentLocks}
   GetAgentStats -> CRAgentStats . map stat <$> withAgent getAgentStats
@@ -1794,19 +1794,19 @@ processChatCommand = \case
 
 withFullChatLock :: ChatMonad' m => String -> m a -> m a
 withFullChatLock name action = do
-  l <- asks chatLock
-  count <- asks entityLocks
-  withGetLock (waitForEntityLocks count $> l) name action
+  (l1, l2) <- asks chatLock
+  count <- asks entityLocksCount
+  withLock l1 name $ withGetLock (waitForEntityLocks count $> l2) name action
   where
     waitForEntityLocks count = readTVar count >>= \n -> when (n > 0) retry
 
 withEntityLock :: ChatMonad' m => String -> ChatLockEntity -> m a -> m a
 withEntityLock name entity action = do
-  l <- asks chatLock
-  ls <- asks entityChatLocks
-  count <- asks entityLocks
+  (l1, _) <- asks chatLock
+  ls <- asks entityLocks
+  count <- asks entityLocksCount
   E.bracket_
-    (atomically $ waitForLock l >> modifyTVar' count (+ 1))
+    (atomically $ waitForLock l1 >> modifyTVar' count (+ 1))
     (atomically $ modifyTVar' count $ \n -> max 0 (n - 1))
     (withLockMap ls entity name action)
 
@@ -2592,7 +2592,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId lockName agentMess
           withAckMessage agentConnId cmdId msgMeta $ do
             msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
             assertDirectAllowed user MDRcv ct $ toCMEventTag event
-            updateChatLock "directMessage" event
+            -- updateChatLock "directMessage" event
             case event of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
               XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct sharedMsgId fileDescr msgMeta
@@ -2822,7 +2822,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId lockName agentMess
         cmdId <- createAckCmd conn
         withAckMessage agentConnId cmdId msgMeta $ do
           msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody cmdId
-          updateChatLock "groupMessage" event
+          -- updateChatLock "groupMessage" event
           case event of
             XMsgNew mc -> canSend $ newGroupContentMessage gInfo m mc msg msgMeta
             XMsgFileDescr sharedMsgId fileDescr -> canSend $ groupMessageFileDescription gInfo m sharedMsgId fileDescr msgMeta
@@ -3088,12 +3088,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId lockName agentMess
             toView $ CRConnectionDisabled connEntity
         _ -> pure ()
 
-    updateChatLock :: MsgEncodingI enc => String -> ChatMsgEvent enc -> m ()
-    updateChatLock name event = do
-      l <- asks chatLock
-      atomically $ tryReadTMVar l >>= mapM_ (swapTMVar l . (<> s))
-      where
-        s = " " <> name <> "=" <> B.unpack (strEncode $ toCMEventTag event)
+    -- updateChatLock :: MsgEncodingI enc => String -> ChatMsgEvent enc -> m ()
+    -- updateChatLock name event = do
+    --   l <- asks chatLock
+    --   atomically $ tryReadTMVar l >>= mapM_ (swapTMVar l . (<> s))
+    --   where
+    --     s = " " <> name <> "=" <> B.unpack (strEncode $ toCMEventTag event)
 
     withCompletedCommand :: forall e. AEntityI e => Connection -> ACommand 'Agent e -> (CommandData -> m ()) -> m ()
     withCompletedCommand Connection {connId} agentMsg action = do
