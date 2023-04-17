@@ -183,7 +183,7 @@ chatFeaturesF :: [((Int, String), Maybe String)]
 chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-chatFeatures'' = [((0, "Disappearing messages: off"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: enabled"), Nothing, Nothing), ((0, "Audio/video calls: enabled"), Nothing, Nothing)]
+chatFeatures'' = [((0, "Disappearing messages: allowed"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: enabled"), Nothing, Nothing), ((0, "Audio/video calls: enabled"), Nothing, Nothing)]
 
 lastChatFeature :: String
 lastChatFeature = snd $ last chatFeatures
@@ -192,7 +192,7 @@ groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) groupFeatures''
 
 groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' = [((0, "Disappearing messages: off"), Nothing, Nothing), ((0, "Direct messages: on"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
+groupFeatures'' = [((0, "Disappearing messages: allowed"), Nothing, Nothing), ((0, "Direct messages: on"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
 
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i

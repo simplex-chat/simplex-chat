@@ -988,7 +988,7 @@ prefStateText feature allowed param = case allowed of
 
 featureStateText :: ChatFeature -> PrefEnabled -> Maybe Int -> Text
 featureStateText feature enabled param =
-  chatFeatureNameText feature <> ": " <> prefEnabledToText enabled <> case enabled of
+  chatFeatureNameText feature <> ": " <> prefEnabledToText feature enabled param <> case enabled of
     PrefEnabled {forUser = True} -> paramText_ feature param
     _ -> ""
 
@@ -997,12 +997,16 @@ paramText_ feature param = case feature of
   CFTimedMessages -> maybe "" (\p -> " (" <> timedTTLText p <> ")") param
   _ -> ""
 
-prefEnabledToText :: PrefEnabled -> Text
-prefEnabledToText = \case
-  PrefEnabled True True -> "enabled"
+prefEnabledToText :: ChatFeature -> PrefEnabled -> Maybe Int -> Text
+prefEnabledToText f enabled param = case enabled of
+  PrefEnabled True True -> enabledStr
   PrefEnabled False False -> "off"
-  PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
-  PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
+  PrefEnabled {forUser = True, forContact = False} -> enabledStr <> " for you"
+  PrefEnabled {forUser = False, forContact = True} -> enabledStr <> " for contact"
+  where
+    enabledStr = case f of
+      CFTimedMessages -> if isJust param then "enabled" else "allowed"
+      _ -> "enabled"
 
 preferenceText :: forall f. FeatureI f => FeaturePreference f -> Text
 preferenceText p =
