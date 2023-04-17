@@ -88,7 +88,7 @@ private fun ContactPreferencesLayout(
     AppBarTitle(stringResource(R.string.contact_preferences))
     val timedMessages: MutableState<Boolean> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.timedMessagesAllowed) }
     val onTTLUpdated = { ttl: Int? ->
-      applyPrefs(featuresAllowed.copy(timedMessagesTTL = ttl ?: 86400))
+      applyPrefs(featuresAllowed.copy(timedMessagesTTL = ttl))
     }
     TimedMessagesFeatureSection(featuresAllowed, contact.mergedPreferences.timedMessages, timedMessages, onTTLUpdated) { allowed, ttl ->
       applyPrefs(featuresAllowed.copy(timedMessagesAllowed = allowed, timedMessagesTTL = ttl ?: currentFeaturesAllowed.timedMessagesTTL))

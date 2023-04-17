@@ -1530,14 +1530,9 @@ testUsersTimedMessages tmp = do
       aliceName <- userName alice
       alice ##> ("/_set prefs @" <> bobId <> " {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": " <> ttl <> "}}")
       alice <## "you updated preferences for bob:"
-      alice <## ("Disappearing messages: off (you allow: yes (" <> ttl <> " sec), contact allows: no)")
+      alice <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes)")
       bob <## (aliceName <> " updated preferences for you:")
-      bob <## ("Disappearing messages: off (you allow: no, contact allows: yes (" <> ttl <> " sec))")
-      bob ##> ("/set disappear @" <> aliceName <> " yes")
-      bob <## ("you updated preferences for " <> aliceName <> ":")
       bob <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes (" <> ttl <> " sec))")
-      alice <## "bob updated preferences for you:"
-      alice <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes (" <> ttl <> " sec))")
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY") -- to remove feature items
 
 testUserPrivacy :: HasCallStack => FilePath -> IO ()
@@ -1582,7 +1577,7 @@ testUserPrivacy =
       -- hidden message is saved
       alice ##> "/tail"
       alice
-        <##? [ "bob> Disappearing messages: off",
+        <##? [ "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled",
