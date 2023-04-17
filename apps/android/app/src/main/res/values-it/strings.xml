@@ -696,11 +696,9 @@
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> vuole connettersi con te via</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">Puoi controllare attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti – i server che usi per inviare loro i messaggi.</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Può accadere quando:
-\n1. I messaggi scadono sul server se non sono stati ricevuti per 30 giorni,
-\n2. Il server usato per ricevere i messaggi da questo contatto è stato aggiornato e riavviato.
-\n3. La connessione è compromessa.
-\nConnettiti agli sviluppatori tramite Impostazioni per ricevere aggiornamenti riguardo i server.
-\nAggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</string>
+\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.
+\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.
+\n3. La connessione è stata compromessa.</string>
     <string name="icon_descr_call_rejected">Chiamata rifiutata</string>
     <string name="icon_descr_call_missed">Chiamata persa</string>
     <string name="status_no_e2e_encryption">nessuna crittografia e2e</string>
@@ -1105,4 +1103,15 @@
     <string name="incorrect_passcode">Codice di accesso errato</string>
     <string name="new_passcode">Nuovo codice di accesso</string>
     <string name="lock_mode">Modalità di blocco</string>
+    <string name="decryption_error">Errore di decifrazione</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> messaggi saltati.</string>
+    <string name="alert_title_msg_bad_id">ID del messaggio errato</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Può accadere quando tu o il tuo contatto avete usato il backup del database vecchio.</string>
+    <string name="alert_text_msg_bad_id">L\'ID del messaggio successivo non è corretto (inferiore o uguale al precedente).
+\nPuò accadere a causa di qualche bug o quando la connessione è compromessa.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">L\'errore è permanente per questa connessione, riconnettiti.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> messaggi non decifrati.</string>
+    <string name="alert_title_msg_bad_hash">Hash del messaggio errato</string>
+    <string name="alert_text_msg_bad_hash">L\'hash del messaggio precedente è diverso.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Si prega di segnalarlo agli sviluppatori.</string>
 </resources>
