@@ -192,7 +192,7 @@ groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) groupFeatures''
 
 groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' = [((0, "Disappearing messages: allowed"), Nothing, Nothing), ((0, "Direct messages: on"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
+groupFeatures'' = [((0, "Disappearing messages: off"), Nothing, Nothing), ((0, "Direct messages: on"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
 
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
