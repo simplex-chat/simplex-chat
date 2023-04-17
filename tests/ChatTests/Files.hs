@@ -1097,15 +1097,14 @@ testXFTPDeleteSentFile =
       dest `shouldBe` src
 
       alice ##> "/fc 1"
-      alice <## "cancelled sending file 1 (test.pdf) to bob, cath"
-      -- concurrentlyN_
-      --   [ alice <## "cancelled sending file 1 (test.pdf) to bob, cath",
-      --     bob <## "alice cancelled sending file 1 (test.pdf)",
-      --     cath <## "alice cancelled sending file 1 (test.pdf)"
-      --   ]
+      concurrentlyN_
+        [ alice <## "cancelled sending file 1 (test.pdf) to bob, cath",
+          bob <## "alice cancelled sending file 1 (test.pdf)",
+          cath <## "alice cancelled sending file 1 (test.pdf)"
+        ]
 
-      -- cath ##> "/fr 1 ./tests/tmp"
-      -- cath <## "file cancelled: test.pdf"
+      cath ##> "/fr 1 ./tests/tmp"
+      cath <## "file cancelled: test.pdf"
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 

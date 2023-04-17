@@ -448,13 +448,13 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSSndTransfer :: {sndProgress :: Int64, sndTotal :: Int64} -> CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
   CIFSSndComplete :: CIFileStatus 'MDSnd
-  CIFSSndError :: {sndError :: String} -> CIFileStatus 'MDSnd
+  CIFSSndError :: CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
   CIFSRcvAccepted :: CIFileStatus 'MDRcv
   CIFSRcvTransfer :: {rcvProgress :: Int64, rcvTotal :: Int64} -> CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
-  CIFSRcvError :: {rcvError :: String} -> CIFileStatus 'MDRcv
+  CIFSRcvError :: CIFileStatus 'MDRcv
 
 deriving instance Eq (CIFileStatus d)
 
@@ -466,13 +466,13 @@ ciFileEnded = \case
   CIFSSndTransfer {} -> False
   CIFSSndCancelled -> True
   CIFSSndComplete -> True
-  CIFSSndError {} -> True
+  CIFSSndError -> True
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
   CIFSRcvTransfer {} -> False
   CIFSRcvCancelled -> True
   CIFSRcvComplete -> True
-  CIFSRcvError {} -> True
+  CIFSRcvError -> True
 
 instance ToJSON (CIFileStatus d) where
   toJSON = J.toJSON . jsonCIFileStatus
@@ -492,13 +492,13 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSSndTransfer sent total -> strEncode (Str "snd_transfer", sent, total)
     CIFSSndCancelled -> "snd_cancelled"
     CIFSSndComplete -> "snd_complete"
-    CIFSSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
+    CIFSSndError -> "snd_error"
     CIFSRcvInvitation -> "rcv_invitation"
     CIFSRcvAccepted -> "rcv_accepted"
     CIFSRcvTransfer rcvd total -> strEncode (Str "rcv_transfer", rcvd, total)
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
-    CIFSRcvError e -> "rcv_error " <> encodeUtf8 (T.pack e)
+    CIFSRcvError -> "rcv_error"
   strP = (\(AFS _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIFileStatus where
@@ -509,13 +509,13 @@ instance StrEncoding ACIFileStatus where
       "snd_transfer" -> AFS SMDSnd <$> progress CIFSSndTransfer
       "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
       "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
-      "snd_error " -> AFS SMDSnd . CIFSSndError . T.unpack . safeDecodeUtf8 <$> A.takeByteString
+      "snd_error" -> pure $ AFS SMDSnd CIFSSndError
       "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
       "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
       "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
       "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
-      "rcv_error " -> AFS SMDRcv . CIFSRcvError . T.unpack . safeDecodeUtf8 <$> A.takeByteString
+      "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
       _ -> fail "bad file status"
     where
       progress :: (Int64 -> Int64 -> a) -> A.Parser a
@@ -527,13 +527,13 @@ data JSONCIFileStatus
   | JCIFSSndTransfer {sndProgress :: Int64, sndTotal :: Int64}
   | JCIFSSndCancelled
   | JCIFSSndComplete
-  | JCIFSSndError {sndError :: String}
+  | JCIFSSndError
   | JCIFSRcvInvitation
   | JCIFSRcvAccepted
   | JCIFSRcvTransfer {rcvProgress :: Int64, rcvTotal :: Int64}
   | JCIFSRcvComplete
   | JCIFSRcvCancelled
-  | JCIFSRcvError {rcvError :: String}
+  | JCIFSRcvError
   deriving (Generic)
 
 instance ToJSON JSONCIFileStatus where
@@ -546,13 +546,13 @@ jsonCIFileStatus = \case
   CIFSSndTransfer sent total -> JCIFSSndTransfer sent total
   CIFSSndCancelled -> JCIFSSndCancelled
   CIFSSndComplete -> JCIFSSndComplete
-  CIFSSndError e -> JCIFSSndError e
+  CIFSSndError -> JCIFSSndError
   CIFSRcvInvitation -> JCIFSRcvInvitation
   CIFSRcvAccepted -> JCIFSRcvAccepted
   CIFSRcvTransfer rcvd total -> JCIFSRcvTransfer rcvd total
   CIFSRcvComplete -> JCIFSRcvComplete
   CIFSRcvCancelled -> JCIFSRcvCancelled
-  CIFSRcvError e -> JCIFSRcvError e
+  CIFSRcvError -> JCIFSRcvError
 
 aciFileStatusJSON :: JSONCIFileStatus -> ACIFileStatus
 aciFileStatusJSON = \case
@@ -560,13 +560,13 @@ aciFileStatusJSON = \case
   JCIFSSndTransfer sent total -> AFS SMDSnd $ CIFSSndTransfer sent total
   JCIFSSndCancelled -> AFS SMDSnd CIFSSndCancelled
   JCIFSSndComplete -> AFS SMDSnd CIFSSndComplete
-  JCIFSSndError e -> AFS SMDSnd $ CIFSSndError e
+  JCIFSSndError -> AFS SMDSnd CIFSSndError
   JCIFSRcvInvitation -> AFS SMDRcv CIFSRcvInvitation
   JCIFSRcvAccepted -> AFS SMDRcv CIFSRcvAccepted
   JCIFSRcvTransfer rcvd total -> AFS SMDRcv $ CIFSRcvTransfer rcvd total
   JCIFSRcvComplete -> AFS SMDRcv CIFSRcvComplete
   JCIFSRcvCancelled -> AFS SMDRcv CIFSRcvCancelled
-  JCIFSRcvError e -> AFS SMDRcv $ CIFSRcvError e
+  JCIFSRcvError -> AFS SMDRcv CIFSRcvError
 
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo
