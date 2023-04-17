@@ -1576,7 +1576,7 @@ processChatCommand = \case
           fileInline = inlineFileMode mc inlineFiles chunks n
           fileMode = case xftpCfg of
             Just cfg
-              | fileInline == Just IFMSent || fileSize < minFileSize cfg -> SendFileSMP fileInline
+              | fileInline == Just IFMSent || fileSize < minFileSize cfg || n <= 0 -> SendFileSMP fileInline
               | otherwise -> SendFileXFTP
             _ -> SendFileSMP fileInline
       pure (fileSize, fileMode)
@@ -1778,7 +1778,9 @@ assertDirectAllowed user dir ct event =
       _ -> True
 
 roundedFDCount :: Int -> Int
-roundedFDCount n = max 4 $ fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
+roundedFDCount n
+  | n <= 0 = 4
+  | otherwise = max 4 $ fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
 
 startExpireCIThread :: forall m. ChatMonad' m => User -> m ()
 startExpireCIThread user@User {userId} = do

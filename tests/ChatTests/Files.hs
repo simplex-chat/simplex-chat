@@ -964,6 +964,9 @@ testAsyncGroupFileTransfer tmp = do
 
 testXFTPRoundFDCount :: Expectation
 testXFTPRoundFDCount = do
+  roundedFDCount (-100) `shouldBe` 4
+  roundedFDCount (-1) `shouldBe` 4
+  roundedFDCount 0 `shouldBe` 4
   roundedFDCount 1 `shouldBe` 4
   roundedFDCount 2 `shouldBe` 4
   roundedFDCount 4 `shouldBe` 4
