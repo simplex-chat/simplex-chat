@@ -546,7 +546,7 @@
     <string name="to_share_with_your_contact">(da condividere con il tuo contatto)</string>
     <string name="to_start_a_new_chat_help_header">Per iniziare una nuova chat</string>
     <string name="use_camera_button">Usa la fotocamera</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Puoi <font color="#0053D0">connetterti con gli sviluppatori di <xliff:g id="appNameFull">SimpleX Chat</xliff:g> per porre domande e ricevere aggiornamenti</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Puoi <font color="#0088ff">connetterti con gli sviluppatori di <xliff:g id="appNameFull">SimpleX Chat</xliff:g> per porre domande e ricevere aggiornamenti</font>.</string>
     <string name="invalid_contact_link">Link non valido!</string>
     <string name="invalid_QR_code">Codice QR non valido</string>
     <string name="image_descr_link_preview">immagine di anteprima link</string>
@@ -683,7 +683,7 @@
     <string name="onboarding_notifications_mode_periodic">Periodico</string>
     <string name="privacy_redefined">Privacy ridefinita</string>
     <string name="onboarding_notifications_mode_title">Notifiche private</string>
-    <string name="read_more_in_github_with_link">Maggiori informazioni nel nostro <font color="#0053D0">repository GitHub</font>.</string>
+    <string name="read_more_in_github_with_link">Maggiori informazioni nel nostro <font color="#0088ff">repository GitHub</font>.</string>
     <string name="read_more_in_github">Maggiori informazioni nel nostro repository GitHub.</string>
     <string name="reject">Rifiuta</string>
     <string name="first_platform_without_user_ids">La prima piattaforma senza alcun identificatore utente – privata by design.</string>

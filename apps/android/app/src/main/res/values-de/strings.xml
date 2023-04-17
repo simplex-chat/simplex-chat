@@ -259,7 +259,7 @@
     <string name="choose_file">Datei\nauswählen</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> installiert haben!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Sie können sich <font color="#0053D0">mit <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Sie können sich <font color="#0088ff">mit <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.</string>
     <string name="to_start_a_new_chat_help_header">Um einen neuen Chat zu starten</string>
     <string name="chat_help_tap_button">Schaltfläche antippen</string>
     <string name="above_then_preposition_continuation">Danach die gewünschte Aktion auswählen:</string>
@@ -493,7 +493,7 @@
     <string name="you_control_servers_to_receive_your_contacts_to_send">Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>2-Schichten Ende-zu-Ende-Verschlüsselung</b> gesendet werden.</string>
     <string name="read_more_in_github">Erfahren Sie in unserem GitHub-Repository mehr dazu.</string>
-    <string name="read_more_in_github_with_link">Erfahren Sie in unserem <font color="#0053D0">GitHub-Repository</font> mehr dazu.</string>
+    <string name="read_more_in_github_with_link">Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.</string>
     <!-- MakeConnection -->
     <string name="paste_the_link_you_received">Fügen Sie den erhaltenen Link ein</string>
     <!-- Call -->

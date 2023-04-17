@@ -851,7 +851,7 @@
     <string name="v4_5_reduced_battery_usage">减少电池使用量</string>
     <string name="v4_5_private_filenames_descr">为了保护时区，图像/语音文件使用 UTC。</string>
     <string name="use_chat">使用聊天</string>
-    <string name="read_more_in_github_with_link">在我们的 <font color="#0053D0">GitHub 存储库</font> 中阅读更多内容。</string>
+    <string name="read_more_in_github_with_link">在我们的 <font color="#0088ff">GitHub 存储库</font> 中阅读更多内容。</string>
     <string name="auth_open_chat_console">打开聊天控制台</string>
     <string name="auth_stop_chat">Stop chat</string>
     <string name="toast_permission_denied">权限被拒绝！</string>
@@ -899,7 +899,7 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">您将在组主设备上线时连接到该群组，请稍等或稍后再检查！</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。</string>
     <string name="archive_created_on_ts">创建于 <xliff:g id="archive_ts">%1$s</xliff:g></string>
-    <string name="you_can_connect_to_simplex_chat_founder">您可以 <font color="#0053D0"> 连接到 <xliff:g id="appNameFull"> SimpleX Chat </xliff:g> 开发者提出任何问题并接收更新 </font>。</string>
+    <string name="you_can_connect_to_simplex_chat_founder">您可以 <font color="#0088ff"> 连接到 <xliff:g id="appNameFull"> SimpleX Chat </xliff:g> 开发者提出任何问题并接收更新 </font>。</string>
     <string name="you_accepted_connection">您已接受连接</string>
     <string name="your_SMP_servers">您的 SMP 服务器</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 已跳过消息</string>

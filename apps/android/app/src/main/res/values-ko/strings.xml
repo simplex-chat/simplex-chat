@@ -742,7 +742,7 @@
     <string name="privacy_redefined">프라이버시의 재정의</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">오픈 소스 프로토콜과 코드 - 누구나 자신만의 서버를 구축할 수 있어요.</string>
     <string name="onboarding_notifications_mode_off">앱이 실행 중일 때</string>
-    <string name="read_more_in_github_with_link">ㅍ자세한 내용은 \u0020<font color="#0053D0">GitHub</font> 에서 확인해 주세요.</string>
+    <string name="read_more_in_github_with_link">ㅍ자세한 내용은 \u0020<font color="#0088ff">GitHub</font> 에서 확인해 주세요.</string>
     <string name="relay_server_protects_ip">릴레이 서버는 IP 주소를 숨겨주지만, 통화 시간을 관찰 할 수 있어요.</string>
     <string name="rcv_group_event_invited_via_your_group_link">그룹 링크로 초대</string>
     <string name="onboarding_notifications_mode_subtitle">설정을 통해 나중에 변경할 수 있어요.</string>

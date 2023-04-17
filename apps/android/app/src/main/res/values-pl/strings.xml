@@ -449,7 +449,7 @@
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Tylko urządzenia klienckie przechowują profile użytkowników, kontakty, grupy i wiadomości wysyłane za pomocą <b>2-warstwowego szyfrowania end-to-end</b>.</string>
     <string name="onboarding_notifications_mode_periodic">Okresowo</string>
     <string name="onboarding_notifications_mode_title">Prywatne powiadomienia</string>
-    <string name="read_more_in_github_with_link">Przeczytaj więcej w naszym <font color="#0053D0">repozytorium GitHub</font>.</string>
+    <string name="read_more_in_github_with_link">Przeczytaj więcej w naszym <font color="#0088ff">repozytorium GitHub</font>.</string>
     <string name="read_more_in_github">Przeczytaj więcej na naszym repozytorium GitHub.</string>
     <string name="use_chat">Użyj czatu</string>
     <string name="onboarding_notifications_mode_off">Gdy aplikacja jest uruchomiona</string>
@@ -1040,7 +1040,7 @@
     <string name="simplex_service_notification_title">serwis <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="contact_wants_to_connect_via_call">&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"contactName\" example=\"Alice\"&gt; chce się z Tobą połączyć przez</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Jesteś już połączony z <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Możesz <font color="#0053D0">połączyć się z deweloperami<xliff:g id="appNameFull">SimpleX Chat</xliff:g> aby zadać wszelkie pytania i otrzymywać aktualizacje</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Możesz <font color="#0088ff">połączyć się z deweloperami<xliff:g id="appNameFull">SimpleX Chat</xliff:g> aby zadać wszelkie pytania i otrzymywać aktualizacje</font>.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Możesz udostępnić link lub kod QR - każdy będzie mógł dołączyć do grupy. Nie stracisz członków grupy, jeśli później ją usuniesz.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Musisz używać najnowszej wersji bazy danych czatu TYLKO na jednym urządzeniu, w przeciwnym razie możesz przestać otrzymywać wiadomości od niektórych kontaktów.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Możesz rozpocząć czat poprzez Ustawienia aplikacji / Bazę danych lub poprzez ponowne uruchomienie aplikacji.</string>

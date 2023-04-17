@@ -358,7 +358,7 @@
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
-  <string name="you_can_connect_to_simplex_chat_founder">You can <font color="#0053D0">connect to <xliff:g id="appNameFull">SimpleX Chat</xliff:g> developers to ask any questions and to receive updates</font>.</string>
+  <string name="you_can_connect_to_simplex_chat_founder">You can <font color="#0088ff">connect to <xliff:g id="appNameFull">SimpleX Chat</xliff:g> developers to ask any questions and to receive updates</font>.</string>
   <string name="to_start_a_new_chat_help_header">To start a new chat</string>
   <string name="chat_help_tap_button">Tap button</string>
   <string name="above_then_preposition_continuation">above, then:</string>
@@ -664,7 +664,7 @@
   <string name="you_control_servers_to_receive_your_contacts_to_send">You control through which server(s) <b>to receive</b> the messages, your contacts – the servers you use to message them.</string>
   <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.</string>
   <string name="read_more_in_github">Read more in our GitHub repository.</string>
-  <string name="read_more_in_github_with_link">Read more in our <font color="#0053D0">GitHub repository</font>.</string>
+  <string name="read_more_in_github_with_link">Read more in our <font color="#0088ff">GitHub repository</font>.</string>
 
   <!-- SetNotificationsMode.kt -->
   <string name="use_chat">Use chat</string>
