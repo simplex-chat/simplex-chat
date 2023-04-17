@@ -132,7 +132,7 @@ fun GroupProfileLayout(
               modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
             )
             ProfileNameField(fullName)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(DEFAULT_PADDING))
             Row {
               TextButton(stringResource(R.string.cancel_verb)) {
                 close.invoke()
