@@ -152,22 +152,25 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
 @Composable
 fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isValid: (String) -> Boolean = { true }, focusRequester: FocusRequester? = null) {
   var valid by rememberSaveable { mutableStateOf(true) }
-  var strokeColor by remember { mutableStateOf(HighOrLowlight.copy(alpha = 0.3f)) }
+  var focused by rememberSaveable { mutableStateOf(false) }
+  val strokeColor by remember {
+    derivedStateOf {
+      if (valid) {
+        if (focused) {
+          HighOrLowlight.copy(alpha = 0.6f)
+        } else {
+          HighOrLowlight.copy(alpha = 0.3f)
+        }
+      } else Color.Red
+    }
+  }
   val modifier = Modifier
     .fillMaxWidth()
     .height(55.dp)
     .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(50))
     .padding(horizontal = 8.dp)
     .navigationBarsWithImePadding()
-    .onFocusChanged {
-      strokeColor = if (valid) {
-          if (it.isFocused) {
-            HighOrLowlight.copy(alpha = 0.6f)
-          } else {
-            HighOrLowlight.copy(alpha = 0.3f)
-          }
-        } else Color.Red
-    }
+    .onFocusChanged { focused = it.isFocused }
   TextField(
     value = name.value,
     onValueChange = { name.value = it; valid = isValid(it) },
