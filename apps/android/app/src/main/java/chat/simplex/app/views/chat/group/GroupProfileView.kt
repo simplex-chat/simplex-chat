@@ -54,8 +54,8 @@ fun GroupProfileLayout(
   saveProfile: (GroupProfile) -> Unit,
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
-  val displayName = remember { mutableStateOf(groupProfile.displayName) }
-  val fullName = remember { mutableStateOf(groupProfile.fullName) }
+  val displayName = rememberSaveable { mutableStateOf(groupProfile.displayName) }
+  val fullName = rememberSaveable { mutableStateOf(groupProfile.fullName) }
   val chosenImage = rememberSaveable { mutableStateOf<Uri?>(null) }
   val profileImage = rememberSaveable { mutableStateOf(groupProfile.image) }
   val scope = rememberCoroutineScope()

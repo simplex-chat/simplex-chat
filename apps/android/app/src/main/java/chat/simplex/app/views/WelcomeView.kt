@@ -1,10 +1,8 @@
 package chat.simplex.app.views
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
@@ -15,16 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,8 +39,8 @@ fun isValidDisplayName(name: String) : Boolean {
 
 @Composable
 fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
-  val displayName = remember { mutableStateOf("") }
-  val fullName = remember { mutableStateOf("") }
+  val displayName = rememberSaveable { mutableStateOf("") }
+  val fullName = rememberSaveable { mutableStateOf("") }
   val focusRequester = remember { FocusRequester() }
 
   Surface(Modifier.background(MaterialTheme.colors.onBackground)) {
@@ -158,12 +152,18 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
 @Composable
 fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isValid: (String) -> Boolean = { true }, focusRequester: FocusRequester? = null) {
   var valid by rememberSaveable { mutableStateOf(true) }
+  var strokeColor by remember { mutableStateOf(HighOrLowlight.copy(alpha = 0.3f)) }
   val modifier = Modifier
     .fillMaxWidth()
     .height(55.dp)
-    .border(border = BorderStroke(1.dp, if (valid) HighOrLowlight.copy(alpha = 0.3f) else Color.Red), shape = RoundedCornerShape(50))
+    .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(50))
     .padding(horizontal = 8.dp)
     .navigationBarsWithImePadding()
+    .onFocusChanged {
+      strokeColor = if (valid) {
+          if (it.isFocused) HighOrLowlight.copy(alpha = 0.6f) else HighOrLowlight.copy(alpha = 0.3f)
+        } else Color.Red
+    }
   TextField(
     value = name.value,
     onValueChange = { name.value = it; valid = isValid(it) },

@@ -62,8 +62,8 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
 fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
-  val displayName = remember { mutableStateOf("") }
-  val fullName = remember { mutableStateOf("") }
+  val displayName = rememberSaveable { mutableStateOf("") }
+  val fullName = rememberSaveable { mutableStateOf("") }
   val chosenImage = rememberSaveable { mutableStateOf<Uri?>(null) }
   val profileImage = rememberSaveable { mutableStateOf<String?>(null) }
   val focusRequester = remember { FocusRequester() }
