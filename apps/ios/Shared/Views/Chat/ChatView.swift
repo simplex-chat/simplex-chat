@@ -492,8 +492,8 @@ struct ChatView: View {
                 }
                 if ci.meta.itemDeleted == nil,
                    let file = ci.file,
-                   file.cancellable {
-                    menu.append(cancelFileUIAction(file.fileId, sent: ci.chatDir.sent))
+                   let cancelTexts = file.cancellableText  {
+                    menu.append(cancelFileUIAction(file.fileId, cancelTexts))
                 }
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
@@ -585,15 +585,16 @@ struct ChatView: View {
             }
         }
 
-        private func cancelFileUIAction(_ fileId: Int64, sent: Bool) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Stop file", comment: "chat item action"),
+        private func cancelFileUIAction(_ fileId: Int64, _ cancelTexts: (String, String, String, String)) -> UIAction {
+            let (action, question, message, confirm) = cancelTexts
+            return UIAction(
+                title: action,
                 image: UIImage(systemName: "xmark")
             ) { _ in
                 AlertManager.shared.showAlert(Alert(
-                    title: Text(sent ? "Stop sending file?" : "Stop receiving file?"),
-                    message: Text(sent ? "Sending file will be stopped." : "Receiving file will be stopped."),
-                    primaryButton: .destructive(Text("Stop")) {
+                    title: Text(question),
+                    message: Text(message),
+                    primaryButton: .destructive(Text(confirm)) {
                         Task {
                             if let user = ChatModel.shared.currentUser {
                                 await cancelFile(user: user, fileId: fileId)

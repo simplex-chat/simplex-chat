@@ -2243,31 +2243,61 @@ public struct CIFile: Decodable {
             case .sndTransfer: return true
             case .sndComplete: return true
             case .sndCancelled: return true
+            case .sndError: return true
             case .rcvInvitation: return false
             case .rcvAccepted: return false
             case .rcvTransfer: return false
             case .rcvCancelled: return false
             case .rcvComplete: return true
+            case .rcvError: return false
             }
         }
     }
 
-    public var cancellable: Bool {
+    public var cancellableText: (String, String, String, String)? {
         get {
             switch self.fileStatus {
-            case .sndStored: return self.fileProtocol != .xftp // TODO true - enable when XFTP send supports cancel
-            case .sndTransfer: return self.fileProtocol != .xftp // TODO true
-            case .sndComplete: return false
-            case .sndCancelled: return false
-            case .rcvInvitation: return false
-            case .rcvAccepted: return true
-            case .rcvTransfer: return true
-            case .rcvCancelled: return false
-            case .rcvComplete: return false
+            case .sndStored: return sndCancelTexts
+            case .sndTransfer: return sndCancelTexts
+            case .sndComplete:
+                if self.fileProtocol == .xftp {
+                    return revokeCancelTexts
+                } else {
+                    return nil
+                }
+            case .sndCancelled: return nil
+            case .sndError: return nil
+            case .rcvInvitation: return nil
+            case .rcvAccepted: return rcvCancelTexts
+            case .rcvTransfer: return rcvCancelTexts
+            case .rcvCancelled: return nil
+            case .rcvComplete: return nil
+            case .rcvError: return nil
             }
         }
     }
 }
+
+private var sndCancelTexts = (
+  NSLocalizedString("Stop file", comment: "cancel file action"),
+  NSLocalizedString("Stop sending file?", comment: "cancel file question"),
+  NSLocalizedString("Sending file will be stopped.", comment: "cancel file text"),
+  NSLocalizedString("Stop", comment: "cancel file confirmation")
+)
+
+private var revokeCancelTexts = (
+    NSLocalizedString("Revoke file", comment: "cancel file action"),
+    NSLocalizedString("Revoke file?", comment: "cancel file question"),
+    NSLocalizedString("File will be deleted from servers.", comment: "cancel file text"),
+    NSLocalizedString("Revoke", comment: "cancel file confirmation")
+)
+
+private var rcvCancelTexts = (
+  NSLocalizedString("Stop file", comment: "cancel file action"),
+  NSLocalizedString("Stop receiving file?", comment: "cancel file question"),
+  NSLocalizedString("Receiving file will be stopped.", comment: "cancel file text"),
+  NSLocalizedString("Stop", comment: "cancel file confirmation")
+)
 
 public enum FileProtocol: String, Decodable {
     case smp = "smp"
@@ -2279,11 +2309,13 @@ public enum CIFileStatus: Decodable {
     case sndTransfer(sndProgress: Int64, sndTotal: Int64)
     case sndComplete
     case sndCancelled
+    case sndError
     case rcvInvitation
     case rcvAccepted
     case rcvTransfer(rcvProgress: Int64, rcvTotal: Int64)
     case rcvComplete
     case rcvCancelled
+    case rcvError
 
     var id: String {
         switch self {
@@ -2291,11 +2323,13 @@ public enum CIFileStatus: Decodable {
         case let .sndTransfer(sndProgress, sndTotal): return "sndTransfer \(sndProgress) \(sndTotal)"
         case .sndComplete: return "sndComplete"
         case .sndCancelled: return "sndCancelled"
+        case .sndError: return "sndError"
         case .rcvInvitation: return "rcvInvitation"
         case .rcvAccepted: return "rcvAccepted"
         case let .rcvTransfer(rcvProgress, rcvTotal): return "rcvTransfer \(rcvProgress) \(rcvTotal)"
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
+        case .rcvError: return "rcvError"
         }
     }
 }

@@ -60,7 +60,8 @@ chatFileTests = do
     it "send and receive file" testXFTPFileTransfer
     it "send and receive file, accepting after upload" testXFTPAcceptAfterUpload
     it "send and receive file in group" testXFTPGroupFileTransfer
-    it "delete sent file" testXFTPDeleteSentFile
+    it "delete uploaded file" testXFTPDeleteUploadedFile
+    it "delete uploaded file in group" testXFTPDeleteUploadedFileGroup
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
@@ -1066,8 +1067,32 @@ testXFTPGroupFileTransfer =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPDeleteSentFile :: HasCallStack => FilePath -> IO ()
-testXFTPDeleteSentFile =
+testXFTPDeleteUploadedFile :: HasCallStack => FilePath -> IO ()
+testXFTPDeleteUploadedFile =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+      alice <## "completed uploading file 1 (test.pdf) for bob"
+
+      alice ##> "/fc 1"
+      concurrentlyN_
+        [ alice <## "cancelled sending file 1 (test.pdf)",
+          bob <## "alice cancelled sending file 1 (test.pdf)"
+        ]
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "file cancelled: test.pdf"
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testXFTPDeleteUploadedFileGroup :: HasCallStack => FilePath -> IO ()
+testXFTPDeleteUploadedFileGroup =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     withXFTPServer $ do
       createGroup3 "team" alice bob cath

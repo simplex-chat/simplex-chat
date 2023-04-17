@@ -93,10 +93,12 @@ struct CIImageView: View {
             case .sndTransfer: progressView()
             case .sndComplete: fileIcon("checkmark", 10, 13)
             case .sndCancelled: fileIcon("xmark", 10, 13)
+            case .sndError: fileIcon("xmark", 10, 13)
             case .rcvInvitation: fileIcon("arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case .rcvTransfer: progressView()
             case .rcvCancelled: fileIcon("xmark", 10, 13)
+            case .rcvError: fileIcon("xmark", 10, 13)
             default: EmptyView()
             }
         }

@@ -1395,9 +1395,14 @@ processChatCommand = \case
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
-        FTSnd ftm@FileTransferMeta {cancelled} fts
+        FTSnd ftm@FileTransferMeta {xftpSndFile, cancelled} fts
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
-          | not (null fts) && all (\SndFileTransfer {fileStatus = s} -> s == FSComplete || s == FSCancelled) fts ->
+          | not (null fts)
+              && all
+                ( \SndFileTransfer {fileStatus = s} ->
+                    s == FSCancelled || (s == FSComplete && isNothing xftpSndFile)
+                )
+                fts ->
             throwChatError $ CEFileCancel fileId "file transfer is complete"
           | otherwise -> do
             fileAgentConnIds <- cancelSndFile user ftm fts True
