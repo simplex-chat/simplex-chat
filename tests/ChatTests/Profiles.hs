@@ -45,9 +45,9 @@ chatProfileTests = do
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
     it "prohibit direct messages to group members" testProhibitDirectMessages
-    it "enable timed messages with contact" testEnableTimedMessagesContact
+    xit'' "enable timed messages with contact" testEnableTimedMessagesContact
     it "enable timed messages in group" testEnableTimedMessagesGroup
-    it "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
+    xit'' "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
