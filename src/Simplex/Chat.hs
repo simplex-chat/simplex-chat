@@ -1576,7 +1576,7 @@ processChatCommand = \case
           fileInline = inlineFileMode mc inlineFiles chunks n
           fileMode = case xftpCfg of
             Just cfg
-              | fileInline == Just IFMSent || fileSize < minFileSize cfg -> SendFileSMP fileInline
+              | fileInline == Just IFMSent || fileSize < minFileSize cfg || n <= 0 -> SendFileSMP fileInline
               | otherwise -> SendFileXFTP
             _ -> SendFileSMP fileInline
       pure (fileSize, fileMode)
