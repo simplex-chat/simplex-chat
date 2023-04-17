@@ -159,6 +159,7 @@ fun GroupProfileLayout(
               }
             }
           }
+          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
 
           LaunchedEffect(Unit) {
             delay(300)

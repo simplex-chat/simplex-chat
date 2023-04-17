@@ -194,6 +194,7 @@ fun UserProfileLayout(
               TextButton(stringResource(R.string.edit_verb)) { editProfile.value = true }
             }
           }
+          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
           if (savedKeyboardState != keyboardState) {
             LaunchedEffect(keyboardState) {
               scope.launch {

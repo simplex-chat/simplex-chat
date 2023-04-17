@@ -62,11 +62,9 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
           Text(
             stringResource(R.string.display_name),
-            fontSize = 16.sp,
-            modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+            fontSize = 16.sp
           )
           if (!isValidDisplayName(displayName.value)) {
-            Spacer(Modifier.size(DEFAULT_PADDING_HALF))
             Text(
               stringResource(R.string.no_spaces),
               fontSize = 16.sp,
@@ -106,7 +104,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         }
         Surface(shape = RoundedCornerShape(20.dp)) {
           Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
-            Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
             Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = createColor)
           }
         }
