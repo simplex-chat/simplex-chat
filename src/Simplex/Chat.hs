@@ -1778,7 +1778,9 @@ assertDirectAllowed user dir ct event =
       _ -> True
 
 roundedFDCount :: Int -> Int
-roundedFDCount n = max 4 $ fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
+roundedFDCount n
+  | n <= 0 = 4
+  | otherwise = max 4 $ fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
 
 startExpireCIThread :: forall m. ChatMonad' m => User -> m ()
 startExpireCIThread user@User {userId} = do
