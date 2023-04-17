@@ -2410,14 +2410,16 @@ data class FullChatPreferences(
   val timedMessages: TimedMessagesPreference,
   val fullDelete: SimpleChatPreference,
   val voice: SimpleChatPreference,
+  val calls: SimpleChatPreference,
 ) {
-  fun toPreferences(): ChatPreferences = ChatPreferences(timedMessages = timedMessages, fullDelete = fullDelete, voice = voice)
+  fun toPreferences(): ChatPreferences = ChatPreferences(timedMessages = timedMessages, fullDelete = fullDelete, voice = voice, calls = calls)
 
   companion object {
     val sampleData = FullChatPreferences(
       timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
       fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
-      voice = SimpleChatPreference(allow = FeatureAllowed.YES)
+      voice = SimpleChatPreference(allow = FeatureAllowed.YES),
+      calls = SimpleChatPreference(allow = FeatureAllowed.YES),
     )
   }
 }
@@ -2427,19 +2429,22 @@ data class ChatPreferences(
   val timedMessages: TimedMessagesPreference?,
   val fullDelete: SimpleChatPreference?,
   val voice: SimpleChatPreference?,
+  val calls: SimpleChatPreference?,
 ) {
   fun setAllowed(feature: ChatFeature, allowed: FeatureAllowed = FeatureAllowed.YES, param: Int? = null): ChatPreferences =
     when (feature) {
       ChatFeature.TimedMessages -> this.copy(timedMessages = TimedMessagesPreference(allow = allowed, ttl = param ?: this.timedMessages?.ttl))
       ChatFeature.FullDelete -> this.copy(fullDelete = SimpleChatPreference(allow = allowed))
       ChatFeature.Voice -> this.copy(voice = SimpleChatPreference(allow = allowed))
+      ChatFeature.Calls -> this.copy(calls = SimpleChatPreference(allow = allowed))
     }
 
   companion object {
     val sampleData = ChatPreferences(
       timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
       fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
-      voice = SimpleChatPreference(allow = FeatureAllowed.YES)
+      voice = SimpleChatPreference(allow = FeatureAllowed.YES),
+      calls = SimpleChatPreference(allow = FeatureAllowed.YES),
     )
   }
 }
@@ -2511,11 +2516,13 @@ data class ContactUserPreferences(
   val timedMessages: ContactUserPreferenceTimed,
   val fullDelete: ContactUserPreference,
   val voice: ContactUserPreference,
+  val calls: ContactUserPreference,
 ) {
   fun toPreferences(): ChatPreferences = ChatPreferences(
     timedMessages = timedMessages.userPreference.pref,
     fullDelete = fullDelete.userPreference.pref,
-    voice = voice.userPreference.pref
+    voice = voice.userPreference.pref,
+    calls = calls.userPreference.pref
   )
 
   companion object {
@@ -2534,7 +2541,12 @@ data class ContactUserPreferences(
         enabled = FeatureEnabled(forUser = true, forContact = true),
         userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
         contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
-      )
+      ),
+      calls = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = true, forContact = true),
+        userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
+        contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
+      ),
     )
   }
 }
@@ -2620,7 +2632,8 @@ interface Feature {
 enum class ChatFeature: Feature {
   @SerialName("timedMessages") TimedMessages,
   @SerialName("fullDelete") FullDelete,
-  @SerialName("voice") Voice;
+  @SerialName("voice") Voice,
+  @SerialName("calls") Calls;
 
   val asymmetric: Boolean get() = when (this) {
     TimedMessages -> false
@@ -2637,6 +2650,7 @@ enum class ChatFeature: Feature {
       TimedMessages -> generalGetString(R.string.timed_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
+      Calls -> generalGetString(R.string.audio_video_calls)
     }
 
   val icon: ImageVector
@@ -2644,6 +2658,7 @@ enum class ChatFeature: Feature {
       TimedMessages -> Icons.Outlined.Timer
       FullDelete -> Icons.Outlined.DeleteForever
       Voice -> Icons.Outlined.KeyboardVoice
+      Calls -> Icons.Outlined.Phone
     }
 
   override val iconFilled: ImageVector
@@ -2651,6 +2666,7 @@ enum class ChatFeature: Feature {
       TimedMessages -> Icons.Filled.Timer
       FullDelete -> Icons.Filled.DeleteForever
       Voice -> Icons.Filled.KeyboardVoice
+      Calls -> Icons.Filled.Phone
     }
 
   fun allowDescription(allowed: FeatureAllowed): String =
@@ -2669,6 +2685,11 @@ enum class ChatFeature: Feature {
         FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_voice_messages)
         FeatureAllowed.YES -> generalGetString(R.string.allow_voice_messages_only_if)
         FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_voice_messages)
+      }
+      Calls -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_call)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_calls_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.prohibit_calls)
       }
     }
 
@@ -2692,7 +2713,13 @@ enum class ChatFeature: Feature {
         enabled.forContact -> generalGetString(R.string.only_your_contact_can_send_voice)
         else -> generalGetString(R.string.voice_prohibited_in_this_chat)
       }
-  }
+      Calls -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_make_calls)
+        enabled.forUser -> generalGetString(R.string.only_you_can_make_calls)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_make_calls)
+        else -> generalGetString(R.string.calls_prohibited_with_this_contact)
+      }
+    }
 }
 
 @Serializable
@@ -2805,14 +2832,16 @@ data class ContactFeaturesAllowed(
   val timedMessagesAllowed: Boolean,
   val timedMessagesTTL: Int?,
   val fullDelete: ContactFeatureAllowed,
-  val voice: ContactFeatureAllowed
+  val voice: ContactFeatureAllowed,
+  val calls: ContactFeatureAllowed,
 ) {
   companion object {
     val sampleData = ContactFeaturesAllowed(
       timedMessagesAllowed = false,
       timedMessagesTTL = null,
       fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
-      voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES)
+      voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
+      calls = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
     )
   }
 }
@@ -2824,7 +2853,8 @@ fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPrefere
     timedMessagesAllowed = allow == FeatureAllowed.YES || allow == FeatureAllowed.ALWAYS,
     timedMessagesTTL = pref.pref.ttl,
     fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
-    voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
+    voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
+    calls = contactUserPrefToFeatureAllowed(contactUserPreferences.calls),
   )
 }
 
@@ -2842,7 +2872,8 @@ fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed
   ChatPreferences(
     timedMessages = TimedMessagesPreference(if (contactFeaturesAllowed.timedMessagesAllowed) FeatureAllowed.YES else FeatureAllowed.NO, contactFeaturesAllowed.timedMessagesTTL),
     fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
-    voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
+    voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
+    calls = contactFeatureAllowedToPref(contactFeaturesAllowed.calls),
   )
 
 fun contactFeatureAllowedToPref(contactFeatureAllowed: ContactFeatureAllowed): SimpleChatPreference? =

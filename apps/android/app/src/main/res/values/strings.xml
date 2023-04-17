@@ -1175,6 +1175,7 @@
   <string name="direct_messages">Direct messages</string>
   <string name="full_deletion">Delete for everyone</string>
   <string name="voice_messages">Voice messages</string>
+  <string name="audio_video_calls">Audio/video calls</string>
   <string name="feature_enabled">enabled</string>
   <string name="feature_enabled_for_you">enabled for you</string>
   <string name="feature_enabled_for_contact">enabled for contact</string>
@@ -1191,6 +1192,9 @@
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
   <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
+  <string name="allow_your_contacts_to_call">Allow your contacts to call you.</string>
+  <string name="allow_calls_only_if">Allow calls only if your contact allows them.</string>
+  <string name="prohibit_calls">Prohibit audio/video calls.</string>
   <string name="both_you_and_your_contact_can_send_disappearing">Both you and your contact can send disappearing messages.</string>
   <string name="only_you_can_send_disappearing">Only you can send disappearing messages.</string>
   <string name="only_your_contact_can_send_disappearing">Only your contact can send disappearing messages.</string>
@@ -1203,6 +1207,10 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="both_you_and_your_contact_can_make_calls">Both you and your contact can make calls.</string>
+  <string name="only_you_can_make_calls">Only you can make calls.</string>
+  <string name="only_your_contact_can_make_calls">Only your contact can make calls.</string>
+  <string name="calls_prohibited_with_this_contact">Audio/video calls are prohibited.</string>
   <string name="allow_to_send_disappearing">Allow to send disappearing messages.</string>
   <string name="prohibit_sending_disappearing">Prohibit sending disappearing messages.</string>
   <string name="allow_direct_messages">Allow sending direct messages to members.</string>
