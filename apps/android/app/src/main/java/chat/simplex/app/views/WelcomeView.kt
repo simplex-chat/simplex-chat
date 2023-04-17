@@ -81,12 +81,12 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         ProfileNameField(displayName, generalGetString(R.string.enter_display_name), ::isValidDisplayName, focusRequester)
         val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
         if (errorText.isNotEmpty()) {
-          Spacer(Modifier.size(DEFAULT_PADDING))
+          Spacer(Modifier.size(DEFAULT_PADDING_HALF))
           Text(
             errorText,
             Modifier.fillMaxWidth(),
             fontSize = 15.sp,
-            color = MaterialTheme.colors.error,
+            color = Color.Red,
             textAlign = TextAlign.Center
           )
         }
@@ -161,7 +161,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
   val modifier = Modifier
     .fillMaxWidth()
     .height(55.dp)
-    .border(border = BorderStroke(1.dp, if (valid) HighOrLowlight.copy(alpha = 0.3f) else MaterialTheme.colors.error), shape = RoundedCornerShape(50))
+    .border(border = BorderStroke(1.dp, if (valid) HighOrLowlight.copy(alpha = 0.3f) else Color.Red), shape = RoundedCornerShape(50))
     .padding(horizontal = 8.dp)
     .navigationBarsWithImePadding()
   TextField(
