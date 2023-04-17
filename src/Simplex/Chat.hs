@@ -2417,10 +2417,10 @@ processAgentMsgRcvFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      ft@RcvFileTransfer {fileId, cancelled} <- withStore $ \db -> do
+      ft@RcvFileTransfer {fileId} <- withStore $ \db -> do
         fileId <- getXFTPRcvFileDBId db $ AgentRcvFileId aFileId
         getRcvFileTransfer db user fileId
-      unless cancelled $ case msg of
+      unless (rcvFileCompleteOrCancelled ft) $ case msg of
         RFPROG rcvProgress rcvTotal -> do
           let status = CIFSRcvTransfer {rcvProgress, rcvTotal}
           ci <- withStore $ \db -> do
@@ -2942,9 +2942,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> pure ()
 
     receiveFileChunk :: RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> m ()
-    receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize, cancelled} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
+    receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
       FileChunkCancel ->
-        unless cancelled $ do
+        unless (rcvFileCompleteOrCancelled ft) $ do
           cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
           ci <- withStore $ \db -> getChatItemByFileId db user fileId
           toView $ CRRcvFileSndCancelled user ci ft
@@ -3084,8 +3084,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     agentErrToItemStatus err = CISSndError . T.unpack . safeDecodeUtf8 $ strEncode err
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
-    badRcvFileChunk ft@RcvFileTransfer {cancelled} err =
-      unless cancelled $ do
+    badRcvFileChunk ft err =
+      unless (rcvFileCompleteOrCancelled ft) $ do
         cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
         throwChatError $ CEFileRcvChunk err
 
@@ -3167,14 +3167,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      RcvFileTransfer {cancelled} <- withStore $ \db -> getRcvFileTransfer db user fileId
-      unless cancelled $ do
+      ft <- withStore $ \db -> getRcvFileTransfer db user fileId
+      unless (rcvFileCompleteOrCancelled ft) $ do
         (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
           rfd <- appendRcvFD db userId fileId fileDescr
           -- reading second time in the same transaction as appending description
           -- to prevent race condition with accept
-          ft <- getRcvFileTransfer db user fileId
-          pure (rfd, ft)
+          ft' <- getRcvFileTransfer db user fileId
+          pure (rfd, ft')
         case fileStatus of
           RFSAccepted _ -> receiveViaCompleteFD user fileId rfd
           _ -> pure ()
@@ -3367,8 +3367,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xFileCancel ct@Contact {contactId} sharedMsgId msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
-      ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
-      unless cancelled $ do
+      ft <- withStore (\db -> getRcvFileTransfer db user fileId)
+      unless (rcvFileCompleteOrCancelled ft) $ do
         cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
         ci <- withStore $ \db -> getChatItemByFileId db user fileId
         toView $ CRRcvFileSndCancelled user ci ft
@@ -3448,8 +3448,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         (SMDRcv, CIGroupRcv m) -> do
           if sameMemberId memberId m
             then do
-              ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
-              unless cancelled $ do
+              ft <- withStore (\db -> getRcvFileTransfer db user fileId)
+              unless (rcvFileCompleteOrCancelled ft) $ do
                 cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
                 ci <- withStore $ \db -> getChatItemByFileId db user fileId
                 toView $ CRRcvFileSndCancelled user ci ft

@@ -1648,6 +1648,9 @@ rcvFileComplete = \case
   RFSComplete _ -> True
   _ -> False
 
+rcvFileCompleteOrCancelled :: RcvFileTransfer -> Bool
+rcvFileCompleteOrCancelled RcvFileTransfer {fileStatus, cancelled} = rcvFileComplete fileStatus || cancelled
+
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
     connId :: Maybe Int64,
