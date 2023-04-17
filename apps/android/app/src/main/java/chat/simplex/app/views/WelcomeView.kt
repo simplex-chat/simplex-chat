@@ -40,7 +40,7 @@ import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.delay
 
 fun isValidDisplayName(name: String) : Boolean {
-  return (name.firstOrNull { it.isWhitespace() }) == null
+  return (name.firstOrNull { it.isWhitespace() }) == null && !name.startsWith("@") && !name.startsWith("#")
 }
 
 @Composable

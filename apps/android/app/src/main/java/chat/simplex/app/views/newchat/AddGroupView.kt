@@ -125,7 +125,7 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
               errorText,
               Modifier.fillMaxWidth(),
               fontSize = 15.sp,
-              color = MaterialTheme.colors.error,
+              color = Color.Red,
               textAlign = TextAlign.Center
             )
           }
