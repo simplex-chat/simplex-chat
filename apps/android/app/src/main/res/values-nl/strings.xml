@@ -483,11 +483,9 @@
     <string name="join_group_incognito_button">Doe incognito mee</string>
     <string name="group_preview_join_as">lid worden als %s</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Het kan gebeuren wanneer:
-\n1. De berichten op de server verlopen als ze 30 dagen niet zijn ontvangen,
-\n2. De server die u gebruikt om de berichten van deze contactpersoon te ontvangen, is bijgewerkt en opnieuw opgestart.
-\n3. De verbinding is verbroken.
-\nMaak verbinding met de ontwikkelaars via Instellingen om de updates over de servers te ontvangen.
-\nWe zullen serverredundantie toevoegen om verloren berichten te voorkomen.</string>
+\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.
+\n2. Decodering van het bericht is mislukt, omdat u of uw contactpersoon een oude databaseback-up heeft gebruikt.
+\n3. De verbinding is verbroken.</string>
     <string name="joining_group">Deel nemen aan groep</string>
     <string name="leave_group_button">Verlaten</string>
     <string name="group_member_role_member">Gebruiker</string>
@@ -1104,4 +1102,15 @@
     <string name="passcode_not_changed">Toegangscode niet gewijzigd!</string>
     <string name="passcode_set">Toegangscode ingesteld!</string>
     <string name="la_mode_system">Systeem</string>
+    <string name="decryption_error">Decryptie fout</string>
+    <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> berichten overgeslagen.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Deze fout is permanent voor deze verbinding, maak opnieuw verbinding.</string>
+    <string name="alert_title_msg_bad_hash">Onjuiste bericht hash</string>
+    <string name="alert_title_msg_bad_id">Onjuiste bericht ID</string>
+    <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
+\nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g>-berichten konden niet worden ontsleuteld.</string>
 </resources>
