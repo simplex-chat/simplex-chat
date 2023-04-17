@@ -3673,7 +3673,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           then messageError "x.grp.mem.new error: member already exists"
           else do
             newMember@GroupMember {groupMemberId} <- withStore $ \db -> createNewGroupMember db user gInfo memInfo GCPostMember GSMemAnnounced
-            ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent $ RGEMemberAdded groupMemberId memberProfile) `catchError` \e -> liftIO (print e) >> throwError e
+            ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent $ RGEMemberAdded groupMemberId memberProfile)
             groupMsgToView gInfo m ci msgMeta
             toView $ CRJoinedGroupMemberConnecting user gInfo m newMember
 
