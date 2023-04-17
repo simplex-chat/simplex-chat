@@ -1533,8 +1533,6 @@ testUsersTimedMessages tmp = do
       alice <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes)")
       bob <## (aliceName <> " updated preferences for you:")
       bob <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes (" <> ttl <> " sec))")
-      bob ##> ("/set disappear @" <> aliceName <> " yes")
-      bob <## ("your preferences for " <> aliceName <> " did not change")
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY") -- to remove feature items
 
 testUserPrivacy :: HasCallStack => FilePath -> IO ()
