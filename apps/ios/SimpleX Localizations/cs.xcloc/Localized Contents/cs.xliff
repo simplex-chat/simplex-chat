@@ -147,9 +147,9 @@ Available in v5.1</source>
         <target>%lld členové</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld minutes" xml:space="preserve" approved="no">
+      <trans-unit id="%lld minutes" xml:space="preserve">
         <source>%lld minutes</source>
-        <target state="translated">%lld minut</target>
+        <target>%lld minut</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
@@ -157,9 +157,9 @@ Available in v5.1</source>
         <target>%lld vteřin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld seconds" xml:space="preserve" approved="no">
+      <trans-unit id="%lld seconds" xml:space="preserve">
         <source>%lld seconds</source>
-        <target state="translated">%lld vteřin</target>
+        <target>%lld vteřin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
@@ -585,7 +585,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve">
         <source>Authentication cancelled</source>
-        <target state="translated">Ověření zrušeno</target>
+        <target>Ověření zrušeno</target>
         <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
@@ -700,9 +700,9 @@ Available in v5.1</source>
         <target>Změnit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change Passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Change Passcode" xml:space="preserve">
         <source>Change Passcode</source>
-        <target state="translated">Změna hesla</target>
+        <target>Změna hesla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
@@ -710,9 +710,9 @@ Available in v5.1</source>
         <target>Změnit přístupovou frázi databáze?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change lock mode" xml:space="preserve" approved="no">
+      <trans-unit id="Change lock mode" xml:space="preserve">
         <source>Change lock mode</source>
-        <target state="translated">Změnit zamykání</target>
+        <target>Změnit zamykání</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve">
@@ -720,9 +720,9 @@ Available in v5.1</source>
         <target>Změnit roli člena?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Change passcode" xml:space="preserve">
         <source>Change passcode</source>
-        <target state="translated">Změnit heslo</target>
+        <target>Změnit heslo</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
@@ -830,9 +830,9 @@ Available in v5.1</source>
         <target>Barvy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Compare file" xml:space="preserve" approved="no">
+      <trans-unit id="Compare file" xml:space="preserve">
         <source>Compare file</source>
-        <target state="translated">Porovnat soubor</target>
+        <target>Porovnat soubor</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Compare security codes with your contacts." xml:space="preserve">
@@ -850,9 +850,9 @@ Available in v5.1</source>
         <target>Potvrdit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Confirm Passcode" xml:space="preserve">
         <source>Confirm Passcode</source>
-        <target state="translated">Potvrdit heslo</target>
+        <target>Potvrdit heslo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
@@ -1010,9 +1010,9 @@ Available in v5.1</source>
         <target>Vytvořit adresu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create file" xml:space="preserve" approved="no">
+      <trans-unit id="Create file" xml:space="preserve">
         <source>Create file</source>
-        <target state="translated">Vytvořit soubor</target>
+        <target>Vytvořit soubor</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Create group link" xml:space="preserve">
@@ -1050,9 +1050,9 @@ Available in v5.1</source>
         <target>Vytvořeno na %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current Passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Current Passcode" xml:space="preserve">
         <source>Current Passcode</source>
-        <target state="translated">Aktuální heslo</target>
+        <target>Aktuální heslo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current passphrase…" xml:space="preserve">
@@ -1242,9 +1242,9 @@ Available in v5.1</source>
         <target>Odstranění databáze</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete file" xml:space="preserve" approved="no">
+      <trans-unit id="Delete file" xml:space="preserve">
         <source>Delete file</source>
-        <target state="translated">Smazat soubor</target>
+        <target>Smazat soubor</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Delete files and media?" xml:space="preserve">
@@ -1447,9 +1447,9 @@ Available in v5.1</source>
         <target>Snížit a otevřít chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Download file" xml:space="preserve" approved="no">
+      <trans-unit id="Download file" xml:space="preserve">
         <source>Download file</source>
-        <target state="translated">Stáhnout soubor</target>
+        <target>Stáhnout soubor</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve">
@@ -1492,9 +1492,9 @@ Available in v5.1</source>
         <target>Povolit okamžitá oznámení?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable lock" xml:space="preserve" approved="no">
+      <trans-unit id="Enable lock" xml:space="preserve">
         <source>Enable lock</source>
-        <target state="translated">Povolit zámek</target>
+        <target>Povolit zámek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable notifications" xml:space="preserve">
@@ -1552,9 +1552,9 @@ Available in v5.1</source>
         <target>Šifrovaná zpráva: neočekávaná chyba</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Enter Passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Enter Passcode" xml:space="preserve">
         <source>Enter Passcode</source>
-        <target state="translated">Zadat heslo</target>
+        <target>Zadat heslo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">
@@ -1697,9 +1697,9 @@ Available in v5.1</source>
         <target>Chyba při připojování ke skupině</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error loading %@ servers" xml:space="preserve" approved="no">
+      <trans-unit id="Error loading %@ servers" xml:space="preserve">
         <source>Error loading %@ servers</source>
-        <target state="translated">Chyba načítání %@ serverů</target>
+        <target>Chyba načítání %@ serverů</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -1727,9 +1727,9 @@ Available in v5.1</source>
         <target>Chyba při ukládání profilu skupiny</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Error saving passcode" xml:space="preserve">
         <source>Error saving passcode</source>
-        <target state="translated">Chyba uložení hesla</target>
+        <target>Chyba uložení hesla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
@@ -2105,9 +2105,9 @@ Available in v5.1</source>
         <target>Obrázek bude přijat, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Immediately" xml:space="preserve" approved="no">
+      <trans-unit id="Immediately" xml:space="preserve">
         <source>Immediately</source>
-        <target state="translated">Ihned</target>
+        <target>Ihned</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Immune to spam and abuse" xml:space="preserve">
@@ -2180,9 +2180,9 @@ Available in v5.1</source>
         <target>Nekompatibilní verze databáze</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incorrect passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Incorrect passcode" xml:space="preserve">
         <source>Incorrect passcode</source>
-        <target state="translated">Nesprávné heslo</target>
+        <target>Nesprávné heslo</target>
         <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Incorrect security code!" xml:space="preserve">
@@ -2303,9 +2303,9 @@ Available in v5.1</source>
         <target>Připojení ke skupině</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="KeyChain error" xml:space="preserve" approved="no">
+      <trans-unit id="KeyChain error" xml:space="preserve">
         <source>KeyChain error</source>
-        <target state="translated">Chyba klíčenky</target>
+        <target>Chyba klíčenky</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve">
@@ -2368,14 +2368,14 @@ Available in v5.1</source>
         <target>Pouze lokální profilová data</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Lock after" xml:space="preserve" approved="no">
+      <trans-unit id="Lock after" xml:space="preserve">
         <source>Lock after</source>
-        <target state="translated">Zamknout po</target>
+        <target>Zamknout po</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Lock mode" xml:space="preserve" approved="no">
+      <trans-unit id="Lock mode" xml:space="preserve">
         <source>Lock mode</source>
-        <target state="translated">Režim zámku</target>
+        <target>Režim zámku</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2548,9 +2548,9 @@ Available in v5.1</source>
         <target>Stav sítě</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New Passcode" xml:space="preserve" approved="no">
+      <trans-unit id="New Passcode" xml:space="preserve">
         <source>New Passcode</source>
-        <target state="translated">Nové heslo</target>
+        <target>Nové heslo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -2593,9 +2593,9 @@ Available in v5.1</source>
         <target>Ne</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No app password" xml:space="preserve" approved="no">
+      <trans-unit id="No app password" xml:space="preserve">
         <source>No app password</source>
-        <target state="translated">Žádné heslo aplikace</target>
+        <target>Žádné heslo aplikace</target>
         <note>Authentication unavailable</note>
       </trans-unit>
       <trans-unit id="No contacts selected" xml:space="preserve">
@@ -2647,9 +2647,9 @@ Available in v5.1</source>
 - zakázat členy (role "pozorovatel")</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off" xml:space="preserve" approved="no">
+      <trans-unit id="Off" xml:space="preserve">
         <source>Off</source>
-        <target state="translated">Vypnout</target>
+        <target>Vypnout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve">
@@ -2785,29 +2785,29 @@ Available in v5.1</source>
         <target>Interval PING</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Passcode" xml:space="preserve">
         <source>Passcode</source>
-        <target state="translated">Heslo</target>
+        <target>Heslo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode changed!" xml:space="preserve" approved="no">
+      <trans-unit id="Passcode changed!" xml:space="preserve">
         <source>Passcode changed!</source>
-        <target state="translated">Heslo změněno!</target>
+        <target>Heslo změněno!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode entry" xml:space="preserve" approved="no">
+      <trans-unit id="Passcode entry" xml:space="preserve">
         <source>Passcode entry</source>
-        <target state="translated">Zadat heslo</target>
+        <target>Zadat heslo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode not changed!" xml:space="preserve" approved="no">
+      <trans-unit id="Passcode not changed!" xml:space="preserve">
         <source>Passcode not changed!</source>
-        <target state="translated">Heslo nezměněno!</target>
+        <target>Heslo nezměněno!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode set!" xml:space="preserve" approved="no">
+      <trans-unit id="Passcode set!" xml:space="preserve">
         <source>Passcode set!</source>
-        <target state="translated">Heslo nastaveno!</target>
+        <target>Heslo nastaveno!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
@@ -2884,9 +2884,9 @@ Available in v5.1</source>
         <target>Po obnovení zálohy databáze zadejte předchozí heslo. Tuto akci nelze vrátit zpět.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve" approved="no">
+      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve">
         <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
-        <target state="translated">Zapamatujte si ho nebo bezpečně uložte - neexistuje žádný způsob, jak obnovit ztracený heslo!</target>
+        <target>Zapamatujte si ho nebo bezpečně uložte - neexistuje žádný způsob, jak obnovit ztracený heslo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please report it to the developers." xml:space="preserve">
@@ -3386,9 +3386,9 @@ Available in v5.1</source>
         <target>Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve" approved="no">
+      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
         <source>Server requires authorization to upload, check password</source>
-        <target state="translated">Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo</target>
+        <target>Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -3495,14 +3495,14 @@ Available in v5.1</source>
         <target>Zámek SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock mode" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX Lock mode" xml:space="preserve">
         <source>SimpleX Lock mode</source>
-        <target state="translated">SimpleX zámek</target>
+        <target>SimpleX zámek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve">
         <source>SimpleX Lock not enabled!</source>
-        <target state="translated">Zámek SimpleX není povolen!</target>
+        <target>Zámek SimpleX není povolen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
@@ -3604,7 +3604,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
         <source>Submit</source>
-        <target state="translated">Odeslat</target>
+        <target>Odeslat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
@@ -3617,9 +3617,9 @@ Available in v5.1</source>
         <target>Systém</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="System authentication" xml:space="preserve" approved="no">
+      <trans-unit id="System authentication" xml:space="preserve">
         <source>System authentication</source>
-        <target state="translated">Ověření systému</target>
+        <target>Ověření systému</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -3979,9 +3979,9 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Odemknout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unlock app" xml:space="preserve" approved="no">
+      <trans-unit id="Unlock app" xml:space="preserve">
         <source>Unlock app</source>
-        <target state="translated">Odemknout aplikaci</target>
+        <target>Odemknout aplikaci</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Unmute" xml:space="preserve">
@@ -4034,9 +4034,9 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Zvýšit a otevřít chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upload file" xml:space="preserve" approved="no">
+      <trans-unit id="Upload file" xml:space="preserve">
         <source>Upload file</source>
-        <target state="translated">Nahrát soubor</target>
+        <target>Nahrát soubor</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
@@ -4104,14 +4104,14 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Videohovor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve" approved="no">
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
         <source>Video will be received when your contact completes uploading it.</source>
-        <target state="translated">Video bude přijato, až kontakt dokončí jeho nahrávání.</target>
+        <target>Video bude přijato, až kontakt dokončí jeho nahrávání.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
+      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>Video will be received when your contact is online, please wait or check later!</source>
-        <target state="translated">Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo zkontrolujte později!</target>
+        <target>Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo zkontrolujte později!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
@@ -4158,9 +4158,9 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Čekání na obrázek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Waiting for video" xml:space="preserve" approved="no">
+      <trans-unit id="Waiting for video" xml:space="preserve">
         <source>Waiting for video</source>
-        <target state="translated">Čekám na video</target>
+        <target>Čekám na video</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
@@ -4295,9 +4295,9 @@ SimpleX zámek musí být povolen.</target>
         <target>Chat můžete zahájit prostřednictvím aplikace Nastavení / Databáze nebo restartováním aplikace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
         <source>You can turn on SimpleX Lock via Settings.</source>
-        <target state="translated">Zámek SimpleX můžete zapnout v Nastavení.</target>
+        <target>Zámek SimpleX můžete zapnout v Nastavení.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -4430,9 +4430,9 @@ SimpleX zámek musí být povolen.</target>
         <target>Vaše kontaktní adresa SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your XFTP servers" xml:space="preserve" approved="no">
+      <trans-unit id="Your XFTP servers" xml:space="preserve">
         <source>Your XFTP servers</source>
-        <target state="translated">Vaše XFTP servery</target>
+        <target>Vaše XFTP servery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
