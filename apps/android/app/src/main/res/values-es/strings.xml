@@ -811,7 +811,7 @@
     <string name="is_not_verified">%s no está verificado</string>
     <string name="smp_servers_test_server">Probar servidor</string>
     <string name="smp_servers_test_servers">Probar servidores</string>
-    <string name="star_on_github">Dar Estrella en GitHub</string>
+    <string name="star_on_github">Estrella en GitHub</string>
     <string name="smp_servers_per_user">Los servidores para nuevas conexiones de tu perfil de Chat actual</string>
     <string name="network_disable_socks">¿Usar conexión directa a Internet\?</string>
     <string name="update_onion_hosts_settings_question">¿Actualizar la configuración de los hosts .onion\?</string>
@@ -1113,4 +1113,31 @@
     <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
     <string name="alert_text_fragment_permanent_error_reconnect">El error es permanente para esta conexión, por favor vuelve a conectarte.</string>
     <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> mensajes no pudieron ser descifrados.</string>
+    <string name="no_spaces">¡Sin espacios!</string>
+    <string name="stop_file__action">Detener archivo</string>
+    <string name="revoke_file__message">El archivo será eliminado de los servidores.</string>
+    <string name="stop_rcv_file__message">Se detendrá la recepción del archivo.</string>
+    <string name="revoke_file__confirm">Revocar</string>
+    <string name="revoke_file__action">Revocar archivo</string>
+    <string name="revoke_file__title">¿Revocar archivo\?</string>
+    <string name="stop_snd_file__message">Se detendrá el envío del archivo.</string>
+    <string name="stop_file__confirm">Detener</string>
+    <string name="stop_rcv_file__title">¿Dejar de recibir el archivo\?</string>
+    <string name="stop_snd_file__title">¿Dejar de enviar el archivo\?</string>
+    <string name="allow_calls_only_if">Se permiten llamadas sólo si tu contacto también las permite.</string>
+    <string name="allow_your_contacts_to_call">Permites que tus contactos puedan llamarte.</string>
+    <string name="audio_video_calls">Llamadas/Videollamadas</string>
+    <string name="calls_prohibited_with_this_contact">Las llamadas/videollamadas no están permitidas.</string>
+    <string name="available_in_v51">"
+\nDisponible en v5.1"</string>
+    <string name="both_you_and_your_contact_can_make_calls">Tanto tú como tu contacto podéis realizar llamadas.</string>
+    <string name="only_you_can_make_calls">Solo tú puedes realizar llamadas.</string>
+    <string name="only_your_contact_can_make_calls">Sólo tu contacto puede realizar llamadas.</string>
+    <string name="prohibit_calls">Prohibir las llamadas/videollamadas.</string>
+    <string name="v5_0_app_passcode">Código de acceso a la aplicación</string>
+    <string name="v5_0_polish_interface">Interfaz en polaco</string>
+    <string name="v5_0_app_passcode_descr">Úsalo en lugar de la autenticación del sistema.</string>
+    <string name="v5_0_polish_interface_descr">Agradecimientos a los usuarios. ¡Contribuye a través de Weblate!</string>
+    <string name="v5_0_large_files_support">Vídeos y archivos de hasta 1Gb</string>
+    <string name="v5_0_large_files_support_descr">¡Rápido y sin tener que esperar a que el remitente esté en línea!</string>
 </resources>
