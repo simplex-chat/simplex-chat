@@ -164,6 +164,26 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!"
             ),
         ]
+    ),
+    VersionDescription(
+        version: "v5.0",
+        features: [
+            FeatureDescription(
+                icon: "arrow.up.doc",
+                title: "Large files support",
+                description: "Send videos and large files up to 1GB!"
+            ),
+            FeatureDescription(
+                icon: "lock",
+                title: "App passcode",
+                description: "Set custom app passcode instead of system authentication."
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "Polish interface",
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!"
+            ),
+        ]
     )
 ]
 

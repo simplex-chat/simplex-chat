@@ -307,6 +307,27 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  VersionDescription(
+    version = "v5.0",
+    features = listOf(
+      FeatureDescription(
+        icon = Icons.Outlined.UploadFile,
+        titleId = R.string.v5_0_large_files_support,
+        descrId = R.string.v5_0_large_files_support_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Lock,
+        titleId = R.string.v5_0_app_passcode,
+        descrId = R.string.v5_0_app_passcode_descr
+      ),
+      FeatureDescription(
+        icon = Icons.Outlined.Translate,
+        titleId = R.string.v5_0_polish_interface,
+        descrId = R.string.v5_0_polish_interface_descr,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
+      )
+    )
+  )
 )
 
 private val lastVersion = versionDescriptions.last().version

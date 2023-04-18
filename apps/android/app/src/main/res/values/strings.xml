@@ -1307,4 +1307,10 @@
   <string name="v4_6_reduced_battery_usage_descr">More improvements are coming soon!</string>
   <string name="v4_6_chinese_spanish_interface">Chinese and Spanish interface</string>
   <string name="v4_6_chinese_spanish_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v5_0_large_files_support">Large files support</string>
+  <string name="v5_0_large_files_support_descr">Send videos and large files up to 1GB!</string>
+  <string name="v5_0_app_passcode">App passcode</string>
+  <string name="v5_0_app_passcode_descr">Set custom app passcode instead of system authentication.</string>
+  <string name="v5_0_polish_interface">Polish interface</string>
+  <string name="v5_0_polish_interface_descr">Thanks to the users – contribute via Weblate!</string>
 </resources>
