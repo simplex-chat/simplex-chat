@@ -425,11 +425,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Kan geen contacten uitnodigen!";
 
-/* chat item action */
-"Cancel" = "Annuleren";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "Bestand overdracht annuleren?";
+"Cancel" = "Annuleren";
 
 /* feature offered item */
 "cancelled %@" = "geannuleerd %@";
@@ -1206,9 +1203,6 @@
 "Exit without saving" = "Afsluiten zonder opslaan";
 
 /* No comment provided by engineer. */
-"Experimental" = "Experimenteel";
-
-/* No comment provided by engineer. */
 "Export database" = "Database exporteren";
 
 /* No comment provided by engineer. */
@@ -1222,9 +1216,6 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Kan wachtwoord niet verwijderen";
-
-/* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "Bestand overdracht wordt geannuleerd. Als het bezig is, wordt het gestopt.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.";
@@ -1525,9 +1516,6 @@
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.";
-
-/* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Het kan gebeuren wanneer:\n1. De berichten op de server verlopen als ze 30 dagen niet zijn ontvangen.\n2. De server die u gebruikt om de berichten van deze contactpersoon te ontvangen, is bijgewerkt en opnieuw opgestart.\n3. De verbinding is verbroken.\nMaak verbinding met de ontwikkelaars via Instellingen om de updates over de servers te ontvangen.\nWe zullen serverredundantie toevoegen om verloren berichten te voorkomen.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Het lijkt erop dat u al bent verbonden via deze link. Als dit niet het geval is, is er een fout opgetreden (%@).";
@@ -1954,7 +1942,7 @@
 "Please enter the previous password after restoring database backup. This action can not be undone." = "Voer het vorige wachtwoord in na het herstellen van de database back-up. Deze actie kan niet ongedaan gemaakt worden.";
 
 /* No comment provided by engineer. */
-"Please remember or store it securely - there is no way to recover a lost passcode!" = "Onthoud het of bewaar het veilig - er is geen manier om een verloren toegangscode te herstellen!";
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Onthoud of bewaar het veilig - er is geen manier om een verloren toegangscode te herstellen!";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Start de app opnieuw en migreer de database om push meldingen in te schakelen.";
@@ -2677,9 +2665,6 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "v4.6.1+ is vereist om te ontvangen via XFTP.";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "Controleer de verbindingsbeveiliging";
 
 /* No comment provided by engineer. */
@@ -2914,7 +2899,7 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "U moet zich authenticeren wanneer u de app na 30 seconden op de achtergrond start of hervat.";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "U wordt lid van een groep waarnaar deze link verwijst en maakt verbinding met de groepsleden.";
+"You will join a group this link refers to and connect to its group members." = "U wordt lid van de groep waar deze link naar verwijst en maakt verbinding met de groepsleden.";
 
 /* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.";
