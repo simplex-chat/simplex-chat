@@ -74,7 +74,7 @@ updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-c
 
 simplexmqCommitQ :: Q Exp
 simplexmqCommitQ = do
-  s <- either error B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
+  s <- either (const "") B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
   [|fromString s|]
   where
     commitHashP :: A.Parser ByteString
@@ -194,7 +194,7 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
+  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
   | APIStopChat
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}
@@ -438,6 +438,7 @@ data ChatResponse
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
   | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileError {user :: User, chatItem :: AChatItem}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
@@ -446,6 +447,7 @@ data ChatResponse
   | CRSndFileProgressXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
   | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileError {user :: User, chatItem :: AChatItem}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
@@ -793,6 +795,7 @@ data ChatErrorType
   | CEFileNotReceived {fileId :: FileTransferId}
   | CEXFTPRcvFile {fileId :: FileTransferId, agentRcvFileId :: AgentRcvFileId, agentError :: AgentErrorType}
   | CEXFTPSndFile {fileId :: FileTransferId, agentSndFileId :: AgentSndFileId, agentError :: AgentErrorType}
+  | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidChatItemUpdate

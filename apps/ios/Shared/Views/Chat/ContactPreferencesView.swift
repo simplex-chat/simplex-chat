@@ -25,6 +25,7 @@ struct ContactPreferencesView: View {
                 timedMessagesFeatureSection()
                 featureSection(.fullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, $featuresAllowed.fullDelete)
                 featureSection(.voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, $featuresAllowed.voice)
+                featureSection(.calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, $featuresAllowed.calls).disabled(true)
 
                 Section {
                     Button("Reset") { featuresAllowed = currentFeaturesAllowed }
@@ -106,7 +107,7 @@ struct ContactPreferencesView: View {
     }
 
     private func featureFooter(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> some View {
-        Text(feature.enabledDescription(enabled))
+        (Text(feature.enabledDescription(enabled)) + (feature == .calls ? Text("\nAvailable in v5.1").bold() : Text("")))
         .frame(height: 36, alignment: .topLeading)
     }
 

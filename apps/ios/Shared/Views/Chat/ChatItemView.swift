@@ -55,7 +55,8 @@ struct ChatItemContentView<Content: View>: View {
         case .rcvDeleted: deletedItemView()
         case let .sndCall(status, duration): callItemView(status, duration)
         case let .rcvCall(status, duration): callItemView(status, duration)
-        case .rcvIntegrityError: IntegrityErrorItemView(chatItem: chatItem, showMember: showMember)
+        case let .rcvIntegrityError(msgError): IntegrityErrorItemView(msgError: msgError, chatItem: chatItem, showMember: showMember)
+        case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem, showMember: showMember)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case .rcvGroupEvent: eventItemView()
@@ -127,6 +128,17 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     chatDir: .directRcv,
                     meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted),
                     content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
+                    quotedItem: nil,
+                    file: nil
+                ),
+                revealed: Binding.constant(true)
+            )
+            ChatItemView(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItem: ChatItem(
+                    chatDir: .directRcv,
+                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead),
+                    content: .rcvDecryptionError(msgDecryptError: .ratchetHeader, msgCount: 2),
                     quotedItem: nil,
                     file: nil
                 ),

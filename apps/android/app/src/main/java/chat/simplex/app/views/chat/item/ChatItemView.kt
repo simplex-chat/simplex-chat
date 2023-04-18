@@ -168,8 +168,8 @@ fun ChatItemView(
               }
             )
           }
-          if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancellable) {
-            CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile)
+          if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
+            CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
           }
           if (!(live && cItem.meta.isLive)) {
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
@@ -247,7 +247,8 @@ fun ChatItemView(
         is CIContent.RcvDeleted -> DeletedItem()
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
-        is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
+        is CIContent.RcvIntegrityError -> IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL, showMember = showMember)
+        is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cItem, cInfo.timedMessagesTTL, showMember = showMember)
         is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.RcvGroupEventContent -> CIEventView(cItem)
@@ -277,14 +278,15 @@ fun ChatItemView(
 fun CancelFileItemAction(
   fileId: Long,
   showMenu: MutableState<Boolean>,
-  cancelFile: (Long) -> Unit
+  cancelFile: (Long) -> Unit,
+  cancelAction: CancelAction
 ) {
   ItemAction(
-    stringResource(R.string.cancel_verb),
+    stringResource(cancelAction.uiActionId),
     Icons.Outlined.Close,
     onClick = {
       showMenu.value = false
-      cancelFileAlertDialog(fileId, cancelFile = cancelFile)
+      cancelFileAlertDialog(fileId, cancelFile = cancelFile, cancelAction = cancelAction)
     },
     color = Color.Red
   )
@@ -343,11 +345,11 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
   }
 }
 
-fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit) {
+fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.cancel_file__question),
-    text = generalGetString(R.string.file_transfer_will_be_cancelled_warning),
-    confirmText = generalGetString(R.string.confirm_verb),
+    title = generalGetString(cancelAction.alert.titleId),
+    text = generalGetString(cancelAction.alert.messageId),
+    confirmText = generalGetString(cancelAction.alert.confirmId),
     destructive = true,
     onConfirm = {
       cancelFile(fileId)

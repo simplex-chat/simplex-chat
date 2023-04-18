@@ -174,13 +174,24 @@ func parseChatData(_ jChat: Any) throws -> ChatData {
         if let ci: ChatItem = try? decodeObject(jCI) {
             return ci
         }
-        return ChatItem.invalidJSON(prettyJSON(jCI) ?? "")
+        return ChatItem.invalidJSON(
+            chatDir: decodeProperty(jCI, "chatDir"),
+            meta: decodeProperty(jCI, "meta"),
+            json: prettyJSON(jCI) ?? ""
+        )
     }
     return ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
 }
 
 func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
     try jsonDecoder.decode(T.self, from: JSONSerialization.data(withJSONObject: obj))
+}
+
+func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
+    if let jProp = (obj as? NSDictionary)?[prop] {
+        return try? decodeObject(jProp)
+    }
+    return nil
 }
 
 func prettyJSON(_ obj: Any) -> String? {

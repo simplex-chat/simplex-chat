@@ -12,6 +12,11 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="&#10;Available in v5.1" xml:space="preserve">
+        <source>
+Available in v5.1</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id=" " xml:space="preserve">
         <source> </source>
         <target> </target>
@@ -190,6 +195,14 @@
       <trans-unit id="%lldw" xml:space="preserve">
         <source>%lldw</source>
         <target>%lldsmn</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
+        <source>%u messages failed to decrypt.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%u messages skipped." xml:space="preserve">
+        <source>%u messages skipped.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -440,6 +453,10 @@
         <target>Autoriser</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
+        <source>Allow calls only if your contact allows them.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
         <target>Autorise les messages éphémères seulement si votre contact vous l’autorise.</target>
@@ -478,6 +495,10 @@
       <trans-unit id="Allow voice messages?" xml:space="preserve">
         <source>Allow voice messages?</source>
         <target>Autoriser les messages vocaux ?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow your contacts to call you." xml:space="preserve">
+        <source>Allow your contacts to call you.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
@@ -520,6 +541,10 @@
         <target>Icône de l'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App passcode" xml:space="preserve">
+        <source>App passcode</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
         <target>Version de l'app</target>
@@ -548,6 +573,14 @@
       <trans-unit id="Audio and video calls" xml:space="preserve">
         <source>Audio and video calls</source>
         <target>Appels audio et vidéo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Audio/video calls" xml:space="preserve">
+        <source>Audio/video calls</source>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve">
+        <source>Audio/video calls are prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve">
@@ -590,9 +623,21 @@
         <target>Retour</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bad message ID" xml:space="preserve">
+        <source>Bad message ID</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Bad message hash" xml:space="preserve">
+        <source>Bad message hash</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
         <source>Both you and your contact can irreversibly delete sent messages.</source>
         <target>Vous et votre contact êtes tous deux en mesure de supprimer de manière irréversible les messages envoyés.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
+        <source>Both you and your contact can make calls.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
@@ -638,11 +683,6 @@
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>Annuler</target>
-        <note>chat item action</note>
-      </trans-unit>
-      <trans-unit id="Cancel file transfer?" xml:space="preserve">
-        <source>Cancel file transfer?</source>
-        <target>Annuler le transfert de fichiers ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
@@ -1126,6 +1166,10 @@
       <trans-unit id="Decentralized" xml:space="preserve">
         <source>Decentralized</source>
         <target>Décentralisé</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Decryption error" xml:space="preserve">
+        <source>Decryption error</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
@@ -1763,11 +1807,6 @@
         <target>Quitter sans sauvegarder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Experimental" xml:space="preserve">
-        <source>Experimental</source>
-        <target>Expérimental</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
         <source>Export database</source>
         <target>Exporter la base de données</target>
@@ -1793,9 +1832,12 @@
         <target>Échec de la suppression de la phrase secrète</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File transfer will be cancelled. If it's in progress it will be stoppped." xml:space="preserve">
-        <source>File transfer will be cancelled. If it's in progress it will be stoppped.</source>
-        <target>Le transfert de fichiers sera annulé. S'il est en cours, il sera interrompu.</target>
+      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve">
+        <source>Fast and no wait until the sender is online!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File will be deleted from servers." xml:space="preserve">
+        <source>File will be deleted from servers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
@@ -2220,19 +2262,15 @@
         <target>Cela permet d'avoir plusieurs connections anonymes sans aucune données partagées entre elles sur un même profil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates about the servers.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
+      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
+        <source>It can happen when you or your connection used the old database backup.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expire on the server if they were not received for 30 days,
-2. The server you use to receive the messages from this contact was updated and restarted.
-3. The connection is compromised.
-Please connect to the developers via Settings to receive the updates about the servers.
-We will be adding server redundancy to prevent lost messages.</source>
-        <target>C'est possible quand :
-1. Les messages expirent du serveur (après 30 jours si ils ne sont pas reçu).
-2. Le serveur que vous utilisez pour recevoir les messages de ce contact a été mise à jour ou redémarré.
-3. La connection est compromise.
-Veuillez vous connecter aux développeurs via les Paramètres pour recevoir les mises à jour concernant les serveurs.
-Nous allons ajouter une redondance des serveurs pour éviter la perte de messages.</target>
+1. The messages expired in the sending client after 2 days or on the server after 30 days.
+2. Message decryption failed, because you or your contact used old database backup.
+3. The connection was compromised.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
@@ -2674,6 +2712,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Vous êtes le seul à pouvoir supprimer des messages de manière irréversible (votre contact peut les marquer comme supprimé).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Only you can make calls." xml:space="preserve">
+        <source>Only you can make calls.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
         <source>Only you can send disappearing messages.</source>
         <target>Seulement vous pouvez envoyer des messages éphémères.</target>
@@ -2687,6 +2729,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
         <target>Seul votre contact peut supprimer de manière irréversible des messages (vous pouvez les marquer comme supprimé).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only your contact can make calls." xml:space="preserve">
+        <source>Only your contact can make calls.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
@@ -2799,6 +2845,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Périodique</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Permanent decryption error" xml:space="preserve">
+        <source>Permanent decryption error</source>
+        <note>message decrypt error item</note>
+      </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
         <source>Please ask your contact to enable sending voice messages.</source>
         <target>Veuillez demander à votre contact de permettre l'envoi de messages vocaux.</target>
@@ -2839,6 +2889,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>N'oubliez pas de le mémoriser ou de le conserver en toute sécurité - il n'y a aucun moyen de récupérer un code d'accès perdu !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please report it to the developers." xml:space="preserve">
+        <source>Please report it to the developers.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
         <source>Please restart the app and migrate the database to enable push notifications.</source>
         <target>Veuillez redémarrer l'app et migrer la base de données pour activer les notifications push.</target>
@@ -2852,6 +2906,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve">
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
         <target>Veuillez conserver votre phrase secrète en lieu sûr, vous NE pourrez PAS la changer si vous la perdez.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Polish interface" xml:space="preserve">
+        <source>Polish interface</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -2904,6 +2962,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Mot de passe de profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
+        <source>Prohibit audio/video calls.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
         <source>Prohibit irreversible message deletion.</source>
         <target>Interdire la suppression irréversible des messages.</target>
@@ -2914,9 +2976,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Interdire l'envoi de messages directs aux membres.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
+      <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve" approved="no">
         <source>Prohibit sending disappearing messages.</source>
-        <target>Interdit l’envoi de messages éphémères.</target>
+        <target state="translated">Interdire l’envoi de messages éphémères.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
@@ -2968,6 +3030,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <source>Received file event</source>
         <target>Événement de fichier reçu</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Receiving file will be stopped." xml:space="preserve">
+        <source>Receiving file will be stopped.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving via" xml:space="preserve">
         <source>Receiving via</source>
@@ -3092,6 +3158,18 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="Revert" xml:space="preserve">
         <source>Revert</source>
         <target>Revenir en arrière</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Revoke" xml:space="preserve">
+        <source>Revoke</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Revoke file" xml:space="preserve">
+        <source>Revoke file</source>
+        <note>cancel file action</note>
+      </trans-unit>
+      <trans-unit id="Revoke file?" xml:space="preserve">
+        <source>Revoke file?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role" xml:space="preserve">
@@ -3284,6 +3362,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>L'expéditeur a peut-être supprimé la demande de connexion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Sending file will be stopped." xml:space="preserve">
+        <source>Sending file will be stopped.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
         <source>Sending via</source>
         <target>Envoi via</target>
@@ -3332,6 +3414,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="Set group preferences" xml:space="preserve">
         <source>Set group preferences</source>
         <target>Définir les préférences du groupe</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Set it instead of system authentication." xml:space="preserve">
+        <source>Set it instead of system authentication.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -3504,6 +3590,18 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Arrêter le chat ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Stop file" xml:space="preserve">
+        <source>Stop file</source>
+        <note>cancel file action</note>
+      </trans-unit>
+      <trans-unit id="Stop receiving file?" xml:space="preserve">
+        <source>Stop receiving file?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Stop sending file?" xml:space="preserve">
+        <source>Stop sending file?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
         <source>Submit</source>
         <target>Soumettre</target>
@@ -3614,6 +3712,11 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>La 1ère plateforme sans aucun identifiant d'utilisateur – privée par design.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
+        <source>The ID of the next message is incorrect (less or equal to the previous).
+It can happen because of some bug or when the connection is compromised.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
         <target>L'application peut vous avertir lorsque vous recevez des messages ou des demandes de contact - veuillez ouvrir les paramètres pour les activer.</target>
@@ -3642,6 +3745,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="The group is fully decentralized – it is visible only to the members." xml:space="preserve">
         <source>The group is fully decentralized – it is visible only to the members.</source>
         <target>Le groupe est entièrement décentralisé – il n'est visible que par ses membres.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The hash of the previous message is different." xml:space="preserve">
+        <source>The hash of the previous message is different.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -3707,6 +3814,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
         <target>Cette action ne peut être annulée - votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This error is permanent for this connection, please re-connect." xml:space="preserve">
+        <source>This error is permanent for this connection, please re-connect.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">
@@ -4001,6 +4112,10 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>Video will be received when your contact is online, please wait or check later!</source>
         <target>La vidéo ne sera reçue que lorsque votre contact sera en ligne. Veuillez patienter ou vérifier plus tard !</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
+        <source>Videos and files up to 1gb</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
@@ -4958,11 +5073,6 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       <trans-unit id="v%@ (%@)" xml:space="preserve">
         <source>v%@ (%@)</source>
         <target>v%@ (%@)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="v4.6.1+ is required to receive via XFTP." xml:space="preserve">
-        <source>v4.6.1+ is required to receive via XFTP.</source>
-        <target>v4.6.1+ nécessaire pour la réception via XFTP.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="via contact address link" xml:space="preserve">

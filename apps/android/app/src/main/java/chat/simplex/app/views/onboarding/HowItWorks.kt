@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,8 +56,13 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
 }
 
 @Composable
-fun ReadableText(@StringRes stringResId: Int) {
-  Text(annotatedStringResource(stringResId), modifier = Modifier.padding(bottom = 12.dp), lineHeight = 22.sp)
+fun ReadableText(@StringRes stringResId: Int, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
+  Text(annotatedStringResource(stringResId), modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp)
+}
+
+@Composable
+fun ReadableText(text: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
+  Text(text, modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp)
 }
 
 @Preview(showBackground = true)

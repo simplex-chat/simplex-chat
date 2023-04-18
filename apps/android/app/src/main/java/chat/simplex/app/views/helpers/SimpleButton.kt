@@ -12,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -25,6 +27,21 @@ fun SimpleButton(text: String, icon: ImageVector,
       modifier = Modifier.padding(end = 8.dp)
     )
     Text(text, style = MaterialTheme.typography.caption, color = color)
+  }
+}
+
+@Composable
+fun SimpleButtonDecorated(text: String, icon: ImageVector,
+  color: Color = MaterialTheme.colors.primary,
+  textDecoration: TextDecoration = TextDecoration.Underline,
+  fontWeight: FontWeight = FontWeight.Normal,
+  click: () -> Unit) {
+  SimpleButtonFrame(click) {
+    Icon(
+      icon, text, tint = color,
+      modifier = Modifier.padding(end = 8.dp)
+    )
+    Text(text, style = MaterialTheme.typography.caption, fontWeight = fontWeight, color = color, textDecoration = textDecoration)
   }
 }
 
@@ -61,9 +78,9 @@ fun SimpleButtonIconEnded(
 }
 
 @Composable
-fun SimpleButtonFrame(click: () -> Unit, disabled: Boolean = false, content: @Composable () -> Unit) {
+fun SimpleButtonFrame(click: () -> Unit, modifier: Modifier = Modifier, disabled: Boolean = false, content: @Composable () -> Unit) {
   Surface(shape = RoundedCornerShape(20.dp)) {
-    val modifier = if (disabled) Modifier else Modifier.clickable { click() }
+    val modifier = if (disabled) modifier else modifier.clickable { click() }
     Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = modifier.padding(8.dp)

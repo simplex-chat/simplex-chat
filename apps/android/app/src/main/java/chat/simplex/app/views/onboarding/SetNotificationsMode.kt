@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
@@ -23,22 +25,22 @@ import chat.simplex.app.views.usersettings.changeNotificationsMode
 
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
-    Column(
-      Modifier
-        .fillMaxSize()
-        .verticalScroll(rememberScrollState())
-        .padding(20.dp)
-    ) {
-      AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title), false)
-      val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
-      Text(stringResource(R.string.onboarding_notifications_mode_subtitle))
-      Spacer(Modifier.padding(DEFAULT_PADDING_HALF))
+  Column(
+    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+  ) {
+    //CloseSheetBar(null)
+    AppBarTitleCentered(stringResource(R.string.onboarding_notifications_mode_title))
+    val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
+    Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
+      Text(stringResource(R.string.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+      Spacer(Modifier.height(DEFAULT_PADDING * 2f))
       NotificationButton(currentMode, NotificationsMode.OFF, R.string.onboarding_notifications_mode_off, R.string.onboarding_notifications_mode_off_desc)
       NotificationButton(currentMode, NotificationsMode.PERIODIC, R.string.onboarding_notifications_mode_periodic, R.string.onboarding_notifications_mode_periodic_desc)
       NotificationButton(currentMode, NotificationsMode.SERVICE, R.string.onboarding_notifications_mode_service, R.string.onboarding_notifications_mode_service_desc)
-      Spacer(Modifier.fillMaxHeight().weight(1f))
-      Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
-        OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage) {
+    }
+    Spacer(Modifier.fillMaxHeight().weight(1f))
+    Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
+        OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
           changeNotificationsMode(currentMode.value, m)
         }
       }
@@ -51,18 +53,24 @@ private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mod
   TextButton(
     onClick = { currentMode.value = mode },
     border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
-    shape = RoundedCornerShape(15.dp),
+    shape = RoundedCornerShape(35.dp),
   ) {
-    Column(Modifier.padding(bottom = 6.dp).padding(horizontal = 8.dp)) {
+    Column(Modifier.padding(14.dp)) {
       Text(
         stringResource(title),
         style = MaterialTheme.typography.h2,
         fontWeight = FontWeight.Medium,
         color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight,
-        modifier = Modifier.padding(bottom = 4.dp)
+        modifier = Modifier.padding(bottom = 14.dp).align(Alignment.CenterHorizontally),
+        textAlign = TextAlign.Center
       )
-      Text(annotatedStringResource(description), color = MaterialTheme.colors.onBackground, lineHeight = 24.sp)
+      Text(annotatedStringResource(description),
+        Modifier.align(Alignment.CenterHorizontally),
+        color = MaterialTheme.colors.onBackground,
+        lineHeight = 24.sp,
+        textAlign = TextAlign.Center
+      )
     }
   }
-  Spacer(Modifier.height(DEFAULT_PADDING))
+  Spacer(Modifier.height(14.dp))
 }

@@ -27,6 +27,7 @@ import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
+import Data.Word (Word32)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
@@ -152,12 +153,14 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRRcvFileStart u ci -> ttyUser u $ receivingFile_' "started" ci
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' "completed" ci
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
+  CRRcvFileError u ci -> ttyUser u $ receivingFile_' "error" ci
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CRSndFileStartXFTP _ _ _ -> []
-  CRSndFileProgressXFTP _ _ _ _ _ -> []
-  CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadedFile ci
-  CRSndFileCancelledXFTP _ _ _ -> []
+  CRSndFileStartXFTP {} -> []
+  CRSndFileProgressXFTP {} -> []
+  CRSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" ci
+  CRSndFileCancelledXFTP {} -> []
+  CRSndFileError u ci -> ttyUser u $ uploadingFile "error" ci
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting u _ -> ttyUser u []
@@ -365,6 +368,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIDirectRcv -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
+        CIRcvDecryptionError err n -> viewRcvDecryptionError from err n ts meta
         CIRcvGroupEvent {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
@@ -381,6 +385,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIGroupRcv m -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
+        CIRcvDecryptionError err n -> viewRcvDecryptionError from err n ts meta
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
@@ -489,20 +494,14 @@ msgPreview = msgPlain . preview . msgContentText
       | T.length t <= 120 = t
       | otherwise = T.take 120 t <> "..."
 
-viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta с 'MDRcv -> [StyledString]
+viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta c 'MDRcv -> [StyledString]
 viewRcvIntegrityError from msgErr ts meta = receivedWithTime_ ts from [] meta (viewMsgIntegrityError msgErr) False
 
+viewRcvDecryptionError :: StyledString -> MsgDecryptError -> Word32 -> CurrentTime -> CIMeta c 'MDRcv -> [StyledString]
+viewRcvDecryptionError from err n ts meta = receivedWithTime_ ts from [] meta [ttyError $ msgDecryptErrorText err n] False
+
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
-viewMsgIntegrityError err = msgError $ case err of
-  MsgSkipped fromId toId ->
-    "skipped message ID " <> show fromId
-      <> if fromId == toId then "" else ".." <> show toId
-  MsgBadId msgId -> "unexpected message ID " <> show msgId
-  MsgBadHash -> "incorrect message hash"
-  MsgDuplicate -> "duplicate message ID"
-  where
-    msgError :: String -> [StyledString]
-    msgError s = [ttyError s]
+viewMsgIntegrityError err = [ttyError $ msgIntegrityError err]
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =
@@ -903,7 +902,7 @@ viewContactPreferences user ct ct' cups =
 viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> AChatFeature -> Maybe StyledString
 viewContactPref userPrefs userPrefs' ctPrefs cups (ACF f)
   | userPref == userPref' && ctPref == contactPreference = Nothing
-  | otherwise = Just . plain $ chatFeatureNameText' f <> ": " <> prefEnabledToText enabled <> " (you allow: " <> countactUserPrefText userPreference <> ", contact allows: " <> preferenceText contactPreference <> ")"
+  | otherwise = Just . plain $ chatFeatureNameText' f <> ": " <> prefEnabledToText (chatFeature f) enabled (prefParam userPref') <> " (you allow: " <> countactUserPrefText userPreference <> ", contact allows: " <> preferenceText contactPreference <> ")"
   where
     userPref = getPreference f userPrefs
     userPref' = getPreference f userPrefs'
@@ -1077,12 +1076,12 @@ sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
-uploadedFile :: AChatItem -> [StyledString]
-uploadedFile (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
-  ["uploaded " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-uploadedFile (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
-  ["uploaded " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
-uploadedFile _ = ["uploaded file"] -- shouldn't happen
+uploadingFile :: StyledString -> AChatItem -> [StyledString]
+uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
+  [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
+uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
+  [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
+uploadingFile status _ = [status <> " uploading file"] -- shouldn't happen
 
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
@@ -1306,6 +1305,7 @@ viewChatError logLevel = \case
     CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
     CEXFTPRcvFile fileId aFileId e -> ["error receiving XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
     CEXFTPSndFile fileId aFileId e -> ["error sending XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
+    CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]

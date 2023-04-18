@@ -12,6 +12,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +26,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,7 +38,6 @@ import chat.simplex.app.model.*
 import chat.simplex.app.model.NtfManager.Companion.OpenChatAction
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
-import chat.simplex.app.views.onboarding.SimpleXLogo
 import kotlinx.datetime.Clock
 
 class IncomingCallActivity: ComponentActivity() {
@@ -184,6 +185,17 @@ fun IncomingCallLockScreenAlertLayout(
       SimpleButton(text = stringResource(R.string.open_verb), icon = Icons.Filled.Check, click = openApp)
     }
   }
+}
+
+@Composable
+private fun SimpleXLogo() {
+  Image(
+    painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
+    contentDescription = stringResource(R.string.image_descr_simplex_logo),
+    modifier = Modifier
+      .padding(vertical = DEFAULT_PADDING)
+      .fillMaxWidth(0.80f)
+  )
 }
 
 @Composable

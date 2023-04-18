@@ -116,6 +116,7 @@
 		5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */; };
 		5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FA2809BF11000C35E3 /* Localizable.strings */; };
 		5CC2C0FF2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */; };
+		5CC868F329EB540C0017BBFD /* CIRcvDecryptionError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */; };
 		5CCA7DF32905735700C8FEBA /* AcceptRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */; };
 		5CCB939C297EFCB100399E78 /* NavStackCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCB939B297EFCB100399E78 /* NavStackCompat.swift */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
@@ -384,6 +385,7 @@
 		5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		5CC2C0FB2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CC2C0FE2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = "ru.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIRcvDecryptionError.swift; sourceTree = "<group>"; };
 		5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptRequestsView.swift; sourceTree = "<group>"; };
 		5CCB939B297EFCB100399E78 /* NavStackCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavStackCompat.swift; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
@@ -798,6 +800,7 @@
 				1841511920742C6E152E469F /* AnimatedImageView.swift */,
 				6407BA82295DA85D0082BA18 /* CIInvalidJSONView.swift */,
 				18415FD2E36F13F596A45BB4 /* CIVideoView.swift */,
+				5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */,
 			);
 			path = ChatItem;
 			sourceTree = "<group>";
@@ -1094,6 +1097,7 @@
 				64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */,
 				5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
+				5CC868F329EB540C0017BBFD /* CIRcvDecryptionError.swift in Sources */,
 				5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
 				3C8C548928133C84000A3EC7 /* PasteToConnectView.swift in Sources */,
 				5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */,

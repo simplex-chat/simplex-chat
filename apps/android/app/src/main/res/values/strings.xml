@@ -32,6 +32,7 @@
   <string name="moderated_description">moderated</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
+  <string name="decryption_error">Decryption error</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
   <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
@@ -217,10 +218,18 @@
   <string name="delete_member_message__question">Delete member message?</string>
   <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
   <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
-  <string name="cancel_file__question">Cancel file transfer?</string>
-  <string name="file_transfer_will_be_cancelled_warning">File transfer will be cancelled. If it\'s in progress it will be stoppped.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
+  <string name="stop_file__action">Stop file</string>
+  <string name="stop_snd_file__title">Stop sending file?</string>
+  <string name="stop_snd_file__message">Sending file will be stopped.</string>
+  <string name="stop_rcv_file__title">Stop receiving file?</string>
+  <string name="stop_rcv_file__message">Receiving file will be stopped.</string>
+  <string name="stop_file__confirm">Stop</string>
+  <string name="revoke_file__action">Revoke file</string>
+  <string name="revoke_file__title">Revoke file?</string>
+  <string name="revoke_file__message">File will be deleted from servers.</string>
+  <string name="revoke_file__confirm">Revoke</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
@@ -606,6 +615,7 @@
   <string name="create_profile">Create profile</string>
   <string name="your_profile_is_stored_on_your_device">Your profile, contacts and delivered messages are stored on your device.</string>
   <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
+  <string name="no_spaces">No spaces!</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Display Name</string>
   <string name="full_name_optional__prompt">Full Name (optional)</string>
@@ -741,7 +751,16 @@
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
   <string name="alert_title_skipped_messages">Skipped messages</string>
-  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages.</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised.</string>
+  <string name="alert_title_msg_bad_hash">Bad message hash</string>
+  <string name="alert_text_msg_bad_hash">The hash of the previous message is different."</string>
+  <string name="alert_title_msg_bad_id">Bad message ID</string>
+  <string name="alert_text_msg_bad_id">The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised.</string>
+  <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> messages failed to decrypt.</string>
+  <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> messages skipped.</string>
+  <string name="alert_text_fragment_encryption_out_of_sync_old_database">It can happen when you or your connection used the old database backup.</string>
+  <string name="alert_text_fragment_permanent_error_reconnect">This error is permanent for this connection, please re-connect.</string>
+  <string name="alert_text_fragment_please_report_to_developers">Please report it to the developers.</string>
 
   <!-- Privacy settings -->
   <string name="privacy_and_security">Privacy &amp; security</string>
@@ -1165,6 +1184,8 @@
   <string name="direct_messages">Direct messages</string>
   <string name="full_deletion">Delete for everyone</string>
   <string name="voice_messages">Voice messages</string>
+  <string name="audio_video_calls">Audio/video calls</string>
+  <string name="available_in_v51">\nAvailable in v5.1</string>
   <string name="feature_enabled">enabled</string>
   <string name="feature_enabled_for_you">enabled for you</string>
   <string name="feature_enabled_for_contact">enabled for contact</string>
@@ -1181,6 +1202,9 @@
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
   <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
+  <string name="allow_your_contacts_to_call">Allow your contacts to call you.</string>
+  <string name="allow_calls_only_if">Allow calls only if your contact allows them.</string>
+  <string name="prohibit_calls">Prohibit audio/video calls.</string>
   <string name="both_you_and_your_contact_can_send_disappearing">Both you and your contact can send disappearing messages.</string>
   <string name="only_you_can_send_disappearing">Only you can send disappearing messages.</string>
   <string name="only_your_contact_can_send_disappearing">Only your contact can send disappearing messages.</string>
@@ -1193,6 +1217,10 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="both_you_and_your_contact_can_make_calls">Both you and your contact can make calls.</string>
+  <string name="only_you_can_make_calls">Only you can make calls.</string>
+  <string name="only_your_contact_can_make_calls">Only your contact can make calls.</string>
+  <string name="calls_prohibited_with_this_contact">Audio/video calls are prohibited.</string>
   <string name="allow_to_send_disappearing">Allow to send disappearing messages.</string>
   <string name="prohibit_sending_disappearing">Prohibit sending disappearing messages.</string>
   <string name="allow_direct_messages">Allow sending direct messages to members.</string>
@@ -1279,4 +1307,10 @@
   <string name="v4_6_reduced_battery_usage_descr">More improvements are coming soon!</string>
   <string name="v4_6_chinese_spanish_interface">Chinese and Spanish interface</string>
   <string name="v4_6_chinese_spanish_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v5_0_large_files_support">Videos and files up to 1gb</string>
+  <string name="v5_0_large_files_support_descr">Fast and no wait until the sender is online!</string>
+  <string name="v5_0_app_passcode">App passcode</string>
+  <string name="v5_0_app_passcode_descr">Set it instead of system authentication.</string>
+  <string name="v5_0_polish_interface">Polish interface</string>
+  <string name="v5_0_polish_interface_descr">Thanks to the users – contribute via Weblate!</string>
 </resources>
