@@ -976,7 +976,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    let startFeatures = [(0, "Disappearing messages: off"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
+    let startFeatures = [(0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
     let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
@@ -1221,25 +1221,22 @@ testEnableTimedMessagesContact =
       connectUsers alice bob
       alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
       alice <## "you updated preferences for bob:"
-      alice <## "Disappearing messages: off (you allow: yes (1 sec), contact allows: no)"
+      alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes)"
       bob <## "alice updated preferences for you:"
-      bob <## "Disappearing messages: off (you allow: no, contact allows: yes (1 sec))"
-      bob ##> "/set disappear @alice yes"
-      bob <## "you updated preferences for alice:"
       bob <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
-      alice <## "bob updated preferences for you:"
-      alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
+      bob ##> "/set disappear @alice yes"
+      bob <## "your preferences for alice did not change"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       alice <## "timed message deleted: hey"
       bob <## "timed message deleted: hi"
       bob <## "timed message deleted: hey"
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       -- turn off, messages are not disappearing
       bob ##> "/set disappear @alice no"
       bob <## "you updated preferences for alice:"
@@ -1248,8 +1245,8 @@ testEnableTimedMessagesContact =
       alice <## "Disappearing messages: off (you allow: yes (1 sec), contact allows: no)"
       alice <##> bob
       threadDelay 1500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
       -- test api
       bob ##> "/set disappear @alice yes 30s"
       bob <## "you updated preferences for alice:"
@@ -1317,8 +1314,7 @@ testTimedMessagesEnabledGlobally =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/set disappear yes"
-      alice <## "updated preferences:"
-      alice <## "Disappearing messages allowed: yes"
+      alice <## "user profile did not change"
       connectUsers alice bob
       bob ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
       bob <## "you updated preferences for alice:"

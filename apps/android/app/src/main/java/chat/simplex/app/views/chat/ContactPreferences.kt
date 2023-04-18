@@ -88,7 +88,7 @@ private fun ContactPreferencesLayout(
     AppBarTitle(stringResource(R.string.contact_preferences))
     val timedMessages: MutableState<Boolean> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.timedMessagesAllowed) }
     val onTTLUpdated = { ttl: Int? ->
-      applyPrefs(featuresAllowed.copy(timedMessagesTTL = ttl ?: 86400))
+      applyPrefs(featuresAllowed.copy(timedMessagesTTL = ttl))
     }
     TimedMessagesFeatureSection(featuresAllowed, contact.mergedPreferences.timedMessages, timedMessages, onTTLUpdated) { allowed, ttl ->
       applyPrefs(featuresAllowed.copy(timedMessagesAllowed = allowed, timedMessagesTTL = ttl ?: currentFeaturesAllowed.timedMessagesTTL))
@@ -102,6 +102,11 @@ private fun ContactPreferencesLayout(
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
     FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
+    }
+    SectionSpacer()
+    val allowCalls: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.calls) }
+    FeatureSection(ChatFeature.Calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, allowCalls) {
+      applyPrefs(featuresAllowed.copy(calls = it))
     }
     SectionSpacer()
     ResetSaveButtons(
@@ -138,6 +143,7 @@ private fun FeatureSection(
         ContactFeatureAllowed.values(userDefault).map { it to it.text },
         allowFeature,
         icon = null,
+        enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
         onSelected = onSelected
       )
     }
@@ -147,7 +153,7 @@ private fun FeatureSection(
       pref.contactPreference.allow.text
     )
   }
-  SectionTextFooter(feature.enabledDescription(enabled))
+  SectionTextFooter(feature.enabledDescription(enabled) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
 }
 
 @Composable
