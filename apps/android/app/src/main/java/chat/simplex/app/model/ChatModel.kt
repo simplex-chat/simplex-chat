@@ -1,7 +1,6 @@
 package chat.simplex.app.model
 
 import android.net.Uri
-import androidx.annotation.StringRes
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
