@@ -111,7 +111,8 @@ testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
       testView = True,
-      tbqSize = 16
+      tbqSize = 16,
+      xftpFileConfig = Nothing
     }
 
 testAgentCfgV1 :: AgentConfig

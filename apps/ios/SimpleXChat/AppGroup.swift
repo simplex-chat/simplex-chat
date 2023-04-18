@@ -203,9 +203,8 @@ public class Default<T> {
     }
 }
 
-public func getXFTPCfg() -> XFTPFileConfig? {
-    let xftpSendEnabled = xftpSendEnabledGroupDefault.get()
-    return xftpSendEnabled ? XFTPFileConfig(minFileSize: 0) : nil
+public func getXFTPCfg() -> XFTPFileConfig {
+    return XFTPFileConfig(minFileSize: 0)
 }
 
 public func getNetCfg() -> NetCfg {
