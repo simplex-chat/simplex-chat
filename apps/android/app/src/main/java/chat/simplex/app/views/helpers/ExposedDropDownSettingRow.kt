@@ -81,7 +81,7 @@ fun <T> ExposedDropDownSettingRow(
               onSelected(selectionOption.first)
               expanded.value = false
             },
-            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2)
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
               selectionOption.second + (if (label != null) " $label" else ""),

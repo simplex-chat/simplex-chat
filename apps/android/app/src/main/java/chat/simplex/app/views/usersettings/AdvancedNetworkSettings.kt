@@ -292,7 +292,7 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
               selection.value = selectionOption
               expanded.value = false
             },
-            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2)
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
               "$selectionOption $label",
@@ -353,7 +353,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
               selection.value = selectionOption
               expanded.value = false
             },
-            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2)
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
               "${df.format(selectionOption / 1_000_000.toDouble())} $label",

@@ -317,7 +317,7 @@ fun ModerateItemAction(
 
 @Composable
 fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2)) {
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,

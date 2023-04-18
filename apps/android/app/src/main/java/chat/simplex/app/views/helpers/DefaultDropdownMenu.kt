@@ -27,7 +27,7 @@ fun DefaultDropdownMenu(
       onDismissRequest = { showMenu.value = false },
       Modifier
         .widthIn(min = 250.dp)
-        .padding(vertical = DEFAULT_PADDING_HALF),
+        .padding(vertical = 4.dp),
       offset = offset,
     ) {
       dropdownMenuItems?.invoke()
