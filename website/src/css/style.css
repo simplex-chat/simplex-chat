@@ -175,6 +175,14 @@ html {
   color: #fff;
 }
 
+.nav-link ul li a.active{
+  color: #0053D0;
+
+}
+.dark .nav-link ul li a.active{
+  color: #66D9E2;
+}
+
 @media (min-width:1024px) {
   .nav-link-text,
   .menu-link {
