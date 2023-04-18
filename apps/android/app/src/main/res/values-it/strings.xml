@@ -1114,4 +1114,25 @@
     <string name="alert_title_msg_bad_hash">Hash del messaggio errato</string>
     <string name="alert_text_msg_bad_hash">L\'hash del messaggio precedente è diverso.</string>
     <string name="alert_text_fragment_please_report_to_developers">Si prega di segnalarlo agli sviluppatori.</string>
+    <string name="stop_snd_file__message">L\'invio del file verrà interrotto.</string>
+    <string name="stop_file__action">Ferma file</string>
+    <string name="stop_snd_file__title">Fermare l\'invio del file\?</string>
+    <string name="revoke_file__message">Il file verrà eliminato dai server.</string>
+    <string name="stop_rcv_file__message">La ricezione del file verrà interrotta.</string>
+    <string name="revoke_file__confirm">Revoca</string>
+    <string name="revoke_file__action">Revoca file</string>
+    <string name="revoke_file__title">Revocare il file\?</string>
+    <string name="stop_file__confirm">Ferma</string>
+    <string name="stop_rcv_file__title">Fermare la ricezione del file\?</string>
+    <string name="no_spaces">Niente spazi!</string>
+    <string name="allow_calls_only_if">Consenti le chiamate solo se il contatto le consente.</string>
+    <string name="calls_prohibited_with_this_contact">Le chiamate audio/video sono vietate.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Sia tu che il tuo contatto potete effettuare chiamate.</string>
+    <string name="only_you_can_make_calls">Solo tu puoi effettuare chiamate.</string>
+    <string name="only_your_contact_can_make_calls">Solo il tuo contatto può effettuare chiamate.</string>
+    <string name="prohibit_calls">Proibisci le chiamate audio/video.</string>
+    <string name="audio_video_calls">Chiamate audio/video</string>
+    <string name="available_in_v51">"
+\nDisponibile nella v5.1"</string>
+    <string name="allow_your_contacts_to_call">Consenti ai tuoi contatti di chiamarti.</string>
 </resources>
