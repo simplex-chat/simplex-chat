@@ -12,6 +12,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -253,14 +254,14 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    var expanded by remember { mutableStateOf(false) }
+    val expanded = rememberSaveable { mutableStateOf(false) }
 
     Text(title)
 
     ExposedDropdownMenuBox(
-      expanded = expanded,
+      expanded = expanded.value,
       onExpandedChange = {
-        expanded = !expanded
+        expanded.value = !expanded.value
       }
     ) {
       Row(
@@ -276,24 +277,22 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+          if (!expanded.value) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
           generalGetString(R.string.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = HighOrLowlight
         )
       }
-      ExposedDropdownMenu(
+      DefaultExposedDropdownMenu(
         expanded = expanded,
-        onDismissRequest = {
-          expanded = false
-        }
       ) {
         values.forEach { selectionOption ->
           DropdownMenuItem(
             onClick = {
               selection.value = selectionOption
-              expanded = false
-            }
+              expanded.value = false
+            },
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2)
           ) {
             Text(
               "$selectionOption $label",
@@ -314,14 +313,14 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    var expanded by remember { mutableStateOf(false) }
+    val expanded = remember { mutableStateOf(false) }
 
     Text(title)
 
     ExposedDropdownMenuBox(
-      expanded = expanded,
+      expanded = expanded.value,
       onExpandedChange = {
-        expanded = !expanded
+        expanded.value = !expanded.value
       }
     ) {
       val df = DecimalFormat("#.#")
@@ -339,24 +338,22 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+          if (!expanded.value) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
           generalGetString(R.string.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = HighOrLowlight
         )
       }
-      ExposedDropdownMenu(
-        expanded = expanded,
-        onDismissRequest = {
-          expanded = false
-        }
+      DefaultExposedDropdownMenu(
+        expanded = expanded
       ) {
         values.forEach { selectionOption ->
           DropdownMenuItem(
             onClick = {
               selection.value = selectionOption
-              expanded = false
-            }
+              expanded.value = false
+            },
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2)
           ) {
             Text(
               "${df.format(selectionOption / 1_000_000.toDouble())} $label",

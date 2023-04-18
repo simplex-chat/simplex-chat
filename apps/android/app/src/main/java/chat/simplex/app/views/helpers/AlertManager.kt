@@ -3,13 +3,14 @@ package chat.simplex.app.views.helpers
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
@@ -37,6 +38,7 @@ class AlertManager {
     val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
     showAlert {
       AlertDialog(
+        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
         onDismissRequest = this::hideAlert,
         title = { Text(title) },
         text = alertText,
@@ -52,22 +54,22 @@ class AlertManager {
   ) {
     showAlert {
       Dialog(onDismissRequest = this::hideAlert) {
-        Column(Modifier.background(MaterialTheme.colors.background, MaterialTheme.shapes.medium)) {
-          Text(title,
-            Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING, bottom = if (text == null) DEFAULT_PADDING else DEFAULT_PADDING_HALF),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold
+        Column(
+          Modifier
+            .background(if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
+            .padding(bottom = DEFAULT_PADDING)
+        ) {
+          Text(
+            title,
+            Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING),
+            color = if (isInDarkTheme()) Color(0xffF3F6F7) else Color(0xff3F484B),
+            textAlign = TextAlign.Center,
+            fontSize = 20.sp
           )
-          if (text != null) {
-            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
-              Text(
-                text,
-                Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
-                fontSize = 14.sp,
-              )
-            }
-          }
           CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+            if (text != null) {
+              Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = HighOrLowlight)
+            }
             buttons()
           }
         }
@@ -85,24 +87,37 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false
   ) {
-    val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
+    val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text, Modifier.fillMaxWidth(), fontSize = 16.sp, textAlign = TextAlign.Center, color = HighOrLowlight) }
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
-        title = { Text(title) },
-        text = alertText,
-        confirmButton = {
-          TextButton(onClick = {
-            onConfirm?.invoke()
-            hideAlert()
-          }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
+        title = {
+          Text(
+            title,
+            Modifier.fillMaxWidth(),
+            color = if (isInDarkTheme()) Color(0xffF3F6F7) else Color(0xff3F484B),
+            textAlign = TextAlign.Center,
+            fontSize = 20.sp
+          )
         },
-        dismissButton = {
-          TextButton(onClick = {
-            onDismiss?.invoke()
-            hideAlert()
-          }) { Text(dismissText) }
-        }
+        text = alertText,
+        buttons = {
+          Row (
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING_HALF),
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            TextButton(onClick = {
+              onDismiss?.invoke()
+              hideAlert()
+            }) { Text(dismissText) }
+            TextButton(onClick = {
+              onConfirm?.invoke()
+              hideAlert()
+            }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
+          }
+        },
+        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
   }
@@ -138,6 +153,8 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified, textAlign = TextAlign.End) }
           }
         },
+        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
   }
@@ -152,12 +169,19 @@ class AlertManager {
         onDismissRequest = this::hideAlert,
         title = { Text(title) },
         text = alertText,
-        confirmButton = {
-          TextButton(onClick = {
-            onConfirm?.invoke()
-            hideAlert()
-          }) { Text(confirmText) }
-        }
+        buttons = {
+          Row(
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING_HALF),
+            horizontalArrangement = Arrangement.Center
+          ) {
+            TextButton(onClick = {
+              onConfirm?.invoke()
+              hideAlert()
+            }) { Text(confirmText, color = Color.Unspecified) }
+          }
+        },
+        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
   }

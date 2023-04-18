@@ -31,7 +31,6 @@ import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.CreateProfile
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>) {
@@ -210,43 +209,39 @@ private fun UserView(
   unmuteUser: (User) -> Unit,
   showHiddenProfile: (User) -> Unit,
 ) {
-  var showDropdownMenu by remember { mutableStateOf(false) }
-  UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showDropdownMenu = true }) {
+  val showMenu = remember { mutableStateOf(false) }
+  UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showMenu.value = true }) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = 16.dp)) {
-    DropdownMenu(
-      expanded = showDropdownMenu,
-      onDismissRequest = { showDropdownMenu = false },
-      Modifier.width(220.dp)
-    ) {
+    DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
         ItemAction(stringResource(R.string.user_unhide), Icons.Outlined.LockOpen, onClick = {
-          showDropdownMenu = false
+          showMenu.value = false
           unhideUser(user)
         })
       } else {
         if (visibleUsersCount > 1) {
           ItemAction(stringResource(R.string.user_hide), Icons.Outlined.Lock, onClick = {
-            showDropdownMenu = false
+            showMenu.value = false
             showHiddenProfile(user)
           })
         }
         if (user.showNtfs) {
           ItemAction(stringResource(R.string.user_mute), Icons.Outlined.NotificationsOff, onClick = {
-            showDropdownMenu = false
+            showMenu.value = false
             muteUser(user)
           })
         } else {
           ItemAction(stringResource(R.string.user_unmute), Icons.Outlined.Notifications, onClick = {
-            showDropdownMenu = false
+            showMenu.value = false
             unmuteUser(user)
           })
         }
       }
       ItemAction(stringResource(R.string.delete_verb), Icons.Outlined.Delete, color = Color.Red, onClick = {
         removeUser(user)
-        showDropdownMenu = false
+        showMenu.value = false
       })
     }
   }

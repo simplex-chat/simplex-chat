@@ -22,8 +22,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ComposeContextItem
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
@@ -105,11 +104,7 @@ fun ChatItemView(
 
       @Composable
       fun MsgContentItemDropdownMenu() {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           if (cItem.meta.itemDeleted == null && !live) {
             ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
               if (composeState.value.editing) {
@@ -183,11 +178,7 @@ fun ChatItemView(
 
       @Composable
       fun MarkedDeletedItemDropdownMenu() {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           if (!cItem.isDeletedContent) {
             ItemAction(
               stringResource(R.string.reveal_verb),
@@ -227,11 +218,7 @@ fun ChatItemView(
 
       @Composable fun DeletedItem() {
         DeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
@@ -330,8 +317,8 @@ fun ModerateItemAction(
 
 @Composable
 fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
-  DropdownMenuItem(onClick) {
-    Row {
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
         modifier = Modifier

@@ -33,7 +33,7 @@ fun <T> ExposedDropDownSettingRow(
     Modifier.fillMaxWidth().padding(vertical = 10.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    var expanded by remember { mutableStateOf(false) }
+    val expanded = remember { mutableStateOf(false) }
 
     if (icon != null) {
       Icon(
@@ -46,9 +46,9 @@ fun <T> ExposedDropDownSettingRow(
     Text(title, Modifier.weight(1f), color = if (enabled.value) Color.Unspecified else HighOrLowlight)
 
     ExposedDropdownMenuBox(
-      expanded = expanded,
+      expanded = expanded.value,
       onExpandedChange = {
-        expanded = !expanded && enabled.value
+        expanded.value = !expanded.value && enabled.value
       }
     ) {
       Row(
@@ -66,24 +66,22 @@ fun <T> ExposedDropDownSettingRow(
         )
         Spacer(Modifier.size(12.dp))
         Icon(
-          if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+          if (!expanded.value) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
           generalGetString(R.string.icon_descr_more_button),
           tint = HighOrLowlight
         )
       }
-      ExposedDropdownMenu(
+      DefaultExposedDropdownMenu(
         modifier = Modifier.widthIn(min = 200.dp),
         expanded = expanded,
-        onDismissRequest = {
-          expanded = false
-        }
       ) {
         values.forEach { selectionOption ->
           DropdownMenuItem(
             onClick = {
               onSelected(selectionOption.first)
-              expanded = false
-            }
+              expanded.value = false
+            },
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 2)
           ) {
             Text(
               selectionOption.second + (if (label != null) " $label" else ""),
