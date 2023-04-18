@@ -2976,9 +2976,9 @@ Available in v5.1</source>
         <target>Interdire l'envoi de messages directs aux membres.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
+      <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve" approved="no">
         <source>Prohibit sending disappearing messages.</source>
-        <target>Interdit l’envoi de messages éphémères.</target>
+        <target state="translated">Interdire l’envoi de messages éphémères.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
