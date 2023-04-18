@@ -1113,4 +1113,5 @@
     <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
 \nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
     <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g>-berichten konden niet worden ontsleuteld.</string>
+    <string name="no_spaces">Geen spaties!</string>
 </resources>
