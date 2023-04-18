@@ -62,7 +62,6 @@ class AlertManager {
           Text(
             title,
             Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING),
-            color = if (isInDarkTheme()) Color(0xffF3F6F7) else Color(0xff3F484B),
             textAlign = TextAlign.Center,
             fontSize = 20.sp
           )
@@ -95,7 +94,6 @@ class AlertManager {
           Text(
             title,
             Modifier.fillMaxWidth(),
-            color = if (isInDarkTheme()) Color(0xffF3F6F7) else Color(0xff3F484B),
             textAlign = TextAlign.Center,
             fontSize = 20.sp
           )
