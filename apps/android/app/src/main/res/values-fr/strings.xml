@@ -475,12 +475,10 @@
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> message⸱s manqué⸱s</string>
     <string name="integrity_msg_bad_id">ID de message incorrecte</string>
     <string name="settings_section_title_settings">PARAMÈTRES</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">C\'est possible quand :
-\n1. Les messages expirent du serveur (après 30 jours si ils ne sont pas reçu).
-\n2. Le serveur que vous utilisez pour recevoir les messages de ce contact a été mise à jour ou redémarré.
-\n3. La connection est compromise.
-\nVeuillez vous connecter aux développeurs via les Paramètres pour recevoir les mises à jour concernant les serveurs.
-\nNous allons ajouter une redondance des serveurs pour éviter la perte de messages.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Cela peut arriver quand :
+\n1. Les messages ont expiré dans le client expéditeur après 2 jours ou sur le serveur après 30 jours.
+\n2. Le déchiffrement du message a échoué, car vous ou votre contact avez utilisé une ancienne sauvegarde de base de données.
+\n3. La connexion a été compromise.</string>
     <string name="icon_descr_call_rejected">Appel rejeté</string>
     <string name="rcv_group_event_member_deleted">a retiré <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="snd_group_event_member_deleted">vous avez retiré <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
@@ -854,7 +852,7 @@
     <string name="group_is_decentralized">Le groupe est entièrement décentralisé – il n\'est visible que par ses membres.</string>
     <string name="group_members_can_send_disappearing">Les membres du groupes peuvent envoyer des messages éphémères.</string>
     <string name="network_options_revert">Revenir en arrière</string>
-    <string name="prohibit_sending_disappearing_messages">Interdit l’envoi de messages éphémères.</string>
+    <string name="prohibit_sending_disappearing_messages">Interdire l’envoi de messages éphémères.</string>
     <string name="incognito_info_protects">Le mode Incognito protège la confidentialité de votre profil principal — pour chaque nouveau contact un nouveau profil aléatoire est créé.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">La mise à jour des ces paramètres reconnectera le client à tous les serveurs.</string>
     <string name="incognito_info_share">Lorsque vous partagez un profil incognito avec quelqu\'un, ce profil sera utilisé pour les groupes auxquels il vous invite.</string>
@@ -887,7 +885,7 @@
     <string name="allow_to_send_voice">Autoriser l\'envoi de messages vocaux.</string>
     <string name="prohibit_sending_voice">Interdire l\'envoi de messages vocaux.</string>
     <string name="allow_to_send_disappearing">Autorise l’envoi de messages éphémères.</string>
-    <string name="prohibit_sending_disappearing">Interdit l’envoi de messages éphémères.</string>
+    <string name="prohibit_sending_disappearing">Interdire l’envoi de messages éphémères.</string>
     <string name="prohibit_message_deletion">Interdire la suppression irréversible des messages.</string>
     <string name="group_members_can_send_dms">Les membres du groupe peuvent envoyer des messages directs.</string>
     <string name="direct_messages_are_prohibited_in_chat">Les messages directs entre membres sont interdits dans ce groupe.</string>
@@ -1075,4 +1073,62 @@
     <string name="network_socks_proxy_settings">Paramètres de proxy SOCKS</string>
     <string name="network_socks_toggle_use_socks_proxy">Utiliser un proxy SOCKS</string>
     <string name="disable_onion_hosts_when_not_supported">Définissez <i>Utiliser les hôtes .onion</i> sur Non si le proxy SOCKS ne les prend pas en charge.</string>
+    <string name="la_lock_mode">Mode de SimpleX Lock</string>
+    <string name="lock_not_enabled">SimpleX Lock n\'est pas activé !</string>
+    <string name="la_lock_mode_system">Authentification du système</string>
+    <string name="la_authenticate">Authentification</string>
+    <string name="la_auth_failed">Echec de l\'authentification</string>
+    <string name="la_change_app_passcode">Modifier le code d\'accès</string>
+    <string name="la_current_app_passcode">Code d\'accès actuel</string>
+    <string name="la_minutes">%d minutes</string>
+    <string name="la_seconds">%d secondes</string>
+    <string name="la_enter_app_passcode">Entrer le code d\'accès</string>
+    <string name="la_immediately">Immédiatement</string>
+    <string name="la_no_app_password">Pas de code d\'accès à l\'app</string>
+    <string name="la_lock_mode_passcode">Saisie du code</string>
+    <string name="la_please_remember_to_store_password">Veuillez le mémoriser ou le conserver en toute sécurité - il n\'y a aucun moyen de récupérer un mot de passe perdu !</string>
+    <string name="enable_lock">Activer le verrouillage</string>
+    <string name="change_lock_mode">Modifier le mode de verrouillage</string>
+    <string name="incorrect_passcode">Code d\'accès erroné</string>
+    <string name="new_passcode">Nouveau code d\'accès</string>
+    <string name="la_mode_passcode">Code d\'accès</string>
+    <string name="passcode_changed">Code d\'accès modifié !</string>
+    <string name="passcode_not_changed">Le code d\'accès n\'a pas été modifié !</string>
+    <string name="passcode_set">Code d\'accès défini !</string>
+    <string name="la_mode_system">Système</string>
+    <string name="authentication_cancelled">Authentification annulée</string>
+    <string name="alert_title_msg_bad_id">Mauvais ID de message</string>
+    <string name="alert_text_msg_bad_hash">Le hash du message précédent est différent.</string>
+    <string name="alert_text_msg_bad_id">L\'ID du message suivant est incorrect (inférieur ou égal au précédent).
+\nCela peut se produire en raison d\'un bug ou lorsque la connexion est compromise.</string>
+    <string name="decryption_error">Erreur de déchiffrement</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Cela peut se produire lorsque vous ou votre contact avez utilisé une ancienne sauvegarde de base de données.</string>
+    <string name="alert_title_msg_bad_hash">Mauvais hash de message</string>
+    <string name="no_spaces">Pas d\'espace !</string>
+    <string name="allow_calls_only_if">Autoriser les appels que si votre contact les autorise.</string>
+    <string name="allow_your_contacts_to_call">Autorise vos contacts à vous appeler.</string>
+    <string name="audio_video_calls">Appels audio/vidéo</string>
+    <string name="available_in_v51">"
+\nDisponible dans la v5.1"</string>
+    <string name="prohibit_calls">Interdire les appels audio/vidéo.</string>
+    <string name="revoke_file__message">Le fichier sera supprimé des serveurs.</string>
+    <string name="revoke_file__confirm">Révoquer</string>
+    <string name="revoke_file__action">Révoquer le fichier</string>
+    <string name="revoke_file__title">Révoquer le fichier \?</string>
+    <string name="stop_snd_file__message">L\'envoi du fichier sera interrompu.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Veuillez le signaler aux développeurs.</string>
+    <string name="submit_passcode">Soumettre</string>
+    <string name="both_you_and_your_contact_can_make_calls">Vous et votre contact pouvez tous deux passer des appels.</string>
+    <string name="only_you_can_make_calls">Vous seul pouvez passer des appels.</string>
+    <string name="calls_prohibited_with_this_contact">Interdire les appels audio/vidéo.</string>
+    <string name="confirm_passcode">Confirmer le code d\'accès</string>
+    <string name="lock_after">Verrouillage après</string>
+    <string name="lock_mode">Mode de verrouillage</string>
+    <string name="only_your_contact_can_make_calls">Seul votre contact peut passer des appels.</string>
+    <string name="stop_rcv_file__message">La réception du fichier sera interrompue.</string>
+    <string name="stop_file__confirm">Arrêter</string>
+    <string name="stop_snd_file__title">Arrêter l\'envoi du fichier \?</string>
+    <string name="stop_file__action">Arrêter le fichier</string>
+    <string name="stop_rcv_file__title">Arrêter de recevoir le fichier \?</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Cette erreur est persistante pour cette connexion, veuillez vous reconnecter.</string>
 </resources>
