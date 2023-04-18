@@ -1116,4 +1116,5 @@
     <string name="alert_text_msg_bad_id">下一条消息的 ID 不正确（小于或等于上一条）。
 \n它可能是由于某些错误或连接被破坏才发生。</string>
     <string name="alert_text_decryption_error_earlier"><xliff:g id="message count" example="1">%1$d</xliff:g> 消息解密失败并且不会显示。</string>
+    <string name="no_spaces">没有空格！</string>
 </resources>
