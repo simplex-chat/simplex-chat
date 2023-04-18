@@ -28,6 +28,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.InfoAboutIncognito
 import chat.simplex.app.views.usersettings.SettingsActionItem
 
 @Composable
@@ -37,6 +38,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
   var allowModifyMembers by remember { mutableStateOf(true) }
   BackHandler(onBack = close)
   AddGroupMembersLayout(
+    chatModel.incognito.value,
     groupInfo = groupInfo,
     creatingGroup = creatingGroup,
     contactsToAdd = getContactsToAdd(chatModel),
@@ -85,6 +87,7 @@ fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
 
 @Composable
 fun AddGroupMembersLayout(
+  chatModelIncognito: Boolean,
   groupInfo: GroupInfo,
   creatingGroup: Boolean,
   contactsToAdd: List<Contact>,
@@ -105,6 +108,14 @@ fun AddGroupMembersLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.button_add_members))
+    InfoAboutIncognito(
+      chatModelIncognito,
+      false,
+      generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
+      generalGetString(R.string.group_main_profile_sent),
+      true
+    )
+    Spacer(Modifier.size(DEFAULT_PADDING))
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
@@ -318,6 +329,7 @@ fun showProhibitedToInviteIncognitoAlertDialog() {
 fun PreviewAddGroupMembersLayout() {
   SimpleXTheme {
     AddGroupMembersLayout(
+      chatModelIncognito = false,
       groupInfo = GroupInfo.sampleData,
       creatingGroup = false,
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),

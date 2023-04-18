@@ -1,11 +1,13 @@
 package chat.simplex.app.views.usersettings
 
+import SectionDivider
+import SectionItemView
+import SectionSpacer
+import SectionView
 import android.content.res.Configuration
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,10 +42,8 @@ import kotlinx.coroutines.launch
 fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
-    val editProfile = rememberSaveable { mutableStateOf(false) }
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(
-      editProfile = editProfile,
       profile = profile,
       close,
       saveProfile = { displayName, fullName, image ->
@@ -53,7 +53,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
             chatModel.updateCurrentUser(newProfile)
             profile = newProfile
           }
-          editProfile.value = false
+          close()
         }
       }
     )
@@ -62,7 +62,6 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
 
 @Composable
 fun UserProfileLayout(
-  editProfile: MutableState<Boolean>,
   profile: Profile,
   close: () -> Unit,
   saveProfile: (String, String, String?) -> Unit,
@@ -92,109 +91,70 @@ fun UserProfileLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      ModalView(close = close) {
+      val dataUnchanged =
+        displayName.value == profile.displayName &&
+            fullName.value == profile.fullName &&
+            chosenImage.value == null
+
+      val closeWithAlert = {
+        if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
+          close()
+        } else {
+          showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, profileImage.value) }, close)
+        }
+      }
+      ModalView(close = closeWithAlert, if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
         Column(
           Modifier
-            .verticalScroll(scrollState)
-            .padding(horizontal = DEFAULT_PADDING),
+            .verticalScroll(scrollState),
           horizontalAlignment = Alignment.Start
         ) {
           AppBarTitleCentered(stringResource(R.string.your_current_profile))
           ReadableText(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it, TextAlign.Center)
-          if (editProfile.value) {
-            Column(
-              Modifier.fillMaxWidth(),
-              horizontalAlignment = Alignment.Start
+          Column(
+            Modifier
+              .fillMaxWidth()
+              .padding(horizontal = DEFAULT_PADDING)
+          ) {
+            Box(
+              Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+              contentAlignment = Alignment.Center
             ) {
-              Box(
-                Modifier
-                  .fillMaxWidth()
-                  .padding(bottom = 24.dp),
-                contentAlignment = Alignment.Center
-              ) {
-                Box(contentAlignment = Alignment.TopEnd) {
-                  Box(contentAlignment = Alignment.Center) {
-                    ProfileImage(192.dp, profileImage.value)
-                    EditImageButton { scope.launch { bottomSheetModalState.show() } }
-                  }
-                  if (profileImage.value != null) {
-                    DeleteImageButton { profileImage.value = null }
-                  }
+              Box(contentAlignment = Alignment.TopEnd) {
+                Box(contentAlignment = Alignment.Center) {
+                  ProfileImage(90.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
+                  EditImageButton { scope.launch { bottomSheetModalState.show() } }
+                }
+                if (profileImage.value != null) {
+                  DeleteImageButton { profileImage.value = null }
                 }
               }
-              Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                  stringResource(R.string.display_name__field),
-                  fontSize = 16.sp
-                )
-                if (!isValidDisplayName(displayName.value)) {
-                  Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-                  Text(
-                    stringResource(R.string.no_spaces),
-                    fontSize = 16.sp,
-                    color = Color.Red
-                  )
-                }
-              }
-              ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
-              Spacer(Modifier.height(DEFAULT_PADDING))
+            }
+            Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
               Text(
-                stringResource(R.string.full_name__field),
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+                stringResource(R.string.display_name__field),
+                fontSize = 16.sp
               )
-              ProfileNameField(fullName)
-              Spacer(Modifier.height(DEFAULT_PADDING))
-              Row {
-                TextButton(stringResource(R.string.cancel_verb)) {
-                  displayName.value = profile.displayName
-                  fullName.value = profile.fullName
-                  profileImage.value = profile.image
-                  editProfile.value = false
-                }
-                Spacer(Modifier.padding(horizontal = 8.dp))
-                val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-                val saveModifier: Modifier
-                val saveColor: Color
-                if (enabled) {
-                  saveModifier = Modifier
-                    .clickable { saveProfile(displayName.value, fullName.value, profileImage.value) }
-                  saveColor = MaterialTheme.colors.primary
-                } else {
-                  saveModifier = Modifier
-                  saveColor = HighOrLowlight
-                }
+              if (!isValidDisplayName(displayName.value)) {
+                Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 Text(
-                  stringResource(R.string.save_and_notify_contacts),
-                  modifier = saveModifier,
-                  color = saveColor
+                  stringResource(R.string.no_spaces),
+                  fontSize = 16.sp,
+                  color = Color.Red
                 )
               }
             }
-          } else {
-            Column(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalAlignment = Alignment.Start
-            ) {
-              Box(
-                Modifier
-                  .fillMaxWidth()
-                  .padding(bottom = 24.dp), contentAlignment = Alignment.Center
-              ) {
-                ProfileImage(192.dp, profile.image)
-                if (profile.image == null) {
-                  EditImageButton {
-                    editProfile.value = true
-                    scope.launch { bottomSheetModalState.show() }
-                  }
-                }
-              }
-              ProfileNameRow(stringResource(R.string.display_name__field), profile.displayName)
-              ProfileNameRow(stringResource(R.string.full_name__field), profile.fullName)
-              TextButton(stringResource(R.string.edit_verb)) { editProfile.value = true }
-            }
+            ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            Text(
+              stringResource(R.string.full_name__field),
+              fontSize = 16.sp,
+              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+            )
+            ProfileNameField(fullName)
           }
-          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
           if (savedKeyboardState != keyboardState) {
             LaunchedEffect(keyboardState) {
               scope.launch {
@@ -203,6 +163,20 @@ fun UserProfileLayout(
               }
             }
           }
+          SectionSpacer()
+          ResetSaveButtons(
+            reset = {
+              displayName.value = profile.displayName
+              fullName.value = profile.fullName
+              profileImage.value = profile.image
+              chosenImage.value = null
+            },
+            save = {
+              saveProfile(displayName.value, fullName.value, profileImage.value)
+            },
+            disabled = dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))
+          )
+          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
         }
       }
     }
@@ -256,13 +230,13 @@ fun TextButton(text: String, click: () -> Unit) {
 fun EditImageButton(click: () -> Unit) {
   IconButton(
     onClick = click,
-    modifier = Modifier.background(Color(1f, 1f, 1f, 0.2f), shape = CircleShape)
+    modifier = Modifier.size(25.dp)
   ) {
     Icon(
       Icons.Outlined.PhotoCamera,
       contentDescription = stringResource(R.string.edit_image),
       tint = MaterialTheme.colors.primary,
-      modifier = Modifier.size(36.dp)
+      modifier = Modifier.size(25.dp)
     )
   }
 }
@@ -278,6 +252,29 @@ fun DeleteImageButton(click: () -> Unit) {
   }
 }
 
+@Composable
+private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
+  SectionView {
+    SectionItemView(reset, disabled = disabled) {
+      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+    }
+    SectionDivider()
+    SectionItemView(save, disabled = disabled) {
+      Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+    }
+  }
+}
+
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(R.string.save_preferences_question),
+    confirmText = generalGetString(R.string.save_and_notify_contacts),
+    dismissText = generalGetString(R.string.exit_without_saving),
+    onConfirm = save,
+    onDismiss = revert,
+  )
+}
+
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -290,7 +287,6 @@ fun PreviewUserProfileLayoutEditOff() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      editProfile = remember { mutableStateOf(false) },
       saveProfile = { _, _, _ -> }
     )
   }
@@ -308,7 +304,6 @@ fun PreviewUserProfileLayoutEditOn() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      editProfile = remember { mutableStateOf(true) },
       saveProfile = { _, _, _ -> }
     )
   }

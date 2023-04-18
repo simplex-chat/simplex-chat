@@ -1,6 +1,5 @@
 package chat.simplex.app.views.newchat
 
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -28,6 +27,7 @@ import chat.simplex.app.views.chat.group.AddGroupMembersView
 import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
+import chat.simplex.app.views.onboarding.ReadableText
 import chat.simplex.app.views.usersettings.DeleteImageButton
 import chat.simplex.app.views.usersettings.EditImageButton
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -38,7 +38,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
   AddGroupLayout(
-    chatModel.incognito.value,
     createGroup = { groupProfile ->
       withApi {
         val groupInfo = chatModel.controller.apiNewGroup(groupProfile)
@@ -59,7 +58,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
 }
 
 @Composable
-fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
+fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
   val displayName = rememberSaveable { mutableStateOf("") }
@@ -91,14 +90,7 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
             .padding(horizontal = DEFAULT_PADDING)
         ) {
           AppBarTitleCentered(stringResource(R.string.create_secret_group_title))
-          Text(stringResource(R.string.group_is_decentralized), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-          InfoAboutIncognito(
-            chatModelIncognito,
-            false,
-            generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
-            generalGetString(R.string.group_main_profile_sent),
-            true
-          )
+          ReadableText(R.string.group_is_decentralized, TextAlign.Center)
           Box(
             Modifier
               .fillMaxWidth()
@@ -107,7 +99,7 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
           ) {
             Box(contentAlignment = Alignment.TopEnd) {
               Box(contentAlignment = Alignment.Center) {
-                ProfileImage(size = 192.dp, image = profileImage.value)
+                ProfileImage(size = 90.dp, image = profileImage.value)
                 EditImageButton { scope.launch { bottomSheetModalState.show() } }
               }
               if (profileImage.value != null) {
@@ -182,7 +174,6 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
 fun PreviewAddGroupLayout() {
   SimpleXTheme {
     AddGroupLayout(
-      chatModelIncognito = false,
       createGroup = {},
       close = {}
     )
