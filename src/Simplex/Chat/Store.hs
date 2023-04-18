@@ -159,9 +159,11 @@ module Simplex.Chat.Store
     getSndFTViaMsgDelivery,
     createSndFileTransferXFTP,
     createSndFTDescrXFTP,
+    setSndFTPrivateSndDescr,
     updateSndFTDescrXFTP,
     createExtraSndFTDescrs,
     updateSndFTDeliveryXFTP,
+    setSndFTAgentDeleted,
     getXFTPSndFileDBId,
     getXFTPRcvFileDBId,
     updateFileCancelled,
@@ -224,9 +226,11 @@ module Simplex.Chat.Store
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
     getDirectChatItemByAgentMsgId,
+    getDirectChatItemsLast,
     getGroupChatItem,
     getGroupChatItemBySharedMsgId,
     getGroupMemberCIBySharedMsgId,
+    getGroupMemberChatItemLast,
     getDirectChatItemIdByText,
     getGroupChatItemIdByText,
     getChatItemByFileId,
@@ -2789,7 +2793,7 @@ getSndFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMs
 createSndFileTransferXFTP :: DB.Connection -> User -> ContactOrGroup -> FilePath -> FileInvitation -> AgentSndFileId -> Integer -> IO FileTransferMeta
 createSndFileTransferXFTP db User {userId} contactOrGroup filePath FileInvitation {fileName, fileSize} agentSndFileId chunkSize = do
   currentTs <- getCurrentTime
-  let xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing}
+  let xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing, agentSndFileDeleted = False}
   DB.execute
     db
     "INSERT INTO files (contact_id, group_id, user_id, file_name, file_path, file_size, chunk_size, agent_snd_file_id, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -2810,6 +2814,14 @@ createSndFTDescrXFTP db User {userId} m Connection {connId} FileTransferMeta {fi
     db
     "INSERT INTO snd_files (file_id, file_status, file_descr_id, group_member_id, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (fileId, fileStatus, fileDescrId, groupMemberId' <$> m, connId, currentTs, currentTs)
+
+setSndFTPrivateSndDescr :: DB.Connection -> User -> FileTransferId -> Text -> IO ()
+setSndFTPrivateSndDescr db User {userId} fileId sfdText = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE files SET private_snd_file_descr = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (sfdText, currentTs, userId, fileId)
 
 updateSndFTDescrXFTP :: DB.Connection -> User -> SndFileTransfer -> Text -> IO ()
 updateSndFTDescrXFTP db user@User {userId} sft@SndFileTransfer {fileId, fileDescrId} rfdText = do
@@ -2840,6 +2852,14 @@ updateSndFTDeliveryXFTP db SndFileTransfer {connId, fileId, fileDescrId} msgDeli
     db
     "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_descr_id = ?"
     (msgDeliveryId, connId, fileId, fileDescrId)
+
+setSndFTAgentDeleted :: DB.Connection -> User -> FileTransferId -> IO ()
+setSndFTAgentDeleted db User {userId} fileId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE files SET agent_snd_file_deleted = 1, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (currentTs, userId, fileId)
 
 getXFTPSndFileDBId :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferId
 getXFTPSndFileDBId db User {userId} aSndFileId =
@@ -3330,15 +3350,15 @@ getFileTransferMeta db User {userId} fileId =
     DB.query
       db
       [sql|
-        SELECT file_name, file_size, chunk_size, file_path, file_inline, agent_snd_file_id, private_snd_file_descr, cancelled
+        SELECT file_name, file_size, chunk_size, file_path, file_inline, agent_snd_file_id, agent_snd_file_deleted, private_snd_file_descr, cancelled
         FROM files
         WHERE user_id = ? AND file_id = ?
       |]
       (userId, fileId)
   where
-    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe AgentSndFileId, Maybe Text, Maybe Bool) -> FileTransferMeta
-    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileInline, aSndFileId_, privateSndFileDescr, cancelled_) =
-      let xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr}) <$> aSndFileId_
+    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe AgentSndFileId, Bool, Maybe Text, Maybe Bool) -> FileTransferMeta
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileInline, aSndFileId_, agentSndFileDeleted, privateSndFileDescr, cancelled_) =
+      let xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted}) <$> aSndFileId_
        in FileTransferMeta {fileId, xftpSndFile, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
 
 getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
@@ -3911,35 +3931,36 @@ getDirectChat db user contactId pagination search_ = do
     CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count search
 
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatLast_ db user@User {userId} contactId count search = do
+getDirectChatLast_ db user contactId count search = do
   contact <- getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItems <- ExceptT getDirectChatItemsLast_
+  chatItems <- getDirectChatItemsLast db user contactId count search
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
-  where
-    getDirectChatItemsLast_ :: IO (Either StoreError [CChatItem 'CTDirect])
-    getDirectChatItemsLast_ = do
-      tz <- getCurrentTimeZone
-      currentTs <- getCurrentTime
-      mapM (toDirectChatItem tz currentTs)
-        <$> DB.query
-          db
-          [sql|
-            SELECT
-              -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
-              -- CIFile
-              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
-              -- DirectQuote
-              ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
-            FROM chat_items i
-            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
-            ORDER BY i.chat_item_id DESC
-            LIMIT ?
-          |]
-          (userId, contactId, search, count)
+
+-- the last items in reverse order (the last item in the conversation is the first in the returned list)
+getDirectChatItemsLast :: DB.Connection -> User -> ContactId -> Int -> String -> ExceptT StoreError IO [CChatItem 'CTDirect]
+getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
+  tz <- getCurrentTimeZone
+  currentTs <- getCurrentTime
+  mapM (toDirectChatItem tz currentTs)
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          -- ChatItem
+          i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
+          -- CIFile
+          f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
+          -- DirectQuote
+          ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
+        FROM chat_items i
+        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+        LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+        WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
+        ORDER BY i.chat_item_id DESC
+        LIMIT ?
+      |]
+      (userId, contactId, search, count)
 
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatAfter_ db user@User {userId} contactId afterChatItemId count search = do
@@ -4070,6 +4091,22 @@ getGroupChatLast_ db user@User {userId} groupId count search = do
             LIMIT ?
           |]
           (userId, groupId, search, count)
+
+getGroupMemberChatItemLast :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
+  chatItemId <-
+    ExceptT . firstRow fromOnly (SEChatItemNotFoundByGroupId groupId) $
+      DB.query
+        db
+        [sql|
+          SELECT chat_item_id
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+          ORDER BY item_ts DESC, chat_item_id DESC
+          LIMIT 1
+        |]
+        (userId, groupId, groupMemberId)
+  getGroupChatItem db user groupId chatItemId
 
 getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = do

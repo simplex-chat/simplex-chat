@@ -927,7 +927,6 @@
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="app_version_code">Build dell\'app: %s</string>
     <string name="app_version_name">Versione app: v%s</string>
-    <string name="core_build_timestamp">Core compilato il: %s</string>
     <string name="smp_servers_per_user">I server per le nuove connessioni del profilo di chat attuale</string>
     <string name="users_add">Aggiungi profilo</string>
     <string name="users_delete_question">Eliminare il profilo di chat\?</string>

@@ -1308,6 +1308,7 @@ data class ChatItem (
       is CIContent.SndCall -> showNtfDir
       is CIContent.RcvCall -> false // notification is shown on CallInvitation instead
       is CIContent.RcvIntegrityError -> showNtfDir
+      is CIContent.RcvDecryptionError -> showNtfDir
       is CIContent.RcvGroupInvitation -> showNtfDir
       is CIContent.SndGroupInvitation -> showNtfDir
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
@@ -1465,10 +1466,10 @@ data class ChatItem (
         file = null
       )
 
-    fun invalidJSON(json: String): ChatItem =
+    fun invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: String): ChatItem =
       ChatItem(
-        chatDir = CIDirection.DirectSnd(),
-        meta = CIMeta.invalidJSON(),
+        chatDir = chatDir ?: CIDirection.DirectSnd(),
+        meta = meta ?: CIMeta.invalidJSON(),
         content = CIContent.InvalidJSON(json),
         quotedItem = null,
         file = null
@@ -1611,6 +1612,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvDecryptionError") class RcvDecryptionError(val msgDecryptError: MsgDecryptError, val msgCount: UInt): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupEvent") class RcvGroupEventContent(val rcvGroupEvent: RcvGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
@@ -1637,6 +1639,7 @@ sealed class CIContent: ItemContent {
       is SndCall -> status.text(duration)
       is RcvCall -> status.text(duration)
       is RcvIntegrityError -> msgError.text
+      is RcvDecryptionError -> msgDecryptError.text
       is RcvGroupInvitation -> groupInvitation.text
       is SndGroupInvitation -> groupInvitation.text
       is RcvGroupEventContent -> rcvGroupEvent.text
@@ -1672,6 +1675,17 @@ sealed class CIContent: ItemContent {
       else ->
         String.format(generalGetString(R.string.feature_cancelled_item), feature.text, TimedMessagesPreference.ttlText(param))
     }
+  }
+}
+
+@Serializable
+enum class MsgDecryptError {
+  @SerialName("ratchetHeader") RatchetHeader,
+  @SerialName("tooManySkipped") TooManySkipped;
+
+  val text: String get() = when (this) {
+    RatchetHeader -> generalGetString(R.string.decryption_error)
+    TooManySkipped -> generalGetString(R.string.decryption_error)
   }
 }
 

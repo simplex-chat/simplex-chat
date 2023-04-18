@@ -174,7 +174,6 @@
     <string name="contribute">Bijdragen</string>
     <string name="configure_ICE_servers">ICE servers configureren</string>
     <string name="network_session_mode_entity">Verbinding</string>
-    <string name="core_build_timestamp">Core gebouwd op: %s</string>
     <string name="core_version">Core versie: v%s</string>
     <string name="callstate_connected">verbonden</string>
     <string name="callstate_connecting">Verbinden…</string>

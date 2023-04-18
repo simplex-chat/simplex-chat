@@ -2460,7 +2460,7 @@ data class TimedMessagesPreference(
 ): ChatPreference {
   companion object {
     val ttlValues: List<Int?>
-      get() = listOf(30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400)
+      get() = listOf(30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, null)
 
     fun ttlText(ttl: Int?): String {
       ttl ?: return generalGetString(R.string.feature_off)
@@ -2593,12 +2593,6 @@ sealed class ContactUserPref {
   @Serializable @SerialName("user") data class User(val preference: SimpleChatPreference): ContactUserPref() {
     override val pref get() = preference
   }
-
-  val contactOverride: SimpleChatPreference?
-    get() = when(this) {
-      is Contact -> pref
-      is User -> null
-    }
 }
 
 @Serializable
@@ -2613,12 +2607,6 @@ sealed class ContactUserPrefTimed {
   @Serializable @SerialName("user") data class User(val preference: TimedMessagesPreference): ContactUserPrefTimed() {
     override val pref get() = preference
   }
-
-  val contactOverride: TimedMessagesPreference?
-    get() = when(this) {
-      is Contact -> pref
-      is User -> null
-    }
 }
 
 interface Feature {
@@ -2831,7 +2819,7 @@ data class ContactFeaturesAllowed(
 
 fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed {
   val pref = contactUserPreferences.timedMessages.userPreference
-  val allow = pref.contactOverride?.allow
+  val allow = pref.pref.allow
   return ContactFeaturesAllowed(
     timedMessagesAllowed = allow == FeatureAllowed.YES || allow == FeatureAllowed.ALWAYS,
     timedMessagesTTL = pref.pref.ttl,
@@ -3011,9 +2999,15 @@ private fun parseChatData(chat: JsonElement): Chat {
     ?: ChatInfo.InvalidJSON(json.encodeToString(chat.jsonObject["chatInfo"]))
   val chatStats = decodeObject(Chat.ChatStats.serializer(), chat.jsonObject["chatStats"])!!
   val chatItems: List<ChatItem> = chat.jsonObject["chatItems"]!!.jsonArray.map {
-    decodeObject(ChatItem.serializer(), it) ?: ChatItem.invalidJSON(json.encodeToString(it))
+    decodeObject(ChatItem.serializer(), it) ?: parseChatItem(it)
   }
- return Chat(chatInfo, chatItems, chatStats)
+  return Chat(chatInfo, chatItems, chatStats)
+}
+
+private fun parseChatItem(j: JsonElement): ChatItem {
+  val chatDir: CIDirection? = decodeObject(CIDirection.serializer(), j.jsonObject["chatDir"])
+  val meta: CIMeta? = decodeObject(CIMeta.serializer(), j.jsonObject["meta"])
+  return ChatItem.invalidJSON(chatDir, meta, json.encodeToString(j))
 }
 
 private fun <T> decodeObject(deserializer: DeserializationStrategy<T>, obj: JsonElement?): T? =
@@ -3398,7 +3392,6 @@ class AutoAccept(val acceptIncognito: Boolean, val autoReply: MsgContent?) {
 @Serializable
 data class CoreVersionInfo(
   val version: String,
-  val buildTimestamp: String,
   val simplexmqVersion: String,
   val simplexmqCommit: String
 )

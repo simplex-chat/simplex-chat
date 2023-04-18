@@ -71,7 +71,7 @@ struct ChatListView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    if chatModel.users.filter { u in u.user.activeUser || !u.user.hidden }.count > 1 {
+                    if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
                         withAnimation {
                             userPickerVisible.toggle()
                         }

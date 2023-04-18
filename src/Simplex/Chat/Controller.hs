@@ -33,8 +33,7 @@ import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
 import Data.Time (ZonedTime)
-import Data.Time.Clock (UTCTime, getCurrentTime)
-import Data.Time.Format (defaultTimeLocale, formatTime, iso8601DateFormat)
+import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Language.Haskell.TH (Exp, Q, runIO)
@@ -73,14 +72,9 @@ versionString version = "SimpleX Chat v" <> version
 updateStr :: String
 updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
-buildTimestampQ :: Q Exp
-buildTimestampQ = do
-  s <- formatTime defaultTimeLocale (iso8601DateFormat $ Just "%H:%M:%S") <$> runIO getCurrentTime
-  [|fromString s|]
-
 simplexmqCommitQ :: Q Exp
 simplexmqCommitQ = do
-  s <- either error B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
+  s <- either (const "") B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
   [|fromString s|]
   where
     commitHashP :: A.Parser ByteString
@@ -92,11 +86,10 @@ simplexmqCommitQ = do
         *> "tag: "
         *> A.takeWhile (A.notInClass " \r\n")
 
-coreVersionInfo :: String -> String -> CoreVersionInfo
-coreVersionInfo buildTimestamp simplexmqCommit =
+coreVersionInfo :: String -> CoreVersionInfo
+coreVersionInfo simplexmqCommit =
   CoreVersionInfo
     { version = versionNumber,
-      buildTimestamp,
       simplexmqVersion = simplexMQVersion,
       simplexmqCommit
     }
@@ -724,7 +717,6 @@ data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
 
 data CoreVersionInfo = CoreVersionInfo
   { version :: String,
-    buildTimestamp :: String,
     simplexmqVersion :: String,
     simplexmqCommit :: String
   }

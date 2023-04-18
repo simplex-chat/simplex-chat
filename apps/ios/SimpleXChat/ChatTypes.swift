@@ -248,7 +248,7 @@ public struct TimedMessagesPreference: Preference {
     }
 
     public static var ttlValues: [Int?] {
-        [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400]
+        [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
     }
 
     public static func ttlText(_ ttl: Int?) -> String {
@@ -389,13 +389,6 @@ public enum ContactUserPref<P: Preference>: Decodable {
         switch self {
         case let .contact(preference): return preference
         case let .user(preference): return preference
-        }
-    }
-
-    var contactOverride: P? {
-        switch self {
-        case let .contact(preference): return preference
-        case .user: return nil
         }
     }
 }
@@ -671,7 +664,7 @@ public struct ContactFeaturesAllowed: Equatable {
 
 public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactUserPreferences) -> ContactFeaturesAllowed {
     let pref = contactUserPreferences.timedMessages.userPreference
-    let allow = pref.contactOverride?.allow
+    let allow = pref.preference.allow
     return ContactFeaturesAllowed(
         timedMessagesAllowed: allow == .yes || allow == .always,
         timedMessagesTTL: pref.preference.ttl,
@@ -1756,6 +1749,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndCall: return showNtfDir
         case .rcvCall: return false // notification is shown on .callInvitation instead
         case .rcvIntegrityError: return showNtfDir
+        case .rcvDecryptionError: return showNtfDir
         case .rcvGroupInvitation: return showNtfDir
         case .sndGroupInvitation: return showNtfDir
         case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
@@ -1942,10 +1936,10 @@ public struct ChatItem: Identifiable, Decodable {
         return item
     }
 
-    public static func invalidJSON(_ json: String) -> ChatItem {
+    public static func invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: String) -> ChatItem {
         ChatItem(
-            chatDir: CIDirection.directSnd,
-            meta: CIMeta.invalidJSON,
+            chatDir: chatDir ?? .directSnd,
+            meta: meta ?? .invalidJSON,
             content: .invalidJSON(json: json),
             quotedItem: nil,
             file: nil
@@ -2099,6 +2093,7 @@ public enum CIContent: Decodable, ItemContent {
     case sndCall(status: CICallStatus, duration: Int)
     case rcvCall(status: CICallStatus, duration: Int)
     case rcvIntegrityError(msgError: MsgErrorType)
+    case rcvDecryptionError(msgDecryptError: MsgDecryptError, msgCount: UInt32)
     case rcvGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case rcvGroupEvent(rcvGroupEvent: RcvGroupEvent)
@@ -2127,6 +2122,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
             case let .rcvIntegrityError(msgError): return msgError.text
+            case let .rcvDecryptionError(msgDecryptError, _): return msgDecryptError.text
             case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
@@ -2169,6 +2165,18 @@ public enum CIContent: Decodable, ItemContent {
             case let .rcvMsgContent(mc): return mc
             default: return nil
             }
+        }
+    }
+}
+
+public enum MsgDecryptError: String, Decodable {
+    case ratchetHeader
+    case tooManySkipped
+
+    var text: String {
+        switch self {
+        case .ratchetHeader: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
+        case .tooManySkipped: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
         }
     }
 }

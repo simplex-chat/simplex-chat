@@ -183,7 +183,10 @@ chatFeaturesF :: [((Int, String), Maybe String)]
 chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-chatFeatures'' = [((0, "Disappearing messages: off"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: enabled"), Nothing, Nothing)]
+chatFeatures'' = [((0, "Disappearing messages: allowed"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: enabled"), Nothing, Nothing), ((0, "Audio/video calls: enabled"), Nothing, Nothing)]
+
+lastChatFeature :: String
+lastChatFeature = snd $ last chatFeatures
 
 groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) groupFeatures''
@@ -271,6 +274,9 @@ getInAnyOrder f cc ls = do
 
 (<#) :: HasCallStack => TestCC -> String -> Expectation
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
+
+(*<#) :: HasCallStack => [TestCC] -> String -> Expectation
+ccs *<# line = concurrentlyN_ $ map (<# line) ccs
 
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
 cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line

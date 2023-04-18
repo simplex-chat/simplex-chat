@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,8 +54,8 @@ fun GroupProfileLayout(
   saveProfile: (GroupProfile) -> Unit,
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
-  val displayName = remember { mutableStateOf(groupProfile.displayName) }
-  val fullName = remember { mutableStateOf(groupProfile.fullName) }
+  val displayName = rememberSaveable { mutableStateOf(groupProfile.displayName) }
+  val fullName = rememberSaveable { mutableStateOf(groupProfile.fullName) }
   val chosenImage = rememberSaveable { mutableStateOf<Uri?>(null) }
   val profileImage = rememberSaveable { mutableStateOf(groupProfile.image) }
   val scope = rememberCoroutineScope()
@@ -109,24 +110,29 @@ fun GroupProfileLayout(
                 }
               }
             }
-            Text(
-              stringResource(R.string.group_display_name_field),
-              Modifier.padding(bottom = 3.dp)
-            )
-            ProfileNameField(displayName, focusRequester)
-            val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-            Text(
-              errorText,
-              fontSize = 15.sp,
-              color = MaterialTheme.colors.error
-            )
-            Spacer(Modifier.height(3.dp))
+            Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+              Text(
+                stringResource(R.string.group_display_name_field),
+                fontSize = 16.sp
+              )
+              if (!isValidDisplayName(displayName.value)) {
+                Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+                Text(
+                  stringResource(R.string.no_spaces),
+                  fontSize = 16.sp,
+                  color = Color.Red
+                )
+              }
+            }
+            ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
+            Spacer(Modifier.height(DEFAULT_PADDING))
             Text(
               stringResource(R.string.group_full_name_field),
-              Modifier.padding(bottom = 5.dp)
+              fontSize = 16.sp,
+              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
             )
             ProfileNameField(fullName)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(DEFAULT_PADDING))
             Row {
               TextButton(stringResource(R.string.cancel_verb)) {
                 close.invoke()
@@ -153,6 +159,7 @@ fun GroupProfileLayout(
               }
             }
           }
+          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
 
           LaunchedEffect(Unit) {
             delay(300)

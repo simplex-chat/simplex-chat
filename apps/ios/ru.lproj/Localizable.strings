@@ -657,9 +657,6 @@
 "Copy" = "Скопировать";
 
 /* No comment provided by engineer. */
-"Core built at: %@" = "Ядро скомпилировано: %@";
-
-/* No comment provided by engineer. */
 "Core version: v%@" = "Версия ядра: v%@";
 
 /* No comment provided by engineer. */
