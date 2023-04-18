@@ -555,7 +555,10 @@
     <string name="integrity_msg_bad_id">Falsche Nachrichten-ID</string>
     <string name="integrity_msg_duplicate">Doppelte Nachricht</string>
     <string name="alert_title_skipped_messages">Übersprungene Nachrichten</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Dies kann unter folgenden Umständen passieren:\n1. Die Nachrichten verfallen auf dem Server, wenn sie 30 Tage lang nicht empfangen wurden.\n2. Der Server, den Sie zum Empfangen der Nachrichten von diesem Kontakt verwenden, wurde aktualisiert und neu gestartet.\n3. Die Verbindung ist kompromittiert.\nBitte nehmen Sie über die Einstellungen Verbindung mit den Entwicklern auf, um Updates zu den Servern zu erhalten.\nWir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu verhindern.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Dies kann unter folgenden Umständen passieren:
+\n1. Die Nachrichten verfallen auf dem sendenden Client-System nach 2 Tagen oder auf dem Server nach 30 Tagen.
+\n2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde.
+\n3. Die Verbindung wurde kompromittiert.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
     <string name="your_privacy">Meine Privatsphäre</string>
@@ -576,7 +579,7 @@
     <string name="settings_section_title_socks">SOCKS-PROXY</string>
     <string name="settings_section_title_icon">APP ICON</string>
     <string name="settings_section_title_themes">DESIGN</string>
-    <string name="settings_section_title_messages">MESSAGES</string>
+    <string name="settings_section_title_messages">NACHRICHTEN und DATEIEN</string>
     <string name="settings_section_title_calls">CALLS</string>
     <string name="settings_section_title_incognito">Inkognito Modus</string>
     <!-- DatabaseView.kt -->
@@ -1131,4 +1134,64 @@
     <string name="icon_descr_waiting_for_video">Auf das Video warten</string>
     <string name="waiting_for_video">Auf das Video warten</string>
     <string name="video_will_be_received_when_contact_is_online">Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</string>
+    <string name="your_XFTP_servers">Ihre XFTP-Server</string>
+    <string name="host_verb">Host</string>
+    <string name="error_saving_xftp_servers">Fehler beim Speichern der XFTP-Server</string>
+    <string name="error_loading_smp_servers">Fehler beim Laden der SMP-Server</string>
+    <string name="error_xftp_test_server_auth">Bitte das Passwort überprüfen - für den Upload benötigt der Server eine Berechtigung</string>
+    <string name="smp_server_test_download_file">Datei herunterladen</string>
+    <string name="smp_server_test_compare_file">Datei vergleichen</string>
+    <string name="smp_server_test_delete_file">Datei löschen</string>
+    <string name="lock_mode">Sperr-Modus</string>
+    <string name="authentication_cancelled">Authentifizierung abgebrochen</string>
+    <string name="confirm_passcode">Passwort bestätigen</string>
+    <string name="enable_lock">Sperre aktivieren</string>
+    <string name="incorrect_passcode">Passwort falsch</string>
+    <string name="lock_after">Sperre nach</string>
+    <string name="new_passcode">Neues Passwort</string>
+    <string name="la_mode_passcode">Passwort</string>
+    <string name="passcode_changed">Passwort geändert!</string>
+    <string name="passcode_set">Passwort wurde geändert!</string>
+    <string name="change_lock_mode">Sperr-Modus ändern</string>
+    <string name="passcode_not_changed">Passwort wurde nicht geändert!</string>
+    <string name="decryption_error">Entschlüsselungsfehler</string>
+    <string name="decryption_error_permanent">Dauerhafter Entschlüsselungsfehler</string>
+    <string name="error_loading_xftp_servers">Fehler beim Laden der XFTP-Server</string>
+    <string name="la_lock_mode_passcode">Passworteingabe</string>
+    <string name="la_enter_app_passcode">Passwort eingeben</string>
+    <string name="la_no_app_password">Kein App-Passwort</string>
+    <string name="la_authenticate">Authentifizieren</string>
+    <string name="la_minutes">%d Minuten</string>
+    <string name="la_seconds">%d Sekunden</string>
+    <string name="la_immediately">Sofort</string>
+    <string name="port_verb">Port</string>
+    <string name="network_proxy_port">Port %d</string>
+    <string name="smp_server_test_create_file">Datei erstellen</string>
+    <string name="la_current_app_passcode">Aktuelles Passwort</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Dies kann passieren, falls Sie oder Ihre Verbindung ein altes Datenbank-Backup genutzt haben.</string>
+    <string name="la_please_remember_to_store_password">Es gibt keine Möglichkeit ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!</string>
+    <string name="alert_text_fragment_please_report_to_developers">Bitte melden Sie es den Entwicklern.</string>
+    <string name="la_change_app_passcode">Passwort ändern</string>
+    <string name="alert_title_msg_bad_hash">Ungültiger Nachrichten-Hash</string>
+    <string name="la_auth_failed">Authentifizierung fehlgeschlagen</string>
+    <string name="alert_title_msg_bad_id">Falsche Nachrichten-ID</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die XFTP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</string>
+    <string name="network_socks_toggle_use_socks_proxy">SOCKS-Proxy nutzen</string>
+    <string name="la_lock_mode">SimpleX Sperr-Modus</string>
+    <string name="lock_not_enabled">SimpleX Sperre ist nicht aktiviert!</string>
+    <string name="disable_onion_hosts_when_not_supported">Setzen Sie <i>Verwende .onion-Hosts</i> auf \"Nein\", wenn der SOCKS-Proxy sie nicht unterstützt.</string>
+    <string name="submit_passcode">Übermitteln</string>
+    <string name="la_mode_system">System</string>
+    <string name="la_could_not_be_verified">Sie können nicht überprüft werden - bitte versuchen Sie es nochmal.</string>
+    <string name="xftp_servers">XFTP-Server</string>
+    <string name="alert_text_msg_bad_id">Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).
+\nDies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> Nachrichten konnten nicht entschlüsselt werden.</string>
+    <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht ist unterschiedlich.</string>
+    <string name="you_can_turn_on_lock">Sie können die SimpleX Sperre über die Einstellungen aktivieren.</string>
+    <string name="network_socks_proxy_settings">SOCKS-Proxy Einstellungen</string>
+    <string name="la_lock_mode_system">System-Authentifizierung</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</string>
+    <string name="smp_server_test_upload_file">Datei hochladen</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> Nachrichten übersprungen.</string>
 </resources>
