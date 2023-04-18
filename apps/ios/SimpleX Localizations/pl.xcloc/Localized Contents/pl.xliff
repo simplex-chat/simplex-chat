@@ -453,8 +453,9 @@ Available in v5.1</source>
         <target>Pozwól</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow calls only if your contact allows them.</source>
+        <target state="translated">Zezwalaj na połączenia tylko wtedy, gdy Twój kontakt na to pozwala.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
@@ -497,8 +498,9 @@ Available in v5.1</source>
         <target>Zezwolić na wiadomości głosowe?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to call you." xml:space="preserve">
+      <trans-unit id="Allow your contacts to call you." xml:space="preserve" approved="no">
         <source>Allow your contacts to call you.</source>
+        <target state="translated">Zezwól swoim kontaktom na połączenia do Ciebie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
@@ -575,12 +577,14 @@ Available in v5.1</source>
         <target>Połączenia audio i wideo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls" xml:space="preserve">
+      <trans-unit id="Audio/video calls" xml:space="preserve" approved="no">
         <source>Audio/video calls</source>
+        <target state="translated">Połączenia audio/wideo</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve">
+      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
         <source>Audio/video calls are prohibited.</source>
+        <target state="translated">Połączenia audio/wideo są zabronione.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve">
@@ -623,12 +627,14 @@ Available in v5.1</source>
         <target>Wstecz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message ID" xml:space="preserve">
+      <trans-unit id="Bad message ID" xml:space="preserve" approved="no">
         <source>Bad message ID</source>
+        <target state="translated">Zły identyfikator wiadomości</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message hash" xml:space="preserve">
+      <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
         <source>Bad message hash</source>
+        <target state="translated">Zły hash wiadomości</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
@@ -636,8 +642,9 @@ Available in v5.1</source>
         <target>Zarówno Ty, jak i Twój kontakt możecie nieodwracalnie usunąć wysłane wiadomości.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
+      <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
         <source>Both you and your contact can make calls.</source>
+        <target state="translated">Zarówno Ty, jak i Twój kontakt możecie nawiązywać połączenia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
@@ -1168,8 +1175,9 @@ Available in v5.1</source>
         <target>Zdecentralizowane</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Decryption error" xml:space="preserve">
+      <trans-unit id="Decryption error" xml:space="preserve" approved="no">
         <source>Decryption error</source>
+        <target state="translated">Błąd odszyfrowania</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
@@ -1836,8 +1844,9 @@ Available in v5.1</source>
         <source>Fast and no wait until the sender is online!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be deleted from servers." xml:space="preserve">
+      <trans-unit id="File will be deleted from servers." xml:space="preserve" approved="no">
         <source>File will be deleted from servers.</source>
+        <target state="translated">Plik zostanie usunięty z serwerów.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
@@ -2262,15 +2271,20 @@ Available in v5.1</source>
         <target>To pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w pojedynczym profilu czatu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
+      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
         <source>It can happen when you or your connection used the old database backup.</source>
+        <target state="translated">Może się to zdarzyć, gdy Ty lub Twoje połączenie użyło starej kopii zapasowej bazy danych.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
         <source>It can happen when:
 1. The messages expired in the sending client after 2 days or on the server after 30 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
+        <target state="translated">Może to nastąpić, gdy:
+1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 30 dniach.
+2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych.
+3. Połączenie zostało skompromitowane.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
@@ -2712,8 +2726,9 @@ Available in v5.1</source>
         <target>Tylko Ty możesz nieodwracalnie usunąć wiadomości (Twój kontakt może oznaczyć je do usunięcia).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can make calls." xml:space="preserve">
+      <trans-unit id="Only you can make calls." xml:space="preserve" approved="no">
         <source>Only you can make calls.</source>
+        <target state="translated">Tylko Ty możesz wykonywać połączenia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
@@ -2731,8 +2746,9 @@ Available in v5.1</source>
         <target>Tylko Twój kontakt może nieodwracalnie usunąć wiadomości (możesz oznaczyć je do usunięcia).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can make calls." xml:space="preserve">
+      <trans-unit id="Only your contact can make calls." xml:space="preserve" approved="no">
         <source>Only your contact can make calls.</source>
+        <target state="translated">Tylko Twój kontakt może wykonywać połączenia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
@@ -2845,8 +2861,9 @@ Available in v5.1</source>
         <target>Okresowo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Permanent decryption error" xml:space="preserve">
+      <trans-unit id="Permanent decryption error" xml:space="preserve" approved="no">
         <source>Permanent decryption error</source>
+        <target state="translated">Błąd odszyfrowania</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -2889,8 +2906,9 @@ Available in v5.1</source>
         <target>Prosimy o jego zapamiętanie lub bezpieczne przechowywanie - nie ma możliwości odzyskania utraconego pinu!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please report it to the developers." xml:space="preserve">
+      <trans-unit id="Please report it to the developers." xml:space="preserve" approved="no">
         <source>Please report it to the developers.</source>
+        <target state="translated">Prosimy o zgłaszanie tego do deweloperów.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
@@ -2962,8 +2980,9 @@ Available in v5.1</source>
         <target>Hasło profilu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
+      <trans-unit id="Prohibit audio/video calls." xml:space="preserve" approved="no">
         <source>Prohibit audio/video calls.</source>
+        <target state="translated">Zabroń połączeń audio/wideo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -3031,8 +3050,9 @@ Available in v5.1</source>
         <target>Otrzymano zdarzenie pliku</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Receiving file will be stopped." xml:space="preserve">
+      <trans-unit id="Receiving file will be stopped." xml:space="preserve" approved="no">
         <source>Receiving file will be stopped.</source>
+        <target state="translated">Odbieranie pliku zostanie przerwane.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving via" xml:space="preserve">
@@ -3160,16 +3180,19 @@ Available in v5.1</source>
         <target>Przywrócić</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Revoke" xml:space="preserve">
+      <trans-unit id="Revoke" xml:space="preserve" approved="no">
         <source>Revoke</source>
+        <target state="translated">Odwołaj</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Revoke file" xml:space="preserve">
+      <trans-unit id="Revoke file" xml:space="preserve" approved="no">
         <source>Revoke file</source>
+        <target state="translated">Odwołaj plik</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Revoke file?" xml:space="preserve">
+      <trans-unit id="Revoke file?" xml:space="preserve" approved="no">
         <source>Revoke file?</source>
+        <target state="translated">Odwołać plik?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role" xml:space="preserve">
@@ -3362,8 +3385,9 @@ Available in v5.1</source>
         <target>Nadawca mógł usunąć prośbę o połączenie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending file will be stopped." xml:space="preserve">
+      <trans-unit id="Sending file will be stopped." xml:space="preserve" approved="no">
         <source>Sending file will be stopped.</source>
+        <target state="translated">Wysyłanie pliku zostanie przerwane.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -3590,16 +3614,19 @@ Available in v5.1</source>
         <target>Zatrzymać czat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop file" xml:space="preserve">
+      <trans-unit id="Stop file" xml:space="preserve" approved="no">
         <source>Stop file</source>
+        <target state="translated">Zatrzymaj plik</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Stop receiving file?" xml:space="preserve">
+      <trans-unit id="Stop receiving file?" xml:space="preserve" approved="no">
         <source>Stop receiving file?</source>
+        <target state="translated">Przestać odbierać plik?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sending file?" xml:space="preserve">
+      <trans-unit id="Stop sending file?" xml:space="preserve" approved="no">
         <source>Stop sending file?</source>
+        <target state="translated">Przestać wysyłać plik?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -3712,9 +3739,11 @@ Available in v5.1</source>
         <target>Pierwsza platforma bez żadnych identyfikatorów użytkowników – z założenia prywatna.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
+      <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve" approved="no">
         <source>The ID of the next message is incorrect (less or equal to the previous).
 It can happen because of some bug or when the connection is compromised.</source>
+        <target state="translated">Identyfikator następnej wiadomości jest nieprawidłowy (mniejszy lub równy poprzedniej).
+Może się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skompromitowane.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -3747,8 +3776,9 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Grupa jest w pełni zdecentralizowana – jest widoczna tylko dla członków.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The hash of the previous message is different." xml:space="preserve">
+      <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
         <source>The hash of the previous message is different.</source>
+        <target state="translated">Hash poprzedniej wiadomości jest inny.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -3816,8 +3846,9 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Tego działania nie można cofnąć - Twój profil, kontakty, wiadomości i pliki zostaną nieodwracalnie utracone.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This error is permanent for this connection, please re-connect." xml:space="preserve">
+      <trans-unit id="This error is permanent for this connection, please re-connect." xml:space="preserve" approved="no">
         <source>This error is permanent for this connection, please re-connect.</source>
+        <target state="translated">Ten błąd jest trwały dla tego połączenia, proszę o ponowne połączenie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">
