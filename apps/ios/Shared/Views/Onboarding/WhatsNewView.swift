@@ -170,13 +170,13 @@ private let versionDescriptions: [VersionDescription] = [
         features: [
             FeatureDescription(
                 icon: "arrow.up.doc",
-                title: "Large files support",
-                description: "Send videos and large files up to 1GB!"
+                title: "Videos and files up to 1gb",
+                description: "Fast and no more waiting for sender online!"
             ),
             FeatureDescription(
                 icon: "lock",
                 title: "App passcode",
-                description: "Set custom app passcode instead of system authentication."
+                description: "Set it instead of system authentication."
             ),
             FeatureDescription(
                 icon: "character",
