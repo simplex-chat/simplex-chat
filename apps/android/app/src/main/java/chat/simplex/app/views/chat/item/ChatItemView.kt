@@ -356,7 +356,7 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
         Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.Center,
       ) {
         TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)

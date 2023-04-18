@@ -113,7 +113,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                 // No saving until something will be changed on the next screen to prevent blank servers on the list
                 showServer(servers.last())
               }) {
-                Text(stringResource(R.string.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(stringResource(R.string.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
               }
               SectionItemView({
                 AlertManager.shared.hideAlert()
@@ -126,7 +126,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                 }
               }
               ) {
-                Text(stringResource(R.string.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(stringResource(R.string.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
               }
               val hasAllPresets = hasAllPresets(presetServers, servers, m)
               if (!hasAllPresets) {

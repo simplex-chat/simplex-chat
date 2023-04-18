@@ -435,7 +435,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
         Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.Center,
       ) {
         TextButton(onClick = {
           AlertManager.shared.hideAlert()

@@ -35,14 +35,14 @@ class AlertManager {
     text: String? = null,
     buttons: @Composable () -> Unit,
   ) {
-    val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
     showAlert {
       AlertDialog(
         backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
         onDismissRequest = this::hideAlert,
-        title = { Text(title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-        text = alertText,
-        buttons = buttons
+        title = alertTitle(title),
+        text = alertText(text),
+        buttons = buttons,
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
   }
@@ -86,19 +86,11 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false
   ) {
-    val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text, Modifier.fillMaxWidth(), fontSize = 16.sp, textAlign = TextAlign.Center, color = HighOrLowlight) }
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
-        title = {
-          Text(
-            title,
-            Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            fontSize = 20.sp
-          )
-        },
-        text = alertText,
+        title = alertTitle(title),
+        text = alertText(text),
         buttons = {
           Row (
             Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING_HALF),
@@ -130,16 +122,15 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false
   ) {
-    val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
-        title = { Text(title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-        text = alertText,
+        title = alertTitle(title),
+        text = alertText(text),
         buttons = {
           Column(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(top = 16.dp, bottom = 2.dp),
-            horizontalAlignment = Alignment.End
+            horizontalAlignment = Alignment.CenterHorizontally
           ) {
             TextButton(onClick = {
               onDismiss?.invoke()
@@ -148,7 +139,7 @@ class AlertManager {
             TextButton(onClick = {
               onConfirm?.invoke()
               hideAlert()
-            }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified, textAlign = TextAlign.End) }
+            }) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
           }
         },
         backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
@@ -161,12 +152,11 @@ class AlertManager {
     title: String, text: String? = null,
     confirmText: String = generalGetString(R.string.ok), onConfirm: (() -> Unit)? = null
   ) {
-    val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
     showAlert {
       AlertDialog(
         onDismissRequest = this::hideAlert,
-        title = { Text(title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-        text = alertText,
+        title = alertTitle(title),
+        text = alertText(text),
         buttons = {
           Row(
             Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING_HALF),
@@ -198,5 +188,32 @@ class AlertManager {
 
   companion object {
     val shared = AlertManager()
+  }
+}
+
+private fun alertTitle(title: String): (@Composable () -> Unit)? {
+  return {
+    Text(
+      title,
+      Modifier.fillMaxWidth(),
+      textAlign = TextAlign.Center,
+      fontSize = 20.sp
+    )
+  }
+}
+
+private fun alertText(text: String?): (@Composable () -> Unit)? {
+  return if (text == null) {
+    null
+  } else {
+    ({
+      Text(
+        text,
+        Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
+        fontSize = 16.sp,
+        color = HighOrLowlight
+      )
+    })
   }
 }
