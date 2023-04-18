@@ -14,5 +14,5 @@ for lang in "${langs[@]}"; do
             -localizationPath ./apps/ios/SimpleX\ Localizations/$lang.xcloc \
             -disableAutomaticPackageResolution \
             -skipPackageUpdates
-  sleep 2
+  sleep 10
 done

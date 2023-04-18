@@ -1137,4 +1137,10 @@
     <string name="stop_rcv_file__title">Przestać odbierać plik\?</string>
     <string name="stop_snd_file__title">Przestać wysyłać plik\?</string>
     <string name="revoke_file__confirm">Odwołaj</string>
+    <string name="v5_0_app_passcode">Pin aplikacji</string>
+    <string name="v5_0_polish_interface">Polski interfejs</string>
+    <string name="v5_0_large_files_support">Filmy i pliki do 1gb</string>
+    <string name="v5_0_app_passcode_descr">Ustaw go zamiast uwierzytelniania systemowego.</string>
+    <string name="v5_0_large_files_support_descr">Szybko i bez czekania aż nadawca będzie online!</string>
+    <string name="v5_0_polish_interface_descr">Podziękowania dla użytkowników - wkład za pośrednictwem Weblate!</string>
 </resources>

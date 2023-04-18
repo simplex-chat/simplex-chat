@@ -383,8 +383,14 @@
 /* integrity error chat item */
 "bad message hash" = "错误消息散列";
 
+/* No comment provided by engineer. */
+"Bad message hash" = "错误消息散列";
+
 /* integrity error chat item */
 "bad message ID" = "错误消息 ID";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "错误消息 ID";
 
 /* No comment provided by engineer. */
 "bold" = "加粗";
@@ -781,6 +787,9 @@
 
 /* No comment provided by engineer. */
 "Decentralized" = "分散式";
+
+/* No comment provided by engineer. */
+"Decryption error" = "解密错误";
 
 /* pref value */
 "default (%@)" = "默认 (%@)";
@@ -1518,6 +1527,12 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "它允许在一个聊天资料中有多个匿名连接，而它们之间没有任何共享数据。";
 
 /* No comment provided by engineer. */
+"It can happen when you or your connection used the old database backup." = "当您或您的连接使用旧数据库备份时，可能会发生这种情况。";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "它可能在以下情况发生：\n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。\n2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。\n3.连接被破坏。";
+
+/* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "您似乎已经通过此链接连接。如果不是这样，则有一个错误 (%@)。";
 
 /* No comment provided by engineer. */
@@ -1914,6 +1929,9 @@
 /* No comment provided by engineer. */
 "Periodically" = "定期";
 
+/* message decrypt error item */
+"Permanent decryption error" = "解密错误";
+
 /* No comment provided by engineer. */
 "PING count" = "PING 次数";
 
@@ -1943,6 +1961,9 @@
 
 /* No comment provided by engineer. */
 "Please remember or store it securely - there is no way to recover a lost passcode!" = "请牢记或妥善保管——丢失的密码将无法恢复！";
+
+/* No comment provided by engineer. */
+"Please report it to the developers." = "请向开发者报告。";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "请重新启动应用程序并迁移数据库以启用推送通知。";
@@ -2458,6 +2479,12 @@
 "The group is fully decentralized – it is visible only to the members." = "该小组是完全分散式的——它只对成员可见。";
 
 /* No comment provided by engineer. */
+"The hash of the previous message is different." = "上一条消息的散列不同。";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "下一条消息的 ID 不正确（小于或等于上一条）。\n它可能是由于某些错误或连接被破坏才发生。";
+
+/* No comment provided by engineer. */
 "The message will be deleted for all members." = "将为所有成员删除该消息。";
 
 /* No comment provided by engineer. */
@@ -2498,6 +2525,9 @@
 
 /* notification title */
 "this contact" = "这个联系人";
+
+/* No comment provided by engineer. */
+"This error is permanent for this connection, please re-connect." = "此错误对于此连接是永久性的，请重新连接。";
 
 /* No comment provided by engineer. */
 "This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "此功能是实验性的！ 它仅在其他客户端安装了 4.2 版时才有效。 地址更改完成后，您应该会在对话中看到该消息——请检查您是否仍能收到来自该联系人（或群组成员）的消息。";
