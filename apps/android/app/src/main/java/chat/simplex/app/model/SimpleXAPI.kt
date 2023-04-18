@@ -1744,9 +1744,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  fun getXFTPCfg(): XFTPFileConfig? {
-    val prefXFTPSendEnabled = appPrefs.xftpSendEnabled.get()
-    return if (prefXFTPSendEnabled) XFTPFileConfig(minFileSize = 0) else null
+  fun getXFTPCfg(): XFTPFileConfig {
+    return XFTPFileConfig(minFileSize = 0)
   }
 
   fun getNetCfg(): NetCfg {
