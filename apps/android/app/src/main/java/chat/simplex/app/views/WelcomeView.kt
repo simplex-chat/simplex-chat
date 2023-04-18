@@ -32,6 +32,8 @@ import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 fun isValidDisplayName(name: String) : Boolean {
   return (name.firstOrNull { it.isWhitespace() }) == null && !name.startsWith("@") && !name.startsWith("#")
@@ -162,7 +164,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
     .onFocusChanged { focused = it.isFocused }
   TextField(
     value = name.value,
-    onValueChange = { name.value = it; valid = isValid(it) },
+    onValueChange = { name.value = it },
     modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
     textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
     keyboardOptions = KeyboardOptions(
@@ -182,4 +184,11 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
       errorIndicatorColor = Color.Unspecified
     )
     )
+  LaunchedEffect(Unit) {
+    snapshotFlow { name.value }
+      .distinctUntilChanged()
+      .collect {
+        valid = isValid(it)
+      }
+  }
 }
