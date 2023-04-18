@@ -12,9 +12,11 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&#10;Available in v5.1" xml:space="preserve">
+      <trans-unit id="&#10;Available in v5.1" xml:space="preserve" approved="no">
         <source>
 Available in v5.1</source>
+        <target state="translated">
+Dostępny w v5.1</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" " xml:space="preserve">
@@ -197,12 +199,14 @@ Available in v5.1</source>
         <target>%lldt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
         <source>%u messages failed to decrypt.</source>
+        <target state="translated">Nie udało się odszyfrować %u wiadomości.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages skipped." xml:space="preserve">
+      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
         <source>%u messages skipped.</source>
+        <target state="translated">%u pominiętych wiadomości.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -543,8 +547,9 @@ Available in v5.1</source>
         <target>Ikona aplikacji</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode" xml:space="preserve">
+      <trans-unit id="App passcode" xml:space="preserve" approved="no">
         <source>App passcode</source>
+        <target state="translated">Pin aplikacji</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -1840,8 +1845,9 @@ Available in v5.1</source>
         <target>Nie udało się usunąć hasła</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve">
+      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve" approved="no">
         <source>Fast and no wait until the sender is online!</source>
+        <target state="translated">Szybko i bez czekania aż nadawca będzie online!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve" approved="no">
@@ -2926,8 +2932,9 @@ Available in v5.1</source>
         <target>Prosimy o bezpieczne przechowywanie hasła, w przypadku jego utraty NIE będzie można go zmienić.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Polish interface" xml:space="preserve">
+      <trans-unit id="Polish interface" xml:space="preserve" approved="no">
         <source>Polish interface</source>
+        <target state="translated">Polski interfejs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -3440,8 +3447,9 @@ Available in v5.1</source>
         <target>Ustaw preferencje grupy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set it instead of system authentication." xml:space="preserve">
+      <trans-unit id="Set it instead of system authentication." xml:space="preserve" approved="no">
         <source>Set it instead of system authentication.</source>
+        <target state="translated">Ustaw go zamiast uwierzytelniania systemowego.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -4145,8 +4153,9 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
         <target>Film zostanie odebrany, gdy kontakt będzie online, poczekaj lub sprawdź później!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
+      <trans-unit id="Videos and files up to 1gb" xml:space="preserve" approved="no">
         <source>Videos and files up to 1gb</source>
+        <target state="translated">Filmy i pliki do 1gb</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
