@@ -225,7 +225,7 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
           then Just <$> async (subscribeUsers users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      startXFTP
+      when startXFTPWorkers $ startXFTP
       startCleanupManager
       when enableExpireCIs $ startExpireCIs users
       pure a1
