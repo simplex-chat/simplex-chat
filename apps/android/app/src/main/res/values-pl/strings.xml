@@ -1129,4 +1129,12 @@
     <string name="both_you_and_your_contact_can_make_calls">Zarówno Ty, jak i Twój kontakt możecie nawiązywać połączenia.</string>
     <string name="prohibit_calls">Zabroń połączeń audio/wideo.</string>
     <string name="only_your_contact_can_make_calls">Tylko Twój kontakt może wykonywać połączenia.</string>
+    <string name="revoke_file__action">Odwołaj plik</string>
+    <string name="revoke_file__title">Odwołać plik\?</string>
+    <string name="stop_snd_file__message">Wysyłanie pliku zostanie przerwane.</string>
+    <string name="stop_file__confirm">Zatrzymaj</string>
+    <string name="stop_file__action">Zatrzymaj plik</string>
+    <string name="stop_rcv_file__title">Przestać odbierać plik\?</string>
+    <string name="stop_snd_file__title">Przestać wysyłać plik\?</string>
+    <string name="revoke_file__confirm">Odwołaj</string>
 </resources>
