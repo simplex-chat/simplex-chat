@@ -22,7 +22,7 @@ public enum ChatCommand {
     case apiMuteUser(userId: Int64)
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
-    case startChat(subscribe: Bool, expire: Bool)
+    case startChat(subscribe: Bool, expire: Bool, xftp: Bool)
     case apiStopChat
     case apiActivateChat
     case apiSuspendChat(timeoutMicroseconds: Int)
@@ -116,7 +116,7 @@ public enum ChatCommand {
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
-            case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
+            case let .startChat(subscribe, expire, xftp): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire)) xftp=\(onOff(xftp))"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
