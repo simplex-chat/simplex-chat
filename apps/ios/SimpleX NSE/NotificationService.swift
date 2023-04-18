@@ -273,18 +273,21 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
         }
         if case .image = cItem.content.msgContent {
            if let file = cItem.file,
+              file.fileProtocol == .smp,
               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
               privacyAcceptImagesGroupDefault.get() {
                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
            }
         } else if case .video = cItem.content.msgContent {
             if let file = cItem.file,
+               file.fileProtocol == .smp,
                file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV,
                privacyAcceptImagesGroupDefault.get() {
                 cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
             }
         } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
             if let file = cItem.file,
+               file.fileProtocol == .smp,
                file.fileSize <= MAX_IMAGE_SIZE,
                file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND,
                privacyAcceptImagesGroupDefault.get() {
@@ -343,7 +346,7 @@ func apiGetActiveUser() -> User? {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = sendSimpleXCmd(.startChat(subscribe: false, expire: false))
+    let r = sendSimpleXCmd(.startChat(subscribe: false, expire: false, xftp: false))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false

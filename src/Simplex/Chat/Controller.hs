@@ -194,7 +194,7 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
+  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
   | APIStopChat
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}

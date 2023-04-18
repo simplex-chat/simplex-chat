@@ -1918,7 +1918,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
+    is StartChat -> "/_start subscribe=on expire=${onOff(expire)} xftp=on"
     is ApiStopChat -> "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
