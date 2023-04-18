@@ -194,26 +194,14 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
 
 @Composable
 fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  DropdownMenuItem({
-    markChatUnread(chat, chatModel)
-    showMenu.value = false
-  }) {
-    Row {
-      Text(
-        stringResource(R.string.mark_unread),
-        modifier = Modifier
-          .fillMaxWidth()
-          .weight(1F)
-          .padding(end = 15.dp),
-        color = MaterialTheme.colors.onBackground
-      )
-      Icon(
-        Icons.Outlined.MarkChatUnread,
-        stringResource(R.string.mark_unread),
-        tint = MaterialTheme.colors.onBackground
-      )
+  ItemAction(
+    stringResource(R.string.mark_unread),
+    Icons.Outlined.MarkChatUnread,
+    onClick = {
+      markChatUnread(chat, chatModel)
+      showMenu.value = false
     }
-  }
+  )
 }
 
 @Composable
@@ -447,7 +435,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
         Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.Center,
       ) {
         TextButton(onClick = {
           AlertManager.shared.hideAlert()
@@ -589,15 +577,7 @@ fun ChatListNavLinkLayout(
       chatLinkPreview()
     }
     if (dropdownMenuItems != null) {
-      Box(Modifier.padding(horizontal = 16.dp)) {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
-          dropdownMenuItems()
-        }
-      }
+      DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)
     }
   }
   Divider(Modifier.padding(horizontal = 8.dp))

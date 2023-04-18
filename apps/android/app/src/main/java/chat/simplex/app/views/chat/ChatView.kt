@@ -378,7 +378,7 @@ fun ChatInfoToolbar(
   onSearchValueChanged: (String) -> Unit,
 ) {
   val scope = rememberCoroutineScope()
-  var showMenu by rememberSaveable { mutableStateOf(false) }
+  val showMenu = rememberSaveable { mutableStateOf(false) }
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
     if (!showSearch) {
@@ -393,7 +393,7 @@ fun ChatInfoToolbar(
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {
     ItemAction(stringResource(android.R.string.search_go).capitalize(Locale.current), Icons.Outlined.Search, onClick = {
-      showMenu = false
+      showMenu.value = false
       showSearch = true
     })
   }
@@ -401,7 +401,7 @@ fun ChatInfoToolbar(
   if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
     barButtons.add {
       IconButton({
-        showMenu = false
+        showMenu.value = false
         startCall(CallMediaType.Audio)
       }) {
         Icon(Icons.Outlined.Phone, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
@@ -409,14 +409,14 @@ fun ChatInfoToolbar(
     }
     menuItems.add {
       ItemAction(stringResource(R.string.icon_descr_video_call).capitalize(Locale.current), Icons.Outlined.Videocam, onClick = {
-        showMenu = false
+        showMenu.value = false
         startCall(CallMediaType.Video)
       })
     }
   } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers && !chat.chatInfo.incognito) {
     barButtons.add {
       IconButton({
-        showMenu = false
+        showMenu.value = false
         addMembers(chat.chatInfo.groupInfo)
       }) {
         Icon(Icons.Outlined.PersonAdd, stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
@@ -429,7 +429,7 @@ fun ChatInfoToolbar(
       if (ntfsEnabled.value) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
       if (ntfsEnabled.value) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
       onClick = {
-        showMenu = false
+        showMenu.value = false
         // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
         scope.launch {
           delay(200)
@@ -440,7 +440,7 @@ fun ChatInfoToolbar(
   }
 
   barButtons.add {
-    IconButton({ showMenu = true }) {
+    IconButton({ showMenu.value = true }) {
       Icon(Icons.Default.MoreVert, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
     }
   }
@@ -457,11 +457,7 @@ fun ChatInfoToolbar(
   Divider(Modifier.padding(top = AppBarHeight))
 
   Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight)) {
-    DropdownMenu(
-      expanded = showMenu,
-      onDismissRequest = { showMenu = false },
-      Modifier.widthIn(min = 220.dp)
-    ) {
+    DefaultDropdownMenu(showMenu) {
       menuItems.forEach { it() }
     }
   }
@@ -788,36 +784,27 @@ fun BoxWithConstraintsScope.FloatingButtons(
   }
   val showButtonWithCounter = topUnreadCount > 0
   val height = with(LocalDensity.current) { maxHeight.toPx() }
-  var showDropDown by remember { mutableStateOf(false) }
+  val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
     Modifier.padding(end = 16.dp, top = 24.dp).align(Alignment.TopEnd),
     topUnreadCount,
     showButtonWithCounter,
     onClick = { scope.launch { listState.animateScrollBy(height) } },
-    onLongClick = { showDropDown = true }
+    onLongClick = { showDropDown.value = true }
   )
 
-  DropdownMenu(
-    expanded = showDropDown,
-    onDismissRequest = { showDropDown = false },
-    Modifier.width(220.dp),
-    offset = DpOffset(maxWidth - 16.dp, 24.dp + fabSize)
-  ) {
-    DropdownMenuItem(
+  DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - 16.dp, 24.dp + fabSize)) {
+    ItemAction(
+      generalGetString(R.string.mark_read),
+      Icons.Outlined.Check,
       onClick = {
         markRead(
           CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
           bottomUnreadCount
         )
-        showDropDown = false
-      }
-    ) {
-      Text(
-        generalGetString(R.string.mark_read),
-        maxLines = 1,
-      )
-    }
+        showDropDown.value = false
+      })
   }
 }
 
