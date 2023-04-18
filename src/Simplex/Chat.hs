@@ -210,8 +210,8 @@ cfgServers = \case
   SPSMP -> smp
   SPXFTP -> xftp
 
-startChatController :: forall m. ChatMonad' m => Bool -> Bool -> m (Async ())
-startChatController subConns enableExpireCIs = do
+startChatController :: forall m. ChatMonad' m => Bool -> Bool -> Bool -> m (Async ())
+startChatController subConns enableExpireCIs startXFTPWorkers = do
   asks smpAgent >>= resumeAgentClient
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
   restoreCalls
@@ -225,7 +225,7 @@ startChatController subConns enableExpireCIs = do
           then Just <$> async (subscribeUsers users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      startXFTP
+      when startXFTPWorkers startXFTP
       startCleanupManager
       when enableExpireCIs $ startExpireCIs users
       pure a1
@@ -380,10 +380,10 @@ processChatCommand = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat subConns enableExpireCIs -> withUser' $ \_ ->
+  StartChat subConns enableExpireCIs startXFTPWorkers -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged $ startChatController subConns enableExpireCIs $> CRChatStarted
+      _ -> checkStoreNotChanged $ startChatController subConns enableExpireCIs startXFTPWorkers $> CRChatStarted
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
@@ -3380,6 +3380,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xFileAcptInv ct sharedMsgId fileConnReq_ fName msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       fileId <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId
+      (AChatItem _ _ _ ci) <- withStore $ \db -> getChatItemByFileId db user fileId
+      assertSMPAcceptNotProhibited ci
       ft@FileTransferMeta {fileName, fileSize, fileInline, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
       -- [async agent commands] no continuation needed, but command should be asynchronous for stability
       if fName == fileName
@@ -3391,15 +3393,26 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           -- receiving inline
           _ -> do
             event <- withStore $ \db -> do
-              ci <- updateDirectCIFileStatus db user fileId $ CIFSSndTransfer 0 1
+              ci' <- updateDirectCIFileStatus db user fileId $ CIFSSndTransfer 0 1
               sft <- liftIO $ createSndDirectInlineFT db ct ft
-              pure $ CRSndFileStart user ci sft
+              pure $ CRSndFileStart user ci' sft
             toView event
             ifM
               (allowSendInline fileSize fileInline)
               (sendDirectFileInline ct ft sharedMsgId)
               (messageError "x.file.acpt.inv: fileSize is bigger than allowed to send inline")
         else messageError "x.file.acpt.inv: fileName is different from expected"
+
+    assertSMPAcceptNotProhibited :: ChatItem c d -> m ()
+    assertSMPAcceptNotProhibited ChatItem {file = Just CIFile {fileId, fileProtocol}, content}
+      | fileProtocol == FPXFTP && not (imageOrVoice content) = throwChatError $ CEFallbackToSMPProhibited fileId
+      | otherwise = pure ()
+      where
+        imageOrVoice :: CIContent d -> Bool
+        imageOrVoice (CISndMsgContent (MCImage _ _)) = True
+        imageOrVoice (CISndMsgContent (MCVoice _ _)) = True
+        imageOrVoice _ = False
+    assertSMPAcceptNotProhibited _ = pure ()
 
     checkSndInlineFTComplete :: Connection -> AgentMsgId -> m ()
     checkSndInlineFTComplete conn agentMsgId = do
@@ -3463,6 +3476,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xFileAcptInvGroup g@GroupInfo {groupId} m@GroupMember {activeConn} sharedMsgId fileConnReq_ fName msgMeta = do
       checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
+      (AChatItem _ _ _ ci) <- withStore $ \db -> getChatItemByFileId db user fileId
+      assertSMPAcceptNotProhibited ci
       -- TODO check that it's not already accepted
       ft@FileTransferMeta {fileName, fileSize, fileInline, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
       if fName == fileName
@@ -3475,9 +3490,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           (_, Just conn) -> do
             -- receiving inline
             event <- withStore $ \db -> do
-              ci <- updateDirectCIFileStatus db user fileId $ CIFSSndTransfer 0 1
+              ci' <- updateDirectCIFileStatus db user fileId $ CIFSSndTransfer 0 1
               sft <- liftIO $ createSndGroupInlineFT db m conn ft
-              pure $ CRSndFileStart user ci sft
+              pure $ CRSndFileStart user ci' sft
             toView event
             ifM
               (allowSendInline fileSize fileInline)
@@ -4495,8 +4510,8 @@ chatCommandP =
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
-      "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP),
-      "/_start" $> StartChat True True,
+      "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP <* " xftp=" <*> onOffP),
+      "/_start" $> StartChat True True True,
       "/_stop" $> APIStopChat,
       "/_app activate" $> APIActivateChat,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),

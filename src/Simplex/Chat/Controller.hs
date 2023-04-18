@@ -194,7 +194,7 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
+  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
   | APIStopChat
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}
@@ -795,6 +795,7 @@ data ChatErrorType
   | CEFileNotReceived {fileId :: FileTransferId}
   | CEXFTPRcvFile {fileId :: FileTransferId, agentRcvFileId :: AgentRcvFileId, agentError :: AgentErrorType}
   | CEXFTPSndFile {fileId :: FileTransferId, agentSndFileId :: AgentSndFileId, agentError :: AgentErrorType}
+  | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
