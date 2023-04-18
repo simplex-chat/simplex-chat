@@ -143,7 +143,13 @@
 "%lld members" = "%lld členové";
 
 /* No comment provided by engineer. */
+"%lld minutes" = "%lld minut";
+
+/* No comment provided by engineer. */
 "%lld second(s)" = "%lld vteřin";
+
+/* No comment provided by engineer. */
+"%lld seconds" = "%lld vteřin";
 
 /* No comment provided by engineer. */
 "%lldd" = "%lldd";
@@ -350,6 +356,9 @@
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "zvukový hovor (nešifrovaný e2e)";
 
+/* PIN entry */
+"Authentication cancelled" = "Ověření zrušeno";
+
 /* No comment provided by engineer. */
 "Authentication failed" = "Ověření selhalo";
 
@@ -374,8 +383,14 @@
 /* integrity error chat item */
 "bad message hash" = "špatný hash zprávy";
 
+/* No comment provided by engineer. */
+"Bad message hash" = "Špatný hash zprávy";
+
 /* integrity error chat item */
 "bad message ID" = "špatné ID zprávy";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "Špatné ID zprávy";
 
 /* No comment provided by engineer. */
 "bold" = "tučně";
@@ -416,11 +431,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Nelze pozvat kontakty!";
 
-/* chat item action */
-"Cancel" = "Zrušit";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "Zrušit přenos souboru?";
+"Cancel" = "Zrušit";
 
 /* feature offered item */
 "cancelled %@" = "zrušeno %@";
@@ -437,8 +449,17 @@
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Změnit přístupovou frázi databáze?";
 
+/* authentication reason */
+"Change lock mode" = "Změnit zamykání";
+
 /* No comment provided by engineer. */
 "Change member role?" = "Změnit roli člena?";
+
+/* authentication reason */
+"Change passcode" = "Změnit heslo";
+
+/* No comment provided by engineer. */
+"Change Passcode" = "Změna hesla";
 
 /* No comment provided by engineer. */
 "Change receiving address" = "Změna adresy příjemce";
@@ -521,6 +542,9 @@
 /* No comment provided by engineer. */
 "Colors" = "Barvy";
 
+/* server test step */
+"Compare file" = "Porovnat soubor";
+
 /* No comment provided by engineer. */
 "Compare security codes with your contacts." = "Porovnejte bezpečnostní kódy se svými kontakty.";
 
@@ -538,6 +562,9 @@
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Potvrdit novou heslovou frázi…";
+
+/* No comment provided by engineer. */
+"Confirm Passcode" = "Potvrdit heslo";
 
 /* No comment provided by engineer. */
 "Confirm password" = "Potvrdit heslo";
@@ -665,6 +692,9 @@
 /* No comment provided by engineer. */
 "Create address" = "Vytvořit adresu";
 
+/* server test step */
+"Create file" = "Vytvořit soubor";
+
 /* No comment provided by engineer. */
 "Create group link" = "Vytvořit odkaz na skupinu";
 
@@ -688,6 +718,9 @@
 
 /* No comment provided by engineer. */
 "creator" = "tvůrce";
+
+/* No comment provided by engineer. */
+"Current Passcode" = "Aktuální heslo";
 
 /* No comment provided by engineer. */
 "Current passphrase…" = "Aktuální přístupová fráze…";
@@ -755,6 +788,9 @@
 /* No comment provided by engineer. */
 "Decentralized" = "Decentralizované";
 
+/* No comment provided by engineer. */
+"Decryption error" = "Chyba dešifrování";
+
 /* pref value */
 "default (%@)" = "výchozí (%@)";
 
@@ -799,6 +835,9 @@
 
 /* No comment provided by engineer. */
 "Delete database" = "Odstranění databáze";
+
+/* server test step */
+"Delete file" = "Smazat soubor";
 
 /* No comment provided by engineer. */
 "Delete files and media?" = "Smazat soubory a média?";
@@ -932,6 +971,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Snížit a otevřít chat";
 
+/* server test step */
+"Download file" = "Stáhnout soubor";
+
 /* No comment provided by engineer. */
 "Duplicate display name!" = "Duplicitní zobrazované jméno!";
 
@@ -955,6 +997,9 @@
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "Povolit okamžitá oznámení?";
+
+/* No comment provided by engineer. */
+"Enable lock" = "Povolit zámek";
 
 /* No comment provided by engineer. */
 "Enable notifications" = "Povolit upozornění";
@@ -1012,6 +1057,9 @@
 
 /* No comment provided by engineer. */
 "Enter correct passphrase." = "Zadejte správnou přístupovou frázi.";
+
+/* No comment provided by engineer. */
+"Enter Passcode" = "Zadat heslo";
 
 /* No comment provided by engineer. */
 "Enter passphrase…" = "Zadejte přístupovou frázi…";
@@ -1098,6 +1146,9 @@
 "Error joining group" = "Chyba při připojování ke skupině";
 
 /* No comment provided by engineer. */
+"Error loading %@ servers" = "Chyba načítání %@ serverů";
+
+/* No comment provided by engineer. */
 "Error receiving file" = "Chyba při příjmu souboru";
 
 /* No comment provided by engineer. */
@@ -1111,6 +1162,9 @@
 
 /* No comment provided by engineer. */
 "Error saving ICE servers" = "Chyba při ukládání serverů ICE";
+
+/* No comment provided by engineer. */
+"Error saving passcode" = "Chyba uložení hesla";
 
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Při ukládání přístupové fráze do klíčenky došlo k chybě";
@@ -1158,9 +1212,6 @@
 "Exit without saving" = "Ukončit bez uložení";
 
 /* No comment provided by engineer. */
-"Experimental" = "Pokusný";
-
-/* No comment provided by engineer. */
 "Export database" = "Export databáze";
 
 /* No comment provided by engineer. */
@@ -1174,9 +1225,6 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Přístupovou frázi se nepodařilo odstranit";
-
-/* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "Přenos souboru bude zrušen. Pokud probíhá, bude zastaven.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Soubor bude přijat, jakmile váš kontakt dokončí nahrávání.";
@@ -1344,6 +1392,9 @@
 "Image will be received when your contact is online, please wait or check later!" = "Obrázek bude přijat, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!";
 
 /* No comment provided by engineer. */
+"Immediately" = "Ihned";
+
+/* No comment provided by engineer. */
 "Immune to spam and abuse" = "Odolná vůči spamu a zneužití";
 
 /* No comment provided by engineer. */
@@ -1393,6 +1444,9 @@
 
 /* No comment provided by engineer. */
 "Incompatible database version" = "Nekompatibilní verze databáze";
+
+/* PIN entry */
+"Incorrect passcode" = "Nesprávné heslo";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "Nesprávný bezpečnostní kód!";
@@ -1473,7 +1527,10 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Umožňuje mít v jednom profilu chatu mnoho anonymních spojení bez jakýchkoli sdílených údajů mezi nimi.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Může se to stát, když:\n1. Zprávy na serveru vyprší, pokud nebyly přijaty po dobu 30 dnů,\n2. Server, který používáte pro příjem zpráv od tohoto kontaktu, byl aktualizován a restartován.\n3. Spojení je narušeno.\nPřipojte se k vývojářům prostřednictvím Nastavení, abyste mohli dostávat aktualizace o serverech.\nBudeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.";
+"It can happen when you or your connection used the old database backup." = "Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Může se to stát, když:\n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 30 dnech.\n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.\n3. Spojení je kompromitováno.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Zdá se, že jste již připojeni prostřednictvím tohoto odkazu. Pokud tomu tak není, došlo k chybě (%@).";
@@ -1501,6 +1558,9 @@
 
 /* No comment provided by engineer. */
 "Keychain error" = "Chyba klíčenky";
+
+/* No comment provided by engineer. */
+"KeyChain error" = "Chyba klíčenky";
 
 /* No comment provided by engineer. */
 "Large file!" = "Velký soubor!";
@@ -1537,6 +1597,12 @@
 
 /* No comment provided by engineer. */
 "Local profile data only" = "Pouze lokální profilová data";
+
+/* No comment provided by engineer. */
+"Lock after" = "Zamknout po";
+
+/* No comment provided by engineer. */
+"Lock mode" = "Režim zámku";
 
 /* No comment provided by engineer. */
 "Make a private connection" = "Vytvořte si soukromé připojení";
@@ -1686,6 +1752,9 @@
 "New message" = "Nová zpráva";
 
 /* No comment provided by engineer. */
+"New Passcode" = "Nové heslo";
+
+/* No comment provided by engineer. */
 "New passphrase…" = "Nová přístupová fráze…";
 
 /* pref value */
@@ -1693,6 +1762,9 @@
 
 /* No comment provided by engineer. */
 "No" = "Ne";
+
+/* Authentication unavailable */
+"No app password" = "Žádné heslo aplikace";
 
 /* No comment provided by engineer. */
 "No contacts selected" = "Nebyl vybrán žádný kontakt";
@@ -1730,6 +1802,9 @@
 /* enabled status
    group pref value */
 "off" = "vypnuto";
+
+/* No comment provided by engineer. */
+"Off" = "Vypnout";
 
 /* No comment provided by engineer. */
 "Off (Local)" = "Vypnuto (místní)";
@@ -1816,6 +1891,21 @@
 "owner" = "vlastník";
 
 /* No comment provided by engineer. */
+"Passcode" = "Heslo";
+
+/* No comment provided by engineer. */
+"Passcode changed!" = "Heslo změněno!";
+
+/* No comment provided by engineer. */
+"Passcode entry" = "Zadat heslo";
+
+/* No comment provided by engineer. */
+"Passcode not changed!" = "Heslo nezměněno!";
+
+/* No comment provided by engineer. */
+"Passcode set!" = "Heslo nastaveno!";
+
+/* No comment provided by engineer. */
 "Password to show" = "Heslo k zobrazení";
 
 /* No comment provided by engineer. */
@@ -1838,6 +1928,9 @@
 
 /* No comment provided by engineer. */
 "Periodically" = "Pravidelně";
+
+/* message decrypt error item */
+"Permanent decryption error" = "Chyba dešifrování";
 
 /* No comment provided by engineer. */
 "PING count" = "Počet PING";
@@ -1865,6 +1958,12 @@
 
 /* No comment provided by engineer. */
 "Please enter the previous password after restoring database backup. This action can not be undone." = "Po obnovení zálohy databáze zadejte předchozí heslo. Tuto akci nelze vrátit zpět.";
+
+/* No comment provided by engineer. */
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Zapamatujte si ho nebo bezpečně uložte - neexistuje žádný způsob, jak obnovit ztracený heslo!";
+
+/* No comment provided by engineer. */
+"Please report it to the developers." = "Nahlaste to prosím vývojářům.";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Restartujte aplikaci a přeneste databázi, abyste povolili doručování oznámení.";
@@ -2166,6 +2265,9 @@
 /* server test error */
 "Server requires authorization to create queues, check password" = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo";
 
+/* server test error */
+"Server requires authorization to upload, check password" = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo";
+
 /* No comment provided by engineer. */
 "Server test failed!" = "Test serveru se nezdařil!";
 
@@ -2239,6 +2341,12 @@
 "SimpleX Lock" = "Zámek SimpleX";
 
 /* No comment provided by engineer. */
+"SimpleX Lock mode" = "SimpleX zámek";
+
+/* No comment provided by engineer. */
+"SimpleX Lock not enabled!" = "Zámek SimpleX není povolen!";
+
+/* No comment provided by engineer. */
 "SimpleX Lock turned on" = "Zapnutý zámek SimpleX Lock";
 
 /* simplex link type */
@@ -2287,10 +2395,16 @@
 "strike" = "stávka";
 
 /* No comment provided by engineer. */
+"Submit" = "Odeslat";
+
+/* No comment provided by engineer. */
 "Support SimpleX Chat" = "Podpořte SimpleX Chat";
 
 /* No comment provided by engineer. */
 "System" = "Systém";
+
+/* No comment provided by engineer. */
+"System authentication" = "Ověření systému";
 
 /* No comment provided by engineer. */
 "Take picture" = "Vyfotit";
@@ -2365,6 +2479,12 @@
 "The group is fully decentralized – it is visible only to the members." = "Skupina je plně decentralizovaná - je viditelná pouze pro členy.";
 
 /* No comment provided by engineer. */
+"The hash of the previous message is different." = "Hash předchozí zprávy se liší.";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "ID další zprávy je nesprávné (menší nebo rovno předchozí).\nMůže se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitováno.";
+
+/* No comment provided by engineer. */
 "The message will be deleted for all members." = "Zpráva bude smazána pro všechny členy.";
 
 /* No comment provided by engineer. */
@@ -2405,6 +2525,9 @@
 
 /* notification title */
 "this contact" = "tento kontakt";
+
+/* No comment provided by engineer. */
+"This error is permanent for this connection, please re-connect." = "Tato chyba je pro toto připojení trvalá, připojte se znovu.";
 
 /* No comment provided by engineer. */
 "This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Tato funkce je experimentální! Bude fungovat pouze v případě, že druhý klient má nainstalovanou verzi 4.2. Po dokončení změny adresy by se měla v konverzaci zobrazit zpráva - zkontrolujte, zda můžete od tohoto kontaktu (nebo člena skupiny) stále přijímat zprávy.";
@@ -2502,6 +2625,9 @@
 /* No comment provided by engineer. */
 "Unlock" = "Odemknout";
 
+/* authentication reason */
+"Unlock app" = "Odemknout aplikaci";
+
 /* No comment provided by engineer. */
 "Unmute" = "Zrušit ztlumení";
 
@@ -2535,6 +2661,9 @@
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Zvýšit a otevřít chat";
 
+/* server test step */
+"Upload file" = "Nahrát soubor";
+
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Použít hostitele .onion";
 
@@ -2566,9 +2695,6 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "Pro příjem přes XFTP je vyžadována verze 4.6.1+.";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "Ověření zabezpečení připojení";
 
 /* No comment provided by engineer. */
@@ -2594,6 +2720,12 @@
 
 /* No comment provided by engineer. */
 "video call (not e2e encrypted)" = "videohovoru (nešifrovaného e2e)";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact completes uploading it." = "Video bude přijato, až kontakt dokončí jeho nahrávání.";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact is online, please wait or check later!" = "Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo zkontrolujte později!";
 
 /* No comment provided by engineer. */
 "View security code" = "Zobrazení bezpečnostního kódu";
@@ -2624,6 +2756,9 @@
 
 /* No comment provided by engineer. */
 "Waiting for image" = "Čekání na obrázek";
+
+/* No comment provided by engineer. */
+"Waiting for video" = "Čekám na video";
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "chce se s vámi spojit!";
@@ -2714,6 +2849,9 @@
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Chat můžete zahájit prostřednictvím aplikace Nastavení / Databáze nebo restartováním aplikace";
+
+/* No comment provided by engineer. */
+"You can turn on SimpleX Lock via Settings." = "Zámek SimpleX můžete zapnout v Nastavení.";
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "K formátování zpráv můžete použít markdown:";
@@ -2888,4 +3026,7 @@
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Vaše servery SMP";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "Vaše XFTP servery";
 

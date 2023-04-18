@@ -285,6 +285,9 @@
 "Allow" = "Consenti";
 
 /* No comment provided by engineer. */
+"Allow calls only if your contact allows them." = "Consenti le chiamate solo se il contatto le consente.";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Consenti i messaggi a tempo solo se il contatto li consente a te.";
 
 /* No comment provided by engineer. */
@@ -307,6 +310,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "Consentire i messaggi vocali?";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "Consenti ai tuoi contatti di chiamarti.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "Permetti ai tuoi contatti di eliminare irreversibilmente i messaggi inviati.";
@@ -356,6 +362,12 @@
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "chiamata audio (non crittografata e2e)";
 
+/* chat feature */
+"Audio/video calls" = "Chiamate audio/video";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "Le chiamate audio/video sono vietate.";
+
 /* PIN entry */
 "Authentication cancelled" = "Autenticazione annullata";
 
@@ -383,14 +395,23 @@
 /* integrity error chat item */
 "bad message hash" = "hash del messaggio errato";
 
+/* No comment provided by engineer. */
+"Bad message hash" = "Hash del messaggio errato";
+
 /* integrity error chat item */
 "bad message ID" = "ID messaggio errato";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "ID del messaggio errato";
 
 /* No comment provided by engineer. */
 "bold" = "grassetto";
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "Sia tu che il tuo contatto potete eliminare irreversibilmente i messaggi inviati.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "Sia tu che il tuo contatto potete effettuare chiamate.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Sia tu che il tuo contatto potete inviare messaggi a tempo.";
@@ -425,11 +446,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Impossibile invitare i contatti!";
 
-/* chat item action */
-"Cancel" = "Annulla";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "Annullare il trasferimento di file?";
+"Cancel" = "Annulla";
 
 /* feature offered item */
 "cancelled %@" = "annullato %@";
@@ -784,6 +802,9 @@
 
 /* No comment provided by engineer. */
 "Decentralized" = "Decentralizzato";
+
+/* No comment provided by engineer. */
+"Decryption error" = "Errore di decifrazione";
 
 /* pref value */
 "default (%@)" = "predefinito (%@)";
@@ -1206,9 +1227,6 @@
 "Exit without saving" = "Esci senza salvare";
 
 /* No comment provided by engineer. */
-"Experimental" = "Sperimentale";
-
-/* No comment provided by engineer. */
 "Export database" = "Esporta database";
 
 /* No comment provided by engineer. */
@@ -1224,7 +1242,7 @@
 "Failed to remove passphrase" = "Rimozione della password fallita";
 
 /* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "Il trasferimento di file verrà annullato. Se è in corso, verrà interrotto.";
+"File will be deleted from servers." = "Il file verrà eliminato dai server.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Il file verrà ricevuto quando il tuo contatto completerà l'invio.";
@@ -1527,7 +1545,10 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Permette di avere molte connessioni anonime senza dati condivisi tra di loro in un unico profilo di chat.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Può accadere quando:\n1. I messaggi scadono sul server se non sono stati ricevuti per 30 giorni,\n2. Il server usato per ricevere i messaggi da questo contatto è stato aggiornato e riavviato.\n3. La connessione è compromessa.\nConnettiti agli sviluppatori tramite Impostazioni per ricevere aggiornamenti riguardo i server.\nAggiungeremo la ridondanza del server per prevenire la perdita di messaggi.";
+"It can happen when you or your connection used the old database backup." = "Può accadere quando tu o il tuo contatto avete usato il backup del database vecchio.";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Può accadere quando:\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.\n3. La connessione è stata compromessa.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Sembra che tu sia già connesso tramite questo link. In caso contrario, c'è stato un errore (%@).";
@@ -1849,6 +1870,9 @@
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Solo tu puoi eliminare irreversibilmente i messaggi (il tuo contatto può contrassegnarli per l'eliminazione).";
 
 /* No comment provided by engineer. */
+"Only you can make calls." = "Solo tu puoi effettuare chiamate.";
+
+/* No comment provided by engineer. */
 "Only you can send disappearing messages." = "Solo tu puoi inviare messaggi a tempo.";
 
 /* No comment provided by engineer. */
@@ -1856,6 +1880,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Solo il tuo contatto può eliminare irreversibilmente i messaggi (tu puoi contrassegnarli per l'eliminazione).";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "Solo il tuo contatto può effettuare chiamate.";
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Solo il tuo contatto può inviare messaggi a tempo.";
@@ -1926,6 +1953,9 @@
 /* No comment provided by engineer. */
 "Periodically" = "Periodicamente";
 
+/* message decrypt error item */
+"Permanent decryption error" = "Errore di decifrazione";
+
 /* No comment provided by engineer. */
 "PING count" = "Conteggio PING";
 
@@ -1955,6 +1985,9 @@
 
 /* No comment provided by engineer. */
 "Please remember or store it securely - there is no way to recover a lost passcode!" = "Ricordalo o conservalo in modo sicuro: non c'è modo di recuperare un codice di accesso perso!";
+
+/* No comment provided by engineer. */
+"Please report it to the developers." = "Si prega di segnalarlo agli sviluppatori.";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Riavvia l'app ed esegui la migrazione del database per attivare le notifiche push.";
@@ -1994,6 +2027,9 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "Password del profilo";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "Proibisci le chiamate audio/video.";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Proibisci l'eliminazione irreversibile dei messaggi.";
@@ -2039,6 +2075,9 @@
 
 /* notification */
 "Received file event" = "Evento file ricevuto";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "La ricezione del file verrà interrotta.";
 
 /* No comment provided by engineer. */
 "Receiving via" = "Ricezione via";
@@ -2126,6 +2165,15 @@
 
 /* No comment provided by engineer. */
 "Revert" = "Annulla";
+
+/* No comment provided by engineer. */
+"Revoke" = "Revoca";
+
+/* cancel file action */
+"Revoke file" = "Revoca file";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "Revocare il file?";
 
 /* No comment provided by engineer. */
 "Role" = "Ruolo";
@@ -2243,6 +2291,9 @@
 
 /* No comment provided by engineer. */
 "Sender may have deleted the connection request." = "Il mittente potrebbe aver eliminato la richiesta di connessione.";
+
+/* No comment provided by engineer. */
+"Sending file will be stopped." = "L'invio del file verrà interrotto.";
 
 /* No comment provided by engineer. */
 "Sending via" = "Invio tramite";
@@ -2379,6 +2430,15 @@
 /* No comment provided by engineer. */
 "Stop chat?" = "Fermare la chat?";
 
+/* cancel file action */
+"Stop file" = "Ferma file";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "Fermare la ricezione del file?";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "Fermare l'invio del file?";
+
 /* authentication reason */
 "Stop SimpleX" = "Ferma SimpleX";
 
@@ -2470,6 +2530,12 @@
 "The group is fully decentralized – it is visible only to the members." = "Il gruppo è completamente decentralizzato: è visibile solo ai membri.";
 
 /* No comment provided by engineer. */
+"The hash of the previous message is different." = "L'hash del messaggio precedente è diverso.";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "L'ID del messaggio successivo non è corretto (inferiore o uguale al precedente).\nPuò accadere a causa di qualche bug o quando la connessione è compromessa.";
+
+/* No comment provided by engineer. */
 "The message will be deleted for all members." = "Il messaggio verrà eliminato per tutti i membri.";
 
 /* No comment provided by engineer. */
@@ -2510,6 +2576,9 @@
 
 /* notification title */
 "this contact" = "questo contatto";
+
+/* No comment provided by engineer. */
+"This error is permanent for this connection, please re-connect." = "L'errore è permanente per questa connessione, riconnettiti.";
 
 /* No comment provided by engineer. */
 "This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Questa funzionalità è sperimentale! Funzionerà solo se l'altro client ha la versione 4.2 installata. Dovresti vedere il messaggio nella conversazione una volta completato il cambio di indirizzo. Controlla di potere ancora ricevere messaggi da questo contatto (o membro del gruppo).";
@@ -2675,9 +2744,6 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "v4.6.1+ necessaria per ricevere via XFTP.";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Verifica la sicurezza della connessione";

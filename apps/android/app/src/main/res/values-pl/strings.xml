@@ -154,7 +154,7 @@
     <string name="icon_descr_sent_msg_status_unauthorized_send">nieautoryzowane wysyłanie</string>
     <string name="icon_descr_received_msg_status_unread">oznacz jako nieprzeczytane</string>
     <string name="welcome">Witaj!</string>
-    <string name="personal_welcome">Witaj &lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\"&gt;!</string>
+    <string name="personal_welcome">Witaj <xliff:g>%1$s</xliff:g>!</string>
     <string name="group_preview_you_are_invited">jesteś zaproszony do grupy</string>
     <string name="you_have_no_chats">Nie masz czatów</string>
     <string name="your_chats">Twoje czaty</string>
@@ -449,7 +449,7 @@
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Tylko urządzenia klienckie przechowują profile użytkowników, kontakty, grupy i wiadomości wysyłane za pomocą <b>2-warstwowego szyfrowania end-to-end</b>.</string>
     <string name="onboarding_notifications_mode_periodic">Okresowo</string>
     <string name="onboarding_notifications_mode_title">Prywatne powiadomienia</string>
-    <string name="read_more_in_github_with_link">Przeczytaj więcej w naszym <font color="#0088ff">repozytorium GitHub</font>.</string>
+    <string name="read_more_in_github_with_link">Przeczytaj więcej na naszym <font color="#0088ff">repozytorium GitHub</font>.</string>
     <string name="read_more_in_github">Przeczytaj więcej na naszym repozytorium GitHub.</string>
     <string name="use_chat">Użyj czatu</string>
     <string name="onboarding_notifications_mode_off">Gdy aplikacja jest uruchomiona</string>
@@ -505,13 +505,11 @@
     <string name="call_connection_via_relay">przez przekaźnik</string>
     <string name="icon_descr_video_off">Wideo wyłączone</string>
     <string name="icon_descr_video_on">Wideo włączone</string>
-    <string name="integrity_msg_skipped">&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"connection ID\" example=\"1\"&gt; wiadomość(i) pominięta(e)</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> wiadomość(i) pominięta(e)</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Może to nastąpić, gdy:
-\n1. Wiadomości wygasają na serwerze, jeśli nie zostały odebrane przez 30 dni,
-\n2. Serwer, którego używasz do odbierania wiadomości od tego kontaktu został zaktualizowany i uruchomiony ponownie.
-\n3. Połączenie jest skompromitowane.
-\nProszę połączyć się z deweloperami przez Ustawienia, aby otrzymać aktualizacje dotyczące serwerów.
-\nBędziemy dodawać redundancję serwerów, aby zapobiec utracie wiadomości.</string>
+\n1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 30 dniach.
+\n2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych.
+\n3. Połączenie zostało skompromitowane.</string>
     <string name="privacy_and_security">Prywatność i bezpieczeństwo</string>
     <string name="alert_title_skipped_messages">Pominięte wiadomości</string>
     <string name="your_privacy">Twoja prywatność</string>
@@ -723,7 +721,7 @@
     <string name="button_leave_group">Opuść grupę</string>
     <string name="button_welcome_message">Wiadomość powitalna</string>
     <string name="invite_prohibited_description">Próbujesz zaprosić osobę, z którą masz wspólny profil incognito do grupy, w której używasz swojego głównego profilu</string>
-    <string name="group_info_member_you">ty: &lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"group_info_you\"&gt;</string>
+    <string name="group_info_member_you">ty: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="change_verb">Zmień</string>
     <string name="change_member_role_question">Zmienić rolę grupy\?</string>
     <string name="change_role">Zmień rolę</string>
@@ -808,7 +806,7 @@
     <string name="feature_enabled_for_you">włączone dla Ciebie</string>
     <string name="group_preferences">Preferencje grupy</string>
     <string name="incognito">Incognito</string>
-    <string name="incognito_info_allows">Pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w jednym profilu czatu.</string>
+    <string name="incognito_info_allows">To pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w pojedynczym profilu czatu.</string>
     <string name="theme_light">Jasny</string>
     <string name="chat_preferences_no">nie</string>
     <string name="chat_preferences_off">wyłączony</string>
@@ -925,7 +923,7 @@
     <string name="users_delete_all_chats_deleted">Wszystkie czaty i wiadomości zostaną usunięte - nie można tego cofnąć!</string>
     <string name="allow_verb">Pozwól</string>
     <string name="chat_preferences_always">zawsze</string>
-    <string name="notifications_mode_service">Zawsze włączone</string>
+    <string name="notifications_mode_service">Zawsze włączona</string>
     <string name="allow_irreversible_message_deletion_only_if">Zezwalaj na nieodwracalne usuwanie wiadomości tylko wtedy, gdy Twój kontakt Ci na to pozwoli.</string>
     <string name="allow_to_send_disappearing">Zezwól na wysyłanie znikających wiadomości.</string>
     <string name="allow_voice_messages_question">Zezwolić na wiadomości głosowe\?</string>
@@ -1036,11 +1034,11 @@
     <string name="icon_descr_simplex_team">Drużyna <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="network_use_onion_hosts_prefer">Gdy dostępny</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Z opcjonalną wiadomością powitalną.</string>
-    <string name="group_info_section_title_num_members">&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"num_members\"&gt; CZŁONKÓW</string>
+    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> CZŁONKÓW</string>
     <string name="simplex_service_notification_title">serwis <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="contact_wants_to_connect_via_call">&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"contactName\" example=\"Alice\"&gt; chce się z Tobą połączyć przez</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> chce się z Tobą połączyć przez</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Jesteś już połączony z <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Możesz <font color="#0088ff">połączyć się z deweloperami<xliff:g id="appNameFull">SimpleX Chat</xliff:g> aby zadać wszelkie pytania i otrzymywać aktualizacje</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Możesz <font color="#0088ff">połączyć się z deweloperami <xliff:g id="appNameFull">SimpleX Chat</xliff:g> aby zadać wszelkie pytania i otrzymywać aktualizacje</font>.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Możesz udostępnić link lub kod QR - każdy będzie mógł dołączyć do grupy. Nie stracisz członków grupy, jeśli później ją usuniesz.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Musisz używać najnowszej wersji bazy danych czatu TYLKO na jednym urządzeniu, w przeciwnym razie możesz przestać otrzymywać wiadomości od niektórych kontaktów.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Możesz rozpocząć czat poprzez Ustawienia aplikacji / Bazę danych lub poprzez ponowne uruchomienie aplikacji.</string>
@@ -1075,4 +1073,74 @@
     <string name="network_socks_proxy_settings">Ustawienia PROXY SOCKS</string>
     <string name="network_socks_toggle_use_socks_proxy">Użyj proxy SOCKS</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Upewnij się, że adresy serwerów XFTP są w poprawnym formacie, rozdzielone liniami i nie są zduplikowane.</string>
+    <string name="la_auth_failed">Uwierzytelnianie nie powiodło się</string>
+    <string name="la_lock_mode_passcode">Wpis pinu</string>
+    <string name="la_lock_mode">Tryb blokady SimpleX</string>
+    <string name="la_lock_mode_system">Uwierzytelnianie systemu</string>
+    <string name="la_could_not_be_verified">Nie można zweryfikować użytkownika; proszę spróbować ponownie.</string>
+    <string name="la_change_app_passcode">Zmień pin</string>
+    <string name="la_current_app_passcode">Aktualny Pin</string>
+    <string name="la_minutes">%d minut</string>
+    <string name="la_seconds">%d sekund</string>
+    <string name="la_enter_app_passcode">Wprowadź Pin</string>
+    <string name="la_no_app_password">Brak pinu aplikacji</string>
+    <string name="lock_not_enabled">Blokada SimpleX wyłączona!</string>
+    <string name="you_can_turn_on_lock">Możesz włączyć blokadę SimpleX poprzez Ustawienia.</string>
+    <string name="enable_lock">Włącz blokadę</string>
+    <string name="authentication_cancelled">Uwierzytelnianie anulowane</string>
+    <string name="confirm_passcode">Potwierdź Pin</string>
+    <string name="incorrect_passcode">Nieprawidłowy pin</string>
+    <string name="lock_after">Zablokuj po</string>
+    <string name="lock_mode">Tryb blokady</string>
+    <string name="new_passcode">Nowy Pin</string>
+    <string name="la_mode_passcode">Pin</string>
+    <string name="passcode_changed">Pin zmieniony!</string>
+    <string name="passcode_set">Pin ustawiony!</string>
+    <string name="submit_passcode">Zatwierdź</string>
+    <string name="la_mode_system">System</string>
+    <string name="change_lock_mode">Zmień tryb blokady</string>
+    <string name="passcode_not_changed">Pin nie został zmieniony!</string>
+    <string name="la_authenticate">Uwierzytelnij</string>
+    <string name="la_immediately">Natychmiast</string>
+    <string name="la_please_remember_to_store_password">Prosimy o jego zapamiętanie lub bezpieczne przechowywanie - nie ma możliwości odzyskania utraconego pinu!</string>
+    <string name="decryption_error">Błąd odszyfrowania</string>
+    <string name="decryption_error_permanent">Trwały błąd odszyfrowywania</string>
+    <string name="alert_title_msg_bad_hash">Zły hash wiadomości</string>
+    <string name="alert_title_msg_bad_id">Zły identyfikator wiadomości</string>
+    <string name="alert_text_msg_bad_hash">Hash poprzedniej wiadomości jest inny.</string>
+    <string name="alert_text_msg_bad_id">Identyfikator następnej wiadomości jest nieprawidłowy (mniejszy lub równy poprzedniej).
+\nMoże się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skompromitowane.</string>
+    <string name="alert_text_decryption_error_header">Nie udało się odszyfrować <xliff:g id="message count" example="1">%1$d</xliff:g> wiadomości.</string>
+    <string name="alert_text_decryption_error_earlier">Nie udało się odszyfrować <xliff:g id="message count" example="1">%1$d</xliff:g> wiadomości i nie będą one pokazane.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Ten błąd jest trwały dla tego połączenia, proszę o ponowne połączenie.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> pominiętych wiadomości.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Może się to zdarzyć, gdy Ty lub Twoje połączenie użyło starej kopii zapasowej bazy danych.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Prosimy o zgłaszanie tego do deweloperów.</string>
+    <string name="calls_prohibited_with_this_contact">Połączenia audio/wideo są zabronione.</string>
+    <string name="revoke_file__message">Plik zostanie usunięty z serwerów.</string>
+    <string name="only_you_can_make_calls">Tylko Ty możesz wykonywać połączenia.</string>
+    <string name="stop_rcv_file__message">Odbieranie pliku zostanie przerwane.</string>
+    <string name="no_spaces">Bez spacji!</string>
+    <string name="allow_calls_only_if">Zezwalaj na połączenia tylko wtedy, gdy Twój kontakt na to pozwala.</string>
+    <string name="allow_your_contacts_to_call">Zezwól swoim kontaktom na połączenia do Ciebie.</string>
+    <string name="audio_video_calls">Połączenia audio/wideo</string>
+    <string name="available_in_v51">"
+\nDostępny w v5.1"</string>
+    <string name="both_you_and_your_contact_can_make_calls">Zarówno Ty, jak i Twój kontakt możecie nawiązywać połączenia.</string>
+    <string name="prohibit_calls">Zabroń połączeń audio/wideo.</string>
+    <string name="only_your_contact_can_make_calls">Tylko Twój kontakt może wykonywać połączenia.</string>
+    <string name="revoke_file__action">Odwołaj plik</string>
+    <string name="revoke_file__title">Odwołać plik\?</string>
+    <string name="stop_snd_file__message">Wysyłanie pliku zostanie przerwane.</string>
+    <string name="stop_file__confirm">Zatrzymaj</string>
+    <string name="stop_file__action">Zatrzymaj plik</string>
+    <string name="stop_rcv_file__title">Przestać odbierać plik\?</string>
+    <string name="stop_snd_file__title">Przestać wysyłać plik\?</string>
+    <string name="revoke_file__confirm">Odwołaj</string>
+    <string name="v5_0_app_passcode">Pin aplikacji</string>
+    <string name="v5_0_polish_interface">Polski interfejs</string>
+    <string name="v5_0_large_files_support">Filmy i pliki do 1gb</string>
+    <string name="v5_0_app_passcode_descr">Ustaw go zamiast uwierzytelniania systemowego.</string>
+    <string name="v5_0_large_files_support_descr">Szybko i bez czekania aż nadawca będzie online!</string>
+    <string name="v5_0_polish_interface_descr">Podziękowania dla użytkowników - wkład za pośrednictwem Weblate!</string>
 </resources>

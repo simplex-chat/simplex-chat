@@ -483,11 +483,9 @@
     <string name="join_group_incognito_button">Doe incognito mee</string>
     <string name="group_preview_join_as">lid worden als %s</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Het kan gebeuren wanneer:
-\n1. De berichten op de server verlopen als ze 30 dagen niet zijn ontvangen,
-\n2. De server die u gebruikt om de berichten van deze contactpersoon te ontvangen, is bijgewerkt en opnieuw opgestart.
-\n3. De verbinding is verbroken.
-\nMaak verbinding met de ontwikkelaars via Instellingen om de updates over de servers te ontvangen.
-\nWe zullen serverredundantie toevoegen om verloren berichten te voorkomen.</string>
+\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.
+\n2. Decodering van het bericht is mislukt, omdat u of uw contactpersoon een oude databaseback-up heeft gebruikt.
+\n3. De verbinding is verbroken.</string>
     <string name="joining_group">Deel nemen aan groep</string>
     <string name="leave_group_button">Verlaten</string>
     <string name="group_member_role_member">Gebruiker</string>
@@ -846,7 +844,7 @@
     <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="connected_to_server_to_receive_messages_from_contact">U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Je profiel wordt verzonden naar het contact van wie je deze link hebt ontvangen.</string>
-    <string name="you_will_join_group">U wordt lid van een groep waarnaar deze link verwijst en maakt verbinding met de groepsleden.</string>
+    <string name="you_will_join_group">U wordt lid van de groep waar deze link naar verwijst en maakt verbinding met de groepsleden.</string>
     <string name="notifications_mode_off">Wordt uitgevoerd wanneer de app is geopend</string>
     <string name="settings_notification_preview_mode_title">Toon voorbeeld</string>
     <string name="ntf_channel_calls">SimpleX Chat oproepen</string>
@@ -1074,4 +1072,72 @@
     <string name="error_loading_smp_servers">Fout bij het laden van SMP servers</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Zorg ervoor dat XFTP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
     <string name="network_proxy_port">poort %d</string>
+    <string name="lock_after">Vergrendelen na</string>
+    <string name="la_auth_failed">Verificatie mislukt</string>
+    <string name="la_change_app_passcode">Toegangscode wijzigen</string>
+    <string name="la_current_app_passcode">Huidige toegangscode</string>
+    <string name="la_enter_app_passcode">Voer toegangscode in</string>
+    <string name="la_no_app_password">Geen app toegangscode</string>
+    <string name="la_lock_mode_passcode">Toegangscode invoer</string>
+    <string name="la_lock_mode">SimpleX Vergrendel modus</string>
+    <string name="la_lock_mode_system">Systeem authenticatie</string>
+    <string name="la_could_not_be_verified">U kon niet worden geverifieerd; probeer het opnieuw.</string>
+    <string name="la_authenticate">Authenticeren</string>
+    <string name="la_minutes">%d minuten</string>
+    <string name="la_seconds">%d seconden</string>
+    <string name="la_immediately">Onmiddellijk</string>
+    <string name="la_please_remember_to_store_password">Onthoud of bewaar het veilig - er is geen manier om een verloren wachtwoord te herstellen!</string>
+    <string name="lock_not_enabled">SimpleX vergrendeling niet ingeschakeld!</string>
+    <string name="you_can_turn_on_lock">Je kunt SimpleX Vergrendeling aanzetten via Instellingen.</string>
+    <string name="enable_lock">Vergrendeling inschakelen</string>
+    <string name="lock_mode">Vergrendeling modus</string>
+    <string name="submit_passcode">Indienen</string>
+    <string name="authentication_cancelled">Verificatie geannuleerd</string>
+    <string name="change_lock_mode">Wijzig de vergrendelings modus</string>
+    <string name="confirm_passcode">Bevestig toegangscode</string>
+    <string name="incorrect_passcode">Onjuiste toegangscode</string>
+    <string name="new_passcode">Nieuwe toegangscode</string>
+    <string name="la_mode_passcode">Toegangscode</string>
+    <string name="passcode_changed">Toegangscode gewijzigd!</string>
+    <string name="passcode_not_changed">Toegangscode niet gewijzigd!</string>
+    <string name="passcode_set">Toegangscode ingesteld!</string>
+    <string name="la_mode_system">Systeem</string>
+    <string name="decryption_error">Decryptie fout</string>
+    <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> berichten overgeslagen.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Deze fout is permanent voor deze verbinding, maak opnieuw verbinding.</string>
+    <string name="alert_title_msg_bad_hash">Onjuiste bericht hash</string>
+    <string name="alert_title_msg_bad_id">Onjuiste bericht ID</string>
+    <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
+\nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g>-berichten konden niet worden ontsleuteld.</string>
+    <string name="no_spaces">Geen spaties!</string>
+    <string name="stop_rcv_file__message">Het ontvangen van het bestand wordt gestopt.</string>
+    <string name="revoke_file__confirm">Intrekken</string>
+    <string name="revoke_file__action">Bestand intrekken</string>
+    <string name="revoke_file__title">Bestand intrekken\?</string>
+    <string name="stop_file__confirm">Stop</string>
+    <string name="stop_file__action">Bestand stoppen</string>
+    <string name="stop_rcv_file__title">Stopt met het ontvangen van een bestand\?</string>
+    <string name="stop_snd_file__title">Bestand verzenden stoppen\?</string>
+    <string name="only_your_contact_can_make_calls">Alleen je contact kan bellen.</string>
+    <string name="revoke_file__message">Het bestand wordt van de servers verwijderd.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Zowel u als uw contact persoon kunnen bellen.</string>
+    <string name="only_you_can_make_calls">Alleen jij kunt bellen.</string>
+    <string name="stop_snd_file__message">Het verzenden van het bestand wordt gestopt.</string>
+    <string name="allow_calls_only_if">Sta oproepen alleen toe als uw contact persoon dit toestaat.</string>
+    <string name="allow_your_contacts_to_call">Sta toe dat uw contacten u bellen.</string>
+    <string name="audio_video_calls">Audio/video oproepen</string>
+    <string name="available_in_v51">"
+\nBeschikbaar in v5.1"</string>
+    <string name="prohibit_calls">Audio/video gesprekken verbieden.</string>
+    <string name="calls_prohibited_with_this_contact">Audio/video gesprekken zijn verboden.</string>
+    <string name="v5_0_large_files_support_descr">Snel en niet wachten tot de afzender online is!</string>
+    <string name="v5_0_app_passcode">App toegangscode</string>
+    <string name="v5_0_app_passcode_descr">Stel het in in plaats van systeemverificatie.</string>
+    <string name="v5_0_polish_interface">Poolse interface</string>
+    <string name="v5_0_polish_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
+    <string name="v5_0_large_files_support">Video\'s en bestanden tot 1 GB</string>
 </resources>

@@ -696,11 +696,9 @@
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> vuole connettersi con te via</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">Puoi controllare attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti – i server che usi per inviare loro i messaggi.</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Può accadere quando:
-\n1. I messaggi scadono sul server se non sono stati ricevuti per 30 giorni,
-\n2. Il server usato per ricevere i messaggi da questo contatto è stato aggiornato e riavviato.
-\n3. La connessione è compromessa.
-\nConnettiti agli sviluppatori tramite Impostazioni per ricevere aggiornamenti riguardo i server.
-\nAggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</string>
+\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.
+\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.
+\n3. La connessione è stata compromessa.</string>
     <string name="icon_descr_call_rejected">Chiamata rifiutata</string>
     <string name="icon_descr_call_missed">Chiamata persa</string>
     <string name="status_no_e2e_encryption">nessuna crittografia e2e</string>
@@ -1075,4 +1073,66 @@
     <string name="smp_server_test_delete_file">Elimina file</string>
     <string name="error_loading_smp_servers">Errore nel caricamento dei server SMP</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Assicurati che gli indirizzi del server XFTP siano nel formato corretto, uno per riga e non doppi.</string>
+    <string name="la_auth_failed">Autenticazione fallita</string>
+    <string name="la_lock_mode_passcode">Inserimento del codice di accesso</string>
+    <string name="la_lock_mode">Modalità di SimpleX Lock</string>
+    <string name="la_lock_mode_system">Autenticazione di sistema</string>
+    <string name="la_authenticate">Autentica</string>
+    <string name="la_change_app_passcode">Cambia codice di accesso</string>
+    <string name="la_current_app_passcode">Codice di accesso attuale</string>
+    <string name="la_minutes">%d minuti</string>
+    <string name="la_seconds">%d secondi</string>
+    <string name="la_enter_app_passcode">Inserisci il codice di accesso</string>
+    <string name="la_immediately">Immediatamente</string>
+    <string name="la_no_app_password">Nessun codice di accesso dell\'app</string>
+    <string name="la_please_remember_to_store_password">Ricordala o conservala in modo sicuro: non c\'è modo di recuperare una password persa!</string>
+    <string name="lock_not_enabled">SimpleX Lock non attivato!</string>
+    <string name="you_can_turn_on_lock">Puoi attivare SimpleX Lock tramite le impostazioni.</string>
+    <string name="la_could_not_be_verified">Non è stato possibile verificarti, riprova.</string>
+    <string name="confirm_passcode">Conferma il codice di accesso</string>
+    <string name="la_mode_passcode">Codice di accesso</string>
+    <string name="passcode_changed">Codice di accesso cambiato!</string>
+    <string name="passcode_not_changed">Codice di accesso non cambiato!</string>
+    <string name="passcode_set">Codice di accesso impostato!</string>
+    <string name="submit_passcode">Invia</string>
+    <string name="la_mode_system">Sistema</string>
+    <string name="change_lock_mode">Cambia modalità di blocco</string>
+    <string name="authentication_cancelled">Autenticazione annullata</string>
+    <string name="lock_after">Blocca dopo</string>
+    <string name="enable_lock">Attiva blocco</string>
+    <string name="incorrect_passcode">Codice di accesso errato</string>
+    <string name="new_passcode">Nuovo codice di accesso</string>
+    <string name="lock_mode">Modalità di blocco</string>
+    <string name="decryption_error">Errore di decifrazione</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> messaggi saltati.</string>
+    <string name="alert_title_msg_bad_id">ID del messaggio errato</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Può accadere quando tu o il tuo contatto avete usato il backup del database vecchio.</string>
+    <string name="alert_text_msg_bad_id">L\'ID del messaggio successivo non è corretto (inferiore o uguale al precedente).
+\nPuò accadere a causa di qualche bug o quando la connessione è compromessa.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">L\'errore è permanente per questa connessione, riconnettiti.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> messaggi non decifrati.</string>
+    <string name="alert_title_msg_bad_hash">Hash del messaggio errato</string>
+    <string name="alert_text_msg_bad_hash">L\'hash del messaggio precedente è diverso.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Si prega di segnalarlo agli sviluppatori.</string>
+    <string name="stop_snd_file__message">L\'invio del file verrà interrotto.</string>
+    <string name="stop_file__action">Ferma file</string>
+    <string name="stop_snd_file__title">Fermare l\'invio del file\?</string>
+    <string name="revoke_file__message">Il file verrà eliminato dai server.</string>
+    <string name="stop_rcv_file__message">La ricezione del file verrà interrotta.</string>
+    <string name="revoke_file__confirm">Revoca</string>
+    <string name="revoke_file__action">Revoca file</string>
+    <string name="revoke_file__title">Revocare il file\?</string>
+    <string name="stop_file__confirm">Ferma</string>
+    <string name="stop_rcv_file__title">Fermare la ricezione del file\?</string>
+    <string name="no_spaces">Niente spazi!</string>
+    <string name="allow_calls_only_if">Consenti le chiamate solo se il contatto le consente.</string>
+    <string name="calls_prohibited_with_this_contact">Le chiamate audio/video sono vietate.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Sia tu che il tuo contatto potete effettuare chiamate.</string>
+    <string name="only_you_can_make_calls">Solo tu puoi effettuare chiamate.</string>
+    <string name="only_your_contact_can_make_calls">Solo il tuo contatto può effettuare chiamate.</string>
+    <string name="prohibit_calls">Proibisci le chiamate audio/video.</string>
+    <string name="audio_video_calls">Chiamate audio/video</string>
+    <string name="available_in_v51">"
+\nDisponibile nella v5.1"</string>
+    <string name="allow_your_contacts_to_call">Consenti ai tuoi contatti di chiamarti.</string>
 </resources>
