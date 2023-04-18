@@ -104,6 +104,11 @@ private fun ContactPreferencesLayout(
       applyPrefs(featuresAllowed.copy(voice = it))
     }
     SectionSpacer()
+    val allowCalls: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.calls) }
+    FeatureSection(ChatFeature.Calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, allowCalls) {
+      applyPrefs(featuresAllowed.copy(calls = it))
+    }
+    SectionSpacer()
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,
@@ -138,6 +143,7 @@ private fun FeatureSection(
         ContactFeatureAllowed.values(userDefault).map { it to it.text },
         allowFeature,
         icon = null,
+        enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
         onSelected = onSelected
       )
     }
@@ -147,7 +153,7 @@ private fun FeatureSection(
       pref.contactPreference.allow.text
     )
   }
-  SectionTextFooter(feature.enabledDescription(enabled))
+  SectionTextFooter(feature.enabledDescription(enabled) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
 }
 
 @Composable
