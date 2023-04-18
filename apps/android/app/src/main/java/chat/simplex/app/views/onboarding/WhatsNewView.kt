@@ -1,7 +1,7 @@
 package chat.simplex.app.views.onboarding
 
 import android.content.res.Configuration
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -40,11 +40,13 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
     }
 
     Column(
-      horizontalAlignment = Alignment.Start
+      horizontalAlignment = Alignment.Start,
+      modifier = Modifier.padding(bottom = 12.dp)
     ) {
       Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(bottom = 4.dp)
       ) {
         Icon(icon, stringResource(titleId), tint = HighOrLowlight)
         Text(
@@ -107,8 +109,9 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   ModalView(close = close) {
     Column(
       Modifier
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING),
+        .fillMaxSize()
+        .padding(horizontal = DEFAULT_PADDING)
+        .verticalScroll(rememberScrollState()),
       horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

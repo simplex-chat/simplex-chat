@@ -171,7 +171,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "arrow.up.doc",
                 title: "Videos and files up to 1gb",
-                description: "Fast and no more waiting for sender online!"
+                description: "Fast and no wait until the sender is online!"
             ),
             FeatureDescription(
                 icon: "lock",
@@ -217,6 +217,7 @@ struct WhatsNewView: View {
                             .padding(.vertical)
                         ForEach(v.features, id: \.icon) { f in
                             featureDescription(f.icon, f.title, f.description)
+                                .padding(.bottom, 8)
                         }
                         if !viaSettings {
                             Spacer()
@@ -243,7 +244,7 @@ struct WhatsNewView: View {
     }
 
     private func featureDescription(_ icon: String, _ title: LocalizedStringKey, _ description: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .center, spacing: 4) {
                 Image(systemName: icon).foregroundColor(.secondary)
                     .frame(minWidth: 30, alignment: .center)

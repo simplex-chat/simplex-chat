@@ -1308,7 +1308,7 @@
   <string name="v4_6_chinese_spanish_interface">Chinese and Spanish interface</string>
   <string name="v4_6_chinese_spanish_interface_descr">Thanks to the users – contribute via Weblate!</string>
   <string name="v5_0_large_files_support">Videos and files up to 1gb</string>
-  <string name="v5_0_large_files_support_descr">Fast and no more waiting for sender online!</string>
+  <string name="v5_0_large_files_support_descr">Fast and no wait until the sender is online!</string>
   <string name="v5_0_app_passcode">App passcode</string>
   <string name="v5_0_app_passcode_descr">Set it instead of system authentication.</string>
   <string name="v5_0_polish_interface">Polish interface</string>
