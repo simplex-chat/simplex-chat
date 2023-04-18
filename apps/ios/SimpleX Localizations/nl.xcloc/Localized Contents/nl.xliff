@@ -12,9 +12,11 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&#10;Available in v5.1" xml:space="preserve">
+      <trans-unit id="&#10;Available in v5.1" xml:space="preserve" approved="no">
         <source>
 Available in v5.1</source>
+        <target state="translated">
+Beschikbaar in v5.1</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" " xml:space="preserve">
@@ -197,12 +199,14 @@ Available in v5.1</source>
         <target>%lldw</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
         <source>%u messages failed to decrypt.</source>
+        <target state="translated">%u-berichten kunnen niet worden gedecodeerd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages skipped." xml:space="preserve">
+      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
         <source>%u messages skipped.</source>
+        <target state="translated">%u berichten zijn overgeslagen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -3443,8 +3447,9 @@ Available in v5.1</source>
         <target>Groep voorkeuren instellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set it instead of system authentication." xml:space="preserve">
+      <trans-unit id="Set it instead of system authentication." xml:space="preserve" approved="no">
         <source>Set it instead of system authentication.</source>
+        <target state="translated">Stel het in in plaats van systeemverificatie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -4148,8 +4153,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>De video wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
+      <trans-unit id="Videos and files up to 1gb" xml:space="preserve" approved="no">
         <source>Videos and files up to 1gb</source>
+        <target state="translated">Video's en bestanden tot 1 GB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
