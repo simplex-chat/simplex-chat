@@ -99,7 +99,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
           ) {
             Box(contentAlignment = Alignment.TopEnd) {
               Box(contentAlignment = Alignment.Center) {
-                ProfileImage(size = 90.dp, image = profileImage.value)
+                ProfileImage(108.dp, image = profileImage.value)
                 EditImageButton { scope.launch { bottomSheetModalState.show() } }
               }
               if (profileImage.value != null) {

@@ -99,7 +99,7 @@ fun GroupProfileLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      ModalView(close = closeWithAlert, if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+      ModalView(close = closeWithAlert) {
         Column(
           Modifier
             .verticalScroll(scrollState)
@@ -117,7 +117,7 @@ fun GroupProfileLayout(
             ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(90.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
+                  ProfileImage(108.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {
@@ -147,24 +147,30 @@ fun GroupProfileLayout(
               modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
             )
             ProfileNameField(fullName)
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            val enabled = !dataUnchanged && displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+            if (enabled) {
+              Text(
+                stringResource(R.string.save_group_profile),
+                modifier = Modifier.clickable {
+                  saveProfile(
+                    groupProfile.copy(
+                      displayName = displayName.value,
+                      fullName = fullName.value,
+                      image = profileImage.value
+                    )
+                  )
+                },
+                color = MaterialTheme.colors.primary
+              )
+            } else {
+              Text(
+                stringResource(R.string.save_group_profile),
+                color = HighOrLowlight
+              )
+            }
           }
-          SectionSpacer()
-          ResetSaveButtons(
-            reset = {
-              displayName.value = groupProfile.displayName
-              fullName.value = groupProfile.fullName
-              profileImage.value = groupProfile.image
-              chosenImage.value = null
-            },
-            save = {
-              saveProfile(groupProfile.copy(
-                displayName = displayName.value,
-                fullName = fullName.value,
-                image = profileImage.value
-              ))
-            },
-            disabled = dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))
-          )
+
           Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
 
           LaunchedEffect(Unit) {
@@ -173,19 +179,6 @@ fun GroupProfileLayout(
           }
         }
       }
-    }
-  }
-}
-
-@Composable
-private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  SectionView {
-    SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
-    }
-    SectionDivider()
-    SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_group_members), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
   }
 }

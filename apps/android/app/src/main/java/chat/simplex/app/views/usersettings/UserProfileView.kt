@@ -1,9 +1,5 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
-import SectionItemView
-import SectionSpacer
-import SectionView
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.*
@@ -103,18 +99,24 @@ fun UserProfileLayout(
           showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, profileImage.value) }, close)
         }
       }
-      ModalView(close = closeWithAlert, if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+      ModalView(close = closeWithAlert) {
         Column(
           Modifier
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            .padding(horizontal = DEFAULT_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
           AppBarTitleCentered(stringResource(R.string.your_current_profile))
-          ReadableText(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it, TextAlign.Center)
+          val text = remember {
+            var t = generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it)
+            val index = t.indexOfFirst { it == '\n' }
+            if (index != -1) t = t.removeRange(index..index + 2)
+            t
+          }
+          ReadableText(text, TextAlign.Center)
           Column(
             Modifier
               .fillMaxWidth()
-              .padding(horizontal = DEFAULT_PADDING)
           ) {
             Box(
               Modifier
@@ -124,7 +126,7 @@ fun UserProfileLayout(
             ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(90.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
+                  ProfileImage(108.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {
@@ -154,7 +156,26 @@ fun UserProfileLayout(
               modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
             )
             ProfileNameField(fullName)
+
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            val enabled = !dataUnchanged && displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+            val saveModifier: Modifier
+            val saveColor: Color
+            if (enabled) {
+              saveModifier = Modifier
+                .clickable { saveProfile(displayName.value, fullName.value, profileImage.value) }
+              saveColor = MaterialTheme.colors.primary
+            } else {
+              saveModifier = Modifier
+              saveColor = HighOrLowlight
+            }
+            Text(
+              stringResource(R.string.save_and_notify_contacts),
+              modifier = saveModifier,
+              color = saveColor
+            )
           }
+          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
           if (savedKeyboardState != keyboardState) {
             LaunchedEffect(keyboardState) {
               scope.launch {
@@ -163,20 +184,6 @@ fun UserProfileLayout(
               }
             }
           }
-          SectionSpacer()
-          ResetSaveButtons(
-            reset = {
-              displayName.value = profile.displayName
-              fullName.value = profile.fullName
-              profileImage.value = profile.image
-              chosenImage.value = null
-            },
-            save = {
-              saveProfile(displayName.value, fullName.value, profileImage.value)
-            },
-            disabled = dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))
-          )
-          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
         }
       }
     }
@@ -230,13 +237,13 @@ fun TextButton(text: String, click: () -> Unit) {
 fun EditImageButton(click: () -> Unit) {
   IconButton(
     onClick = click,
-    modifier = Modifier.size(25.dp)
+    modifier = Modifier.size(30.dp)
   ) {
     Icon(
       Icons.Outlined.PhotoCamera,
       contentDescription = stringResource(R.string.edit_image),
       tint = MaterialTheme.colors.primary,
-      modifier = Modifier.size(25.dp)
+      modifier = Modifier.size(30.dp)
     )
   }
 }
@@ -249,19 +256,6 @@ fun DeleteImageButton(click: () -> Unit) {
       contentDescription = stringResource(R.string.delete_image),
       tint = MaterialTheme.colors.primary,
     )
-  }
-}
-
-@Composable
-private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  SectionView {
-    SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
-    }
-    SectionDivider()
-    SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
-    }
   }
 }
 
