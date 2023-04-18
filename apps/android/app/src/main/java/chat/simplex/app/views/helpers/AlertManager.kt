@@ -40,7 +40,7 @@ class AlertManager {
       AlertDialog(
         backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
         onDismissRequest = this::hideAlert,
-        title = { Text(title) },
+        title = { Text(title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
         text = alertText,
         buttons = buttons
       )
@@ -134,7 +134,7 @@ class AlertManager {
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
-        title = { Text(title) },
+        title = { Text(title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
         text = alertText,
         buttons = {
           Column(
@@ -165,7 +165,7 @@ class AlertManager {
     showAlert {
       AlertDialog(
         onDismissRequest = this::hideAlert,
-        title = { Text(title) },
+        title = { Text(title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
         text = alertText,
         buttons = {
           Row(

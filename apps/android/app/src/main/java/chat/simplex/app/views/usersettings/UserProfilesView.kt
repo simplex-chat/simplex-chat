@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.chatPasswordHash
@@ -72,14 +73,14 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
                 AlertManager.shared.hideAlert()
                 removeUser(m, user, users, true, searchTextOrPassword.value.trim())
               }) {
-                Text(stringResource(R.string.users_delete_with_connections), color = Color.Red)
+                Text(stringResource(R.string.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
               }
               SectionItemView({
                 AlertManager.shared.hideAlert()
                 removeUser(m, user, users, false, searchTextOrPassword.value.trim())
               }
               ) {
-                Text(stringResource(R.string.users_delete_data_only), color = Color.Red)
+                Text(stringResource(R.string.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
               }
             }
           }

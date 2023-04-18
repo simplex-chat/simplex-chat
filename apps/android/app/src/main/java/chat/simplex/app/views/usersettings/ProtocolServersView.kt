@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -112,7 +113,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                 // No saving until something will be changed on the next screen to prevent blank servers on the list
                 showServer(servers.last())
               }) {
-                Text(stringResource(R.string.smp_servers_enter_manually))
+                Text(stringResource(R.string.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
               }
               SectionItemView({
                 AlertManager.shared.hideAlert()
@@ -125,7 +126,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                 }
               }
               ) {
-                Text(stringResource(R.string.smp_servers_scan_qr))
+                Text(stringResource(R.string.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
               }
               val hasAllPresets = hasAllPresets(presetServers, servers, m)
               if (!hasAllPresets) {
@@ -133,7 +134,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                   AlertManager.shared.hideAlert()
                   servers = (servers + addAllPresets(presetServers, servers, m)).sortedByDescending { it.preset }
                 }) {
-                  Text(stringResource(R.string.smp_servers_preset_add), color = MaterialTheme.colors.onBackground)
+                  Text(stringResource(R.string.smp_servers_preset_add), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
                 }
               }
             }
