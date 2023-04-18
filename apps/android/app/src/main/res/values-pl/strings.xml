@@ -1116,4 +1116,17 @@
     <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> pominiętych wiadomości.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Może się to zdarzyć, gdy Ty lub Twoje połączenie użyło starej kopii zapasowej bazy danych.</string>
     <string name="alert_text_fragment_please_report_to_developers">Prosimy o zgłaszanie tego do deweloperów.</string>
+    <string name="calls_prohibited_with_this_contact">Połączenia audio/wideo są zabronione.</string>
+    <string name="revoke_file__message">Plik zostanie usunięty z serwerów.</string>
+    <string name="only_you_can_make_calls">Tylko Ty możesz wykonywać połączenia.</string>
+    <string name="stop_rcv_file__message">Odbieranie pliku zostanie przerwane.</string>
+    <string name="no_spaces">Bez spacji!</string>
+    <string name="allow_calls_only_if">Zezwalaj na połączenia tylko wtedy, gdy Twój kontakt na to pozwala.</string>
+    <string name="allow_your_contacts_to_call">Zezwól swoim kontaktom na połączenia do Ciebie.</string>
+    <string name="audio_video_calls">Połączenia audio/wideo</string>
+    <string name="available_in_v51">"
+\nDostępny w v5.1"</string>
+    <string name="both_you_and_your_contact_can_make_calls">Zarówno Ty, jak i Twój kontakt możecie nawiązywać połączenia.</string>
+    <string name="prohibit_calls">Zabroń połączeń audio/wideo.</string>
+    <string name="only_your_contact_can_make_calls">Tylko Twój kontakt może wykonywać połączenia.</string>
 </resources>
