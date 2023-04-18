@@ -1114,4 +1114,24 @@
 \nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
     <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g>-berichten konden niet worden ontsleuteld.</string>
     <string name="no_spaces">Geen spaties!</string>
+    <string name="stop_rcv_file__message">Het ontvangen van het bestand wordt gestopt.</string>
+    <string name="revoke_file__confirm">Intrekken</string>
+    <string name="revoke_file__action">Bestand intrekken</string>
+    <string name="revoke_file__title">Bestand intrekken\?</string>
+    <string name="stop_file__confirm">Stop</string>
+    <string name="stop_file__action">Bestand stoppen</string>
+    <string name="stop_rcv_file__title">Stopt met het ontvangen van een bestand\?</string>
+    <string name="stop_snd_file__title">Bestand verzenden stoppen\?</string>
+    <string name="only_your_contact_can_make_calls">Alleen je contact kan bellen.</string>
+    <string name="revoke_file__message">Het bestand wordt van de servers verwijderd.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Zowel u als uw contact persoon kunnen bellen.</string>
+    <string name="only_you_can_make_calls">Alleen jij kunt bellen.</string>
+    <string name="stop_snd_file__message">Het verzenden van het bestand wordt gestopt.</string>
+    <string name="allow_calls_only_if">Sta oproepen alleen toe als uw contact persoon dit toestaat.</string>
+    <string name="allow_your_contacts_to_call">Sta toe dat uw contacten u bellen.</string>
+    <string name="audio_video_calls">Audio/video oproepen</string>
+    <string name="available_in_v51">"
+\nBeschikbaar in v5.1"</string>
+    <string name="prohibit_calls">Audio/video gesprekken verbieden.</string>
+    <string name="calls_prohibited_with_this_contact">Audio/video gesprekken zijn verboden.</string>
 </resources>
