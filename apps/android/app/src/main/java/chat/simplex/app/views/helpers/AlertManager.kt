@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
@@ -134,7 +135,7 @@ class AlertManager {
             TextButton(onClick = {
               onConfirm?.invoke()
               hideAlert()
-            }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
+            }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified, textAlign = TextAlign.End) }
           }
         },
       )

@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chat.group
 
 import android.content.res.Configuration
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -24,6 +23,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
+import chat.simplex.app.views.onboarding.ReadableText
 import chat.simplex.app.views.usersettings.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -61,7 +61,25 @@ fun GroupProfileLayout(
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val focusRequester = remember { FocusRequester() }
-
+  val dataUnchanged =
+    displayName.value == groupProfile.displayName &&
+        fullName.value == groupProfile.fullName &&
+        chosenImage.value == null
+  val closeWithAlert = {
+    if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
+      close()
+    } else {
+      showUnsavedChangesAlert({
+        saveProfile(
+          groupProfile.copy(
+            displayName = displayName.value,
+            fullName = fullName.value,
+            image = profileImage.value
+          )
+        )
+      }, close)
+    }
+  }
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
@@ -77,23 +95,16 @@ fun GroupProfileLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      ModalView(close = close) {
+      ModalView(close = closeWithAlert) {
         Column(
           Modifier
             .verticalScroll(scrollState)
-            .padding(horizontal = DEFAULT_PADDING),
-          horizontalAlignment = Alignment.Start
         ) {
-          Text(
-            stringResource(R.string.group_profile_is_stored_on_members_devices),
-            Modifier.padding(bottom = 24.dp),
-            color = MaterialTheme.colors.onBackground,
-            lineHeight = 22.sp
-          )
           Column(
-            Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.Start
+            Modifier.fillMaxWidth()
+              .padding(horizontal = DEFAULT_PADDING)
           ) {
+            ReadableText(R.string.group_profile_is_stored_on_members_devices, TextAlign.Center)
             Box(
               Modifier
                 .fillMaxWidth()
@@ -102,7 +113,7 @@ fun GroupProfileLayout(
             ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(192.dp, profileImage.value)
+                  ProfileImage(108.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {
@@ -133,32 +144,29 @@ fun GroupProfileLayout(
             )
             ProfileNameField(fullName)
             Spacer(Modifier.height(DEFAULT_PADDING))
-            Row {
-              TextButton(stringResource(R.string.cancel_verb)) {
-                close.invoke()
-              }
-              Spacer(Modifier.padding(horizontal = 8.dp))
-              val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-              if (enabled) {
-                Text(
-                  stringResource(R.string.save_group_profile),
-                  modifier = Modifier.clickable {
-                    saveProfile(groupProfile.copy(
+            val enabled = !dataUnchanged && displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+            if (enabled) {
+              Text(
+                stringResource(R.string.save_group_profile),
+                modifier = Modifier.clickable {
+                  saveProfile(
+                    groupProfile.copy(
                       displayName = displayName.value,
                       fullName = fullName.value,
                       image = profileImage.value
-                    ))
-                  },
-                  color = MaterialTheme.colors.primary
-                )
-              } else {
-                Text(
-                  stringResource(R.string.save_group_profile),
-                  color = HighOrLowlight
-                )
-              }
+                    )
+                  )
+                },
+                color = MaterialTheme.colors.primary
+              )
+            } else {
+              Text(
+                stringResource(R.string.save_group_profile),
+                color = HighOrLowlight
+              )
             }
           }
+
           Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
 
           LaunchedEffect(Unit) {
@@ -169,6 +177,16 @@ fun GroupProfileLayout(
       }
     }
   }
+}
+
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(R.string.save_preferences_question),
+    confirmText = generalGetString(R.string.save_and_notify_group_members),
+    dismissText = generalGetString(R.string.exit_without_saving),
+    onConfirm = save,
+    onDismiss = revert,
+  )
 }
 
 @Preview(showBackground = true)
