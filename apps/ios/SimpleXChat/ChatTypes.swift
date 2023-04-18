@@ -2281,31 +2281,78 @@ public struct CIFile: Decodable {
             case .sndTransfer: return true
             case .sndComplete: return true
             case .sndCancelled: return true
+            case .sndError: return true
             case .rcvInvitation: return false
             case .rcvAccepted: return false
             case .rcvTransfer: return false
             case .rcvCancelled: return false
             case .rcvComplete: return true
+            case .rcvError: return false
             }
         }
     }
 
-    public var cancellable: Bool {
+    public var cancelAction: CancelAction? {
         get {
             switch self.fileStatus {
-            case .sndStored: return self.fileProtocol != .xftp // TODO true - enable when XFTP send supports cancel
-            case .sndTransfer: return self.fileProtocol != .xftp // TODO true
-            case .sndComplete: return false
-            case .sndCancelled: return false
-            case .rcvInvitation: return false
-            case .rcvAccepted: return true
-            case .rcvTransfer: return true
-            case .rcvCancelled: return false
-            case .rcvComplete: return false
+            case .sndStored: return sndCancelAction
+            case .sndTransfer: return sndCancelAction
+            case .sndComplete:
+                if self.fileProtocol == .xftp {
+                    return revokeCancelAction
+                } else {
+                    return nil
+                }
+            case .sndCancelled: return nil
+            case .sndError: return nil
+            case .rcvInvitation: return nil
+            case .rcvAccepted: return rcvCancelAction
+            case .rcvTransfer: return rcvCancelAction
+            case .rcvCancelled: return nil
+            case .rcvComplete: return nil
+            case .rcvError: return nil
             }
         }
     }
 }
+
+public struct CancelAction {
+    public var uiAction: String
+    public var alert: AlertInfo
+}
+
+public struct AlertInfo {
+    public var title: LocalizedStringKey
+    public var message: LocalizedStringKey
+    public var confirm: LocalizedStringKey
+}
+
+private var sndCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Stop file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Stop sending file?",
+        message: "Sending file will be stopped.",
+        confirm: "Stop"
+    )
+)
+
+private var revokeCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Revoke file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Revoke file?",
+        message: "File will be deleted from servers.",
+        confirm: "Revoke"
+    )
+)
+
+private var rcvCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Stop file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Stop receiving file?",
+        message: "Receiving file will be stopped.",
+        confirm: "Stop"
+    )
+)
 
 public enum FileProtocol: String, Decodable {
     case smp = "smp"
@@ -2317,11 +2364,13 @@ public enum CIFileStatus: Decodable {
     case sndTransfer(sndProgress: Int64, sndTotal: Int64)
     case sndComplete
     case sndCancelled
+    case sndError
     case rcvInvitation
     case rcvAccepted
     case rcvTransfer(rcvProgress: Int64, rcvTotal: Int64)
     case rcvComplete
     case rcvCancelled
+    case rcvError
 
     var id: String {
         switch self {
@@ -2329,11 +2378,13 @@ public enum CIFileStatus: Decodable {
         case let .sndTransfer(sndProgress, sndTotal): return "sndTransfer \(sndProgress) \(sndTotal)"
         case .sndComplete: return "sndComplete"
         case .sndCancelled: return "sndCancelled"
+        case .sndError: return "sndError"
         case .rcvInvitation: return "rcvInvitation"
         case .rcvAccepted: return "rcvAccepted"
         case let .rcvTransfer(rcvProgress, rcvTotal): return "rcvTransfer \(rcvProgress) \(rcvTotal)"
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
+        case .rcvError: return "rcvError"
         }
     }
 }

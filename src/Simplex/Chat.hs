@@ -1395,9 +1395,9 @@ processChatCommand = \case
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
-        FTSnd ftm@FileTransferMeta {cancelled} fts
+        FTSnd ftm@FileTransferMeta {xftpSndFile, cancelled} fts
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
-          | not (null fts) && all (\SndFileTransfer {fileStatus = s} -> s == FSComplete || s == FSCancelled) fts ->
+          | not (null fts) && all fileCancelledOrCompleteSMP fts ->
             throwChatError $ CEFileCancel fileId "file transfer is complete"
           | otherwise -> do
             fileAgentConnIds <- cancelSndFile user ftm fts True
@@ -1413,6 +1413,9 @@ processChatCommand = \case
               _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
             ci <- withStore $ \db -> getChatItemByFileId db user fileId
             pure $ CRSndFileCancelled user ci ftm fts
+          where
+            fileCancelledOrCompleteSMP SndFileTransfer {fileStatus = s} =
+              s == FSCancelled || (s == FSComplete && isNothing xftpSndFile)
         FTRcv ftr@RcvFileTransfer {cancelled, fileStatus, xftpRcvFile}
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
           | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
@@ -2333,62 +2336,63 @@ processAgentMsgSndFile _corrId aFileId msg =
       (ft@FileTransferMeta {fileId, cancelled}, sfts) <- withStore $ \db -> do
         fileId <- getXFTPSndFileDBId db user $ AgentSndFileId aFileId
         getSndFileTransfer db user fileId
-      case msg of
-        SFPROG sndProgress sndTotal ->
-          unless cancelled $ do
-            let status = CIFSSndTransfer {sndProgress, sndTotal}
+      unless cancelled $ case msg of
+        SFPROG sndProgress sndTotal -> do
+          let status = CIFSSndTransfer {sndProgress, sndTotal}
+          ci <- withStore $ \db -> do
+            liftIO $ updateCIFileStatus db user fileId status
+            getChatItemByFileId db user fileId
+          toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
+        SFDONE sndDescr rfds -> do
+          withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
+          ci@(AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
+            withStore $ \db -> getChatItemByFileId db user fileId
+          case (msgId_, itemDeleted) of
+            (Just sharedMsgId, Nothing) -> do
+              when (length rfds < length sfts) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
+              -- TODO either update database status or move to SFPROG
+              toView $ CRSndFileProgressXFTP user ci ft 1 1
+              case (rfds, sfts, d, cInfo) of
+                (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
+                  withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
+                  msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
+                  withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+                  agentXFTPDeleteSndFileInternal user aFileId
+                (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
+                  ms <- withStore' $ \db -> getGroupMembers db user g
+                  let rfdsMemberFTs = zip rfds $ memberFTs ms
+                      extraRFDs = drop (length rfdsMemberFTs) rfds
+                  withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
+                  forM_ rfdsMemberFTs $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
+                  ci' <- withStore $ \db -> do
+                    liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
+                    getChatItemByFileId db user fileId
+                  agentXFTPDeleteSndFileInternal user aFileId
+                  toView $ CRSndFileCompleteXFTP user ci' ft
+                  where
+                    memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
+                    memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
+                      where
+                        mConns' = mapMaybe useMember ms
+                        sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
+                        useMember GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
+                          | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
+                          | otherwise = Nothing
+                        useMember _ = Nothing
+                    sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m ()
+                    sendToMember (rfd, (conn, sft)) =
+                      void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
+                _ -> pure ()
+            _ -> pure () -- TODO error?
+        SFERR e
+          | temporaryAgentError e ->
+            throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
+          | otherwise -> do
             ci <- withStore $ \db -> do
-              liftIO $ updateCIFileStatus db user fileId status
+              liftIO $ updateFileCancelled db user fileId CIFSSndError
               getChatItemByFileId db user fileId
-            toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
-        SFDONE sndDescr rfds ->
-          unless cancelled $ do
-            withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
-            ci@(AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
-              withStore $ \db -> getChatItemByFileId db user fileId
-            case (msgId_, itemDeleted) of
-              (Just sharedMsgId, Nothing) -> do
-                when (length rfds < length sfts) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
-                -- TODO either update database status or move to SFPROG
-                toView $ CRSndFileProgressXFTP user ci ft 1 1
-                case (rfds, sfts, d, cInfo) of
-                  (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
-                    withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                    msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
-                    withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
-                    agentXFTPDeleteSndFileInternal user aFileId
-                  (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
-                    ms <- withStore' $ \db -> getGroupMembers db user g
-                    let rfdsMemberFTs = zip rfds $ memberFTs ms
-                        extraRFDs = drop (length rfdsMemberFTs) rfds
-                    withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                    forM_ rfdsMemberFTs $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
-                    ci' <- withStore $ \db -> do
-                      liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
-                      getChatItemByFileId db user fileId
-                    agentXFTPDeleteSndFileInternal user aFileId
-                    toView $ CRSndFileCompleteXFTP user ci' ft
-                    where
-                      memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
-                      memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
-                        where
-                          mConns' = mapMaybe useMember ms
-                          sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
-                          useMember GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
-                            | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
-                            | otherwise = Nothing
-                          useMember _ = Nothing
-                      sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> m ()
-                      sendToMember (rfd, (conn, sft)) =
-                        void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
-                  _ -> pure ()
-              _ -> pure () -- TODO error?
-        SFERR e -> do
-          unless (temporaryAgentError e) $ do
-            -- update chat item status
-            -- send status to view
             agentXFTPDeleteSndFileInternal user aFileId
-          throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
+            toView $ CRSndFileError user ci
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
@@ -2416,37 +2420,38 @@ processAgentMsgRcvFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      ft@RcvFileTransfer {fileId, cancelled} <- withStore $ \db -> do
+      ft@RcvFileTransfer {fileId} <- withStore $ \db -> do
         fileId <- getXFTPRcvFileDBId db $ AgentRcvFileId aFileId
         getRcvFileTransfer db user fileId
-      case msg of
-        RFPROG rcvProgress rcvTotal ->
-          unless cancelled $ do
-            let status = CIFSRcvTransfer {rcvProgress, rcvTotal}
-            ci <- withStore $ \db -> do
-              liftIO $ updateCIFileStatus db user fileId status
-              getChatItemByFileId db user fileId
-            toView $ CRRcvFileProgressXFTP user ci rcvProgress rcvTotal
+      unless (rcvFileCompleteOrCancelled ft) $ case msg of
+        RFPROG rcvProgress rcvTotal -> do
+          let status = CIFSRcvTransfer {rcvProgress, rcvTotal}
+          ci <- withStore $ \db -> do
+            liftIO $ updateCIFileStatus db user fileId status
+            getChatItemByFileId db user fileId
+          toView $ CRRcvFileProgressXFTP user ci rcvProgress rcvTotal
         RFDONE xftpPath ->
-          unless cancelled $ do
-            case liveRcvFileTransferPath ft of
-              Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
-              Just targetPath -> do
-                fsTargetPath <- toFSFilePath targetPath
-                renameFile xftpPath fsTargetPath
-                ci <- withStore $ \db -> do
-                  liftIO $ do
-                    updateRcvFileStatus db fileId FSComplete
-                    updateCIFileStatus db user fileId CIFSRcvComplete
-                  getChatItemByFileId db user fileId
-                agentXFTPDeleteRcvFile user aFileId fileId
-                toView $ CRRcvFileComplete user ci
-        RFERR e -> do
-          unless (temporaryAgentError e) $ do
-            -- update chat item status
-            -- send status to view
+          case liveRcvFileTransferPath ft of
+            Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
+            Just targetPath -> do
+              fsTargetPath <- toFSFilePath targetPath
+              renameFile xftpPath fsTargetPath
+              ci <- withStore $ \db -> do
+                liftIO $ do
+                  updateRcvFileStatus db fileId FSComplete
+                  updateCIFileStatus db user fileId CIFSRcvComplete
+                getChatItemByFileId db user fileId
+              agentXFTPDeleteRcvFile user aFileId fileId
+              toView $ CRRcvFileComplete user ci
+        RFERR e
+          | temporaryAgentError e ->
+            throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
+          | otherwise -> do
+            ci <- withStore $ \db -> do
+              liftIO $ updateFileCancelled db user fileId CIFSRcvError
+              getChatItemByFileId db user fileId
             agentXFTPDeleteRcvFile user aFileId fileId
-          throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
+            toView $ CRRcvFileError user ci
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn user _ agentConnId END =
@@ -2940,9 +2945,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> pure ()
 
     receiveFileChunk :: RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> m ()
-    receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize, cancelled} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
+    receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
       FileChunkCancel ->
-        unless cancelled $ do
+        unless (rcvFileCompleteOrCancelled ft) $ do
           cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
           ci <- withStore $ \db -> getChatItemByFileId db user fileId
           toView $ CRRcvFileSndCancelled user ci ft
@@ -3082,8 +3087,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     agentErrToItemStatus err = CISSndError . T.unpack . safeDecodeUtf8 $ strEncode err
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
-    badRcvFileChunk ft@RcvFileTransfer {cancelled} err =
-      unless cancelled $ do
+    badRcvFileChunk ft err =
+      unless (rcvFileCompleteOrCancelled ft) $ do
         cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
         throwChatError $ CEFileRcvChunk err
 
@@ -3165,14 +3170,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processFDMessage :: FileTransferId -> FileDescr -> m ()
     processFDMessage fileId fileDescr = do
-      RcvFileTransfer {cancelled} <- withStore $ \db -> getRcvFileTransfer db user fileId
-      unless cancelled $ do
+      ft <- withStore $ \db -> getRcvFileTransfer db user fileId
+      unless (rcvFileCompleteOrCancelled ft) $ do
         (rfd, RcvFileTransfer {fileStatus}) <- withStore $ \db -> do
           rfd <- appendRcvFD db userId fileId fileDescr
           -- reading second time in the same transaction as appending description
           -- to prevent race condition with accept
-          ft <- getRcvFileTransfer db user fileId
-          pure (rfd, ft)
+          ft' <- getRcvFileTransfer db user fileId
+          pure (rfd, ft')
         case fileStatus of
           RFSAccepted _ -> receiveViaCompleteFD user fileId rfd
           _ -> pure ()
@@ -3365,8 +3370,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xFileCancel ct@Contact {contactId} sharedMsgId msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
-      ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
-      unless cancelled $ do
+      ft <- withStore (\db -> getRcvFileTransfer db user fileId)
+      unless (rcvFileCompleteOrCancelled ft) $ do
         cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
         ci <- withStore $ \db -> getChatItemByFileId db user fileId
         toView $ CRRcvFileSndCancelled user ci ft
@@ -3446,8 +3451,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         (SMDRcv, CIGroupRcv m) -> do
           if sameMemberId memberId m
             then do
-              ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
-              unless cancelled $ do
+              ft <- withStore (\db -> getRcvFileTransfer db user fileId)
+              unless (rcvFileCompleteOrCancelled ft) $ do
                 cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
                 ci <- withStore $ \db -> getChatItemByFileId db user fileId
                 toView $ CRRcvFileSndCancelled user ci ft
