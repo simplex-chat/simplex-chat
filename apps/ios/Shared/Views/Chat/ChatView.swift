@@ -492,8 +492,8 @@ struct ChatView: View {
                 }
                 if ci.meta.itemDeleted == nil,
                    let file = ci.file,
-                   let cancelTexts = file.cancellableText  {
-                    menu.append(cancelFileUIAction(file.fileId, cancelTexts))
+                   let cancelAction = file.cancelAction  {
+                    menu.append(cancelFileUIAction(file.fileId, cancelAction))
                 }
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
@@ -585,16 +585,16 @@ struct ChatView: View {
             }
         }
 
-        private func cancelFileUIAction(_ fileId: Int64, _ cancelTexts: (String, String, String, String)) -> UIAction {
-            let (action, question, message, confirm) = cancelTexts
+        private func cancelFileUIAction(_ fileId: Int64, _ cancelAction: CancelAction) -> UIAction {
             return UIAction(
-                title: action,
-                image: UIImage(systemName: "xmark")
+                title: cancelAction.uiAction,
+                image: UIImage(systemName: "xmark"),
+                attributes: [.destructive]
             ) { _ in
                 AlertManager.shared.showAlert(Alert(
-                    title: Text(question),
-                    message: Text(message),
-                    primaryButton: .destructive(Text(confirm)) {
+                    title: Text(cancelAction.alert.title),
+                    message: Text(cancelAction.alert.message),
+                    primaryButton: .destructive(Text(cancelAction.alert.confirm)) {
                         Task {
                             if let user = ChatModel.shared.currentUser {
                                 await cancelFile(user: user, fileId: fileId)

@@ -1335,6 +1335,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileError(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
+            cleanupFile(aChatItem)
         case let .sndFileStart(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileComplete(user, aChatItem, _):

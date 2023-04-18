@@ -2254,22 +2254,22 @@ public struct CIFile: Decodable {
         }
     }
 
-    public var cancellableText: (String, String, String, String)? {
+    public var cancelAction: CancelAction? {
         get {
             switch self.fileStatus {
-            case .sndStored: return sndCancelTexts
-            case .sndTransfer: return sndCancelTexts
+            case .sndStored: return sndCancelAction
+            case .sndTransfer: return sndCancelAction
             case .sndComplete:
                 if self.fileProtocol == .xftp {
-                    return revokeCancelTexts
+                    return revokeCancelAction
                 } else {
                     return nil
                 }
             case .sndCancelled: return nil
             case .sndError: return nil
             case .rcvInvitation: return nil
-            case .rcvAccepted: return rcvCancelTexts
-            case .rcvTransfer: return rcvCancelTexts
+            case .rcvAccepted: return rcvCancelAction
+            case .rcvTransfer: return rcvCancelAction
             case .rcvCancelled: return nil
             case .rcvComplete: return nil
             case .rcvError: return nil
@@ -2278,25 +2278,42 @@ public struct CIFile: Decodable {
     }
 }
 
-private var sndCancelTexts = (
-  NSLocalizedString("Stop file", comment: "cancel file action"),
-  NSLocalizedString("Stop sending file?", comment: "cancel file question"),
-  NSLocalizedString("Sending file will be stopped.", comment: "cancel file text"),
-  NSLocalizedString("Stop", comment: "cancel file confirmation")
+public struct CancelAction {
+    public var uiAction: String
+    public var alert: AlertInfo
+}
+
+public struct AlertInfo {
+    public var title: LocalizedStringKey
+    public var message: LocalizedStringKey
+    public var confirm: LocalizedStringKey
+}
+
+private var sndCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Stop file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Stop sending file?",
+        message: "Sending file will be stopped.",
+        confirm: "Stop"
+    )
 )
 
-private var revokeCancelTexts = (
-    NSLocalizedString("Revoke file", comment: "cancel file action"),
-    NSLocalizedString("Revoke file?", comment: "cancel file question"),
-    NSLocalizedString("File will be deleted from servers.", comment: "cancel file text"),
-    NSLocalizedString("Revoke", comment: "cancel file confirmation")
+private var revokeCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Revoke file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Revoke file?",
+        message: "File will be deleted from servers.",
+        confirm: "Revoke"
+    )
 )
 
-private var rcvCancelTexts = (
-  NSLocalizedString("Stop file", comment: "cancel file action"),
-  NSLocalizedString("Stop receiving file?", comment: "cancel file question"),
-  NSLocalizedString("Receiving file will be stopped.", comment: "cancel file text"),
-  NSLocalizedString("Stop", comment: "cancel file confirmation")
+private var rcvCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Stop file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Stop receiving file?",
+        message: "Receiving file will be stopped.",
+        confirm: "Stop"
+    )
 )
 
 public enum FileProtocol: String, Decodable {

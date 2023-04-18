@@ -218,10 +218,18 @@
   <string name="delete_member_message__question">Delete member message?</string>
   <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
   <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
-  <string name="cancel_file__question">Cancel file transfer?</string>
-  <string name="file_transfer_will_be_cancelled_warning">File transfer will be cancelled. If it\'s in progress it will be stoppped.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
+  <string name="stop_file__action">Stop file</string>
+  <string name="stop_snd_file__title">Stop sending file?</string>
+  <string name="stop_snd_file__message">Sending file will be stopped.</string>
+  <string name="stop_rcv_file__title">Stop receiving file?</string>
+  <string name="stop_rcv_file__message">Receiving file will be stopped.</string>
+  <string name="stop_file__confirm">Stop</string>
+  <string name="revoke_file__action">Revoke file</string>
+  <string name="revoke_file__title">Revoke file?</string>
+  <string name="revoke_file__message">File will be deleted from servers.</string>
+  <string name="revoke_file__confirm">Revoke</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
