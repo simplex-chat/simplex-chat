@@ -1134,4 +1134,10 @@
 \nBeschikbaar in v5.1"</string>
     <string name="prohibit_calls">Audio/video gesprekken verbieden.</string>
     <string name="calls_prohibited_with_this_contact">Audio/video gesprekken zijn verboden.</string>
+    <string name="v5_0_large_files_support_descr">Snel en niet wachten tot de afzender online is!</string>
+    <string name="v5_0_app_passcode">App toegangscode</string>
+    <string name="v5_0_app_passcode_descr">Stel het in in plaats van systeemverificatie.</string>
+    <string name="v5_0_polish_interface">Poolse interface</string>
+    <string name="v5_0_polish_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
+    <string name="v5_0_large_files_support">Video\'s en bestanden tot 1 GB</string>
 </resources>
