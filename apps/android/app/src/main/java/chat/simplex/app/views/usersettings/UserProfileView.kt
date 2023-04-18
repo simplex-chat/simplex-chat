@@ -191,49 +191,6 @@ fun UserProfileLayout(
 }
 
 @Composable
-fun ProfileNameTextField(name: MutableState<String>) {
-  BasicTextField(
-    value = name.value,
-    onValueChange = { name.value = it },
-    modifier = Modifier
-      .padding(bottom = 24.dp)
-      .padding(start = 28.dp)
-      .fillMaxWidth(),
-    textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
-    keyboardOptions = KeyboardOptions(
-      capitalization = KeyboardCapitalization.None,
-      autoCorrect = false
-    ),
-    singleLine = true
-  )
-}
-
-@Composable
-fun ProfileNameRow(label: String, text: String) {
-  Row(Modifier.padding(bottom = 24.dp)) {
-    Text(
-      label,
-      color = MaterialTheme.colors.onBackground
-    )
-    Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(
-      text,
-      fontWeight = FontWeight.Bold,
-      color = MaterialTheme.colors.onBackground
-    )
-  }
-}
-
-@Composable
-fun TextButton(text: String, click: () -> Unit) {
-  Text(
-    text,
-    color = MaterialTheme.colors.primary,
-    modifier = Modifier.clickable(onClick = click),
-  )
-}
-
-@Composable
 fun EditImageButton(click: () -> Unit) {
   IconButton(
     onClick = click,

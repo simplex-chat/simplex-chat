@@ -1,9 +1,5 @@
 package chat.simplex.app.views.chat.group
 
-import SectionDivider
-import SectionItemView
-import SectionSpacer
-import SectionView
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.*
