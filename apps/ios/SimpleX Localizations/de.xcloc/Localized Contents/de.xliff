@@ -623,14 +623,14 @@ Available in v5.1</source>
         <target>Zurück</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message ID" xml:space="preserve" approved="no">
+      <trans-unit id="Bad message ID" xml:space="preserve">
         <source>Bad message ID</source>
-        <target state="translated">Falsche Nachrichten-ID</target>
+        <target>Falsche Nachrichten-ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
+      <trans-unit id="Bad message hash" xml:space="preserve">
         <source>Bad message hash</source>
-        <target state="translated">Ungültiger Nachrichten-Hash</target>
+        <target>Ungültiger Nachrichten-Hash</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
@@ -1170,9 +1170,9 @@ Available in v5.1</source>
         <target>Dezentral</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Decryption error" xml:space="preserve" approved="no">
+      <trans-unit id="Decryption error" xml:space="preserve">
         <source>Decryption error</source>
-        <target state="translated">Entschlüsselungsfehler</target>
+        <target>Entschlüsselungsfehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
@@ -2265,17 +2265,17 @@ Available in v5.1</source>
         <target>Er ermöglicht mehrere anonyme Verbindungen in einem einzigen Chat-Profil ohne Daten zwischen diesen zu teilen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
+      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target state="translated">Dies kann passieren, falls Sie oder Ihre Verbindung ein altes Datenbank-Backup genutzt haben.</target>
+        <target>Dies kann passieren, falls Sie oder Ihre Verbindung ein altes Datenbank-Backup genutzt haben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
 1. The messages expired in the sending client after 2 days or on the server after 30 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
-        <target state="translated">Dies kann unter folgenden Umständen passieren:
+        <target>Dies kann unter folgenden Umständen passieren:
 1. Die Nachrichten verfallen auf dem sendenden Client-System nach 2 Tagen oder auf dem Server nach 30 Tagen.
 2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde.
 3. Die Verbindung wurde kompromittiert.</target>
@@ -2853,9 +2853,9 @@ Available in v5.1</source>
         <target>Periodisch</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Permanent decryption error" xml:space="preserve" approved="no">
+      <trans-unit id="Permanent decryption error" xml:space="preserve">
         <source>Permanent decryption error</source>
-        <target state="translated">Entschlüsselungsfehler</target>
+        <target>Entschlüsselungsfehler</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -2898,9 +2898,9 @@ Available in v5.1</source>
         <target>Es gibt keine Möglichkeit ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please report it to the developers." xml:space="preserve" approved="no">
+      <trans-unit id="Please report it to the developers." xml:space="preserve">
         <source>Please report it to the developers.</source>
-        <target state="translated">Bitte melden Sie es den Entwicklern.</target>
+        <target>Bitte melden Sie es den Entwicklern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
@@ -3722,10 +3722,10 @@ Available in v5.1</source>
         <target>Die erste Plattform ohne Benutzerkennungen – Privat per Design.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve" approved="no">
+      <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
         <source>The ID of the next message is incorrect (less or equal to the previous).
 It can happen because of some bug or when the connection is compromised.</source>
-        <target state="translated">Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).
+        <target>Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).
 Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3759,9 +3759,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
+      <trans-unit id="The hash of the previous message is different." xml:space="preserve">
         <source>The hash of the previous message is different.</source>
-        <target state="translated">Der Hash der vorherigen Nachricht ist unterschiedlich.</target>
+        <target>Der Hash der vorherigen Nachricht ist unterschiedlich.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -3829,9 +3829,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Diese Aktion kann nicht rückgängig gemacht werden! Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This error is permanent for this connection, please re-connect." xml:space="preserve" approved="no">
+      <trans-unit id="This error is permanent for this connection, please re-connect." xml:space="preserve">
         <source>This error is permanent for this connection, please re-connect.</source>
-        <target state="translated">Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</target>
+        <target>Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">
