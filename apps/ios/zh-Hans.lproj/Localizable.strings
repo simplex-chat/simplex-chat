@@ -360,13 +360,13 @@
 "Authentication cancelled" = "身份验证已取消";
 
 /* No comment provided by engineer. */
-"Authentication failed" = "身份认证失败";
+"Authentication failed" = "身份验证失败";
 
 /* No comment provided by engineer. */
 "Authentication is required before the call is connected, but you may miss calls." = "通话接通前需要进行认证，但您可能会错过来电。";
 
 /* No comment provided by engineer. */
-"Authentication unavailable" = "身份认证不可用";
+"Authentication unavailable" = "身份验证不可用";
 
 /* No comment provided by engineer. */
 "Auto-accept contact requests" = "自动接受联系人请求";
@@ -425,11 +425,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "无法邀请联系人！";
 
-/* chat item action */
-"Cancel" = "取消";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "取消文件传输？";
+"Cancel" = "取消";
 
 /* feature offered item */
 "cancelled %@" = "已取消 %@";
@@ -912,10 +909,10 @@
 "Device" = "设备";
 
 /* No comment provided by engineer. */
-"Device authentication is disabled. Turning off SimpleX Lock." = "设备认证被禁用。关闭 SimpleX 锁定。";
+"Device authentication is disabled. Turning off SimpleX Lock." = "设备验证被禁用。关闭 SimpleX 锁定。";
 
 /* No comment provided by engineer. */
-"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "没有启用设备认证。一旦启用设备认证，您可以通过设置打开 SimpleX 锁定。";
+"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "没有启用设备验证。一旦启用设备验证，您可以通过设置打开 SimpleX 锁定。";
 
 /* No comment provided by engineer. */
 "different migration in the app/database: %@ / %@" = "应用程序/数据库中的不同迁移：%@ / %@";
@@ -1206,9 +1203,6 @@
 "Exit without saving" = "退出而不保存";
 
 /* No comment provided by engineer. */
-"Experimental" = "实验性";
-
-/* No comment provided by engineer. */
 "Export database" = "导出数据库";
 
 /* No comment provided by engineer. */
@@ -1222,9 +1216,6 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "移除密码失败";
-
-/* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "文件传输将被取消。文件传输将被终止如果它正在进行中。";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "文件将在您的联系人完成上传后收到。";
@@ -1525,9 +1516,6 @@
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "它允许在一个聊天资料中有多个匿名连接，而它们之间没有任何共享数据。";
-
-/* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "它可以在以下情况下发生：\n1. 如果消息在30天内没有被收到，就会在服务器上过期。\n2. 您用于接收来自此联系人的消息的服务器已更新并重新启动。\n3. 连接受损。\n请通过设置与开发者联系，以接收有关服务器的更新。\n我们将添加服务器冗余以防止丢失消息。";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "您似乎已经通过此链接连接。如果不是这样，则有一个错误 (%@)。";
@@ -2395,7 +2383,7 @@
 "System" = "系统";
 
 /* No comment provided by engineer. */
-"System authentication" = "系统认证";
+"System authentication" = "系统验证";
 
 /* No comment provided by engineer. */
 "Take picture" = "拍照";
@@ -2675,9 +2663,6 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "通过 XFTP 接收需要 v4.6.1 以上版本。";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "验证连接安全";

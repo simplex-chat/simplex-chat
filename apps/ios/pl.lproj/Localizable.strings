@@ -425,11 +425,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Nie można zaprosić kontaktów!";
 
-/* chat item action */
-"Cancel" = "Anuluj";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "Anulować transfer plików?";
+"Cancel" = "Anuluj";
 
 /* feature offered item */
 "cancelled %@" = "anulowany %@";
@@ -1206,9 +1203,6 @@
 "Exit without saving" = "Wyjdź bez zapisywania";
 
 /* No comment provided by engineer. */
-"Experimental" = "Eksperymentalne";
-
-/* No comment provided by engineer. */
 "Export database" = "Eksportuj bazę danych";
 
 /* No comment provided by engineer. */
@@ -1222,9 +1216,6 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Nie udało się usunąć hasła";
-
-/* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "Transfer plików zostanie anulowany. Jeśli jest w toku, zostanie zatrzymany.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Plik zostanie odebrany, gdy Twój kontakt zakończy przesyłanie.";
@@ -1524,10 +1515,7 @@
 "Irreversible message deletion is prohibited in this group." = "Nieodwracalne usuwanie wiadomości jest w tej grupie zabronione.";
 
 /* No comment provided by engineer. */
-"It allows having many anonymous connections without any shared data between them in a single chat profile." = "Pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w jednym profilu czatu.";
-
-/* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Może to nastąpić, gdy:\n1. Wiadomości wygasają na serwerze, jeśli nie zostały odebrane przez 30 dni,\n2. Serwer, którego używasz do odbierania wiadomości od tego kontaktu został zaktualizowany i uruchomiony ponownie.\n3. Połączenie jest skompromitowane.\nProszę połączyć się z deweloperami przez Ustawienia, aby otrzymać aktualizacje dotyczące serwerów.\nBędziemy dodawać redundancję serwerów, aby zapobiec utracie wiadomości.";
+"It allows having many anonymous connections without any shared data between them in a single chat profile." = "To pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w pojedynczym profilu czatu.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Wygląda na to, że jesteś już połączony przez ten link. Jeśli tak nie jest, wystąpił błąd (%@).";
@@ -2614,7 +2602,7 @@
 "Unmute" = "Wyłącz wyciszenie";
 
 /* No comment provided by engineer. */
-"Unread" = "Oznacz jako nieprzeczytane";
+"Unread" = "Nieprzeczytane";
 
 /* No comment provided by engineer. */
 "Update" = "Aktualizuj";
@@ -2675,9 +2663,6 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "v4.6.1+ jest wymagany do odbierania przez XFTP.";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Weryfikuj bezpieczeństwo połączenia";

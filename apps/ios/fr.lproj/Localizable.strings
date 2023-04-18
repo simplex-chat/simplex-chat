@@ -425,11 +425,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Impossible d'inviter les contacts !";
 
-/* chat item action */
-"Cancel" = "Annuler";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "Annuler le transfert de fichiers ?";
+"Cancel" = "Annuler";
 
 /* feature offered item */
 "cancelled %@" = "annulé %@";
@@ -1206,9 +1203,6 @@
 "Exit without saving" = "Quitter sans sauvegarder";
 
 /* No comment provided by engineer. */
-"Experimental" = "Expérimental";
-
-/* No comment provided by engineer. */
 "Export database" = "Exporter la base de données";
 
 /* No comment provided by engineer. */
@@ -1222,9 +1216,6 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Échec de la suppression de la phrase secrète";
-
-/* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "Le transfert de fichiers sera annulé. S'il est en cours, il sera interrompu.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Le fichier sera reçu lorsque votre contact aura terminé de le mettre en ligne.";
@@ -1525,9 +1516,6 @@
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Cela permet d'avoir plusieurs connections anonymes sans aucune données partagées entre elles sur un même profil.";
-
-/* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "C'est possible quand :\n1. Les messages expirent du serveur (après 30 jours si ils ne sont pas reçu).\n2. Le serveur que vous utilisez pour recevoir les messages de ce contact a été mise à jour ou redémarré.\n3. La connection est compromise.\nVeuillez vous connecter aux développeurs via les Paramètres pour recevoir les mises à jour concernant les serveurs.\nNous allons ajouter une redondance des serveurs pour éviter la perte de messages.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Il semblerait que vous êtes déjà connecté via ce lien. Si ce n'est pas le cas, il y a eu une erreur (%@).";
@@ -2002,7 +1990,7 @@
 "Prohibit sending direct messages to members." = "Interdire l'envoi de messages directs aux membres.";
 
 /* No comment provided by engineer. */
-"Prohibit sending disappearing messages." = "Interdit l’envoi de messages éphémères.";
+"Prohibit sending disappearing messages." = "Interdire l’envoi de messages éphémères.";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Interdire l'envoi de messages vocaux.";
@@ -2675,9 +2663,6 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "v4.6.1+ nécessaire pour la réception via XFTP.";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Vérifier la sécurité de la connexion";
