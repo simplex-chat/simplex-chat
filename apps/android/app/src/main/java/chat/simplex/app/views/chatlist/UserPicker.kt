@@ -213,6 +213,7 @@ fun UserProfileRow(u: User) {
       u.displayName,
       modifier = Modifier
         .padding(start = 8.dp, end = 8.dp),
+      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
   }
@@ -226,7 +227,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
     Spacer(Modifier.width(DEFAULT_PADDING * 1.5f))
     Text(
       text,
-      color = MaterialTheme.colors.onBackground,
+      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
     )
   }
 }
@@ -239,7 +240,7 @@ private fun CancelPickerItem(onClick: () -> Unit) {
     Spacer(Modifier.width(DEFAULT_PADDING * 1.5f))
     Text(
       text,
-      color = MaterialTheme.colors.onBackground,
+      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
     )
   }
 }

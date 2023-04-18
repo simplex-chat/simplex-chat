@@ -316,7 +316,10 @@ fun ModerateItemAction(
 }
 
 @Composable
-fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
+fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
+  val finalColor = if (color == Color.Unspecified) {
+    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+  } else color
   DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
@@ -325,9 +328,9 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
           .fillMaxWidth()
           .weight(1F)
           .padding(end = 15.dp),
-        color = color
+        color = finalColor
       )
-      Icon(icon, text, tint = color)
+      Icon(icon, text, tint = finalColor)
     }
   }
 }

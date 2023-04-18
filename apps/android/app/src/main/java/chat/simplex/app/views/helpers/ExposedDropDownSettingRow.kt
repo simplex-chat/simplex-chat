@@ -15,8 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.ui.theme.DEFAULT_PADDING
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.*
 
 @Composable
 fun <T> ExposedDropDownSettingRow(
@@ -87,6 +86,7 @@ fun <T> ExposedDropDownSettingRow(
               selectionOption.second + (if (label != null) " $label" else ""),
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
+              color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
             )
           }
         }
