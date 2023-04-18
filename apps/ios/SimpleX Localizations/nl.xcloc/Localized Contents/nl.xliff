@@ -2886,7 +2886,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve">
         <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
-        <target>Onthoud het of bewaar het veilig - er is geen manier om een verloren toegangscode te herstellen!</target>
+        <target>Onthoud of bewaar het veilig - er is geen manier om een verloren toegangscode te herstellen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please report it to the developers." xml:space="preserve">
@@ -4387,7 +4387,7 @@ SimpleX Lock moet ingeschakeld zijn.</target>
       </trans-unit>
       <trans-unit id="You will join a group this link refers to and connect to its group members." xml:space="preserve">
         <source>You will join a group this link refers to and connect to its group members.</source>
-        <target>U wordt lid van een groep waarnaar deze link verwijst en maakt verbinding met de groepsleden.</target>
+        <target>U wordt lid van de groep waar deze link naar verwijst en maakt verbinding met de groepsleden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">

@@ -590,7 +590,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
         <source>Authentication failed</source>
-        <target>身份认证失败</target>
+        <target>身份验证失败</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
@@ -600,7 +600,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve">
         <source>Authentication unavailable</source>
-        <target>身份认证不可用</target>
+        <target>身份验证不可用</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept contact requests" xml:space="preserve">
@@ -1369,12 +1369,12 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
         <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
-        <target>设备认证被禁用。关闭 SimpleX 锁定。</target>
+        <target>设备验证被禁用。关闭 SimpleX 锁定。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
-        <target>没有启用设备认证。一旦启用设备认证，您可以通过设置打开 SimpleX 锁定。</target>
+        <target>没有启用设备验证。一旦启用设备验证，您可以通过设置打开 SimpleX 锁定。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
@@ -3619,7 +3619,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="System authentication" xml:space="preserve">
         <source>System authentication</source>
-        <target>系统认证</target>
+        <target>系统验证</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">

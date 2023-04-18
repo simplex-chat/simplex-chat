@@ -2259,7 +2259,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
         <source>It allows having many anonymous connections without any shared data between them in a single chat profile.</source>
-        <target>Pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w jednym profilu czatu.</target>
+        <target>To pozwala na posiadanie wielu anonimowych połączeń bez żadnych wspólnych danych między nimi w pojedynczym profilu czatu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
@@ -3991,7 +3991,7 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       </trans-unit>
       <trans-unit id="Unread" xml:space="preserve">
         <source>Unread</source>
-        <target>Oznacz jako nieprzeczytane</target>
+        <target>Nieprzeczytane</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update" xml:space="preserve">

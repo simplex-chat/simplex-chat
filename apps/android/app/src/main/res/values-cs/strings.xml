@@ -277,7 +277,7 @@
     <string name="settings_section_title_socks">SOCKS PROXY</string>
     <string name="settings_section_title_icon">IKONA APLIKACE</string>
     <string name="settings_section_title_themes">TÉMATA</string>
-    <string name="settings_section_title_messages">ZPRÁVY</string>
+    <string name="settings_section_title_messages">ZPRÁVY A SOUBORY</string>
     <string name="settings_section_title_calls">VOLÁNÍ</string>
     <string name="export_database">Export databáze</string>
     <string name="import_database">Import databáze</string>
@@ -725,11 +725,9 @@
     <string name="answer_call">Přijmout hovor</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> přeskočená zpráva (zprávy)</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Může se to stát, když:
-\n1. Zprávy na serveru vyprší, pokud nebyly přijaty po dobu 30 dnů,
-\n2. Server, který používáte pro příjem zpráv od tohoto kontaktu, byl aktualizován a restartován.
-\n3. Spojení je narušeno.
-\nPřipojte se k vývojářům prostřednictvím Nastavení, abyste mohli dostávat aktualizace o serverech.
-\nBudeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</string>
+\n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 30 dnech.
+\n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.
+\n3. Spojení je kompromitováno.</string>
     <string name="settings_section_title_you">VY</string>
     <string name="settings_section_title_support">PODPOŘIT SIMPLEX CHAT</string>
     <string name="settings_section_title_develop">VÝVOJ</string>
@@ -907,7 +905,7 @@
     <string name="theme">Téma</string>
     <string name="chat_preferences_contact_allows">Kontakt povolil</string>
     <string name="chat_preferences_on">zapnuto</string>
-    <string name="chat_preferences_off">vypnuto</string>
+    <string name="chat_preferences_off">vypnout</string>
     <string name="chat_preferences">Chat předvolby</string>
     <string name="contact_preferences">Předvolby kontaktu</string>
     <string name="group_preferences">Předvolby skupiny</string>
@@ -1055,6 +1053,65 @@
     <string name="icon_descr_waiting_for_video">Čekám na video</string>
     <string name="icon_descr_video_snd_complete">Video odesláno</string>
     <string name="video_will_be_received_when_contact_completes_uploading">Video bude přijato, až kontakt dokončí jeho nahrávání.</string>
-    <string name="video_will_be_received_when_contact_is_online">Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!</string>
+    <string name="video_will_be_received_when_contact_is_online">Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo zkontrolujte později!</string>
     <string name="waiting_for_video">Čekám na video</string>
+    <string name="error_loading_smp_servers">Chyba načítání serverů SMP</string>
+    <string name="error_loading_xftp_servers">Chyba načítání serverů XFTP</string>
+    <string name="error_saving_xftp_servers">Chyba ukládání XFTP serverů</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Ujistěte se, že adresy XFTP serverů jsou ve správném formátu s oddělenými řádky a nejsou duplicitní.</string>
+    <string name="error_xftp_test_server_auth">Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo</string>
+    <string name="smp_server_test_compare_file">Porovnat soubor</string>
+    <string name="smp_server_test_create_file">Vytvořit soubor</string>
+    <string name="smp_server_test_delete_file">Smazat soubor</string>
+    <string name="smp_server_test_download_file">Stáhnout soubor</string>
+    <string name="smp_server_test_upload_file">Nahrát soubor</string>
+    <string name="xftp_servers">XFTP servery</string>
+    <string name="network_socks_toggle_use_socks_proxy">Použít SOCKS proxy</string>
+    <string name="host_verb">Host</string>
+    <string name="network_proxy_port">port %d</string>
+    <string name="network_socks_proxy_settings">Nastavení SOCKS proxy</string>
+    <string name="la_lock_mode_passcode">Zadat heslo</string>
+    <string name="la_lock_mode">SimpleX zámek</string>
+    <string name="la_lock_mode_system">Ověření systému</string>
+    <string name="la_authenticate">Ověřit</string>
+    <string name="la_auth_failed">Ověření selhalo</string>
+    <string name="la_change_app_passcode">Změnit heslo</string>
+    <string name="la_current_app_passcode">Aktuální heslo</string>
+    <string name="la_enter_app_passcode">Zadat heslo</string>
+    <string name="la_no_app_password">Bez hesla aplikace</string>
+    <string name="la_could_not_be_verified">Nemohli jste být ověřeni; Zkuste to prosím znovu.</string>
+    <string name="la_minutes">%d minut</string>
+    <string name="la_seconds">%d vteřin</string>
+    <string name="la_immediately">Ihned</string>
+    <string name="la_please_remember_to_store_password">Zapamatujte si jej nebo bezpečně uložte - neexistuje způsob, jak obnovit ztracené heslo!</string>
+    <string name="lock_not_enabled">Zámek SimpleX není povolen!</string>
+    <string name="you_can_turn_on_lock">Zámek SimpleX můžete zapnout v Nastavení.</string>
+    <string name="port_verb">Port</string>
+    <string name="disable_onion_hosts_when_not_supported">Nastavte <i>Použít .onion hostitele</i> na Ne, pokud je SOCKS proxy nepodporuje.</string>
+    <string name="your_XFTP_servers">Vaše XFTP servery</string>
+    <string name="enable_lock">Povolit zámek</string>
+    <string name="lock_after">Zamknout po</string>
+    <string name="lock_mode">Režim zámku</string>
+    <string name="authentication_cancelled">Ověření zrušeno</string>
+    <string name="confirm_passcode">Potvrdit heslo</string>
+    <string name="incorrect_passcode">Nesprávné heslo</string>
+    <string name="new_passcode">Nové heslo</string>
+    <string name="submit_passcode">Odeslat</string>
+    <string name="la_mode_system">Systém</string>
+    <string name="change_lock_mode">Změnit zamykání</string>
+    <string name="la_mode_passcode">Heslo</string>
+    <string name="passcode_changed">Heslo změněno!</string>
+    <string name="passcode_not_changed">Heslo nezměněno!</string>
+    <string name="passcode_set">Heslo nastaveno!</string>
+    <string name="decryption_error">Chyba dešifrování</string>
+    <string name="alert_title_msg_bad_hash">Špatný hash zprávy</string>
+    <string name="alert_title_msg_bad_id">Špatné ID zprávy</string>
+    <string name="alert_text_msg_bad_hash">Hash předchozí zprávy se liší.</string>
+    <string name="alert_text_msg_bad_id">ID další zprávy je nesprávné (menší nebo rovno předchozí).
+\nMůže se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitováno.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> zprávy se nepodařilo dešifrovat.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> zprývy přeskočeny.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Nahlaste to prosím vývojářům.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Tato chyba je pro toto připojení trvalá, připojte se znovu.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.</string>
 </resources>

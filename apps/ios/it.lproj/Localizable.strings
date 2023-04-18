@@ -425,11 +425,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Impossibile invitare i contatti!";
 
-/* chat item action */
-"Cancel" = "Annulla";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "Annullare il trasferimento di file?";
+"Cancel" = "Annulla";
 
 /* feature offered item */
 "cancelled %@" = "annullato %@";
@@ -1206,9 +1203,6 @@
 "Exit without saving" = "Esci senza salvare";
 
 /* No comment provided by engineer. */
-"Experimental" = "Sperimentale";
-
-/* No comment provided by engineer. */
 "Export database" = "Esporta database";
 
 /* No comment provided by engineer. */
@@ -1222,9 +1216,6 @@
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Rimozione della password fallita";
-
-/* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "Il trasferimento di file verrà annullato. Se è in corso, verrà interrotto.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Il file verrà ricevuto quando il tuo contatto completerà l'invio.";
@@ -1525,9 +1516,6 @@
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Permette di avere molte connessioni anonime senza dati condivisi tra di loro in un unico profilo di chat.";
-
-/* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Può accadere quando:\n1. I messaggi scadono sul server se non sono stati ricevuti per 30 giorni,\n2. Il server usato per ricevere i messaggi da questo contatto è stato aggiornato e riavviato.\n3. La connessione è compromessa.\nConnettiti agli sviluppatori tramite Impostazioni per ricevere aggiornamenti riguardo i server.\nAggiungeremo la ridondanza del server per prevenire la perdita di messaggi.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Sembra che tu sia già connesso tramite questo link. In caso contrario, c'è stato un errore (%@).";
@@ -2675,9 +2663,6 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "v4.6.1+ necessaria per ricevere via XFTP.";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Verifica la sicurezza della connessione";
