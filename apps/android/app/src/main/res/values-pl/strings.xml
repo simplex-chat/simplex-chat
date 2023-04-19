@@ -539,13 +539,11 @@
     <string name="protect_app_screen">Chroń ekran aplikacji</string>
     <string name="run_chat_section">URUCHOM CZAT</string>
     <string name="send_link_previews">Wyślij podgląd linku</string>
-    <string name="settings_send_files_via_xftp">Wysyłaj filmy i pliki przez XFTP</string>
     <string name="settings_section_title_settings">USTAWIENIA</string>
     <string name="settings_section_title_socks">PROXY SOCKS</string>
     <string name="stop_chat_question">Zatrzymać czat\?</string>
     <string name="settings_section_title_support">WSPIERAJ SIMPLEX CHAT</string>
     <string name="settings_section_title_themes">MOTYWY</string>
-    <string name="xftp_requires_v461">v4.6.1+ jest wymagany do odbierania przez XFTP.</string>
     <string name="settings_section_title_you">TY</string>
     <string name="your_chat_database">Twoja baza danych czatu</string>
     <string name="set_password_to_export">Ustaw hasło do eksportu</string>

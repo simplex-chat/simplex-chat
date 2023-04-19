@@ -1019,7 +1019,6 @@
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
     <string name="group_welcome_title">欢迎信息</string>
-    <string name="settings_send_files_via_xftp">通过 XFTP 发送视频和文件</string>
     <string name="confirm_database_upgrades">确认数据库升级</string>
     <string name="settings_section_title_experimenta">实验性</string>
     <string name="database_upgrade">数据库升级</string>
@@ -1034,7 +1033,6 @@
     <string name="database_migrations">迁移：%s</string>
     <string name="image_will_be_received_when_contact_completes_uploading">图片将在您的联系人完成上传后收到。</string>
     <string name="show_developer_options">显示开发者选项</string>
-    <string name="xftp_requires_v461">通过 XFTP 接收需要 v4.6.1 以上版本。</string>
     <string name="upgrade_and_open_chat">升级并打开聊天</string>
     <string name="database_downgrade_warning">警告：您可能会丢失部分数据！</string>
     <string name="invalid_migration_confirmation">迁移确认无效</string>

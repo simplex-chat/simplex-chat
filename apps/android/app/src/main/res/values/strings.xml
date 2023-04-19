@@ -802,8 +802,6 @@
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
   <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
-  <string name="settings_send_files_via_xftp">Send videos and files via XFTP</string>
-  <string name="xftp_requires_v461">v4.6.1+ is required to receive via XFTP.</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>

@@ -43,16 +43,5 @@ fun DeveloperView(
         generalGetString(R.string.developer_options)
     )
     SectionSpacer()
-
-//    val xftpSendEnabled = m.controller.appPrefs.xftpSendEnabled
-//    val xftpEnabled = remember { mutableStateOf(xftpSendEnabled.get()) }
-//    SectionView(generalGetString(R.string.settings_section_title_experimenta)) {
-//      SettingsPreferenceItem(Icons.Outlined.UploadFile, stringResource(R.string.settings_send_files_via_xftp), xftpSendEnabled, xftpEnabled) {
-//        withApi { m.controller.apiSetXFTPConfig(m.controller.getXFTPCfg()) }
-//      }
-//    }
-//    if (xftpEnabled.value) {
-//      SectionTextFooter(generalGetString(R.string.xftp_requires_v461))
-//    }
   }
 }

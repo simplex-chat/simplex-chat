@@ -1020,7 +1020,6 @@
 \n- borrar mensajes de los miembros.
 \n- desactivar el rol a miembros (a rol \"observador\")</string>
     <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página Tus perfiles Chat.</string>
-    <string name="settings_send_files_via_xftp">Enviar vídeos y archivos mediante XFTP</string>
     <string name="database_upgrade">Actualización de la base de datos</string>
     <string name="database_downgrade">Volviendo a versión anterior de la base de datos</string>
     <string name="invalid_migration_confirmation">Confirmación de migración no válida</string>
@@ -1036,7 +1035,6 @@
     <string name="developer_options">ID de base de datos y opción de aislamiento de transporte.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">El archivo se recibirá cuando tu contacto termine de subirlo.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">La imagen se recibirá cuando tu contacto termine de subirla.</string>
-    <string name="xftp_requires_v461">Se requiere v4.6.1+ para recibir vía XFTP.</string>
     <string name="show_developer_options">Mostrar opciones de desarrollador</string>
     <string name="hide_dev_options">Ocultar:</string>
     <string name="show_dev_options">Mostrar:</string>
