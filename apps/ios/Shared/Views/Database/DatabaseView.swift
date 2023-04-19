@@ -77,7 +77,7 @@ struct DatabaseView: View {
                     }
                 }
                 .frame(height: 36)
-                .disabled(m.chatDbChanged || progressIndicator)
+                .disabled(stopped)
             } header: {
                 Text("Messages")
             } footer: {

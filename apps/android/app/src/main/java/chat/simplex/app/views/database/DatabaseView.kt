@@ -160,7 +160,7 @@ fun DatabaseLayout(
     AppBarTitle(stringResource(R.string.your_chat_database))
 
     SectionView(stringResource(R.string.messages_section_title).uppercase()) {
-      SectionItemView { TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!progressIndicator && !chatDbChanged), onChatItemTTLSelected) }
+      SectionItemView { TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped), onChatItemTTLSelected) }
     }
     SectionTextFooter(
       remember(currentUser?.displayName) {
