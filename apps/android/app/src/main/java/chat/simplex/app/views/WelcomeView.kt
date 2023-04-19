@@ -90,7 +90,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
             text = stringResource(R.string.about_simplex),
             icon = Icons.Outlined.ArrowBackIosNew,
             textDecoration = TextDecoration.None,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Medium
           ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
         }
         Spacer(Modifier.fillMaxWidth().weight(1f))
