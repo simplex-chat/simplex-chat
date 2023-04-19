@@ -841,7 +841,6 @@
     <string name="select_contacts">연락처 선택</string>
     <string name="skip_inviting_button">멤버 초대 건너뛰기</string>
     <string name="sending_via">다음을 통해 보내기</string>
-    <string name="settings_send_files_via_xftp">XFTP로 동영상 및 파일 보내기</string>
     <string name="stop_chat_confirmation">멈추기</string>
     <string name="snd_group_event_changed_member_role">%s의 역할을 %s로 변경했어요.</string>
     <string name="section_title_for_console">콘솔용</string>

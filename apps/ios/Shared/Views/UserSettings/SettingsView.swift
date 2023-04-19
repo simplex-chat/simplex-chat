@@ -232,14 +232,6 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("info") { Text("About SimpleX Chat") }
                     }
-//                    NavigationLink {
-//                        MarkdownHelp()
-//                            .padding()
-//                            .navigationTitle("How to use markdown")
-//                            .frame(maxHeight: .infinity, alignment: .top)
-//                    } label: {
-//                        settingsRow("textformat") { Text("Markdown in messages") }
-//                    }
                     settingsRow("number") {
                         Button("Send questions and ideas") {
                             showSettings = false
@@ -278,12 +270,6 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("chevron.left.forwardslash.chevron.right") { Text("Developer tools") }
                     }
-//                    NavigationLink {
-//                        ExperimentalFeaturesView()
-//                            .navigationTitle("Experimental features")
-//                    } label: {
-//                        settingsRow("gauge") { Text("Experimental features") }
-//                    }
                     NavigationLink {
                         VersionView()
                             .navigationBarTitle("App version")

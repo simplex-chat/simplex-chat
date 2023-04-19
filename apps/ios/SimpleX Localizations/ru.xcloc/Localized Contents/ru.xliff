@@ -3377,11 +3377,6 @@ Available in v5.1</source>
         <target>Отправьте из галереи или из дополнительных клавиатур.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
-        <source>Send videos and files via XFTP</source>
-        <target>Отправлять видео и файлы через XFTP</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>Отправитель отменил передачу файла.</target>

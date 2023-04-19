@@ -1102,7 +1102,6 @@
     <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
     <string name="you_will_still_receive_calls_and_ntfs">Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
     <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть профиль или выключить уведомления - подержите, чтобы увидеть меню.</string>
-    <string name="settings_send_files_via_xftp">Отправлять видео и файлы через XFTP</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Изображение будет принято когда Ваш контакт его загрузит.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Файл будет принят когда Ваш контакт загрузит его.</string>
     <string name="database_upgrade">Обновление базы данных</string>
@@ -1124,7 +1123,6 @@
     <string name="delete_chat_profile">Удалить профиль чата</string>
     <string name="delete_profile">Удалить профиль</string>
     <string name="profile_password">Пароль профиля</string>
-    <string name="xftp_requires_v461">v4.6.1+ необходима для приема файлов через XFTP.</string>
     <string name="videos_limit_title">Слишком много видео!</string>
     <string name="icon_descr_video_asked_to_receive">Запросил прием видео</string>
     <string name="video_descr">Видео</string>

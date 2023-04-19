@@ -3357,11 +3357,6 @@ Available in v5.1</source>
         <target>Senden Sie diese aus dem Fotoalbum oder von individuellen Tastaturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
-        <source>Send videos and files via XFTP</source>
-        <target>Dateien per XFTP versenden</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>Der Absender hat die Dateiübertragung abgebrochen.</target>

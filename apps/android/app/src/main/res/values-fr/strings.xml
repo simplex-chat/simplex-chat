@@ -1019,7 +1019,6 @@
     <string name="group_welcome_title">Message d\'accueil</string>
     <string name="you_can_hide_or_mute_user_profile">Vous pouvez masquer ou mettre en sourdine un profil d\'utilisateur - maintenez-le enfoncé pour accéder au menu.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu\'ils sont actifs.</string>
-    <string name="settings_send_files_via_xftp">Envoi de vidéos et de fichiers via XFTP</string>
     <string name="database_downgrade">Rétrogradation de la base de données</string>
     <string name="database_upgrade">Mise à niveau de la base de données</string>
     <string name="incompatible_database_version">Version de la base de données incompatible</string>
@@ -1035,7 +1034,6 @@
     <string name="show_dev_options">Afficher :</string>
     <string name="show_developer_options">Afficher les options pour les développeurs</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Le fichier sera reçu lorsque votre contact aura terminé de le mettre en ligne.</string>
-    <string name="xftp_requires_v461">v4.6.1+ nécessaire pour la réception via XFTP.</string>
     <string name="developer_options">IDs de base de données et option d\'isolation du transport.</string>
     <string name="settings_section_title_experimenta">EXPÉRIMENTALE</string>
     <string name="hide_dev_options">Cacher :</string>

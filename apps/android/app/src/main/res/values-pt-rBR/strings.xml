@@ -699,7 +699,6 @@
     <string name="group_member_status_invited">convidado</string>
     <string name="select_contacts">Selecionar contatos</string>
     <string name="num_contacts_selected">%d contato(s) selecionado(s)</string>
-    <string name="settings_send_files_via_xftp">Envie vídeos e arquivos via XFTP</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Esta ação não pode ser desfeita - seu perfil, contatos, mensagens e arquivos serão irreversivelmente perdidos.</string>
     <string name="remove_passphrase">Remover</string>
     <string name="wrong_passphrase">Senha do banco de dados incorreta</string>
@@ -1010,7 +1009,6 @@
     <string name="callstate_waiting_for_confirmation">aguardando confirmação…</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Não armazenamos nenhum dos seus contatos ou mensagens (uma vez entregues) nos servidores.</string>
     <string name="alert_title_skipped_messages">Mensagens ignoradas</string>
-    <string name="xftp_requires_v461">v4.6.1+ é necessário receber via XFTP.</string>
     <string name="tap_to_activate_profile">Toque para ativar o perfil.</string>
     <string name="unhide_chat_profile">Mostrar perfil de chat</string>
     <string name="unhide_profile">Mostrar perfil</string>

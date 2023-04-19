@@ -207,8 +207,6 @@ fun SettingsLayout(
       SectionView(stringResource(R.string.settings_section_title_develop)) {
         SettingsActionItem(Icons.Outlined.Code, stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) })
         SectionDivider()
-//        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it) })
-//        SectionDivider()
         AppVersionItem(showVersion)
       }
     }

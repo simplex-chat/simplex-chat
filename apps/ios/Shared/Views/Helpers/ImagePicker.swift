@@ -28,7 +28,6 @@ struct LibraryImagePicker: View {
 
 struct LibraryMediaListPicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
-    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: groupDefaults) var xftpSendEnabled = false
     @Binding var media: [UploadContent]
     var selectionLimit: Int
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
@@ -131,12 +130,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
-        let allowVideoAttachment = xftpSendEnabled
-        if allowVideoAttachment {
-            config.filter = .any(of: [.images, .videos])
-        } else {
-            config.filter = .images
-        }
+        config.filter = .any(of: [.images, .videos])
         config.selectionLimit = selectionLimit
         config.selection = .ordered
         //config.preferredAssetRepresentationMode = .current
