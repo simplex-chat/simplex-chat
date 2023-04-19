@@ -26,7 +26,10 @@ import chat.simplex.app.views.usersettings.changeNotificationsMode
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
   Column(
-    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+    modifier = Modifier
+      .fillMaxSize()
+      .verticalScroll(rememberScrollState())
+      .padding(vertical = 14.dp)
   ) {
     //CloseSheetBar(null)
     AppBarTitleCentered(stringResource(R.string.onboarding_notifications_mode_title))
@@ -55,7 +58,7 @@ private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mod
     border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
     shape = RoundedCornerShape(35.dp),
   ) {
-    Column(Modifier.padding(14.dp)) {
+    Column(Modifier.padding(vertical = 4.dp, horizontal = 14.dp)) {
       Text(
         stringResource(title),
         style = MaterialTheme.typography.h2,
