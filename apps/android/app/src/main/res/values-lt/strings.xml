@@ -331,9 +331,7 @@
     <string name="using_simplex_chat_servers">Naudojami <xliff:g id="appNameFull">SimpleX Chat</xliff:g> serveriai.</string>
     <string name="network_settings">Išplėstiniai tinklo nustatymai</string>
     <string name="your_current_profile">Jūsų dabartinis profilis</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Jūsų profilis yra saugomas jūsų įrenginyje ir bendrinamas tik su jūsų adresatais.
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> serveriai negali matyti jūsų profilio.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Jūsų profilis yra saugomas jūsų įrenginyje ir bendrinamas tik su jūsų adresatais. <xliff:g id="appName">SimpleX</xliff:g> serveriai negali matyti jūsų profilio.</string>
     <string name="icon_descr_video_call">vaizdo skambutis</string>
     <string name="your_calls">Jūsų skambučiai</string>
     <string name="webrtc_ice_servers">WebRTC ICE serveriai</string>

@@ -667,9 +667,7 @@
     <string name="you_control_your_chat">Sei tu a controllare la tua chat!</string>
     <string name="your_current_profile">Il tuo profilo attuale</string>
     <string name="your_profile_is_stored_on_your_device">Il tuo profilo, i contatti e i messaggi recapitati sono memorizzati sul tuo dispositivo.</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti.
-\n
-\nI server di <xliff:g id="appName">SimpleX</xliff:g> non possono vedere il tuo profilo.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti. I server di <xliff:g id="appName">SimpleX</xliff:g> non possono vedere il tuo profilo.</string>
     <string name="ignore">Ignora</string>
     <string name="immune_to_spam_and_abuse">Immune a spam e abusi</string>
     <string name="incoming_audio_call">Chiamata in arrivo</string>

@@ -935,9 +935,7 @@
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Uw huidige chatdatabase wordt VERWIJDERD en VERVANGEN door de geïmporteerde.
 \nDeze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
     <string name="invite_prohibited_description">Je probeert een contact met wie je een incognito profiel hebt gedeeld, uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten.
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> servers kunnen uw profiel niet zien.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten. <xliff:g id="appName">SimpleX</xliff:g> servers kunnen uw profiel niet zien.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">U moet zich authenticeren wanneer u de app na 30 seconden op de achtergrond start of hervat.</string>
     <string name="images_limit_title">Te veel afbeeldingen!</string>
     <string name="icon_descr_speaker_off">Luidspreker uit</string>

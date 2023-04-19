@@ -621,9 +621,7 @@
     <string name="icon_descr_profile_image_placeholder">资料图片占位符</string>
     <string name="smp_servers_per_user">您当前聊天资料的新连接服务器</string>
     <string name="your_current_profile">您当前的资料</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">您的资料存储在您的设备上并且仅与您的联系人共享。
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> 服务器无法看见您的资料。</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">您的资料存储在您的设备上并且仅与您的联系人共享。<xliff:g id="appName">SimpleX</xliff:g> 服务器无法看见您的资料。</string>
     <string name="your_profile_is_stored_on_your_device">您的资料、联系人和发送的消息存储在您的设备上。</string>
     <string name="profile_is_only_shared_with_your_contacts">该资料仅与您的联系人共享。</string>
     <string name="chat_preferences_on">开启</string>

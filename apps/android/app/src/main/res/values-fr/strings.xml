@@ -439,9 +439,7 @@
     <string name="section_title_welcome_message">MESSAGE DE BIENVENUE</string>
     <string name="display_name__field">Nom affiché :</string>
     <string name="full_name__field">Nom complet :</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Votre profil est stocké sur votre appareil et partagé uniquement avec vos contacts.
-\n
-\nLes serveurs <xliff:g id="appName">SimpleX</xliff:g> ne peuvent pas voir votre profil.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Votre profil est stocké sur votre appareil et partagé uniquement avec vos contacts. Les serveurs <xliff:g id="appName">SimpleX</xliff:g> ne peuvent pas voir votre profil.</string>
     <string name="delete_image">Supprimer l\'image</string>
     <string name="save_preferences_question">Sauvegarder les préférences \?</string>
     <string name="you_control_your_chat">Vous maîtrisez vos discussions !</string>

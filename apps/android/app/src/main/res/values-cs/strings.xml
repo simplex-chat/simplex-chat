@@ -661,9 +661,7 @@
     <string name="all_your_contacts_will_remain_connected">Všechny vaše kontakty zůstanou připojeny.</string>
     <string name="contact_requests">Žádosti o kontakt</string>
     <string name="display_name__field">Zobrazované jméno:</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Váš profil je uložen v zařízení a je sdílen pouze s vašimi kontakty.
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> servery váš profil vidět nemohou.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Váš profil je uložen v zařízení a je sdílen pouze s vašimi kontakty. <xliff:g id="appName">SimpleX</xliff:g> servery váš profil vidět nemohou.</string>
     <string name="save_preferences_question">Uložit předvolby\?</string>
     <string name="save_and_notify_contact">Uložit a upozornit kontakt</string>
     <string name="save_and_notify_contacts">Uložit a upozornit kontakty</string>
