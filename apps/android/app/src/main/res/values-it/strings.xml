@@ -1133,4 +1133,10 @@
     <string name="available_in_v51">"
 \nDisponibile nella v5.1"</string>
     <string name="allow_your_contacts_to_call">Consenti ai tuoi contatti di chiamarti.</string>
+    <string name="v5_0_app_passcode">Codice di accesso dell\'app</string>
+    <string name="v5_0_large_files_support_descr">Veloce e senza aspettare che il mittente sia in linea!</string>
+    <string name="v5_0_polish_interface">Interfaccia polacca</string>
+    <string name="v5_0_app_passcode_descr">Impostala al posto dell\'autenticazione di sistema.</string>
+    <string name="v5_0_polish_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
+    <string name="v5_0_large_files_support">Video e file fino a 1 GB</string>
 </resources>
