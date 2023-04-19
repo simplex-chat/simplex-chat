@@ -77,7 +77,7 @@ struct DatabaseView: View {
                     }
                 }
                 .frame(height: 36)
-                .disabled(stopped)
+                .disabled(stopped || progressIndicator)
             } header: {
                 Text("Messages")
             } footer: {
