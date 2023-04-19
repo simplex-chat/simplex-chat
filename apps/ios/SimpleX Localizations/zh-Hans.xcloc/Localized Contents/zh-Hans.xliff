@@ -3357,11 +3357,6 @@ Available in v5.1</source>
         <target>发送它们来自图库或自定义键盘。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
-        <source>Send videos and files via XFTP</source>
-        <target>通过 XFTP 发送文件</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>发送人已取消文件传输。</target>

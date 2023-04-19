@@ -3370,11 +3370,6 @@ Available in v5.1</source>
         <target>Envoyez-les depuis la phototèque ou des claviers personnalisés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
-        <source>Send videos and files via XFTP</source>
-        <target>Envoi de fichiers via XFTP</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>L'expéditeur a annulé le transfert de fichiers.</target>

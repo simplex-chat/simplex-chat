@@ -460,7 +460,7 @@ struct ComposeView: View {
     }
 
     private var maxFileSize: Int64 {
-        return getMaxFileSize(.xftp)
+        getMaxFileSize(.xftp)
     }
 
     private func sendLiveMessage() async {

@@ -3377,11 +3377,6 @@ Beschikbaar in v5.1</target>
         <target>Stuur ze vanuit de galerij of aangepaste toetsenborden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
-        <source>Send videos and files via XFTP</source>
-        <target>Bestanden verzenden via XFTP</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>Afzender heeft bestandsoverdracht geannuleerd.</target>
