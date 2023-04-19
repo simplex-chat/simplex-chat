@@ -11,7 +11,7 @@ import kotlinx.serialization.encoding.Encoder
 
 sealed class SharedContent {
   data class Text(val text: String): SharedContent()
-  data class Images(val text: String, val uris: List<Uri>): SharedContent()
+  data class Media(val text: String, val uris: List<Uri>): SharedContent()
   data class File(val text: String, val uri: Uri): SharedContent()
 }
 
