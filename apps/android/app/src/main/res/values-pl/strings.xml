@@ -224,9 +224,9 @@
     <string name="scan_QR_code">Zeskanuj kod QR</string>
     <string name="add_contact_or_create_group">Rozpocznij nowy czat</string>
     <string name="to_share_with_your_contact">(aby udostępnić Twojemu kontaktowi)</string>
-    <string name="choose_file">Wybierz plik</string>
+    <string name="choose_file">Plik</string>
     <string name="toast_permission_denied">Odmowa Uprawnienia!</string>
-    <string name="use_camera_button">Użyj Aparatu</string>
+    <string name="use_camera_button">Aparatu</string>
     <string name="accept_contact_button">Akceptuj</string>
     <string name="accept_contact_incognito_button">Akceptuj incognito</string>
     <string name="clear_chat_warning">Wszystkie wiadomości zostaną usunięte - nie można tego cofnąć! Wiadomości zostaną usunięte TYLKO dla Ciebie.</string>
@@ -539,13 +539,11 @@
     <string name="protect_app_screen">Chroń ekran aplikacji</string>
     <string name="run_chat_section">URUCHOM CZAT</string>
     <string name="send_link_previews">Wyślij podgląd linku</string>
-    <string name="settings_send_files_via_xftp">Wysyłaj filmy i pliki przez XFTP</string>
     <string name="settings_section_title_settings">USTAWIENIA</string>
     <string name="settings_section_title_socks">PROXY SOCKS</string>
     <string name="stop_chat_question">Zatrzymać czat\?</string>
     <string name="settings_section_title_support">WSPIERAJ SIMPLEX CHAT</string>
     <string name="settings_section_title_themes">MOTYWY</string>
-    <string name="xftp_requires_v461">v4.6.1+ jest wymagany do odbierania przez XFTP.</string>
     <string name="settings_section_title_you">TY</string>
     <string name="your_chat_database">Twoja baza danych czatu</string>
     <string name="set_password_to_export">Ustaw hasło do eksportu</string>
@@ -970,6 +968,8 @@
 \n- usuwać wiadomości członków.
 \n- wyłączyć członków (rola \"obserwatora\")</string>
     <string name="from_gallery_button">Z Galerii</string>
+    <string name="gallery_image_button">Obraz</string>
+    <string name="gallery_video_button">Wideo</string>
     <string name="feature_offered_item_with_param">zaproponował %s: %2s</string>
     <string name="only_group_owners_can_enable_voice">Tylko właściciele grup mogą włączyć wiadomości głosowe.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Hosty onion nie będą używane.</string>
@@ -1137,4 +1137,10 @@
     <string name="stop_rcv_file__title">Przestać odbierać plik\?</string>
     <string name="stop_snd_file__title">Przestać wysyłać plik\?</string>
     <string name="revoke_file__confirm">Odwołaj</string>
+    <string name="v5_0_app_passcode">Pin aplikacji</string>
+    <string name="v5_0_polish_interface">Polski interfejs</string>
+    <string name="v5_0_large_files_support">Filmy i pliki do 1gb</string>
+    <string name="v5_0_app_passcode_descr">Ustaw go zamiast uwierzytelniania systemowego.</string>
+    <string name="v5_0_large_files_support_descr">Szybko i bez czekania aż nadawca będzie online!</string>
+    <string name="v5_0_polish_interface_descr">Podziękowania dla użytkowników - wkład za pośrednictwem Weblate!</string>
 </resources>

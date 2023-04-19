@@ -201,7 +201,9 @@
     <string name="to_share_with_your_contact">(à partager avec votre contact)</string>
     <string name="create_group">Créer un groupe secret</string>
     <string name="from_gallery_button">Depuis la Phototèque</string>
-    <string name="choose_file">Choisir le fichier</string>
+    <string name="choose_file">Fichier</string>
+    <string name="gallery_image_button">Image</string>
+    <string name="gallery_video_button">Vidéo</string>
     <string name="to_start_a_new_chat_help_header">Pour démarrer une nouvelle discussion</string>
     <string name="chat_help_tap_button">Appuyez sur le bouton</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scanner un code QR</b> : pour vous connecter à votre contact qui vous montre un code QR.</string>
@@ -294,7 +296,7 @@
     <string name="waiting_for_file">En attente du fichier</string>
     <string name="voice_message">Message vocal</string>
     <string name="toast_permission_denied">Autorisation refusée !</string>
-    <string name="use_camera_button">Utiliser l\'Appareil photo</string>
+    <string name="use_camera_button">Appareil\nphoto</string>
     <string name="thank_you_for_installing_simplex">Merci d\'avoir installé <xliff:g id="appNameFull">SimpleX Chat</xliff:g> !</string>
     <string name="you_can_connect_to_simplex_chat_founder">Vous pouvez <font color="#0088ff">vous connecter aux développeurs de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pour leur poser des questions et recevoir des réponses :</font>.</string>
     <string name="above_then_preposition_continuation">ci-dessus, puis :</string>
@@ -1019,7 +1021,6 @@
     <string name="group_welcome_title">Message d\'accueil</string>
     <string name="you_can_hide_or_mute_user_profile">Vous pouvez masquer ou mettre en sourdine un profil d\'utilisateur - maintenez-le enfoncé pour accéder au menu.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu\'ils sont actifs.</string>
-    <string name="settings_send_files_via_xftp">Envoi de vidéos et de fichiers via XFTP</string>
     <string name="database_downgrade">Rétrogradation de la base de données</string>
     <string name="database_upgrade">Mise à niveau de la base de données</string>
     <string name="incompatible_database_version">Version de la base de données incompatible</string>
@@ -1035,7 +1036,6 @@
     <string name="show_dev_options">Afficher :</string>
     <string name="show_developer_options">Afficher les options pour les développeurs</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Le fichier sera reçu lorsque votre contact aura terminé de le mettre en ligne.</string>
-    <string name="xftp_requires_v461">v4.6.1+ nécessaire pour la réception via XFTP.</string>
     <string name="developer_options">IDs de base de données et option d\'isolation du transport.</string>
     <string name="settings_section_title_experimenta">EXPÉRIMENTALE</string>
     <string name="hide_dev_options">Cacher :</string>

@@ -939,7 +939,7 @@ processChatCommand = \case
       CRServerTestResult user srv <$> withAgent (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
-  APISetChatItemTTL userId newTTL_ -> withUser' $ \user -> do
+  APISetChatItemTTL userId newTTL_ -> withUser $ \user -> do
     checkSameUser userId user
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do

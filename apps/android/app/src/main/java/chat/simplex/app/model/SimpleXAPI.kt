@@ -153,8 +153,6 @@ class AppPreferences(val context: Context) {
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
 
-  val xftpSendEnabled = mkBoolPreference(SHARED_PREFS_XFTP_SEND_ENABLED, false)
-
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
       get = fun() = sharedPreferences.getInt(prefName, default),
@@ -264,7 +262,6 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
-    private const val SHARED_PREFS_XFTP_SEND_ENABLED = "XFTPSendEnabled"
   }
 }
 

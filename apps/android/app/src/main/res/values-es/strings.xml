@@ -263,7 +263,7 @@
     <string name="clear_contacts_selection_button">Limpiar</string>
     <string name="change_member_role_question">¿Cambiar rol de grupo\?</string>
     <string name="v4_4_verify_connection_security_desc">Compara los códigos de seguridad con tus contactos</string>
-    <string name="choose_file">Elije archivo</string>
+    <string name="choose_file">Archivo</string>
     <string name="clear_verb">Limpiar</string>
     <string name="clear_chat_button">Limpiar chat</string>
     <string name="configure_ICE_servers">Configurar servidores ICE</string>
@@ -359,6 +359,8 @@
     <string name="error_saving_file">Error al guardar archivo</string>
     <string name="icon_descr_server_status_error">Error</string>
     <string name="from_gallery_button">De la Galería</string>
+    <string name="gallery_image_button">Imagen</string>
+    <string name="gallery_video_button">Vídeo</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si has recibido el enlace de invitación a <xliff:g id="appName">SimpleX Chat</xliff:g>, puedes abrirlo en tu navegador:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si eliges rechazar, el remitente NO será notificado.</string>
     <string name="invalid_contact_link">¡Enlace no válido!</string>
@@ -748,7 +750,7 @@
     <string name="icon_descr_received_msg_status_unread">no leído</string>
     <string name="text_field_set_contact_placeholder">Escribe un nombre para el contacto…</string>
     <string name="switch_receiving_address_question">¿Cambiar dirección de recepción\?</string>
-    <string name="use_camera_button">Usar cámara</string>
+    <string name="use_camera_button">Cámara</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">¡El contacto con el que has compartido este enlace NO podrá conectarse!</string>
     <string name="show_QR_code">Mostrar código QR</string>
     <string name="this_link_is_not_a_valid_connection_link">¡El enlace no es un enlace de conexión válido!</string>
@@ -1020,7 +1022,6 @@
 \n- borrar mensajes de los miembros.
 \n- desactivar el rol a miembros (a rol \"observador\")</string>
     <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página Tus perfiles Chat.</string>
-    <string name="settings_send_files_via_xftp">Enviar vídeos y archivos mediante XFTP</string>
     <string name="database_upgrade">Actualización de la base de datos</string>
     <string name="database_downgrade">Volviendo a versión anterior de la base de datos</string>
     <string name="invalid_migration_confirmation">Confirmación de migración no válida</string>
@@ -1036,7 +1037,6 @@
     <string name="developer_options">ID de base de datos y opción de aislamiento de transporte.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">El archivo se recibirá cuando tu contacto termine de subirlo.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">La imagen se recibirá cuando tu contacto termine de subirla.</string>
-    <string name="xftp_requires_v461">Se requiere v4.6.1+ para recibir vía XFTP.</string>
     <string name="show_developer_options">Mostrar opciones de desarrollador</string>
     <string name="hide_dev_options">Ocultar:</string>
     <string name="show_dev_options">Mostrar:</string>

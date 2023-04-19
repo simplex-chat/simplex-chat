@@ -24,7 +24,7 @@
     <string name="icon_descr_asked_to_receive">Pediu para receber a imagem</string>
     <string name="icon_descr_cancel_live_message">Cancelar mensagem ao vivo</string>
     <string name="back">Voltar</string>
-    <string name="choose_file">Selecione o arquivo</string>
+    <string name="choose_file">Arquivo</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Adicionar novo contato</b>: para criar seu QR code de uso único para seu contato.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Escanear código QR</b>: para se conectar ao seu contato que mostra o código QR para você.</string>
     <string name="accept_contact_button">Aceitar</string>
@@ -352,6 +352,7 @@
     <string name="description_via_one_time_link_incognito">anônimo via link único</string>
     <string name="hide_verb">Ocultar</string>
     <string name="from_gallery_button">Da Galeria</string>
+    <string name="gallery_video_button">Vídeo</string>
     <string name="group_members_can_send_disappearing">Os membros do grupo podem enviar mensagens que desaparecem.</string>
     <string name="icon_descr_file">Arquivo</string>
     <string name="full_name__field">Nome completo:</string>
@@ -499,7 +500,7 @@
     <string name="save_color">Salvar cor</string>
     <string name="v4_5_italian_interface">interface italiana</string>
     <string name="periodic_notifications">Notificações periódicas</string>
-    <string name="use_camera_button">Usar câmera</string>
+    <string name="use_camera_button">Câmera</string>
     <string name="your_ICE_servers">Seus servidores ICE</string>
     <string name="your_ice_servers">Seus servidores ICE</string>
     <string name="your_privacy">Sua privacidade</string>
@@ -699,7 +700,6 @@
     <string name="group_member_status_invited">convidado</string>
     <string name="select_contacts">Selecionar contatos</string>
     <string name="num_contacts_selected">%d contato(s) selecionado(s)</string>
-    <string name="settings_send_files_via_xftp">Envie vídeos e arquivos via XFTP</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Esta ação não pode ser desfeita - seu perfil, contatos, mensagens e arquivos serão irreversivelmente perdidos.</string>
     <string name="remove_passphrase">Remover</string>
     <string name="wrong_passphrase">Senha do banco de dados incorreta</string>
@@ -1010,7 +1010,6 @@
     <string name="callstate_waiting_for_confirmation">aguardando confirmação…</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Não armazenamos nenhum dos seus contatos ou mensagens (uma vez entregues) nos servidores.</string>
     <string name="alert_title_skipped_messages">Mensagens ignoradas</string>
-    <string name="xftp_requires_v461">v4.6.1+ é necessário receber via XFTP.</string>
     <string name="tap_to_activate_profile">Toque para ativar o perfil.</string>
     <string name="unhide_chat_profile">Mostrar perfil de chat</string>
     <string name="unhide_profile">Mostrar perfil</string>

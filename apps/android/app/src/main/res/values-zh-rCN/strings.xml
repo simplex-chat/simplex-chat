@@ -238,7 +238,7 @@
     <string name="callstate_connected">已连接</string>
     <string name="connect_button">连接</string>
     <string name="connect_via_link_verb">连接</string>
-    <string name="choose_file">选择文件</string>
+    <string name="choose_file">文件</string>
     <string name="network_session_mode_user">聊天资料</string>
     <string name="v4_5_transport_isolation_descr">按聊天资料（默认）或按连接（BETA）。</string>
     <string name="smp_servers_check_address">检查服务器地址并再试一次。</string>
@@ -435,6 +435,8 @@
     <string name="maximum_supported_file_size">目前支持的最大文件尺寸是 <xliff:g id="maxFileSize">%1$s</xliff:g>。</string>
     <string name="file_will_be_received_when_contact_is_online">文件将在您的联系人在线时收到，请稍等或稍后再查看！</string>
     <string name="from_gallery_button">从图库</string>
+    <string name="gallery_image_button">照片</string>
+    <string name="gallery_video_button">视频</string>
     <string name="exit_without_saving">退出而不保存</string>
     <string name="icon_descr_flip_camera">翻转相机</string>
     <string name="enable_automatic_deletion_question">启用自动删除消息？</string>
@@ -855,7 +857,7 @@
     <string name="toast_permission_denied">权限被拒绝！</string>
     <string name="chat_help_tap_button">点击按钮</string>
     <string name="thank_you_for_installing_simplex">感谢您安装 <xliff:g id="appNameFull">SimpleX Chat</xliff:g>！</string>
-    <string name="use_camera_button">使用相机</string>
+    <string name="use_camera_button">相机</string>
     <string name="smp_servers_preset_address">预设服务器地址</string>
     <string name="smp_servers_scan_qr">扫描服务器二维码</string>
     <string name="smp_servers_test_failed">服务器测试失败！</string>
@@ -1019,7 +1021,6 @@
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
     <string name="group_welcome_title">欢迎信息</string>
-    <string name="settings_send_files_via_xftp">通过 XFTP 发送视频和文件</string>
     <string name="confirm_database_upgrades">确认数据库升级</string>
     <string name="settings_section_title_experimenta">实验性</string>
     <string name="database_upgrade">数据库升级</string>
@@ -1034,7 +1035,6 @@
     <string name="database_migrations">迁移：%s</string>
     <string name="image_will_be_received_when_contact_completes_uploading">图片将在您的联系人完成上传后收到。</string>
     <string name="show_developer_options">显示开发者选项</string>
-    <string name="xftp_requires_v461">通过 XFTP 接收需要 v4.6.1 以上版本。</string>
     <string name="upgrade_and_open_chat">升级并打开聊天</string>
     <string name="database_downgrade_warning">警告：您可能会丢失部分数据！</string>
     <string name="invalid_migration_confirmation">迁移确认无效</string>

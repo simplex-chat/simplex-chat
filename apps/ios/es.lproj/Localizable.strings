@@ -383,8 +383,14 @@
 /* integrity error chat item */
 "bad message hash" = "hash de mensaje erróneo";
 
+/* No comment provided by engineer. */
+"Bad message hash" = "Hash de mensaje incorrecto";
+
 /* integrity error chat item */
 "bad message ID" = "ID de mensaje erróneo";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "ID de mensaje incorrecto";
 
 /* No comment provided by engineer. */
 "bold" = "negrita";
@@ -781,6 +787,9 @@
 
 /* No comment provided by engineer. */
 "Decentralized" = "Descentralizado";
+
+/* No comment provided by engineer. */
+"Decryption error" = "Error de descifrado";
 
 /* pref value */
 "default (%@)" = "por defecto (%@)";
@@ -1518,6 +1527,12 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Permite tener varias conexiones anónimas sin datos compartidos entre estas dentro del mismo perfil.";
 
 /* No comment provided by engineer. */
+"It can happen when you or your connection used the old database backup." = "Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Esto puede suceder cuando:\n1. Los mensajes caducan en el cliente saliente tras 2 días o en el servidor tras 30 días.\n2. El descifrado ha fallado porque tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.\n3. La conexión ha sido comprometida.";
+
+/* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Parece que ya está conectado mediante este enlace. Si no es así ha habido un error (%@).";
 
 /* No comment provided by engineer. */
@@ -1914,6 +1929,9 @@
 /* No comment provided by engineer. */
 "Periodically" = "Periódico";
 
+/* message decrypt error item */
+"Permanent decryption error" = "Error de descifrado";
+
 /* No comment provided by engineer. */
 "PING count" = "Contador PING";
 
@@ -1943,6 +1961,9 @@
 
 /* No comment provided by engineer. */
 "Please remember or store it securely - there is no way to recover a lost passcode!" = "Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay ninguna manera de recuperar un código de acceso perdido!";
+
+/* No comment provided by engineer. */
+"Please report it to the developers." = "Por favor, informa a los desarrolladores.";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Reinicia la aplicación y migra la base de datos para activar las notificaciones automáticas.";
@@ -2224,9 +2245,6 @@
 "Send them from gallery or custom keyboards." = "Envíalos desde la galería o desde teclados personalizados.";
 
 /* No comment provided by engineer. */
-"Send videos and files via XFTP" = "Enviar archivos vía XFTP";
-
-/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "El remitente ha cancelado la transferencia de archivos.";
 
 /* No comment provided by engineer. */
@@ -2458,6 +2476,12 @@
 "The group is fully decentralized – it is visible only to the members." = "El grupo está totalmente descentralizado y sólo es visible para los miembros.";
 
 /* No comment provided by engineer. */
+"The hash of the previous message is different." = "El hash del mensaje anterior es diferente.";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).\nPuede ocurrir por algún bug o cuando la conexión está comprometida.";
+
+/* No comment provided by engineer. */
 "The message will be deleted for all members." = "El mensaje se eliminará para todos los miembros.";
 
 /* No comment provided by engineer. */
@@ -2498,6 +2522,9 @@
 
 /* notification title */
 "this contact" = "este contacto";
+
+/* No comment provided by engineer. */
+"This error is permanent for this connection, please re-connect." = "El error es permanente para esta conexión, por favor vuelve a conectarte.";
 
 /* No comment provided by engineer. */
 "This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "¡Experimental! Sólo funcionará si el otro cliente tiene instalada la versión 4.2. Deberías ver el mensaje en la conversación una vez completado el cambio de dirección. Comprueba que puedes seguir recibiendo mensajes de este contacto (o miembro del grupo).";

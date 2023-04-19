@@ -383,8 +383,14 @@
 /* integrity error chat item */
 "bad message hash" = "špatný hash zprávy";
 
+/* No comment provided by engineer. */
+"Bad message hash" = "Špatný hash zprávy";
+
 /* integrity error chat item */
 "bad message ID" = "špatné ID zprávy";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "Špatné ID zprávy";
 
 /* No comment provided by engineer. */
 "bold" = "tučně";
@@ -781,6 +787,9 @@
 
 /* No comment provided by engineer. */
 "Decentralized" = "Decentralizované";
+
+/* No comment provided by engineer. */
+"Decryption error" = "Chyba dešifrování";
 
 /* pref value */
 "default (%@)" = "výchozí (%@)";
@@ -1518,6 +1527,12 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Umožňuje mít v jednom profilu chatu mnoho anonymních spojení bez jakýchkoli sdílených údajů mezi nimi.";
 
 /* No comment provided by engineer. */
+"It can happen when you or your connection used the old database backup." = "Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Může se to stát, když:\n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 30 dnech.\n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.\n3. Spojení je kompromitováno.";
+
+/* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Zdá se, že jste již připojeni prostřednictvím tohoto odkazu. Pokud tomu tak není, došlo k chybě (%@).";
 
 /* No comment provided by engineer. */
@@ -1914,6 +1929,9 @@
 /* No comment provided by engineer. */
 "Periodically" = "Pravidelně";
 
+/* message decrypt error item */
+"Permanent decryption error" = "Chyba dešifrování";
+
 /* No comment provided by engineer. */
 "PING count" = "Počet PING";
 
@@ -1943,6 +1961,9 @@
 
 /* No comment provided by engineer. */
 "Please remember or store it securely - there is no way to recover a lost passcode!" = "Zapamatujte si ho nebo bezpečně uložte - neexistuje žádný způsob, jak obnovit ztracený heslo!";
+
+/* No comment provided by engineer. */
+"Please report it to the developers." = "Nahlaste to prosím vývojářům.";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Restartujte aplikaci a přeneste databázi, abyste povolili doručování oznámení.";
@@ -2224,9 +2245,6 @@
 "Send them from gallery or custom keyboards." = "Odeslat je z galerie nebo vlastní klávesnice.";
 
 /* No comment provided by engineer. */
-"Send videos and files via XFTP" = "Odeslat soubory přes XFTP";
-
-/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Odesílatel zrušil přenos souboru.";
 
 /* No comment provided by engineer. */
@@ -2458,6 +2476,12 @@
 "The group is fully decentralized – it is visible only to the members." = "Skupina je plně decentralizovaná - je viditelná pouze pro členy.";
 
 /* No comment provided by engineer. */
+"The hash of the previous message is different." = "Hash předchozí zprávy se liší.";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "ID další zprávy je nesprávné (menší nebo rovno předchozí).\nMůže se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitováno.";
+
+/* No comment provided by engineer. */
 "The message will be deleted for all members." = "Zpráva bude smazána pro všechny členy.";
 
 /* No comment provided by engineer. */
@@ -2498,6 +2522,9 @@
 
 /* notification title */
 "this contact" = "tento kontakt";
+
+/* No comment provided by engineer. */
+"This error is permanent for this connection, please re-connect." = "Tato chyba je pro toto připojení trvalá, připojte se znovu.";
 
 /* No comment provided by engineer. */
 "This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Tato funkce je experimentální! Bude fungovat pouze v případě, že druhý klient má nainstalovanou verzi 4.2. Po dokončení změny adresy by se měla v konverzaci zobrazit zpráva - zkontrolujte, zda můžete od tohoto kontaktu (nebo člena skupiny) stále přijímat zprávy.";

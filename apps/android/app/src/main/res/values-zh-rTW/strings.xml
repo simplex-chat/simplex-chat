@@ -52,7 +52,7 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b>新增新的聯絡人</b>：新增新的聯絡人可以使用二維碼建立你的一次性二維碼。</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>掃描二維碼</b>：連接到向你出示二維碼的聯絡人。</string>
     <string name="choose_file">選擇檔案</string>
-    <string name="use_camera_button">使用相機</string>
+    <string name="use_camera_button">相機</string>
     <string name="from_gallery_button">從圖片庫選擇圖片</string>
     <string name="accept_contact_incognito_button">接受匿名聊天模式</string>
     <string name="clear_chat_warning">所有訊息記錄會刪除 - 這不能還原！這些訊息只會在你裝置中刪除。</string>
@@ -1025,7 +1025,6 @@
     <string name="user_unmute">取消靜音</string>
     <string name="you_will_still_receive_calls_and_ntfs">當靜音配置檔案處於活動狀態時，你仍會收到來自靜音配置檔案的通話和通知。</string>
     <string name="user_unhide">取消隱藏</string>
-    <string name="settings_send_files_via_xftp">通過 XFTP 傳送影片和檔案</string>
     <string name="video_will_be_received_when_contact_is_online">影片將會在你的聯絡人在線時接收，請你等等或者稍後再檢查！</string>
     <string name="confirm_database_upgrades">確認數據庫更新</string>
     <string name="incompatible_database_version">數據庫版本不相容</string>
@@ -1039,7 +1038,6 @@
     <string name="image_will_be_received_when_contact_completes_uploading">圖片將會在你的聯絡人完成上傳後接收。</string>
     <string name="file_will_be_received_when_contact_completes_uploading">檔案將會在你的聯絡人完成上傳後接收。</string>
     <string name="settings_section_title_experimenta">實驗性</string>
-    <string name="xftp_requires_v461">通過 XFTP 去接收需要 v4.6.1 以上的版本。</string>
     <string name="upgrade_and_open_chat">升級和開始對話</string>
     <string name="cancel_file__question">取消傳輸檔案？</string>
     <string name="file_transfer_will_be_cancelled_warning">檔案傳遞將會取消。若是在傳遞檔案中，亦會暫停。</string>

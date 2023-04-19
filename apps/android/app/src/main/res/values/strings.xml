@@ -360,9 +360,11 @@
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>
-  <string name="use_camera_button">Use Camera</string>
+  <string name="use_camera_button">Camera</string>
   <string name="from_gallery_button">From Gallery</string>
-  <string name="choose_file">Choose file</string>
+  <string name="choose_file">File</string>
+  <string name="gallery_image_button">Image</string>
+  <string name="gallery_video_button">Video</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
@@ -802,8 +804,6 @@
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
   <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
-  <string name="settings_send_files_via_xftp">Send videos and files via XFTP</string>
-  <string name="xftp_requires_v461">v4.6.1+ is required to receive via XFTP.</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>

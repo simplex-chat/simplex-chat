@@ -254,9 +254,11 @@
     <string name="only_stored_on_members_devices">(Wird nur von Gruppenmitgliedern gespeichert)</string>
     <!-- GetImageView -->
     <string name="toast_permission_denied">Berechtigung verweigert!</string>
-    <string name="use_camera_button">Kamera\nverwenden</string>
+    <string name="use_camera_button">Kamera</string>
     <string name="from_gallery_button">Aus dem\nFotoalbum</string>
-    <string name="choose_file">Datei\nauswählen</string>
+    <string name="choose_file">Datei</string>
+    <string name="gallery_image_button">Bild</string>
+    <string name="gallery_video_button">Video</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> installiert haben!</string>
     <string name="you_can_connect_to_simplex_chat_founder">Sie können sich <font color="#0088ff">mit <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.</string>
@@ -1098,7 +1100,6 @@
     <string name="group_welcome_title">Begrüßungsmeldung</string>
     <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten - für das Menü gedrückt halten.</string>
     <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
-    <string name="settings_send_files_via_xftp">Videos und Dateien per XFTP versenden</string>
     <string name="invalid_migration_confirmation">Migrations-Bestätigung ungültig</string>
     <string name="upgrade_and_open_chat">Aktualisieren und den Chat öffnen</string>
     <string name="confirm_database_upgrades">Datenbank-Aktualisierungen bestätigen</string>
@@ -1115,7 +1116,6 @@
     <string name="mtr_error_no_down_migration">Die Datenbank-Version ist neuer als die App, keine Abwärts-Migration für: %s</string>
     <string name="hide_dev_options">Verberge:</string>
     <string name="database_migrations">Migrationen: %s</string>
-    <string name="xftp_requires_v461">Für den Empfang per XFTP wird v4.6.1 oder neuer benötigt.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
     <string name="cancel_file__question">Dateitransfer abbrechen\?</string>
@@ -1194,4 +1194,6 @@
     <string name="alert_text_fragment_permanent_error_reconnect">Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</string>
     <string name="smp_server_test_upload_file">Datei hochladen</string>
     <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> Nachrichten übersprungen.</string>
+    <string name="allow_calls_only_if">Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</string>
+    <string name="allow_your_contacts_to_call">Erlaubt Ihren Kontakten Sie anzurufen.</string>
 </resources>

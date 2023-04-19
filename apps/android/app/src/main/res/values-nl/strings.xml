@@ -385,6 +385,8 @@
     <string name="file_not_found">Bestand niet gevonden</string>
     <string name="file_saved">Bestand opgeslagen</string>
     <string name="from_gallery_button">Galerij</string>
+    <string name="gallery_image_button">Foto</string>
+    <string name="gallery_video_button">Video</string>
     <string name="error_saving_ICE_servers">Fout bij opslaan van ICE servers</string>
     <string name="callstate_ended">geëindigd</string>
     <string name="group_members_can_send_disappearing">Groepsleden kunnen verdwijnende berichten sturen.</string>
@@ -1018,7 +1020,6 @@
     <string name="to_reveal_profile_enter_password">Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoekveld in op de pagina Uw chat profielen.</string>
     <string name="button_welcome_message">Welkomst bericht</string>
     <string name="you_will_still_receive_calls_and_ntfs">U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.</string>
-    <string name="settings_send_files_via_xftp">Verzend video\'s en bestanden via XFTP</string>
     <string name="database_downgrade">Database downgraden</string>
     <string name="invalid_migration_confirmation">Ongeldige migratie bevestiging</string>
     <string name="upgrade_and_open_chat">Upgrade en open chat</string>
@@ -1037,7 +1038,6 @@
     <string name="hide_dev_options">Verbergen:</string>
     <string name="show_developer_options">Ontwikkelaars opties tonen</string>
     <string name="settings_section_title_experimenta">EXPERIMENTEEL</string>
-    <string name="xftp_requires_v461">v4.6.1+ is vereist om te ontvangen via XFTP.</string>
     <string name="cancel_file__question">Bestand overdracht annuleren\?</string>
     <string name="file_transfer_will_be_cancelled_warning">Bestand overdracht wordt geannuleerd. Als het bezig is, wordt het gestopt.</string>
     <string name="delete_profile">Verwijder profiel</string>
@@ -1134,4 +1134,10 @@
 \nBeschikbaar in v5.1"</string>
     <string name="prohibit_calls">Audio/video gesprekken verbieden.</string>
     <string name="calls_prohibited_with_this_contact">Audio/video gesprekken zijn verboden.</string>
+    <string name="v5_0_large_files_support_descr">Snel en niet wachten tot de afzender online is!</string>
+    <string name="v5_0_app_passcode">App toegangscode</string>
+    <string name="v5_0_app_passcode_descr">Stel het in in plaats van systeemverificatie.</string>
+    <string name="v5_0_polish_interface">Poolse interface</string>
+    <string name="v5_0_polish_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
+    <string name="v5_0_large_files_support">Video\'s en bestanden tot 1 GB</string>
 </resources>

@@ -625,10 +625,12 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Bad message ID" xml:space="preserve">
         <source>Bad message ID</source>
+        <target>Falsche Nachrichten-ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bad message hash" xml:space="preserve">
         <source>Bad message hash</source>
+        <target>Ungültiger Nachrichten-Hash</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
@@ -1170,6 +1172,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Decryption error" xml:space="preserve">
         <source>Decryption error</source>
+        <target>Entschlüsselungsfehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
@@ -2264,6 +2267,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
         <source>It can happen when you or your connection used the old database backup.</source>
+        <target>Dies kann passieren, falls Sie oder Ihre Verbindung ein altes Datenbank-Backup genutzt haben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
@@ -2271,6 +2275,10 @@ Available in v5.1</source>
 1. The messages expired in the sending client after 2 days or on the server after 30 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
+        <target>Dies kann unter folgenden Umständen passieren:
+1. Die Nachrichten verfallen auf dem sendenden Client-System nach 2 Tagen oder auf dem Server nach 30 Tagen.
+2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde.
+3. Die Verbindung wurde kompromittiert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
@@ -2847,6 +2855,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Permanent decryption error" xml:space="preserve">
         <source>Permanent decryption error</source>
+        <target>Entschlüsselungsfehler</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -2891,6 +2900,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Please report it to the developers." xml:space="preserve">
         <source>Please report it to the developers.</source>
+        <target>Bitte melden Sie es den Entwicklern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
@@ -3347,11 +3357,6 @@ Available in v5.1</source>
         <target>Senden Sie diese aus dem Fotoalbum oder von individuellen Tastaturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send videos and files via XFTP" xml:space="preserve">
-        <source>Send videos and files via XFTP</source>
-        <target>Dateien per XFTP versenden</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>Der Absender hat die Dateiübertragung abgebrochen.</target>
@@ -3715,6 +3720,8 @@ Available in v5.1</source>
       <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
         <source>The ID of the next message is incorrect (less or equal to the previous).
 It can happen because of some bug or when the connection is compromised.</source>
+        <target>Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).
+Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -3749,6 +3756,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
         <source>The hash of the previous message is different.</source>
+        <target>Der Hash der vorherigen Nachricht ist unterschiedlich.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -3818,6 +3826,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="This error is permanent for this connection, please re-connect." xml:space="preserve">
         <source>This error is permanent for this connection, please re-connect.</source>
+        <target>Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">

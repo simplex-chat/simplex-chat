@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"\nAvailable in v5.1" = "\nBeschikbaar in v5.1";
+
+/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -173,6 +176,12 @@
 "%lldw" = "%lldw";
 
 /* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u-berichten kunnen niet worden gedecodeerd.";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "%u berichten zijn overgeslagen.";
+
+/* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
 
 /* No comment provided by engineer. */
@@ -285,6 +294,9 @@
 "Allow" = "Toestaan";
 
 /* No comment provided by engineer. */
+"Allow calls only if your contact allows them." = "Sta oproepen alleen toe als uw contact persoon dit toestaat.";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Sta verdwijnende berichten alleen toe als uw contactpersoon dit toestaat.";
 
 /* No comment provided by engineer. */
@@ -307,6 +319,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "Spraak berichten toestaan?";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "Sta toe dat uw contacten u bellen.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "Laat uw contacten verzonden berichten onomkeerbaar verwijderen.";
@@ -336,6 +351,9 @@
 "App icon" = "App icon";
 
 /* No comment provided by engineer. */
+"App passcode" = "App toegangscode";
+
+/* No comment provided by engineer. */
 "App version" = "App versie";
 
 /* No comment provided by engineer. */
@@ -355,6 +373,12 @@
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "audio oproep (niet e2e versleuteld)";
+
+/* chat feature */
+"Audio/video calls" = "Audio/video oproepen";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "Audio/video gesprekken zijn verboden.";
 
 /* PIN entry */
 "Authentication cancelled" = "Verificatie geannuleerd";
@@ -383,14 +407,23 @@
 /* integrity error chat item */
 "bad message hash" = "Onjuiste bericht hash";
 
+/* No comment provided by engineer. */
+"Bad message hash" = "Onjuiste bericht hash";
+
 /* integrity error chat item */
 "bad message ID" = "Onjuiste bericht ID";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "Onjuiste bericht ID";
 
 /* No comment provided by engineer. */
 "bold" = "vetgedrukt";
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "Zowel jij als je contactpersoon kunnen verzonden berichten onherroepelijk verwijderen.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "Zowel u als uw contact persoon kunnen bellen.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Zowel jij als je contactpersoon kunnen verdwijnende berichten sturen.";
@@ -781,6 +814,9 @@
 
 /* No comment provided by engineer. */
 "Decentralized" = "Gedecentraliseerd";
+
+/* No comment provided by engineer. */
+"Decryption error" = "Decryptie fout";
 
 /* pref value */
 "default (%@)" = "standaard (%@)";
@@ -1218,6 +1254,12 @@
 "Failed to remove passphrase" = "Kan wachtwoord niet verwijderen";
 
 /* No comment provided by engineer. */
+"Fast and no wait until the sender is online!" = "Snel en niet wachten tot de afzender online is!";
+
+/* No comment provided by engineer. */
+"File will be deleted from servers." = "Het bestand wordt van de servers verwijderd.";
+
+/* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.";
 
 /* No comment provided by engineer. */
@@ -1516,6 +1558,12 @@
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.";
+
+/* No comment provided by engineer. */
+"It can happen when you or your connection used the old database backup." = "Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Het kan gebeuren wanneer:\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.\n2. Decodering van het bericht is mislukt, omdat u of uw contactpersoon een oude databaseback-up heeft gebruikt.\n3. De verbinding is verbroken.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Het lijkt erop dat u al bent verbonden via deze link. Als dit niet het geval is, is er een fout opgetreden (%@).";
@@ -1837,6 +1885,9 @@
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Alleen jij kunt berichten onomkeerbaar verwijderen (je contactpersoon kan ze markeren voor verwijdering).";
 
 /* No comment provided by engineer. */
+"Only you can make calls." = "Alleen jij kunt bellen.";
+
+/* No comment provided by engineer. */
 "Only you can send disappearing messages." = "Alleen jij kunt verdwijnende berichten verzenden.";
 
 /* No comment provided by engineer. */
@@ -1844,6 +1895,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Alleen uw contactpersoon kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "Alleen je contact kan bellen.";
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Alleen uw contactpersoon kan verdwijnende berichten verzenden.";
@@ -1914,6 +1968,9 @@
 /* No comment provided by engineer. */
 "Periodically" = "Periodiek";
 
+/* message decrypt error item */
+"Permanent decryption error" = "Decryptie fout";
+
 /* No comment provided by engineer. */
 "PING count" = "PING count";
 
@@ -1945,6 +2002,9 @@
 "Please remember or store it securely - there is no way to recover a lost passcode!" = "Onthoud of bewaar het veilig - er is geen manier om een verloren toegangscode te herstellen!";
 
 /* No comment provided by engineer. */
+"Please report it to the developers." = "Meld het alsjeblieft aan de ontwikkelaars.";
+
+/* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Start de app opnieuw en migreer de database om push meldingen in te schakelen.";
 
 /* No comment provided by engineer. */
@@ -1952,6 +2012,9 @@
 
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u het kwijtraakt.";
+
+/* No comment provided by engineer. */
+"Polish interface" = "Poolse interface";
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Mogelijk is de certificaat vingerafdruk in het server adres onjuist";
@@ -1982,6 +2045,9 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "Profiel wachtwoord";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "Audio/video gesprekken verbieden.";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Verbied het onomkeerbaar verwijderen van berichten.";
@@ -2027,6 +2093,9 @@
 
 /* notification */
 "Received file event" = "Ontvangen bestandsgebeurtenis";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "Het ontvangen van het bestand wordt gestopt.";
 
 /* No comment provided by engineer. */
 "Receiving via" = "Ontvang via";
@@ -2114,6 +2183,15 @@
 
 /* No comment provided by engineer. */
 "Revert" = "Terugdraaien";
+
+/* No comment provided by engineer. */
+"Revoke" = "Intrekken";
+
+/* cancel file action */
+"Revoke file" = "Bestand intrekken";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "Bestand intrekken?";
 
 /* No comment provided by engineer. */
 "Role" = "Rol";
@@ -2224,13 +2302,13 @@
 "Send them from gallery or custom keyboards." = "Stuur ze vanuit de galerij of aangepaste toetsenborden.";
 
 /* No comment provided by engineer. */
-"Send videos and files via XFTP" = "Bestanden verzenden via XFTP";
-
-/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Afzender heeft bestandsoverdracht geannuleerd.";
 
 /* No comment provided by engineer. */
 "Sender may have deleted the connection request." = "De afzender heeft mogelijk het verbindingsverzoek verwijderd.";
+
+/* No comment provided by engineer. */
+"Sending file will be stopped." = "Het verzenden van het bestand wordt gestopt.";
 
 /* No comment provided by engineer. */
 "Sending via" = "Verzenden via";
@@ -2261,6 +2339,9 @@
 
 /* No comment provided by engineer. */
 "Set group preferences" = "Groep voorkeuren instellen";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "Stel het in in plaats van systeemverificatie.";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Wachtwoord instellen om te exporteren";
@@ -2367,6 +2448,15 @@
 /* No comment provided by engineer. */
 "Stop chat?" = "Stop chat?";
 
+/* cancel file action */
+"Stop file" = "Bestand stoppen";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "Stopt met het ontvangen van een bestand?";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "Bestand verzenden stoppen?";
+
 /* authentication reason */
 "Stop SimpleX" = "Stop SimpleX";
 
@@ -2458,6 +2548,12 @@
 "The group is fully decentralized – it is visible only to the members." = "De groep is volledig gedecentraliseerd – het is alleen zichtbaar voor de leden.";
 
 /* No comment provided by engineer. */
+"The hash of the previous message is different." = "De hash van het vorige bericht is anders.";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).\nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.";
+
+/* No comment provided by engineer. */
 "The message will be deleted for all members." = "Het bericht wordt verwijderd voor alle leden.";
 
 /* No comment provided by engineer. */
@@ -2498,6 +2594,9 @@
 
 /* notification title */
 "this contact" = "dit contact";
+
+/* No comment provided by engineer. */
+"This error is permanent for this connection, please re-connect." = "Deze fout is permanent voor deze verbinding, maak opnieuw verbinding.";
 
 /* No comment provided by engineer. */
 "This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Deze functie is experimenteel! Het werkt alleen als op de andere client versie 4.2 is geïnstalleerd. U zou het bericht in het gesprek moeten zien zodra de adreswijziging is voltooid. Controleer of u nog steeds berichten van dit contact (of groepslid) kunt ontvangen.";
@@ -2696,6 +2795,9 @@
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "De video wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "Video's en bestanden tot 1 GB";
 
 /* No comment provided by engineer. */
 "View security code" = "Beveiligingscode bekijken";

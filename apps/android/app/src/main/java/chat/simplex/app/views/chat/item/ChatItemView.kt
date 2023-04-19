@@ -22,8 +22,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ComposeContextItem
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
@@ -105,11 +104,7 @@ fun ChatItemView(
 
       @Composable
       fun MsgContentItemDropdownMenu() {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           if (cItem.meta.itemDeleted == null && !live) {
             ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
               if (composeState.value.editing) {
@@ -183,11 +178,7 @@ fun ChatItemView(
 
       @Composable
       fun MarkedDeletedItemDropdownMenu() {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           if (!cItem.isDeletedContent) {
             ItemAction(
               stringResource(R.string.reveal_verb),
@@ -227,11 +218,7 @@ fun ChatItemView(
 
       @Composable fun DeletedItem() {
         DeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
@@ -329,18 +316,21 @@ fun ModerateItemAction(
 }
 
 @Composable
-fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
-  DropdownMenuItem(onClick) {
-    Row {
+fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
+  val finalColor = if (color == Color.Unspecified) {
+    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+  } else color
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
         modifier = Modifier
           .fillMaxWidth()
           .weight(1F)
           .padding(end = 15.dp),
-        color = color
+        color = finalColor
       )
-      Icon(icon, text, tint = color)
+      Icon(icon, text, tint = finalColor)
     }
   }
 }
@@ -366,7 +356,7 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
         Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.Center,
       ) {
         TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
