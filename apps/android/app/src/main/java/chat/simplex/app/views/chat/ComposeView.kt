@@ -261,7 +261,6 @@ fun ComposeView(
       }
     }
   }
-//  val mediaLauncherWithFiles = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
   val galleryImageLauncher = rememberLauncherForActivityResult(contract = PickMultipleImagesFromGallery()) { processPickedMedia(it, null) }
   val galleryImageLauncherFallback = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
   val galleryVideoLauncher = rememberLauncherForActivityResult(contract = PickMultipleVideosFromGallery()) { processPickedMedia(it, null) }
