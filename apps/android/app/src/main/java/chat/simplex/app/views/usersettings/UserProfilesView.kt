@@ -45,6 +45,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     searchTextOrPassword = searchTextOrPassword,
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
+    prefPerformLA = m.controller.appPrefs.performLA.get(),
     addUser = {
       ModalManager.shared.showModalCloseable { close ->
         CreateProfile(m, close)
@@ -142,6 +143,7 @@ private fun UserProfilesView(
   searchTextOrPassword: MutableState<String>,
   profileHidden: MutableState<Boolean>,
   visibleUsersCount: Int,
+  prefPerformLA: Boolean,
   showHiddenProfilesNotice: SharedPreference<Boolean>,
   addUser: () -> Unit,
   activateUser: (User) -> Unit,
@@ -170,7 +172,7 @@ private fun UserProfilesView(
 
     SectionView {
       for (user in filteredUsers) {
-        UserView(user, users, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
+        UserView(user, users, visibleUsersCount, prefPerformLA, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
         SectionDivider()
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
@@ -203,6 +205,7 @@ private fun UserView(
   user: User,
   users: List<User>,
   visibleUsersCount: Int,
+  prefPerformLA: Boolean,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
   unhideUser: (User) -> Unit,
@@ -222,7 +225,7 @@ private fun UserView(
           unhideUser(user)
         })
       } else {
-        if (visibleUsersCount > 1) {
+        if (visibleUsersCount > 1 && prefPerformLA) {
           ItemAction(stringResource(R.string.user_hide), Icons.Outlined.Lock, onClick = {
             showMenu.value = false
             showHiddenProfile(user)
