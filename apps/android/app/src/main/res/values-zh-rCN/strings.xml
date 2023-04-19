@@ -1128,9 +1128,9 @@
     <string name="audio_video_calls">音频/视频通话</string>
     <string name="available_in_v51">"
 \n在 v5.1 中可用"</string>
-    <string name="v5_0_app_passcode">应用密码</string>
+    <string name="v5_0_app_passcode">应用程序密码</string>
     <string name="v5_0_polish_interface">波兰语界面</string>
-    <string name="v5_0_polish_interface_descr">感谢用户—通过 Weblate 做出贡献！</string>
+    <string name="v5_0_polish_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
     <string name="v5_0_app_passcode_descr">设置它以代替系统身份验证。</string>
     <string name="v5_0_large_files_support">最大 1gb 的视频和文件</string>
     <string name="v5_0_large_files_support_descr">快速且无需等待发件人在线！</string>
