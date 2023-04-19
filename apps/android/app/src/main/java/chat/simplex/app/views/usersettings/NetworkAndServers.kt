@@ -48,7 +48,6 @@ fun NetworkAndServersView(
 
   NetworkAndServersLayout(
     developerTools = developerTools,
-    xftpSendEnabled = remember { chatModel.controller.appPrefs.xftpSendEnabled.state },
     networkUseSocksProxy = networkUseSocksProxy,
     onionHosts = onionHosts,
     sessionMode = sessionMode,
@@ -145,7 +144,6 @@ fun NetworkAndServersView(
 
 @Composable fun NetworkAndServersLayout(
   developerTools: Boolean,
-  xftpSendEnabled: State<Boolean>,
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
   sessionMode: MutableState<TransportSessionMode>,
@@ -167,10 +165,8 @@ fun NetworkAndServersView(
       SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
       SectionDivider()
 
-      if (xftpSendEnabled.value) {
-        SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
-        SectionDivider()
-      }
+      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
+      SectionDivider()
 
       SectionItemView {
         UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
@@ -434,7 +430,6 @@ fun PreviewNetworkAndServersLayout() {
   SimpleXTheme {
     NetworkAndServersLayout(
       developerTools = true,
-      xftpSendEnabled = remember { mutableStateOf(true) },
       networkUseSocksProxy = remember { mutableStateOf(true) },
       proxyPort = remember { mutableStateOf(9050) },
       showModal = { {} },

@@ -241,8 +241,6 @@ struct ComposeView: View {
     @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
-    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: groupDefaults) private var xftpSendEnabled = false
-
     @State private var showChooseSource = false
     @State private var showMediaPicker = false
     @State private var showTakePhoto = false
@@ -462,8 +460,7 @@ struct ComposeView: View {
     }
 
     private var maxFileSize: Int64 {
-        let fileProtocol: FileProtocol = xftpSendEnabled ? .xftp : .smp
-        return getMaxFileSize(fileProtocol)
+        return getMaxFileSize(.xftp)
     }
 
     private func sendLiveMessage() async {

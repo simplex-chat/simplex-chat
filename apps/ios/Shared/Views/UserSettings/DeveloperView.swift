@@ -12,7 +12,6 @@ import SimpleXChat
 struct DeveloperView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
-    @AppStorage(GROUP_DEFAULT_XFTP_SEND_ENABLED, store: groupDefaults) private var xftpSendEnabled = false
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {

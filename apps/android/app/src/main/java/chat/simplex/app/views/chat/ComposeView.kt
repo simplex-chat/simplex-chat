@@ -179,8 +179,7 @@ fun ComposeView(
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
-  val xftpSendEnabled = chatModel.controller.appPrefs.xftpSendEnabled.get()
-  val maxFileSize = getMaxFileSize(fileProtocol = if (xftpSendEnabled) FileProtocol.XFTP else FileProtocol.SMP)
+  val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
@@ -279,7 +278,7 @@ fun ComposeView(
         attachmentOption.value = null
       }
       AttachmentOption.PickMedia -> {
-        mediaLauncherWithFiles.launch(if (xftpSendEnabled) "image/*;video/*" else "image/*")
+        mediaLauncherWithFiles.launch("image/*;video/*")
         attachmentOption.value = null
       }
       AttachmentOption.PickFile -> {
