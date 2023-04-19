@@ -238,7 +238,7 @@
     <string name="callstate_connected">已连接</string>
     <string name="connect_button">连接</string>
     <string name="connect_via_link_verb">连接</string>
-    <string name="choose_file">选择文件</string>
+    <string name="choose_file">文件</string>
     <string name="network_session_mode_user">聊天资料</string>
     <string name="v4_5_transport_isolation_descr">按聊天资料（默认）或按连接（BETA）。</string>
     <string name="smp_servers_check_address">检查服务器地址并再试一次。</string>
@@ -435,6 +435,8 @@
     <string name="maximum_supported_file_size">目前支持的最大文件尺寸是 <xliff:g id="maxFileSize">%1$s</xliff:g>。</string>
     <string name="file_will_be_received_when_contact_is_online">文件将在您的联系人在线时收到，请稍等或稍后再查看！</string>
     <string name="from_gallery_button">从图库</string>
+    <string name="gallery_image_button">照片</string>
+    <string name="gallery_video_button">视频</string>
     <string name="exit_without_saving">退出而不保存</string>
     <string name="icon_descr_flip_camera">翻转相机</string>
     <string name="enable_automatic_deletion_question">启用自动删除消息？</string>
@@ -855,7 +857,7 @@
     <string name="toast_permission_denied">权限被拒绝！</string>
     <string name="chat_help_tap_button">点击按钮</string>
     <string name="thank_you_for_installing_simplex">感谢您安装 <xliff:g id="appNameFull">SimpleX Chat</xliff:g>！</string>
-    <string name="use_camera_button">使用相机</string>
+    <string name="use_camera_button">相机</string>
     <string name="smp_servers_preset_address">预设服务器地址</string>
     <string name="smp_servers_scan_qr">扫描服务器二维码</string>
     <string name="smp_servers_test_failed">服务器测试失败！</string>

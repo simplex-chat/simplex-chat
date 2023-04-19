@@ -186,9 +186,11 @@
     <string name="to_share_with_your_contact">(sdílet s kontaktem)</string>
     <string name="only_stored_on_members_devices">(uloženo pouze členy skupiny)</string>
     <string name="toast_permission_denied">Oprávnění zamítnuto!</string>
-    <string name="use_camera_button">Použít fotoaparát</string>
+    <string name="use_camera_button">Fotoaparát</string>
     <string name="from_gallery_button">Z Galerie</string>
-    <string name="choose_file">Vybrat soubor</string>
+    <string name="choose_file">Soubor</string>
+    <string name="gallery_image_button">Obrázek</string>
+    <string name="gallery_video_button">Video</string>
     <string name="to_start_a_new_chat_help_header">Pro zahájení nové konverzace</string>
     <string name="chat_help_tap_button">Klepněte na tlačítko</string>
     <string name="above_then_preposition_continuation">potom:</string>

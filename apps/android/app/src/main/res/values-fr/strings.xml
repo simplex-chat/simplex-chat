@@ -201,7 +201,9 @@
     <string name="to_share_with_your_contact">(à partager avec votre contact)</string>
     <string name="create_group">Créer un groupe secret</string>
     <string name="from_gallery_button">Depuis la Phototèque</string>
-    <string name="choose_file">Choisir le fichier</string>
+    <string name="choose_file">Fichier</string>
+    <string name="gallery_image_button">Image</string>
+    <string name="gallery_video_button">Vidéo</string>
     <string name="to_start_a_new_chat_help_header">Pour démarrer une nouvelle discussion</string>
     <string name="chat_help_tap_button">Appuyez sur le bouton</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scanner un code QR</b> : pour vous connecter à votre contact qui vous montre un code QR.</string>
@@ -294,7 +296,7 @@
     <string name="waiting_for_file">En attente du fichier</string>
     <string name="voice_message">Message vocal</string>
     <string name="toast_permission_denied">Autorisation refusée !</string>
-    <string name="use_camera_button">Utiliser l\'Appareil photo</string>
+    <string name="use_camera_button">Appareil\nphoto</string>
     <string name="thank_you_for_installing_simplex">Merci d\'avoir installé <xliff:g id="appNameFull">SimpleX Chat</xliff:g> !</string>
     <string name="you_can_connect_to_simplex_chat_founder">Vous pouvez <font color="#0088ff">vous connecter aux développeurs de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pour leur poser des questions et recevoir des réponses :</font>.</string>
     <string name="above_then_preposition_continuation">ci-dessus, puis :</string>

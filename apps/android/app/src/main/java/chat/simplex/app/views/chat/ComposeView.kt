@@ -14,6 +14,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -260,13 +261,17 @@ fun ComposeView(
       }
     }
   }
-  val mediaLauncherWithFiles = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
+  val galleryImageLauncher = rememberLauncherForActivityResult(contract = PickMultipleImagesFromGallery()) { processPickedMedia(it, null) }
+  val galleryImageLauncherFallback = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
+  val galleryVideoLauncher = rememberLauncherForActivityResult(contract = PickMultipleVideosFromGallery()) { processPickedMedia(it, null) }
+  val galleryVideoLauncherFallback = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
+
   val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
   LaunchedEffect(attachmentOption.value) {
     when (attachmentOption.value) {
-      AttachmentOption.TakePhoto -> {
+      AttachmentOption.CameraPhoto -> {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launchWithFallback()
@@ -277,11 +282,23 @@ fun ComposeView(
         }
         attachmentOption.value = null
       }
-      AttachmentOption.PickMedia -> {
-        mediaLauncherWithFiles.launch("image/*;video/*")
+      AttachmentOption.GalleryImage -> {
+        try {
+          galleryImageLauncher.launch(0)
+        } catch (e: ActivityNotFoundException) {
+          galleryImageLauncherFallback.launch("image/*")
+        }
         attachmentOption.value = null
       }
-      AttachmentOption.PickFile -> {
+      AttachmentOption.GalleryVideo -> {
+        try {
+          galleryVideoLauncher.launch(0)
+        } catch (e: ActivityNotFoundException) {
+          galleryVideoLauncherFallback.launch("video/*")
+        }
+        attachmentOption.value = null
+      }
+      AttachmentOption.File -> {
         filesLauncher.launch("*/*")
         attachmentOption.value = null
       }

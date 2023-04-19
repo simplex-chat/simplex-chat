@@ -13,9 +13,10 @@ import chat.simplex.app.R
 import chat.simplex.app.views.newchat.ActionButton
 
 sealed class AttachmentOption {
-  object TakePhoto: AttachmentOption()
-  object PickMedia: AttachmentOption()
-  object PickFile: AttachmentOption()
+  object CameraPhoto: AttachmentOption()
+  object GalleryImage: AttachmentOption()
+  object GalleryVideo: AttachmentOption()
+  object File: AttachmentOption()
 }
 
 @Composable
@@ -38,15 +39,19 @@ fun ChooseAttachmentView(
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
       ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
-        attachmentOption.value = AttachmentOption.TakePhoto
+        attachmentOption.value = AttachmentOption.CameraPhoto
         hide()
       }
-      ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
-        attachmentOption.value = AttachmentOption.PickMedia
+      ActionButton(null, stringResource(R.string.gallery_image_button), icon = Icons.Outlined.Image) {
+        attachmentOption.value = AttachmentOption.GalleryImage
+        hide()
+      }
+      ActionButton(null, stringResource(R.string.gallery_video_button), icon = Icons.Outlined.SmartDisplay) {
+        attachmentOption.value = AttachmentOption.GalleryVideo
         hide()
       }
       ActionButton(null, stringResource(R.string.choose_file), icon = Icons.Outlined.InsertDriveFile) {
-        attachmentOption.value = AttachmentOption.PickFile
+        attachmentOption.value = AttachmentOption.File
         hide()
       }
     }

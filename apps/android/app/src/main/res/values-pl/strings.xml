@@ -224,9 +224,9 @@
     <string name="scan_QR_code">Zeskanuj kod QR</string>
     <string name="add_contact_or_create_group">Rozpocznij nowy czat</string>
     <string name="to_share_with_your_contact">(aby udostępnić Twojemu kontaktowi)</string>
-    <string name="choose_file">Wybierz plik</string>
+    <string name="choose_file">Plik</string>
     <string name="toast_permission_denied">Odmowa Uprawnienia!</string>
-    <string name="use_camera_button">Użyj Aparatu</string>
+    <string name="use_camera_button">Aparatu</string>
     <string name="accept_contact_button">Akceptuj</string>
     <string name="accept_contact_incognito_button">Akceptuj incognito</string>
     <string name="clear_chat_warning">Wszystkie wiadomości zostaną usunięte - nie można tego cofnąć! Wiadomości zostaną usunięte TYLKO dla Ciebie.</string>
@@ -968,6 +968,8 @@
 \n- usuwać wiadomości członków.
 \n- wyłączyć członków (rola \"obserwatora\")</string>
     <string name="from_gallery_button">Z Galerii</string>
+    <string name="gallery_image_button">Obraz</string>
+    <string name="gallery_video_button">Wideo</string>
     <string name="feature_offered_item_with_param">zaproponował %s: %2s</string>
     <string name="only_group_owners_can_enable_voice">Tylko właściciele grup mogą włączyć wiadomości głosowe.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Hosty onion nie będą używane.</string>
