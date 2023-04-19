@@ -90,7 +90,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
             text = stringResource(R.string.about_simplex),
             icon = Icons.Outlined.ArrowBackIosNew,
             textDecoration = TextDecoration.None,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Medium
           ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
         }
         Spacer(Modifier.fillMaxWidth().weight(1f))
@@ -106,7 +106,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         }
         Surface(shape = RoundedCornerShape(20.dp)) {
           Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
-            Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Bold)
             Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = createColor)
           }
         }
