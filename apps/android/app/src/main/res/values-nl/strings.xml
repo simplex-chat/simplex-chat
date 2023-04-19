@@ -385,6 +385,8 @@
     <string name="file_not_found">Bestand niet gevonden</string>
     <string name="file_saved">Bestand opgeslagen</string>
     <string name="from_gallery_button">Galerij</string>
+    <string name="gallery_image_button">Foto</string>
+    <string name="gallery_video_button">Video</string>
     <string name="error_saving_ICE_servers">Fout bij opslaan van ICE servers</string>
     <string name="callstate_ended">geëindigd</string>
     <string name="group_members_can_send_disappearing">Groepsleden kunnen verdwijnende berichten sturen.</string>

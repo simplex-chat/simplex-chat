@@ -18,8 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Collections
-import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -259,7 +258,7 @@ fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
+      ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Image) {
         try {
           galleryLauncher.launch(0)
         } catch (e: ActivityNotFoundException) {

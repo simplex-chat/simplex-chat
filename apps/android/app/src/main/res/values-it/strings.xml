@@ -298,7 +298,7 @@
     <string name="display_name">Nome da mostrare</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Aggiungi un contatto</b>: per creare il tuo codice QR una tantum per il tuo contatto.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scansiona codice QR</b>: per connetterti al contatto che ti mostra il codice QR.</string>
-    <string name="choose_file">Scegli file</string>
+    <string name="choose_file">File</string>
     <string name="clear_chat_button">Svuota chat</string>
     <string name="clear_chat_question">Svuotare la chat\?</string>
     <string name="clear_verb">Svuota</string>
@@ -308,6 +308,8 @@
     <string name="create_group">Crea gruppo segreto</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scansiona dall\'app il codice QR mostrato, tramite <b>Scansiona codice QR</b>.</string>
     <string name="from_gallery_button">Dalla Galleria</string>
+    <string name="gallery_image_button">Immagine</string>
+    <string name="gallery_video_button">Video</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Se scegli di rifiutare, il mittente NON verrà avvisato.</string>
     <string name="clear_chat_menu_action">Svuota</string>
     <string name="icon_descr_close_button">Pulsante di chiusura</string>
@@ -545,7 +547,7 @@
     <string name="to_connect_via_link_title">Per connettersi via link</string>
     <string name="to_share_with_your_contact">(da condividere con il tuo contatto)</string>
     <string name="to_start_a_new_chat_help_header">Per iniziare una nuova chat</string>
-    <string name="use_camera_button">Usa la fotocamera</string>
+    <string name="use_camera_button">Fotocamera</string>
     <string name="you_can_connect_to_simplex_chat_founder">Puoi <font color="#0088ff">connetterti con gli sviluppatori di <xliff:g id="appNameFull">SimpleX Chat</xliff:g> per porre domande e ricevere aggiornamenti</font>.</string>
     <string name="invalid_contact_link">Link non valido!</string>
     <string name="invalid_QR_code">Codice QR non valido</string>

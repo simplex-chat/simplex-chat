@@ -254,9 +254,11 @@
     <string name="only_stored_on_members_devices">(Wird nur von Gruppenmitgliedern gespeichert)</string>
     <!-- GetImageView -->
     <string name="toast_permission_denied">Berechtigung verweigert!</string>
-    <string name="use_camera_button">Kamera\nverwenden</string>
+    <string name="use_camera_button">Kamera</string>
     <string name="from_gallery_button">Aus dem\nFotoalbum</string>
-    <string name="choose_file">Datei\nauswählen</string>
+    <string name="choose_file">Datei</string>
+    <string name="gallery_image_button">Bild</string>
+    <string name="gallery_video_button">Video</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> installiert haben!</string>
     <string name="you_can_connect_to_simplex_chat_founder">Sie können sich <font color="#0088ff">mit <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.</string>

@@ -52,7 +52,7 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b>新增新的聯絡人</b>：新增新的聯絡人可以使用二維碼建立你的一次性二維碼。</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>掃描二維碼</b>：連接到向你出示二維碼的聯絡人。</string>
     <string name="choose_file">選擇檔案</string>
-    <string name="use_camera_button">使用相機</string>
+    <string name="use_camera_button">相機</string>
     <string name="from_gallery_button">從圖片庫選擇圖片</string>
     <string name="accept_contact_incognito_button">接受匿名聊天模式</string>
     <string name="clear_chat_warning">所有訊息記錄會刪除 - 這不能還原！這些訊息只會在你裝置中刪除。</string>

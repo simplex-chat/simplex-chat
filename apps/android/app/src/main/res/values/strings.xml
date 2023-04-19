@@ -360,9 +360,11 @@
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>
-  <string name="use_camera_button">Use Camera</string>
+  <string name="use_camera_button">Camera</string>
   <string name="from_gallery_button">From Gallery</string>
-  <string name="choose_file">Choose file</string>
+  <string name="choose_file">File</string>
+  <string name="gallery_image_button">Image</string>
+  <string name="gallery_video_button">Video</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
