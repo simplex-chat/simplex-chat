@@ -11,7 +11,7 @@
     <string name="smp_servers_add">Přidat server…</string>
     <string name="network_enable_socks_info">Přistupovat k serverům přes SOCKS proxy na portu 9050\? Před povolením této možnosti musí být spuštěna proxy.</string>
     <string name="accept_feature">Přijmout</string>
-    <string name="allow_your_contacts_to_send_disappearing_messages">Umožněte svým kontaktům odesílat mizící zprávy.</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Povolte svým kontaktům odesílat mizící zprávy.</string>
     <string name="about_simplex_chat">O <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="smp_servers_add_to_another_device">Přidat do jiného zařízení</string>
     <string name="accept_requests">Přijímat žádosti</string>
@@ -1112,4 +1112,31 @@
     <string name="alert_text_fragment_please_report_to_developers">Nahlaste to prosím vývojářům.</string>
     <string name="alert_text_fragment_permanent_error_reconnect">Tato chyba je pro toto připojení trvalá, připojte se znovu.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.</string>
+    <string name="no_spaces">Žádné mezery!</string>
+    <string name="revoke_file__message">Soubor bude smazán ze serverů.</string>
+    <string name="stop_rcv_file__message">Příjem souboru bude zastaven.</string>
+    <string name="allow_calls_only_if">Povolte hovory, pouze pokud je váš kontakt povolí.</string>
+    <string name="allow_your_contacts_to_call">Povolte svým kontaktům vám volat.</string>
+    <string name="audio_video_calls">Audio/video hovory</string>
+    <string name="available_in_v51">"
+\nDostupné ve verzi 5.1"</string>
+    <string name="both_you_and_your_contact_can_make_calls">Volat můžete vy i váš kontakt.</string>
+    <string name="only_you_can_make_calls">Volat můžete pouze vy.</string>
+    <string name="prohibit_calls">Zákaz audio/video hovorů.</string>
+    <string name="calls_prohibited_with_this_contact">Audio/video hovory jsou zakázány.</string>
+    <string name="only_your_contact_can_make_calls">Volat může pouze váš kontakt.</string>
+    <string name="v5_0_app_passcode">Heslo aplikace</string>
+    <string name="v5_0_large_files_support_descr">Rychle a bez čekání, než bude odesílatel online!</string>
+    <string name="v5_0_polish_interface">Polské rozhraní</string>
+    <string name="v5_0_app_passcode_descr">Nastavte jej namísto ověřování systému.</string>
+    <string name="v5_0_large_files_support">Videa a soubory až do velikosti 1 gb</string>
+    <string name="v5_0_polish_interface_descr">Díky uživatelům - překládejte prostřednictvím Weblate!</string>
+    <string name="revoke_file__title">Odvolat soubor\?</string>
+    <string name="revoke_file__confirm">Odvolat</string>
+    <string name="revoke_file__action">Odvolat soubor</string>
+    <string name="stop_snd_file__message">Odesílání souboru bude zastaveno.</string>
+    <string name="stop_file__confirm">Zastavit</string>
+    <string name="stop_file__action">Zastavit soubor</string>
+    <string name="stop_snd_file__title">Zastavit odesílání souboru\?</string>
+    <string name="stop_rcv_file__title">Zastavit příjem souboru\?</string>
 </resources>
