@@ -512,9 +512,7 @@
     <string name="network_use_onion_hosts_required_desc_in_alert">連接時將需要 Onion 主機</string>
     <string name="delete_address__question">刪除地址？</string>
     <string name="you_can_share_your_address_anybody_will_be_able_to_connect">你可以使用連結或二維碼分享你的地址 - 任何人也可以和你連線。如果你不主動刪除你的聯絡人，你並不會遺失你的聯絡人</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">你的個人檔案只會儲存於你的裝置和只會分享給你的聯絡人。
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> 伺服器並不會看到你的個人檔案。</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">你的個人檔案只會儲存於你的裝置和只會分享給你的聯絡人。 <xliff:g id="appName">SimpleX</xliff:g> 伺服器並不會看到你的個人檔案。</string>
     <string name="save_and_notify_contact">儲存並通知你的聯絡人</string>
     <string name="save_and_notify_contacts">儲存並通知你的多個聯絡人</string>
     <string name="your_profile_is_stored_on_your_device">你的個人檔案，聯絡人和傳送的訊息只會儲存於你的個人裝置內。</string>
