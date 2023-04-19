@@ -360,7 +360,7 @@
     <string name="icon_descr_server_status_error">Error</string>
     <string name="from_gallery_button">De la Galería</string>
     <string name="gallery_image_button">Imagen</string>
-    <string name="gallery_video_button">Video</string>
+    <string name="gallery_video_button">Vídeo</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si has recibido el enlace de invitación a <xliff:g id="appName">SimpleX Chat</xliff:g>, puedes abrirlo en tu navegador:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si eliges rechazar, el remitente NO será notificado.</string>
     <string name="invalid_contact_link">¡Enlace no válido!</string>
