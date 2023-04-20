@@ -152,7 +152,7 @@
     <string name="tap_to_start_new_chat">Tocca per iniziare una conversazione</string>
     <string name="chat_with_developers">Scrivi agli sviluppatori</string>
     <string name="you_have_no_chats">Non hai chat</string>
-    <string name="share_image">Condividi immagine…</string>
+    <string name="share_image">Condividi multimediale…</string>
     <string name="share_file">Condividi file…</string>
     <string name="icon_descr_context">Icona contestuale</string>
     <string name="icon_descr_cancel_file_preview">Annulla anteprima file</string>
