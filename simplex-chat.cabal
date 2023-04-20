@@ -91,6 +91,7 @@ library
       Simplex.Chat.Migrations.M20230328_files_protocol
       Simplex.Chat.Migrations.M20230402_protocol_servers
       Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
+      Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options

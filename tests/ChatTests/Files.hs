@@ -65,6 +65,7 @@ chatFileTests = do
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
+    fit "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
 
@@ -1232,6 +1233,37 @@ testXFTPContinueRcv tmp = do
       dest `shouldBe` src
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testXFTPMarkToReceive :: HasCallStack => FilePath -> IO ()
+testXFTPMarkToReceive = do
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
+      alice <## "completed uploading file 1 (test.pdf) for bob"
+      bob #$> ("/_ftoreceive 1", id, "ok")
+
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob #$> ("/_files_folder ./tests/tmp/bob_files", id, "ok")
+      bob #$> ("/_temp_folder ./tests/tmp/bob_xftp", id, "ok")
+      bob ##> "/_start"
+      bob <## "chat started"
+
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "started receiving file 1 (test.pdf) from alice"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}}
 
 testXFTPRcvError :: HasCallStack => FilePath -> IO ()
 testXFTPRcvError tmp = do

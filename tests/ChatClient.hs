@@ -238,8 +238,8 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- uncomment 2 lines below to echo virtual terminal
-      -- name <- userName cc
-      -- putStrLn $ name <> ": " <> s
+      name <- userName cc
+      putStrLn $ name <> ": " <> s
       pure s
     _ -> error "no output for 5 seconds"
 
