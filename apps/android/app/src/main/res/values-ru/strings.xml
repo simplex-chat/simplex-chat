@@ -258,7 +258,7 @@
     <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="from_gallery_button">Галерея</string>
-    <string name="gallery_image_button">Изображение</string>
+    <string name="gallery_image_button">Фото</string>
     <string name="gallery_video_button">Видео</string>
     <string name="choose_file">Файл</string>
     <!-- help - ChatHelpView.kt -->
