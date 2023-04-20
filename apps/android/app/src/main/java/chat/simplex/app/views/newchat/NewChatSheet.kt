@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
@@ -184,6 +185,50 @@ fun ActionButton(
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      Icon(
+        icon, text,
+        tint = tint,
+        modifier = Modifier
+          .size(40.dp)
+          .padding(bottom = 8.dp)
+      )
+      if (text != null) {
+        Text(
+          text,
+          textAlign = TextAlign.Center,
+          fontWeight = FontWeight.Bold,
+          color = tint,
+          modifier = Modifier.padding(bottom = 4.dp)
+        )
+      }
+      if (comment != null) {
+        Text(
+          comment,
+          textAlign = TextAlign.Center,
+          style = MaterialTheme.typography.body2
+        )
+      }
+    }
+  }
+}
+
+@Composable
+fun ActionButton(
+  text: String?,
+  comment: String?,
+  icon: Painter,
+  tint: Color = MaterialTheme.colors.primary,
+  disabled: Boolean = false,
+  click: () -> Unit = {}
+) {
+  Surface(shape = RoundedCornerShape(18.dp)) {
+    Column(
+      Modifier
+        .clickable(onClick = click)
+        .padding(8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      val tint = if (disabled) HighOrLowlight else tint
       Icon(
         icon, text,
         tint = tint,
