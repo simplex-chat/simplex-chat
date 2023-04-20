@@ -501,7 +501,7 @@
 \n在启用此功能之前，系统将提示您完成身份验证。</string>
     <string name="your_chats">您的聊天</string>
     <string name="share_file">分享文件……</string>
-    <string name="share_image">分享图片……</string>
+    <string name="share_image">分享媒体……</string>
     <string name="share_message">分享消息……</string>
     <string name="text_field_set_contact_placeholder">设置联系人姓名……</string>
     <string name="callstate_received_answer">已收到回复……</string>
