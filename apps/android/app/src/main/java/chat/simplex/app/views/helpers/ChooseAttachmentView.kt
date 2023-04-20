@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -41,19 +42,19 @@ fun ChooseAttachmentView(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, stringResource(R.string.use_camera_button), icon = painterResource(R.drawable.ic_camera_enhance), MaterialTheme.colors.primary) {
+      ActionButton(Modifier.fillMaxWidth(0.25f), null, stringResource(R.string.use_camera_button), icon = painterResource(R.drawable.ic_camera_enhance)) {
         attachmentOption.value = AttachmentOption.CameraPhoto
         hide()
       }
-      ActionButton(null, stringResource(R.string.gallery_image_button), icon = painterResource(R.drawable.ic_add_photo), MaterialTheme.colors.primary) {
+      ActionButton(Modifier.fillMaxWidth(0.33f), null, stringResource(R.string.gallery_image_button), icon = painterResource(R.drawable.ic_add_photo)) {
         attachmentOption.value = AttachmentOption.GalleryImage
         hide()
       }
-      ActionButton(null, stringResource(R.string.gallery_video_button), icon = painterResource(R.drawable.ic_smart_display), MaterialTheme.colors.primary) {
+      ActionButton(Modifier.fillMaxWidth(0.50f), null, stringResource(R.string.gallery_video_button), icon = painterResource(R.drawable.ic_smart_display)) {
         attachmentOption.value = AttachmentOption.GalleryVideo
         hide()
       }
-      ActionButton(null, stringResource(R.string.choose_file), icon = painterResource(R.drawable.ic_note_add), MaterialTheme.colors.primary) {
+      ActionButton(Modifier.fillMaxWidth(1f), null, stringResource(R.string.choose_file), icon = painterResource(R.drawable.ic_note_add)) {
         attachmentOption.value = AttachmentOption.File
         hide()
       }

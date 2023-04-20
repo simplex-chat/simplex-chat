@@ -214,6 +214,7 @@ fun ActionButton(
 
 @Composable
 fun ActionButton(
+  modifier: Modifier,
   text: String?,
   comment: String?,
   icon: Painter,
@@ -221,9 +222,10 @@ fun ActionButton(
   disabled: Boolean = false,
   click: () -> Unit = {}
 ) {
-  Surface(shape = RoundedCornerShape(18.dp)) {
+  Surface(modifier, shape = RoundedCornerShape(18.dp)) {
     Column(
       Modifier
+        .fillMaxWidth()
         .clickable(onClick = click)
         .padding(8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
