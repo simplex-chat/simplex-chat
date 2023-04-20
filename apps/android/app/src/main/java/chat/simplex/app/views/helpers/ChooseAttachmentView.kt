@@ -1,6 +1,7 @@
 package chat.simplex.app.views.helpers
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
@@ -40,19 +41,19 @@ fun ChooseAttachmentView(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, stringResource(R.string.use_camera_button), icon = painterResource(R.drawable.ic_camera_enhance), Color.White) {
+      ActionButton(null, stringResource(R.string.use_camera_button), icon = painterResource(R.drawable.ic_camera_enhance), MaterialTheme.colors.primary) {
         attachmentOption.value = AttachmentOption.CameraPhoto
         hide()
       }
-      ActionButton(null, stringResource(R.string.gallery_image_button), icon = painterResource(R.drawable.ic_add_photo), Color.White) {
+      ActionButton(null, stringResource(R.string.gallery_image_button), icon = painterResource(R.drawable.ic_add_photo), MaterialTheme.colors.primary) {
         attachmentOption.value = AttachmentOption.GalleryImage
         hide()
       }
-      ActionButton(null, stringResource(R.string.gallery_video_button), icon = painterResource(R.drawable.ic_smart_display), Color.White) {
+      ActionButton(null, stringResource(R.string.gallery_video_button), icon = painterResource(R.drawable.ic_smart_display), MaterialTheme.colors.primary) {
         attachmentOption.value = AttachmentOption.GalleryVideo
         hide()
       }
-      ActionButton(null, stringResource(R.string.choose_file), icon = painterResource(R.drawable.ic_note_add), Color.White) {
+      ActionButton(null, stringResource(R.string.choose_file), icon = painterResource(R.drawable.ic_note_add), MaterialTheme.colors.primary) {
         attachmentOption.value = AttachmentOption.File
         hide()
       }
