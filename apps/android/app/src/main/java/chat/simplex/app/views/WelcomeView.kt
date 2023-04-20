@@ -164,7 +164,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
   Box(
     Modifier
       .fillMaxWidth()
-      .height(50.dp)
+      .height(52.dp)
       .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(50)),
     contentAlignment = Alignment.Center
   ) {
