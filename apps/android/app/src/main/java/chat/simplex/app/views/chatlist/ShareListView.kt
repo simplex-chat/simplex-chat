@@ -114,7 +114,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
         Text(
           when (chatModel.sharedContent.value) {
             is SharedContent.Text -> stringResource(R.string.share_message)
-            is SharedContent.Images -> stringResource(R.string.share_image)
+            is SharedContent.Media -> stringResource(R.string.share_image)
             is SharedContent.File -> stringResource(R.string.share_file)
             else -> stringResource(R.string.share_message)
           },

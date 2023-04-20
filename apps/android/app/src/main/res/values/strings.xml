@@ -253,7 +253,7 @@
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
-  <string name="share_image">Share image…</string>
+  <string name="share_image">Share media…</string>
   <string name="share_file">Share file…</string>
 
   <!-- ComposeView.kt, helpers -->
