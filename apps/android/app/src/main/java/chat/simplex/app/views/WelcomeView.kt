@@ -3,6 +3,7 @@ package chat.simplex.app.views
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -33,7 +35,6 @@ import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 
 fun isValidDisplayName(name: String) : Boolean {
   return (name.firstOrNull { it.isWhitespace() }) == null && !name.startsWith("@") && !name.startsWith("#")
@@ -90,7 +91,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
             text = stringResource(R.string.about_simplex),
             icon = Icons.Outlined.ArrowBackIosNew,
             textDecoration = TextDecoration.None,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Medium
           ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
         }
         Spacer(Modifier.fillMaxWidth().weight(1f))
@@ -157,33 +158,29 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
   }
   val modifier = Modifier
     .fillMaxWidth()
-    .height(55.dp)
-    .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(50))
-    .padding(horizontal = 8.dp)
+    .padding(horizontal = DEFAULT_PADDING)
     .navigationBarsWithImePadding()
     .onFocusChanged { focused = it.isFocused }
-  TextField(
-    value = name.value,
-    onValueChange = { name.value = it },
-    modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
-    textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
-    keyboardOptions = KeyboardOptions(
-      capitalization = KeyboardCapitalization.None,
-      autoCorrect = false
-    ),
-    singleLine = true,
-    isError = !valid,
-    placeholder = { Text(placeholder, fontSize = 18.sp, color = HighOrLowlight.copy(alpha = 0.3f)) },
-    shape = RoundedCornerShape(50),
-    colors = TextFieldDefaults.textFieldColors(
-      backgroundColor = Color.Unspecified,
-      textColor = MaterialTheme.colors.onBackground,
-      focusedIndicatorColor = Color.Unspecified,
-      unfocusedIndicatorColor = Color.Unspecified,
-      cursorColor = HighOrLowlight,
-      errorIndicatorColor = Color.Unspecified
+  Box(
+    Modifier
+      .fillMaxWidth()
+      .height(52.dp)
+      .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(50)),
+    contentAlignment = Alignment.Center
+  ) {
+    BasicTextField(
+      value = name.value,
+      onValueChange = { name.value = it },
+      modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
+      textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
+      keyboardOptions = KeyboardOptions(
+        capitalization = KeyboardCapitalization.None,
+        autoCorrect = false
+      ),
+      singleLine = true,
+      cursorBrush = SolidColor(HighOrLowlight)
     )
-    )
+  }
   LaunchedEffect(Unit) {
     snapshotFlow { name.value }
       .distinctUntilChanged()

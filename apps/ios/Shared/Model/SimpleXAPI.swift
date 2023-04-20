@@ -1324,6 +1324,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if active(user) {
                 m.updateGroup(groupInfo)
             }
+        case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
+            chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileStart(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):

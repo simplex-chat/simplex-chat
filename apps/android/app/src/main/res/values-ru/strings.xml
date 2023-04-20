@@ -258,7 +258,7 @@
     <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="from_gallery_button">Галерея</string>
-    <string name="gallery_image_button">Изображение</string>
+    <string name="gallery_image_button">Фото</string>
     <string name="gallery_video_button">Видео</string>
     <string name="choose_file">Файл</string>
     <!-- help - ChatHelpView.kt -->
@@ -429,9 +429,7 @@
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">"Полное имя:</string>
     <string name="your_current_profile">Ваш активный профиль</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам.
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к Вашему профилю.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. <xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к Вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
     <string name="save_preferences_question">Сохранить предпочтения?</string>

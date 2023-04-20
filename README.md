@@ -48,7 +48,7 @@
 
 ## Join user groups
 
-You can join an English-speaking users group if you want to ask any questions: [#SimpleX-Group-2](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FQP8zaGjjmlXV-ix_Er4JgJ0lNPYGS1KX%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEApAgBkRZ3x12ayZ7sHrjHQWNMvqzZpWUgM_fFCUdLXwo%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xWpPXEZZsQp_F7vwAcAYDw%3D%3D%22%7D)
+You can join an English-speaking users group if you want to ask any questions: [#SimpleX-Group-3](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FeDEgekVhh0zIBYvUupGWZ96kiBEMbXwK%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAS7Z3zQyOhZ9o1qzI9OTZRySpkFTagdLMa6Rc7opuNh4%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22cG3W1qxZGzyrvHTugx16bg%3D%3D%22%7D)
 
 There are groups in other languages, that we have the apps interface translated into. These groups are for testing, and asking questions to other SimpleX Chat users:
 

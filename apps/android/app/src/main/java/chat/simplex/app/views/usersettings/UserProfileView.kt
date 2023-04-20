@@ -103,13 +103,7 @@ fun UserProfileLayout(
           horizontalAlignment = Alignment.Start
         ) {
           AppBarTitleCentered(stringResource(R.string.your_current_profile))
-          val text = remember {
-            var t = generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it)
-            val index = t.indexOfFirst { it == '\n' }
-            if (index != -1) t = t.removeRange(index..index + 2)
-            t
-          }
-          ReadableText(text, TextAlign.Center)
+          ReadableText(generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it), TextAlign.Center)
           Column(
             Modifier
               .fillMaxWidth()

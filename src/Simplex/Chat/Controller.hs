@@ -346,6 +346,7 @@ data ChatCommand
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
   | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
+  | SetFileToReceive FileTransferId
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)

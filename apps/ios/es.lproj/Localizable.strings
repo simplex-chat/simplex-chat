@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"\nAvailable in v5.1" = "\nDisponible en v5.1";
+
+/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -44,7 +47,7 @@
 "[Send us email](mailto:chat@simplex.chat)" = "[Contacta por email](mailto:chat@simplex.chat)";
 
 /* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Dar Estrella en GitHub] (https://github.com/simplex-chat/simplex-chat)";
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Estrella en GitHub] (https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Añadir nuevo contacto**: para crear tu código QR o enlace de un uso para tu contacto.";
@@ -173,6 +176,12 @@
 "%lldw" = "%lldw";
 
 /* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u mensajes no pudieron ser descifrados.";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "%u mensajes omitidos.";
+
+/* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
 
 /* No comment provided by engineer. */
@@ -285,6 +294,9 @@
 "Allow" = "Permitir";
 
 /* No comment provided by engineer. */
+"Allow calls only if your contact allows them." = "Se permiten llamadas sólo si tu contacto también las permite.";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Se permiten mensajes temporales sólo si tu contacto también los permite para tí.";
 
 /* No comment provided by engineer. */
@@ -307,6 +319,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "¿Permites los mensajes de voz?";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "Permites que tus contactos puedan llamarte.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "Permites a tus contactos eliminar irreversiblemente los mensajes enviados.";
@@ -336,6 +351,9 @@
 "App icon" = "Icono app";
 
 /* No comment provided by engineer. */
+"App passcode" = "Código de acceso a la aplicación";
+
+/* No comment provided by engineer. */
 "App version" = "Versión de la aplicación";
 
 /* No comment provided by engineer. */
@@ -355,6 +373,12 @@
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "llamada de audio (sin cifrado e2e)";
+
+/* chat feature */
+"Audio/video calls" = "Llamadas/Videollamadas";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "Las llamadas/videollamadas no están permitidas.";
 
 /* PIN entry */
 "Authentication cancelled" = "Autenticación cancelada";
@@ -397,6 +421,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "Tanto tú como tu contacto podéis eliminar de forma irreversible los mensajes enviados.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "Tanto tú como tu contacto podéis realizar llamadas.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Tanto tú como tu contacto podéis enviar mensajes temporales.";
@@ -1227,6 +1254,12 @@
 "Failed to remove passphrase" = "Error eliminando la contraseña";
 
 /* No comment provided by engineer. */
+"Fast and no wait until the sender is online!" = "¡Rápido y sin tener que esperar a que el remitente esté en línea!";
+
+/* No comment provided by engineer. */
+"File will be deleted from servers." = "El archivo será eliminado de los servidores.";
+
+/* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "El archivo se recibirá cuando tu contacto termine de subirlo.";
 
 /* No comment provided by engineer. */
@@ -1852,6 +1885,9 @@
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Sólo tú puedes eliminar mensajes de forma irreversible (tu contacto puede marcarlos para eliminar).";
 
 /* No comment provided by engineer. */
+"Only you can make calls." = "Solo tú puedes realizar llamadas.";
+
+/* No comment provided by engineer. */
 "Only you can send disappearing messages." = "Sólo tú puedes enviar mensajes temporales.";
 
 /* No comment provided by engineer. */
@@ -1859,6 +1895,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Sólo tu contacto puede eliminar mensajes de forma irreversible (tu puedes marcarlos para eliminar).";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "Sólo tu contacto puede realizar llamadas.";
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Sólo tu contacto puede enviar mensajes temporales.";
@@ -1974,6 +2013,9 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Guarda la contraseña de forma segura, NO podrás cambiarla si la pierdes.";
 
+/* No comment provided by engineer. */
+"Polish interface" = "Interfaz en polaco";
+
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Posiblemente la huella digital del certificado en la dirección del servidor es incorrecta";
 
@@ -2003,6 +2045,9 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "Contraseña del perfil";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "Prohibir las llamadas/videollamadas.";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Prohibir la eliminación irreversible de mensajes.";
@@ -2048,6 +2093,9 @@
 
 /* notification */
 "Received file event" = "Evento de archivo recibido";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "Se detendrá la recepción del archivo.";
 
 /* No comment provided by engineer. */
 "Receiving via" = "Recibiendo mediante";
@@ -2135,6 +2183,15 @@
 
 /* No comment provided by engineer. */
 "Revert" = "Revertir";
+
+/* No comment provided by engineer. */
+"Revoke" = "Revocar";
+
+/* cancel file action */
+"Revoke file" = "Revocar archivo";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "¿Revocar archivo?";
 
 /* No comment provided by engineer. */
 "Role" = "Rol";
@@ -2251,6 +2308,9 @@
 "Sender may have deleted the connection request." = "El remitente puede haber eliminado la solicitud de conexión.";
 
 /* No comment provided by engineer. */
+"Sending file will be stopped." = "Se detendrá el envío del archivo.";
+
+/* No comment provided by engineer. */
 "Sending via" = "Envando mediante";
 
 /* notification */
@@ -2279,6 +2339,9 @@
 
 /* No comment provided by engineer. */
 "Set group preferences" = "Establecer preferencias de grupo";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "Úsalo en lugar de la autenticación del sistema.";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Escribe la contraseña para exportar";
@@ -2384,6 +2447,15 @@
 
 /* No comment provided by engineer. */
 "Stop chat?" = "¿Detener Chat?";
+
+/* cancel file action */
+"Stop file" = "Detener archivo";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "¿Dejar de recibir el archivo?";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "¿Dejar de enviar el archivo?";
 
 /* authentication reason */
 "Stop SimpleX" = "Detener SimpleX";
@@ -2723,6 +2795,9 @@
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "El vídeo se recibirá cuando tu contacto esté en línea, por favor espera o compruébalo más tarde.";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "Vídeos y archivos de hasta 1Gb";
 
 /* No comment provided by engineer. */
 "View security code" = "Ver código de seguridad";

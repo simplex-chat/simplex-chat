@@ -1,6 +1,5 @@
 package chat.simplex.app
 
-import SectionItemView
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
@@ -21,7 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
@@ -584,14 +582,23 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
       when {
-        "text/plain" == intent.type -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let {
-          chatModel.sharedContent.value = SharedContent.Text(it)
+        intent.type == "text/plain" -> {
+          val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+          if (text != null) {
+            chatModel.sharedContent.value = SharedContent.Text(text)
+          }
         }
-        intent.type?.startsWith("image/") == true -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.Images(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(it))
-        } // All other mime types
-        else -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
+        isMediaIntent(intent) -> {
+          val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+          if (uri != null) {
+            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(uri))
+          } // All other mime types
+        }
+        else -> {
+          val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+          if (uri != null) {
+            chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uri)
+          }
         }
       }
     }
@@ -599,15 +606,22 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
       // Close active chat and show a list of chats
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
+      Log.e(TAG, "ACTION_SEND_MULTIPLE ${intent.type}")
       when {
-        intent.type?.startsWith("image/") == true -> (intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>)?.let {
-          chatModel.sharedContent.value = SharedContent.Images(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
-        } // All other mime types
+        isMediaIntent(intent) -> {
+          val uris = intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>
+          if (uris != null) {
+            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uris)
+          } // All other mime types
+        }
         else -> {}
       }
     }
   }
 }
+
+fun isMediaIntent(intent: Intent): Boolean =
+  intent.type?.startsWith("image/") == true || intent.type?.startsWith("video/") == true
 
 fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")

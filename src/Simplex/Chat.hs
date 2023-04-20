@@ -225,7 +225,9 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
           then Just <$> async (subscribeUsers users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      when startXFTPWorkers startXFTP
+      when startXFTPWorkers $ do
+        startXFTP
+        void $ forkIO $ startFilesToReceive users
       startCleanupManager
       when enableExpireCIs $ startExpireCIs users
       pure a1
@@ -256,6 +258,22 @@ subscribeUsers users = do
   where
     subscribe :: [User] -> m ()
     subscribe = mapM_ $ runExceptT . subscribeUserConnections Agent.subscribeConnections
+
+startFilesToReceive :: forall m. ChatMonad' m => [User] -> m ()
+startFilesToReceive users = do
+  let (us, us') = partition activeUser users
+  startReceive us
+  startReceive us'
+  where
+    startReceive :: [User] -> m ()
+    startReceive = mapM_ $ runExceptT . startReceiveUserFiles
+
+startReceiveUserFiles :: forall m. ChatMonad m => User -> m ()
+startReceiveUserFiles user = do
+  filesToReceive <- withStore' (`getRcvFilesToReceive` user)
+  forM_ filesToReceive $ \ft ->
+    flip catchError (toView . CRChatError (Just user)) $
+      toView =<< receiveFile' user ft Nothing Nothing
 
 restoreCalls :: ChatMonad' m => m ()
 restoreCalls = do
@@ -1385,13 +1403,11 @@ processChatCommand = \case
   ReceiveFile fileId rcvInline_ filePath_ -> withUser $ \_ ->
     withChatLock "receiveFile" . procCmd $ do
       (user, ft) <- withStore $ \db -> getRcvFileTransferById db fileId
-      (CRRcvFileAccepted user <$> acceptFileReceive user ft rcvInline_ filePath_) `catchError` processError user ft
-    where
-      processError user ft = \case
-        -- TODO AChatItem in Cancelled events
-        ChatErrorAgent (SMP SMP.AUTH) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
-        ChatErrorAgent (CONN DUPLICATE) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
-        e -> throwError e
+      receiveFile' user ft rcvInline_ filePath_
+  SetFileToReceive fileId -> withUser $ \_ -> do
+    withChatLock "setFileToReceive" . procCmd $ do
+      withStore' (`setRcvFileToReceive` fileId)
+      ok_
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
@@ -1903,6 +1919,16 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 toFSFilePath :: ChatMonad m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
+
+receiveFile' :: ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m ChatResponse
+receiveFile' user ft rcvInline_ filePath_ = do
+  (CRRcvFileAccepted user <$> acceptFileReceive user ft rcvInline_ filePath_) `catchError` processError
+  where
+    processError = \case
+      -- TODO AChatItem in Cancelled events
+      ChatErrorAgent (SMP SMP.AUTH) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
+      ChatErrorAgent (CONN DUPLICATE) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
+      e -> throwError e
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m AChatItem
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
@@ -4668,6 +4694,7 @@ chatCommandP =
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
       ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
+      "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" $> ConnectSimplex,

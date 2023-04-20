@@ -146,7 +146,7 @@
     <string name="icon_descr_sent_msg_status_send_failed">wysyłanie nie powiodło się</string>
     <string name="icon_descr_sent_msg_status_sent">wyślij</string>
     <string name="share_file">Udostępnij plik…</string>
-    <string name="share_image">Udostępnij obraz…</string>
+    <string name="share_image">Udostępnij media…</string>
     <string name="tap_to_start_new_chat">Dotknij, aby rozpocząć nowy czat</string>
     <string name="moderate_message_will_be_deleted_warning">Wiadomość zostanie usunięta dla wszystkich członków.</string>
     <string name="this_text_is_available_in_settings">Ten tekst jest dostępny w ustawieniach</string>
@@ -1048,9 +1048,7 @@
 \nTej czynności nie można cofnąć - Twój profil, kontakty, wiadomości i pliki zostaną nieodwracalnie utracone.</string>
     <string name="contact_sent_large_file">Twój kontakt wysłał plik, który jest większy niż obecnie obsługiwany maksymalny rozmiar (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
     <string name="snd_group_event_member_deleted">usunąłeś <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Twój profil jest przechowywany na Twoim urządzeniu i udostępniany tylko Twoim kontaktom.
-\n
-\nSerwery <xliff:g id="appName">SimpleX</xliff:g> nie widzą Twojego profilu.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Twój profil jest przechowywany na Twoim urządzeniu i udostępniany tylko Twoim kontaktom. Serwery <xliff:g id="appName">SimpleX</xliff:g> nie widzą Twojego profilu.</string>
     <string name="description_you_shared_one_time_link_incognito">udostępniłeś jednorazowy link incognito</string>
     <string name="you_will_join_group">Dołączysz do grupy, do której odnosi się ten link i połączysz się z jej członkami.</string>
     <string name="your_SMP_servers">Twoje serwery SMP</string>

@@ -833,9 +833,7 @@
     <string name="network_use_onion_hosts_no">Não</string>
     <string name="network_disable_socks">Usar conexão direta com a internet\?</string>
     <string name="hide_dev_options">Ocultar:</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Seu perfil é guardado no seu diapositivo e é compartilhado somente com seus contatos.
-\n
-\n<xliff:g id="appName">Servidores</xliff:g> SimpleX não podem ver seu perfil.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Seu perfil é guardado no seu diapositivo e é compartilhado somente com seus contatos. <xliff:g id="appName">Servidores</xliff:g> SimpleX não podem ver seu perfil.</string>
     <string name="save_preferences_question">Salvar preferências\?</string>
     <string name="save_and_notify_group_members">Salvar e notificar membros do grupo</string>
     <string name="error_saving_user_password">Erro ao salvar a senha do usuário</string>
