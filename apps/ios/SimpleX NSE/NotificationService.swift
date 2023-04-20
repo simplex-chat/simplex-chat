@@ -261,8 +261,8 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
     switch res {
     case let .contactConnected(user, contact, _):
         return (contact.id, .nse(notification: createContactConnectedNtf(user, contact)))
-        //        case let .contactConnecting(contact):
-        //            TODO profile update
+//        case let .contactConnecting(contact):
+//            TODO profile update
     case let .receivedContactRequest(user, contactRequest):
         return (UserContact(contactRequest: contactRequest).id, .nse(notification: createContactRequestNtf(user, contactRequest)))
     case let .newChatItem(user, aChatItem):
