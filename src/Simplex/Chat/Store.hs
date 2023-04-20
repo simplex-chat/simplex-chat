@@ -182,6 +182,7 @@ module Simplex.Chat.Store
     createRcvGroupFileTransfer,
     appendRcvFD,
     getRcvFileDescrByFileId,
+    cleanupXFTPFileDescrs,
     updateRcvFileAgentId,
     getRcvFileTransferById,
     getRcvFileTransfer,
@@ -3117,6 +3118,13 @@ getRcvFileDescrByFileId_ db fileId =
     toRcvFileDescr :: (Int64, Text, Int, Bool) -> RcvFileDescr
     toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete) =
       RcvFileDescr {fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete}
+
+cleanupXFTPFileDescrs :: DB.Connection -> User -> IO ()
+cleanupXFTPFileDescrs db User {userId} = do
+  cutoffTs <- addUTCTime (- (2 * nominalDay)) <$> getCurrentTime
+  -- TODO delete
+  DB.execute db "UPDATE xftp_file_descriptions SET file_descr_text = '' WHERE user_id = ? AND created_at <= ?" (userId, cutoffTs)
+  DB.execute db "DELETE FROM extra_xftp_file_descriptions WHERE user_id = ? AND created_at <= ?" (userId, cutoffTs)
 
 updateRcvFileAgentId :: DB.Connection -> FileTransferId -> Maybe AgentRcvFileId -> IO ()
 updateRcvFileAgentId db fileId aFileId = do

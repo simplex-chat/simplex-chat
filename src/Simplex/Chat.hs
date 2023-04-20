@@ -2238,13 +2238,16 @@ cleanupManager = do
       forM_ us' cleanupUser
     liftIO $ threadDelay' $ cleanupManagerInterval * 1000000
   where
-    cleanupUser user =
+    cleanupUser user = do
       cleanupTimedItems user `catchError` (toView . CRChatError (Just user))
+      cleanupFileDescriptions user `catchError` (toView . CRChatError (Just user))
     cleanupTimedItems user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime (realToFrac cleanupManagerInterval) ts
       timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ uncurry (startTimedItemThread user)
+    cleanupFileDescriptions user =
+      withStore' (`cleanupXFTPFileDescrs` user)
 
 startProximateTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 startProximateTimedItemThread user itemRef deleteAt = do
