@@ -152,7 +152,7 @@
     <string name="tap_to_start_new_chat">Tocca per iniziare una conversazione</string>
     <string name="chat_with_developers">Scrivi agli sviluppatori</string>
     <string name="you_have_no_chats">Non hai chat</string>
-    <string name="share_image">Condividi immagine…</string>
+    <string name="share_image">Condividi multimediale…</string>
     <string name="share_file">Condividi file…</string>
     <string name="icon_descr_context">Icona contestuale</string>
     <string name="icon_descr_cancel_file_preview">Annulla anteprima file</string>
@@ -1133,4 +1133,10 @@
     <string name="available_in_v51">"
 \nDisponibile nella v5.1"</string>
     <string name="allow_your_contacts_to_call">Consenti ai tuoi contatti di chiamarti.</string>
+    <string name="v5_0_app_passcode">Codice di accesso dell\'app</string>
+    <string name="v5_0_large_files_support_descr">Veloce e senza aspettare che il mittente sia in linea!</string>
+    <string name="v5_0_polish_interface">Interfaccia polacca</string>
+    <string name="v5_0_app_passcode_descr">Impostala al posto dell\'autenticazione di sistema.</string>
+    <string name="v5_0_polish_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
+    <string name="v5_0_large_files_support">Video e file fino a 1 GB</string>
 </resources>

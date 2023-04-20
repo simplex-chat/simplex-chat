@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"\nAvailable in v5.1" = "\nVerfügbar ab v5.1";
+
+/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -173,6 +176,12 @@
 "%lldw" = "%lldW";
 
 /* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u Nachrichten konnten nicht entschlüsselt werden.";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "%u übersprungene Nachrichten.";
+
+/* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
 
 /* No comment provided by engineer. */
@@ -285,6 +294,9 @@
 "Allow" = "Erlauben";
 
 /* No comment provided by engineer. */
+"Allow calls only if your contact allows them." = "Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Verschwindende Nachrichten nur erlauben, wenn Ihr Kontakt das ebenfalls erlaubt.";
 
 /* No comment provided by engineer. */
@@ -307,6 +319,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "Sprachnachricht erlauben?";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "Erlaubt Ihren Kontakten Sie anzurufen.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen.";
@@ -336,6 +351,9 @@
 "App icon" = "App Icon";
 
 /* No comment provided by engineer. */
+"App passcode" = "App Passwort";
+
+/* No comment provided by engineer. */
 "App version" = "App Version";
 
 /* No comment provided by engineer. */
@@ -355,6 +373,12 @@
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "Audioanruf (nicht E2E verschlüsselt)";
+
+/* chat feature */
+"Audio/video calls" = "Audio/Video Anrufe";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "Audio/Video Anrufe sind nicht erlaubt.";
 
 /* PIN entry */
 "Authentication cancelled" = "Authentifizierung abgebrochen";
@@ -397,6 +421,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "Sowohl Ihr Kontakt, als auch Sie können gesendete Nachrichten unwiederbringlich löschen.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "Sowohl Sie, als auch Ihr Kontakt können Anrufe tätigen.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Ihr Kontakt und Sie können beide verschwindende Nachrichten senden.";
@@ -1227,6 +1254,12 @@
 "Failed to remove passphrase" = "Das Entfernen des Passworts ist fehlgeschlagen";
 
 /* No comment provided by engineer. */
+"Fast and no wait until the sender is online!" = "Schnell und ohne warten auf den Absender, bis er online ist!";
+
+/* No comment provided by engineer. */
+"File will be deleted from servers." = "Die Datei wird von den Servern gelöscht.";
+
+/* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.";
 
 /* No comment provided by engineer. */
@@ -1852,6 +1885,9 @@
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).";
 
 /* No comment provided by engineer. */
+"Only you can make calls." = "Nur Sie können Anrufe tätigen.";
+
+/* No comment provided by engineer. */
 "Only you can send disappearing messages." = "Nur Sie können verschwindende Nachrichten senden.";
 
 /* No comment provided by engineer. */
@@ -1859,6 +1895,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "Nur Ihr Kontakt kann Anrufe tätigen.";
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Nur Ihr Kontakt kann verschwindende Nachrichten senden.";
@@ -1974,6 +2013,9 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Bitte bewahren Sie das Passwort sicher auf, Sie können es NICHT mehr ändern, wenn Sie es vergessen haben oder verlieren.";
 
+/* No comment provided by engineer. */
+"Polish interface" = "Polnische Bedienoberfläche";
+
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig";
 
@@ -2003,6 +2045,9 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "Passwort für Profil";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "Audio/Video Anrufe nicht erlauben.";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Unwiederbringliches löschen von Nachrichten nicht erlauben.";
@@ -2048,6 +2093,9 @@
 
 /* notification */
 "Received file event" = "Datei-Ereignis empfangen";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "Der Empfang der Datei wird beendet.";
 
 /* No comment provided by engineer. */
 "Receiving via" = "Empfangen über";
@@ -2135,6 +2183,15 @@
 
 /* No comment provided by engineer. */
 "Revert" = "Zurückkehren";
+
+/* No comment provided by engineer. */
+"Revoke" = "Widerrufen";
+
+/* cancel file action */
+"Revoke file" = "Datei widerrufen";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "Datei widerrufen?";
 
 /* No comment provided by engineer. */
 "Role" = "Rolle";
@@ -2251,6 +2308,9 @@
 "Sender may have deleted the connection request." = "Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.";
 
 /* No comment provided by engineer. */
+"Sending file will be stopped." = "Das Senden der Datei wird beendet.";
+
+/* No comment provided by engineer. */
 "Sending via" = "Senden über";
 
 /* notification */
@@ -2279,6 +2339,9 @@
 
 /* No comment provided by engineer. */
 "Set group preferences" = "Gruppenpräferenzen einstellen";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "Anstelle der System-Authentifizierung festlegen.";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Passwort für den Export festlegen";
@@ -2384,6 +2447,15 @@
 
 /* No comment provided by engineer. */
 "Stop chat?" = "Chat beenden?";
+
+/* cancel file action */
+"Stop file" = "Datei beenden";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "Den Empfang der Datei beenden?";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "Das Senden der Datei beenden?";
 
 /* authentication reason */
 "Stop SimpleX" = "Stoppen Sie SimpleX";
@@ -2723,6 +2795,9 @@
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "Videos und Dateien bis zu 1GB";
 
 /* No comment provided by engineer. */
 "View security code" = "Schauen Sie sich den Sicherheitscode an";
