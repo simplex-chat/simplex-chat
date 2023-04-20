@@ -12,10 +12,10 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&#10;Available in v5.1" xml:space="preserve" approved="no">
+      <trans-unit id="&#10;Available in v5.1" xml:space="preserve">
         <source>
 Available in v5.1</source>
-        <target state="translated">
+        <target>
 Verfügbar ab v5.1</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -199,14 +199,14 @@ Verfügbar ab v5.1</target>
         <target>%lldW</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
         <source>%u messages failed to decrypt.</source>
-        <target state="translated">%u Nachrichten konnten nicht entschlüsselt werden.</target>
+        <target>%u Nachrichten konnten nicht entschlüsselt werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
+      <trans-unit id="%u messages skipped." xml:space="preserve">
         <source>%u messages skipped.</source>
-        <target state="translated">%u übersprungene Nachrichten.</target>
+        <target>%u übersprungene Nachrichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -457,9 +457,9 @@ Verfügbar ab v5.1</target>
         <target>Erlauben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve" approved="no">
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
         <source>Allow calls only if your contact allows them.</source>
-        <target state="translated">Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</target>
+        <target>Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
@@ -502,9 +502,9 @@ Verfügbar ab v5.1</target>
         <target>Sprachnachricht erlauben?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to call you." xml:space="preserve" approved="no">
+      <trans-unit id="Allow your contacts to call you." xml:space="preserve">
         <source>Allow your contacts to call you.</source>
-        <target state="translated">Erlaubt Ihren Kontakten Sie anzurufen.</target>
+        <target>Erlaubt Ihren Kontakten Sie anzurufen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
@@ -547,9 +547,9 @@ Verfügbar ab v5.1</target>
         <target>App Icon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode" xml:space="preserve" approved="no">
+      <trans-unit id="App passcode" xml:space="preserve">
         <source>App passcode</source>
-        <target state="translated">App Passwort</target>
+        <target>App Passwort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -582,14 +582,14 @@ Verfügbar ab v5.1</target>
         <target>Audio- und Videoanrufe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls" xml:space="preserve" approved="no">
+      <trans-unit id="Audio/video calls" xml:space="preserve">
         <source>Audio/video calls</source>
-        <target state="translated">Audio/Video Anrufe</target>
+        <target>Audio/Video Anrufe</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
+      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve">
         <source>Audio/video calls are prohibited.</source>
-        <target state="translated">Audio/Video Anrufe sind nicht erlaubt.</target>
+        <target>Audio/Video Anrufe sind nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve">
@@ -647,9 +647,9 @@ Verfügbar ab v5.1</target>
         <target>Sowohl Ihr Kontakt, als auch Sie können gesendete Nachrichten unwiederbringlich löschen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
         <source>Both you and your contact can make calls.</source>
-        <target state="translated">Sowohl Sie, als auch Ihr Kontakt können Anrufe tätigen.</target>
+        <target>Sowohl Sie, als auch Ihr Kontakt können Anrufe tätigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
@@ -1845,14 +1845,14 @@ Verfügbar ab v5.1</target>
         <target>Das Entfernen des Passworts ist fehlgeschlagen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve" approved="no">
+      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve">
         <source>Fast and no wait until the sender is online!</source>
-        <target state="translated">Schnell und ohne warten auf den Absender, bis er online ist!</target>
+        <target>Schnell und ohne warten auf den Absender, bis er online ist!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be deleted from servers." xml:space="preserve" approved="no">
+      <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
-        <target state="translated">Die Datei wird von den Servern gelöscht.</target>
+        <target>Die Datei wird von den Servern gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
@@ -2732,9 +2732,9 @@ Verfügbar ab v5.1</target>
         <target>Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Only you can make calls." xml:space="preserve">
         <source>Only you can make calls.</source>
-        <target state="translated">Nur Sie können Anrufe tätigen.</target>
+        <target>Nur Sie können Anrufe tätigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
@@ -2752,9 +2752,9 @@ Verfügbar ab v5.1</target>
         <target>Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Only your contact can make calls." xml:space="preserve">
         <source>Only your contact can make calls.</source>
-        <target state="translated">Nur Ihr Kontakt kann Anrufe tätigen.</target>
+        <target>Nur Ihr Kontakt kann Anrufe tätigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
@@ -2932,9 +2932,9 @@ Verfügbar ab v5.1</target>
         <target>Bitte bewahren Sie das Passwort sicher auf, Sie können es NICHT mehr ändern, wenn Sie es vergessen haben oder verlieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Polish interface" xml:space="preserve" approved="no">
+      <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
-        <target state="translated">Polnische Bedienoberfläche</target>
+        <target>Polnische Bedienoberfläche</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -2987,9 +2987,9 @@ Verfügbar ab v5.1</target>
         <target>Passwort für Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit audio/video calls." xml:space="preserve" approved="no">
+      <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
-        <target state="translated">Audio/Video Anrufe nicht erlauben.</target>
+        <target>Audio/Video Anrufe nicht erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -3057,9 +3057,9 @@ Verfügbar ab v5.1</target>
         <target>Datei-Ereignis empfangen</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Receiving file will be stopped." xml:space="preserve" approved="no">
+      <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
-        <target state="translated">Der Empfang der Datei wird beendet.</target>
+        <target>Der Empfang der Datei wird beendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving via" xml:space="preserve">
@@ -3187,19 +3187,19 @@ Verfügbar ab v5.1</target>
         <target>Zurückkehren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Revoke" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke" xml:space="preserve">
         <source>Revoke</source>
-        <target state="translated">Widerrufen</target>
+        <target>Widerrufen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Revoke file" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke file" xml:space="preserve">
         <source>Revoke file</source>
-        <target state="translated">Datei widerrufen</target>
+        <target>Datei widerrufen</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Revoke file?" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke file?" xml:space="preserve">
         <source>Revoke file?</source>
-        <target state="translated">Datei widerrufen?</target>
+        <target>Datei widerrufen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role" xml:space="preserve">
@@ -3387,9 +3387,9 @@ Verfügbar ab v5.1</target>
         <target>Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending file will be stopped." xml:space="preserve" approved="no">
+      <trans-unit id="Sending file will be stopped." xml:space="preserve">
         <source>Sending file will be stopped.</source>
-        <target state="translated">Das Senden der Datei wird beendet.</target>
+        <target>Das Senden der Datei wird beendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -3442,9 +3442,9 @@ Verfügbar ab v5.1</target>
         <target>Gruppenpräferenzen einstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set it instead of system authentication." xml:space="preserve" approved="no">
+      <trans-unit id="Set it instead of system authentication." xml:space="preserve">
         <source>Set it instead of system authentication.</source>
-        <target state="translated">Anstelle der System-Authentifizierung festlegen.</target>
+        <target>Anstelle der System-Authentifizierung festlegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -3617,19 +3617,19 @@ Verfügbar ab v5.1</target>
         <target>Chat beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop file" xml:space="preserve" approved="no">
+      <trans-unit id="Stop file" xml:space="preserve">
         <source>Stop file</source>
-        <target state="translated">Datei beenden</target>
+        <target>Datei beenden</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Stop receiving file?" xml:space="preserve" approved="no">
+      <trans-unit id="Stop receiving file?" xml:space="preserve">
         <source>Stop receiving file?</source>
-        <target state="translated">Den Empfang der Datei beenden?</target>
+        <target>Den Empfang der Datei beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sending file?" xml:space="preserve" approved="no">
+      <trans-unit id="Stop sending file?" xml:space="preserve">
         <source>Stop sending file?</source>
-        <target state="translated">Das Senden der Datei beenden?</target>
+        <target>Das Senden der Datei beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -4148,9 +4148,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos and files up to 1gb" xml:space="preserve" approved="no">
+      <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
         <source>Videos and files up to 1gb</source>
-        <target state="translated">Videos und Dateien bis zu 1GB</target>
+        <target>Videos und Dateien bis zu 1GB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">

@@ -12,10 +12,10 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&#10;Available in v5.1" xml:space="preserve" approved="no">
+      <trans-unit id="&#10;Available in v5.1" xml:space="preserve">
         <source>
 Available in v5.1</source>
-        <target state="translated">
+        <target>
 在 v5.1 中可用</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -199,14 +199,14 @@ Available in v5.1</source>
         <target>%lldw</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
         <source>%u messages failed to decrypt.</source>
-        <target state="translated">%u 消息解密失败。</target>
+        <target>%u 消息解密失败。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
+      <trans-unit id="%u messages skipped." xml:space="preserve">
         <source>%u messages skipped.</source>
-        <target state="translated">已跳过 %u 条消息。</target>
+        <target>已跳过 %u 条消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -457,9 +457,9 @@ Available in v5.1</source>
         <target>允许</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve" approved="no">
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
         <source>Allow calls only if your contact allows them.</source>
-        <target state="translated">仅当您的联系人允许时才允许呼叫。</target>
+        <target>仅当您的联系人允许时才允许呼叫。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
@@ -502,9 +502,9 @@ Available in v5.1</source>
         <target>允许语音消息？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to call you." xml:space="preserve" approved="no">
+      <trans-unit id="Allow your contacts to call you." xml:space="preserve">
         <source>Allow your contacts to call you.</source>
-        <target state="translated">允许您的联系人给您打电话。</target>
+        <target>允许您的联系人给您打电话。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
@@ -547,9 +547,9 @@ Available in v5.1</source>
         <target>应用程序图标</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode" xml:space="preserve" approved="no">
+      <trans-unit id="App passcode" xml:space="preserve">
         <source>App passcode</source>
-        <target state="translated">应用程序密码</target>
+        <target>应用程序密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -582,14 +582,14 @@ Available in v5.1</source>
         <target>音视频通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls" xml:space="preserve" approved="no">
+      <trans-unit id="Audio/video calls" xml:space="preserve">
         <source>Audio/video calls</source>
-        <target state="translated">音频/视频通话</target>
+        <target>音频/视频通话</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
+      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve">
         <source>Audio/video calls are prohibited.</source>
-        <target state="translated">禁止音频/视频通话。</target>
+        <target>禁止音频/视频通话。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve">
@@ -647,9 +647,9 @@ Available in v5.1</source>
         <target>您和您的联系人都可以不可逆转地删除已发送的消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
         <source>Both you and your contact can make calls.</source>
-        <target state="translated">您和您的联系人都可以拨打电话。</target>
+        <target>您和您的联系人都可以拨打电话。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
@@ -1845,14 +1845,14 @@ Available in v5.1</source>
         <target>移除密码失败</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve" approved="no">
+      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve">
         <source>Fast and no wait until the sender is online!</source>
-        <target state="translated">快速且无需等待发件人在线！</target>
+        <target>快速且无需等待发件人在线！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be deleted from servers." xml:space="preserve" approved="no">
+      <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
-        <target state="translated">文件将从服务器中删除。</target>
+        <target>文件将从服务器中删除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
@@ -2732,9 +2732,9 @@ Available in v5.1</source>
         <target>只有您可以不可撤回地删除消息（您的联系人可以将它们标记为删除）。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Only you can make calls." xml:space="preserve">
         <source>Only you can make calls.</source>
-        <target state="translated">只有您可以拨打电话。</target>
+        <target>只有您可以拨打电话。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
@@ -2752,9 +2752,9 @@ Available in v5.1</source>
         <target>只有您的联系人才能不可撤回地删除消息（您可以将它们标记为删除）。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Only your contact can make calls." xml:space="preserve">
         <source>Only your contact can make calls.</source>
-        <target state="translated">只有您的联系人可以拨打电话。</target>
+        <target>只有您的联系人可以拨打电话。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
@@ -2932,9 +2932,9 @@ Available in v5.1</source>
         <target>请安全地保存密码，如果您丢失了密码，您将无法更改它。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Polish interface" xml:space="preserve" approved="no">
+      <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
-        <target state="translated">波兰语界面</target>
+        <target>波兰语界面</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -2987,9 +2987,9 @@ Available in v5.1</source>
         <target>个人资料密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit audio/video calls." xml:space="preserve" approved="no">
+      <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
-        <target state="translated">禁止音频/视频通话。</target>
+        <target>禁止音频/视频通话。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -3057,9 +3057,9 @@ Available in v5.1</source>
         <target>收到文件项目</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Receiving file will be stopped." xml:space="preserve" approved="no">
+      <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
-        <target state="translated">即将停止接收文件。</target>
+        <target>即将停止接收文件。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving via" xml:space="preserve">
@@ -3187,19 +3187,19 @@ Available in v5.1</source>
         <target>恢复</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Revoke" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke" xml:space="preserve">
         <source>Revoke</source>
-        <target state="translated">撤销</target>
+        <target>撤销</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Revoke file" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke file" xml:space="preserve">
         <source>Revoke file</source>
-        <target state="translated">撤销文件</target>
+        <target>撤销文件</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Revoke file?" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke file?" xml:space="preserve">
         <source>Revoke file?</source>
-        <target state="translated">撤销文件？</target>
+        <target>撤销文件？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role" xml:space="preserve">
@@ -3387,9 +3387,9 @@ Available in v5.1</source>
         <target>发送人可能已删除连接请求。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending file will be stopped." xml:space="preserve" approved="no">
+      <trans-unit id="Sending file will be stopped." xml:space="preserve">
         <source>Sending file will be stopped.</source>
-        <target state="translated">即将停止发送文件。</target>
+        <target>即将停止发送文件。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -3442,9 +3442,9 @@ Available in v5.1</source>
         <target>设置群组偏好设置</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set it instead of system authentication." xml:space="preserve" approved="no">
+      <trans-unit id="Set it instead of system authentication." xml:space="preserve">
         <source>Set it instead of system authentication.</source>
-        <target state="translated">设置它以代替系统身份验证。</target>
+        <target>设置它以代替系统身份验证。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -3617,19 +3617,19 @@ Available in v5.1</source>
         <target>停止聊天程序？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop file" xml:space="preserve" approved="no">
+      <trans-unit id="Stop file" xml:space="preserve">
         <source>Stop file</source>
-        <target state="translated">停止文件</target>
+        <target>停止文件</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Stop receiving file?" xml:space="preserve" approved="no">
+      <trans-unit id="Stop receiving file?" xml:space="preserve">
         <source>Stop receiving file?</source>
-        <target state="translated">停止接收文件？</target>
+        <target>停止接收文件？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sending file?" xml:space="preserve" approved="no">
+      <trans-unit id="Stop sending file?" xml:space="preserve">
         <source>Stop sending file?</source>
-        <target state="translated">停止发送文件？</target>
+        <target>停止发送文件？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -4148,9 +4148,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>视频将在您的联系人在线时收到，请稍等或稍后查看！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos and files up to 1gb" xml:space="preserve" approved="no">
+      <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
         <source>Videos and files up to 1gb</source>
-        <target state="translated">最大 1gb 的视频和文件</target>
+        <target>最大 1gb 的视频和文件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">

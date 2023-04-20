@@ -12,10 +12,10 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&#10;Available in v5.1" xml:space="preserve" approved="no">
+      <trans-unit id="&#10;Available in v5.1" xml:space="preserve">
         <source>
 Available in v5.1</source>
-        <target state="translated">
+        <target>
 Disponible dans la v5.1</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -199,14 +199,14 @@ Disponible dans la v5.1</target>
         <target>%lldsmn</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
         <source>%u messages failed to decrypt.</source>
-        <target state="translated">%u messages n'ont pas pu être déchiffrés.</target>
+        <target>%u messages n'ont pas pu être déchiffrés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
+      <trans-unit id="%u messages skipped." xml:space="preserve">
         <source>%u messages skipped.</source>
-        <target state="translated">%u messages sautés.</target>
+        <target>%u messages sautés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -547,9 +547,9 @@ Disponible dans la v5.1</target>
         <target>Icône de l'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode" xml:space="preserve" approved="no">
+      <trans-unit id="App passcode" xml:space="preserve">
         <source>App passcode</source>
-        <target state="translated">Code d'accès à l'app</target>
+        <target>Code d'accès à l'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -1845,9 +1845,9 @@ Disponible dans la v5.1</target>
         <target>Échec de la suppression de la phrase secrète</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve" approved="no">
+      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve">
         <source>Fast and no wait until the sender is online!</source>
-        <target state="translated">Rapide et ne nécessitant pas d'attendre que l'expéditeur soit en ligne !</target>
+        <target>Rapide et ne nécessitant pas d'attendre que l'expéditeur soit en ligne !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
@@ -2932,9 +2932,9 @@ Disponible dans la v5.1</target>
         <target>Veuillez conserver votre phrase secrète en lieu sûr, vous NE pourrez PAS la changer si vous la perdez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Polish interface" xml:space="preserve" approved="no">
+      <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
-        <target state="translated">Interface en polonais</target>
+        <target>Interface en polonais</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -3442,9 +3442,9 @@ Disponible dans la v5.1</target>
         <target>Définir les préférences du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set it instead of system authentication." xml:space="preserve" approved="no">
+      <trans-unit id="Set it instead of system authentication." xml:space="preserve">
         <source>Set it instead of system authentication.</source>
-        <target state="translated">Il permet de remplacer l'authentification du système.</target>
+        <target>Il permet de remplacer l'authentification du système.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -4148,9 +4148,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>La vidéo ne sera reçue que lorsque votre contact sera en ligne. Veuillez patienter ou vérifier plus tard !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos and files up to 1gb" xml:space="preserve" approved="no">
+      <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
         <source>Videos and files up to 1gb</source>
-        <target state="translated">Vidéos et fichiers jusqu'à 1Go</target>
+        <target>Vidéos et fichiers jusqu'à 1Go</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">

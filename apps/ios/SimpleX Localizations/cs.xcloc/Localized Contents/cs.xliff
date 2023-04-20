@@ -12,10 +12,10 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&#10;Available in v5.1" xml:space="preserve" approved="no">
+      <trans-unit id="&#10;Available in v5.1" xml:space="preserve">
         <source>
 Available in v5.1</source>
-        <target state="translated">
+        <target>
 Dostupné ve verzi 5.1</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -199,14 +199,14 @@ Dostupné ve verzi 5.1</target>
         <target>%lldw</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
         <source>%u messages failed to decrypt.</source>
-        <target state="translated">%u zpráv se nepodařilo dešifrovat.</target>
+        <target>%u zpráv se nepodařilo dešifrovat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
+      <trans-unit id="%u messages skipped." xml:space="preserve">
         <source>%u messages skipped.</source>
-        <target state="translated">%u zpráv přeskočeno.</target>
+        <target>%u zpráv přeskočeno.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -457,9 +457,9 @@ Dostupné ve verzi 5.1</target>
         <target>Povolit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve" approved="no">
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
         <source>Allow calls only if your contact allows them.</source>
-        <target state="translated">Povolte hovory, pouze pokud je váš kontakt povolí.</target>
+        <target>Povolte hovory, pouze pokud je váš kontakt povolí.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
@@ -502,9 +502,9 @@ Dostupné ve verzi 5.1</target>
         <target>Povolit hlasové zprávy?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to call you." xml:space="preserve" approved="no">
+      <trans-unit id="Allow your contacts to call you." xml:space="preserve">
         <source>Allow your contacts to call you.</source>
-        <target state="translated">Povolte svým kontaktům vám volat.</target>
+        <target>Povolte svým kontaktům vám volat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
@@ -547,9 +547,9 @@ Dostupné ve verzi 5.1</target>
         <target>Ikona aplikace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode" xml:space="preserve" approved="no">
+      <trans-unit id="App passcode" xml:space="preserve">
         <source>App passcode</source>
-        <target state="translated">Heslo aplikace</target>
+        <target>Heslo aplikace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -582,14 +582,14 @@ Dostupné ve verzi 5.1</target>
         <target>Hlasové a video hovory</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls" xml:space="preserve" approved="no">
+      <trans-unit id="Audio/video calls" xml:space="preserve">
         <source>Audio/video calls</source>
-        <target state="translated">Audio/video hovory</target>
+        <target>Audio/video hovory</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
+      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve">
         <source>Audio/video calls are prohibited.</source>
-        <target state="translated">Audio/video hovory jsou zakázány.</target>
+        <target>Audio/video hovory jsou zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve">
@@ -647,9 +647,9 @@ Dostupné ve verzi 5.1</target>
         <target>Vy i váš kontakt můžete nevratně mazat odeslané zprávy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
         <source>Both you and your contact can make calls.</source>
-        <target state="translated">Volat můžete vy i váš kontakt.</target>
+        <target>Volat můžete vy i váš kontakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
@@ -1845,14 +1845,14 @@ Dostupné ve verzi 5.1</target>
         <target>Přístupovou frázi se nepodařilo odstranit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve" approved="no">
+      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve">
         <source>Fast and no wait until the sender is online!</source>
-        <target state="translated">Rychle a bez čekání, než bude odesílatel online!</target>
+        <target>Rychle a bez čekání, než bude odesílatel online!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be deleted from servers." xml:space="preserve" approved="no">
+      <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
-        <target state="translated">Soubor bude smazán ze serverů.</target>
+        <target>Soubor bude smazán ze serverů.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
@@ -2732,9 +2732,9 @@ Dostupné ve verzi 5.1</target>
         <target>Nevratně mazat zprávy můžete pouze vy (váš kontakt je může označit ke smazání).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Only you can make calls." xml:space="preserve">
         <source>Only you can make calls.</source>
-        <target state="translated">Volat můžete pouze vy.</target>
+        <target>Volat můžete pouze vy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
@@ -2752,9 +2752,9 @@ Dostupné ve verzi 5.1</target>
         <target>Nevratně mazat zprávy může pouze váš kontakt (vy je můžete označit ke smazání).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can make calls." xml:space="preserve" approved="no">
+      <trans-unit id="Only your contact can make calls." xml:space="preserve">
         <source>Only your contact can make calls.</source>
-        <target state="translated">Volat může pouze váš kontakt.</target>
+        <target>Volat může pouze váš kontakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
@@ -2932,9 +2932,9 @@ Dostupné ve verzi 5.1</target>
         <target>Heslo uložte bezpečně, v případě jeho ztráty jej NEBUDE možné změnit.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Polish interface" xml:space="preserve" approved="no">
+      <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
-        <target state="translated">Polské rozhraní</target>
+        <target>Polské rozhraní</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -2987,9 +2987,9 @@ Dostupné ve verzi 5.1</target>
         <target>Heslo profilu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit audio/video calls." xml:space="preserve" approved="no">
+      <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
-        <target state="translated">Zákaz audio/video hovorů.</target>
+        <target>Zákaz audio/video hovorů.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -3057,9 +3057,9 @@ Dostupné ve verzi 5.1</target>
         <target>Událost přijatého souboru</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Receiving file will be stopped." xml:space="preserve" approved="no">
+      <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
-        <target state="translated">Příjem souboru bude zastaven.</target>
+        <target>Příjem souboru bude zastaven.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving via" xml:space="preserve">
@@ -3187,19 +3187,19 @@ Dostupné ve verzi 5.1</target>
         <target>Vrátit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Revoke" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke" xml:space="preserve">
         <source>Revoke</source>
-        <target state="translated">Odvolat</target>
+        <target>Odvolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Revoke file" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke file" xml:space="preserve">
         <source>Revoke file</source>
-        <target state="translated">Odvolat soubor</target>
+        <target>Odvolat soubor</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Revoke file?" xml:space="preserve" approved="no">
+      <trans-unit id="Revoke file?" xml:space="preserve">
         <source>Revoke file?</source>
-        <target state="translated">Odvolat soubor?</target>
+        <target>Odvolat soubor?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role" xml:space="preserve">
@@ -3387,9 +3387,9 @@ Dostupné ve verzi 5.1</target>
         <target>Odesílatel možná smazal požadavek připojení.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending file will be stopped." xml:space="preserve" approved="no">
+      <trans-unit id="Sending file will be stopped." xml:space="preserve">
         <source>Sending file will be stopped.</source>
-        <target state="translated">Odesílání souboru bude zastaveno.</target>
+        <target>Odesílání souboru bude zastaveno.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -3442,9 +3442,9 @@ Dostupné ve verzi 5.1</target>
         <target>Nastavení skupinových předvoleb</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set it instead of system authentication." xml:space="preserve" approved="no">
+      <trans-unit id="Set it instead of system authentication." xml:space="preserve">
         <source>Set it instead of system authentication.</source>
-        <target state="translated">Nastavte jej namísto ověřování systému.</target>
+        <target>Nastavte jej namísto ověřování systému.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -3617,19 +3617,19 @@ Dostupné ve verzi 5.1</target>
         <target>Zastavit chat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop file" xml:space="preserve" approved="no">
+      <trans-unit id="Stop file" xml:space="preserve">
         <source>Stop file</source>
-        <target state="translated">Zastavit soubor</target>
+        <target>Zastavit soubor</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Stop receiving file?" xml:space="preserve" approved="no">
+      <trans-unit id="Stop receiving file?" xml:space="preserve">
         <source>Stop receiving file?</source>
-        <target state="translated">Zastavit příjem souboru?</target>
+        <target>Zastavit příjem souboru?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sending file?" xml:space="preserve" approved="no">
+      <trans-unit id="Stop sending file?" xml:space="preserve">
         <source>Stop sending file?</source>
-        <target state="translated">Zastavit odesílání souboru?</target>
+        <target>Zastavit odesílání souboru?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -4148,9 +4148,9 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo zkontrolujte později!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos and files up to 1gb" xml:space="preserve" approved="no">
+      <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
         <source>Videos and files up to 1gb</source>
-        <target state="translated">Videa a soubory až do velikosti 1 gb</target>
+        <target>Videa a soubory až do velikosti 1 gb</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
