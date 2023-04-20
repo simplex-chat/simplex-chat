@@ -398,10 +398,10 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil) -> AChatItem? {
     return nil
 }
 
-func apiToReceiveFile(fileId: Int64) {
-    let r = sendSimpleXCmd(.toReceiveFile(fileId: fileId))
+func apiSetFileToReceive(fileId: Int64) {
+    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId))
     if case .cmdOk = r { return }
-    logger.error("toReceiveFile error: \(responseError(r))")
+    logger.error("setFileToReceive error: \(responseError(r))")
 }
 
 func autoReceiveFile(_ file: CIFile) -> ChatItem? {
@@ -409,7 +409,7 @@ func autoReceiveFile(_ file: CIFile) -> ChatItem? {
     case .smp:
         return apiReceiveFile(fileId: file.fileId)?.chatItem
     case .xftp:
-        apiToReceiveFile(fileId: file.fileId)
+        apiSetFileToReceive(fileId: file.fileId)
         return nil
     }
 }

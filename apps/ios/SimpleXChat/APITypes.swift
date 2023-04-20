@@ -100,7 +100,7 @@ public enum ChatCommand {
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, inline: Bool?)
-    case toReceiveFile(fileId: Int64)
+    case setFileToReceive(fileId: Int64)
     case cancelFile(fileId: Int64)
     case showVersion
     case string(String)
@@ -207,7 +207,7 @@ public enum ChatCommand {
                     return "/freceive \(fileId) inline=\(onOff(inline))"
                 }
                 return "/freceive \(fileId)"
-            case let .toReceiveFile(fileId): return "/_file_to_receive \(fileId)"
+            case let .setFileToReceive(fileId): return "/_set_file_to_receive \(fileId)"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case .showVersion: return "/version"
             case let .string(str): return str
@@ -304,7 +304,7 @@ public enum ChatCommand {
             case .apiChatRead: return "apiChatRead"
             case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
-            case .toReceiveFile: return "toReceiveFile"
+            case .setFileToReceive: return "setFileToReceive"
             case .cancelFile: return "cancelFile"
             case .showVersion: return "showVersion"
             case .string: return "console command"

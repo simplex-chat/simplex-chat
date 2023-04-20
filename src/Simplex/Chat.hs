@@ -227,7 +227,7 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
       atomically . writeTVar s $ Just (a1, a2)
       when startXFTPWorkers $ do
         startXFTP
-        withAsync (startFilesToReceive users) wait
+        void $ forkIO $ startFilesToReceive users
       startCleanupManager
       when enableExpireCIs $ startExpireCIs users
       pure a1
@@ -1404,8 +1404,8 @@ processChatCommand = \case
     withChatLock "receiveFile" . procCmd $ do
       (user, ft) <- withStore $ \db -> getRcvFileTransferById db fileId
       receiveFile' user ft rcvInline_ filePath_
-  MarkFileToReceive fileId -> withUser $ \_ -> do
-    withChatLock "markFileToReceive" . procCmd $ do
+  SetFileToReceive fileId -> withUser $ \_ -> do
+    withChatLock "setFileToReceive" . procCmd $ do
       withStore' (`setRcvFileToReceive` fileId)
       ok_
   CancelFile fileId -> withUser $ \user@User {userId} ->
@@ -4694,7 +4694,7 @@ chatCommandP =
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
       ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
-      "/_file_to_receive " *> (MarkFileToReceive <$> A.decimal),
+      "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" $> ConnectSimplex,
