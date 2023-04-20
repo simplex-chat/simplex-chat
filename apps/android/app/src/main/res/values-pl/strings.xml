@@ -146,7 +146,7 @@
     <string name="icon_descr_sent_msg_status_send_failed">wysyłanie nie powiodło się</string>
     <string name="icon_descr_sent_msg_status_sent">wyślij</string>
     <string name="share_file">Udostępnij plik…</string>
-    <string name="share_image">Udostępnij obraz…</string>
+    <string name="share_image">Udostępnij media…</string>
     <string name="tap_to_start_new_chat">Dotknij, aby rozpocząć nowy czat</string>
     <string name="moderate_message_will_be_deleted_warning">Wiadomość zostanie usunięta dla wszystkich członków.</string>
     <string name="this_text_is_available_in_settings">Ten tekst jest dostępny w ustawieniach</string>
