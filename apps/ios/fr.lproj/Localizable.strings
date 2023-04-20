@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"\nAvailable in v5.1" = "\nDisponible dans la v5.1";
+
+/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -173,6 +176,12 @@
 "%lldw" = "%lldsmn";
 
 /* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u messages n'ont pas pu être déchiffrés.";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "%u messages sautés.";
+
+/* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
 
 /* No comment provided by engineer. */
@@ -340,6 +349,9 @@
 
 /* No comment provided by engineer. */
 "App icon" = "Icône de l'app";
+
+/* No comment provided by engineer. */
+"App passcode" = "Code d'accès à l'app";
 
 /* No comment provided by engineer. */
 "App version" = "Version de l'app";
@@ -1242,6 +1254,9 @@
 "Failed to remove passphrase" = "Échec de la suppression de la phrase secrète";
 
 /* No comment provided by engineer. */
+"Fast and no wait until the sender is online!" = "Rapide et ne nécessitant pas d'attendre que l'expéditeur soit en ligne !";
+
+/* No comment provided by engineer. */
 "File will be deleted from servers." = "Le fichier sera supprimé des serveurs.";
 
 /* No comment provided by engineer. */
@@ -1998,6 +2013,9 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Veuillez conserver votre phrase secrète en lieu sûr, vous NE pourrez PAS la changer si vous la perdez.";
 
+/* No comment provided by engineer. */
+"Polish interface" = "Interface en polonais";
+
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte";
 
@@ -2321,6 +2339,9 @@
 
 /* No comment provided by engineer. */
 "Set group preferences" = "Définir les préférences du groupe";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "Il permet de remplacer l'authentification du système.";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Définir la phrase secrète pour l'export";
@@ -2774,6 +2795,9 @@
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "La vidéo ne sera reçue que lorsque votre contact sera en ligne. Veuillez patienter ou vérifier plus tard !";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "Vidéos et fichiers jusqu'à 1Go";
 
 /* No comment provided by engineer. */
 "View security code" = "Afficher le code de sécurité";

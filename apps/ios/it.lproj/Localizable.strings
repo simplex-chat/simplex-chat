@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"\nAvailable in v5.1" = "\nDisponibile nella v5.1";
+
+/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -173,6 +176,12 @@
 "%lldw" = "%lldset";
 
 /* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u messaggi non sono stati decifrati.";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "%u messaggi saltati.";
+
+/* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
 
 /* No comment provided by engineer. */
@@ -340,6 +349,9 @@
 
 /* No comment provided by engineer. */
 "App icon" = "Icona app";
+
+/* No comment provided by engineer. */
+"App passcode" = "Codice di accesso dell'app";
 
 /* No comment provided by engineer. */
 "App version" = "Versione dell'app";
@@ -1242,6 +1254,9 @@
 "Failed to remove passphrase" = "Rimozione della password fallita";
 
 /* No comment provided by engineer. */
+"Fast and no wait until the sender is online!" = "Veloce e senza aspettare che il mittente sia in linea!";
+
+/* No comment provided by engineer. */
 "File will be deleted from servers." = "Il file verrà eliminato dai server.";
 
 /* No comment provided by engineer. */
@@ -1998,6 +2013,9 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Conserva la password in modo sicuro, NON potrai cambiarla se la perdi.";
 
+/* No comment provided by engineer. */
+"Polish interface" = "Interfaccia polacca";
+
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata";
 
@@ -2321,6 +2339,9 @@
 
 /* No comment provided by engineer. */
 "Set group preferences" = "Imposta le preferenze del gruppo";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "Impostala al posto dell'autenticazione di sistema.";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Imposta la password per esportare";
@@ -2774,6 +2795,9 @@
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "Il video verrà ricevuto quando il tuo contatto sarà in linea, attendi o controlla più tardi!";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "Video e file fino a 1 GB";
 
 /* No comment provided by engineer. */
 "View security code" = "Vedi codice di sicurezza";

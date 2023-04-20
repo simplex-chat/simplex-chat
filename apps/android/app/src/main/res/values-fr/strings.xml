@@ -156,7 +156,7 @@
     <string name="contact_connection_pending">connexion…</string>
     <string name="group_connection_pending">connexion…</string>
     <string name="share_message">Partager le message…</string>
-    <string name="share_image">Partager l’image…</string>
+    <string name="share_image">Partager le média…</string>
     <string name="images_limit_desc">Envoi de 10 images en même temps maximum</string>
     <string name="personal_welcome">Bienvenue <xliff:g>%1$s</xliff:g> !</string>
     <string name="notifications_mode_periodic_desc">Vérifie les nouveaux messages toutes les 10 minutes pendant 1 minute au maximum.</string>
@@ -1133,4 +1133,10 @@
     <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> messages n\'ont pas pu être déchiffrés.</string>
     <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> messages sautés.</string>
     <string name="you_can_turn_on_lock">Vous pouvez activer SimpleX Lock dans les Paramètres.</string>
+    <string name="v5_0_polish_interface_descr">Merci aux utilisateurs - contribuez via Weblate !</string>
+    <string name="v5_0_large_files_support">Vidéos et fichiers jusqu\'à 1Go</string>
+    <string name="v5_0_app_passcode">Code d\'accès à l\'app</string>
+    <string name="v5_0_large_files_support_descr">Rapide et ne nécessitant pas d\'attendre que l\'expéditeur soit en ligne !</string>
+    <string name="v5_0_polish_interface">Interface en polonais</string>
+    <string name="v5_0_app_passcode_descr">Il permet de remplacer l\'authentification du système.</string>
 </resources>

@@ -501,7 +501,7 @@
 \n在启用此功能之前，系统将提示您完成身份验证。</string>
     <string name="your_chats">您的聊天</string>
     <string name="share_file">分享文件……</string>
-    <string name="share_image">分享图片……</string>
+    <string name="share_image">分享媒体……</string>
     <string name="share_message">分享消息……</string>
     <string name="text_field_set_contact_placeholder">设置联系人姓名……</string>
     <string name="callstate_received_answer">已收到回复……</string>
@@ -1115,4 +1115,30 @@
 \n它可能是由于某些错误或连接被破坏才发生。</string>
     <string name="alert_text_decryption_error_earlier"><xliff:g id="message count" example="1">%1$d</xliff:g> 消息解密失败并且不会显示。</string>
     <string name="no_spaces">没有空格！</string>
+    <string name="stop_file__action">停止文件</string>
+    <string name="stop_snd_file__title">停止发送文件？</string>
+    <string name="stop_snd_file__message">即将停止发送文件。</string>
+    <string name="stop_rcv_file__title">停止接收文件？</string>
+    <string name="stop_rcv_file__message">即将停止接收文件。</string>
+    <string name="stop_file__confirm">Stop</string>
+    <string name="revoke_file__action">撤销文件</string>
+    <string name="revoke_file__title">撤销文件？</string>
+    <string name="revoke_file__message">文件将从服务器中删除。</string>
+    <string name="revoke_file__confirm">撤销</string>
+    <string name="audio_video_calls">音频/视频通话</string>
+    <string name="available_in_v51">"
+\n在 v5.1 中可用"</string>
+    <string name="v5_0_app_passcode">应用程序密码</string>
+    <string name="v5_0_polish_interface">波兰语界面</string>
+    <string name="v5_0_polish_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
+    <string name="v5_0_app_passcode_descr">设置它以代替系统身份验证。</string>
+    <string name="v5_0_large_files_support">最大 1gb 的视频和文件</string>
+    <string name="v5_0_large_files_support_descr">快速且无需等待发件人在线！</string>
+    <string name="prohibit_calls">禁止音频/视频通话。</string>
+    <string name="both_you_and_your_contact_can_make_calls">您和您的联系人都可以拨打电话。</string>
+    <string name="only_you_can_make_calls">只有您可以拨打电话。</string>
+    <string name="only_your_contact_can_make_calls">只有您的联系人可以拨打电话。</string>
+    <string name="allow_your_contacts_to_call">允许您的联系人给您打电话。</string>
+    <string name="allow_calls_only_if">仅当您的联系人允许时才允许呼叫。</string>
+    <string name="calls_prohibited_with_this_contact">禁止音频/视频通话。</string>
 </resources>
