@@ -65,7 +65,7 @@ chatFileTests = do
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
-    fit "receive file marked to receive on chat start" testXFTPMarkToReceive
+    it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
 
@@ -1246,19 +1246,22 @@ testXFTPMarkToReceive = do
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       -- alice <## "started sending file 1 (test.pdf) to bob" -- TODO "started uploading" ?
       alice <## "completed uploading file 1 (test.pdf) for bob"
-      bob #$> ("/_ftoreceive 1", id, "ok")
+      bob #$> ("/_file_to_receive 1", id, "ok")
 
       bob ##> "/_stop"
       bob <## "chat stopped"
       bob #$> ("/_files_folder ./tests/tmp/bob_files", id, "ok")
       bob #$> ("/_temp_folder ./tests/tmp/bob_xftp", id, "ok")
       bob ##> "/_start"
-      bob <## "chat started"
 
-      bob <## "1 contacts connected (use /cs for the list)"
-      bob <## "started receiving file 1 (test.pdf) from alice"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+      bob
+        <### [ "chat started",
+               "1 contacts connected (use /cs for the list)",
+               "started receiving file 1 (test.pdf) from alice",
+               "saving file 1 from alice to test.pdf"
+             ]
       bob <## "completed receiving file 1 (test.pdf) from alice"
+
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
       dest `shouldBe` src

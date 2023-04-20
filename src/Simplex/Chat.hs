@@ -227,7 +227,7 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
       atomically . writeTVar s $ Just (a1, a2)
       when startXFTPWorkers $ do
         startXFTP
-        withAsync (startFilesToReceive users) (const $ pure ())
+        withAsync (startFilesToReceive users) wait
       startCleanupManager
       when enableExpireCIs $ startExpireCIs users
       pure a1
@@ -4694,7 +4694,7 @@ chatCommandP =
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
       ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
-      "/_ftoreceive " *> (MarkFileToReceive <$> A.decimal),
+      "/_file_to_receive " *> (MarkFileToReceive <$> A.decimal),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" $> ConnectSimplex,
