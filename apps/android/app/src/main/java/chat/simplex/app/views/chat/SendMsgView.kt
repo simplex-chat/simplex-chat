@@ -225,7 +225,7 @@ private fun NativeKeyboard(
           } catch (e: Exception) {
             return@OnCommitContentListener false
           }
-          SimplexApp.context.chatModel.sharedContent.value = SharedContent.Images("", listOf(inputContentInfo.contentUri))
+          SimplexApp.context.chatModel.sharedContent.value = SharedContent.Media("", listOf(inputContentInfo.contentUri))
           true
         }
         return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)

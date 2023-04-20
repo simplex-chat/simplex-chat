@@ -667,7 +667,7 @@ fun ComposeView(
 
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
-      is SharedContent.Images -> processPickedMedia(shared.uris, shared.text)
+      is SharedContent.Media -> processPickedMedia(shared.uris, shared.text)
       is SharedContent.File -> processPickedFile(shared.uri, shared.text)
       null -> {}
     }

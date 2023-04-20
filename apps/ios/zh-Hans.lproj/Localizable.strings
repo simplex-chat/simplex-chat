@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"\nAvailable in v5.1" = "\n在 v5.1 中可用";
+
+/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -173,6 +176,12 @@
 "%lldw" = "%lldw";
 
 /* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u 消息解密失败。";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "已跳过 %u 条消息。";
+
+/* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
 
 /* No comment provided by engineer. */
@@ -285,6 +294,9 @@
 "Allow" = "允许";
 
 /* No comment provided by engineer. */
+"Allow calls only if your contact allows them." = "仅当您的联系人允许时才允许呼叫。";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "仅当您的联系人允许时才允许限时消息。";
 
 /* No comment provided by engineer. */
@@ -307,6 +319,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "允许语音消息？";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "允许您的联系人给您打电话。";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "允许您的联系人不可撤回地删除已发送消息。";
@@ -336,6 +351,9 @@
 "App icon" = "应用程序图标";
 
 /* No comment provided by engineer. */
+"App passcode" = "应用程序密码";
+
+/* No comment provided by engineer. */
 "App version" = "应用程序版本";
 
 /* No comment provided by engineer. */
@@ -355,6 +373,12 @@
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "语音通话（非端到端加密）";
+
+/* chat feature */
+"Audio/video calls" = "音频/视频通话";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "禁止音频/视频通话。";
 
 /* PIN entry */
 "Authentication cancelled" = "身份验证已取消";
@@ -397,6 +421,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "您和您的联系人都可以不可逆转地删除已发送的消息。";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "您和您的联系人都可以拨打电话。";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "您和您的联系人都可以发送限时消息。";
@@ -1227,6 +1254,12 @@
 "Failed to remove passphrase" = "移除密码失败";
 
 /* No comment provided by engineer. */
+"Fast and no wait until the sender is online!" = "快速且无需等待发件人在线！";
+
+/* No comment provided by engineer. */
+"File will be deleted from servers." = "文件将从服务器中删除。";
+
+/* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "文件将在您的联系人完成上传后收到。";
 
 /* No comment provided by engineer. */
@@ -1852,6 +1885,9 @@
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "只有您可以不可撤回地删除消息（您的联系人可以将它们标记为删除）。";
 
 /* No comment provided by engineer. */
+"Only you can make calls." = "只有您可以拨打电话。";
+
+/* No comment provided by engineer. */
 "Only you can send disappearing messages." = "只有您可以发送限时消息。";
 
 /* No comment provided by engineer. */
@@ -1859,6 +1895,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "只有您的联系人才能不可撤回地删除消息（您可以将它们标记为删除）。";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "只有您的联系人可以拨打电话。";
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "只有您的联系人才可以发送限时消息。";
@@ -1974,6 +2013,9 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "请安全地保存密码，如果您丢失了密码，您将无法更改它。";
 
+/* No comment provided by engineer. */
+"Polish interface" = "波兰语界面";
+
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "服务器地址中的证书指纹可能不正确";
 
@@ -2003,6 +2045,9 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "个人资料密码";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "禁止音频/视频通话。";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "禁止不可撤回消息删除。";
@@ -2048,6 +2093,9 @@
 
 /* notification */
 "Received file event" = "收到文件项目";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "即将停止接收文件。";
 
 /* No comment provided by engineer. */
 "Receiving via" = "接收通过";
@@ -2135,6 +2183,15 @@
 
 /* No comment provided by engineer. */
 "Revert" = "恢复";
+
+/* No comment provided by engineer. */
+"Revoke" = "撤销";
+
+/* cancel file action */
+"Revoke file" = "撤销文件";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "撤销文件？";
 
 /* No comment provided by engineer. */
 "Role" = "角色";
@@ -2251,6 +2308,9 @@
 "Sender may have deleted the connection request." = "发送人可能已删除连接请求。";
 
 /* No comment provided by engineer. */
+"Sending file will be stopped." = "即将停止发送文件。";
+
+/* No comment provided by engineer. */
 "Sending via" = "发送通过";
 
 /* notification */
@@ -2279,6 +2339,9 @@
 
 /* No comment provided by engineer. */
 "Set group preferences" = "设置群组偏好设置";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "设置它以代替系统身份验证。";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "设置密码来导出";
@@ -2384,6 +2447,15 @@
 
 /* No comment provided by engineer. */
 "Stop chat?" = "停止聊天程序？";
+
+/* cancel file action */
+"Stop file" = "停止文件";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "停止接收文件？";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "停止发送文件？";
 
 /* authentication reason */
 "Stop SimpleX" = "停止 SimpleX";
@@ -2723,6 +2795,9 @@
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "视频将在您的联系人在线时收到，请稍等或稍后查看！";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "最大 1gb 的视频和文件";
 
 /* No comment provided by engineer. */
 "View security code" = "查看安全码";
