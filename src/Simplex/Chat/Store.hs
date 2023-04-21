@@ -190,6 +190,8 @@ module Simplex.Chat.Store
     acceptRcvInlineFT,
     startRcvInlineFT,
     xftpAcceptRcvFT,
+    setRcvFileToReceive,
+    getRcvFilesToReceive,
     setRcvFTAgentDeleted,
     updateRcvFileStatus,
     createRcvFileChunk,
@@ -302,7 +304,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (addUTCTime)
-import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
 import Data.Type.Equality
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
@@ -370,6 +372,7 @@ import Simplex.Chat.Migrations.M20230321_agent_file_deleted
 import Simplex.Chat.Migrations.M20230328_files_protocol
 import Simplex.Chat.Migrations.M20230402_protocol_servers
 import Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
+import Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -443,7 +446,8 @@ schemaMigrations =
     ("20230321_agent_file_deleted", m20230321_agent_file_deleted, Just down_m20230321_agent_file_deleted),
     ("20230328_files_protocol", m20230328_files_protocol, Just down_m20230328_files_protocol),
     ("20230402_protocol_servers", m20230402_protocol_servers, Just down_m20230402_protocol_servers),
-    ("20230411_extra_xftp_file_descriptions", m20230411_extra_xftp_file_descriptions, Just down_m20230411_extra_xftp_file_descriptions)
+    ("20230411_extra_xftp_file_descriptions", m20230411_extra_xftp_file_descriptions, Just down_m20230411_extra_xftp_file_descriptions),
+    ("20230420_rcv_files_to_receive", m20230420_rcv_files_to_receive, Just down_m20230420_rcv_files_to_receive)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -3215,6 +3219,31 @@ acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
     db
     "UPDATE rcv_files SET rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
     (rcvFileInline, FSAccepted, currentTs, fileId)
+
+setRcvFileToReceive :: DB.Connection -> FileTransferId -> IO ()
+setRcvFileToReceive db fileId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE rcv_files SET to_receive = 1, updated_at = ? WHERE file_id = ?"
+    (currentTs, fileId)
+
+getRcvFilesToReceive :: DB.Connection -> User -> IO [RcvFileTransfer]
+getRcvFilesToReceive db user@User {userId} = do
+  cutoffTs <- addUTCTime (- (2 * nominalDay)) <$> getCurrentTime
+  fileIds :: [Int64] <-
+    map fromOnly
+      <$> DB.query
+        db
+        [sql|
+          SELECT r.file_id
+          FROM rcv_files r
+          JOIN files f ON f.file_id = r.file_id
+          WHERE f.user_id = ? AND r.file_status = ?
+            AND r.to_receive = 1 AND r.created_at > ?
+        |]
+        (userId, FSNew, cutoffTs)
+  rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds
 
 setRcvFTAgentDeleted :: DB.Connection -> FileTransferId -> IO ()
 setRcvFTAgentDeleted db fileId = do

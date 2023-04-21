@@ -60,6 +60,11 @@ fun ReadableText(@StringRes stringResId: Int, textAlign: TextAlign = TextAlign.S
   Text(annotatedStringResource(stringResId), modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp)
 }
 
+@Composable
+fun ReadableText(text: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
+  Text(text, modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp)
+}
+
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

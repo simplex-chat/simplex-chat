@@ -108,11 +108,13 @@ struct VoiceMessagePlayer: View {
                 case .sndTransfer: playbackButton()
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
+                case .sndError: playbackButton()
                 case .rcvInvitation: loadingIcon()
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                case .rcvError: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }
             } else {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))

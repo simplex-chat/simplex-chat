@@ -22,7 +22,7 @@ public enum ChatCommand {
     case apiMuteUser(userId: Int64)
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
-    case startChat(subscribe: Bool, expire: Bool)
+    case startChat(subscribe: Bool, expire: Bool, xftp: Bool)
     case apiStopChat
     case apiActivateChat
     case apiSuspendChat(timeoutMicroseconds: Int)
@@ -100,6 +100,7 @@ public enum ChatCommand {
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, inline: Bool?)
+    case setFileToReceive(fileId: Int64)
     case cancelFile(fileId: Int64)
     case showVersion
     case string(String)
@@ -116,7 +117,7 @@ public enum ChatCommand {
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
-            case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
+            case let .startChat(subscribe, expire, xftp): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire)) xftp=\(onOff(xftp))"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
@@ -206,6 +207,7 @@ public enum ChatCommand {
                     return "/freceive \(fileId) inline=\(onOff(inline))"
                 }
                 return "/freceive \(fileId)"
+            case let .setFileToReceive(fileId): return "/_set_file_to_receive \(fileId)"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case .showVersion: return "/version"
             case let .string(str): return str
@@ -302,6 +304,7 @@ public enum ChatCommand {
             case .apiChatRead: return "apiChatRead"
             case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
+            case .setFileToReceive: return "setFileToReceive"
             case .cancelFile: return "cancelFile"
             case .showVersion: return "showVersion"
             case .string: return "console command"
@@ -453,6 +456,7 @@ public enum ChatResponse: Decodable, Error {
     case rcvFileComplete(user: User, chatItem: AChatItem)
     case rcvFileCancelled(user: User, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
     case rcvFileSndCancelled(user: User, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileError(user: User, chatItem: AChatItem)
     // sending file events
     case sndFileStart(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileComplete(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
@@ -460,6 +464,8 @@ public enum ChatResponse: Decodable, Error {
     case sndFileRcvCancelled(user: User, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileProgressXFTP(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sentSize: Int64, totalSize: Int64)
     case sndFileCompleteXFTP(user: User, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
+    case sndFileError(user: User, chatItem: AChatItem)
+    // call events
     case callInvitation(callInvitation: RcvCallInvitation)
     case callOffer(user: User, contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
     case callAnswer(user: User, contact: Contact, answer: WebRTCSession)
@@ -564,12 +570,14 @@ public enum ChatResponse: Decodable, Error {
             case .rcvFileComplete: return "rcvFileComplete"
             case .rcvFileCancelled: return "rcvFileCancelled"
             case .rcvFileSndCancelled: return "rcvFileSndCancelled"
+            case .rcvFileError: return "rcvFileError"
             case .sndFileStart: return "sndFileStart"
             case .sndFileComplete: return "sndFileComplete"
             case .sndFileCancelled: return "sndFileCancelled"
             case .sndFileRcvCancelled: return "sndFileRcvCancelled"
             case .sndFileProgressXFTP: return "sndFileProgressXFTP"
             case .sndFileCompleteXFTP: return "sndFileCompleteXFTP"
+            case .sndFileError: return "sndFileError"
             case .callInvitation: return "callInvitation"
             case .callOffer: return "callOffer"
             case .callAnswer: return "callAnswer"
@@ -677,12 +685,14 @@ public enum ChatResponse: Decodable, Error {
             case let .rcvFileComplete(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .rcvFileCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .rcvFileError(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .sndFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
             case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileProgressXFTP(u, chatItem, _, sentSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nsentSize: \(sentSize)\ntotalSize: \(totalSize)")
             case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .sndFileError(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .callInvitation(inv): return String(describing: inv)
             case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")
             case let .callAnswer(u, contact, answer): return withUser(u, "contact: \(contact.id)\nanswer: \(String(describing: answer))")

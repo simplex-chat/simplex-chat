@@ -155,20 +155,18 @@ fun SendMsgView(
             cs.contextItem is ComposeContextItem.NoContextItem &&
             sendLiveMessage != null && updateLiveMessage != null
           ) {
-            var showDropdown by rememberSaveable { mutableStateOf(false) }
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown = true }
+            val showDropdown = rememberSaveable { mutableStateOf(false) }
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown.value = true }
 
-            DropdownMenu(
-              expanded = showDropdown,
-              onDismissRequest = { showDropdown = false },
-              Modifier.width(220.dp),
+            DefaultDropdownMenu(
+              showDropdown,
             ) {
               ItemAction(
                 generalGetString(R.string.send_live_message),
                 Icons.Filled.Bolt,
                 onClick = {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
-                  showDropdown = false
+                  showDropdown.value = false
                 }
               )
             }
@@ -227,7 +225,7 @@ private fun NativeKeyboard(
           } catch (e: Exception) {
             return@OnCommitContentListener false
           }
-          SimplexApp.context.chatModel.sharedContent.value = SharedContent.Images("", listOf(inputContentInfo.contentUri))
+          SimplexApp.context.chatModel.sharedContent.value = SharedContent.Media("", listOf(inputContentInfo.contentUri))
           true
         }
         return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)

@@ -14,6 +14,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -179,8 +180,7 @@ fun ComposeView(
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
-  val xftpSendEnabled = chatModel.controller.appPrefs.xftpSendEnabled.get()
-  val maxFileSize = getMaxFileSize(fileProtocol = if (xftpSendEnabled) FileProtocol.XFTP else FileProtocol.SMP)
+  val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
@@ -261,13 +261,17 @@ fun ComposeView(
       }
     }
   }
-  val mediaLauncherWithFiles = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
+  val galleryImageLauncher = rememberLauncherForActivityResult(contract = PickMultipleImagesFromGallery()) { processPickedMedia(it, null) }
+  val galleryImageLauncherFallback = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
+  val galleryVideoLauncher = rememberLauncherForActivityResult(contract = PickMultipleVideosFromGallery()) { processPickedMedia(it, null) }
+  val galleryVideoLauncherFallback = rememberGetMultipleContentsLauncher { processPickedMedia(it, null) }
+
   val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
   LaunchedEffect(attachmentOption.value) {
     when (attachmentOption.value) {
-      AttachmentOption.TakePhoto -> {
+      AttachmentOption.CameraPhoto -> {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launchWithFallback()
@@ -278,11 +282,23 @@ fun ComposeView(
         }
         attachmentOption.value = null
       }
-      AttachmentOption.PickMedia -> {
-        mediaLauncherWithFiles.launch(if (xftpSendEnabled) "image/*;video/*" else "image/*")
+      AttachmentOption.GalleryImage -> {
+        try {
+          galleryImageLauncher.launch(0)
+        } catch (e: ActivityNotFoundException) {
+          galleryImageLauncherFallback.launch("image/*")
+        }
         attachmentOption.value = null
       }
-      AttachmentOption.PickFile -> {
+      AttachmentOption.GalleryVideo -> {
+        try {
+          galleryVideoLauncher.launch(0)
+        } catch (e: ActivityNotFoundException) {
+          galleryVideoLauncherFallback.launch("video/*")
+        }
+        attachmentOption.value = null
+      }
+      AttachmentOption.File -> {
         filesLauncher.launch("*/*")
         attachmentOption.value = null
       }
@@ -651,7 +667,7 @@ fun ComposeView(
 
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
-      is SharedContent.Images -> processPickedMedia(shared.uris, shared.text)
+      is SharedContent.Media -> processPickedMedia(shared.uris, shared.text)
       is SharedContent.File -> processPickedFile(shared.uri, shared.text)
       null -> {}
     }

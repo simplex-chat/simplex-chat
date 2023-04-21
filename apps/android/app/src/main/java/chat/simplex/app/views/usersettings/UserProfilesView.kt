@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.chatPasswordHash
@@ -31,7 +32,6 @@ import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.CreateProfile
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>) {
@@ -45,6 +45,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     searchTextOrPassword = searchTextOrPassword,
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
+    prefPerformLA = m.controller.appPrefs.performLA.get(),
     addUser = {
       ModalManager.shared.showModalCloseable { close ->
         CreateProfile(m, close)
@@ -73,14 +74,14 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
                 AlertManager.shared.hideAlert()
                 removeUser(m, user, users, true, searchTextOrPassword.value.trim())
               }) {
-                Text(stringResource(R.string.users_delete_with_connections), color = Color.Red)
+                Text(stringResource(R.string.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
               }
               SectionItemView({
                 AlertManager.shared.hideAlert()
                 removeUser(m, user, users, false, searchTextOrPassword.value.trim())
               }
               ) {
-                Text(stringResource(R.string.users_delete_data_only), color = Color.Red)
+                Text(stringResource(R.string.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
               }
             }
           }
@@ -142,6 +143,7 @@ private fun UserProfilesView(
   searchTextOrPassword: MutableState<String>,
   profileHidden: MutableState<Boolean>,
   visibleUsersCount: Int,
+  prefPerformLA: Boolean,
   showHiddenProfilesNotice: SharedPreference<Boolean>,
   addUser: () -> Unit,
   activateUser: (User) -> Unit,
@@ -170,7 +172,7 @@ private fun UserProfilesView(
 
     SectionView {
       for (user in filteredUsers) {
-        UserView(user, users, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
+        UserView(user, users, visibleUsersCount, prefPerformLA, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
         SectionDivider()
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
@@ -203,6 +205,7 @@ private fun UserView(
   user: User,
   users: List<User>,
   visibleUsersCount: Int,
+  prefPerformLA: Boolean,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
   unhideUser: (User) -> Unit,
@@ -210,43 +213,39 @@ private fun UserView(
   unmuteUser: (User) -> Unit,
   showHiddenProfile: (User) -> Unit,
 ) {
-  var showDropdownMenu by remember { mutableStateOf(false) }
-  UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showDropdownMenu = true }) {
+  val showMenu = remember { mutableStateOf(false) }
+  UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showMenu.value = true }) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = 16.dp)) {
-    DropdownMenu(
-      expanded = showDropdownMenu,
-      onDismissRequest = { showDropdownMenu = false },
-      Modifier.width(220.dp)
-    ) {
+    DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
         ItemAction(stringResource(R.string.user_unhide), Icons.Outlined.LockOpen, onClick = {
-          showDropdownMenu = false
+          showMenu.value = false
           unhideUser(user)
         })
       } else {
-        if (visibleUsersCount > 1) {
+        if (visibleUsersCount > 1 && prefPerformLA) {
           ItemAction(stringResource(R.string.user_hide), Icons.Outlined.Lock, onClick = {
-            showDropdownMenu = false
+            showMenu.value = false
             showHiddenProfile(user)
           })
         }
         if (user.showNtfs) {
           ItemAction(stringResource(R.string.user_mute), Icons.Outlined.NotificationsOff, onClick = {
-            showDropdownMenu = false
+            showMenu.value = false
             muteUser(user)
           })
         } else {
           ItemAction(stringResource(R.string.user_unmute), Icons.Outlined.Notifications, onClick = {
-            showDropdownMenu = false
+            showMenu.value = false
             unmuteUser(user)
           })
         }
       }
       ItemAction(stringResource(R.string.delete_verb), Icons.Outlined.Delete, color = Color.Red, onClick = {
         removeUser(user)
-        showDropdownMenu = false
+        showMenu.value = false
       })
     }
   }

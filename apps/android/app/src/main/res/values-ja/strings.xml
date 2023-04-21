@@ -842,9 +842,7 @@
     <string name="this_string_is_not_a_connection_link">このストリングは接続リンクではありません！</string>
     <string name="chat_with_the_founder">質問やアイデアを送る</string>
     <string name="star_on_github">GithubでStar</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g>のサーバには開示されません。</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。 <xliff:g id="appName">SimpleX</xliff:g>のサーバには開示されません。</string>
     <string name="your_calls">あなたの通話</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g>飛ばしたメッセージ</string>
     <string name="send_link_previews">リンクのプレビューを送信</string>

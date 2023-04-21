@@ -22,8 +22,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ComposeContextItem
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
@@ -105,11 +104,7 @@ fun ChatItemView(
 
       @Composable
       fun MsgContentItemDropdownMenu() {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           if (cItem.meta.itemDeleted == null && !live) {
             ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
               if (composeState.value.editing) {
@@ -168,8 +163,8 @@ fun ChatItemView(
               }
             )
           }
-          if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancellable) {
-            CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile)
+          if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
+            CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
           }
           if (!(live && cItem.meta.isLive)) {
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
@@ -183,11 +178,7 @@ fun ChatItemView(
 
       @Composable
       fun MarkedDeletedItemDropdownMenu() {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           if (!cItem.isDeletedContent) {
             ItemAction(
               stringResource(R.string.reveal_verb),
@@ -227,11 +218,7 @@ fun ChatItemView(
 
       @Composable fun DeletedItem() {
         DeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
@@ -278,14 +265,15 @@ fun ChatItemView(
 fun CancelFileItemAction(
   fileId: Long,
   showMenu: MutableState<Boolean>,
-  cancelFile: (Long) -> Unit
+  cancelFile: (Long) -> Unit,
+  cancelAction: CancelAction
 ) {
   ItemAction(
-    stringResource(R.string.cancel_verb),
+    stringResource(cancelAction.uiActionId),
     Icons.Outlined.Close,
     onClick = {
       showMenu.value = false
-      cancelFileAlertDialog(fileId, cancelFile = cancelFile)
+      cancelFileAlertDialog(fileId, cancelFile = cancelFile, cancelAction = cancelAction)
     },
     color = Color.Red
   )
@@ -328,27 +316,30 @@ fun ModerateItemAction(
 }
 
 @Composable
-fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
-  DropdownMenuItem(onClick) {
-    Row {
+fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
+  val finalColor = if (color == Color.Unspecified) {
+    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+  } else color
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
         modifier = Modifier
           .fillMaxWidth()
           .weight(1F)
           .padding(end = 15.dp),
-        color = color
+        color = finalColor
       )
-      Icon(icon, text, tint = color)
+      Icon(icon, text, tint = finalColor)
     }
   }
 }
 
-fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit) {
+fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.cancel_file__question),
-    text = generalGetString(R.string.file_transfer_will_be_cancelled_warning),
-    confirmText = generalGetString(R.string.confirm_verb),
+    title = generalGetString(cancelAction.alert.titleId),
+    text = generalGetString(cancelAction.alert.messageId),
+    confirmText = generalGetString(cancelAction.alert.confirmId),
     destructive = true,
     onConfirm = {
       cancelFile(fileId)
@@ -365,7 +356,7 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
         Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.Center,
       ) {
         TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)

@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"\nAvailable in v5.1" = "\n在 v5.1 中可用";
+
+/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -173,6 +176,12 @@
 "%lldw" = "%lldw";
 
 /* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u 消息解密失败。";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "已跳过 %u 条消息。";
+
+/* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
 
 /* No comment provided by engineer. */
@@ -285,6 +294,9 @@
 "Allow" = "允许";
 
 /* No comment provided by engineer. */
+"Allow calls only if your contact allows them." = "仅当您的联系人允许时才允许呼叫。";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "仅当您的联系人允许时才允许限时消息。";
 
 /* No comment provided by engineer. */
@@ -307,6 +319,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "允许语音消息？";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "允许您的联系人给您打电话。";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "允许您的联系人不可撤回地删除已发送消息。";
@@ -336,6 +351,9 @@
 "App icon" = "应用程序图标";
 
 /* No comment provided by engineer. */
+"App passcode" = "应用程序密码";
+
+/* No comment provided by engineer. */
 "App version" = "应用程序版本";
 
 /* No comment provided by engineer. */
@@ -356,17 +374,23 @@
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "语音通话（非端到端加密）";
 
+/* chat feature */
+"Audio/video calls" = "音频/视频通话";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "禁止音频/视频通话。";
+
 /* PIN entry */
 "Authentication cancelled" = "身份验证已取消";
 
 /* No comment provided by engineer. */
-"Authentication failed" = "身份认证失败";
+"Authentication failed" = "身份验证失败";
 
 /* No comment provided by engineer. */
 "Authentication is required before the call is connected, but you may miss calls." = "通话接通前需要进行认证，但您可能会错过来电。";
 
 /* No comment provided by engineer. */
-"Authentication unavailable" = "身份认证不可用";
+"Authentication unavailable" = "身份验证不可用";
 
 /* No comment provided by engineer. */
 "Auto-accept contact requests" = "自动接受联系人请求";
@@ -383,14 +407,23 @@
 /* integrity error chat item */
 "bad message hash" = "错误消息散列";
 
+/* No comment provided by engineer. */
+"Bad message hash" = "错误消息散列";
+
 /* integrity error chat item */
 "bad message ID" = "错误消息 ID";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "错误消息 ID";
 
 /* No comment provided by engineer. */
 "bold" = "加粗";
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "您和您的联系人都可以不可逆转地删除已发送的消息。";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "您和您的联系人都可以拨打电话。";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "您和您的联系人都可以发送限时消息。";
@@ -425,11 +458,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "无法邀请联系人！";
 
-/* chat item action */
-"Cancel" = "取消";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "取消文件传输？";
+"Cancel" = "取消";
 
 /* feature offered item */
 "cancelled %@" = "已取消 %@";
@@ -785,6 +815,9 @@
 /* No comment provided by engineer. */
 "Decentralized" = "分散式";
 
+/* No comment provided by engineer. */
+"Decryption error" = "解密错误";
+
 /* pref value */
 "default (%@)" = "默认 (%@)";
 
@@ -912,10 +945,10 @@
 "Device" = "设备";
 
 /* No comment provided by engineer. */
-"Device authentication is disabled. Turning off SimpleX Lock." = "设备认证被禁用。关闭 SimpleX 锁定。";
+"Device authentication is disabled. Turning off SimpleX Lock." = "设备验证被禁用。关闭 SimpleX 锁定。";
 
 /* No comment provided by engineer. */
-"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "没有启用设备认证。一旦启用设备认证，您可以通过设置打开 SimpleX 锁定。";
+"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "没有启用设备验证。一旦启用设备验证，您可以通过设置打开 SimpleX 锁定。";
 
 /* No comment provided by engineer. */
 "different migration in the app/database: %@ / %@" = "应用程序/数据库中的不同迁移：%@ / %@";
@@ -1206,9 +1239,6 @@
 "Exit without saving" = "退出而不保存";
 
 /* No comment provided by engineer. */
-"Experimental" = "实验性";
-
-/* No comment provided by engineer. */
 "Export database" = "导出数据库";
 
 /* No comment provided by engineer. */
@@ -1224,7 +1254,10 @@
 "Failed to remove passphrase" = "移除密码失败";
 
 /* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "文件传输将被取消。文件传输将被终止如果它正在进行中。";
+"Fast and no wait until the sender is online!" = "快速且无需等待发件人在线！";
+
+/* No comment provided by engineer. */
+"File will be deleted from servers." = "文件将从服务器中删除。";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "文件将在您的联系人完成上传后收到。";
@@ -1527,7 +1560,10 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "它允许在一个聊天资料中有多个匿名连接，而它们之间没有任何共享数据。";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "它可以在以下情况下发生：\n1. 如果消息在30天内没有被收到，就会在服务器上过期。\n2. 您用于接收来自此联系人的消息的服务器已更新并重新启动。\n3. 连接受损。\n请通过设置与开发者联系，以接收有关服务器的更新。\n我们将添加服务器冗余以防止丢失消息。";
+"It can happen when you or your connection used the old database backup." = "当您或您的连接使用旧数据库备份时，可能会发生这种情况。";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "它可能在以下情况发生：\n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。\n2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。\n3.连接被破坏。";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "您似乎已经通过此链接连接。如果不是这样，则有一个错误 (%@)。";
@@ -1849,6 +1885,9 @@
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "只有您可以不可撤回地删除消息（您的联系人可以将它们标记为删除）。";
 
 /* No comment provided by engineer. */
+"Only you can make calls." = "只有您可以拨打电话。";
+
+/* No comment provided by engineer. */
 "Only you can send disappearing messages." = "只有您可以发送限时消息。";
 
 /* No comment provided by engineer. */
@@ -1856,6 +1895,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "只有您的联系人才能不可撤回地删除消息（您可以将它们标记为删除）。";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "只有您的联系人可以拨打电话。";
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "只有您的联系人才可以发送限时消息。";
@@ -1926,6 +1968,9 @@
 /* No comment provided by engineer. */
 "Periodically" = "定期";
 
+/* message decrypt error item */
+"Permanent decryption error" = "解密错误";
+
 /* No comment provided by engineer. */
 "PING count" = "PING 次数";
 
@@ -1957,6 +2002,9 @@
 "Please remember or store it securely - there is no way to recover a lost passcode!" = "请牢记或妥善保管——丢失的密码将无法恢复！";
 
 /* No comment provided by engineer. */
+"Please report it to the developers." = "请向开发者报告。";
+
+/* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "请重新启动应用程序并迁移数据库以启用推送通知。";
 
 /* No comment provided by engineer. */
@@ -1964,6 +2012,9 @@
 
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "请安全地保存密码，如果您丢失了密码，您将无法更改它。";
+
+/* No comment provided by engineer. */
+"Polish interface" = "波兰语界面";
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "服务器地址中的证书指纹可能不正确";
@@ -1994,6 +2045,9 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "个人资料密码";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "禁止音频/视频通话。";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "禁止不可撤回消息删除。";
@@ -2039,6 +2093,9 @@
 
 /* notification */
 "Received file event" = "收到文件项目";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "即将停止接收文件。";
 
 /* No comment provided by engineer. */
 "Receiving via" = "接收通过";
@@ -2126,6 +2183,15 @@
 
 /* No comment provided by engineer. */
 "Revert" = "恢复";
+
+/* No comment provided by engineer. */
+"Revoke" = "撤销";
+
+/* cancel file action */
+"Revoke file" = "撤销文件";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "撤销文件？";
 
 /* No comment provided by engineer. */
 "Role" = "角色";
@@ -2236,13 +2302,13 @@
 "Send them from gallery or custom keyboards." = "发送它们来自图库或自定义键盘。";
 
 /* No comment provided by engineer. */
-"Send videos and files via XFTP" = "通过 XFTP 发送文件";
-
-/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "发送人已取消文件传输。";
 
 /* No comment provided by engineer. */
 "Sender may have deleted the connection request." = "发送人可能已删除连接请求。";
+
+/* No comment provided by engineer. */
+"Sending file will be stopped." = "即将停止发送文件。";
 
 /* No comment provided by engineer. */
 "Sending via" = "发送通过";
@@ -2273,6 +2339,9 @@
 
 /* No comment provided by engineer. */
 "Set group preferences" = "设置群组偏好设置";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "设置它以代替系统身份验证。";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "设置密码来导出";
@@ -2379,6 +2448,15 @@
 /* No comment provided by engineer. */
 "Stop chat?" = "停止聊天程序？";
 
+/* cancel file action */
+"Stop file" = "停止文件";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "停止接收文件？";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "停止发送文件？";
+
 /* authentication reason */
 "Stop SimpleX" = "停止 SimpleX";
 
@@ -2395,7 +2473,7 @@
 "System" = "系统";
 
 /* No comment provided by engineer. */
-"System authentication" = "系统认证";
+"System authentication" = "系统验证";
 
 /* No comment provided by engineer. */
 "Take picture" = "拍照";
@@ -2470,6 +2548,12 @@
 "The group is fully decentralized – it is visible only to the members." = "该小组是完全分散式的——它只对成员可见。";
 
 /* No comment provided by engineer. */
+"The hash of the previous message is different." = "上一条消息的散列不同。";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "下一条消息的 ID 不正确（小于或等于上一条）。\n它可能是由于某些错误或连接被破坏才发生。";
+
+/* No comment provided by engineer. */
 "The message will be deleted for all members." = "将为所有成员删除该消息。";
 
 /* No comment provided by engineer. */
@@ -2510,6 +2594,9 @@
 
 /* notification title */
 "this contact" = "这个联系人";
+
+/* No comment provided by engineer. */
+"This error is permanent for this connection, please re-connect." = "此错误对于此连接是永久性的，请重新连接。";
 
 /* No comment provided by engineer. */
 "This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "此功能是实验性的！ 它仅在其他客户端安装了 4.2 版时才有效。 地址更改完成后，您应该会在对话中看到该消息——请检查您是否仍能收到来自该联系人（或群组成员）的消息。";
@@ -2677,9 +2764,6 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "通过 XFTP 接收需要 v4.6.1 以上版本。";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "验证连接安全";
 
 /* No comment provided by engineer. */
@@ -2711,6 +2795,9 @@
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "视频将在您的联系人在线时收到，请稍等或稍后查看！";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "最大 1gb 的视频和文件";
 
 /* No comment provided by engineer. */
 "View security code" = "查看安全码";

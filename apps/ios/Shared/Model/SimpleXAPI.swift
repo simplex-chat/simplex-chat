@@ -187,7 +187,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true))
+    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true, xftp: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -1324,6 +1324,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if active(user) {
                 m.updateGroup(groupInfo)
             }
+        case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
+            chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileStart(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
@@ -1333,6 +1335,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             cleanupFile(aChatItem)
         case let .rcvFileProgressXFTP(user, aChatItem, _, _):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .rcvFileError(user, aChatItem):
+            chatItemSimpleUpdate(user, aChatItem)
+            cleanupFile(aChatItem)
         case let .sndFileStart(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileComplete(user, aChatItem, _):
@@ -1344,6 +1349,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileCompleteXFTP(user, aChatItem, _):
+            chatItemSimpleUpdate(user, aChatItem)
+            cleanupFile(aChatItem)
+        case let .sndFileError(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
             cleanupFile(aChatItem)
         case let .callInvitation(invitation):

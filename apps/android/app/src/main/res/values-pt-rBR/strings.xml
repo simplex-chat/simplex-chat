@@ -24,7 +24,7 @@
     <string name="icon_descr_asked_to_receive">Pediu para receber a imagem</string>
     <string name="icon_descr_cancel_live_message">Cancelar mensagem ao vivo</string>
     <string name="back">Voltar</string>
-    <string name="choose_file">Selecione o arquivo</string>
+    <string name="choose_file">Arquivo</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Adicionar novo contato</b>: para criar seu QR code de uso único para seu contato.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Escanear código QR</b>: para se conectar ao seu contato que mostra o código QR para você.</string>
     <string name="accept_contact_button">Aceitar</string>
@@ -352,6 +352,7 @@
     <string name="description_via_one_time_link_incognito">anônimo via link único</string>
     <string name="hide_verb">Ocultar</string>
     <string name="from_gallery_button">Da Galeria</string>
+    <string name="gallery_video_button">Vídeo</string>
     <string name="group_members_can_send_disappearing">Os membros do grupo podem enviar mensagens que desaparecem.</string>
     <string name="icon_descr_file">Arquivo</string>
     <string name="full_name__field">Nome completo:</string>
@@ -499,7 +500,7 @@
     <string name="save_color">Salvar cor</string>
     <string name="v4_5_italian_interface">interface italiana</string>
     <string name="periodic_notifications">Notificações periódicas</string>
-    <string name="use_camera_button">Usar câmera</string>
+    <string name="use_camera_button">Câmera</string>
     <string name="your_ICE_servers">Seus servidores ICE</string>
     <string name="your_ice_servers">Seus servidores ICE</string>
     <string name="your_privacy">Sua privacidade</string>
@@ -690,7 +691,7 @@
     <string name="v4_6_reduced_battery_usage">Maior redução no uso da bateria</string>
     <string name="v4_6_reduced_battery_usage_descr">Mais melhorias chegarão em breve!</string>
     <string name="settings_section_title_you">VOCÊ</string>
-    <string name="settings_section_title_messages">MENSAGENS</string>
+    <string name="settings_section_title_messages">MENSAGENS E ARQUIVOS</string>
     <string name="your_chat_database">Seu banco de dados de chat</string>
     <string name="snd_group_event_member_deleted">Você removeu&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"member profile\" example=\"alice (Alice)\"&gt;</string>
     <string name="group_member_status_removed">removido</string>
@@ -699,7 +700,6 @@
     <string name="group_member_status_invited">convidado</string>
     <string name="select_contacts">Selecionar contatos</string>
     <string name="num_contacts_selected">%d contato(s) selecionado(s)</string>
-    <string name="settings_send_files_via_xftp">Envie vídeos e arquivos via XFTP</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Esta ação não pode ser desfeita - seu perfil, contatos, mensagens e arquivos serão irreversivelmente perdidos.</string>
     <string name="remove_passphrase">Remover</string>
     <string name="wrong_passphrase">Senha do banco de dados incorreta</string>
@@ -833,9 +833,7 @@
     <string name="network_use_onion_hosts_no">Não</string>
     <string name="network_disable_socks">Usar conexão direta com a internet\?</string>
     <string name="hide_dev_options">Ocultar:</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Seu perfil é guardado no seu diapositivo e é compartilhado somente com seus contatos.
-\n
-\n<xliff:g id="appName">Servidores</xliff:g> SimpleX não podem ver seu perfil.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Seu perfil é guardado no seu diapositivo e é compartilhado somente com seus contatos. <xliff:g id="appName">Servidores</xliff:g> SimpleX não podem ver seu perfil.</string>
     <string name="save_preferences_question">Salvar preferências\?</string>
     <string name="save_and_notify_group_members">Salvar e notificar membros do grupo</string>
     <string name="error_saving_user_password">Erro ao salvar a senha do usuário</string>
@@ -1010,7 +1008,6 @@
     <string name="callstate_waiting_for_confirmation">aguardando confirmação…</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Não armazenamos nenhum dos seus contatos ou mensagens (uma vez entregues) nos servidores.</string>
     <string name="alert_title_skipped_messages">Mensagens ignoradas</string>
-    <string name="xftp_requires_v461">v4.6.1+ é necessário receber via XFTP.</string>
     <string name="tap_to_activate_profile">Toque para ativar o perfil.</string>
     <string name="unhide_chat_profile">Mostrar perfil de chat</string>
     <string name="unhide_profile">Mostrar perfil</string>
@@ -1038,7 +1035,7 @@
     <string name="ntf_channel_calls">Chamadas</string>
     <string name="ntf_channel_messages">Mensagens</string>
     <string name="la_notice_title_simplex_lock">Bloqueio SimpleX</string>
-    <string name="markdown_help">Ajuda Markdown</string>
+    <string name="markdown_help">Ajuda com Markdown</string>
     <string name="onboarding_notifications_mode_service">Instantânea</string>
     <string name="open_simplex_chat_to_accept_call">Abra<xliff:g id="appNameFull">o chat do SimpleX</xliff:g> para aceitar a chamada</string>
     <string name="call_connection_via_relay">via relay</string>
@@ -1055,4 +1052,52 @@
     <string name="you_control_servers_to_receive_your_contacts_to_send">Você controla por meio de qual(is) servidor(es) <b>receber</b> as mensagens, seus contatos controlam os servidores que você usa para enviar mensagens.</string>
     <string name="smp_server_test_secure_queue">Fila segura</string>
     <string name="icon_descr_profile_image_placeholder">imagem de perfil temporária</string>
+    <string name="error_loading_smp_servers">Erro ao carregar servidores SMP</string>
+    <string name="error_loading_xftp_servers">Erro ao carregar servidores XFTP</string>
+    <string name="error_saving_xftp_servers">Erro ao salvar servidores XFTP</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços dos servidores XFTP estejam no formato correto, separados por linha e não estão duplicados.</string>
+    <string name="smp_server_test_create_file">Criar arquivo</string>
+    <string name="smp_server_test_download_file">Baixar arquivo</string>
+    <string name="error_xftp_test_server_auth">O servidor requer autorização para fazer upload, verifique a senha</string>
+    <string name="smp_server_test_upload_file">Enviar arquivo</string>
+    <string name="smp_server_test_compare_file">Comparar arquivo</string>
+    <string name="smp_server_test_delete_file">Excluír arquivo</string>
+    <string name="your_XFTP_servers">Seus servidores XFTP</string>
+    <string name="la_auth_failed">Autenticação falhou</string>
+    <string name="la_change_app_passcode">Mudar senha</string>
+    <string name="la_current_app_passcode">Senha atual</string>
+    <string name="la_minutes">%d minutos</string>
+    <string name="la_seconds">%d segundos</string>
+    <string name="la_enter_app_passcode">Digite a senha</string>
+    <string name="la_immediately">Imediatamente</string>
+    <string name="la_no_app_password">Sem senha de aplicativo</string>
+    <string name="la_lock_mode_passcode">Entrada de senha</string>
+    <string name="la_please_remember_to_store_password">Por favor, lembre-se ou guarde-a com segurança - não há como recuperar uma senha perdida!</string>
+    <string name="la_lock_mode">Modo de bloqueio SimpleX</string>
+    <string name="la_lock_mode_system">Autenticação do sistema</string>
+    <string name="la_could_not_be_verified">Você não pôde ser verificado; por favor, tente novamente.</string>
+    <string name="la_authenticate">Autenticar</string>
+    <string name="lock_not_enabled">Bloqueio SimpleX não ativado!</string>
+    <string name="xftp_servers">Servidores XFTP</string>
+    <string name="network_proxy_port">porta %d</string>
+    <string name="network_socks_proxy_settings">Configurações de proxy SOCKS</string>
+    <string name="network_socks_toggle_use_socks_proxy">Usar proxy SOCKS</string>
+    <string name="host_verb">Hospedar</string>
+    <string name="disable_onion_hosts_when_not_supported">Definir <i>Usar hosts .onion</i> para não se o proxy SOCKS não oferecer suporte a eles.</string>
+    <string name="port_verb">Porta</string>
+    <string name="confirm_passcode">Confirmar senha</string>
+    <string name="incorrect_passcode">Senha incorreta</string>
+    <string name="lock_after">Bloquear após</string>
+    <string name="submit_passcode">Enviar</string>
+    <string name="change_lock_mode">Mudar modo de bloqueio</string>
+    <string name="lock_mode">Modo de bloqueio</string>
+    <string name="new_passcode">Nova Senha</string>
+    <string name="passcode_not_changed">A senha não foi alterada!</string>
+    <string name="passcode_set">Senha definida!</string>
+    <string name="la_mode_system">Sistema</string>
+    <string name="la_mode_passcode">Senha</string>
+    <string name="authentication_cancelled">Autenticação cancelada</string>
+    <string name="enable_lock">Habilitar bloqueio</string>
+    <string name="passcode_changed">Senha alterada!</string>
+    <string name="you_can_turn_on_lock">Você pode ativar o bloqueio SimpleX via Configurações.</string>
 </resources>

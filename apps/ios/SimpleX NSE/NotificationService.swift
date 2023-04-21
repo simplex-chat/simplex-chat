@@ -272,25 +272,25 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
         }
         if case .image = cItem.content.msgContent {
-           if let file = cItem.file,
-              file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
-              privacyAcceptImagesGroupDefault.get() {
-               cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
-           }
+            if let file = cItem.file,
+               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
+               privacyAcceptImagesGroupDefault.get() {
+                cItem = autoReceiveFile(file) ?? cItem
+            }
         } else if case .video = cItem.content.msgContent {
             if let file = cItem.file,
                file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV,
                privacyAcceptImagesGroupDefault.get() {
-                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+                cItem = autoReceiveFile(file) ?? cItem
             }
         } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
             if let file = cItem.file,
                file.fileSize <= MAX_IMAGE_SIZE,
                file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND,
                privacyAcceptImagesGroupDefault.get() {
-                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+                cItem = autoReceiveFile(file) ?? cItem
             }
-         }
+        }
         let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(notification: createMessageReceivedNtf(user, cInfo, cItem)) : .empty
         return cItem.showMutableNotification ? (aChatItem.chatId, ntf) : nil
     case let .rcvFileSndCancelled(_, aChatItem, _):
@@ -343,7 +343,7 @@ func apiGetActiveUser() -> User? {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = sendSimpleXCmd(.startChat(subscribe: false, expire: false))
+    let r = sendSimpleXCmd(.startChat(subscribe: false, expire: false, xftp: false))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -396,6 +396,22 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil) -> AChatItem? {
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
+}
+
+func apiSetFileToReceive(fileId: Int64) {
+    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId))
+    if case .cmdOk = r { return }
+    logger.error("setFileToReceive error: \(responseError(r))")
+}
+
+func autoReceiveFile(_ file: CIFile) -> ChatItem? {
+    switch file.fileProtocol {
+    case .smp:
+        return apiReceiveFile(fileId: file.fileId)?.chatItem
+    case .xftp:
+        apiSetFileToReceive(fileId: file.fileId)
+        return nil
+    }
 }
 
 func setNetworkConfig(_ cfg: NetCfg) throws {

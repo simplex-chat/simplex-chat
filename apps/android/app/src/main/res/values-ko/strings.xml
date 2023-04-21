@@ -328,7 +328,7 @@
     <string name="auth_enable_simplex_lock">SimpleX 잠금 활성화</string>
     <string name="auth_log_in_using_credential">자격 증명으로 로그인</string>
     <string name="auth_open_chat_console">채팅 콘솔 열기</string>
-    <string name="auth_stop_chat">채팅 중지하기</string>
+    <string name="auth_stop_chat">채팅 기능 중지하기</string>
     <string name="auth_unlock">잠금 해제하기</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">앱을 사용하지 않는 지 30초가 지나면 다시 인증해야 해요.</string>
     <string name="contact_wants_to_connect_with_you">님이 연결하고 싶어해요!</string>
@@ -841,7 +841,6 @@
     <string name="select_contacts">연락처 선택</string>
     <string name="skip_inviting_button">멤버 초대 건너뛰기</string>
     <string name="sending_via">다음을 통해 보내기</string>
-    <string name="settings_send_files_via_xftp">XFTP로 동영상 및 파일 보내기</string>
     <string name="stop_chat_confirmation">멈추기</string>
     <string name="snd_group_event_changed_member_role">%s의 역할을 %s로 변경했어요.</string>
     <string name="section_title_for_console">콘솔용</string>
@@ -887,4 +886,11 @@
     <string name="smp_servers_your_server">내 서버</string>
     <string name="smp_servers_your_server_address">내 서버 주소</string>
     <string name="snd_group_event_member_deleted"><xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g>을(를) 강퇴했어요.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">채팅 데이터베이스를 내보내기, 가져오기 또는 삭제 하려면 채팅 기능을 중지해 주세요. 채팅 기능이 중지된 동안에는 메시지를 주고받을 수 없어요.</string>
+    <string name="store_passphrase_securely">비밀번호를 모르면 변경하거나 찾을 수 없으므로 비밀번호를 안전하게 보관해 주세요.</string>
+    <string name="submit_passcode">제출하기</string>
+    <string name="store_passphrase_securely_without_recover">비밀번호를 모르면 채팅에 액세스할 수 없으니 비밀번호를 안전하게 보관해 주세요.</string>
+    <string name="stop_chat_question">채팅 기능을 중지할까요\?</string>
+    <string name="stop_chat_to_enable_database_actions">데이터베이스 작업을 할 수 있도록 채팅 기능을 중지하기</string>
+    <string name="switch_receiving_address">수신 주소 바꾸기</string>
 </resources>

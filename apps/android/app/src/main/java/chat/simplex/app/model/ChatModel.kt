@@ -729,6 +729,7 @@ data class Contact(
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.enabled.forUser
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.enabled.forUser
     ChatFeature.Voice -> mergedPreferences.voice.enabled.forUser
+    ChatFeature.Calls -> mergedPreferences.calls.enabled.forUser
   }
   override val timedMessagesTTL: Int? get() = with(mergedPreferences.timedMessages) { if (enabled.forUser) userPreference.pref.ttl else null }
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
@@ -747,12 +748,14 @@ data class Contact(
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.Voice -> mergedPreferences.voice.contactPreference.allow != FeatureAllowed.NO
+    ChatFeature.Calls -> mergedPreferences.calls.contactPreference.allow != FeatureAllowed.NO
   }
 
   fun userAllowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.Voice -> mergedPreferences.voice.userPreference.pref.allow != FeatureAllowed.NO
+    ChatFeature.Calls -> mergedPreferences.calls.userPreference.pref.allow != FeatureAllowed.NO
   }
 
   companion object {
@@ -882,6 +885,7 @@ data class GroupInfo (
     ChatFeature.TimedMessages -> fullGroupPreferences.timedMessages.on
     ChatFeature.FullDelete -> fullGroupPreferences.fullDelete.on
     ChatFeature.Voice -> fullGroupPreferences.voice.on
+    ChatFeature.Calls -> false
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
   override val displayName get() = groupProfile.displayName
@@ -1734,23 +1738,32 @@ class CIFile(
     is CIFileStatus.SndTransfer -> true
     is CIFileStatus.SndComplete -> true
     is CIFileStatus.SndCancelled -> true
+    is CIFileStatus.SndError -> true
     is CIFileStatus.RcvInvitation -> false
     is CIFileStatus.RcvAccepted -> false
     is CIFileStatus.RcvTransfer -> false
     is CIFileStatus.RcvCancelled -> false
     is CIFileStatus.RcvComplete -> true
+    is CIFileStatus.RcvError -> false
   }
 
-  val cancellable: Boolean = when (fileStatus) {
-    is CIFileStatus.SndStored -> fileProtocol != FileProtocol.XFTP // TODO true - enable when XFTP send supports cancel
-    is CIFileStatus.SndTransfer -> fileProtocol != FileProtocol.XFTP // TODO true
-    is CIFileStatus.SndComplete -> false
-    is CIFileStatus.SndCancelled -> false
-    is CIFileStatus.RcvInvitation -> false
-    is CIFileStatus.RcvAccepted -> true
-    is CIFileStatus.RcvTransfer -> true
-    is CIFileStatus.RcvCancelled -> false
-    is CIFileStatus.RcvComplete -> false
+  val cancelAction: CancelAction? = when (fileStatus) {
+    is CIFileStatus.SndStored -> sndCancelAction
+    is CIFileStatus.SndTransfer -> sndCancelAction
+    is CIFileStatus.SndComplete ->
+      if (fileProtocol == FileProtocol.XFTP) {
+        revokeCancelAction
+      } else {
+        null
+      }
+    is CIFileStatus.SndCancelled -> null
+    is CIFileStatus.SndError -> null
+    is CIFileStatus.RcvInvitation -> null
+    is CIFileStatus.RcvAccepted -> rcvCancelAction
+    is CIFileStatus.RcvTransfer -> rcvCancelAction
+    is CIFileStatus.RcvCancelled -> null
+    is CIFileStatus.RcvComplete -> null
+    is CIFileStatus.RcvError -> null
   }
 
   companion object {
@@ -1766,6 +1779,44 @@ class CIFile(
 }
 
 @Serializable
+class CancelAction(
+  val uiActionId: Int,
+  val alert: AlertInfo
+)
+
+@Serializable
+class AlertInfo(
+  val titleId: Int,
+  val messageId: Int,
+  val confirmId: Int
+)
+
+private val sndCancelAction: CancelAction = CancelAction(
+  uiActionId = R.string.stop_file__action,
+  alert = AlertInfo(
+    titleId = R.string.stop_snd_file__title,
+    messageId = R.string.stop_snd_file__message,
+    confirmId = R.string.stop_file__confirm
+  )
+)
+private val revokeCancelAction: CancelAction = CancelAction(
+  uiActionId = R.string.revoke_file__action,
+  alert = AlertInfo(
+    titleId = R.string.revoke_file__title,
+    messageId = R.string.revoke_file__message,
+    confirmId = R.string.revoke_file__confirm
+  )
+)
+private val rcvCancelAction: CancelAction = CancelAction(
+  uiActionId = R.string.stop_file__action,
+  alert = AlertInfo(
+    titleId = R.string.stop_rcv_file__title,
+    messageId = R.string.stop_rcv_file__message,
+    confirmId = R.string.stop_file__confirm
+  )
+)
+
+@Serializable
 enum class FileProtocol {
   @SerialName("smp") SMP,
   @SerialName("xftp") XFTP;
@@ -1777,11 +1828,13 @@ sealed class CIFileStatus {
   @Serializable @SerialName("sndTransfer") class SndTransfer(val sndProgress: Long, val sndTotal: Long): CIFileStatus()
   @Serializable @SerialName("sndComplete") object SndComplete: CIFileStatus()
   @Serializable @SerialName("sndCancelled") object SndCancelled: CIFileStatus()
+  @Serializable @SerialName("sndError") object SndError: CIFileStatus()
   @Serializable @SerialName("rcvInvitation") object RcvInvitation: CIFileStatus()
   @Serializable @SerialName("rcvAccepted") object RcvAccepted: CIFileStatus()
   @Serializable @SerialName("rcvTransfer") class RcvTransfer(val rcvProgress: Long, val rcvTotal: Long): CIFileStatus()
   @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
+  @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")

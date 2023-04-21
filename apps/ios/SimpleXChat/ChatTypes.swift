@@ -162,17 +162,20 @@ public struct FullPreferences: Decodable, Equatable {
     public var timedMessages: TimedMessagesPreference
     public var fullDelete: SimplePreference
     public var voice: SimplePreference
+    public var calls: SimplePreference
 
-    public init(timedMessages: TimedMessagesPreference, fullDelete: SimplePreference, voice: SimplePreference) {
+    public init(timedMessages: TimedMessagesPreference, fullDelete: SimplePreference, voice: SimplePreference, calls: SimplePreference) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
+        self.calls = calls
     }
 
     public static let sampleData = FullPreferences(
         timedMessages:  TimedMessagesPreference(allow: .no),
         fullDelete: SimplePreference(allow: .no),
-        voice: SimplePreference(allow: .yes)
+        voice: SimplePreference(allow: .yes),
+        calls: SimplePreference(allow: .yes)
     )
 }
 
@@ -180,18 +183,21 @@ public struct Preferences: Codable {
     public var timedMessages: TimedMessagesPreference?
     public var fullDelete: SimplePreference?
     public var voice: SimplePreference?
+    public var calls: SimplePreference?
 
-    public init(timedMessages: TimedMessagesPreference?, fullDelete: SimplePreference?, voice: SimplePreference?) {
+    public init(timedMessages: TimedMessagesPreference?, fullDelete: SimplePreference?, voice: SimplePreference?, calls: SimplePreference?) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
+        self.calls = calls
     }
 
-    func copy(timedMessages: TimedMessagesPreference? = nil, fullDelete: SimplePreference? = nil, voice: SimplePreference? = nil) -> Preferences {
+    func copy(timedMessages: TimedMessagesPreference? = nil, fullDelete: SimplePreference? = nil, voice: SimplePreference? = nil, calls: SimplePreference? = nil) -> Preferences {
         Preferences(
             timedMessages: timedMessages ?? self.timedMessages,
             fullDelete: fullDelete ?? self.fullDelete,
-            voice: voice ?? self.voice
+            voice: voice ?? self.voice,
+            calls: calls ?? self.calls
         )
     }
 
@@ -200,13 +206,15 @@ public struct Preferences: Codable {
         case .timedMessages: return copy(timedMessages: TimedMessagesPreference(allow: allowed, ttl: param ?? timedMessages?.ttl))
         case .fullDelete: return copy(fullDelete: SimplePreference(allow: allowed))
         case .voice: return copy(voice: SimplePreference(allow: allowed))
+        case .calls: return copy(calls: SimplePreference(allow: allowed))
         }
     }
 
     public static let sampleData = Preferences(
         timedMessages: TimedMessagesPreference(allow: .no),
         fullDelete: SimplePreference(allow: .no),
-        voice: SimplePreference(allow: .yes)
+        voice: SimplePreference(allow: .yes),
+        calls: SimplePreference(allow: .yes)
     )
 }
 
@@ -214,7 +222,8 @@ public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> 
     Preferences(
         timedMessages: fullPreferences.timedMessages,
         fullDelete: fullPreferences.fullDelete,
-        voice: fullPreferences.voice
+        voice: fullPreferences.voice,
+        calls: fullPreferences.calls
     )
 }
 
@@ -222,7 +231,8 @@ public func contactUserPreferencesToPreferences(_ contactUserPreferences: Contac
     Preferences(
         timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
         fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
-        voice: contactUserPreferences.voice.userPreference.preference
+        voice: contactUserPreferences.voice.userPreference.preference,
+        calls: contactUserPreferences.calls.userPreference.preference
     )
 }
 
@@ -308,15 +318,18 @@ public struct ContactUserPreferences: Decodable {
     public var timedMessages: ContactUserPreference<TimedMessagesPreference>
     public var fullDelete: ContactUserPreference<SimplePreference>
     public var voice: ContactUserPreference<SimplePreference>
+    public var calls: ContactUserPreference<SimplePreference>
 
     public init(
         timedMessages: ContactUserPreference<TimedMessagesPreference>,
         fullDelete: ContactUserPreference<SimplePreference>,
-        voice: ContactUserPreference<SimplePreference>
+        voice: ContactUserPreference<SimplePreference>,
+        calls: ContactUserPreference<SimplePreference>
     ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
+        self.calls = calls
     }
 
     public static let sampleData = ContactUserPreferences(
@@ -331,6 +344,11 @@ public struct ContactUserPreferences: Decodable {
             contactPreference: SimplePreference(allow: .no)
         ),
         voice: ContactUserPreference<SimplePreference>(
+            enabled: FeatureEnabled(forUser: true, forContact: true),
+            userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .yes)),
+            contactPreference: SimplePreference(allow: .yes)
+        ),
+        calls: ContactUserPreference<SimplePreference>(
             enabled: FeatureEnabled(forUser: true, forContact: true),
             userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .yes)),
             contactPreference: SimplePreference(allow: .yes)
@@ -405,6 +423,7 @@ public enum ChatFeature: String, Decodable, Feature {
     case timedMessages
     case fullDelete
     case voice
+    case calls
 
     public var values: [ChatFeature] { [.fullDelete, .voice] }
 
@@ -429,6 +448,7 @@ public enum ChatFeature: String, Decodable, Feature {
         case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
+        case .calls: return NSLocalizedString("Audio/video calls", comment: "chat feature")
         }
     }
 
@@ -437,6 +457,7 @@ public enum ChatFeature: String, Decodable, Feature {
         case .timedMessages: return "stopwatch"
         case .fullDelete: return "trash.slash"
         case .voice: return "mic"
+        case .calls: return "phone"
         }
     }
 
@@ -445,6 +466,7 @@ public enum ChatFeature: String, Decodable, Feature {
         case .timedMessages: return "stopwatch.fill"
         case .fullDelete: return "trash.slash.fill"
         case .voice: return "mic.fill"
+        case .calls: return "phone.fill"
         }
     }
 
@@ -475,6 +497,12 @@ public enum ChatFeature: String, Decodable, Feature {
             case .yes: return "Allow voice messages only if your contact allows them."
             case .no: return "Prohibit sending voice messages."
             }
+        case .calls:
+            switch allowed {
+            case .always: return "Allow your contacts to call you."
+            case .yes: return "Allow calls only if your contact allows them."
+            case .no: return "Prohibit audio/video calls."
+            }
         }
     }
 
@@ -504,6 +532,14 @@ public enum ChatFeature: String, Decodable, Feature {
                     : enabled.forContact
                     ? "Only your contact can send voice messages."
                     : "Voice messages are prohibited in this chat."
+        case .calls:
+            return enabled.forUser && enabled.forContact
+                    ? "Both you and your contact can make calls."
+                    : enabled.forUser
+                    ? "Only you can make calls."
+                    : enabled.forContact
+                    ? "Only your contact can make calls."
+                    : "Audio/video calls are prohibited."
         }
     }
 }
@@ -646,19 +682,22 @@ public struct ContactFeaturesAllowed: Equatable {
     public var timedMessagesTTL: Int?
     public var fullDelete: ContactFeatureAllowed
     public var voice: ContactFeatureAllowed
+    public var calls: ContactFeatureAllowed
 
-    public init(timedMessagesAllowed: Bool, timedMessagesTTL: Int?, fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed) {
+    public init(timedMessagesAllowed: Bool, timedMessagesTTL: Int?, fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed, calls: ContactFeatureAllowed) {
         self.timedMessagesAllowed = timedMessagesAllowed
         self.timedMessagesTTL = timedMessagesTTL
         self.fullDelete = fullDelete
         self.voice = voice
+        self.calls = calls
     }
 
     public static let sampleData = ContactFeaturesAllowed(
         timedMessagesAllowed: false,
         timedMessagesTTL: nil,
         fullDelete: ContactFeatureAllowed.userDefault(.no),
-        voice: ContactFeatureAllowed.userDefault(.yes)
+        voice: ContactFeatureAllowed.userDefault(.yes),
+        calls: ContactFeatureAllowed.userDefault(.yes)
     )
 }
 
@@ -669,7 +708,8 @@ public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactU
         timedMessagesAllowed: allow == .yes || allow == .always,
         timedMessagesTTL: pref.preference.ttl,
         fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
-        voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
+        voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
+        calls: contactUserPrefToFeatureAllowed(contactUserPreferences.calls)
     )
 }
 
@@ -689,7 +729,8 @@ public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeatu
     Preferences(
         timedMessages: TimedMessagesPreference(allow: contactFeaturesAllowed.timedMessagesAllowed ? .yes : .no, ttl: contactFeaturesAllowed.timedMessagesTTL),
         fullDelete: contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
-        voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
+        voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
+        calls: contactFeatureAllowedToPref(contactFeaturesAllowed.calls)
     )
 }
 
@@ -977,6 +1018,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case .timedMessages: return cups.timedMessages.enabled.forUser
             case .fullDelete: return cups.fullDelete.enabled.forUser
             case .voice: return cups.voice.enabled.forUser
+            case .calls: return cups.calls.enabled.forUser
             }
         case let .group(groupInfo):
             let prefs = groupInfo.fullGroupPreferences
@@ -984,6 +1026,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case .timedMessages: return prefs.timedMessages.on
             case .fullDelete: return prefs.fullDelete.on
             case .voice: return prefs.voice.on
+            case .calls: return false
             }
         default: return false
         }
@@ -1137,6 +1180,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         case .timedMessages: return mergedPreferences.timedMessages.contactPreference.allow != .no
         case .fullDelete: return mergedPreferences.fullDelete.contactPreference.allow != .no
         case .voice: return mergedPreferences.voice.contactPreference.allow != .no
+        case .calls: return mergedPreferences.calls.contactPreference.allow != .no
         }
     }
 
@@ -1145,6 +1189,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         case .timedMessages: return mergedPreferences.timedMessages.userPreference.preference.allow != .no
         case .fullDelete: return mergedPreferences.fullDelete.userPreference.preference.allow != .no
         case .voice: return mergedPreferences.voice.userPreference.preference.allow != .no
+        case .calls: return mergedPreferences.calls.userPreference.preference.allow != .no
         }
     }
 
@@ -2236,31 +2281,78 @@ public struct CIFile: Decodable {
             case .sndTransfer: return true
             case .sndComplete: return true
             case .sndCancelled: return true
+            case .sndError: return true
             case .rcvInvitation: return false
             case .rcvAccepted: return false
             case .rcvTransfer: return false
             case .rcvCancelled: return false
             case .rcvComplete: return true
+            case .rcvError: return false
             }
         }
     }
 
-    public var cancellable: Bool {
+    public var cancelAction: CancelAction? {
         get {
             switch self.fileStatus {
-            case .sndStored: return self.fileProtocol != .xftp // TODO true - enable when XFTP send supports cancel
-            case .sndTransfer: return self.fileProtocol != .xftp // TODO true
-            case .sndComplete: return false
-            case .sndCancelled: return false
-            case .rcvInvitation: return false
-            case .rcvAccepted: return true
-            case .rcvTransfer: return true
-            case .rcvCancelled: return false
-            case .rcvComplete: return false
+            case .sndStored: return sndCancelAction
+            case .sndTransfer: return sndCancelAction
+            case .sndComplete:
+                if self.fileProtocol == .xftp {
+                    return revokeCancelAction
+                } else {
+                    return nil
+                }
+            case .sndCancelled: return nil
+            case .sndError: return nil
+            case .rcvInvitation: return nil
+            case .rcvAccepted: return rcvCancelAction
+            case .rcvTransfer: return rcvCancelAction
+            case .rcvCancelled: return nil
+            case .rcvComplete: return nil
+            case .rcvError: return nil
             }
         }
     }
 }
+
+public struct CancelAction {
+    public var uiAction: String
+    public var alert: AlertInfo
+}
+
+public struct AlertInfo {
+    public var title: LocalizedStringKey
+    public var message: LocalizedStringKey
+    public var confirm: LocalizedStringKey
+}
+
+private var sndCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Stop file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Stop sending file?",
+        message: "Sending file will be stopped.",
+        confirm: "Stop"
+    )
+)
+
+private var revokeCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Revoke file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Revoke file?",
+        message: "File will be deleted from servers.",
+        confirm: "Revoke"
+    )
+)
+
+private var rcvCancelAction = CancelAction(
+    uiAction: NSLocalizedString("Stop file", comment: "cancel file action"),
+    alert: AlertInfo(
+        title: "Stop receiving file?",
+        message: "Receiving file will be stopped.",
+        confirm: "Stop"
+    )
+)
 
 public enum FileProtocol: String, Decodable {
     case smp = "smp"
@@ -2272,11 +2364,13 @@ public enum CIFileStatus: Decodable {
     case sndTransfer(sndProgress: Int64, sndTotal: Int64)
     case sndComplete
     case sndCancelled
+    case sndError
     case rcvInvitation
     case rcvAccepted
     case rcvTransfer(rcvProgress: Int64, rcvTotal: Int64)
     case rcvComplete
     case rcvCancelled
+    case rcvError
 
     var id: String {
         switch self {
@@ -2284,11 +2378,13 @@ public enum CIFileStatus: Decodable {
         case let .sndTransfer(sndProgress, sndTotal): return "sndTransfer \(sndProgress) \(sndTotal)"
         case .sndComplete: return "sndComplete"
         case .sndCancelled: return "sndCancelled"
+        case .sndError: return "sndError"
         case .rcvInvitation: return "rcvInvitation"
         case .rcvAccepted: return "rcvAccepted"
         case let .rcvTransfer(rcvProgress, rcvTotal): return "rcvTransfer \(rcvProgress) \(rcvTotal)"
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
+        case .rcvError: return "rcvError"
         }
     }
 }

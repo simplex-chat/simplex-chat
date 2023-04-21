@@ -300,6 +300,7 @@ private fun loadingIndicator(file: CIFile?) {
           }
         is CIFileStatus.SndComplete -> fileIcon(Icons.Filled.Check, R.string.icon_descr_video_snd_complete)
         is CIFileStatus.SndCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
+        is CIFileStatus.SndError -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
         is CIFileStatus.RcvInvitation -> fileIcon(Icons.Outlined.ArrowDownward, R.string.icon_descr_video_asked_to_receive)
         is CIFileStatus.RcvAccepted -> fileIcon(Icons.Outlined.MoreHoriz, R.string.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
@@ -309,6 +310,7 @@ private fun loadingIndicator(file: CIFile?) {
             progressIndicator()
           }
         is CIFileStatus.RcvCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
+        is CIFileStatus.RcvError -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
         else -> {}
       }
     }

@@ -82,10 +82,12 @@ fun CIImageView(
           is CIFileStatus.SndTransfer -> progressIndicator()
           is CIFileStatus.SndComplete -> fileIcon(Icons.Filled.Check, R.string.icon_descr_image_snd_complete)
           is CIFileStatus.SndCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
+          is CIFileStatus.SndError -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
           is CIFileStatus.RcvInvitation -> fileIcon(Icons.Outlined.ArrowDownward, R.string.icon_descr_asked_to_receive)
           is CIFileStatus.RcvAccepted -> fileIcon(Icons.Outlined.MoreHoriz, R.string.icon_descr_waiting_for_image)
           is CIFileStatus.RcvTransfer -> progressIndicator()
           is CIFileStatus.RcvCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
+          is CIFileStatus.RcvError -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
           else -> {}
         }
       }

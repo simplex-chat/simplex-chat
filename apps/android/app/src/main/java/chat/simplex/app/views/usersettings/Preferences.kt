@@ -80,6 +80,11 @@ private fun PreferencesLayout(
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }
     SectionSpacer()
+    val allowCalls = remember(preferences) { mutableStateOf(preferences.calls.allow) }
+    FeatureSection(ChatFeature.Calls, allowCalls) {
+      applyPrefs(preferences.copy(calls = SimpleChatPreference(allow = it)))
+    }
+    SectionSpacer()
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,
@@ -97,11 +102,12 @@ private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllo
         FeatureAllowed.values().map { it to it.text },
         allowFeature,
         icon = feature.icon,
-        onSelected = onSelected
+        enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
+        onSelected = onSelected,
       )
     }
   }
-  SectionTextFooter(feature.allowDescription(allowFeature.value))
+  SectionTextFooter(feature.allowDescription(allowFeature.value) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
 }
 
 @Composable

@@ -156,6 +156,7 @@ fun CIFileView(
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          is CIFileStatus.SndError -> fileIcon(innerIcon = Icons.Outlined.Close)
           is CIFileStatus.RcvInvitation ->
             if (fileSizeValid())
               fileIcon(innerIcon = Icons.Outlined.ArrowDownward, color = MaterialTheme.colors.primary)
@@ -170,6 +171,7 @@ fun CIFileView(
             }
           is CIFileStatus.RcvComplete -> fileIcon()
           is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          is CIFileStatus.RcvError -> fileIcon(innerIcon = Icons.Outlined.Close)
         }
       } else {
         fileIcon()

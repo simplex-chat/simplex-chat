@@ -229,7 +229,8 @@ CREATE TABLE rcv_files(
   file_descr_id INTEGER NULL
   REFERENCES xftp_file_descriptions ON DELETE SET NULL,
   agent_rcv_file_id BLOB NULL,
-  agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL)
+  agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL),
+  to_receive INTEGER
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
