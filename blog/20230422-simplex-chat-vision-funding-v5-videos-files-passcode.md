@@ -51,8 +51,8 @@ Going forward we plan to keep the basic usage of the platform free, and at the s
 ### What is next?
 
 Our goals for the next 1-2 years are to make the messaging network:
-- more reliable and resilient by adding redundancy into the message delivery and delivery receipts,
-- more private by adding automating rotation of the servers used to deliver messages and by adding delivery relays to better protect IP addresses of the users,
+- more reliable and resilient, by adding redundancy into the message delivery and delivery receipts,
+- more private, by automating rotation of the servers used to deliver messages and by adding delivery relays to better protect IP addresses of the users,
 - more usable by adding and improving the functions users are expecting in messengers, and also adding some unique functions, like we did with [incognito mode](./20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode), [live messages](./20230103-simplex-chat-v4.4-disappearing-messages.md#live-messages) and [hidden profiles](./20230328-simplex-chat-v4-6-hidden-profiles.md#hidden-chat-profiles).
 
 One major initiative we will kick-off this year is the support for large, fully decentralized and private communities and groups not hosted on any servers – something that no Internet platform achieved so far in as private and efficient way as we plan to build it.
@@ -65,14 +65,14 @@ To accelerate product development and growth we will be raising a seed funding t
 
 <img src="./images/20230422-video.png" width="288">
 
-In the beginning of March [we released servers and command-line utility to send and receive files via XFTP protocols](./20230301-simplex-file-transfer-protocol.md) - a very private and secure protocol that sends end-to-end encrypted files in chunks, protecting meta-data better than any alternatives we know of.
+In the beginning of March [we released servers and command-line utility to send and receive files via XFTP protocol](./20230301-simplex-file-transfer-protocol.md) - a very private and secure protocol that sends end-to-end encrypted files in chunks, protecting meta-data better than any alternatives we know of.
 
 Now this protocol is fully integrated in SimpleX Chat, and all files except small voice messages are sent using this protocol (small voice messages are sent as usual messages). Not only it is much faster than before - with the fast Internet connection I can send 25Mb file in 3 seconds and 1gb file in 2 minutes (for most users it's capped at the available Internet bandwidth), it has two other major advantages making it more usable:
 
 - the file sent to a group has to be uploaded only once, regardless of the group size.
 - once the file is uploaded (it will have the tick), you no longer need to be online for your contact (or group members) to be able to receive it.
 
-As for the metadata privacy, it has similar guarantee to SimpleX Messaging Protocol. Even though the files as sent via TLS 1.2/1.3, with the same server identity verification, TLS channel binding and upload authorization approach as used with SMP servers, the file metadata is protected even if TLS is compromised - there are no identifiers and ciphertext in common in server received and sent traffic, allowing to correlate only by sending time - which will be less efficient as the server traffic grows.
+As for the metadata privacy, it has similar guarantee to SimpleX Messaging Protocol. The files are sent via TLS 1.2/1.3, with the same server identity verification, TLS channel binding and upload authorization as used with SMP servers. But the file metadata is protected even if TLS is compromised, as there are no identifiers and ciphertext in common in server received and sent traffic, allowing to correlate only by sending and receiving time. Correlating by time becomes less efficient as the server traffic grows.
 
 We also added the ability to send videos in the chat, so they can be played right in the conversation or on full screen without leaving the app – thanks to the efficient and fast file transfer they are very usable.
 
