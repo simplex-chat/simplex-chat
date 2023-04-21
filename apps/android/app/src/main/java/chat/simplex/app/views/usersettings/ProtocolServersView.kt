@@ -1,8 +1,7 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
@@ -204,7 +203,6 @@ private fun ProtocolServersLayout(
         SectionItemView({ showServer(srv) }, disabled = testing) {
           ProtocolServerView(serverProtocol, srv, servers, testing)
         }
-        SectionDivider()
       }
       SettingsActionItem(
         Icons.Outlined.Add,
@@ -226,22 +224,20 @@ private fun ProtocolServersLayout(
         }
       }
     )
-    SectionSpacer()
+    SectionDividerSpaced()
     SectionView {
       SectionItemView(resetServers, disabled = serversUnchanged) {
         Text(stringResource(R.string.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else HighOrLowlight)
       }
-      SectionDivider()
       val testServersDisabled = testing || allServersDisabled
       SectionItemView(testServers, disabled = testServersDisabled) {
         Text(stringResource(R.string.smp_servers_test_servers), color = if (!testServersDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
       }
-      SectionDivider()
       SectionItemView(saveSMPServers, disabled = saveDisabled) {
         Text(stringResource(R.string.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     SectionView {
       HowToButton()
     }

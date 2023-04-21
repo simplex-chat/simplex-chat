@@ -1,6 +1,5 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionTextFooter
@@ -96,16 +95,14 @@ private fun PreferencesLayout(
 @Composable
 private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
   SectionView {
-    SectionItemView {
-      ExposedDropDownSettingRow(
-        feature.text,
-        FeatureAllowed.values().map { it to it.text },
-        allowFeature,
-        icon = feature.icon,
-        enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
-        onSelected = onSelected,
-      )
-    }
+    ExposedDropDownSettingRow(
+      feature.text,
+      FeatureAllowed.values().map { it to it.text },
+      allowFeature,
+      icon = feature.icon,
+      enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
+      onSelected = onSelected,
+    )
   }
   SectionTextFooter(feature.allowDescription(allowFeature.value) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
 }
@@ -113,15 +110,13 @@ private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllo
 @Composable
 private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onSelected: (Boolean) -> Unit) {
   SectionView {
-    SectionItemView {
-      PreferenceToggleWithIcon(
-        ChatFeature.TimedMessages.text,
-        ChatFeature.TimedMessages.icon,
-        HighOrLowlight,
-        allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
-        onSelected
-      )
-    }
+    PreferenceToggleWithIcon(
+      ChatFeature.TimedMessages.text,
+      ChatFeature.TimedMessages.icon,
+      HighOrLowlight,
+      allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
+      onSelected
+    )
   }
   SectionTextFooter(ChatFeature.TimedMessages.allowDescription(allowFeature.value))
 }
@@ -132,7 +127,6 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
-    SectionDivider()
     SectionItemView(save, disabled = disabled) {
       Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }

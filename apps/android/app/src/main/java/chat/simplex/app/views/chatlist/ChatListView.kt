@@ -67,8 +67,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
   val scaffoldState = rememberScaffoldState()
   val scope = rememberCoroutineScope()
   val switchingUsers = rememberSaveable { mutableStateOf(false) }
-  Scaffold(
-    topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
+  Scaffold(topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
     floatingActionButton = {

@@ -89,7 +89,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
-          AppBarTitleCentered(stringResource(R.string.create_secret_group_title))
+          AppBarTitle(stringResource(R.string.create_secret_group_title))
           ReadableText(R.string.group_is_decentralized, TextAlign.Center)
           Box(
             Modifier

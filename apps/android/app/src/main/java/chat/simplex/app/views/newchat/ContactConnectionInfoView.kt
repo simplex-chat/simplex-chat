@@ -1,6 +1,5 @@
 package chat.simplex.app.views.newchat
 
-import SectionDivider
 import SectionView
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
@@ -101,7 +100,6 @@ private fun ContactConnectionInfoLayout(
     SectionView {
       if (!connReq.isNullOrEmpty() && contactConnection.initiated) {
         ShowQrButton(contactConnection.incognito, showQr)
-        SectionDivider()
       }
       DeleteButton(deleteConnection)
     }

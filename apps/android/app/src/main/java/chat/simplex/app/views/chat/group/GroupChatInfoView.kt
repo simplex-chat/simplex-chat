@@ -1,7 +1,7 @@
 package chat.simplex.app.views.chat.group
 
 import InfoRow
-import SectionDivider
+import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionTextFooter
@@ -173,63 +173,50 @@ fun GroupChatInfoLayout(
 
     SectionView {
       if (groupInfo.canEdit) {
-        SectionItemView(editGroupProfile) { EditGroupProfileButton() }
-        SectionDivider()
-        SectionItemView(addOrEditWelcomeMessage) { AddOrEditWelcomeMessage(groupInfo.groupProfile.description) }
-        SectionDivider()
+        EditGroupProfileButton(editGroupProfile)
+        AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
       }
       GroupPreferencesButton(openPreferences)
     }
     SectionTextFooter(stringResource(R.string.only_group_owners_can_change_prefs))
-    SectionSpacer()
+    SectionDividerSpaced()
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
-        SectionItemView(manageGroupLink) {
-          if (groupLink == null) {
-            CreateGroupLinkButton()
-          } else {
-            GroupLinkButton()
-          }
+        if (groupLink == null) {
+          CreateGroupLinkButton(manageGroupLink)
+        } else {
+          GroupLinkButton(manageGroupLink)
         }
-        SectionDivider()
+
         val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
-        SectionItemView(onAddMembersClick) {
-          val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
-          AddMembersButton(tint)
-        }
-        SectionDivider()
+        val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
+        AddMembersButton(tint, onAddMembersClick)
       }
       SectionItemView(minHeight = 50.dp) {
         MemberRow(groupInfo.membership, user = true)
       }
-      if (members.isNotEmpty()) {
-        SectionDivider()
-      }
       MembersList(members, showMemberInfo)
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     SectionView {
       ClearChatButton(clearChat)
       if (groupInfo.canDelete) {
-        SectionDivider()
-        SectionItemView(deleteGroup) { DeleteGroupButton() }
+        DeleteGroupButton(deleteGroup)
       }
       if (groupInfo.membership.memberCurrent) {
-        SectionDivider()
-        SectionItemView(leaveGroup) { LeaveGroupButton() }
+        LeaveGroupButton(leaveGroup)
+      }
+    }
+
+    if (developerTools) {
+      SectionDividerSpaced()
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), groupInfo.localDisplayName)
+        InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
       }
     }
     SectionSpacer()
-
-    if (developerTools) {
-      SectionView(title = stringResource(R.string.section_title_for_console)) {
-        InfoRow(stringResource(R.string.info_row_local_name), groupInfo.localDisplayName)
-        SectionDivider()
-        InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
-      }
-      SectionSpacer()
-    }
   }
 }
 
@@ -267,19 +254,14 @@ private fun GroupPreferencesButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary) {
-  Row(
-    Modifier.fillMaxSize(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Add,
-      stringResource(R.string.button_add_members),
-      tint = tint
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_add_members), color = tint)
-  }
+private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Add,
+    stringResource(R.string.button_add_members),
+    onClick,
+    iconColor = tint,
+    textColor = tint
+  )
 }
 
 @Composable
@@ -288,9 +270,6 @@ private fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember
     members.forEachIndexed { index, member ->
       SectionItemView({ showMemberInfo(member) }, minHeight = 50.dp) {
         MemberRow(member)
-      }
-      if (index < members.lastIndex) {
-        SectionDivider()
       }
     }
   }
@@ -304,11 +283,12 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
-      Modifier.weight(1f).padding(end = DEFAULT_PADDING),
+      Modifier.weight(1f).padding(start = 5.dp, end = DEFAULT_PADDING),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       ProfileImage(size = 46.dp, member.image)
+      Spacer(Modifier.width(DEFAULT_PADDING))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
           if (member.verified) {
@@ -343,108 +323,70 @@ private fun MemberVerifiedShield() {
 }
 
 @Composable
-private fun GroupLinkButton() {
-  Row(
-    Modifier
-      .fillMaxSize(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Link,
-      stringResource(R.string.group_link),
-      tint = HighOrLowlight
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.group_link))
-  }
+private fun GroupLinkButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Link,
+    stringResource(R.string.group_link),
+    onClick,
+    iconColor = HighOrLowlight
+  )
 }
 
 @Composable
-private fun CreateGroupLinkButton() {
-  Row(
-    Modifier
-      .fillMaxSize(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.AddLink,
-      stringResource(R.string.create_group_link),
-      tint = HighOrLowlight
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.create_group_link))
-  }
+private fun CreateGroupLinkButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.AddLink,
+    stringResource(R.string.create_group_link),
+    onClick,
+    iconColor = HighOrLowlight
+  )
 }
 
 @Composable
-fun EditGroupProfileButton() {
-  Row(
-    Modifier
-      .fillMaxSize(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Edit,
-      stringResource(R.string.button_edit_group_profile),
-      tint = HighOrLowlight
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_edit_group_profile))
-  }
+fun EditGroupProfileButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Edit,
+    stringResource(R.string.button_edit_group_profile),
+    onClick,
+    iconColor = HighOrLowlight
+  )
 }
 
 @Composable
-private fun AddOrEditWelcomeMessage(welcomeMessage: String?) {
+private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit) {
   val text = if (welcomeMessage == null) {
     stringResource(R.string.button_add_welcome_message)
   } else {
     stringResource(R.string.button_welcome_message)
   }
-  Row(
-    Modifier
-      .fillMaxSize(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.MapsUgc,
-      text,
-      tint = HighOrLowlight
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(text)
-  }
+  SettingsActionItem(
+    Icons.Outlined.MapsUgc,
+    text,
+    onClick,
+    iconColor = HighOrLowlight
+  )
 }
 
 @Composable
-private fun LeaveGroupButton() {
-  Row(
-    Modifier.fillMaxSize(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Logout,
-      stringResource(R.string.button_leave_group),
-      tint = Color.Red
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_leave_group), color = Color.Red)
-  }
+private fun LeaveGroupButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Logout,
+    stringResource(R.string.button_leave_group),
+    onClick,
+    iconColor = Color.Red,
+    textColor = Color.Red
+  )
 }
 
 @Composable
-private fun DeleteGroupButton() {
-  Row(
-    Modifier.fillMaxSize(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Delete,
-      stringResource(R.string.button_delete_group),
-      tint = Color.Red
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_delete_group), color = Color.Red)
-  }
+private fun DeleteGroupButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Delete,
+    stringResource(R.string.button_delete_group),
+    onClick,
+    iconColor = Color.Red,
+    textColor = Color.Red
+  )
 }
 
 @Preview

@@ -1,6 +1,5 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
@@ -173,7 +172,6 @@ private fun UserProfilesView(
     SectionView {
       for (user in filteredUsers) {
         UserView(user, users, visibleUsersCount, prefPerformLA, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
-        SectionDivider()
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
         SectionItemView(addUser, minHeight = 68.dp) {
