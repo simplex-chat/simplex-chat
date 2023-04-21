@@ -268,27 +268,25 @@ fromTime,filesCreated,fileRecipients,filesUploaded,filesDeleted,dayCount,weekCou
 
 - `fromTime` - timestamp; date and time of event
 
-- `filesCreated` - int; files created
+- `filesCreated` - int; chunks created
 
-- `fileRecipients` - int; established queues
+- `fileRecipients` - int; number of file chunks recipients
 
-- `filesUploaded` - int; files uploaded
+- `filesUploaded` - int; chunks uploaded
 
-- `filesDeleted` - int; files deleted
+- `filesDeleted` - int; chunks deleted
 
-- `dayCount` - int; uploaded files in a day
+- `dayCount` - int; uploaded chunks in a day
 
-- `weekCount` - int; uploaded files in a week
+- `weekCount` - int; uploaded chunks in a week
 
-- `monthCount` - int; uploaded files in a month
+- `monthCount` - int; uploaded chunks in a month
 
-- `fileDownloads` - int; files downloaded
+- `fileDownloads` - int; chunks downloaded
 
-- `fileDownloadAcks` - int; ?
+- `filesCount` - int; count of stored file chunks
 
-- `filesCount` - int; ?
-
-- `filesSize` - int; size of uploaded files
+- `filesSize` - int; total size of uploaded file chunks
 
 
 To import `csv` to `Grafana` one should:
