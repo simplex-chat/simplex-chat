@@ -61,14 +61,6 @@ To accelerate product development and growth we will be raising a seed funding t
 
 ## What's new in v5.0
 
-- [send videos and files up to 1gb](#send-files-up-to-1gb)
-- [app passcode independent from system authentication](#app-passcode)
-- [networking improvements](#networking-improvements)
-
-Also, we added Polish interface language, thanks to [the users' community and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
-
-SimpleX Chat apps are now available in 10 languages!
-
 ### Send videos and files up to 1gb!
 
 <img src="./images/20230422-video.png" width="288">
