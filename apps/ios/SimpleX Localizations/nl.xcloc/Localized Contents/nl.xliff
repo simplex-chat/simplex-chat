@@ -1180,9 +1180,9 @@ Beschikbaar in v5.1</target>
         <target>Gedecentraliseerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Decryption error" xml:space="preserve">
+      <trans-unit id="Decryption error" xml:space="preserve" approved="no">
         <source>Decryption error</source>
-        <target>Decryptie fout</target>
+        <target state="translated">Decodering fout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
@@ -2867,9 +2867,9 @@ Beschikbaar in v5.1</target>
         <target>Periodiek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Permanent decryption error" xml:space="preserve">
+      <trans-unit id="Permanent decryption error" xml:space="preserve" approved="no">
         <source>Permanent decryption error</source>
-        <target>Decryptie fout</target>
+        <target state="translated">Decodering fout</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
