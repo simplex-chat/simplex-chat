@@ -234,7 +234,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
 
 @Composable
 private fun CancelPickerItem(onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 17.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 17.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(R.string.cancel_verb)
     Icon(Icons.Outlined.Close, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 8.dp))
