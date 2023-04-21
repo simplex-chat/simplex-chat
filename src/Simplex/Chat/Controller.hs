@@ -411,6 +411,7 @@ data ChatResponse
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
+  | CRFileTransferStatusXFTP User AChatItem
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
   | CRUserPrivacy {user :: User, updatedUser :: User}
@@ -782,6 +783,7 @@ data ChatErrorType
   | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
   | CEGroupInternal {message :: String}
   | CEFileNotFound {message :: String}
+  | CEFileSize {filePath :: FilePath}
   | CEFileAlreadyReceiving {message :: String}
   | CEFileCancelled {message :: String}
   | CEFileCancel {fileId :: FileTransferId, message :: String}
