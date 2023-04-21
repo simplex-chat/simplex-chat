@@ -333,7 +333,7 @@
     <string name="smp_servers_your_server_address">Twój adres serwera</string>
     <string name="your_simplex_contact_address">Twój adres kontaktowy <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="contribute">Przyczyń się</string>
-    <string name="network_enable_socks_info">Uzyskiwać dostęp do serwerów przez SOCKS proxy na porcie 9050\? Proxy musi zostać uruchomione przed włączeniem tej opcji.</string>
+    <string name="network_enable_socks_info">Uzyskiwanie dostępu do serwerów przez SOCKS proxy na porcie 9050\? Proxy musi zostać uruchomione przed włączeniem tej opcji.</string>
     <string name="network_settings">Zaawansowane ustawienia sieci</string>
     <string name="app_version_code">Kompilacja aplikacji: %s</string>
     <string name="appearance_settings">Wygląd</string>
