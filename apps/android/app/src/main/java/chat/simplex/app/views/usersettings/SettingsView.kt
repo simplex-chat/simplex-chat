@@ -131,7 +131,7 @@ fun SettingsLayout(
   withAuth: (block: () -> Unit) -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
-  Surface(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+  Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).background(MaterialTheme.colors.background)) {
     Column(
       Modifier
         .fillMaxSize()
