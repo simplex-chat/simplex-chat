@@ -316,4 +316,4 @@ For further documentation, see: [CSV Data Source for Grafana - Documentation](ht
 
 ### Configuring the app to use the server
 
-?
+Please see: [SMP Server: Configuring the app to use the server](./SERVER.md#configuring-the-app-to-use-the-server).
