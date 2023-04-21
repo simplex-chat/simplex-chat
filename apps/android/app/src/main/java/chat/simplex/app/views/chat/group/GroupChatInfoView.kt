@@ -283,12 +283,12 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
-      Modifier.weight(1f).padding(start = 5.dp, end = DEFAULT_PADDING),
+      Modifier.weight(1f).padding(end = DEFAULT_PADDING),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       ProfileImage(size = 46.dp, member.image)
-      Spacer(Modifier.width(DEFAULT_PADDING))
+      Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
           if (member.verified) {
