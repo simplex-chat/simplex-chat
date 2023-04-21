@@ -782,6 +782,7 @@ data ChatErrorType
   | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
   | CEGroupInternal {message :: String}
   | CEFileNotFound {message :: String}
+  | CEFileSize {filePath :: FilePath}
   | CEFileAlreadyReceiving {message :: String}
   | CEFileCancelled {message :: String}
   | CEFileCancel {fileId :: FileTransferId, message :: String}

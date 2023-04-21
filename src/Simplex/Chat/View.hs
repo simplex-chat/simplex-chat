@@ -1291,6 +1291,7 @@ viewChatError logLevel = \case
     CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
+    CEFileSize f -> ["file size exceeds the limit: " <> plain f]
     CEFileAlreadyReceiving f -> ["file is already being received: " <> plain f]
     CEFileCancelled f -> ["file cancelled: " <> plain f]
     CEFileCancel fileId e -> ["error cancelling file " <> sShow fileId <> ": " <> sShow e]
