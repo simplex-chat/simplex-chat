@@ -10,7 +10,7 @@
     "simplex-explained-tab-1-p-2": "Jak może to działać z jednokierunkowymi kolejkami i bez identyfikatorów profili użytkowników?",
     "simplex-explained-tab-2-p-1": "Dla każdego połączenia używasz dwóch oddzielnych kolejek z wiadomościami do wysyłania i odbierania wiadomości przez różne serwery.",
     "simplex-explained-tab-3-p-1": "Serwery mają osobne anonimowe poświadczenia dla każdej kolejki i nie wiedzą do jakich użytkowników one należą.",
-    "simplex-privacy": "Prywatność w SimpleX",
+    "simplex-privacy": "Prywatność SimpleX",
     "chat-bot-example": "Przykładowy chatbot",
     "smp-protocol": "Protokół SMP",
     "chat-protocol": "Protokół czatu",
