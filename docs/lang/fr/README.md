@@ -1,3 +1,7 @@
+---
+title: Simplex Docs
+ignoreForWeb: true
+---
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - la première plateforme de messagerie qui n'a pas le moindre identifiant d'utilisateur - 100% privé par définition !

@@ -119,7 +119,9 @@ module.exports = function (ty) {
   })
 
   ty.addCollection('docs', function (collection) {
-    const docs = collection.getFilteredByGlob('src/docs/**/*.md').map(doc => {
+    const docs = collection.getFilteredByGlob('src/docs/**/*.md')
+    .filter(doc => !doc.data.ignoreForWeb)
+    .map(doc => {
       return { url: doc.url, title: doc.data.title, displayAt: doc.data.displayAt || 0 }
     })
 

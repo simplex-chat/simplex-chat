@@ -1,3 +1,7 @@
+---
+title: Simplex Docs
+ignoreForWeb: true
+---
 | Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md) |
 
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">

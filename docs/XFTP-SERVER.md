@@ -1,3 +1,6 @@
+---
+title: Hosting your own XFTP Server
+---
 # Hosting your own XFTP Server
 
 ## Overview
