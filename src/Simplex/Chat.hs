@@ -59,6 +59,7 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
+import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
@@ -1596,6 +1597,7 @@ processChatCommand = \case
       ChatConfig {fileChunkSize, inlineFiles} <- asks config
       xftpCfg <- readTVarIO =<< asks userXFTPFileConfig
       fileSize <- getFileSize fsFilePath
+      when (fromInteger fileSize > maxFileSize) $ throwChatError $ CEFileSize f
       let chunks = - ((- fileSize) `div` fileChunkSize)
           fileInline = inlineFileMode mc inlineFiles chunks n
           fileMode = case xftpCfg of
