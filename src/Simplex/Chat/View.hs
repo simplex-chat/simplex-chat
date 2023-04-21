@@ -1194,7 +1194,7 @@ fileProgress chunksNum chunkSize fileSize =
 
 fileProgressXFTP :: Int64 -> Int64 -> Integer -> StyledString
 fileProgressXFTP progress total fileSize =
-  sShow (progress `div` total) <> "% of " <> humanReadableSize fileSize
+  sShow (progress * 100 `div` total) <> "% of " <> humanReadableSize fileSize
 
 viewCallInvitation :: Contact -> CallType -> Maybe C.Key -> [StyledString]
 viewCallInvitation ct@Contact {contactId} callType@CallType {media} sharedKey =
