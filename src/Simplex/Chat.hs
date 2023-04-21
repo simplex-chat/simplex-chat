@@ -1454,8 +1454,13 @@ processChatCommand = \case
                 getChatItemByFileId db user fileId
               pure $ CRRcvFileCancelled user ci ftr
   FileStatus fileId -> withUser $ \user -> do
-    fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
-    pure $ CRFileTransferStatus user fileStatus
+    ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> getChatItemByFileId db user fileId
+    case file of
+      Just CIFile {fileProtocol = FPXFTP} ->
+        pure $ CRFileTransferStatusXFTP user ci
+      _ -> do
+        fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
+        pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {displayName = displayName, fullName = fullName}

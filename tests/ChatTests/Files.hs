@@ -995,6 +995,11 @@ testXFTPFileTransfer =
       bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
+      alice ##> "/fs 1"
+      alice <## "sending file 1 (test.pdf) complete"
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (test.pdf) complete, path: ./tests/tmp/test.pdf"
+
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
@@ -1118,6 +1123,13 @@ testXFTPDeleteUploadedFileGroup =
              ]
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
+      alice ##> "/fs 1"
+      alice <## "sending file 1 (test.pdf) complete"
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (test.pdf) complete, path: ./tests/tmp/test.pdf"
+      cath ##> "/fs 1"
+      cath <## "receiving file 1 (test.pdf) not accepted yet, use /fr 1 to receive file"
+
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
@@ -1127,6 +1139,13 @@ testXFTPDeleteUploadedFileGroup =
         [ alice <## "cancelled sending file 1 (test.pdf) to bob, cath",
           cath <## "alice cancelled sending file 1 (test.pdf)"
         ]
+
+      alice ##> "/fs 1"
+      alice <## "sending file 1 (test.pdf) cancelled"
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (test.pdf) complete, path: ./tests/tmp/test.pdf"
+      cath ##> "/fs 1"
+      cath <## "receiving file 1 (test.pdf) cancelled"
 
       cath ##> "/fr 1 ./tests/tmp"
       cath <## "file cancelled: test.pdf"
@@ -1221,6 +1240,10 @@ testXFTPContinueRcv tmp = do
     bob ##> "/fr 1 ./tests/tmp"
     bob <## "started receiving file 1 (test.pdf) from alice"
     bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+
+    bob ##> "/fs 1"
+    bob <## "receiving file 1 (test.pdf) progress 0% of 266.0 KiB"
+
     (bob </)
 
   withXFTPServer $ do
@@ -1290,6 +1313,9 @@ testXFTPRcvError tmp = do
       bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
       bob <## "error receiving file 1 (test.pdf) from alice"
+
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (test.pdf) error"
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
@@ -1311,8 +1337,14 @@ testXFTPCancelRcvRepeat =
       alice <## "completed uploading file 1 (testfile) for bob"
       bob <## "started receiving file 1 (testfile) from alice"
 
+      bob ##> "/fs 1"
+      bob <##. "receiving file 1 (testfile) progress"
+
       bob ##> "/fc 1"
       bob <## "cancelled receiving file 1 (testfile) from alice"
+
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (testfile) not accepted yet, use /fr 1 to receive file"
 
       bob ##> "/fr 1 ./tests/tmp"
       bob
@@ -1320,6 +1352,9 @@ testXFTPCancelRcvRepeat =
                "started receiving file 1 (testfile) from alice"
              ]
       bob <## "completed receiving file 1 (testfile) from alice"
+
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (testfile) complete, path: ./tests/tmp/testfile_1"
 
       src <- B.readFile "./tests/tmp/testfile"
       dest <- B.readFile "./tests/tmp/testfile_1"

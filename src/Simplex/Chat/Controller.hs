@@ -411,6 +411,7 @@ data ChatResponse
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
+  | CRFileTransferStatusXFTP User AChatItem
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
   | CRUserPrivacy {user :: User, updatedUser :: User}

@@ -118,6 +118,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
         then [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
         else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
+  CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
   CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
   CRUserPrivacy u u' -> ttyUserPrefix u $ viewUserPrivacy u u'
@@ -1166,12 +1167,34 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSCancelled (Just RcvFileInfo {filePath}) -> "cancelled, received part path: " <> plain filePath
       RFSCancelled Nothing -> "cancelled"
 
+viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
+viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, filePath}}) =
+  case fileStatus of
+    CIFSSndStored -> ["sending " <> fstr <> " just started"]
+    CIFSSndTransfer progress total -> ["sending " <> fstr <> " in progress " <> fileProgressXFTP progress total fileSize]
+    CIFSSndCancelled -> ["sending " <> fstr <> " cancelled"]
+    CIFSSndComplete -> ["sending " <> fstr <> " complete"]
+    CIFSSndError -> ["sending " <> fstr <> " error"]
+    CIFSRcvInvitation -> ["receiving " <> fstr <> " not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"]
+    CIFSRcvAccepted -> ["receiving " <> fstr <> " just started"]
+    CIFSRcvTransfer progress total -> ["receiving " <> fstr <> " progress " <> fileProgressXFTP progress total fileSize]
+    CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\fp -> ", path: " <> plain fp) filePath]
+    CIFSRcvCancelled -> ["receiving " <> fstr <> " cancelled"]
+    CIFSRcvError -> ["receiving " <> fstr <> " error"]
+  where
+    fstr = fileTransferStr fileId fileName
+viewFileTransferStatusXFTP _ = ["no file status"]
+
 listRecipients :: [SndFileTransfer] -> StyledString
 listRecipients = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
 
 fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =
   sShow (sum chunksNum * chunkSize * 100 `div` fileSize) <> "% of " <> humanReadableSize fileSize
+
+fileProgressXFTP :: Int64 -> Int64 -> Integer -> StyledString
+fileProgressXFTP progress total fileSize =
+  sShow (progress `div` total) <> "% of " <> humanReadableSize fileSize
 
 viewCallInvitation :: Contact -> CallType -> Maybe C.Key -> [StyledString]
 viewCallInvitation ct@Contact {contactId} callType@CallType {media} sharedKey =
