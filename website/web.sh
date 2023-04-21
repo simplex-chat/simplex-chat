@@ -18,7 +18,7 @@ for file in langs/*.json; do
 done
 
 npm install
-node merge_translations.js
+node src/js/merge_translations.js
 node src/js/customize_docs_frontmatter.js
 
 # creating folders for each language for internationalization
