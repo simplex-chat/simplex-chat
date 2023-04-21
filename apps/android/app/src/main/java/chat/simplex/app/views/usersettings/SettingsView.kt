@@ -234,7 +234,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween
     ) {
-      Row {
+      Row(Modifier.weight(1f)) {
         Icon(
           Icons.Outlined.FolderOpen,
           contentDescription = stringResource(R.string.database_passphrase_and_export),
