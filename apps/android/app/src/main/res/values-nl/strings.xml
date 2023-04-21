@@ -1100,7 +1100,7 @@
     <string name="passcode_not_changed">Toegangscode niet gewijzigd!</string>
     <string name="passcode_set">Toegangscode ingesteld!</string>
     <string name="la_mode_system">Systeem</string>
-    <string name="decryption_error">Decryptie fout</string>
+    <string name="decryption_error">Decodering fout</string>
     <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.</string>
     <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> berichten overgeslagen.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</string>
