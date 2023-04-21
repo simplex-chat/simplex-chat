@@ -51,7 +51,6 @@ website/node_modules/
 website/src/blog/
 website/src/docs/
 website/translations.json
-website/src/_data/supported_languages.json
 website/src/img/images/
 website/src/images/
 # Generated files

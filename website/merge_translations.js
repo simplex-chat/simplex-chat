@@ -28,8 +28,6 @@ for (const key in enStrings) {
 }
 
 saveFile("translations.json", translations)
-// the list in the supported_languages.json file is used as the reference list for displaying available languages on the frontend
-saveFile("src/_data/supported_languages.json", {"langs": supportedLangs})
 
 function saveFile(relPath, data) {
     filePath = path.resolve(__dirname, relPath)
