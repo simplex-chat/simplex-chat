@@ -52,7 +52,7 @@ fun IncomingCallAlertLayout(
   acceptCall: () -> Unit
 ) {
   val color = if (isInDarkTheme()) IncomingCallDark else IncomingCallLight
-  Column(Modifier.fillMaxWidth().background(color).padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp)) {
+  Column(Modifier.fillMaxWidth().background(color).padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING, start = DEFAULT_PADDING, end = 8.dp)) {
     IncomingCallInfo(invitation, chatModel)
     Spacer(Modifier.height(8.dp))
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {

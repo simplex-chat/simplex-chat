@@ -19,7 +19,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
@@ -40,7 +39,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
     Column(
       Modifier
         .verticalScroll(rememberScrollState())
-        .padding(bottom = 16.dp),
+        .padding(bottom = DEFAULT_BOTTOM_PADDING),
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
       AppBarTitle(stringResource(R.string.add_contact), false)
@@ -75,7 +74,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
         annotatedStringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         lineHeight = 22.sp,
         modifier = Modifier
-          .padding(top = 16.dp, bottom = if (screenHeight > 600.dp) 16.dp else 0.dp)
+          .padding(top = DEFAULT_PADDING, bottom = if (screenHeight > 600.dp) DEFAULT_PADDING else 0.dp)
       )
       Row(
         Modifier.fillMaxWidth(),

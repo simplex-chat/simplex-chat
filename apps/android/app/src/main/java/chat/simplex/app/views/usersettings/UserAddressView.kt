@@ -90,7 +90,7 @@ fun UserAddressLayout(
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.padding(vertical = 16.dp)
+          modifier = Modifier.padding(vertical = DEFAULT_PADDING)
         ) {
           SimpleButton(
             stringResource(R.string.share_link),

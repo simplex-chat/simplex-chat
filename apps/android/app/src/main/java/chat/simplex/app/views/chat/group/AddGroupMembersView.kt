@@ -1,7 +1,7 @@
 package chat.simplex.app.views.chat.group
 
 import SectionCustomFooter
-import SectionDivider
+import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -145,12 +145,8 @@ fun AddGroupMembersLayout(
           SectionItemView(openPreferences) {
             Text(stringResource(R.string.set_group_preferences))
           }
-          SectionDivider()
         }
-        SectionItemView {
-          RoleSelectionRow(groupInfo, selectedRole, allowModifyMembers)
-        }
-        SectionDivider()
+        RoleSelectionRow(groupInfo, selectedRole, allowModifyMembers)
         if (creatingGroup && selectedContacts.isEmpty()) {
           SkipInvitingButton(close)
         } else {
@@ -160,7 +156,7 @@ fun AddGroupMembersLayout(
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
-      SectionSpacer()
+      SectionDividerSpaced()
 
       SectionView(stringResource(R.string.select_contacts)) {
         ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, allowModifyMembers, addContact, removeContact)
@@ -260,9 +256,6 @@ fun ContactList(
         checked = selectedContacts.contains(contact.apiId),
         enabled = enabled,
       )
-      if (index < contacts.lastIndex) {
-        SectionDivider()
-      }
     }
   }
 }

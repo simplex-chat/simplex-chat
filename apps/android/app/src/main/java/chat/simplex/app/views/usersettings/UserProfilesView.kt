@@ -217,7 +217,7 @@ private fun UserView(
   UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showMenu.value = true }) {
     activateUser(user)
   }
-  Box(Modifier.padding(horizontal = 16.dp)) {
+  Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
         ItemAction(stringResource(R.string.user_unhide), Icons.Outlined.LockOpen, onClick = {

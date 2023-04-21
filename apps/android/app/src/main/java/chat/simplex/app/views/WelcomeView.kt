@@ -58,7 +58,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         }
       })*/
       Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
-        AppBarTitleCentered(stringResource(R.string.create_profile))
+        AppBarTitle(stringResource(R.string.create_profile))
         ReadableText(R.string.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues())
         ReadableText(R.string.profile_is_only_shared_with_your_contacts, TextAlign.Center)
         Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))

@@ -1,9 +1,8 @@
 package chat.simplex.app.views.chat.group
 
 import InfoRow
-import SectionDivider
+import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
@@ -45,7 +44,6 @@ fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
       if (preferences == currentPreferences) close()
       else showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     GroupPreferencesLayout(
       preferences,
@@ -87,23 +85,23 @@ private fun GroupPreferencesLayout(
         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
     FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
     FeatureSection(GroupFeature.FullDelete, allowFullDeletion, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
     }
     if (groupInfo.canEdit) {
-      SectionSpacer()
+      SectionDividerSpaced()
       ResetSaveButtons(
         reset = reset,
         save = savePrefs,
@@ -128,18 +126,15 @@ private fun FeatureSection(
     val iconTint = if (on) SimplexGreen else HighOrLowlight
     val timedOn = feature == GroupFeature.TimedMessages && enableFeature.value == GroupFeatureEnabled.ON
     if (groupInfo.canEdit) {
-      SectionItemView {
-        PreferenceToggleWithIcon(
-          feature.text,
-          icon,
-          iconTint,
-          enableFeature.value == GroupFeatureEnabled.ON,
-        ) { checked ->
-          onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF)
-        }
+      PreferenceToggleWithIcon(
+        feature.text,
+        icon,
+        iconTint,
+        enableFeature.value == GroupFeatureEnabled.ON,
+      ) { checked ->
+        onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF)
       }
       if (timedOn) {
-        SectionDivider()
         val ttl = rememberSaveable(preferences.timedMessages) { mutableStateOf(preferences.timedMessages.ttl) }
         TimedMessagesTTLPicker(ttl, onTTLUpdated)
       }
@@ -151,7 +146,6 @@ private fun FeatureSection(
         iconTint = iconTint,
       )
       if (timedOn) {
-        SectionDivider()
         InfoRow(generalGetString(R.string.delete_after), TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
       }
     }
@@ -165,7 +159,6 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
-    SectionDivider()
     SectionItemView(save, disabled = disabled) {
       Text(stringResource(R.string.save_and_notify_group_members), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }

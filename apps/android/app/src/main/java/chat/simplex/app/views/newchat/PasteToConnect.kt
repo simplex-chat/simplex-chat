@@ -84,7 +84,7 @@ fun PasteToConnectLayout(
       generalGetString(R.string.profile_will_be_sent_to_contact_sending_link)
     )
 
-    Box(Modifier.padding(top = 16.dp, bottom = 6.dp)) {
+    Box(Modifier.padding(top = DEFAULT_PADDING, bottom = 6.dp)) {
       TextEditor(Modifier.height(180.dp), text = connectionLink)
     }
 

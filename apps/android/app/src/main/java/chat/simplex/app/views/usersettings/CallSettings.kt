@@ -1,6 +1,5 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -45,14 +44,10 @@ fun CallSettingsLayout(
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     SectionView(stringResource(R.string.settings_section_title_settings)) {
       SectionItemView(editIceServers) { Text(stringResource(R.string.webrtc_ice_servers)) }
-      SectionDivider()
 
       val enabled = remember { mutableStateOf(true) }
-      SectionItemView { LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it }) }
-      SectionDivider()
-      SectionItemView() {
-        SharedPreferenceToggle(stringResource(R.string.always_use_relay), webrtcPolicyRelay)
-      }
+      LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it })
+      SettingsPreferenceItem(null, stringResource(R.string.always_use_relay), webrtcPolicyRelay)
     }
     SectionTextFooter(
       if (remember { webrtcPolicyRelay.state }.value) {
@@ -87,28 +82,22 @@ private fun LockscreenOpts(lockscreenOpts: State<CallOnLockScreen>, enabled: Sta
 
 @Composable
 fun SharedPreferenceToggle(
-  text: String,
   preference: SharedPreference<Boolean>,
-  preferenceState: MutableState<Boolean>? = null,
+  enabled: Boolean = true,
   onChange: ((Boolean) -> Unit)? = null,
-  ) {
-  val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
-  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Text(text, Modifier.padding(end = 24.dp))
-    Spacer(Modifier.fillMaxWidth().weight(1f))
-    Switch(
-      checked = prefState.value,
-      onCheckedChange = {
-        preference.set(it)
-        prefState.value = it
-        onChange?.invoke(it)
-      },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      )
+) {
+  Switch(
+    enabled = enabled,
+    checked = remember { preference.state }.value,
+    onCheckedChange = {
+      preference.set(it)
+      onChange?.invoke(it)
+    },
+    colors = SwitchDefaults.colors(
+      checkedThumbColor = MaterialTheme.colors.primary,
+      uncheckedThumbColor = HighOrLowlight
     )
-  }
+  )
 }
 
 @Composable

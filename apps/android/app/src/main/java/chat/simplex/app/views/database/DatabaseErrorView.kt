@@ -61,7 +61,7 @@ fun DatabaseErrorView(
   fun DatabaseErrorDetails(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) {
     Text(
       generalGetString(title),
-      Modifier.padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+      Modifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
       style = MaterialTheme.typography.h1
     )
     SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), content)
@@ -158,7 +158,7 @@ fun DatabaseErrorView(
     if (restoreDbFromBackup.value) {
       SectionSpacer()
       Text(generalGetString(R.string.database_backup_can_be_restored))
-      Spacer(Modifier.size(16.dp))
+      Spacer(Modifier.size(DEFAULT_PADDING))
       RestoreDbButton {
         AlertManager.shared.showAlertDialog(
           title = generalGetString(R.string.restore_database_alert_title),

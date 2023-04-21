@@ -10,10 +10,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
@@ -32,7 +30,7 @@ fun SetNotificationsMode(m: ChatModel) {
       .padding(vertical = 14.dp)
   ) {
     //CloseSheetBar(null)
-    AppBarTitleCentered(stringResource(R.string.onboarding_notifications_mode_title))
+    AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title))
     val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
     Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
       Text(stringResource(R.string.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
@@ -42,7 +40,7 @@ fun SetNotificationsMode(m: ChatModel) {
       NotificationButton(currentMode, NotificationsMode.SERVICE, R.string.onboarding_notifications_mode_service, R.string.onboarding_notifications_mode_service_desc)
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
-    Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
         OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
           changeNotificationsMode(currentMode.value, m)
         }

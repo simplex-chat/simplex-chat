@@ -1,6 +1,6 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionTextFooter
@@ -40,7 +40,6 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
       if (preferences == currentPreferences) close()
       else  showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     PreferencesLayout(
       preferences,
@@ -69,22 +68,22 @@ private fun PreferencesLayout(
     TimedMessagesFeatureSection(timedMessages) {
       applyPrefs(preferences.copy(timedMessages = TimedMessagesPreference(allow = if (it) FeatureAllowed.YES else FeatureAllowed.NO)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
     FeatureSection(ChatFeature.FullDelete, allowFullDeletion) {
       applyPrefs(preferences.copy(fullDelete = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowCalls = remember(preferences) { mutableStateOf(preferences.calls.allow) }
     FeatureSection(ChatFeature.Calls, allowCalls) {
       applyPrefs(preferences.copy(calls = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,
@@ -96,16 +95,14 @@ private fun PreferencesLayout(
 @Composable
 private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
   SectionView {
-    SectionItemView {
-      ExposedDropDownSettingRow(
-        feature.text,
-        FeatureAllowed.values().map { it to it.text },
-        allowFeature,
-        icon = feature.icon,
-        enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
-        onSelected = onSelected,
-      )
-    }
+    ExposedDropDownSettingRow(
+      feature.text,
+      FeatureAllowed.values().map { it to it.text },
+      allowFeature,
+      icon = feature.icon,
+      enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
+      onSelected = onSelected,
+    )
   }
   SectionTextFooter(feature.allowDescription(allowFeature.value) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
 }
@@ -113,15 +110,14 @@ private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllo
 @Composable
 private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onSelected: (Boolean) -> Unit) {
   SectionView {
-    SectionItemView {
-      PreferenceToggleWithIcon(
-        ChatFeature.TimedMessages.text,
-        ChatFeature.TimedMessages.icon,
-        HighOrLowlight,
-        allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
-        onSelected
-      )
-    }
+    PreferenceToggleWithIcon(
+      ChatFeature.TimedMessages.text,
+      ChatFeature.TimedMessages.icon,
+      HighOrLowlight,
+      allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
+      extraPadding = false,
+      onSelected
+    )
   }
   SectionTextFooter(ChatFeature.TimedMessages.allowDescription(allowFeature.value))
 }
@@ -132,7 +128,6 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
-    SectionDivider()
     SectionItemView(save, disabled = disabled) {
       Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }

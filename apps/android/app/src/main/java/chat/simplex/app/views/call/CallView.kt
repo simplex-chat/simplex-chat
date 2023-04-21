@@ -263,7 +263,7 @@ private fun ActiveCallOverlayLayout(
   toggleSound: () -> Unit,
   flipCamera: () -> Unit
 ) {
-  Column(Modifier.padding(16.dp)) {
+  Column(Modifier.padding(DEFAULT_PADDING)) {
     when (call.peerMedia ?: call.localMedia) {
       CallMediaType.Video -> {
         CallInfoView(call, alignment = Alignment.Start)

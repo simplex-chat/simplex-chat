@@ -1,6 +1,5 @@
 package chat.simplex.app.views.database
 
-import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
@@ -162,8 +161,6 @@ fun DatabaseEncryptionLayout(
       }
 
       if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
-        SectionDivider()
-
         PassphraseField(
           currentKey,
           generalGetString(R.string.current_passphrase),
@@ -172,8 +169,6 @@ fun DatabaseEncryptionLayout(
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
         )
       }
-
-      SectionDivider()
 
       PassphraseField(
         newKey,
@@ -206,8 +201,6 @@ fun DatabaseEncryptionLayout(
           !validKey(newKey.value) ||
           progressIndicator.value
 
-      SectionDivider()
-
       PassphraseField(
         confirmNewKey,
         generalGetString(R.string.confirm_new_passphrase),
@@ -218,8 +211,6 @@ fun DatabaseEncryptionLayout(
           defaultKeyboardAction(ImeAction.Done)
         }),
       )
-
-      SectionDivider()
 
       SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
         Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
