@@ -49,7 +49,6 @@ fun ContactPreferencesView(
       if (featuresAllowed == currentFeaturesAllowed) close()
       else showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     ContactPreferencesLayout(
       featuresAllowed,

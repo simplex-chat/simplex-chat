@@ -44,7 +44,6 @@ fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
       if (preferences == currentPreferences) close()
       else showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     GroupPreferencesLayout(
       preferences,

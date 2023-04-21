@@ -44,7 +44,6 @@ fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
       if (welcomeText.value == groupInfo.groupProfile.description || (welcomeText.value == "" && groupInfo.groupProfile.description == null)) close()
       else showUnsavedChangesAlert({ save(close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     GroupWelcomeLayout(
       welcomeText,

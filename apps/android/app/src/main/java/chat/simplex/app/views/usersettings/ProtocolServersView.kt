@@ -91,7 +91,6 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
       if (saveDisabled.value) close()
       else showUnsavedChangesAlert({ saveServers(serverProtocol, currServers, servers, m, close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     ProtocolServersLayout(
       serverProtocol,

@@ -63,7 +63,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
           val search = rememberSaveable { mutableStateOf("") }
           ModalView(
             { close() },
-            if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight,
             endButtons = {
               SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), alwaysVisible = true) { search.value = it }
             },
@@ -136,7 +135,6 @@ fun SettingsLayout(
     Column(
       Modifier
         .fillMaxSize()
-        .background(if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight)
         .padding(top = DEFAULT_PADDING)
     ) {
       AppBarTitle(stringResource(R.string.your_settings))
