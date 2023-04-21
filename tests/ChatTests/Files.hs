@@ -67,7 +67,7 @@ chatFileTests = do
     xit' "continue receiving file after restart" testXFTPContinueRcv
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
-    fit "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
+    it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
