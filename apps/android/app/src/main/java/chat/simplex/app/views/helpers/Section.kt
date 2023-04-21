@@ -82,8 +82,8 @@ fun SectionItemView(
   click: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
   disabled: Boolean = false,
-  icon: ImageVector? = null,
-  padding: PaddingValues = if (icon != null) PaddingValues(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING) else  PaddingValues(horizontal = DEFAULT_PADDING),
+  extraPadding: Boolean = false,
+  padding: PaddingValues = if (extraPadding) PaddingValues(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING) else PaddingValues(horizontal = DEFAULT_PADDING),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -122,27 +122,6 @@ fun SectionItemViewSpaceBetween(
   onLongClick: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
   padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
-  disabled: Boolean = false,
-  content: (@Composable RowScope.() -> Unit)
-) {
-  val modifier = Modifier
-    .fillMaxWidth()
-    .sizeIn(minHeight = minHeight)
-  Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier.combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    content()
-  }
-}
-
-@Composable
-fun SectionItemViewSpaceBetweenWithIcon(
-  click: (() -> Unit)? = null,
-  onLongClick: (() -> Unit)? = null,
-  minHeight: Dp = 46.dp,
-  padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING),
   disabled: Boolean = false,
   content: (@Composable RowScope.() -> Unit)
 ) {
@@ -228,8 +207,8 @@ fun SectionSpacer() {
 }
 
 @Composable
-fun TextIconSpacered() {
-  Spacer(Modifier.padding(horizontal = DEFAULT_PADDING))
+fun TextIconSpaced(extraPadding: Boolean = false) {
+  Spacer(Modifier.padding(horizontal = if (extraPadding) DEFAULT_PADDING else DEFAULT_PADDING_HALF))
 }
 
 @Composable

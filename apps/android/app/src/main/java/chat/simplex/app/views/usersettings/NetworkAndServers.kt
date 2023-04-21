@@ -6,7 +6,7 @@ import SectionItemView
 import SectionItemWithValue
 import SectionView
 import SectionViewSelectable
-import TextIconSpacered
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -169,9 +169,7 @@ fun NetworkAndServersView(
 
       SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
 
-      SectionItemView {
-        UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
-      }
+      UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
       UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
       if (developerTools) {
         SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
@@ -196,7 +194,7 @@ fun UseSocksProxySwitch(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   Row(
-    Modifier.fillMaxWidth(),
+    Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
@@ -209,9 +207,8 @@ fun UseSocksProxySwitch(
         stringResource(R.string.network_socks_toggle),
         tint = HighOrLowlight
       )
-      TextIconSpacered()
+      TextIconSpaced(false)
       if (networkUseSocksProxy.value) {
-        Row {
           val text = buildAnnotatedString {
             append(generalGetString(R.string.network_socks_toggle_use_socks_proxy) + " (")
             val style = SpanStyle(color = MaterialTheme.colors.primary)
@@ -233,7 +230,6 @@ fun UseSocksProxySwitch(
               text.getStringAnnotations(tag = "PORT", start = offset, end = offset).any()
             }
           )
-        }
       } else {
         Text(stringResource(R.string.network_socks_toggle))
       }

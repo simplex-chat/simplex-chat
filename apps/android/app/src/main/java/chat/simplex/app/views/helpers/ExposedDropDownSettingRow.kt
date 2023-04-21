@@ -1,6 +1,5 @@
 package chat.simplex.app.views.helpers
 
-import TextIconSpacered
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons

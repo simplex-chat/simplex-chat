@@ -116,6 +116,7 @@ private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onS
       ChatFeature.TimedMessages.icon,
       HighOrLowlight,
       allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
+      extraPadding = false,
       onSelected
     )
   }
