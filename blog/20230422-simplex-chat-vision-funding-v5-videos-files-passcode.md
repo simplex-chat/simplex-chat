@@ -18,7 +18,7 @@ SimpleX Chat vision and funding:
 - [what is next?](#what-is-next)
 
 What's new in v5.0:
-- [send videos and files up to 1gb](#send-files-up-to-1gb)
+- [send videos and files up to 1gb](#send-videos-and-files-up-to-1gb)
 - [app passcode independent from system authentication](#app-passcode)
 - [networking improvements](#networking-improvements)
 
