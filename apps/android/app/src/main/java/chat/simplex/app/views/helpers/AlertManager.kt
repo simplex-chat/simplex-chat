@@ -129,7 +129,7 @@ class AlertManager {
         text = alertText(text),
         buttons = {
           Column(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(top = 16.dp, bottom = 2.dp),
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING_HALF).padding(top = DEFAULT_PADDING, bottom = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             TextButton(onClick = {

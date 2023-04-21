@@ -138,7 +138,7 @@ fun OnboardingActionButton(
     Icon(
       Icons.Outlined.ArrowForwardIos, "next stage", tint = MaterialTheme.colors.primary,
       modifier = Modifier
-        .padding(start = 16.dp, top = 5.dp)
+        .padding(start = DEFAULT_PADDING, top = 5.dp)
         .size(15.dp)
     )
   }

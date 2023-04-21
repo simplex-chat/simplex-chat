@@ -145,7 +145,9 @@ fun SettingsLayout(
 
       SectionView(stringResource(R.string.settings_section_title_you)) {
         SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
+          Spacer(Modifier.width(2.dp))
           ProfilePreview(profile, stopped = stopped)
+          Spacer(Modifier.width(2.dp))
         }
         val profileHidden = rememberSaveable { mutableStateOf(false) }
         SettingsActionItem(Icons.Outlined.ManageAccounts, stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
@@ -329,7 +331,7 @@ fun ChatLockItem(
 }
 
 @Composable fun ChatConsoleItem(showTerminal: () -> Unit) {
-  SectionItemViewWithIcon(showTerminal) {
+  SectionItemView(showTerminal) {
     Icon(
       painter = painterResource(id = R.drawable.ic_outline_terminal),
       contentDescription = stringResource(R.string.chat_console),
@@ -341,7 +343,7 @@ fun ChatLockItem(
 }
 
 @Composable fun InstallTerminalAppItem(uriHandler: UriHandler) {
-  SectionItemViewWithIcon({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
+  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
       contentDescription = "GitHub",
@@ -362,7 +364,7 @@ fun ChatLockItem(
 
 @Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary, stopped: Boolean = false) {
   ProfileImage(size = size, image = profileOf.image, color = color)
-  Spacer(Modifier.padding(horizontal = 6.dp))
+  Spacer(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
   Column {
     Text(
       profileOf.displayName,
