@@ -1,10 +1,6 @@
 ---
-layout: layouts/doc.html
 title: Sending messages
 displayAt: 2
-permalink: "/docs/guide/send-messages.html"
-supportedLangsForDoc:
-    - en
 ---
 # Sending, editing and deleting messages
 

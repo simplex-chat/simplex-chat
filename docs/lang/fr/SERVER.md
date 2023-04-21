@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Héberger votre propre serveur SMP
-permalink: "/docs/lang/fr/SERVER.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 | 31.01.2023 | FR, [EN](/docs/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
 

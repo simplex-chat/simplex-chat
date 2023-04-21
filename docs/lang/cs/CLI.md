@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: SimpleX Chat terminálová
-permalink: "/docs/lang/cs/CLI.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/CLI.md), [FR](/docs/lang/fr/CLI.md) |
 

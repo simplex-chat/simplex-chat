@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Incognito connections
-permalink: "/docs/rfcs/2022-08-10-incognito-connections.html"
-supportedLangsForDoc:
-    - en
 ---
 # Incognito connections
 

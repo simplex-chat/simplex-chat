@@ -1,13 +1,3 @@
----
-layout: layouts/doc.html
-title: Simplex Docs
-permalink: "/docs/lang/fr/"
-active_docs: true
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
----
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - la première plateforme de messagerie qui n'a pas le moindre identifiant d'utilisateur - 100% privé par définition !

@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: User profiles
-permalink: "/docs/rfcs/2022-12-17-user-profiles.html"
-supportedLangsForDoc:
-    - en
 ---
 # User profiles
 

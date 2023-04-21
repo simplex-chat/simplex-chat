@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Chat item integrity
-permalink: "/docs/rfcs/2022-05-28-chat-item-integrity.html"
-supportedLangsForDoc:
-    - en
 ---
 # Chat item integrity
 

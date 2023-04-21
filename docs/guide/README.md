@@ -1,10 +1,6 @@
 ---
-layout: layouts/doc.html
 title: Quick start
 displayAt: 1
-permalink: "/docs/guide/quick-start.html"
-supportedLangsForDoc:
-    - en
 ---
 # SimpleX Chat User Guide
 

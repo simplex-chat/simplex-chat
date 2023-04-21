@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Application de terminal
-permalink: "/docs/lang/fr/CLI.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 | 31.01.2023 | FR, [EN](/docs/CLI.md), [CZ](/docs/lang/cs/CLI.md) |
 

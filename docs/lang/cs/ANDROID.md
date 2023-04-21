@@ -1,10 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Přístup k souborům v aplikaci Android
-permalink: "/docs/lang/cs/ANDROID.html"
-supportedLangsForDoc:
-    - en
-    - cs
 ---
 | Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/ANDROID.md) |
 

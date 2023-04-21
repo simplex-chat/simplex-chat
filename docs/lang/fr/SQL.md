@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
-title: Accès à l'historique des messages via des requêtes SQL
-permalink: "/docs/lang/fr/SQL.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
+title: Accès aux messages de la base de données
 ---
 | 31.01.2023 | FR, [EN](/docs/SQL.md), [CZ](/docs/lang/cs/SQL.md) |
 

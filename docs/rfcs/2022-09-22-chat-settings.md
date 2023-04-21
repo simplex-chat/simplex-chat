@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Chat settings
-permalink: "/docs/rfcs/2022-09-22-chat-settings.html"
-supportedLangsForDoc:
-    - en
 ---
 # Chat settings
 

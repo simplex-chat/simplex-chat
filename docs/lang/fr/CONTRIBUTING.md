@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Guide pour contribuer
-permalink: "/docs/lang/fr/CONTRIBUTING.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 | 31.01.2023 | FR, [EN](/docs/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md) |
 

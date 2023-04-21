@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Hostování vlastního serveru SMP
-permalink: "/docs/lang/cs/SERVER.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md) |
 

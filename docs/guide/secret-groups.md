@@ -1,10 +1,6 @@
 ---
-layout: layouts/doc.html
 title: Secret groups
 displayAt: 3
-permalink: "/docs/guide/secret-groups.html"
-supportedLangsForDoc:
-    - en
 ---
 # Secret groups
 

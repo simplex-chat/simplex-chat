@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Group links
-permalink: "/docs/rfcs/2022-10-10-group-links.html"
-supportedLangsForDoc:
-    - en
 ---
 # Group links
 

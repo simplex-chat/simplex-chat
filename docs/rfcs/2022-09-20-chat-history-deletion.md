@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: chat history deletion
-permalink: "/docs/rfcs/2022-09-20-chat-history-deletion.html"
-supportedLangsForDoc:
-    - en
 ---
 # Chat history deletion
 

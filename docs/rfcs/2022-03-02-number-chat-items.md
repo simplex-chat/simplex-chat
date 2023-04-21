@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Number chat items
-permalink: "/docs/rfcs/2022-03-02-number-chat-items.html"
-supportedLangsForDoc:
-    - en
 ---
 # Message replies and chat item sequential numbers
 

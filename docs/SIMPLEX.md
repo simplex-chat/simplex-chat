@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: SimpleX platform
-permalink: "/docs/SIMPLEX.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 
 | Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md) |

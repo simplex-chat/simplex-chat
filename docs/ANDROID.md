@@ -1,10 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Accessing files in Android app
-permalink: "/docs/ANDROID.html"
-supportedLangsForDoc:
-    - en
-    - cs
 ---
 
 | 07.02.2023 | EN, [CZ](/docs/lang/cs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md) |

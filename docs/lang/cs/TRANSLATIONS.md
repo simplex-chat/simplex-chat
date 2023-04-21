@@ -1,10 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Přispívání překladů do SimpleX Chat
-permalink: "/docs/lang/cs/TRANSLATIONS.html"
-supportedLangsForDoc:
-    - en
-    - cs
 ---
 | Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/TRANSLATIONS.md) |
 

@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Servers configuration
-permalink: "/docs/rfcs/2022-02-24-servers-configuration.html"
-supportedLangsForDoc:
-    - en
 ---
 # Server configuration
 

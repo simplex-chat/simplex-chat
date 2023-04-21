@@ -1,3 +1,6 @@
+---
+title: Contribuer aux traductions de SimpleX Chat
+---
 | 19.03.2023 | FR, [EN](/docs/TRANSLATIONS.md), [CZ](/docs/lang/cs/TRANSLATIONS.md) |
 
 # Contribuer aux traductions de SimpleX Chat

@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Group connections recovery
-permalink: "/docs/rfcs/2022-08-26-group-connections-recovery.html"
-supportedLangsForDoc:
-    - en
 ---
 # Group connections recovery after asynchronous commands
 

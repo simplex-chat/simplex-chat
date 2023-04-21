@@ -1,10 +1,6 @@
 ---
-layout: layouts/doc.html
 title: Managing data
 displayAt: 5
-permalink: "/docs/guide/managing-data.html"
-supportedLangsForDoc:
-    - en
 ---
 # Managing Your Data
 

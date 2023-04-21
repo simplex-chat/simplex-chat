@@ -1,10 +1,6 @@
 ---
-layout: layouts/doc.html
 title: Audio & video Calls
 displayAt: 6
-permalink: "/docs/guide/audio-video-calls.html"
-supportedLangsForDoc:
-    - en
 ---
 # Audio and Video Calls
 

@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Přístup ke zprávám v databázi
-permalink: "/docs/lang/cs/SQL.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/SQL.md), [FR](/docs/lang/fr/SQL.md) |
 

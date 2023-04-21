@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Hosting your own SMP Server
-permalink: "/docs/SERVER.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 
 | Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |

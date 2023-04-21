@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Database encryption
-permalink: "/docs/rfcs/2022-08-29-database-encryption.html"
-supportedLangsForDoc:
-    - en
 ---
 # Database encryption
 

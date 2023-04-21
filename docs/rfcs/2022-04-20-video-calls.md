@@ -1,9 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Video Calls
-permalink: "/docs/rfcs/2022-04-20-video-calls.html"
-supportedLangsForDoc:
-    - en
 ---
 # Adding Audio/Video Call Functionality to SimpleX Apps
 

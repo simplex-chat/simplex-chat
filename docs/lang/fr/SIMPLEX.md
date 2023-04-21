@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Plateforme SimpleX
-permalink: "/docs/lang/fr/SIMPLEX.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 | 07.02.2023 | FR, [EN](/docs/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md) |
 

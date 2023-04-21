@@ -1,11 +1,5 @@
 ---
-layout: layouts/doc.html
 title: Průvodce přispíváním
-permalink: "/docs/lang/cs/CONTRIBUTING.html"
-supportedLangsForDoc:
-    - en
-    - cs
-    - fr
 ---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/CONTRIBUTING.md), [FR](/docs/lang/fr/CONTRIBUTING.md) |
 
