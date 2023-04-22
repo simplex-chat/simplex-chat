@@ -263,7 +263,6 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
   ) {
     val actionPassword = rememberSaveable { mutableStateOf("") }
     val passwordValid by remember { derivedStateOf { actionPassword.value == actionPassword.value.trim() } }
@@ -301,6 +300,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
         PasswordAndAction(R.string.unhide_chat_profile)
       }
     }
+    SectionBottomSpacer()
   }
 }
 
