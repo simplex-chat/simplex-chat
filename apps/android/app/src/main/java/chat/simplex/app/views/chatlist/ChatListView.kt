@@ -70,6 +70,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
   Scaffold(topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
+    drawerScrimColor = if (isInDarkTheme()) MaterialTheme.colors.background.copy(alpha = 0.8f) else MaterialTheme.colors.onSurface.copy(alpha = 0.32f),
     floatingActionButton = {
       if (searchInList.isEmpty()) {
         FloatingActionButton(
