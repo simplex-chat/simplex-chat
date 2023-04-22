@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
@@ -153,8 +154,7 @@ fun DatabaseLayout(
   val operationsDisabled = !stopped || progressIndicator
 
   Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = DEFAULT_BOTTOM_PADDING),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.your_chat_database))
 
@@ -262,6 +262,7 @@ fun DatabaseLayout(
         String.format(stringResource(R.string.total_files_count_and_size), count, formatBytes(size))
       }
     )
+    SectionBottomSpacer()
   }
 }
 

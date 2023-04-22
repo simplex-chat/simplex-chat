@@ -28,7 +28,6 @@ val bold = SpanStyle(fontWeight = FontWeight.Bold)
 @Composable
 fun ChatHelpView(addContact: (() -> Unit)? = null) {
   Column(
-    horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
     val uriHandler = LocalUriHandler.current
@@ -44,7 +43,6 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
 
     Column(
       Modifier.padding(top = 24.dp),
-      horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       Text(
@@ -70,7 +68,6 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
 
     Column(
       Modifier.padding(top = 24.dp),
-      horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       Text(stringResource(R.string.to_connect_via_link_title), style = MaterialTheme.typography.h2)
@@ -81,7 +78,6 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
 
     Column(
       Modifier.padding(vertical = 24.dp),
-      horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       Text(stringResource(R.string.markdown_in_messages), style = MaterialTheme.typography.h2)

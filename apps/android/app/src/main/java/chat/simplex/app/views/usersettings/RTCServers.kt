@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionItemViewSpaceBetween
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.*
@@ -102,6 +103,7 @@ fun RTCServersLayout(
     Column(
       Modifier
         .fillMaxWidth()
+        .verticalScroll(rememberScrollState())
         .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -129,7 +131,7 @@ fun RTCServersLayout(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Column(horizontalAlignment = Alignment.Start) {
+            Column {
               Row {
                 Text(
                   stringResource(R.string.cancel_verb),
@@ -175,7 +177,7 @@ fun RTCServersLayout(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Column(horizontalAlignment = Alignment.Start) {
+            Column {
               Text(
                 stringResource(R.string.edit_verb),
                 color = MaterialTheme.colors.primary,
@@ -189,6 +191,7 @@ fun RTCServersLayout(
           }
         }
       }
+      SectionBottomSpacer()
     }
   }
 }

@@ -26,7 +26,6 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
   Column(Modifier
     .fillMaxWidth()
     .padding(horizontal = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start
   ) {
     AppBarTitle(stringResource(R.string.how_simplex_works), false)
     ReadableText(R.string.many_people_asked_how_can_it_deliver)

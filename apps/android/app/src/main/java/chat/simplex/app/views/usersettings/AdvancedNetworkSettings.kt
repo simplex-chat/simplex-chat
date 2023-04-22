@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
 import SectionItemView
 import SectionSpacer
@@ -140,7 +141,6 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.network_settings_title))
     SectionView {
@@ -199,7 +199,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     SectionCustomFooter {
       SettingsSectionFooter(revert, save, footerDisabled)
     }
-    SectionSpacer()
+    SectionBottomSpacer()
   }
 }
 

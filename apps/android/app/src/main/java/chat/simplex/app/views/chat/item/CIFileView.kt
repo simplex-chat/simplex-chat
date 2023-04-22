@@ -190,9 +190,7 @@ fun CIFileView(
     else
       "                 "
     if (file != null) {
-      Column(
-        horizontalAlignment = Alignment.Start
-      ) {
+      Column {
         Text(
           file.fileName,
           maxLines = 1

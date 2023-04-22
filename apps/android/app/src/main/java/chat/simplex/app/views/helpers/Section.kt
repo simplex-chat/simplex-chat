@@ -195,15 +195,24 @@ fun SectionDivider() {
 }
 
 @Composable
-fun SectionDividerSpaced() {
-  SectionSpacer()
-  Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
-  SectionSpacer()
+fun SectionDividerSpaced(maxTopPadding: Boolean = false, maxBottomPadding: Boolean = true) {
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      top = if (maxTopPadding) 30.dp else 20.dp,
+      end = DEFAULT_PADDING_HALF,
+      bottom = if (maxBottomPadding) 30.dp else 20.dp)
+  )
 }
 
 @Composable
 fun SectionSpacer() {
   Spacer(Modifier.height(30.dp))
+}
+
+@Composable
+fun SectionBottomSpacer() {
+  Spacer(Modifier.height(DEFAULT_BOTTOM_PADDING))
 }
 
 @Composable

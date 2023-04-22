@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewWithIcon
@@ -139,8 +140,6 @@ fun SettingsLayout(
     ) {
       AppBarTitle(stringResource(R.string.your_settings))
 
-      Spacer(Modifier.height(30.dp))
-
       SectionView(stringResource(R.string.settings_section_title_you)) {
         SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
           Spacer(Modifier.width(2.dp))
@@ -185,6 +184,7 @@ fun SettingsLayout(
         SettingsActionItem(Icons.Outlined.Code, stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
         AppVersionItem(showVersion)
       }
+      SectionBottomSpacer()
     }
   }
 }

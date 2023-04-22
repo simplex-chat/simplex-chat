@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.group
 
 import InfoRow
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
@@ -160,8 +161,7 @@ fun GroupChatInfoLayout(
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start
+      .verticalScroll(rememberScrollState())
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -198,7 +198,7 @@ fun GroupChatInfoLayout(
       }
       MembersList(members, showMemberInfo)
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
     SectionView {
       ClearChatButton(clearChat)
       if (groupInfo.canDelete) {
@@ -216,7 +216,7 @@ fun GroupChatInfoLayout(
         InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
       }
     }
-    SectionSpacer()
+    SectionBottomSpacer()
   }
 }
 

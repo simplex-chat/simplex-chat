@@ -1,9 +1,10 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -36,8 +37,7 @@ fun CallSettingsLayout(
   editIceServers: () -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(R.string.your_calls))
@@ -56,6 +56,7 @@ fun CallSettingsLayout(
         generalGetString(R.string.relay_server_if_necessary)
       }
     )
+    SectionBottomSpacer()
   }
 }
 

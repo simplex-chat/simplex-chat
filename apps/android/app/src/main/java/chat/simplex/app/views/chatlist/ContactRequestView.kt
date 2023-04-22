@@ -39,7 +39,6 @@ fun ContactRequestView(chatModelIncognito: Boolean, contactRequest: ChatInfo.Con
     val ts = getTimestampText(contactRequest.contactRequest.updatedAt)
     Column(
       Modifier.fillMaxHeight(),
-      verticalArrangement = Arrangement.Top
     ) {
       Text(
         ts,

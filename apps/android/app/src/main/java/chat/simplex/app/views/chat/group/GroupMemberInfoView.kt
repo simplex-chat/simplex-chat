@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.group
 
 import InfoRow
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionSpacer
 import SectionView
@@ -151,7 +152,6 @@ fun GroupMemberInfoLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -225,9 +225,8 @@ fun GroupMemberInfoLayout(
         InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
         InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
       }
-      SectionSpacer()
     }
-    SectionSpacer()
+    SectionBottomSpacer()
   }
 }
 

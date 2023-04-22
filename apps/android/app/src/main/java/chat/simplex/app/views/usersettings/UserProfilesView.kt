@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
@@ -157,7 +158,6 @@ private fun UserProfilesView(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_PADDING),
   ) {
     if (profileHidden.value) {
       SectionView {
@@ -197,6 +197,7 @@ private fun UserProfilesView(
         )
       }
     }
+    SectionBottomSpacer()
   }
 }
 

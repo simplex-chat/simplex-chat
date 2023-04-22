@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -58,6 +59,7 @@ fun MarkdownHelpView() {
         })
       }
     }
+    SectionBottomSpacer()
   }
 }
 

@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.group
 
+import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
@@ -105,7 +106,6 @@ fun AddGroupMembersLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.button_add_members))
     InfoAboutIncognito(
@@ -156,13 +156,13 @@ fun AddGroupMembersLayout(
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
 
       SectionView(stringResource(R.string.select_contacts)) {
         ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, allowModifyMembers, addContact, removeContact)
       }
-      SectionSpacer()
     }
+    SectionBottomSpacer()
   }
 }
 
