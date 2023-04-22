@@ -141,10 +141,8 @@ fun SettingsLayout(
       AppBarTitle(stringResource(R.string.your_settings))
 
       SectionView(stringResource(R.string.settings_section_title_you)) {
-        SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
-          Spacer(Modifier.width(2.dp))
+        SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
           ProfilePreview(profile, stopped = stopped)
-          Spacer(Modifier.width(2.dp))
         }
         val profileHidden = rememberSaveable { mutableStateOf(false) }
         SettingsActionItem(Icons.Outlined.ManageAccounts, stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
@@ -362,8 +360,8 @@ fun ChatLockItem(
 
 @Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary, stopped: Boolean = false) {
   ProfileImage(size = size, image = profileOf.image, color = color)
-  Spacer(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
-  Column {
+  Spacer(Modifier.padding(horizontal = DEFAULT_PADDING_HALF + 1.dp))
+  Column(Modifier.height(size), verticalArrangement = Arrangement.Center) {
     Text(
       profileOf.displayName,
       style = MaterialTheme.typography.caption,
@@ -372,12 +370,15 @@ fun ChatLockItem(
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
-    Text(
-      profileOf.fullName,
-      color = if (stopped) HighOrLowlight else Color.Unspecified,
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis
-    )
+    if (profileOf.fullName.isNotEmpty()) {
+      Text(
+        profileOf.fullName,
+        Modifier.padding(vertical = 5.dp),
+        color = if (stopped) HighOrLowlight else Color.Unspecified,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
+    }
   }
 }
 
@@ -395,7 +396,10 @@ fun SettingsActionItemWithContent(icon: ImageVector?, text: String? = null, clic
   SectionItemView(
     click,
     extraPadding = extraPadding,
-    padding = if (extraPadding && icon != null) PaddingValues(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING) else PaddingValues(horizontal = DEFAULT_PADDING),
+    padding = if (extraPadding && icon != null)
+      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF)
+    else
+      PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
     disabled = disabled
   ) {
     if (icon != null) {
