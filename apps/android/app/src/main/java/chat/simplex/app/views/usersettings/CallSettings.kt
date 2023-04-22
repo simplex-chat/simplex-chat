@@ -6,12 +6,16 @@ import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -87,17 +91,13 @@ fun SharedPreferenceToggle(
   enabled: Boolean = true,
   onChange: ((Boolean) -> Unit)? = null,
 ) {
-  Switch(
+  DefaultSwitch(
     enabled = enabled,
     checked = remember { preference.state }.value,
     onCheckedChange = {
       preference.set(it)
       onChange?.invoke(it)
     },
-    colors = SwitchDefaults.colors(
-      checkedThumbColor = MaterialTheme.colors.primary,
-      uncheckedThumbColor = HighOrLowlight
-    )
   )
 }
 
@@ -120,16 +120,12 @@ fun SharedPreferenceToggleWithIcon(
       tint = MaterialTheme.colors.primary
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))
-    Switch(
+    DefaultSwitch(
       checked = prefState.value,
       onCheckedChange = {
         preference.set(it)
         prefState.value = it
       },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
       enabled = !stopped
     )
   }

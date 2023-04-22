@@ -109,13 +109,9 @@ fun RTCServersLayout(
     ) {
       SectionItemViewSpaceBetween(padding = PaddingValues()) {
         Text(stringResource(R.string.configure_ICE_servers), Modifier.padding(end = 24.dp))
-        Switch(
+        DefaultSwitch(
           checked = isUserRTCServers,
           onCheckedChange = isUserRTCServersOnOff,
-          colors = SwitchDefaults.colors(
-            checkedThumbColor = MaterialTheme.colors.primary,
-            uncheckedThumbColor = HighOrLowlight
-          ),
         )
       }
 

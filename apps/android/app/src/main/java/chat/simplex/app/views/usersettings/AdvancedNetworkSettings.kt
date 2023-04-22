@@ -225,13 +225,9 @@ fun EnableKeepAliveSwitch(
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Text(stringResource(R.string.network_option_enable_tcp_keep_alive))
-    Switch(
+    DefaultSwitch(
       checked = networkEnableKeepAlive.value,
       onCheckedChange = { networkEnableKeepAlive.value = it },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }

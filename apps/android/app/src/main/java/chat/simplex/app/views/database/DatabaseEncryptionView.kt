@@ -303,13 +303,9 @@ fun SavePassphraseSetting(
         color = Color.Unspecified
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
-      Switch(
+      DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        ),
         enabled = !initialRandomDBPassphrase && !progressIndicator
       )
     }

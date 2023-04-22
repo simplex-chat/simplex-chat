@@ -267,13 +267,9 @@ private fun EnableLock(performLA: MutableState<Boolean>, onCheckedChange: (Boole
           .fillMaxWidth()
           .weight(1F)
       )
-      Switch(
+      DefaultSwitch(
         checked = performLA.value,
         onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        )
       )
     }
   }

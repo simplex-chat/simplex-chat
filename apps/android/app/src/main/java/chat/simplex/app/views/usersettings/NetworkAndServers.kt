@@ -238,13 +238,9 @@ fun UseSocksProxySwitch(
         Text(stringResource(R.string.network_socks_toggle))
       }
     }
-    Switch(
+    DefaultSwitch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }

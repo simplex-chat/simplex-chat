@@ -340,7 +340,7 @@ fun RunChatSetting(
     text = chatRunningText,
     iconColor = if (stopped) Color.Red else MaterialTheme.colors.primary,
   ) {
-    Switch(
+    DefaultSwitch(
       enabled = !chatDbDeleted,
       checked = runChat,
       onCheckedChange = { runChatSwitch ->
@@ -350,10 +350,6 @@ fun RunChatSetting(
           stopChatAlert()
         }
       },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }

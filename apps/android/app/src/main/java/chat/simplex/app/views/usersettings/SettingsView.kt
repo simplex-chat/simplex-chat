@@ -450,13 +450,9 @@ fun PreferenceToggle(
   onChange: (Boolean) -> Unit = {},
 ) {
   SettingsActionItemWithContent(null, text, extraPadding = true,) {
-    Switch(
+    DefaultSwitch(
       checked = checked,
       onCheckedChange = onChange,
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      )
     )
   }
 }
@@ -471,15 +467,11 @@ fun PreferenceToggleWithIcon(
   onChange: (Boolean) -> Unit = {},
 ) {
   SettingsActionItemWithContent(icon, text, iconColor = iconColor ?: HighOrLowlight, extraPadding = extraPadding) {
-    Switch(
+    DefaultSwitch(
       checked = checked,
       onCheckedChange = {
         onChange(it)
       },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      )
     )
   }
 }
