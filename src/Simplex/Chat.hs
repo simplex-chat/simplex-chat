@@ -1357,6 +1357,8 @@ processChatCommand = \case
   ShowGroupLink gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGetGroupLink groupId
+  UpdateProfileGroupLink gName groupLink ->
+    updateGroupProfileByName gName $ \p -> p {groupLink}
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
@@ -4405,7 +4407,7 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName, image = Nothing, preferences = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -4673,6 +4675,7 @@ chatCommandP =
       "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
+      "/profile link #" *> (UpdateProfileGroupLink  <$> displayName <*> optional (A.space *> strP)),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
@@ -4764,14 +4767,14 @@ chatCommandP =
       pure (cName, fullName)
     userProfile = do
       (cName, fullName) <- userNames
-      pure Profile {displayName = cName, fullName, image = Nothing, preferences = Nothing}
+      pure Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
       let groupPreferences = Just (emptyGroupPrefs :: GroupPreferences) {directMessages = Just DirectMessagesGroupPreference {enable = FEOn}}
-      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
+      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupLink = Nothing, groupPreferences}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
