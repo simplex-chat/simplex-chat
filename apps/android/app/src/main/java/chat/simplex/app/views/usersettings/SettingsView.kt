@@ -360,7 +360,7 @@ fun ChatLockItem(
 
 @Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary, stopped: Boolean = false) {
   ProfileImage(size = size, image = profileOf.image, color = color)
-  Spacer(Modifier.padding(horizontal = DEFAULT_PADDING_HALF + 1.dp))
+  Spacer(Modifier.padding(horizontal = 8.dp))
   Column(Modifier.height(size), verticalArrangement = Arrangement.Center) {
     Text(
       profileOf.displayName,
@@ -397,9 +397,9 @@ fun SettingsActionItemWithContent(icon: ImageVector?, text: String? = null, clic
     click,
     extraPadding = extraPadding,
     padding = if (extraPadding && icon != null)
-      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF)
+      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
     else
-      PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+      PaddingValues(horizontal = DEFAULT_PADDING),
     disabled = disabled
   ) {
     if (icon != null) {

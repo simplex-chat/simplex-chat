@@ -152,13 +152,13 @@ private fun CustomServer(
       onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
     }
   }
-  SectionDividerSpaced()
+  SectionDividerSpaced(maxTopPadding = true)
   UseServerSection(valid.value, testing, server, testServer, onUpdate, onDelete)
 
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(R.string.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value, Modifier.aspectRatio(1f))
+      QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
     }
   }
 }
