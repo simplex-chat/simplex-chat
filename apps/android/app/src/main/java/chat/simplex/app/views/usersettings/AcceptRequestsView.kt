@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
 import SectionView
 import androidx.compose.foundation.layout.*
@@ -92,6 +93,7 @@ private fun AcceptRequestsLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

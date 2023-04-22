@@ -40,7 +40,6 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
     }
 
     Column(
-      horizontalAlignment = Alignment.Start,
       modifier = Modifier.padding(bottom = 12.dp)
     ) {
       Row(
@@ -112,7 +111,6 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         .fillMaxSize()
         .padding(horizontal = DEFAULT_PADDING)
         .verticalScroll(rememberScrollState()),
-      horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
     ) {
       Text(

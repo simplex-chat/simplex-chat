@@ -95,7 +95,7 @@ private fun InfoRow(icon: Painter, @StringRes titleId: Int, @StringRes textId: I
     Image(icon, contentDescription = null, modifier = Modifier
       .width(width)
       .padding(top = 8.dp, start = 8.dp, end = 24.dp))
-    Column(horizontalAlignment = Alignment.Start) {
+    Column {
       Text(stringResource(titleId), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h3, lineHeight = 24.sp)
       Text(stringResource(textId), lineHeight = 24.sp, style = MaterialTheme.typography.body1)
     }

@@ -83,7 +83,10 @@ fun SectionItemView(
   minHeight: Dp = 46.dp,
   disabled: Boolean = false,
   extraPadding: Boolean = false,
-  padding: PaddingValues = if (extraPadding) PaddingValues(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING) else PaddingValues(horizontal = DEFAULT_PADDING),
+  padding: PaddingValues = if (extraPadding)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+  else
+    PaddingValues(horizontal = DEFAULT_PADDING),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -102,7 +105,7 @@ fun SectionItemViewWithIcon(
   click: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
   disabled: Boolean = false,
-  padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING),
+  padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -195,10 +198,14 @@ fun SectionDivider() {
 }
 
 @Composable
-fun SectionDividerSpaced() {
-  SectionSpacer()
-  Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
-  SectionSpacer()
+fun SectionDividerSpaced(maxTopPadding: Boolean = false, maxBottomPadding: Boolean = true) {
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      top = if (maxTopPadding) 40.dp else 30.dp,
+      end = DEFAULT_PADDING_HALF,
+      bottom = if (maxBottomPadding) 40.dp else 30.dp)
+  )
 }
 
 @Composable
@@ -207,8 +214,13 @@ fun SectionSpacer() {
 }
 
 @Composable
+fun SectionBottomSpacer() {
+  Spacer(Modifier.height(DEFAULT_BOTTOM_PADDING))
+}
+
+@Composable
 fun TextIconSpaced(extraPadding: Boolean = false) {
-  Spacer(Modifier.padding(horizontal = if (extraPadding) DEFAULT_PADDING else DEFAULT_PADDING_HALF))
+  Spacer(Modifier.padding(horizontal = if (extraPadding) 17.dp else DEFAULT_PADDING_HALF))
 }
 
 @Composable

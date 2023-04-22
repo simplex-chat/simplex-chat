@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import SectionBottomSpacer
 import SectionView
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
@@ -103,6 +104,7 @@ private fun ContactConnectionInfoLayout(
       }
       DeleteButton(deleteConnection)
     }
+    SectionBottomSpacer()
   }
 }
 

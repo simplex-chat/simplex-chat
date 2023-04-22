@@ -42,7 +42,6 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
     val ts = getTimestampText(contactConnection.updatedAt)
     Column(
       Modifier.fillMaxHeight(),
-      verticalArrangement = Arrangement.Top
     ) {
       Text(
         ts,

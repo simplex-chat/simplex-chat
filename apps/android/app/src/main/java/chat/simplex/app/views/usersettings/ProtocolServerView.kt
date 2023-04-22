@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
@@ -81,7 +82,6 @@ private fun ProtocolServerLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_PADDING)
   ) {
     AppBarTitle(stringResource(if (server.preset) R.string.smp_servers_preset_server else R.string.smp_servers_your_server))
 
@@ -90,6 +90,7 @@ private fun ProtocolServerLayout(
     } else {
       CustomServer(testing, server, serverProtocol, testServer, onUpdate, onDelete)
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -113,7 +114,7 @@ private fun PresetServer(
       )
     }
   }
-  SectionDividerSpaced()
+  SectionDividerSpaced(maxTopPadding = true)
   UseServerSection(true, testing, server, testServer, onUpdate, onDelete)
 }
 
@@ -157,10 +158,9 @@ private fun CustomServer(
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(R.string.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value, Modifier.aspectRatio(1f))
+      QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
     }
   }
-  SectionSpacer()
 }
 
 @Composable

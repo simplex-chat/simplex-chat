@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionBottomSpacer
 import SectionTextFooter
 import SectionView
 import android.content.Context
@@ -55,7 +56,6 @@ fun ChatArchiveLayout(
 ) {
   Column(
     Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(title)
     SectionView(stringResource(R.string.chat_archive_section)) {
@@ -78,6 +78,7 @@ fun ChatArchiveLayout(
     SectionTextFooter(
       String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
     )
+    SectionBottomSpacer()
   }
 }
 

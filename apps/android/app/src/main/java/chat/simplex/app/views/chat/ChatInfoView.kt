@@ -2,6 +2,7 @@ package chat.simplex.app.views.chat
 
 import InfoRow
 import InfoRowEllipsis
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
@@ -168,8 +169,7 @@ fun ChatInfoLayout(
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start
+      .verticalScroll(rememberScrollState())
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -179,15 +179,14 @@ fun ChatInfoLayout(
     }
 
     LocalAliasEditor(localAlias, updateValue = onLocalAliasChanged)
-
+    SectionSpacer()
     if (customUserProfile != null) {
-      SectionSpacer()
       SectionView(generalGetString(R.string.incognito).uppercase()) {
         InfoRow(generalGetString(R.string.incognito_random_profile), customUserProfile.chatViewName)
       }
+      SectionDividerSpaced()
     }
 
-    SectionSpacer()
     SectionView {
       if (connectionCode != null) {
         VerifyCodeButton(contact.verified, verifyClicked)
@@ -230,7 +229,7 @@ fun ChatInfoLayout(
         InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
       }
     }
-    SectionSpacer()
+    SectionBottomSpacer()
   }
 }
 

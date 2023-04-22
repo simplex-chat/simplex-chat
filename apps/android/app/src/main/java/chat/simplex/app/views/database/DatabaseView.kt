@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
@@ -153,8 +154,7 @@ fun DatabaseLayout(
   val operationsDisabled = !stopped || progressIndicator
 
   Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = DEFAULT_BOTTOM_PADDING),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.your_chat_database))
 
@@ -172,7 +172,7 @@ fun DatabaseLayout(
         }
       }
     )
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
@@ -189,7 +189,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
       AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxBottomPadding = false)
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.export_database),
@@ -240,7 +240,7 @@ fun DatabaseLayout(
         stringResource(R.string.stop_chat_to_enable_database_actions)
       }
     )
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.files_and_media_section).uppercase()) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
@@ -262,6 +262,7 @@ fun DatabaseLayout(
         String.format(stringResource(R.string.total_files_count_and_size), count, formatBytes(size))
       }
     )
+    SectionBottomSpacer()
   }
 }
 
@@ -339,7 +340,7 @@ fun RunChatSetting(
     text = chatRunningText,
     iconColor = if (stopped) Color.Red else MaterialTheme.colors.primary,
   ) {
-    Switch(
+    DefaultSwitch(
       enabled = !chatDbDeleted,
       checked = runChat,
       onCheckedChange = { runChatSwitch ->
@@ -349,10 +350,6 @@ fun RunChatSetting(
           stopChatAlert()
         }
       },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }

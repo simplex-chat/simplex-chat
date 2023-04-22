@@ -1,11 +1,14 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
 import android.view.WindowManager
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -41,8 +44,7 @@ fun PrivacySettingsView(
   setPerformLA: (Boolean, FragmentActivity) -> Unit
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
     AppBarTitle(stringResource(R.string.your_privacy))
@@ -73,6 +75,7 @@ fun PrivacySettingsView(
     if (chatModel.simplexLinkMode.value == SimplexLinkMode.BROWSER) {
       SectionTextFooter(stringResource(R.string.simplex_link_mode_browser_warning))
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -199,8 +202,7 @@ fun SimplexLockView(
   }
 
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.chat_lock))
     SectionView {
@@ -251,6 +253,7 @@ fun SimplexLockView(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -264,13 +267,9 @@ private fun EnableLock(performLA: MutableState<Boolean>, onCheckedChange: (Boole
           .fillMaxWidth()
           .weight(1F)
       )
-      Switch(
+      DefaultSwitch(
         checked = performLA.value,
         onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        )
       )
     }
   }

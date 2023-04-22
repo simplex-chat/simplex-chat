@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import SectionBottomSpacer
 import android.content.ClipboardManager
 import android.content.res.Configuration
 import android.net.Uri
@@ -108,6 +109,7 @@ fun PasteToConnectLayout(
     }
 
     Text(annotatedStringResource(R.string.you_can_also_connect_by_clicking_the_link))
+    SectionBottomSpacer()
   }
 }
 

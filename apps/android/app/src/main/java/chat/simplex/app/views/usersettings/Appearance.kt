@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemViewSpaceBetween
@@ -85,8 +86,7 @@ fun AppearanceView(m: ChatModel) {
   editPrimaryColor: (Color) -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.appearance_settings))
     SectionView(stringResource(R.string.settings_section_title_language), padding = PaddingValues()) {
@@ -141,7 +141,7 @@ fun AppearanceView(m: ChatModel) {
       }
     }
 
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(R.string.settings_section_title_themes)) {
       val darkTheme = isSystemInDarkTheme()
@@ -166,6 +166,7 @@ fun AppearanceView(m: ChatModel) {
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

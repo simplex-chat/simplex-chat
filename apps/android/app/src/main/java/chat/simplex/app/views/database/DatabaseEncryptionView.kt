@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
@@ -136,7 +137,6 @@ fun DatabaseEncryptionLayout(
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.database_passphrase))
     SectionView(null) {
@@ -236,6 +236,7 @@ fun DatabaseEncryptionLayout(
         SectionTextFooter(generalGetString(R.string.impossible_to_recover_passphrase))
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -302,13 +303,9 @@ fun SavePassphraseSetting(
         color = Color.Unspecified
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
-      Switch(
+      DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        ),
         enabled = !initialRandomDBPassphrase && !progressIndicator
       )
     }

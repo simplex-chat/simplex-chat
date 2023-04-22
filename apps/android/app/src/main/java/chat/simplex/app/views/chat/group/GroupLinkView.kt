@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.group
 
+import SectionBottomSpacer
 import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -101,10 +102,7 @@ fun GroupLinkLayout(
 ) {
   Column(
     Modifier
-      .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
-    horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.Top
+      .verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.group_link))
     Text(
@@ -128,7 +126,7 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        QRCode(groupLink, Modifier.aspectRatio(1f).padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING))
+        QRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
@@ -148,6 +146,7 @@ fun GroupLinkLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

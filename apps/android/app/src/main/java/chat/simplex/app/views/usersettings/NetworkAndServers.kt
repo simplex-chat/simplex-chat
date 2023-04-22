@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
@@ -159,8 +160,7 @@ fun NetworkAndServersView(
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(R.string.network_and_servers))
@@ -178,11 +178,15 @@ fun NetworkAndServersView(
     }
     if (networkUseSocksProxy.value) {
       SectionCustomFooter { Text(annotatedStringResource(R.string.disable_onion_hosts_when_not_supported)) }
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+    } else {
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
-    SectionDividerSpaced()
+
     SectionView(generalGetString(R.string.settings_section_title_calls)) {
       SettingsActionItem(Icons.Outlined.ElectricalServices, stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -234,13 +238,9 @@ fun UseSocksProxySwitch(
         Text(stringResource(R.string.network_socks_toggle))
       }
     }
-    Switch(
+    DefaultSwitch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }
@@ -251,7 +251,6 @@ fun SockProxySettings(m: ChatModel) {
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
   ) {
     val defaultHostPort = remember { "localhost:9050" }
     AppBarTitle(generalGetString(R.string.network_socks_proxy_settings))
@@ -317,6 +316,7 @@ fun SockProxySettings(m: ChatModel) {
             remember { derivedStateOf { !validPort(portUnsaved.value.text) } }.value
       )
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -339,7 +339,6 @@ private fun UseOnionHosts(
   val onSelected = showModal {
     Column(
       Modifier.fillMaxWidth(),
-      horizontalAlignment = Alignment.Start,
     ) {
       AppBarTitle(stringResource(R.string.network_use_onion_hosts))
       SectionViewSelectable(null, onionHosts, values, useOnion)
@@ -379,7 +378,6 @@ private fun SessionModePicker(
     onSelected = showModal {
       Column(
         Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.Start,
       ) {
         AppBarTitle(stringResource(R.string.network_session_mode_transport_isolation))
         SectionViewSelectable(null, sessionMode, values, updateSessionMode)

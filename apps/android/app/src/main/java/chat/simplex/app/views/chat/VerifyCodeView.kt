@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import SectionBottomSpacer
 import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -126,6 +127,7 @@ private fun VerifyCodeLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

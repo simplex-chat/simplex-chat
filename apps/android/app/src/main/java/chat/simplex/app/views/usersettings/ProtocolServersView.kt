@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
@@ -193,7 +194,6 @@ private fun ProtocolServersLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_PADDING),
   ) {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) R.string.your_SMP_servers else R.string.your_XFTP_servers))
 
@@ -223,7 +223,7 @@ private fun ProtocolServersLayout(
         }
       }
     )
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     SectionView {
       SectionItemView(resetServers, disabled = serversUnchanged) {
         Text(stringResource(R.string.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else HighOrLowlight)
@@ -236,10 +236,11 @@ private fun ProtocolServersLayout(
         Text(stringResource(R.string.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
       }
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxBottomPadding = false)
     SectionView {
       HowToButton()
     }
+    SectionBottomSpacer()
   }
 }
 

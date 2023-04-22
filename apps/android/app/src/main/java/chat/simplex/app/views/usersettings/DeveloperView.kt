@@ -1,10 +1,13 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
@@ -22,7 +25,7 @@ fun DeveloperView(
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   withAuth: (block: () -> Unit) -> Unit
 ) {
-  Column(Modifier.fillMaxWidth()) {
+  Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
     val uriHandler = LocalUriHandler.current
     AppBarTitle(stringResource(R.string.settings_developer_tools))
     val developerTools = m.controller.appPrefs.developerTools
@@ -37,6 +40,6 @@ fun DeveloperView(
       generalGetString(if (devTools.value) R.string.show_dev_options else R.string.hide_dev_options) + " " +
         generalGetString(R.string.developer_options)
     )
-    SectionSpacer()
+    SectionBottomSpacer()
   }
 }

@@ -110,7 +110,7 @@ fun UserPicker(
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
         .shadow(8.dp, RoundedCornerShape(corner = CornerSize(25.dp)), clip = true)
-        .background(if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
+        .background(if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
         .clip(RoundedCornerShape(corner = CornerSize(25.dp)))
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {

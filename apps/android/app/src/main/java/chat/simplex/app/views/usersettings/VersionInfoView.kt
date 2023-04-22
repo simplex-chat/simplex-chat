@@ -17,7 +17,6 @@ import chat.simplex.app.views.helpers.AppBarTitle
 fun VersionInfoView(info: CoreVersionInfo) {
   Column(
     Modifier.padding(horizontal = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start
   ) {
     AppBarTitle(stringResource(R.string.app_version_title), false)
     Text(String.format(stringResource(R.string.app_version_name), BuildConfig.VERSION_NAME))

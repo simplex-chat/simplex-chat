@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.*
@@ -100,7 +101,6 @@ fun UserProfileLayout(
           Modifier
             .verticalScroll(scrollState)
             .padding(horizontal = DEFAULT_PADDING),
-          horizontalAlignment = Alignment.Start
         ) {
           AppBarTitle(stringResource(R.string.your_current_profile))
           ReadableText(generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it), TextAlign.Center)
@@ -174,6 +174,7 @@ fun UserProfileLayout(
               }
             }
           }
+          SectionBottomSpacer()
         }
       }
     }

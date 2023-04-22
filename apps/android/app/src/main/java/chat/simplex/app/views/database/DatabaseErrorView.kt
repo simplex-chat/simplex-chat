@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionBottomSpacer
 import SectionSpacer
 import SectionView
 import android.content.Context
@@ -79,7 +80,6 @@ fun DatabaseErrorView(
 
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.Center,
   ) {
     val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
@@ -169,6 +169,7 @@ fun DatabaseErrorView(
         )
       }
     }
+    SectionBottomSpacer()
   }
   if (progressIndicator.value) {
     Box(
