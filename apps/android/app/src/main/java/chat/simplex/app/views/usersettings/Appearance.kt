@@ -141,7 +141,7 @@ fun AppearanceView(m: ChatModel) {
       }
     }
 
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(R.string.settings_section_title_themes)) {
       val darkTheme = isSystemInDarkTheme()

@@ -236,7 +236,7 @@ private fun ProtocolServersLayout(
         Text(stringResource(R.string.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
       }
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxBottomPadding = false)
     SectionView {
       HowToButton()
     }

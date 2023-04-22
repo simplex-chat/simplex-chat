@@ -84,17 +84,17 @@ private fun GroupPreferencesLayout(
         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
       }
     }
-    SectionDividerSpaced(true)
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
     FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
     }
-    SectionDividerSpaced(true)
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
     FeatureSection(GroupFeature.FullDelete, allowFullDeletion, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
     }
-    SectionDividerSpaced(true)
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))

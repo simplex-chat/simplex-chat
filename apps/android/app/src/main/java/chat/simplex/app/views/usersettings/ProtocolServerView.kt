@@ -152,7 +152,7 @@ private fun CustomServer(
       onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
     }
   }
-  SectionDividerSpaced(maxTopPadding = true)
+  SectionDividerSpaced()
   UseServerSection(valid.value, testing, server, testServer, onUpdate, onDelete)
 
   if (valid.value) {

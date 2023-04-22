@@ -172,7 +172,7 @@ fun DatabaseLayout(
         }
       }
     )
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
@@ -189,7 +189,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
       AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxBottomPadding = false)
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.export_database),
@@ -240,7 +240,7 @@ fun DatabaseLayout(
         stringResource(R.string.stop_chat_to_enable_database_actions)
       }
     )
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.files_and_media_section).uppercase()) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0

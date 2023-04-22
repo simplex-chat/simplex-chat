@@ -213,7 +213,7 @@ fun GroupMemberInfoLayout(
     }
 
     if (member.canBeRemoved(groupInfo)) {
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxBottomPadding = false)
       SectionView {
         RemoveMemberButton(removeMember)
       }

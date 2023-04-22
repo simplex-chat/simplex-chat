@@ -179,7 +179,7 @@ fun GroupChatInfoLayout(
       GroupPreferencesButton(openPreferences)
     }
     SectionTextFooter(stringResource(R.string.only_group_owners_can_change_prefs))
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
@@ -198,7 +198,7 @@ fun GroupChatInfoLayout(
       }
       MembersList(members, showMemberInfo)
     }
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     SectionView {
       ClearChatButton(clearChat)
       if (groupInfo.canDelete) {
