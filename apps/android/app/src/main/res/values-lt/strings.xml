@@ -356,7 +356,6 @@
     <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> komanda</string>
     <string name="whats_new">Kas naujo</string>
     <string name="save_and_notify_group_members">Įrašyti ir pranešti grupės nariams</string>
-    <string name="callstatus_connecting"></string>
     <string name="callstate_received_confirmation">gautas patvirtinimas…</string>
     <string name="read_more_in_github">Išsamiau skaitykite mūsų „GitHub“ saugykloje</string>
     <string name="icon_descr_call_missed">Praleistas skambutis</string>
@@ -460,7 +459,6 @@
     <string name="should_be_at_least_one_visible_profile">Turėtų būti matomas bent vienas naudotojo profilis.</string>
     <string name="chat_preferences_contact_allows">Adresatas leidžia</string>
     <string name="voice_prohibited_in_this_chat">Balso žinutės šiame pokalbyje yra uždraustos.</string>
-    <string name="v4_3_irreversible_message_deletion"></string>
     <string name="v4_4_disappearing_messages_desc">Išsiųstos žinutės bus ištrintos po nustatyto laiko.</string>
     <string name="user_unhide">Nebeslėpti</string>
     <string name="la_lock_mode">SimpleX užrakto veiksena</string>
@@ -502,7 +500,6 @@
     <string name="change_database_passphrase_question">Keisti duomenų bazės slaptafrazę\?</string>
     <string name="network_proxy_port">prievadas %d</string>
     <string name="stop_rcv_file__message">Failo gavimas bus sustabdytas.</string>
-    <string name="revoke_file__confirm"></string>
     <string name="network_socks_toggle_use_socks_proxy">Naudoti SOCKS įgaliotąjį serverį</string>
     <string name="video_descr">Vaizdo įrašas</string>
     <string name="clear_verb">Išvalyti</string>
