@@ -174,18 +174,17 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
     } else if (u.hidden) {
         Icon(Icons.Outlined.Lock, null, Modifier.size(20.dp), tint = HighOrLowlight)
     } else if (unreadCount > 0) {
-      Box(Modifier
-        .sizeIn(20.dp, 20.dp)
-        .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape),
+      Box(
         contentAlignment = Alignment.Center
       ) {
         Text(
           unreadCountStr(unreadCount),
-          Modifier
-            .padding(horizontal = 3.dp, vertical = 1.dp),
           color = Color.White,
           fontSize = 11.sp,
-          maxLines = 1
+          modifier = Modifier
+            .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape)
+            .padding(2.dp)
+            .badgeLayout()
         )
       }
     } else if (!u.showNtfs) {
