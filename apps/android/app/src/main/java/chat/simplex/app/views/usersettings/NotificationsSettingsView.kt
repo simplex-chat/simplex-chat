@@ -11,6 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.intl.Locale
@@ -83,7 +84,7 @@ fun NotificationsSettingsLayout(
   ) {
     AppBarTitle(stringResource(R.string.notifications))
     SectionView(null) {
-      SettingsActionItemWithContent(null, stringResource(R.string.settings_notifications_mode_title), { showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
+      SettingsActionItemWithContent(null as ImageVector?, stringResource(R.string.settings_notifications_mode_title), { showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
         Text(
           modes.first { it.value == notificationsMode.value }.title,
           maxLines = 1,
@@ -91,7 +92,7 @@ fun NotificationsSettingsLayout(
           color = HighOrLowlight
         )
       }
-      SettingsActionItemWithContent(null, stringResource(R.string.settings_notification_preview_mode_title), { showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
+      SettingsActionItemWithContent(null as ImageVector?, stringResource(R.string.settings_notification_preview_mode_title), { showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
         Text(
           previewModes.first { it.value == notificationPreviewMode.value }.title,
           maxLines = 1,

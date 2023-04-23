@@ -19,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
@@ -145,18 +146,18 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         val profileHidden = rememberSaveable { mutableStateOf(false) }
-        SettingsActionItem(Icons.Outlined.ManageAccounts, stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_manage_accounts), stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
-        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_qr_code), stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped, extraPadding = true)
         ChatPreferencesItem(showCustomModal, stopped = stopped)
       }
       SectionDividerSpaced()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_bolt), stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_wifi_tethering), stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_videocam), stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_lock), stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it) }, disabled = stopped, extraPadding = true)
         DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
@@ -195,7 +196,7 @@ fun SettingsIncognitoActionItem(
   onClickInfo: () -> Unit,
 ) {
   SettingsPreferenceItemWithInfo(
-    if (incognito.value) Icons.Filled.TheaterComedy else Icons.Outlined.TheaterComedy,
+    if (incognito.value) painterResource(R.drawable.ic_theater_comedy) else painterResource(R.drawable.ic_theater_comedy),
     if (incognito.value) Indigo else HighOrLowlight,
     stringResource(R.string.incognito),
     stopped,
@@ -253,7 +254,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 
 @Composable fun ChatPreferencesItem(showCustomModal: ((@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit)), stopped: Boolean) {
   SettingsActionItem(
-    Icons.Outlined.ToggleOn,
+    painterResource(R.drawable.ic_toggle_on),
     stringResource(R.string.chat_preferences),
     click = if (stopped) null else ({
       withApi {
@@ -392,6 +393,15 @@ fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = n
 }
 
 @Composable
+fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false) {
+  SectionItemView(click, disabled = disabled, extraPadding = extraPadding) {
+    Icon(icon, text, Modifier.size(25.dp), tint = if (disabled) HighOrLowlight else iconColor)
+    TextIconSpaced(extraPadding)
+    Text(text, color = if (disabled) HighOrLowlight else textColor)
+  }
+}
+
+@Composable
 fun SettingsActionItemWithContent(icon: ImageVector?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false, content: @Composable RowScope.() -> Unit) {
   SectionItemView(
     click,
@@ -404,6 +414,29 @@ fun SettingsActionItemWithContent(icon: ImageVector?, text: String? = null, clic
   ) {
     if (icon != null) {
       Icon(icon, text, tint = if (disabled) HighOrLowlight else iconColor)
+      TextIconSpaced(extraPadding)
+    }
+    if (text != null) {
+      Text(text, Modifier.weight(1f), color = if (disabled) HighOrLowlight else MaterialTheme.colors.onBackground)
+      Spacer(Modifier.width(DEFAULT_PADDING))
+    }
+    content()
+  }
+}
+
+@Composable
+fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false, content: @Composable RowScope.() -> Unit) {
+  SectionItemView(
+    click,
+    extraPadding = extraPadding,
+    padding = if (extraPadding && icon != null)
+      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+    else
+      PaddingValues(horizontal = DEFAULT_PADDING),
+    disabled = disabled
+  ) {
+    if (icon != null) {
+      Icon(icon, text, Modifier.size(25.dp), tint = if (disabled) HighOrLowlight else iconColor)
       TextIconSpaced(extraPadding)
     }
     if (text != null) {
@@ -444,12 +477,27 @@ fun SettingsPreferenceItemWithInfo(
 }
 
 @Composable
+fun SettingsPreferenceItemWithInfo(
+  icon: Painter,
+  iconTint: Color,
+  text: String,
+  stopped: Boolean,
+  onClickInfo: () -> Unit,
+  pref: SharedPreference<Boolean>,
+  prefState: MutableState<Boolean>? = null
+) {
+  SettingsActionItemWithContent(icon, null, click = if (stopped) null else onClickInfo, iconColor = iconTint, extraPadding = true,) {
+    SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, stopped, onClickInfo, pref, prefState)
+  }
+}
+
+@Composable
 fun PreferenceToggle(
   text: String,
   checked: Boolean,
   onChange: (Boolean) -> Unit = {},
 ) {
-  SettingsActionItemWithContent(null, text, extraPadding = true,) {
+  SettingsActionItemWithContent(null as ImageVector?, text, extraPadding = true,) {
     DefaultSwitch(
       checked = checked,
       onCheckedChange = onChange,
