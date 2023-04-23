@@ -110,6 +110,8 @@ testUserContactLink :: SpecWith FilePath
 testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   alice ##> "/ad"
   cLink <- getContactLink alice True
+  alice ##> "/pa on"
+  alice <## "contact link added"
   bob ##> ("/c " <> cLink)
   alice <#? bob
   alice @@@ [("<@bob", "")]
@@ -133,6 +135,9 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   threadDelay 100000
   alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
   alice <##> cath
+  alice ##> "/da"
+  alice <## "Your chat address is deleted - accepted contacts will remain connected."
+  alice <## "To create a new chat address use /ad"
 
 testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
 testUserContactLinkAutoAccept =

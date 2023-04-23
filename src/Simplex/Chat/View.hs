@@ -872,11 +872,12 @@ viewSwitchPhase SPCompleted = "changed address"
 viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} Profile {displayName = n', fullName = fullName', image = image', preferences = prefs'} =
+viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     profileUpdated
-      | n == n' && fullName == fullName' && image == image' = []
+      | n == n' && fullName == fullName' && image == image' && contactLink == contactLink' = []
+      | n == n' && fullName == fullName' && image == image' = ["contact link " <> if isNothing contactLink' then "removed" else if isNothing contactLink then "added" else "updated"]
       | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
       | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
       | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
@@ -929,8 +930,8 @@ countactUserPrefText cup = case cup of
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, description, image, groupPreferences = gps}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', description = description', image = image', groupPreferences = gps'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, description, image, groupLink, groupPreferences = gps}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', description = description', image = image', groupLink = groupLink', groupPreferences = gps'}}
   m = do
     let update = groupProfileUpdated <> groupPrefsUpdated
     if null update
@@ -942,6 +943,7 @@ viewGroupUpdated
         ["changed to " <> ttyFullGroup g' | n /= n']
           <> ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to: " <> plain fullName' | n == n' && fullName /= fullName']
           <> ["profile image " <> maybe "removed" (const "updated") image' | image /= image']
+          <> ["group link " <> maybe "removed" (const $ maybe "added" (const "updated") groupLink) groupLink' | groupLink /= groupLink']
           <> (if description == description' then [] else maybe ["description removed"] ((bold' "description changed to:" :) . map plain . T.lines) description')
       groupPrefsUpdated
         | null prefs = []

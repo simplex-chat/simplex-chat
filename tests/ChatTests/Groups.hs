@@ -1434,11 +1434,15 @@ testGroupLink =
       alice <## "no group link, to create: /create link #team"
       alice ##> "/create link #team"
       _ <- getGroupLink alice "team" GRMember True
+      alice ##> "/profile link #team on"
+      alice <## "group link added"
       alice ##> "/delete link #team"
       alice <## "Group link is deleted - joined members will remain connected."
       alice <## "To create a new group link use /create link #team"
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
+      alice ##> "/profile link #team on"
+      alice <## "group link added"
       alice ##> "/show link #team"
       _ <- getGroupLink alice "team" GRMember False
       alice ##> "/create link #team"
@@ -1456,7 +1460,7 @@ testGroupLink =
             bob <## "#team: you joined the group"
         ]
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "group profile updated"), (1, "group profile updated"), (0, "invited via your group link"), (0, "connected")])
       -- contacts connected via group link are not in chat previews
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]

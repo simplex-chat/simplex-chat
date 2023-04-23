@@ -1133,6 +1133,15 @@ processChatCommand = \case
     CRUserContactLink user <$> withStore (`getUserAddress` user)
   ShowMyAddress -> withUser $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
+  APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
+    let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
+    updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user Nothing
+  APISetProfileAddress userId True -> withUserId userId $ \user@User {profile = p} -> do
+    ucl@UserContactLink {connReqContact} <- withStore (`getUserAddress` user)
+    let p' = (fromLocalProfile p :: Profile) {contactLink = Just connReqContact}
+    updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user $ Just ucl
+  SetProfileAddress onOff -> withUser $ \User {userId} ->
+    processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
     contactLink <- withStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
     pure $ CRUserContactLinkUpdated user contactLink
@@ -1345,6 +1354,11 @@ processChatCommand = \case
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     (_, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo groupLink mRole
+  APISetGroupProfileLink groupId onOff -> withUser $ \user -> do
+    g@(Group gInfo _) <- withStore $ \db -> getGroup db user groupId
+    assertUserGroupRole gInfo GROwner
+    g'@GroupInfo {groupProfile = p'} <- withStore $ \db -> setProfileGroupLink db user gInfo onOff
+    broadcaseUpdateGroupProfile user g g' p'
   CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APICreateGroupLink groupId mRole
@@ -1357,8 +1371,9 @@ processChatCommand = \case
   ShowGroupLink gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGetGroupLink groupId
-  UpdateProfileGroupLink gName groupLink ->
-    updateGroupProfileByName gName $ \p -> p {groupLink}
+  SetGroupProfileLink gName onOff -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APISetGroupProfileLink groupId onOff
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
@@ -1613,7 +1628,9 @@ processChatCommand = \case
       | chunks <= sendChunks && chunks * n <= totalSendChunks && isVoice mc = Just IFMSent
       | otherwise = Just IFMOffer
     updateProfile :: User -> Profile -> m ChatResponse
-    updateProfile user@User {profile = p} p'
+    updateProfile user p' = updateProfile_ user p' $ withStore $ \db -> updateUserProfile db user p'
+    updateProfile_ :: User -> Profile -> m User -> m ChatResponse
+    updateProfile_ user@User {profile = p} p' updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
         -- read contacts before user update to correctly merge preferences
@@ -1621,7 +1638,7 @@ processChatCommand = \case
         contacts <-
           filter (\ct -> isReady ct && not (contactConnIncognito ct))
             <$> withStore' (`getUserContacts` user)
-        user' <- withStore $ \db -> updateUserProfile db user p'
+        user' <- updateUser
         asks currentUser >>= atomically . (`writeTVar` Just user')
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
@@ -1650,9 +1667,12 @@ processChatCommand = \case
             when (directOrUsed ct') $ createSndFeatureItems user ct ct'
         pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
-    runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
+    runUpdateGroupProfile user group@(Group g _) p' = do
       assertUserGroupRole g GROwner
       g' <- withStore $ \db -> updateGroupProfile db user g p'
+      broadcaseUpdateGroupProfile user group g' p'
+    broadcaseUpdateGroupProfile :: User -> Group -> GroupInfo -> GroupProfile -> m ChatResponse
+    broadcaseUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) g' p' = do
       msg <- sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
       unless (sameGroupProfileInfo p p') $ do
@@ -4671,11 +4691,12 @@ chatCommandP =
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
+      "/_profile link #" *> (APISetGroupProfileLink  <$> A.decimal <* A.space <*> onOffP),
       "/create link #" *> (CreateGroupLink <$> displayName <*> (memberRole <|> pure GRMember)),
       "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
-      "/profile link #" *> (UpdateProfileGroupLink  <$> displayName <*> optional (A.space *> strP)),
+      "/profile link #" *> (SetGroupProfileLink  <$> displayName <* A.space <*> onOffP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
@@ -4714,6 +4735,8 @@ chatCommandP =
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
       "/_show_address " *> (APIShowMyAddress <$> A.decimal),
       ("/show_address" <|> "/sa") $> ShowMyAddress,
+      ("/_profile_address ") *> (APISetProfileAddress <$> A.decimal <* A.space <*> onOffP),
+      ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
       "/_auto_accept " *> (APIAddressAutoAccept <$> A.decimal <* A.space <*> autoAcceptP),
       "/auto_accept " *> (AddressAutoAccept <$> autoAcceptP),
       ("/accept " <|> "/ac ") *> char_ '@' *> (AcceptContact <$> displayName),

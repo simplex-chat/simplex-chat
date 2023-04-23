@@ -17,7 +17,9 @@ CREATE TABLE contact_profiles(
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   incognito INTEGER,
   local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
-  preferences TEXT
+  preferences TEXT,
+  contact_link BLOB,
+  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE RESTRICT
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -123,7 +125,9 @@ CREATE TABLE group_profiles(
   image TEXT,
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   preferences TEXT,
-  description TEXT NULL
+  description TEXT NULL,
+  group_link BLOB,
+  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE RESTRICT
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -594,4 +598,10 @@ CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON extra_xftp_file_descrip
 );
 CREATE INDEX idx_xftp_file_descriptions_user_id ON xftp_file_descriptions(
   user_id
+);
+CREATE INDEX idx_group_profiles_user_contact_link_id ON group_profiles(
+  user_contact_link_id
+);
+CREATE INDEX idx_contact_profiles_user_contact_link_id ON contact_profiles(
+  user_contact_link_id
 );

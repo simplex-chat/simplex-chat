@@ -304,6 +304,8 @@ data ChatCommand
   | DeleteMyAddress
   | APIShowMyAddress UserId
   | ShowMyAddress
+  | APISetProfileAddress UserId Bool
+  | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)
   | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact ContactName
@@ -334,7 +336,8 @@ data ChatCommand
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
-  | UpdateProfileGroupLink GroupName (Maybe ConnReqContact)
+  | APISetGroupProfileLink GroupId Bool
+  | SetGroupProfileLink GroupName Bool
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
