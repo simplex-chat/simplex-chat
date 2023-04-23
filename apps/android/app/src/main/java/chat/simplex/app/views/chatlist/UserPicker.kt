@@ -115,7 +115,7 @@ fun UserPicker(
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         users.forEach { u ->
-          UserProfilePickerItem(u.user, u.unreadCount, PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING), openSettings = {
+          UserProfilePickerItem(u.user, u.unreadCount, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = {
             settingsClicked()
             userPickerState.value = AnimatedViewState.GONE
           }) {
@@ -153,7 +153,7 @@ fun UserPicker(
 }
 
 @Composable
-fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
+fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
@@ -174,20 +174,19 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
     } else if (u.hidden) {
         Icon(Icons.Outlined.Lock, null, Modifier.size(20.dp), tint = HighOrLowlight)
     } else if (unreadCount > 0) {
-      Row {
+      Box(Modifier
+        .sizeIn(20.dp, 20.dp)
+        .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape),
+        contentAlignment = Alignment.Center
+      ) {
         Text(
           unreadCountStr(unreadCount),
+          Modifier
+            .padding(horizontal = 3.dp, vertical = 1.dp),
           color = Color.White,
           fontSize = 11.sp,
-          modifier = Modifier
-            .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape)
-            .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
-            .padding(horizontal = 3.dp)
-            .padding(vertical = 1.dp),
-          textAlign = TextAlign.Center,
           maxLines = 1
         )
-        Spacer(Modifier.width(2.dp))
       }
     } else if (!u.showNtfs) {
       Icon(Icons.Outlined.NotificationsOff, null, Modifier.size(20.dp), tint = HighOrLowlight)
@@ -212,7 +211,7 @@ fun UserProfileRow(u: User) {
     Text(
       u.displayName,
       modifier = Modifier
-        .padding(start = 8.dp, end = 8.dp),
+        .padding(start = 10.dp, end = 8.dp),
       color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
@@ -221,10 +220,10 @@ fun UserProfileRow(u: User) {
 
 @Composable
 private fun SettingsPickerItem(onClick: () -> Unit) {
-  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 17.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(R.string.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(Icons.Outlined.Settings, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-    Spacer(Modifier.width(DEFAULT_PADDING + 8.dp))
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
       text,
       color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
@@ -234,10 +233,10 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
 
 @Composable
 private fun CancelPickerItem(onClick: () -> Unit) {
-  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 17.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(R.string.cancel_verb)
     Icon(Icons.Outlined.Close, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-    Spacer(Modifier.width(DEFAULT_PADDING + 8.dp))
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
       text,
       color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
