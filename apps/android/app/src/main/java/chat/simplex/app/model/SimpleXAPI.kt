@@ -9,14 +9,14 @@ import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import chat.simplex.app.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,7 +24,6 @@ import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
-import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ConnectViaLinkTab
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.*
@@ -1633,7 +1632,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -1670,7 +1669,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -1701,7 +1700,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -2628,7 +2627,8 @@ sealed class ContactUserPrefTimed {
 interface Feature {
 //  val icon: ImageVector
   val text: String
-  val iconFilled: ImageVector
+  @Composable
+  fun iconFilled(): Painter
   val hasParam: Boolean
 }
 
@@ -2657,21 +2657,21 @@ enum class ChatFeature: Feature {
       Calls -> generalGetString(R.string.audio_video_calls)
     }
 
-  val icon: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Outlined.Timer
-      FullDelete -> Icons.Outlined.DeleteForever
-      Voice -> Icons.Outlined.KeyboardVoice
-      Calls -> Icons.Outlined.Phone
+  val icon: Painter
+    @Composable get() = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice)
+      Calls -> painterResource(R.drawable.ic_call)
     }
 
-  override val iconFilled: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Filled.Timer
-      FullDelete -> Icons.Filled.DeleteForever
-      Voice -> Icons.Filled.KeyboardVoice
-      Calls -> Icons.Filled.Phone
-    }
+  @Composable
+  override fun iconFilled(): Painter = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer_filled)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
+      Calls -> painterResource(R.drawable.ic_call_filled)
+  }
 
   fun allowDescription(allowed: FeatureAllowed): String =
     when (this) {
@@ -2746,21 +2746,21 @@ enum class GroupFeature: Feature {
       Voice -> generalGetString(R.string.voice_messages)
     }
 
-  val icon: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Outlined.Timer
-      DirectMessages -> Icons.Outlined.SwapHorizontalCircle
-      FullDelete -> Icons.Outlined.DeleteForever
-      Voice -> Icons.Outlined.KeyboardVoice
+  val icon: Painter
+    @Composable get() = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer)
+      DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice)
     }
 
-  override val iconFilled: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Filled.Timer
-      DirectMessages -> Icons.Filled.SwapHorizontalCircle
-      FullDelete -> Icons.Filled.DeleteForever
-      Voice -> Icons.Filled.KeyboardVoice
-    }
+  @Composable
+  override fun iconFilled(): Painter = when(this) {
+    TimedMessages -> painterResource(R.drawable.ic_timer_filled)
+    DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle_filled)
+    FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
+    Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
+  }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
     if (canEdit) {

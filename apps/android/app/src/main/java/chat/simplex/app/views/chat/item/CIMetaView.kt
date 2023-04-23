@@ -2,15 +2,13 @@ package chat.simplex.app.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
+import chat.simplex.app.R
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,11 +37,11 @@ fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = Hi
 // changing this function requires updating reserveSpaceForMeta
 private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
   if (meta.itemEdited) {
-    StatusIconText(Icons.Outlined.Edit, color)
+    StatusIconText(painterResource(R.drawable.ic_edit), color)
     Spacer(Modifier.width(3.dp))
   }
   if (meta.disappearing) {
-    StatusIconText(Icons.Outlined.Timer, color)
+    StatusIconText(painterResource(R.drawable.ic_timer), color)
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
       Text(TimedMessagesPreference.shortTtlText(ttl), color = color, fontSize = 13.sp)
@@ -53,10 +51,10 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
   val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color)
   if (statusIcon != null) {
     val (icon, statusColor) = statusIcon
-    StatusIconText(icon, statusColor)
+    StatusIconText(painterResource(icon), statusColor)
     Spacer(Modifier.width(4.dp))
   } else if (!meta.disappearing) {
-    StatusIconText(Icons.Filled.Circle, Color.Transparent)
+    StatusIconText(painterResource(R.drawable.ic_circle_filled), Color.Transparent)
     Spacer(Modifier.width(4.dp))
   }
   Text(meta.timestampText, color = color, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -81,7 +79,7 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
 }
 
 @Composable
-private fun StatusIconText(icon: ImageVector, color: Color) {
+private fun StatusIconText(icon: Painter, color: Color) {
   Icon(icon, null, Modifier.height(12.dp), tint = color)
 }
 

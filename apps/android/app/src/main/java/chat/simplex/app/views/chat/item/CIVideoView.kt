@@ -9,17 +9,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
@@ -163,9 +162,8 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        imageVector = Icons.Filled.PlayArrow,
+        painterResource(R.drawable.ic_play_arrow_filled),
         contentDescription = null,
-        Modifier.size(25.dp),
         tint = if (error) WarningOrange else Color.White
       )
     }
@@ -192,7 +190,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
           color = Color.White
         )
         /*if (!soundEnabled.value) {
-        Icon(Icons.Outlined.VolumeOff, null,
+        Icon(painterResource(R.drawable.ic_volume_off_filled), null,
           Modifier.padding(start = 5.dp).size(10.dp),
           tint = Color.White
         )
@@ -255,7 +253,7 @@ private fun progressIndicator() {
 }
 
 @Composable
-private fun fileIcon(icon: ImageVector, @StringRes stringId: Int) {
+private fun fileIcon(icon: Painter, @StringRes stringId: Int) {
   Icon(
     icon,
     stringResource(stringId),
@@ -298,19 +296,19 @@ private fun loadingIndicator(file: CIFile?) {
             FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
             FileProtocol.SMP -> progressIndicator()
           }
-        is CIFileStatus.SndComplete -> fileIcon(Icons.Filled.Check, R.string.icon_descr_video_snd_complete)
-        is CIFileStatus.SndCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
-        is CIFileStatus.SndError -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
-        is CIFileStatus.RcvInvitation -> fileIcon(Icons.Outlined.ArrowDownward, R.string.icon_descr_video_asked_to_receive)
-        is CIFileStatus.RcvAccepted -> fileIcon(Icons.Outlined.MoreHoriz, R.string.icon_descr_waiting_for_video)
+        is CIFileStatus.SndComplete -> fileIcon(painterResource(R.drawable.ic_check_filled), R.string.icon_descr_video_snd_complete)
+        is CIFileStatus.SndCancelled -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
+        is CIFileStatus.SndError -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
+        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(R.drawable.ic_arrow_downward), R.string.icon_descr_video_asked_to_receive)
+        is CIFileStatus.RcvAccepted -> fileIcon(painterResource(R.drawable.ic_more_horiz), R.string.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
           if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
             progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
           } else {
             progressIndicator()
           }
-        is CIFileStatus.RcvCancelled -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
-        is CIFileStatus.RcvError -> fileIcon(Icons.Outlined.Close, R.string.icon_descr_file)
+        is CIFileStatus.RcvCancelled -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
+        is CIFileStatus.RcvError -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
         else -> {}
       }
     }

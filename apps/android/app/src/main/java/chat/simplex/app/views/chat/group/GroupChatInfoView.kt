@@ -12,12 +12,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -247,7 +246,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
 @Composable
 private fun GroupPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.ToggleOn,
+    painterResource(R.drawable.ic_toggle_on),
     stringResource(R.string.group_preferences),
     click = onClick
   )
@@ -256,7 +255,7 @@ private fun GroupPreferencesButton(onClick: () -> Unit) {
 @Composable
 private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Add,
+    painterResource(R.drawable.ic_add),
     stringResource(R.string.button_add_members),
     onClick,
     iconColor = tint,
@@ -319,13 +318,13 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
 
 @Composable
 private fun MemberVerifiedShield() {
-  Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 3.dp).size(16.dp), tint = HighOrLowlight)
+  Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = HighOrLowlight)
 }
 
 @Composable
 private fun GroupLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Link,
+    painterResource(R.drawable.ic_link),
     stringResource(R.string.group_link),
     onClick,
     iconColor = HighOrLowlight
@@ -335,7 +334,7 @@ private fun GroupLinkButton(onClick: () -> Unit) {
 @Composable
 private fun CreateGroupLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.AddLink,
+    painterResource(R.drawable.ic_add_link),
     stringResource(R.string.create_group_link),
     onClick,
     iconColor = HighOrLowlight
@@ -345,7 +344,7 @@ private fun CreateGroupLinkButton(onClick: () -> Unit) {
 @Composable
 fun EditGroupProfileButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Edit,
+    painterResource(R.drawable.ic_edit),
     stringResource(R.string.button_edit_group_profile),
     onClick,
     iconColor = HighOrLowlight
@@ -360,7 +359,7 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
     stringResource(R.string.button_welcome_message)
   }
   SettingsActionItem(
-    Icons.Outlined.MapsUgc,
+    painterResource(R.drawable.ic_maps_ugc),
     text,
     onClick,
     iconColor = HighOrLowlight
@@ -370,7 +369,7 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
 @Composable
 private fun LeaveGroupButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Logout,
+    painterResource(R.drawable.ic_logout),
     stringResource(R.string.button_leave_group),
     onClick,
     iconColor = Color.Red,
@@ -381,7 +380,7 @@ private fun LeaveGroupButton(onClick: () -> Unit) {
 @Composable
 private fun DeleteGroupButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     stringResource(R.string.button_delete_group),
     onClick,
     iconColor = Color.Red,

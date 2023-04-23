@@ -5,15 +5,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -25,8 +24,8 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondary) {
   val icon =
-    if (chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
-                                    else Icons.Filled.AccountCircle
+    if (chatInfo is ChatInfo.Group) painterResource(R.drawable.ic_supervised_user_circle_filled)
+                                    else painterResource(R.drawable.ic_account_circle_filled)
   ProfileImage(size, chatInfo.image, icon, iconColor)
 }
 
@@ -34,7 +33,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
 fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondary) {
   Box(Modifier.size(size)) {
     Icon(
-      Icons.Filled.TheaterComedy, stringResource(R.string.incognito),
+      painterResource(R.drawable.ic_theater_comedy_filled), stringResource(R.string.incognito),
       modifier = Modifier.size(size).padding(size / 12),
       iconColor
     )
@@ -45,7 +44,7 @@ fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondary) 
 fun ProfileImage(
   size: Dp,
   image: String? = null,
-  icon: ImageVector = Icons.Filled.AccountCircle,
+  icon: Painter = painterResource(R.drawable.ic_account_circle_filled),
   color: Color = MaterialTheme.colors.secondary
 ) {
   Box(Modifier.size(size)) {

@@ -5,20 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Backspace
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
+import chat.simplex.app.R
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
 
 @Composable
@@ -59,13 +57,13 @@ private fun BoxWithConstraintsScope.VerticalPasswordGrid(password: MutableState<
     DigitsRow(s, 7, 8, 9, password)
     Divider()
     Row(Modifier.requiredHeight(s)) {
-      PasswordEdit(s, Icons.Default.Close) {
+      PasswordEdit(s, painterResource(R.drawable.ic_close)) {
         password.value = ""
       }
       VerticalDivider()
       PasswordDigit(s, 0, password)
       VerticalDivider()
-      PasswordEdit(s, Icons.Outlined.Backspace) {
+      PasswordEdit(s, painterResource(R.drawable.ic_backspace)) {
         password.value = password.value.dropLast(1)
       }
     }
@@ -79,7 +77,7 @@ private fun BoxWithConstraintsScope.HorizontalPasswordGrid(password: MutableStat
     Row(Modifier.height(IntrinsicSize.Min)) {
       DigitsRow(s, 1, 2, 3, password);
       VerticalDivider()
-      PasswordEdit(s, Icons.Default.Close) {
+      PasswordEdit(s, painterResource(R.drawable.ic_close)) {
         password.value = ""
       }
     }
@@ -93,7 +91,7 @@ private fun BoxWithConstraintsScope.HorizontalPasswordGrid(password: MutableStat
     Row(Modifier.height(IntrinsicSize.Min)) {
       DigitsRow(s, 7, 8, 9, password)
       VerticalDivider()
-      PasswordEdit(s, Icons.Outlined.Backspace) {
+      PasswordEdit(s, painterResource(R.drawable.ic_backspace)) {
         password.value = password.value.dropLast(1)
       }
     }
@@ -137,7 +135,7 @@ private fun PasswordDigit(size: Dp, d: Int, password: MutableState<String>) {
 }
 
 @Composable
-private fun PasswordEdit(size: Dp, image: ImageVector, action: () -> Unit) {
+private fun PasswordEdit(size: Dp, image: Painter, action: () -> Unit) {
   PasswordButton(size, action) {
     Icon(image, null, tint = HighOrLowlight)
   }

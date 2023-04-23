@@ -7,14 +7,13 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -188,7 +187,7 @@ fun EditImageButton(click: () -> Unit) {
     modifier = Modifier.size(30.dp)
   ) {
     Icon(
-      Icons.Outlined.PhotoCamera,
+      painterResource(R.drawable.ic_photo_camera),
       contentDescription = stringResource(R.string.edit_image),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.size(30.dp)
@@ -200,7 +199,7 @@ fun EditImageButton(click: () -> Unit) {
 fun DeleteImageButton(click: () -> Unit) {
   IconButton(onClick = click) {
     Icon(
-      Icons.Outlined.Close,
+      painterResource(R.drawable.ic_close),
       contentDescription = stringResource(R.string.delete_image),
       tint = MaterialTheme.colors.primary,
     )

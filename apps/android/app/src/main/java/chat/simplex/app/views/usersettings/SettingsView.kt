@@ -11,16 +11,12 @@ import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -100,7 +96,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
             ) {
               SimpleButton(
                 stringResource(R.string.auth_unlock),
-                icon = Icons.Outlined.Lock,
+                icon = painterResource(R.drawable.ic_lock),
                 click = {
                   runAuth(context, onFinishAuth)
                 }
@@ -158,17 +154,17 @@ fun SettingsLayout(
         SettingsActionItem(painterResource(R.drawable.ic_wifi_tethering), stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_videocam), stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_lock), stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_light_mode), stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it) }, disabled = stopped, extraPadding = true)
         DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionDividerSpaced()
 
       SectionView(stringResource(R.string.settings_section_title_help)) {
-        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(Icons.Outlined.Add, stringResource(R.string.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, extraPadding = true)
-        SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
-        SettingsActionItem(Icons.Outlined.Email, stringResource(R.string.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_help)/*LALAL*/, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_add), stringResource(R.string.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_info), stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_tag), stringResource(R.string.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_mail), stringResource(R.string.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary, extraPadding = true)
       }
       SectionDividerSpaced()
 
@@ -180,7 +176,7 @@ fun SettingsLayout(
       SectionDividerSpaced()
 
       SectionView(stringResource(R.string.settings_section_title_develop)) {
-        SettingsActionItem(Icons.Outlined.Code, stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_code), stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
         AppVersionItem(showVersion)
       }
       SectionBottomSpacer()
@@ -196,7 +192,7 @@ fun SettingsIncognitoActionItem(
   onClickInfo: () -> Unit,
 ) {
   SettingsPreferenceItemWithInfo(
-    if (incognito.value) painterResource(R.drawable.ic_theater_comedy) else painterResource(R.drawable.ic_theater_comedy),
+    if (incognito.value) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_theater_comedy),
     if (incognito.value) Indigo else HighOrLowlight,
     stringResource(R.string.incognito),
     stopped,
@@ -233,7 +229,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
     ) {
       Row(Modifier.weight(1f)) {
         Icon(
-          Icons.Outlined.FolderOpen,
+          painterResource(R.drawable.ic_folder_open),
           contentDescription = stringResource(R.string.database_passphrase_and_export),
           tint = if (encrypted) HighOrLowlight else WarningOrange,
         )
@@ -242,7 +238,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
       }
       if (stopped) {
         Icon(
-          Icons.Filled.Report,
+          painterResource(R.drawable.ic_report_filled),
           contentDescription = stringResource(R.string.chat_is_stopped),
           tint = Color.Red,
           modifier = Modifier.padding(end = 6.dp)
@@ -278,7 +274,7 @@ fun ChatLockItem(
   val currentLAMode = remember { chatModel.controller.appPrefs.laMode }
   SettingsActionItemWithContent(
     click = showSettingsModal { SimplexLockView(chatModel, currentLAMode, setPerformLA) },
-    icon = if (performLA.value) Icons.Filled.Lock else Icons.Outlined.Lock,
+    icon = if (performLA.value) painterResource(R.drawable.ic_lock_filled) else painterResource(R.drawable.ic_lock),
     text = stringResource(R.string.chat_lock),
     iconColor = if (performLA.value) SimplexGreen else HighOrLowlight,
     extraPadding = false,
@@ -290,7 +286,7 @@ fun ChatLockItem(
 @Composable private fun ContributeItem(uriHandler: UriHandler) {
   SectionItemViewWithIcon({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat#contribute") }) {
     Icon(
-      Icons.Outlined.Keyboard,
+      painterResource(R.drawable.ic_keyboard),
       contentDescription = "GitHub",
       tint = HighOrLowlight,
     )
@@ -306,7 +302,7 @@ fun ChatLockItem(
   }
   ) {
     Icon(
-      Icons.Outlined.StarOutline,
+      painterResource(R.drawable.ic_star),
       contentDescription = "Google Play",
       tint = HighOrLowlight,
     )
@@ -384,43 +380,11 @@ fun ChatLockItem(
 }
 
 @Composable
-fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false) {
+fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false) {
   SectionItemView(click, disabled = disabled, extraPadding = extraPadding) {
     Icon(icon, text, tint = if (disabled) HighOrLowlight else iconColor)
     TextIconSpaced(extraPadding)
     Text(text, color = if (disabled) HighOrLowlight else textColor)
-  }
-}
-
-@Composable
-fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false) {
-  SectionItemView(click, disabled = disabled, extraPadding = extraPadding) {
-    Icon(icon, text, Modifier.size(25.dp), tint = if (disabled) HighOrLowlight else iconColor)
-    TextIconSpaced(extraPadding)
-    Text(text, color = if (disabled) HighOrLowlight else textColor)
-  }
-}
-
-@Composable
-fun SettingsActionItemWithContent(icon: ImageVector?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false, content: @Composable RowScope.() -> Unit) {
-  SectionItemView(
-    click,
-    extraPadding = extraPadding,
-    padding = if (extraPadding && icon != null)
-      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
-    else
-      PaddingValues(horizontal = DEFAULT_PADDING),
-    disabled = disabled
-  ) {
-    if (icon != null) {
-      Icon(icon, text, tint = if (disabled) HighOrLowlight else iconColor)
-      TextIconSpaced(extraPadding)
-    }
-    if (text != null) {
-      Text(text, Modifier.weight(1f), color = if (disabled) HighOrLowlight else MaterialTheme.colors.onBackground)
-      Spacer(Modifier.width(DEFAULT_PADDING))
-    }
-    content()
   }
 }
 
@@ -436,7 +400,7 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
     disabled = disabled
   ) {
     if (icon != null) {
-      Icon(icon, text, Modifier.size(25.dp), tint = if (disabled) HighOrLowlight else iconColor)
+      Icon(icon, text, Modifier, tint = if (disabled) HighOrLowlight else iconColor)
       TextIconSpaced(extraPadding)
     }
     if (text != null) {
@@ -449,7 +413,7 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
 
 @Composable
 fun SettingsPreferenceItem(
-  icon: ImageVector?,
+  icon: Painter?,
   text: String,
   pref: SharedPreference<Boolean>,
   iconColor: Color = HighOrLowlight,
@@ -458,21 +422,6 @@ fun SettingsPreferenceItem(
 ) {
   SettingsActionItemWithContent(icon, text, iconColor = iconColor,) {
     SharedPreferenceToggle(pref, enabled, onChange)
-  }
-}
-
-@Composable
-fun SettingsPreferenceItemWithInfo(
-  icon: ImageVector,
-  iconTint: Color,
-  text: String,
-  stopped: Boolean,
-  onClickInfo: () -> Unit,
-  pref: SharedPreference<Boolean>,
-  prefState: MutableState<Boolean>? = null
-) {
-  SettingsActionItemWithContent(icon, null, click = if (stopped) null else onClickInfo, iconColor = iconTint, extraPadding = true,) {
-    SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, stopped, onClickInfo, pref, prefState)
   }
 }
 
@@ -487,7 +436,7 @@ fun SettingsPreferenceItemWithInfo(
   prefState: MutableState<Boolean>? = null
 ) {
   SettingsActionItemWithContent(icon, null, click = if (stopped) null else onClickInfo, iconColor = iconTint, extraPadding = true,) {
-    SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, stopped, onClickInfo, pref, prefState)
+    SharedPreferenceToggleWithIcon(text, painterResource(R.drawable.ic_info), stopped, onClickInfo, pref, prefState)
   }
 }
 
@@ -497,7 +446,7 @@ fun PreferenceToggle(
   checked: Boolean,
   onChange: (Boolean) -> Unit = {},
 ) {
-  SettingsActionItemWithContent(null as ImageVector?, text, extraPadding = true,) {
+  SettingsActionItemWithContent(null, text, extraPadding = true,) {
     DefaultSwitch(
       checked = checked,
       onCheckedChange = onChange,
@@ -508,7 +457,7 @@ fun PreferenceToggle(
 @Composable
 fun PreferenceToggleWithIcon(
   text: String,
-  icon: ImageVector? = null,
+  icon: Painter? = null,
   iconColor: Color? = HighOrLowlight,
   checked: Boolean,
   extraPadding: Boolean = false,

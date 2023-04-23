@@ -6,9 +6,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowForwardIos
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
@@ -71,7 +68,7 @@ fun SimpleXInfoLayout(
         .fillMaxWidth()
         .padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING), contentAlignment = Alignment.Center
     ) {
-      SimpleButtonDecorated(text = stringResource(R.string.how_it_works), icon = Icons.Outlined.Info,
+      SimpleButtonDecorated(text = stringResource(R.string.how_it_works), icon = painterResource(R.drawable.ic_info),
         click = showModal { HowItWorks(user, onboardingStage) })
     }
     Spacer(Modifier.weight(1f))
@@ -136,7 +133,7 @@ fun OnboardingActionButton(
   }, modifier) {
     Text(stringResource(labelId), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary, fontSize = 20.sp)
     Icon(
-      Icons.Outlined.ArrowForwardIos, "next stage", tint = MaterialTheme.colors.primary,
+      painterResource(R.drawable.ic_arrow_forward_ios), "next stage", tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .padding(start = DEFAULT_PADDING, top = 5.dp)
         .size(15.dp)

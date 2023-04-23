@@ -2,11 +2,11 @@ package chat.simplex.app.model
 
 import android.net.Uri
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
@@ -1517,12 +1517,12 @@ data class CIMeta (
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
 
-  fun statusIcon(primaryColor: Color, metaColor: Color = HighOrLowlight): Pair<ImageVector, Color>? =
+  fun statusIcon(primaryColor: Color, metaColor: Color = HighOrLowlight): Pair<Int, Color>? =
     when (itemStatus) {
-      is CIStatus.SndSent -> Icons.Filled.Check to metaColor
-      is CIStatus.SndErrorAuth -> Icons.Filled.Close to Color.Red
-      is CIStatus.SndError -> Icons.Filled.WarningAmber to WarningYellow
-      is CIStatus.RcvNew -> Icons.Filled.Circle to primaryColor
+      is CIStatus.SndSent -> R.drawable.ic_check_filled to metaColor
+      is CIStatus.SndErrorAuth -> R.drawable.ic_close to Color.Red
+      is CIStatus.SndError -> R.drawable.ic_warning_filled to WarningYellow // LALAL
+      is CIStatus.RcvNew -> R.drawable.ic_circle_filled to primaryColor
       else -> null
     }
 

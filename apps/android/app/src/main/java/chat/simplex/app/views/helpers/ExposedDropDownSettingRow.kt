@@ -2,14 +2,12 @@ package chat.simplex.app.views.helpers
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -24,7 +22,7 @@ fun <T> ExposedDropDownSettingRow(
   values: List<Pair<T, String>>,
   selection: State<T>,
   label: String? = null,
-  icon: ImageVector? = null,
+  icon: Painter? = null,
   iconTint: Color = HighOrLowlight,
   enabled: State<Boolean> = mutableStateOf(true),
   onSelected: (T) -> Unit
@@ -52,7 +50,7 @@ fun <T> ExposedDropDownSettingRow(
         )
         Spacer(Modifier.size(12.dp))
         Icon(
-          if (!expanded.value) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
           generalGetString(R.string.icon_descr_more_button),
           tint = HighOrLowlight
         )
