@@ -185,6 +185,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
+[Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
+
 [Mar 28, 2023. v4.6 released - with Android 8+ and ARMv7a support, hidden profiles, community moderation, improved audio/video calls and reduced battery usage](./blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
 
 [Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
@@ -299,13 +301,15 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Improved audio & video calls.
 - ✅ Support older Android OS and 32-bit CPUs.
 - ✅ Hidden chat profiles.
-- 🏗 Sending and receiving large files via [XFTP protocol](./blog/20230301-simplex-file-transfer-protocol.md).
-- 🏗 Video messages.
+- ✅ Sending and receiving large files via [XFTP protocol](./blog/20230301-simplex-file-transfer-protocol.md).
+- ✅ Video messages.
+- ✅ App access passcode.
+- 🏗 Improved Android app UI design.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
 - 🏗 Reduced battery and traffic usage in large groups.
 - Include optional message into connection request sent via contact address.
 - Ephemeral/disappearing/OTR conversations with the existing contacts.
-- Access password/pin (with optional alternative access password).
+- Optional alternative access password.
 - Local app files encryption.
 - Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).
 - Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).

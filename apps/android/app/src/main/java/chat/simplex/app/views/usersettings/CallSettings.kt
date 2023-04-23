@@ -1,17 +1,21 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionBottomSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -37,22 +41,17 @@ fun CallSettingsLayout(
   editIceServers: () -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(R.string.your_calls))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     SectionView(stringResource(R.string.settings_section_title_settings)) {
       SectionItemView(editIceServers) { Text(stringResource(R.string.webrtc_ice_servers)) }
-      SectionDivider()
 
       val enabled = remember { mutableStateOf(true) }
-      SectionItemView { LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it }) }
-      SectionDivider()
-      SectionItemView() {
-        SharedPreferenceToggle(stringResource(R.string.always_use_relay), webrtcPolicyRelay)
-      }
+      LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it })
+      SettingsPreferenceItem(null, stringResource(R.string.always_use_relay), webrtcPolicyRelay)
     }
     SectionTextFooter(
       if (remember { webrtcPolicyRelay.state }.value) {
@@ -61,6 +60,7 @@ fun CallSettingsLayout(
         generalGetString(R.string.relay_server_if_necessary)
       }
     )
+    SectionBottomSpacer()
   }
 }
 
@@ -87,28 +87,18 @@ private fun LockscreenOpts(lockscreenOpts: State<CallOnLockScreen>, enabled: Sta
 
 @Composable
 fun SharedPreferenceToggle(
-  text: String,
   preference: SharedPreference<Boolean>,
-  preferenceState: MutableState<Boolean>? = null,
+  enabled: Boolean = true,
   onChange: ((Boolean) -> Unit)? = null,
-  ) {
-  val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
-  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Text(text, Modifier.padding(end = 24.dp))
-    Spacer(Modifier.fillMaxWidth().weight(1f))
-    Switch(
-      checked = prefState.value,
-      onCheckedChange = {
-        preference.set(it)
-        prefState.value = it
-        onChange?.invoke(it)
-      },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      )
-    )
-  }
+) {
+  DefaultSwitch(
+    enabled = enabled,
+    checked = remember { preference.state }.value,
+    onCheckedChange = {
+      preference.set(it)
+      onChange?.invoke(it)
+    },
+  )
 }
 
 @Composable
@@ -130,16 +120,12 @@ fun SharedPreferenceToggleWithIcon(
       tint = MaterialTheme.colors.primary
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))
-    Switch(
+    DefaultSwitch(
       checked = prefState.value,
       onCheckedChange = {
         preference.set(it)
         prefState.value = it
       },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
       enabled = !stopped
     )
   }

@@ -1,8 +1,7 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDivider
-import SectionItemView
 import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -53,25 +52,20 @@ private fun AcceptRequestsLayout(
     val autoAcceptState = remember { mutableStateOf(AutoAcceptState(contactLink)) }
     val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
     SectionView(stringResource(R.string.accept_requests).uppercase()) {
-      SectionItemView {
-        PreferenceToggleWithIcon(stringResource(R.string.accept_automatically), Icons.Outlined.Check, checked = autoAcceptState.value.enable) {
-          autoAcceptState.value = if (!it)
-            AutoAcceptState()
-          else
-            AutoAcceptState(it, autoAcceptState.value.incognito, autoAcceptState.value.welcomeText)
-        }
+      PreferenceToggleWithIcon(stringResource(R.string.accept_automatically), Icons.Outlined.Check, checked = autoAcceptState.value.enable) {
+        autoAcceptState.value = if (!it)
+          AutoAcceptState()
+        else
+          AutoAcceptState(it, autoAcceptState.value.incognito, autoAcceptState.value.welcomeText)
       }
       if (autoAcceptState.value.enable) {
-        SectionDivider()
-        SectionItemView {
-          PreferenceToggleWithIcon(
-            stringResource(R.string.incognito),
-            if (autoAcceptState.value.incognito) Icons.Filled.TheaterComedy else Icons.Outlined.TheaterComedy,
-            if (autoAcceptState.value.incognito) Indigo else HighOrLowlight,
-            autoAcceptState.value.incognito,
-          ) {
-            autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.welcomeText)
-          }
+        PreferenceToggleWithIcon(
+          stringResource(R.string.incognito),
+          if (autoAcceptState.value.incognito) Icons.Filled.TheaterComedy else Icons.Outlined.TheaterComedy,
+          if (autoAcceptState.value.incognito) Indigo else HighOrLowlight,
+          autoAcceptState.value.incognito,
+        ) {
+          autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.welcomeText)
         }
       }
     }
@@ -99,6 +93,7 @@ private fun AcceptRequestsLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

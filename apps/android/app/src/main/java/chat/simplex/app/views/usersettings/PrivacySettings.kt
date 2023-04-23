@@ -1,15 +1,16 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionTextFooter
 import SectionView
 import android.view.WindowManager
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,7 +22,6 @@ import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimplexGreen
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.localauth.SetAppPasscodeView
@@ -44,14 +44,12 @@ fun PrivacySettingsView(
   setPerformLA: (Boolean, FragmentActivity) -> Unit
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
     AppBarTitle(stringResource(R.string.your_privacy))
     SectionView(stringResource(R.string.settings_section_title_device)) {
       ChatLockItem(chatModel, showSettingsModal, setPerformLA)
-      SectionDivider()
       val context = LocalContext.current
       SettingsPreferenceItem(Icons.Outlined.VisibilityOff, stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
         if (on) {
@@ -64,23 +62,20 @@ fun PrivacySettingsView(
         }
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     SectionView(stringResource(R.string.settings_section_title_chats)) {
       SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      SectionDivider()
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
-      SectionDivider()
-      SectionItemView {
-        SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
-          simplexLinkMode.set(it)
-          chatModel.simplexLinkMode.value = it
-        })
-      }
+      SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
+        simplexLinkMode.set(it)
+        chatModel.simplexLinkMode.value = it
+      })
     }
     if (chatModel.simplexLinkMode.value == SimplexLinkMode.BROWSER) {
       SectionTextFooter(stringResource(R.string.simplex_link_mode_browser_warning))
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -207,8 +202,7 @@ fun SimplexLockView(
   }
 
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.chat_lock))
     SectionView {
@@ -241,31 +235,25 @@ fun SimplexLockView(
           setPerformLA(false, activity)
         }
       }
-      SectionDivider()
-      SectionItemView {
-        LockModeSelector(laMode) { newLAMode ->
-          if (laMode.value == newLAMode) return@LockModeSelector
-          if (chatModel.controller.appPrefs.performLA.get()) {
-            toggleLAMode(newLAMode)
-          } else {
-            currentLAMode.set(newLAMode)
-          }
+      LockModeSelector(laMode) { newLAMode ->
+        if (laMode.value == newLAMode) return@LockModeSelector
+        if (chatModel.controller.appPrefs.performLA.get()) {
+          toggleLAMode(newLAMode)
+        } else {
+          currentLAMode.set(newLAMode)
         }
       }
 
       if (performLA.value) {
-        SectionDivider()
-        SectionItemView {
-          LockDelaySelector(remember { laLockDelay.state }) { laLockDelay.set(it) }
-        }
+        LockDelaySelector(remember { laLockDelay.state }) { laLockDelay.set(it) }
         if (showChangePasscode.value && laMode.value == LAMode.PASSCODE) {
-          SectionDivider()
           SectionItemView({ changeLAPassword() }) {
             Text(generalGetString(R.string.la_change_app_passcode))
           }
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -279,13 +267,9 @@ private fun EnableLock(performLA: MutableState<Boolean>, onCheckedChange: (Boole
           .fillMaxWidth()
           .weight(1F)
       )
-      Switch(
+      DefaultSwitch(
         checked = performLA.value,
         onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        )
       )
     }
   }

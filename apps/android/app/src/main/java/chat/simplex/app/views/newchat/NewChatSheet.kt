@@ -147,7 +147,7 @@ private fun NewChatSheetLayout(
     }
     FloatingActionButton(
       onClick = { if (!stopped) closeNewChatSheet(true) },
-      Modifier.padding(end = 16.dp, bottom = 16.dp),
+      Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
       elevation = FloatingActionButtonDefaults.elevation(
         defaultElevation = 0.dp,
         pressedElevation = 0.dp,

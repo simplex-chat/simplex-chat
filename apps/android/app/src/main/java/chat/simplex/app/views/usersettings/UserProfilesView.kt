@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
@@ -157,7 +158,6 @@ private fun UserProfilesView(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_PADDING),
   ) {
     if (profileHidden.value) {
       SectionView {
@@ -197,6 +197,7 @@ private fun UserProfilesView(
         )
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -217,7 +218,7 @@ private fun UserView(
   UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showMenu.value = true }) {
     activateUser(user)
   }
-  Box(Modifier.padding(horizontal = 16.dp)) {
+  Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
         ItemAction(stringResource(R.string.user_unhide), Icons.Outlined.LockOpen, onClick = {
@@ -262,7 +263,6 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
   ) {
     val actionPassword = rememberSaveable { mutableStateOf("") }
     val passwordValid by remember { derivedStateOf { actionPassword.value == actionPassword.value.trim() } }
@@ -300,6 +300,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
         PasswordAndAction(R.string.unhide_chat_profile)
       }
     }
+    SectionBottomSpacer()
   }
 }
 

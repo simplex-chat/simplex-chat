@@ -787,14 +787,14 @@ fun BoxWithConstraintsScope.FloatingButtons(
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
-    Modifier.padding(end = 16.dp, top = 24.dp).align(Alignment.TopEnd),
+    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp).align(Alignment.TopEnd),
     topUnreadCount,
     showButtonWithCounter,
     onClick = { scope.launch { listState.animateScrollBy(height) } },
     onLongClick = { showDropDown.value = true }
   )
 
-  DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - 16.dp, 24.dp + fabSize)) {
+  DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
     ItemAction(
       generalGetString(R.string.mark_read),
       Icons.Outlined.Check,

@@ -89,7 +89,6 @@ fun CIGroupInvitationView(
         Modifier
           .defaultMinSize(minWidth = 220.dp)
           .padding(bottom = 4.dp),
-        horizontalAlignment = Alignment.Start
       ) {
         groupInfoView()
         Column(Modifier.padding(top = 2.dp, start = 5.dp)) {

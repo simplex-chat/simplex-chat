@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import SectionBottomSpacer
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,7 +20,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
@@ -39,8 +39,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
     val screenHeight = maxHeight
     Column(
       Modifier
-        .verticalScroll(rememberScrollState())
-        .padding(bottom = 16.dp),
+        .verticalScroll(rememberScrollState()),
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
       AppBarTitle(stringResource(R.string.add_contact), false)
@@ -75,7 +74,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
         annotatedStringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         lineHeight = 22.sp,
         modifier = Modifier
-          .padding(top = 16.dp, bottom = if (screenHeight > 600.dp) 16.dp else 0.dp)
+          .padding(top = DEFAULT_PADDING, bottom = if (screenHeight > 600.dp) DEFAULT_PADDING else 0.dp)
       )
       Row(
         Modifier.fillMaxWidth(),
@@ -83,6 +82,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
       ) {
         SimpleButton(stringResource(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
       }
+      SectionBottomSpacer()
     }
   }
 }

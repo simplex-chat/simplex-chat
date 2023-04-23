@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 cp -R docs website/src
 cp -R blog website/src
 cp -R images website/src
@@ -23,7 +25,7 @@ node src/js/customize_docs_frontmatter.js
 
 # creating folders for each language for internationalization
 for lang in "${langs[@]}"; do
-  mkdir src/$lang
+  mkdir -p src/$lang
   cp src/index.html src/$lang
   cp src/contact.html src/$lang
   cp src/invitation.html src/$lang

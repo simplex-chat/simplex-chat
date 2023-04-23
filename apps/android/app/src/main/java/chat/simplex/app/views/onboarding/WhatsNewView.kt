@@ -40,7 +40,6 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
     }
 
     Column(
-      horizontalAlignment = Alignment.Start,
       modifier = Modifier.padding(bottom = 12.dp)
     ) {
       Row(
@@ -68,7 +67,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   fun pagination() {
     Row(
       Modifier
-        .padding(bottom = 16.dp)
+        .padding(bottom = DEFAULT_PADDING)
     ) {
       if (currentVersion.value > 0) {
         val prev = currentVersion.value - 1
@@ -112,8 +111,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         .fillMaxSize()
         .padding(horizontal = DEFAULT_PADDING)
         .verticalScroll(rememberScrollState()),
-      horizontalAlignment = Alignment.Start,
-      verticalArrangement = Arrangement.spacedBy(16.dp)
+      verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
     ) {
       Text(
         String.format(generalGetString(R.string.new_in_version), v.version),

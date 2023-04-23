@@ -1,9 +1,9 @@
 package chat.simplex.app.views.chat
 
 import InfoRow
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
@@ -12,7 +12,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -50,7 +49,6 @@ fun ContactPreferencesView(
       if (featuresAllowed == currentFeaturesAllowed) close()
       else showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     ContactPreferencesLayout(
       featuresAllowed,
@@ -81,9 +79,7 @@ private fun ContactPreferencesLayout(
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start,
+      .verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.contact_preferences))
     val timedMessages: MutableState<Boolean> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.timedMessagesAllowed) }
@@ -93,27 +89,28 @@ private fun ContactPreferencesLayout(
     TimedMessagesFeatureSection(featuresAllowed, contact.mergedPreferences.timedMessages, timedMessages, onTTLUpdated) { allowed, ttl ->
       applyPrefs(featuresAllowed.copy(timedMessagesAllowed = allowed, timedMessagesTTL = ttl ?: currentFeaturesAllowed.timedMessagesTTL))
     }
-    SectionSpacer()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
     FeatureSection(ChatFeature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
       applyPrefs(featuresAllowed.copy(fullDelete = it))
     }
-    SectionSpacer()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
     FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
     }
-    SectionSpacer()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowCalls: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.calls) }
     FeatureSection(ChatFeature.Calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, allowCalls) {
       applyPrefs(featuresAllowed.copy(calls = it))
     }
-    SectionSpacer()
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,
       disabled = featuresAllowed == currentFeaturesAllowed
     )
+    SectionBottomSpacer()
   }
 }
 
@@ -137,17 +134,14 @@ private fun FeatureSection(
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {
-    SectionItemView {
-      ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_you_allow),
-        ContactFeatureAllowed.values(userDefault).map { it to it.text },
-        allowFeature,
-        icon = null,
-        enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
-        onSelected = onSelected
-      )
-    }
-    SectionDivider()
+    ExposedDropDownSettingRow(
+      generalGetString(R.string.chat_preferences_you_allow),
+      ContactFeatureAllowed.values(userDefault).map { it to it.text },
+      allowFeature,
+      icon = null,
+      enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
+      onSelected = onSelected
+    )
     InfoRow(
       generalGetString(R.string.chat_preferences_contact_allows),
       pref.contactPreference.allow.text
@@ -176,20 +170,16 @@ private fun TimedMessagesFeatureSection(
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {
-    SectionItemView {
-      PreferenceToggle(
-        generalGetString(R.string.chat_preferences_you_allow),
-        checked = allowFeature.value,
-      ) { allow ->
-        onSelected(allow, if (allow) featuresAllowed.timedMessagesTTL ?: 86400 else null)
-      }
+    PreferenceToggle(
+      generalGetString(R.string.chat_preferences_you_allow),
+      checked = allowFeature.value,
+    ) { allow ->
+      onSelected(allow, if (allow) featuresAllowed.timedMessagesTTL ?: 86400 else null)
     }
-    SectionDivider()
     InfoRow(
       generalGetString(R.string.chat_preferences_contact_allows),
       pref.contactPreference.allow.text
     )
-    SectionDivider()
     if (featuresAllowed.timedMessagesAllowed) {
       val ttl = rememberSaveable(featuresAllowed.timedMessagesTTL) { mutableStateOf(featuresAllowed.timedMessagesTTL) }
       TimedMessagesTTLPicker(ttl, onTTLUpdated)
@@ -206,7 +196,6 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
-    SectionDivider()
     SectionItemView(save, disabled = disabled) {
       Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
@@ -217,14 +206,12 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
 fun TimedMessagesTTLPicker(selection: MutableState<Int?>, onSelected: (Int?) -> Unit) {
   val ttlValues = TimedMessagesPreference.ttlValues
   val values = ttlValues + if (ttlValues.contains(selection.value)) listOf() else listOf(selection.value)
-  SectionItemView {
-    ExposedDropDownSettingRow(
-      generalGetString(R.string.delete_after),
-      values.map { it to TimedMessagesPreference.ttlText(it) },
-      selection,
-      onSelected = onSelected
-    )
-  }
+  ExposedDropDownSettingRow(
+    generalGetString(R.string.delete_after),
+    values.map { it to TimedMessagesPreference.ttlText(it) },
+    selection,
+    onSelected = onSelected
+  )
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {

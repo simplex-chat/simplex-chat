@@ -1,13 +1,13 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDivider
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
-import SectionSpacer
-import SectionTextFooter
 import SectionView
 import SectionViewSelectable
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -19,13 +19,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.chat.item.ClickableText
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -156,37 +160,33 @@ fun NetworkAndServersView(
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(R.string.network_and_servers))
     SectionView(generalGetString(R.string.settings_section_title_messages)) {
       SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
-      SectionDivider()
 
       SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
-      SectionDivider()
 
-      SectionItemView {
-        UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
-      }
-      SectionDivider()
+      UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
       UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
-      SectionDivider()
       if (developerTools) {
         SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
-        SectionDivider()
       }
       SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
     if (networkUseSocksProxy.value) {
       SectionCustomFooter { Text(annotatedStringResource(R.string.disable_onion_hosts_when_not_supported)) }
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+    } else {
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
-    Spacer(Modifier.height(16.dp))
+
     SectionView(generalGetString(R.string.settings_section_title_calls)) {
       SettingsActionItem(Icons.Outlined.ElectricalServices, stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -198,41 +198,49 @@ fun UseSocksProxySwitch(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   Row(
-    Modifier.fillMaxWidth(),
+    Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Row(
-      Modifier.weight(1f),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
+      Modifier.weight(1f).padding(horizontal = DEFAULT_PADDING),
+      verticalAlignment = Alignment.CenterVertically
     ) {
       Icon(
         Icons.Outlined.SettingsEthernet,
         stringResource(R.string.network_socks_toggle),
         tint = HighOrLowlight
       )
+      TextIconSpaced(false)
       if (networkUseSocksProxy.value) {
-        Row {
-          Text(generalGetString(R.string.network_socks_toggle_use_socks_proxy) + " (")
-          Text(
-            generalGetString(R.string.network_proxy_port).format(proxyPort.value),
-            Modifier.clickable { showSettingsModal { SockProxySettings(it) }() },
-            color = MaterialTheme.colors.primary
+          val text = buildAnnotatedString {
+            append(generalGetString(R.string.network_socks_toggle_use_socks_proxy) + " (")
+            val style = SpanStyle(color = MaterialTheme.colors.primary)
+            withAnnotation(tag = "PORT", annotation = generalGetString(R.string.network_proxy_port).format(proxyPort.value)) {
+              withStyle(style) { append(generalGetString(R.string.network_proxy_port).format(proxyPort.value)) }
+            }
+            append(")")
+          }
+          ClickableText(
+            text,
+            style = TextStyle(color =  MaterialTheme.colors.onBackground, fontSize = 16.sp, fontFamily = FontFamily(Font(R.font.inter_regular))),
+            onClick = { offset ->
+              text.getStringAnnotations(tag = "PORT", start = offset, end = offset)
+                .firstOrNull()?.let { _ ->
+                  showSettingsModal { SockProxySettings(it) }()
+                }
+            },
+            shouldConsumeEvent = { offset ->
+              text.getStringAnnotations(tag = "PORT", start = offset, end = offset).any()
+            }
           )
-          Text(")")
-        }
       } else {
         Text(stringResource(R.string.network_socks_toggle))
       }
     }
-    Switch(
+    DefaultSwitch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }
@@ -243,7 +251,6 @@ fun SockProxySettings(m: ChatModel) {
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
   ) {
     val defaultHostPort = remember { "localhost:9050" }
     AppBarTitle(generalGetString(R.string.network_socks_proxy_settings))
@@ -273,7 +280,6 @@ fun SockProxySettings(m: ChatModel) {
           }
         }, disabled = hostPort == defaultHostPort)
       }
-      SectionDivider()
       SectionItemView {
         DefaultConfigurableTextField(
           hostUnsaved,
@@ -284,7 +290,6 @@ fun SockProxySettings(m: ChatModel) {
           keyboardType = KeyboardType.Text,
         )
       }
-      SectionDivider()
       SectionItemView {
         DefaultConfigurableTextField(
           portUnsaved,
@@ -311,6 +316,7 @@ fun SockProxySettings(m: ChatModel) {
             remember { derivedStateOf { !validPort(portUnsaved.value.text) } }.value
       )
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -333,7 +339,6 @@ private fun UseOnionHosts(
   val onSelected = showModal {
     Column(
       Modifier.fillMaxWidth(),
-      horizontalAlignment = Alignment.Start,
     ) {
       AppBarTitle(stringResource(R.string.network_use_onion_hosts))
       SectionViewSelectable(null, onionHosts, values, useOnion)
@@ -373,7 +378,6 @@ private fun SessionModePicker(
     onSelected = showModal {
       Column(
         Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.Start,
       ) {
         AppBarTitle(stringResource(R.string.network_session_mode_transport_isolation))
         SectionViewSelectable(null, sessionMode, values, updateSessionMode)

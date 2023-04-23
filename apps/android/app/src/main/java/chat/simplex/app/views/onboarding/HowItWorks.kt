@@ -26,7 +26,6 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
   Column(Modifier
     .fillMaxWidth()
     .padding(horizontal = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start
   ) {
     AppBarTitle(stringResource(R.string.how_simplex_works), false)
     ReadableText(R.string.many_people_asked_how_can_it_deliver)
@@ -47,7 +46,7 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
     Spacer(Modifier.fillMaxHeight().weight(1f))
 
     if (onboardingStage != null) {
-      Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
+      Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
         OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.shared.closeModal() })
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))

@@ -67,10 +67,10 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
   val scaffoldState = rememberScaffoldState()
   val scope = rememberCoroutineScope()
   val switchingUsers = rememberSaveable { mutableStateOf(false) }
-  Scaffold(
-    topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
+  Scaffold(topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
+    drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     floatingActionButton = {
       if (searchInList.isEmpty()) {
         FloatingActionButton(
@@ -79,6 +79,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
               if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
             }
           },
+          Modifier.padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp),
           elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 0.dp,
             pressedElevation = 0.dp,

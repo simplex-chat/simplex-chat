@@ -1,6 +1,6 @@
 package chat.simplex.app.views.database
 
-import SectionDivider
+import SectionBottomSpacer
 import SectionTextFooter
 import SectionView
 import android.content.Context
@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
@@ -57,7 +56,6 @@ fun ChatArchiveLayout(
 ) {
   Column(
     Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(title)
     SectionView(stringResource(R.string.chat_archive_section)) {
@@ -68,7 +66,6 @@ fun ChatArchiveLayout(
         textColor = MaterialTheme.colors.primary,
         iconColor = MaterialTheme.colors.primary,
       )
-      SectionDivider()
       SettingsActionItem(
         Icons.Outlined.Delete,
         stringResource(R.string.delete_archive),
@@ -81,6 +78,7 @@ fun ChatArchiveLayout(
     SectionTextFooter(
       String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
     )
+    SectionBottomSpacer()
   }
 }
 

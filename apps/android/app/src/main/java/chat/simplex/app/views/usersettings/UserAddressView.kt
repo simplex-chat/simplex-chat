@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -69,8 +70,6 @@ fun UserAddressLayout(
 ) {
   Column(
     Modifier.verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.Top
   ) {
     AppBarTitle(stringResource(R.string.your_contact_address), false)
     Text(
@@ -90,7 +89,7 @@ fun UserAddressLayout(
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.padding(vertical = 16.dp)
+          modifier = Modifier.padding(vertical = DEFAULT_PADDING)
         ) {
           SimpleButton(
             stringResource(R.string.share_link),
@@ -110,6 +109,7 @@ fun UserAddressLayout(
         )
       }
     }
+    SectionBottomSpacer()
   }
 }
 

@@ -1,6 +1,6 @@
 package chat.simplex.app.views.database
 
-import SectionDivider
+import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
@@ -137,7 +137,6 @@ fun DatabaseEncryptionLayout(
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.database_passphrase))
     SectionView(null) {
@@ -162,8 +161,6 @@ fun DatabaseEncryptionLayout(
       }
 
       if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
-        SectionDivider()
-
         PassphraseField(
           currentKey,
           generalGetString(R.string.current_passphrase),
@@ -172,8 +169,6 @@ fun DatabaseEncryptionLayout(
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
         )
       }
-
-      SectionDivider()
 
       PassphraseField(
         newKey,
@@ -206,8 +201,6 @@ fun DatabaseEncryptionLayout(
           !validKey(newKey.value) ||
           progressIndicator.value
 
-      SectionDivider()
-
       PassphraseField(
         confirmNewKey,
         generalGetString(R.string.confirm_new_passphrase),
@@ -218,8 +211,6 @@ fun DatabaseEncryptionLayout(
           defaultKeyboardAction(ImeAction.Done)
         }),
       )
-
-      SectionDivider()
 
       SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
         Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
@@ -245,6 +236,7 @@ fun DatabaseEncryptionLayout(
         SectionTextFooter(generalGetString(R.string.impossible_to_recover_passphrase))
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -311,13 +303,9 @@ fun SavePassphraseSetting(
         color = Color.Unspecified
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
-      Switch(
+      DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        ),
         enabled = !initialRandomDBPassphrase && !progressIndicator
       )
     }

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.usersettings.SettingsActionItemWithContent
 
 @Composable
 fun <T> ExposedDropDownSettingRow(
@@ -28,22 +29,8 @@ fun <T> ExposedDropDownSettingRow(
   enabled: State<Boolean> = mutableStateOf(true),
   onSelected: (T) -> Unit
 ) {
-  Row(
-    Modifier.fillMaxWidth().padding(vertical = 10.dp),
-    verticalAlignment = Alignment.CenterVertically,
-  ) {
+  SettingsActionItemWithContent(icon, title, iconColor = iconTint, disabled = !enabled.value) {
     val expanded = remember { mutableStateOf(false) }
-
-    if (icon != null) {
-      Icon(
-        icon,
-        "",
-        Modifier.padding(end = 8.dp),
-        tint = iconTint
-      )
-    }
-    Text(title, Modifier.weight(1f), color = if (enabled.value) Color.Unspecified else HighOrLowlight)
-
     ExposedDropdownMenuBox(
       expanded = expanded.value,
       onExpandedChange = {
@@ -55,7 +42,7 @@ fun <T> ExposedDropDownSettingRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End
       ) {
-        val maxWidth = with(LocalDensity.current){ 180.sp.toDp() }
+        val maxWidth = with(LocalDensity.current) { 180.sp.toDp() }
         Text(
           values.first { it.first == selection.value }.second + (if (label != null) " $label" else ""),
           Modifier.widthIn(max = maxWidth),

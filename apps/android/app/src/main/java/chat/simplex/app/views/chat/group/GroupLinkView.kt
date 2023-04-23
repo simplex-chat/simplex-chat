@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.group
 
+import SectionBottomSpacer
 import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -101,15 +102,12 @@ fun GroupLinkLayout(
 ) {
   Column(
     Modifier
-      .verticalScroll(rememberScrollState())
-      .padding(start = DEFAULT_PADDING, bottom = DEFAULT_BOTTOM_PADDING, end = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.Top
+      .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.group_link), false)
+    AppBarTitle(stringResource(R.string.group_link))
     Text(
       stringResource(R.string.you_can_share_group_link_anybody_will_be_able_to_connect),
-      Modifier.padding(bottom = 12.dp),
+      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 12.dp),
       lineHeight = 22.sp
     )
     Column(
@@ -120,9 +118,7 @@ fun GroupLinkLayout(
       if (groupLink == null) {
         SimpleButton(stringResource(R.string.button_create_group_link), icon = Icons.Outlined.AddLink, disabled = creatingLink, click = createLink)
       } else {
-        SectionItemView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
-          RoleSelectionRow(groupInfo, groupLinkMemberRole)
-        }
+        RoleSelectionRow(groupInfo, groupLinkMemberRole)
         var initialLaunch by remember { mutableStateOf(true) }
         LaunchedEffect(groupLinkMemberRole.value) {
           if (!initialLaunch) {
@@ -130,11 +126,11 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        QRCode(groupLink, Modifier.aspectRatio(1f))
+        QRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.padding(vertical = 10.dp)
+          modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
         ) {
           SimpleButton(
             stringResource(R.string.share_link),
@@ -150,6 +146,7 @@ fun GroupLinkLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

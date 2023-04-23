@@ -1,9 +1,9 @@
 package chat.simplex.app.views.database
 
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
-import SectionSpacer
 import SectionView
 import android.content.Context
 import android.content.res.Configuration
@@ -154,13 +154,12 @@ fun DatabaseLayout(
   val operationsDisabled = !stopped || progressIndicator
 
   Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = DEFAULT_BOTTOM_PADDING),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.your_chat_database))
 
     SectionView(stringResource(R.string.messages_section_title).uppercase()) {
-      SectionItemView { TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected) }
+      TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
     }
     SectionTextFooter(
       remember(currentUser?.displayName) {
@@ -173,12 +172,12 @@ fun DatabaseLayout(
         }
       }
     )
-    SectionSpacer()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     SectionView(stringResource(R.string.chat_database_section)) {
       val unencrypted = chatDbEncrypted == false
@@ -189,9 +188,8 @@ fun DatabaseLayout(
         iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
         disabled = operationsDisabled
       )
-      SectionDivider()
       AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
-      SectionDivider()
+      SectionDividerSpaced(maxBottomPadding = false)
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.export_database),
@@ -206,7 +204,6 @@ fun DatabaseLayout(
         iconColor = MaterialTheme.colors.primary,
         disabled = operationsDisabled
       )
-      SectionDivider()
       SettingsActionItem(
         Icons.Outlined.FileDownload,
         stringResource(R.string.import_database),
@@ -215,7 +212,6 @@ fun DatabaseLayout(
         iconColor = Color.Red,
         disabled = operationsDisabled
       )
-      SectionDivider()
       val chatArchiveNameVal = chatArchiveName.value
       val chatArchiveTimeVal = chatArchiveTime.value
       val chatLastStartVal = chatLastStart.value
@@ -227,7 +223,6 @@ fun DatabaseLayout(
           click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = operationsDisabled
         )
-        SectionDivider()
       }
       SettingsActionItem(
         Icons.Outlined.DeleteForever,
@@ -245,7 +240,7 @@ fun DatabaseLayout(
         stringResource(R.string.stop_chat_to_enable_database_actions)
       }
     )
-    SectionSpacer()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.files_and_media_section).uppercase()) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
@@ -267,37 +262,26 @@ fun DatabaseLayout(
         String.format(stringResource(R.string.total_files_count_and_size), count, formatBytes(size))
       }
     )
+    SectionBottomSpacer()
   }
 }
 
 @Composable
 private fun AppDataBackupPreference(privacyFullBackup: SharedPreference<Boolean>, initialRandomDBPassphrase: SharedPreference<Boolean>) {
-  SectionItemView {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(Icons.Outlined.Backup, stringResource(R.string.full_backup), tint = HighOrLowlight)
-      Spacer(Modifier.padding(horizontal = 4.dp))
-      val prefState = remember { mutableStateOf(privacyFullBackup.get()) }
-      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.full_backup), Modifier.padding(end = 24.dp))
-        Spacer(Modifier.fillMaxWidth().weight(1f))
-        Switch(
-          checked = prefState.value,
-          onCheckedChange = {
-            if (initialRandomDBPassphrase.get()) {
-              exportProhibitedAlert()
-            } else {
-              privacyFullBackup.set(it)
-              prefState.value = it
-            }
-          },
-          colors = SwitchDefaults.colors(
-            checkedThumbColor = MaterialTheme.colors.primary,
-            uncheckedThumbColor = HighOrLowlight
-          )
-        )
+  SettingsPreferenceItem(
+    Icons.Outlined.Backup,
+    iconColor = HighOrLowlight,
+    pref = privacyFullBackup,
+    text = stringResource(R.string.full_backup),
+    onChange = {
+      if (initialRandomDBPassphrase.get()) {
+        exportProhibitedAlert()
+        privacyFullBackup.set(false)
+      } else {
+        privacyFullBackup.set(it)
       }
     }
-  }
+  )
 }
 
 private fun setChatItemTTLAlert(
@@ -350,36 +334,23 @@ fun RunChatSetting(
   startChat: () -> Unit,
   stopChatAlert: () -> Unit
 ) {
-  SectionItemView() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
-      Icon(
-        if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
-        chatRunningText,
-        tint = if (stopped) Color.Red else MaterialTheme.colors.primary
-      )
-      Spacer(Modifier.padding(horizontal = 4.dp))
-      Text(
-        chatRunningText,
-        Modifier.padding(end = 24.dp)
-      )
-      Spacer(Modifier.fillMaxWidth().weight(1f))
-      Switch(
-        enabled = !chatDbDeleted,
-        checked = runChat,
-        onCheckedChange = { runChatSwitch ->
-          if (runChatSwitch) {
-            startChat()
-          } else {
-            stopChatAlert()
-          }
-        },
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        ),
-      )
-    }
+  val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
+  SettingsActionItemWithContent(
+    icon = if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
+    text = chatRunningText,
+    iconColor = if (stopped) Color.Red else MaterialTheme.colors.primary,
+  ) {
+    DefaultSwitch(
+      enabled = !chatDbDeleted,
+      checked = runChat,
+      onCheckedChange = { runChatSwitch ->
+        if (runChatSwitch) {
+          startChat()
+        } else {
+          stopChatAlert()
+        }
+      },
+    )
   }
 }
 

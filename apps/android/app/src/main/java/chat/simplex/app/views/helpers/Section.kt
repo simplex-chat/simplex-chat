@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ValueTitleDesc
 import chat.simplex.app.views.helpers.ValueTitle
+import chat.simplex.app.views.usersettings.SettingsActionItemWithContent
 
 @Composable
 fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(), content: (@Composable ColumnScope.() -> Unit)) {
@@ -28,9 +29,7 @@ fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(),
         modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
       )
     }
-    Surface(color = if (isInDarkTheme()) GroupDark else MaterialTheme.colors.background) {
-      Column(Modifier.padding(padding).fillMaxWidth()) { content() }
-    }
+    Column(Modifier.padding(padding).fillMaxWidth()) { content() }
   }
 }
 
@@ -46,13 +45,11 @@ fun SectionView(
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-      if (leadingIcon) Icon(icon, null, Modifier.padding(end = 4.dp).size(iconSize), tint = iconTint)
+      if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
       Text(title, color = HighOrLowlight, style = MaterialTheme.typography.body2, fontSize = 12.sp)
-      if (!leadingIcon) Icon(icon, null, Modifier.padding(start = 4.dp).size(iconSize), tint = iconTint)
+      if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
-    Surface(color = if (isInDarkTheme()) GroupDark else MaterialTheme.colors.background) {
-      Column(Modifier.padding(padding).fillMaxWidth()) { content() }
-    }
+    Column(Modifier.padding(padding).fillMaxWidth()) { content() }
   }
 }
 
@@ -85,7 +82,30 @@ fun SectionItemView(
   click: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
   disabled: Boolean = false,
-  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
+  extraPadding: Boolean = false,
+  padding: PaddingValues = if (extraPadding)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+  else
+    PaddingValues(horizontal = DEFAULT_PADDING),
+  content: (@Composable RowScope.() -> Unit)
+) {
+  val modifier = Modifier
+    .fillMaxWidth()
+    .sizeIn(minHeight = minHeight)
+  Row(
+    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    content()
+  }
+}
+
+@Composable
+fun SectionItemViewWithIcon(
+  click: (() -> Unit)? = null,
+  minHeight: Dp = 46.dp,
+  disabled: Boolean = false,
+  padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -131,19 +151,7 @@ fun <T> SectionItemWithValue(
   enabled: State<Boolean> = mutableStateOf(true),
   onSelected: () -> Unit
 ) {
-  SectionItemView(click = if (enabled.value) onSelected else null) {
-    if (icon != null) {
-      Icon(
-        icon,
-        title,
-        Modifier.padding(end = 8.dp),
-        tint = iconTint
-      )
-    }
-    Text(title, color = if (enabled.value) Color.Unspecified else HighOrLowlight)
-
-    Spacer(Modifier.fillMaxWidth().weight(1f))
-
+  SettingsActionItemWithContent(icon = icon, text = title, iconColor = iconTint, click = if (enabled.value) onSelected else null, disabled = !enabled.value) {
     Row(
       Modifier.padding(start = 10.dp),
       verticalAlignment = Alignment.CenterVertically,
@@ -190,8 +198,29 @@ fun SectionDivider() {
 }
 
 @Composable
+fun SectionDividerSpaced(maxTopPadding: Boolean = false, maxBottomPadding: Boolean = true) {
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      top = if (maxTopPadding) 40.dp else 30.dp,
+      end = DEFAULT_PADDING_HALF,
+      bottom = if (maxBottomPadding) 40.dp else 30.dp)
+  )
+}
+
+@Composable
 fun SectionSpacer() {
   Spacer(Modifier.height(30.dp))
+}
+
+@Composable
+fun SectionBottomSpacer() {
+  Spacer(Modifier.height(DEFAULT_BOTTOM_PADDING))
+}
+
+@Composable
+fun TextIconSpaced(extraPadding: Boolean = false) {
+  Spacer(Modifier.padding(horizontal = if (extraPadding) 17.dp else DEFAULT_PADDING_HALF))
 }
 
 @Composable

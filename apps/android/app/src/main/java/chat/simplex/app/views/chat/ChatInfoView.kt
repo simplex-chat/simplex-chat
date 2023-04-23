@@ -2,7 +2,8 @@ package chat.simplex.app.views.chat
 
 import InfoRow
 import InfoRowEllipsis
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -168,8 +169,7 @@ fun ChatInfoLayout(
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start
+      .verticalScroll(rememberScrollState())
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -179,28 +179,25 @@ fun ChatInfoLayout(
     }
 
     LocalAliasEditor(localAlias, updateValue = onLocalAliasChanged)
-
+    SectionSpacer()
     if (customUserProfile != null) {
-      SectionSpacer()
       SectionView(generalGetString(R.string.incognito).uppercase()) {
         InfoRow(generalGetString(R.string.incognito_random_profile), customUserProfile.chatViewName)
       }
+      SectionDividerSpaced()
     }
 
-    SectionSpacer()
     SectionView {
       if (connectionCode != null) {
         VerifyCodeButton(contact.verified, verifyClicked)
-        SectionDivider()
       }
       ContactPreferencesButton(openPreferences)
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
       SwitchAddressButton(switchContactAddress)
-      SectionDivider()
       if (connStats != null) {
         SectionItemView({
           AlertManager.shared.showAlertMsg(
@@ -211,32 +208,28 @@ fun ChatInfoLayout(
         }
         val rcvServers = connStats.rcvServers
         if (rcvServers != null && rcvServers.isNotEmpty()) {
-          SectionDivider()
           SimplexServers(stringResource(R.string.receiving_via), rcvServers)
         }
         val sndServers = connStats.sndServers
         if (sndServers != null && sndServers.isNotEmpty()) {
-          SectionDivider()
           SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     SectionView {
       ClearChatButton(clearChat)
-      SectionDivider()
       DeleteContactButton(deleteContact)
     }
-    SectionSpacer()
 
     if (developerTools) {
+      SectionDividerSpaced()
       SectionView(title = stringResource(R.string.section_title_for_console)) {
         InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
-        SectionDivider()
         InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
       }
-      SectionSpacer()
     }
+    SectionBottomSpacer()
   }
 }
 

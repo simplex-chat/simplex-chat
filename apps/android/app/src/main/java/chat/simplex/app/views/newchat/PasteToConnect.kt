@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import SectionBottomSpacer
 import android.content.ClipboardManager
 import android.content.res.Configuration
 import android.net.Uri
@@ -84,7 +85,7 @@ fun PasteToConnectLayout(
       generalGetString(R.string.profile_will_be_sent_to_contact_sending_link)
     )
 
-    Box(Modifier.padding(top = 16.dp, bottom = 6.dp)) {
+    Box(Modifier.padding(top = DEFAULT_PADDING, bottom = 6.dp)) {
       TextEditor(Modifier.height(180.dp), text = connectionLink)
     }
 
@@ -108,6 +109,7 @@ fun PasteToConnectLayout(
     }
 
     Text(annotatedStringResource(R.string.you_can_also_connect_by_clicking_the_link))
+    SectionBottomSpacer()
   }
 }
 

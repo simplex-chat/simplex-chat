@@ -213,7 +213,7 @@ private fun LockScreenCallButton(text: String, icon: ImageVector, color: Color, 
       IconButton(action) {
         Icon(icon, text, tint = color, modifier = Modifier.scale(1.75f))
       }
-      Spacer(Modifier.height(16.dp))
+      Spacer(Modifier.height(DEFAULT_PADDING))
       Text(text, style = MaterialTheme.typography.body2, color = HighOrLowlight)
     }
   }

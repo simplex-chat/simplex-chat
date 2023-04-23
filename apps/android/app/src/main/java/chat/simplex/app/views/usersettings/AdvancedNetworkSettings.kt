@@ -1,7 +1,7 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -141,55 +141,46 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.network_settings_title))
     SectionView {
       SectionItemView {
         ResetToDefaultsButton(reset, disabled = resetDisabled)
       }
-      SectionDivider()
       SectionItemView {
         TimeoutSettingRow(
           stringResource(R.string.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
           listOf(2_500000, 5_000000, 7_500000, 10_000000, 15_000000, 20_000000), secondsLabel
         )
       }
-      SectionDivider()
       SectionItemView {
         TimeoutSettingRow(
           stringResource(R.string.network_option_protocol_timeout), networkTCPTimeout,
           listOf(1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000), secondsLabel
         )
       }
-      SectionDivider()
       SectionItemView {
         TimeoutSettingRow(
           stringResource(R.string.network_option_ping_interval), networkSMPPingInterval,
           listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
         )
       }
-      SectionDivider()
       SectionItemView {
         IntSettingRow(
           stringResource(R.string.network_option_ping_count), networkSMPPingCount,
           listOf(1, 2, 3, 5, 8), ""
         )
       }
-      SectionDivider()
       SectionItemView {
         EnableKeepAliveSwitch(networkEnableKeepAlive)
       }
-      SectionDivider()
       if (networkEnableKeepAlive.value) {
         SectionItemView {
           IntSettingRow("TCP_KEEPIDLE", networkTCPKeepIdle, listOf(15, 30, 60, 120, 180), secondsLabel)
         }
-        SectionDivider()
         SectionItemView {
           IntSettingRow("TCP_KEEPINTVL", networkTCPKeepIntvl, listOf(5, 10, 15, 30, 60), secondsLabel)
         }
-        SectionDivider()
         SectionItemView {
           IntSettingRow("TCP_KEEPCNT", networkTCPKeepCnt, listOf(1, 2, 4, 6, 8), "")
         }
@@ -197,11 +188,9 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
         SectionItemView {
           Text("TCP_KEEPIDLE", color = HighOrLowlight)
         }
-        SectionDivider()
         SectionItemView {
           Text("TCP_KEEPINTVL", color = HighOrLowlight)
         }
-        SectionDivider()
         SectionItemView {
           Text("TCP_KEEPCNT", color = HighOrLowlight)
         }
@@ -210,7 +199,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     SectionCustomFooter {
       SettingsSectionFooter(revert, save, footerDisabled)
     }
-    SectionSpacer()
+    SectionBottomSpacer()
   }
 }
 
@@ -236,13 +225,9 @@ fun EnableKeepAliveSwitch(
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Text(stringResource(R.string.network_option_enable_tcp_keep_alive))
-    Switch(
+    DefaultSwitch(
       checked = networkEnableKeepAlive.value,
       onCheckedChange = { networkEnableKeepAlive.value = it },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }

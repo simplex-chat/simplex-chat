@@ -1,6 +1,7 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
@@ -81,7 +82,6 @@ private fun ProtocolServerLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_PADDING)
   ) {
     AppBarTitle(stringResource(if (server.preset) R.string.smp_servers_preset_server else R.string.smp_servers_your_server))
 
@@ -90,6 +90,7 @@ private fun ProtocolServerLayout(
     } else {
       CustomServer(testing, server, serverProtocol, testServer, onUpdate, onDelete)
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -113,7 +114,7 @@ private fun PresetServer(
       )
     }
   }
-  SectionSpacer()
+  SectionDividerSpaced(maxTopPadding = true)
   UseServerSection(true, testing, server, testServer, onUpdate, onDelete)
 }
 
@@ -151,13 +152,13 @@ private fun CustomServer(
       onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
     }
   }
-  SectionSpacer()
+  SectionDividerSpaced()
   UseServerSection(valid.value, testing, server, testServer, onUpdate, onDelete)
-  SectionSpacer()
 
   if (valid.value) {
+    SectionDividerSpaced()
     SectionView(stringResource(R.string.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value, Modifier.aspectRatio(1f))
+      QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
     }
   }
 }
@@ -176,12 +177,8 @@ private fun UseServerSection(
       Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else HighOrLowlight)
       ShowTestStatus(server)
     }
-    SectionDivider()
-    SectionItemView {
-      val enabled = rememberUpdatedState(server.enabled)
-      PreferenceToggle(stringResource(R.string.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
-    }
-    SectionDivider()
+    val enabled = rememberUpdatedState(server.enabled)
+    PreferenceToggle(stringResource(R.string.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
     SectionItemView(onDelete, disabled = testing) {
       Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) HighOrLowlight else MaterialTheme.colors.error)
     }
