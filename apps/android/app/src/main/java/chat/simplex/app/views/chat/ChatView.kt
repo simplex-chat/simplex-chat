@@ -439,7 +439,7 @@ fun ChatInfoToolbar(
 
   barButtons.add {
     IconButton({ showMenu.value = true }) {
-      Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      Icon(MoreVertFilled, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
     }
   }
 
