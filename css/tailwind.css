@@ -574,8 +574,8 @@ video {
   position: sticky;
 }
 
-.-left-10 {
-  left: -2.5rem;
+.-right-14 {
+  right: -3.5rem;
 }
 
 .bottom-0 {
@@ -1058,6 +1058,11 @@ video {
 
 .w-full {
   width: 100%;
+}
+
+.w-max {
+  width: -moz-max-content;
+  width: max-content;
 }
 
 .min-w-\[152px\] {
@@ -1552,11 +1557,6 @@ video {
 .px-8 {
   padding-left: 2rem;
   padding-right: 2rem;
-}
-
-.px-\[20px\] {
-  padding-left: 20px;
-  padding-right: 20px;
 }
 
 .px-\[34px\] {
