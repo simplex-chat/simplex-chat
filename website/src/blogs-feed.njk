@@ -1,18 +1,14 @@
----json
-{
-    "permalink": "feed.xml",
-    "eleventyExcludeFromCollections": true,
-    "metadata": {
-        "title": "SimpleX Chat Blogs",
-        "subtitle": "It allows you to stay up to date with the latest Blogs from SimpleX Chat.",
-        "language": "en",
-        "url": "https://simplex.chat/",
-        "author": {
-            "name": "Evgeny Poberezkin",
-            "email": "ep@simplex.chat"
-        }
-    }
-}
+---
+permalink: feed.rss
+eleventyExcludeFromCollections: true
+metadata:
+    title: SimpleX Chat Blog
+    subtitle: 
+    language: en
+    url: https://simplex.chat/,
+    author:
+        name: SimpleX Chat
+        email: chat@simplex.chat
 ---
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xml:base="{{ metadata.url }}">
