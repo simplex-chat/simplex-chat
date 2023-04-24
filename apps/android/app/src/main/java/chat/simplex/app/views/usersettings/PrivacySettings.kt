@@ -10,18 +10,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.localauth.SetAppPasscodeView
@@ -51,7 +49,7 @@ fun PrivacySettingsView(
     SectionView(stringResource(R.string.settings_section_title_device)) {
       ChatLockItem(chatModel, showSettingsModal, setPerformLA)
       val context = LocalContext.current
-      SettingsPreferenceItem(Icons.Outlined.VisibilityOff, stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
+      SettingsPreferenceItem(painterResource(R.drawable.ic_visibility_off), stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
         if (on) {
           (context as? FragmentActivity)?.window?.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
@@ -65,8 +63,8 @@ fun PrivacySettingsView(
     SectionDividerSpaced()
 
     SectionView(stringResource(R.string.settings_section_title_chats)) {
-      SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
+      SettingsPreferenceItem(painterResource(R.drawable.ic_image), stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      SettingsPreferenceItem(painterResource(R.drawable.ic_travel_explore), stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it

@@ -13,13 +13,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.R
@@ -60,14 +59,14 @@ fun ChatArchiveLayout(
     AppBarTitle(title)
     SectionView(stringResource(R.string.chat_archive_section)) {
       SettingsActionItem(
-        Icons.Outlined.IosShare,
+        painterResource(R.drawable.ic_ios_share),
         stringResource(R.string.save_archive),
         saveArchive,
         textColor = MaterialTheme.colors.primary,
         iconColor = MaterialTheme.colors.primary,
       )
       SettingsActionItem(
-        Icons.Outlined.Delete,
+        painterResource(R.drawable.ic_delete),
         stringResource(R.string.delete_archive),
         deleteArchiveAlert,
         textColor = Color.Red,

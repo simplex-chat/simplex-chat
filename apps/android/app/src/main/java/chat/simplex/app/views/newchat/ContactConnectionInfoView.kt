@@ -7,11 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.R
@@ -111,7 +110,7 @@ private fun ContactConnectionInfoLayout(
 @Composable
 fun ShowQrButton(incognito: Boolean, onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.QrCode,
+    painterResource(R.drawable.ic_qr_code),
     stringResource(R.string.show_QR_code),
     click = onClick,
     textColor = if (incognito) Indigo else MaterialTheme.colors.primary,
@@ -122,7 +121,7 @@ fun ShowQrButton(incognito: Boolean, onClick: () -> Unit) {
 @Composable
 fun DeleteButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     stringResource(R.string.delete_verb),
     click = onClick,
     textColor = Color.Red,

@@ -130,7 +130,7 @@ private fun FeatureSection(
 
   SectionView(
     feature.text.uppercase(),
-    icon = feature.iconFilled,
+    icon = feature.iconFilled(),
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {
@@ -166,7 +166,7 @@ private fun TimedMessagesFeatureSection(
 
   SectionView(
     ChatFeature.TimedMessages.text.uppercase(),
-    icon = ChatFeature.TimedMessages.iconFilled,
+    icon = ChatFeature.TimedMessages.iconFilled(),
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {

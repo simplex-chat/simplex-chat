@@ -8,13 +8,12 @@ import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -204,7 +203,7 @@ private fun ProtocolServersLayout(
         }
       }
       SettingsActionItem(
-        Icons.Outlined.Add,
+        painterResource(R.drawable.ic_add),
         stringResource(R.string.smp_servers_add),
         addServer,
         disabled = testing,
@@ -249,7 +248,7 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
-    !srv.enabled -> Icon(Icons.Outlined.DoNotDisturb, null, tint = HighOrLowlight)
+    !srv.enabled -> Icon(painterResource(R.drawable.ic_do_not_disturb_on), null, tint = HighOrLowlight)
     else -> ShowTestStatus(srv)
   }
   Spacer(Modifier.padding(horizontal = 4.dp))
@@ -265,7 +264,7 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
 private fun HowToButton() {
   val uriHandler = LocalUriHandler.current
   SettingsActionItem(
-    Icons.Outlined.OpenInNew,
+    painterResource(R.drawable.ic_open_in_new),
     stringResource(R.string.how_to_use_your_servers),
     { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
     textColor = MaterialTheme.colors.primary,
@@ -275,7 +274,7 @@ private fun HowToButton() {
 
 @Composable
 fun InvalidServer() {
-  Icon(Icons.Outlined.ErrorOutline, null, tint = MaterialTheme.colors.error)
+  Icon(painterResource(R.drawable.ic_error), null, tint = MaterialTheme.colors.error)
 }
 
 private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<ServerCfg>): Boolean = servers.all { srv ->

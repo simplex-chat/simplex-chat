@@ -4,8 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,7 +55,7 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
       ) {
         Text(stringResource(R.string.chat_help_tap_button))
         Icon(
-          Icons.Outlined.PersonAdd,
+          painterResource(R.drawable.ic_person_add),
           stringResource(R.string.add_contact),
           modifier = if (addContact != null) Modifier.clickable(onClick = addContact) else Modifier,
         )

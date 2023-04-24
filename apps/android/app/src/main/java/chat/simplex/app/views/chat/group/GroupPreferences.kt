@@ -122,7 +122,7 @@ private fun FeatureSection(
 ) {
   SectionView {
     val on = enableFeature.value == GroupFeatureEnabled.ON
-    val icon = if (on) feature.iconFilled else feature.icon
+    val icon = if (on) feature.iconFilled() else feature.icon
     val iconTint = if (on) SimplexGreen else HighOrLowlight
     val timedOn = feature == GroupFeature.TimedMessages && enableFeature.value == GroupFeatureEnabled.ON
     if (groupInfo.canEdit) {

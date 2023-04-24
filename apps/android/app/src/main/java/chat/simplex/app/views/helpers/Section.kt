@@ -3,18 +3,18 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ValueTitleDesc
 import chat.simplex.app.views.helpers.ValueTitle
@@ -36,7 +36,7 @@ fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(),
 @Composable
 fun SectionView(
   title: String,
-  icon: ImageVector,
+  icon: Painter,
   iconTint: Color = HighOrLowlight,
   leadingIcon: Boolean = false,
   padding: PaddingValues = PaddingValues(),
@@ -67,7 +67,7 @@ fun <T> SectionViewSelectable(
         SectionItemViewSpaceBetween({ onSelected(item.value) }) {
           Text(item.title)
           if (currentValue.value == item.value) {
-            Icon(Icons.Outlined.Check, item.title, tint = MaterialTheme.colors.primary)
+            Icon(painterResource(R.drawable.ic_check), item.title, tint = MaterialTheme.colors.primary)
           }
         }
         Spacer(Modifier.padding(horizontal = 4.dp))
@@ -146,7 +146,7 @@ fun <T> SectionItemWithValue(
   currentValue: State<T>,
   values: List<ValueTitle<T>>,
   label: String? = null,
-  icon: ImageVector? = null,
+  icon: Painter? = null,
   iconTint: Color = HighOrLowlight,
   enabled: State<Boolean> = mutableStateOf(true),
   onSelected: () -> Unit
@@ -224,7 +224,7 @@ fun TextIconSpaced(extraPadding: Boolean = false) {
 }
 
 @Composable
-fun InfoRow(title: String, value: String, icon: ImageVector? = null, iconTint: Color? = null) {
+fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null) {
   SectionItemViewSpaceBetween {
     Row {
       val iconSize = with(LocalDensity.current) { 21.sp.toDp() }

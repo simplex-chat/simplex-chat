@@ -10,15 +10,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.TheaterComedy
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -179,16 +176,15 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
       values,
       selectedRole,
       icon = null,
-      enabled = rememberUpdatedState(enabled),
-      onSelected = { selectedRole.value = it }
-    )
+      enabled = rememberUpdatedState(enabled)
+    ) { selectedRole.value = it }
   }
 }
 
 @Composable
 fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
   SettingsActionItem(
-    Icons.Outlined.Check,
+    painterResource(R.drawable.ic_check),
     stringResource(R.string.invite_to_group_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
@@ -200,7 +196,7 @@ fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
 @Composable
 fun SkipInvitingButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Check,
+    painterResource(R.drawable.ic_check),
     stringResource(R.string.skip_inviting_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
@@ -270,16 +266,16 @@ fun ContactCheckRow(
   enabled: Boolean,
 ) {
   val prohibitedToInviteIncognito = !groupInfo.membership.memberIncognito && contact.contactConnIncognito
-  val icon: ImageVector
+  val icon: Painter
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
-    icon = Icons.Filled.TheaterComedy
+    icon = painterResource(R.drawable.ic_theater_comedy_filled)
     iconColor = HighOrLowlight
   } else if (checked) {
-    icon = Icons.Filled.CheckCircle
+    icon = painterResource(R.drawable.ic_check_circle_filled)
     iconColor = if (enabled) MaterialTheme.colors.primary else HighOrLowlight
   } else {
-    icon = Icons.Outlined.Circle
+    icon = painterResource(R.drawable.ic_circle)
     iconColor = HighOrLowlight
   }
   SectionItemView(
