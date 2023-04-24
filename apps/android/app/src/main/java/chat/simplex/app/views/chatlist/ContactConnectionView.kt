@@ -21,7 +21,7 @@ import chat.simplex.app.views.helpers.ProfileImage
 fun ContactConnectionView(contactConnection: PendingContactConnection) {
   Row {
     Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
-      ProfileImage(size = 54.dp, null, if (contactConnection.initiated) painterResource(R.drawable.ic_add_link) else painterResource(R.drawable.ic_link))
+      ProfileImage(size = 54.dp, null, if (contactConnection.initiated) R.drawable.ic_add_link else R.drawable.ic_link)
     }
     Column(
       modifier = Modifier
