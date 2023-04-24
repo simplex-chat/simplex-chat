@@ -51,13 +51,22 @@ fun ProfileImage(
   color: Color = MaterialTheme.colors.secondary
 ) {
   Box(Modifier.size(size)) {
-    if (image == null || icon == painterResource(R.drawable.ic_account_circle_filled)) {
-      Icon(
-        AccountCircle,
-        contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
-        tint = color,
-        modifier = Modifier.fillMaxSize()
-      )
+    if (image == null) {
+      if (icon == painterResource(R.drawable.ic_account_circle_filled)) {
+        Icon(
+          AccountCircle,
+          contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
+          tint = color,
+          modifier = Modifier.fillMaxSize()
+        )
+      } else {
+        Icon(
+          icon,
+          contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
+          tint = color,
+          modifier = Modifier.fillMaxSize()
+        )
+      }
     } else {
       val imageBitmap = base64ToBitmap(image).asImageBitmap()
       Image(
