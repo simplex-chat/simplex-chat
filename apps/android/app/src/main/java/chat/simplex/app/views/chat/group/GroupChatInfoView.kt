@@ -192,7 +192,7 @@ fun GroupChatInfoLayout(
         val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
         AddMembersButton(tint, onAddMembersClick)
       }
-      SectionItemView(minHeight = 50.dp) {
+      SectionItemView(minHeight = 54.dp) {
         MemberRow(groupInfo.membership, user = true)
       }
       MembersList(members, showMemberInfo)
@@ -267,7 +267,8 @@ private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick
 private fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
   Column {
     members.forEachIndexed { index, member ->
-      SectionItemView({ showMemberInfo(member) }, minHeight = 50.dp) {
+      Divider()
+      SectionItemView({ showMemberInfo(member) }, minHeight = 54.dp) {
         MemberRow(member)
       }
     }

@@ -252,9 +252,6 @@ fun ContactList(
         checked = selectedContacts.contains(contact.apiId),
         enabled = enabled,
       )
-      if (index != contacts.lastIndex) {
-        Divider()
-      }
     }
   }
 }
@@ -291,8 +288,7 @@ fun ContactCheckRow(
         else
           removeContact(contact.apiId)
       }
-    } else null,
-    minHeight = 54.dp
+    } else null
   ) {
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
