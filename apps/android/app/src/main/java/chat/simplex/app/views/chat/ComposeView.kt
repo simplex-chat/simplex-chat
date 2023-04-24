@@ -19,10 +19,6 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.Reply
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -30,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -652,10 +649,10 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, Icons.Outlined.Reply) {
+      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_reply)) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, Icons.Filled.Edit) {
+      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_edit_filled)) {
         clearState()
       }
     }
@@ -690,7 +687,7 @@ fun ComposeView(
     ) {
       IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
-          Icons.Filled.AttachFile,
+          painterResource(R.drawable.ic_attach_file_filled_500),
           contentDescription = stringResource(R.string.attach),
           tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else HighOrLowlight,
           modifier = Modifier

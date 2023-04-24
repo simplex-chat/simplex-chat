@@ -16,17 +16,15 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -272,14 +270,14 @@ private fun ActiveCallOverlayLayout(
           ToggleAudioButton(call, toggleAudio)
           Spacer(Modifier.size(40.dp))
           IconButton(onClick = dismiss) {
-            Icon(Icons.Filled.CallEnd, stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+            Icon(painterResource(R.drawable.ic_call_end_filled), stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
           }
           if (call.videoEnabled) {
-            ControlButton(call, Icons.Filled.FlipCameraAndroid, R.string.icon_descr_flip_camera, flipCamera)
-            ControlButton(call, Icons.Filled.Videocam, R.string.icon_descr_video_off, toggleVideo)
+            ControlButton(call, painterResource(R.drawable.ic_flip_camera_android_filled), R.string.icon_descr_flip_camera, flipCamera)
+            ControlButton(call, painterResource(R.drawable.ic_videocam_filled), R.string.icon_descr_video_off, toggleVideo)
           } else {
             Spacer(Modifier.size(48.dp))
-            ControlButton(call, Icons.Outlined.VideocamOff, R.string.icon_descr_video_on, toggleVideo)
+            ControlButton(call, painterResource(R.drawable.ic_videocam_off), R.string.icon_descr_video_on, toggleVideo)
           }
         }
       }
@@ -297,7 +295,7 @@ private fun ActiveCallOverlayLayout(
         Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
           Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconButton(onClick = dismiss) {
-              Icon(Icons.Filled.CallEnd, stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+              Icon(painterResource(R.drawable.ic_call_end_filled), stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
             }
           }
           Box(Modifier.padding(start = 32.dp)) {
@@ -315,7 +313,7 @@ private fun ActiveCallOverlayLayout(
 }
 
 @Composable
-private fun ControlButton(call: Call, icon: ImageVector, @StringRes iconText: Int, action: () -> Unit, enabled: Boolean = true) {
+private fun ControlButton(call: Call, icon: Painter, @StringRes iconText: Int, action: () -> Unit, enabled: Boolean = true) {
   if (call.hasMedia) {
     IconButton(onClick = action, enabled = enabled) {
       Icon(icon, stringResource(iconText), tint = if (enabled) Color(0xFFFFFFD8) else HighOrLowlight, modifier = Modifier.size(40.dp))
@@ -328,18 +326,18 @@ private fun ControlButton(call: Call, icon: ImageVector, @StringRes iconText: In
 @Composable
 private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
   if (call.audioEnabled) {
-    ControlButton(call, Icons.Outlined.Mic, R.string.icon_descr_audio_off, toggleAudio)
+    ControlButton(call, painterResource(R.drawable.ic_mic), R.string.icon_descr_audio_off, toggleAudio)
   } else {
-    ControlButton(call, Icons.Outlined.MicOff, R.string.icon_descr_audio_on, toggleAudio)
+    ControlButton(call, painterResource(R.drawable.ic_mic_off), R.string.icon_descr_audio_on, toggleAudio)
   }
 }
 
 @Composable
 private fun ToggleSoundButton(call: Call, enabled: Boolean, toggleSound: () -> Unit) {
   if (call.soundSpeaker) {
-    ControlButton(call, Icons.Outlined.VolumeUp, R.string.icon_descr_speaker_off, toggleSound, enabled)
+    ControlButton(call, painterResource(R.drawable.ic_volume_up), R.string.icon_descr_speaker_off, toggleSound, enabled)
   } else {
-    ControlButton(call, Icons.Outlined.VolumeDown, R.string.icon_descr_speaker_on, toggleSound, enabled)
+    ControlButton(call, painterResource(R.drawable.ic_volume_down), R.string.icon_descr_speaker_on, toggleSound, enabled)
   }
 }
 

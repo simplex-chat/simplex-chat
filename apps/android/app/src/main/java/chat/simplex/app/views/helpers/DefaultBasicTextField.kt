@@ -8,10 +8,6 @@ import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.material.TextFieldDefaults.indicatorLine
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.outlined.Error
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -19,11 +15,13 @@ import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.app.R
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.database.PassphraseStrength
 import chat.simplex.app.views.database.validKey
@@ -136,8 +134,8 @@ fun DefaultConfigurableTextField(
   var valid by remember { mutableStateOf(validKey(state.value.text)) }
   var showKey by remember { mutableStateOf(false) }
   val icon = if (valid) {
-    if (showKey) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
-  } else Icons.Outlined.Error
+    if (showKey) painterResource(R.drawable.ic_visibility_off_filled) else painterResource(R.drawable.ic_visibility_filled)
+  } else painterResource(R.drawable.ic_error)
   val iconColor = if (valid) {
     if (showPasswordStrength && state.value.text.isNotEmpty()) PassphraseStrength.check(state.value.text).color else HighOrLowlight
   } else Color.Red

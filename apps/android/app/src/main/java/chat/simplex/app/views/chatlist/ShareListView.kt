@@ -6,14 +6,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
@@ -86,7 +84,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
   if (chatModel.chats.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(Icons.Outlined.Search, stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -99,7 +97,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
         )
       }) {
         Icon(
-          Icons.Filled.Report,
+          painterResource(R.drawable.ic_report_filled),
           generalGetString(R.string.chat_is_stopped_indication),
           tint = Color.Red,
         )
@@ -123,7 +121,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
         )
         if (chatModel.incognito.value) {
           Icon(
-            Icons.Filled.TheaterComedy,
+            painterResource(R.drawable.ic_theater_comedy_filled),
             stringResource(R.string.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)

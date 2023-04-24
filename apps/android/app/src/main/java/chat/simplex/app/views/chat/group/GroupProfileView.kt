@@ -65,7 +65,7 @@ fun GroupProfileLayout(
   val dataUnchanged =
     displayName.value == groupProfile.displayName &&
         fullName.value == groupProfile.fullName &&
-        chosenImage.value == null
+        groupProfile.image == profileImage.value
   val closeWithAlert = {
     if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
       close()

@@ -4,15 +4,14 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,9 +59,9 @@ fun IncomingCallAlertLayout(
         ProfilePreview(profileOf = invitation.contact, size = 64.dp, color = Color.White)
       }
       Row(verticalAlignment = Alignment.CenterVertically) {
-        CallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
-        CallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
-        CallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
+        CallButton(stringResource(R.string.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
+        CallButton(stringResource(R.string.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
+        CallButton(stringResource(R.string.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
       }
     }
   }
@@ -70,21 +69,21 @@ fun IncomingCallAlertLayout(
 
 @Composable
 fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
-  @Composable fun CallIcon(icon: ImageVector, descr: String) = Icon(icon, descr, tint = SimplexGreen)
+  @Composable fun CallIcon(icon: Painter, descr: String) = Icon(icon, descr, tint = SimplexGreen)
   Row(verticalAlignment = Alignment.CenterVertically) {
     if (chatModel.users.size > 1) {
       ProfileImage(size = 32.dp, image = invitation.user.profile.image, color = MaterialTheme.colors.secondary)
       Spacer(Modifier.width(4.dp))
     }
-    if (invitation.callType.media == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, stringResource(R.string.icon_descr_video_call))
-    else CallIcon(Icons.Filled.Phone, stringResource(R.string.icon_descr_audio_call))
+    if (invitation.callType.media == CallMediaType.Video) CallIcon(painterResource(R.drawable.ic_videocam_filled), stringResource(R.string.icon_descr_video_call))
+    else CallIcon(painterResource(R.drawable.ic_call_filled), stringResource(R.string.icon_descr_audio_call))
     Spacer(Modifier.width(4.dp))
     Text(invitation.callTypeText)
   }
 }
 
 @Composable
-private fun CallButton(text: String, icon: ImageVector, color: Color, action: () -> Unit) {
+private fun CallButton(text: String, icon: Painter, color: Color, action: () -> Unit) {
   Surface(
     shape = RoundedCornerShape(10.dp),
     color = Color.Transparent
