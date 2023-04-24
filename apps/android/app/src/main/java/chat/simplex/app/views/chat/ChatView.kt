@@ -402,7 +402,7 @@ fun ChatInfoToolbar(
         showMenu.value = false
         startCall(CallMediaType.Audio)
       }) {
-        Icon(painterResource(R.drawable.ic_call), stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_call_500), stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
     }
     menuItems.add {
@@ -417,7 +417,7 @@ fun ChatInfoToolbar(
         showMenu.value = false
         addMembers(chat.chatInfo.groupInfo)
       }) {
-        Icon(painterResource(R.drawable.ic_person_add), stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_person_add_500), stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
       }
     }
   }

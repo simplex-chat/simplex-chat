@@ -180,7 +180,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
   if (chatModel.chats.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(painterResource(R.drawable.ic_search), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }

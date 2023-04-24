@@ -229,7 +229,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
     ) {
       Row(Modifier.weight(1f)) {
         Icon(
-          painterResource(R.drawable.ic_folder_open),
+          painterResource(R.drawable.ic_database),
           contentDescription = stringResource(R.string.database_passphrase_and_export),
           tint = if (encrypted) HighOrLowlight else WarningOrange,
         )

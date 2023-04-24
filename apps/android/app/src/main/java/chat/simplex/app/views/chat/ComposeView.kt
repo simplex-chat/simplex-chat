@@ -687,7 +687,7 @@ fun ComposeView(
     ) {
       IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
-          painterResource(R.drawable.ic_attach_file_filled),
+          painterResource(R.drawable.ic_attach_file_filled_500),
           contentDescription = stringResource(R.string.attach),
           tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else HighOrLowlight,
           modifier = Modifier

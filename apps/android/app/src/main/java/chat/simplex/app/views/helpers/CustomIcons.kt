@@ -1,8 +1,9 @@
 package chat.simplex.app.views.helpers
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.materialPath
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.*
 import androidx.compose.ui.unit.dp
@@ -165,7 +166,7 @@ val MoreVertFilled: ImageVector
     if (_moreVertFilled != null) {
       return _moreVertFilled!!
     }
-    _moreVertFilled = androidx.compose.material.icons.materialIcon(name = "Filled.MoreVert") {
+    _moreVertFilled = materialIcon(name = "Filled.MoreVert") {
       materialPath {
         moveTo(12.0f, 8.0f)
         curveToRelative(1.1f, 0.0f, 2.0f, -0.9f, 2.0f, -2.0f)
