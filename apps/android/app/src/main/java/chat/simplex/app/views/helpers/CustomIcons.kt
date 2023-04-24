@@ -1,5 +1,8 @@
 package chat.simplex.app.views.helpers
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.materialPath
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.*
 import androidx.compose.ui.unit.dp
@@ -50,12 +53,13 @@ private inline fun ImageVector.Builder.materialPath(
 internal const val MaterialIconDimension = 24f
 
 
-val AccountCircle: ImageVector
+val AccountCircleFilled: ImageVector
   get() {
-    if (_accountCircle != null) {
-      return _accountCircle!!
+    Icons.Filled.Bolt
+    if (_accountCircleFilled != null) {
+      return _accountCircleFilled!!
     }
-    _accountCircle = materialIcon(name = "Filled.AccountCircle") {
+    _accountCircleFilled = materialIcon(name = "Filled.AccountCircle") {
       materialPath {
         moveTo(12.0f, 2.0f)
         curveTo(6.48f, 2.0f, 2.0f, 6.48f, 2.0f, 12.0f)
@@ -77,17 +81,17 @@ val AccountCircle: ImageVector
         close()
       }
     }
-    return _accountCircle!!
+    return _accountCircleFilled!!
   }
 
-private var _accountCircle: ImageVector? = null
+private var _accountCircleFilled: ImageVector? = null
 
-val SupervisedUserCircle: ImageVector
+val SupervisedUserCircleFilled: ImageVector
   get() {
-    if (_supervisedUserCircle != null) {
-      return _supervisedUserCircle!!
+    if (_supervisedUserCircleFilled != null) {
+      return _supervisedUserCircleFilled!!
     }
-    _supervisedUserCircle = materialIcon(name = "Filled.SupervisedUserCircle") {
+    _supervisedUserCircleFilled = materialIcon(name = "Filled.SupervisedUserCircle") {
       materialPath {
         moveTo(11.99f, 2.0f)
         curveToRelative(-5.52f, 0.0f, -10.0f, 4.48f, -10.0f, 10.0f)
@@ -123,7 +127,35 @@ val SupervisedUserCircle: ImageVector
         close()
       }
     }
-    return _supervisedUserCircle!!
+    return _supervisedUserCircleFilled!!
   }
 
-private var _supervisedUserCircle: ImageVector? = null
+private var _supervisedUserCircleFilled: ImageVector? = null
+
+val BoltFilled: ImageVector
+  get() {
+    if (_boltFilled != null) {
+      return _boltFilled!!
+    }
+    _boltFilled = materialIcon(name = "Filled.Bolt") {
+      materialPath {
+        moveTo(11.0f, 21.0f)
+        horizontalLineToRelative(-1.0f)
+        lineToRelative(1.0f, -7.0f)
+        horizontalLineTo(7.5f)
+        curveToRelative(-0.58f, 0.0f, -0.57f, -0.32f, -0.38f, -0.66f)
+        curveToRelative(0.19f, -0.34f, 0.05f, -0.08f, 0.07f, -0.12f)
+        curveTo(8.48f, 10.94f, 10.42f, 7.54f, 13.0f, 3.0f)
+        horizontalLineToRelative(1.0f)
+        lineToRelative(-1.0f, 7.0f)
+        horizontalLineToRelative(3.5f)
+        curveToRelative(0.49f, 0.0f, 0.56f, 0.33f, 0.47f, 0.51f)
+        lineToRelative(-0.07f, 0.15f)
+        curveTo(12.96f, 17.55f, 11.0f, 21.0f, 11.0f, 21.0f)
+        close()
+      }
+    }
+    return _boltFilled!!
+  }
+
+private var _boltFilled: ImageVector? = null

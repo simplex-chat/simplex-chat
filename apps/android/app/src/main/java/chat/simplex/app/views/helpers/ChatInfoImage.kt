@@ -48,8 +48,8 @@ fun ProfileImage(
   Box(Modifier.size(size)) {
     if (image == null) {
       val iconToReplace = when (icon) {
-        R.drawable.ic_account_circle_filled -> AccountCircle
-        R.drawable.ic_supervised_user_circle_filled -> SupervisedUserCircle
+        R.drawable.ic_account_circle_filled -> AccountCircleFilled
+        R.drawable.ic_supervised_user_circle_filled -> SupervisedUserCircleFilled
         else -> null
       }
       if (iconToReplace != null) {

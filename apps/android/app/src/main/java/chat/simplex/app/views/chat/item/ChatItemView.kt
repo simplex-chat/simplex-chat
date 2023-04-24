@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -315,6 +316,26 @@ fun ModerateItemAction(
 
 @Composable
 fun ItemAction(text: String, icon: Painter, onClick: () -> Unit, color: Color = Color.Unspecified) {
+  val finalColor = if (color == Color.Unspecified) {
+    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+  } else color
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Text(
+        text,
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1F)
+          .padding(end = 15.dp),
+        color = finalColor
+      )
+      Icon(icon, text, tint = finalColor)
+    }
+  }
+}
+
+@Composable
+fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
   val finalColor = if (color == Color.Unspecified) {
     if (isInDarkTheme()) MenuTextColorDark else Color.Black
   } else color

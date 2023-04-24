@@ -161,7 +161,7 @@ fun SendMsgView(
             ) {
               ItemAction(
                 generalGetString(R.string.send_live_message),
-                painterResource(R.drawable.ic_bolt_filled),
+                BoltFilled,
                 onClick = {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
                   showDropdown.value = false
@@ -495,7 +495,7 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
     contentAlignment = Alignment.Center
   ) {
     Icon(
-      painterResource(R.drawable.ic_bolt_filled),
+      BoltFilled,
       stringResource(R.string.icon_descr_send_message),
       tint = if (enabled) MaterialTheme.colors.primary else HighOrLowlight,
       modifier = Modifier
