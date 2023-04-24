@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,21 +27,6 @@ fun SimpleButton(text: String, icon: Painter,
       modifier = Modifier.padding(end = 8.dp)
     )
     Text(text, style = MaterialTheme.typography.caption, color = color)
-  }
-}
-
-@Composable
-fun SimpleButtonDecorated(text: String, icon: ImageVector,
-  color: Color = MaterialTheme.colors.primary,
-  textDecoration: TextDecoration = TextDecoration.Underline,
-  fontWeight: FontWeight = FontWeight.Normal,
-  click: () -> Unit) {
-  SimpleButtonFrame(click) {
-    Icon(
-      icon, text, tint = color,
-      modifier = Modifier.padding(end = 8.dp)
-    )
-    Text(text, style = MaterialTheme.typography.caption, fontWeight = fontWeight, color = color, textDecoration = textDecoration)
   }
 }
 
