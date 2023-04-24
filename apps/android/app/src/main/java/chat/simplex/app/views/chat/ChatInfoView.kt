@@ -395,7 +395,7 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
 @Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_settings_backup_restore), // LALAL
+    painterResource(R.drawable.ic_settings_backup_restore),
     stringResource(R.string.clear_chat_button),
     click = onClick,
     textColor = WarningOrange,

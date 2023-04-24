@@ -272,7 +272,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_chat), // LALAL
+    painterResource(R.drawable.ic_chat),
     stringResource(R.string.button_send_direct_message),
     click = onClick,
     textColor = MaterialTheme.colors.primary,

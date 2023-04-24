@@ -1520,7 +1520,7 @@ data class CIMeta (
     when (itemStatus) {
       is CIStatus.SndSent -> R.drawable.ic_check_filled to metaColor
       is CIStatus.SndErrorAuth -> R.drawable.ic_close to Color.Red
-      is CIStatus.SndError -> R.drawable.ic_warning_filled to WarningYellow // LALAL
+      is CIStatus.SndError -> R.drawable.ic_warning_filled to WarningYellow
       is CIStatus.RcvNew -> R.drawable.ic_circle_filled to primaryColor
       else -> null
     }

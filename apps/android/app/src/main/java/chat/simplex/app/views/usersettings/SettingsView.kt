@@ -160,7 +160,7 @@ fun SettingsLayout(
       SectionDividerSpaced()
 
       SectionView(stringResource(R.string.settings_section_title_help)) {
-        SettingsActionItem(painterResource(R.drawable.ic_help)/*LALAL*/, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_help), stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_add), stringResource(R.string.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_info), stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_tag), stringResource(R.string.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)

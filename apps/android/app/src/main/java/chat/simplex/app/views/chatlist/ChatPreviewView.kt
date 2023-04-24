@@ -82,7 +82,7 @@ fun ChatPreviewView(
   fun messageDraft(draft: ComposeState): Pair<AnnotatedString, Map<String, InlineTextContent>> {
     fun attachment(): Pair<Int, String?>? =
       when (draft.preview) {
-        is ComposePreview.FilePreview -> R.drawable.ic_draft_filled to draft.preview.fileName // LALAL
+        is ComposePreview.FilePreview -> R.drawable.ic_draft_filled to draft.preview.fileName
         is ComposePreview.MediaPreview -> R.drawable.ic_image to null
         is ComposePreview.VoicePreview -> R.drawable.ic_play_arrow_filled to durationText(draft.preview.durationMs / 1000)
         else -> null

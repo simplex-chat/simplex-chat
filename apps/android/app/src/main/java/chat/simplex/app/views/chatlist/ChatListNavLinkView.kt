@@ -218,7 +218,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.clear_chat_menu_action),
-    painterResource(R.drawable.ic_settings_backup_restore), // LALAL
+    painterResource(R.drawable.ic_settings_backup_restore),
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false

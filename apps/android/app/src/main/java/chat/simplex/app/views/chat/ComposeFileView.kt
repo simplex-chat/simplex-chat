@@ -23,7 +23,7 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
-      painterResource(R.drawable.ic_draft_filled), // LALAL
+      painterResource(R.drawable.ic_draft_filled),
       stringResource(R.string.icon_descr_file),
       Modifier
         .padding(start = 4.dp, end = 2.dp)
