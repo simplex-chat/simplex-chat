@@ -8,6 +8,7 @@ import SectionView
 import TextIconSpaced
 import android.content.Context
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -76,7 +77,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
           }
         }
       },
-      withAuth = { block ->
+      withAuth = { title, desc, block ->
         if (!requireAuth.value) {
           block()
         } else {
@@ -85,10 +86,12 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
               if (success) {
                 close()
                 block()
+              } else if (SimplexApp.context.chatModel.controller.appPrefs.laMode.get() == LAMode.PASSCODE) {
+                close()
               }
             }
             LaunchedEffect(Unit) {
-              runAuth(context, onFinishAuth)
+              runAuth(title, desc, context, onFinishAuth)
             }
             Box(
               Modifier.fillMaxSize(),
@@ -98,7 +101,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
                 stringResource(R.string.auth_unlock),
                 icon = painterResource(R.drawable.ic_lock),
                 click = {
-                  runAuth(context, onFinishAuth)
+                  runAuth(title, desc, context, onFinishAuth)
                 }
               )
             }
@@ -126,7 +129,7 @@ fun SettingsLayout(
   showSettingsModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
-  withAuth: (block: () -> Unit) -> Unit
+  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
   Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).background(MaterialTheme.colors.background)) {
@@ -142,7 +145,7 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         val profileHidden = rememberSaveable { mutableStateOf(false) }
-        SettingsActionItem(painterResource(R.drawable.ic_manage_accounts), stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_manage_accounts), stringResource(R.string.your_chat_profiles), { withAuth(generalGetString(R.string.auth_open_chat_profiles), generalGetString(R.string.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SettingsActionItem(painterResource(R.drawable.ic_qr_code), stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped, extraPadding = true)
         ChatPreferencesItem(showCustomModal, stopped = stopped)
@@ -473,10 +476,10 @@ fun PreferenceToggleWithIcon(
   }
 }
 
-private fun runAuth(context: Context, onFinish: (success: Boolean) -> Unit) {
+private fun runAuth(title: String, desc: String, context: Context, onFinish: (success: Boolean) -> Unit) {
   authenticate(
-    generalGetString(R.string.auth_open_chat_console),
-    generalGetString(R.string.auth_log_in_using_credential),
+    title,
+    desc,
     context as FragmentActivity,
     completed = { laResult ->
       onFinish(laResult == LAResult.Success || laResult is LAResult.Unavailable)
@@ -506,7 +509,7 @@ fun PreviewSettingsLayout() {
       showSettingsModalWithSearch = { },
       showCustomModal = { {} },
       showVersion = {},
-      withAuth = {},
+      withAuth = { _, _, _ -> },
     )
   }
 }
