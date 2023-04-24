@@ -45,9 +45,9 @@
     <string name="bold">negrita</string>
     <string name="callstatus_accepted">llamada aceptada</string>
     <string name="accept">Aceptar</string>
-    <string name="audio_call_no_encryption">llamada de audio (sin cifrado e2e)</string>
-    <string name="icon_descr_audio_call">llamada de audio</string>
-    <string name="settings_audio_video_calls">Llamadas y Videollamadas</string>
+    <string name="audio_call_no_encryption">llamada (sin cifrar)</string>
+    <string name="icon_descr_audio_call">llamada</string>
+    <string name="settings_audio_video_calls">Llamadas y videollamadas</string>
     <string name="icon_descr_audio_off">Audio desactivado</string>
     <string name="icon_descr_audio_on">Audio activado</string>
     <string name="integrity_msg_bad_id">ID de mensaje erróneo</string>
@@ -103,7 +103,7 @@
     <string name="disappearing_prohibited_in_this_chat">Los mensajes temporales no están permitidos en este chat.</string>
     <string name="disappearing_messages_are_prohibited">Los mensajes temporales no están permitidos en este grupo.</string>
     <string name="display_name_cannot_contain_whitespace">El nombre mostrado no puede contener espacios en blanco.</string>
-    <string name="encrypted_video_call">Videollamada con cifrado e2e</string>
+    <string name="encrypted_video_call">Videollamada con cifrado de extremo a extremo</string>
     <string name="display_name_connection_established">conexión establecida</string>
     <string name="simplex_link_mode_description">Descripción</string>
     <string name="smp_server_test_connect">Conectar</string>
@@ -113,8 +113,8 @@
     <string name="maximum_supported_file_size">El tamaño máximo de archivo admitido es <xliff:g id="maxFileSize">%1$s</xliff:g></string>
     <string name="clear_verification">Eliminar verificación</string>
     <string name="create_profile">Crear perfil</string>
-    <string name="encrypted_audio_call">llamada con cifrado e2e</string>
-    <string name="status_e2e_encrypted">Cifrado e2e</string>
+    <string name="encrypted_audio_call">Llamada con cifrado de extremo a extremo</string>
+    <string name="status_e2e_encrypted">cifrado de extremo a extremo</string>
     <string name="integrity_msg_duplicate">mensaje duplicado</string>
     <string name="settings_section_title_develop">DESARROLLO</string>
     <string name="settings_developer_tools">Herramientas desarrollo</string>
@@ -147,7 +147,7 @@
     <string name="connect_via_link_or_qr">Conectar mediante enlace / Código QR</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No puede deshacerse!</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
-    <string name="status_contact_has_e2e_encryption">El contacto dispone de cifrado e2e</string>
+    <string name="status_contact_has_e2e_encryption">el contacto dispone de cifrado de extremo a extremo</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
     <string name="notification_preview_mode_contact">Nombre del contacto</string>
     <string name="copy_verb">Copiar</string>
@@ -244,7 +244,7 @@
     <string name="contact_connection_pending">conectando…</string>
     <string name="group_connection_pending">conectando…</string>
     <string name="icon_descr_context">Icono contextual</string>
-    <string name="status_contact_has_no_e2e_encryption">El contacto no dispone de cifrado e2e</string>
+    <string name="status_contact_has_no_e2e_encryption">el contacto no dispone de cifrado</string>
     <string name="icon_descr_call_connecting">Conectando llamada</string>
     <string name="create_secret_group_title">Crear grupo secreto</string>
     <string name="icon_descr_email">Email</string>
@@ -265,7 +265,7 @@
     <string name="v4_4_verify_connection_security_desc">Compara los códigos de seguridad con tus contactos</string>
     <string name="choose_file">Archivo</string>
     <string name="clear_verb">Limpiar</string>
-    <string name="clear_chat_button">Limpiar chat</string>
+    <string name="clear_chat_button">Vaciar chat</string>
     <string name="configure_ICE_servers">Configurar servidores ICE</string>
     <string name="callstatus_ended">Llamada terminada <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="callstatus_error">error en la llamada</string>
@@ -278,7 +278,7 @@
     <string name="invite_prohibited">¡No se puede invitar el contacto!</string>
     <string name="cannot_receive_file">No se puede recibir el archivo</string>
     <string name="database_initialization_error_title">No se puede iniciar la base de datos</string>
-    <string name="clear_chat_question">Limpiar chat\?</string>
+    <string name="clear_chat_question">¿Vaciar chat\?</string>
     <string name="network_session_mode_user">Perfil de Chat</string>
     <string name="chat_is_stopped_indication">Chat está detenido</string>
     <string name="rcv_group_event_changed_member_role">rol de %s cambiado a %s</string>
@@ -453,7 +453,7 @@
     <string name="rcv_group_event_member_added">invitado <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="incognito_info_allows">Permite tener varias conexiones anónimas sin datos compartidos entre estas dentro del mismo perfil.</string>
     <string name="invite_to_group_button">Invitar al grupo</string>
-    <string name="to_verify_compare">Para comprobar el cifrado de extremo a extremo con su contacto compare (o escanee) el código en sus dispositivos.</string>
+    <string name="to_verify_compare">Para comprobar el cifrado de extremo a extremo con tu contacto compara (o escanea) el código en tus dispositivos.</string>
     <string name="database_is_not_encrypted">La base de datos no está cifrada. Escribe una contraseña para protegerla.</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor SMP tienen el formato correcto, están separadas por líneas y no están duplicadas.</string>
     <string name="icon_descr_instant_notifications">Notificación instantánea</string>
@@ -543,8 +543,8 @@
     <string name="network_use_onion_hosts_prefer_desc">Se usarán hosts .onion cuando estén disponibles.</string>
     <string name="italic">cursiva</string>
     <string name="incoming_audio_call">Llamada entrante</string>
-    <string name="video_call_no_encryption">videollamada (sin cifrado e2e)</string>
-    <string name="status_no_e2e_encryption">sin cifrado e2e</string>
+    <string name="video_call_no_encryption">videollamada (sin cifrar)</string>
+    <string name="status_no_e2e_encryption">sin cifrar</string>
     <string name="import_database">Importar base de datos</string>
     <string name="settings_section_title_messages">MENSAJES Y ARCHIVOS</string>
     <string name="import_database_question">¿Importar base de datos\?</string>
@@ -634,7 +634,7 @@
     <string name="send_link_previews">Enviar previsualizacion de enlaces</string>
     <string name="send_live_message_desc">Envía un mensaje en vivo: se actualizará para el(los) destinatario(s) a medida que se escribe</string>
     <string name="icon_descr_sent_msg_status_send_failed">error de envío</string>
-    <string name="sending_via">Enviando mediante</string>
+    <string name="sending_via">Envías vía</string>
     <string name="contact_developers">Por favor, actualiza la aplicación y ponte en contacto con los desarrolladores.</string>
     <string name="sender_cancelled_file_transfer">El remitente ha cancelado la transferencia de archivos.</string>
     <string name="smp_server_test_secure_queue">Cola segura</string>
@@ -681,7 +681,7 @@
     <string name="save_archive">Guardar archivo</string>
     <string name="restore_database_alert_desc">Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</string>
     <string name="rcv_group_event_user_deleted">te ha eliminado</string>
-    <string name="receiving_via">Recibiendo mediante</string>
+    <string name="receiving_via">Recibes vía</string>
     <string name="network_option_protocol_timeout">Tiempo de espera del protocolo</string>
     <string name="network_option_seconds_label">seg</string>
     <string name="users_delete_with_connections">Perfil y conexiones de servidor</string>
@@ -749,7 +749,7 @@
     <string name="ntf_channel_messages">Mensajes de chat SimpleX</string>
     <string name="icon_descr_received_msg_status_unread">no leído</string>
     <string name="text_field_set_contact_placeholder">Escribe un nombre para el contacto…</string>
-    <string name="switch_receiving_address_question">¿Cambiar dirección de recepción\?</string>
+    <string name="switch_receiving_address_question">¿Cambiar servidor de recepción\?</string>
     <string name="use_camera_button">Cámara</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">¡El contacto con el que has compartido este enlace NO podrá conectarse!</string>
     <string name="show_QR_code">Mostrar código QR</string>
@@ -847,7 +847,7 @@
     <string name="database_backup_can_be_restored">El intento de cambiar la contraseña de la base de datos no se ha completado.</string>
     <string name="chat_help_tap_button">Pulsa el botón</string>
     <string name="to_start_a_new_chat_help_header">Para iniciar un chat nuevo</string>
-    <string name="switch_receiving_address">Cambiar dirección de recepción</string>
+    <string name="switch_receiving_address">Cambiar servidor de recepción</string>
     <string name="group_is_decentralized">El grupo está totalmente descentralizado: sólo es visible para los miembros.</string>
     <string name="to_connect_via_link_title">Para conectarte mediante enlace</string>
     <string name="smp_servers_test_failed">¡Error en prueba del servidor!</string>
@@ -960,7 +960,7 @@
     <string name="contact_sent_large_file">El contacto ha enviado un archivo mayor al máximo admitido (<xliff:g id="maxFileSize">%1$s</xliff:g> ).</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> mensaje(s) omitido(s)</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Dejarás de recibir mensajes de este grupo. El historial del chat se conservará.</string>
-    <string name="view_security_code">Ver código de seguridad</string>
+    <string name="view_security_code">Mostrar código de seguridad</string>
     <string name="you_need_to_allow_to_send_voice">Para poder enviar mensajes de voz antes debes permitir que tu contacto pueda enviarlos.</string>
     <string name="voice_messages_prohibited">¡Mensajes de voz prohibidos!</string>
     <string name="group_main_profile_sent">Tu perfil Chat será enviado a los miembros del grupo</string>
@@ -1032,7 +1032,7 @@
     <string name="confirm_database_upgrades">Confirmar actualizaciones de la bases de datos</string>
     <string name="mtr_error_no_down_migration">la versión de la base de datos es más reciente que la aplicación, pero no hay migración hacia versión anterior para: %s</string>
     <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
-    <string name="developer_options">la ID de la base de datos y las opciónes de aislamiento de transporte.</string>
+    <string name="developer_options">IDs de la base de datos y opciónes de aislamiento de transporte.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">El archivo se recibirá cuando tu contacto termine de subirlo.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">La imagen se recibirá cuando tu contacto termine de subirla.</string>
     <string name="show_developer_options">Mostrar opciones de desarrollador</string>
@@ -1126,14 +1126,14 @@
     <string name="stop_snd_file__title">¿Dejar de enviar el archivo\?</string>
     <string name="allow_calls_only_if">Se permiten llamadas sólo si tu contacto también las permite.</string>
     <string name="allow_your_contacts_to_call">Permites que tus contactos puedan llamarte.</string>
-    <string name="audio_video_calls">Llamadas/Videollamadas</string>
-    <string name="calls_prohibited_with_this_contact">Las llamadas/videollamadas no están permitidas.</string>
+    <string name="audio_video_calls">Llamadas y videollamadas</string>
+    <string name="calls_prohibited_with_this_contact">Las llamadas y videollamadas no están permitidas.</string>
     <string name="available_in_v51">"
 \nDisponible en v5.1"</string>
     <string name="both_you_and_your_contact_can_make_calls">Tanto tú como tu contacto podéis realizar llamadas.</string>
     <string name="only_you_can_make_calls">Solo tú puedes realizar llamadas.</string>
     <string name="only_your_contact_can_make_calls">Sólo tu contacto puede realizar llamadas.</string>
-    <string name="prohibit_calls">Prohibir las llamadas/videollamadas.</string>
+    <string name="prohibit_calls">Prohibir llamadas y videollamadas.</string>
     <string name="v5_0_app_passcode">Código de acceso a la aplicación</string>
     <string name="v5_0_polish_interface">Interfaz polaco</string>
     <string name="v5_0_app_passcode_descr">Úsalo en lugar de la autenticación del sistema.</string>
