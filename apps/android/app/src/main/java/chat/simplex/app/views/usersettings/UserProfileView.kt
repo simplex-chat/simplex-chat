@@ -86,7 +86,7 @@ fun UserProfileLayout(
       val dataUnchanged =
         displayName.value == profile.displayName &&
             fullName.value == profile.fullName &&
-            chosenImage.value == null
+            profile.image == profileImage.value
 
       val closeWithAlert = {
         if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
