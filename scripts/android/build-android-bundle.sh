@@ -1,15 +1,18 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Safety measures
+set -euo pipefail
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
+
 [ -n "$1" ] || exit 1
-set -eu
 
 tmp=$(mktemp -d -t)
-libsim=$(cat "$1" | grep libsimplex)
-libsup=$(cat "$1" | grep libsupport)
+libsim=$(<<< "$1" grep libsimplex)
+libsup=$(<<< "$1" grep libsupport)
 commit="${2:-nix-android}"
 
 # Clone simplex
-git clone https://github.com/simplex-chat/simplex-chat "$tmp/simplex-chat"
+git clone --depth 1 https://github.com/simplex-chat/simplex-chat "$tmp/simplex-chat"
 
 # Switch to nix-android branch
 git -C "$tmp/simplex-chat" checkout "$commit"
