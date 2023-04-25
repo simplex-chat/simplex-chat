@@ -21,7 +21,7 @@ import chat.simplex.app.views.helpers.*
 fun DeveloperView(
   m: ChatModel,
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-  withAuth: (block: () -> Unit) -> Unit
+  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
   Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
     val uriHandler = LocalUriHandler.current
@@ -30,7 +30,7 @@ fun DeveloperView(
     val devTools = remember { developerTools.state }
     SectionView() {
       InstallTerminalAppItem(uriHandler)
-      ChatConsoleItem { withAuth(showCustomModal { it, close -> TerminalView(it, close) }) }
+      ChatConsoleItem { withAuth(generalGetString(R.string.auth_open_chat_console), generalGetString(R.string.auth_log_in_using_credential), showCustomModal { it, close -> TerminalView(it, close) })}
       SettingsPreferenceItem(painterResource(R.drawable.ic_drive_folder_upload), stringResource(R.string.confirm_database_upgrades), m.controller.appPrefs.confirmDBUpgrades)
       SettingsPreferenceItem(painterResource(R.drawable.ic_code), stringResource(R.string.show_developer_options), developerTools)
     }
