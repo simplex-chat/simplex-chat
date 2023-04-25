@@ -81,17 +81,20 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
         if (!requireAuth.value) {
           block()
         } else {
+          var autoShow = true
           ModalManager.shared.showModalCloseable { close ->
             val onFinishAuth = { success: Boolean ->
               if (success) {
                 close()
                 block()
-              } else if (SimplexApp.context.chatModel.controller.appPrefs.laMode.get() == LAMode.PASSCODE) {
-                close()
               }
             }
+
             LaunchedEffect(Unit) {
-              runAuth(title, desc, context, onFinishAuth)
+              if (autoShow) {
+                autoShow = false
+                runAuth(title, desc, context, onFinishAuth)
+              }
             }
             Box(
               Modifier.fillMaxSize(),
