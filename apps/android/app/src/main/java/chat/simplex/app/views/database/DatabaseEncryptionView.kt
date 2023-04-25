@@ -244,7 +244,7 @@ fun encryptDatabaseSavedAlert(onConfirm: () -> Unit) {
     text = generalGetString(R.string.database_will_be_encrypted_and_passphrase_stored) + "\n" + storeSecurelySaved(),
     confirmText = generalGetString(R.string.encrypt_database),
     onConfirm = onConfirm,
-    destructive = false,
+    destructive = true,
   )
 }
 

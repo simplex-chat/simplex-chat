@@ -466,7 +466,8 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
           onSuccess()
         }
       }
-    }
+    },
+    destructive = true,
   )
 }
 
@@ -484,6 +485,7 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
         }
       }
     },
+    destructive = true,
     dismissText = generalGetString(R.string.cancel_verb),
   )
 }

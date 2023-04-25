@@ -633,7 +633,7 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
         ConnectionLinkType.INVITATION -> generalGetString(R.string.connect_via_invitation_link)
         ConnectionLinkType.GROUP -> generalGetString(R.string.connect_via_group_link)
       }
-      AlertManager.shared.showAlertMsg(
+      AlertManager.shared.showAlertDialog(
         title = title,
         text = if (linkType == ConnectionLinkType.GROUP)
           generalGetString(R.string.you_will_join_group)

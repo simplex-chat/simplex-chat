@@ -66,7 +66,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
       }
     },
     deleteLink = {
-      AlertManager.shared.showAlertMsg(
+      AlertManager.shared.showAlertDialog(
         title = generalGetString(R.string.delete_link_question),
         text = generalGetString(R.string.all_group_members_will_remain_connected),
         confirmText = generalGetString(R.string.delete_verb),
@@ -78,7 +78,8 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
               onGroupLinkUpdated(null to null)
             }
           }
-        }
+        },
+        destructive = true,
       )
     }
   )

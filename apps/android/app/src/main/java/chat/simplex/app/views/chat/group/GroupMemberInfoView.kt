@@ -116,7 +116,7 @@ fun GroupMemberInfoView(
 }
 
 fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.button_remove_member),
     text = generalGetString(R.string.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(R.string.remove_member_confirmation),
@@ -128,7 +128,8 @@ fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: Cha
         }
         close?.invoke()
       }
-    }
+    },
+    destructive = true,
   )
 }
 

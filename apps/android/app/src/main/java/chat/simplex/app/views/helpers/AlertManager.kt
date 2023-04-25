@@ -150,7 +150,7 @@ class AlertManager {
 
   fun showAlertMsg(
     title: String, text: String? = null,
-    confirmText: String = generalGetString(R.string.ok), onConfirm: (() -> Unit)? = null
+    confirmText: String = generalGetString(R.string.ok)
   ) {
     showAlert {
       AlertDialog(
@@ -163,7 +163,6 @@ class AlertManager {
             horizontalArrangement = Arrangement.Center
           ) {
             TextButton(onClick = {
-              onConfirm?.invoke()
               hideAlert()
             }) { Text(confirmText, color = Color.Unspecified) }
           }
@@ -173,13 +172,11 @@ class AlertManager {
       )
     }
   }
-
   fun showAlertMsg(
     title: Int,
     text: Int? = null,
     confirmText: Int = R.string.ok,
-    onConfirm: (() -> Unit)? = null
-  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), onConfirm)
+  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText))
 
   @Composable
   fun showInView() {

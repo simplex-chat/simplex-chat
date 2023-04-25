@@ -380,13 +380,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
         TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
-        }) { Text(stringResource(R.string.for_me_only)) }
+        }) { Text(stringResource(R.string.for_me_only), color = MaterialTheme.colors.error) }
         if (chatItem.meta.editable) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(R.string.for_everybody)) }
+          }) { Text(stringResource(R.string.for_everybody), color = MaterialTheme.colors.error) }
         }
       }
     }
