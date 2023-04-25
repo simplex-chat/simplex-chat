@@ -112,7 +112,7 @@ Jeśli już korzystasz z SimpleX Chat lub planujesz korzystać z niego w przysz�
 Możliwe jest przekazanie darowizny poprzez:
 
 - [GitHub](https://github.com/sponsors/simplex-chat): nie pobiera prowizji od nas.
-- OpenCollective](https://opencollective.com/simplex-chat): przyjmuje również darowizny w kryptowalutach, ale pobiera prowizję.
+- [OpenCollective](https://opencollective.com/simplex-chat): przyjmuje również darowizny w kryptowalutach, ale pobiera prowizję.
 - Portfel Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 
 Dziękuję,
