@@ -1,6 +1,7 @@
-#!/bin/bash
-
-set -eu
+#!/usr/bin/env bash
+set -euo pipefail
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
 
 APP_NAME="simplex-chat"
 BIN_DIR="$HOME/.local/bin"
@@ -17,9 +18,9 @@ else
   echo "downloading the latest version of SimpleX Chat ..."
 fi
 
-if [ $PLATFORM == "Darwin" ]; then
+if [ "$PLATFORM" == "Darwin" ]; then
   PLATFORM="macos-x86-64"
-elif [ $PLATFORM == "Linux" ]; then
+elif [ "$PLATFORM" == "Linux" ]; then
   PLATFORM="ubuntu-20_04-x86-64"
 else
   echo "Scripted installation on your platform is not supported."
@@ -43,12 +44,12 @@ if [[ -z $binary ]]; then
   agent_db="$HOME/.simplex/simplex.agent.db"
   if [[ \
     -f "$agent_db" && \
-    $(echo "select * from migrations;" | sqlite3 $agent_db | grep 20210101_initial) \
+    $(echo "select * from migrations;" | sqlite3 "$agent_db" | grep 20210101_initial) \
   ]]; then
     echo "Warning: found SimpleX Chat database, the current version is not backwards compatible."
     echo "If you continue, the current version will be installed as $APP_NAME with a clean database, the old database will be preserved."
     while true; do
-      read -p "Please choose to (a)bort or (c)ontinue: " yn < /dev/tty
+      read -r -p "Please choose to (a)bort or (c)ontinue: " yn < /dev/tty
       case $yn in
           [Aa]* ) exit 1 ;;
           [Cc]* ) break ;;
@@ -61,12 +62,12 @@ elif [[ ! $($binary -h | grep v1) ]]; then
   echo "Warning: found a previous version of SimpleX Chat, the current version is not backwards compatible."
   echo "If you continue, it will be renamed to $APP_NAME-v0, and the new version will be installed as $APP_NAME with a clean database."
   while true; do
-    read -p "Please choose (a)bort or (c)ontinue: " yn < /dev/tty
+    read -r -p "Please choose (a)bort or (c)ontinue: " yn < /dev/tty
     case $yn in
         [Aa]* ) exit 1 ;;
         [Cc]* )
           binary_v0="$binary-v0"
-          mv ${binary} ${binary_v0}
+          mv "${binary}" "${binary_v0}"
           echo "Renamed $binary into $binary_v0"
           break
           ;;
@@ -76,18 +77,18 @@ elif [[ ! $($binary -h | grep v1) ]]; then
 fi
 # Prepare to upgrade from v0 to v1 /
 
-[[ ! -d $BIN_DIR ]] && mkdir -p $BIN_DIR
+[[ ! -d $BIN_DIR ]] && mkdir -p "$BIN_DIR"
 
 if [ -n "$(command -v curl)" ]; then
-  curl -L -o $BIN_PATH "https://github.com/$APP_NAME/$APP_NAME/releases/$DOWNLOAD/$APP_NAME-$PLATFORM"
+  curl -L -o "$BIN_PATH" "https://github.com/$APP_NAME/$APP_NAME/releases/$DOWNLOAD/$APP_NAME-$PLATFORM"
 elif [ -n "$(command -v wget)" ]; then
-  wget -O $BIN_PATH "https://github.com/$APP_NAME/$APP_NAME/releases/$DOWNLOAD/$APP_NAME-$PLATFORM"
+  wget -O "$BIN_PATH" "https://github.com/$APP_NAME/$APP_NAME/releases/$DOWNLOAD/$APP_NAME-$PLATFORM"
 else
   echo "Cannot download $APP_NAME - please install curl or wget"
   exit 1
 fi
 
-chmod +x $BIN_PATH
+chmod +x "$BIN_PATH"
 
 echo "$APP_NAME installed successfully!"
 
@@ -102,7 +103,7 @@ if [ -z "$(command -v $APP_NAME)" ]; then
     echo "Or you can run $APP_NAME via full path: $BIN_PATH"
   fi
   if [ -n "$SHELL_FILE" ]; then
-    echo "export PATH=\$PATH:$BIN_DIR" >> $SHELL_FILE
+    echo "export PATH=\$PATH:$BIN_DIR" >> "$SHELL_FILE"
     echo "Source your $SHELL_FILE or open a new shell and type $APP_NAME to run it"
   fi
 else
