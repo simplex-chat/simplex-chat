@@ -1,6 +1,8 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Safety measures
-set -eu
+set -euo pipefail
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
 
 u="$USER"
 tmp=$(mktemp -d -t)
@@ -111,7 +113,7 @@ main() {
       *) printf "Flag '-%s' doesn't exist.\n" "$OPTARG"; exit 1 ;;
     esac
   done
-  shift $(( $OPTIND - 1 ))
+  shift $(( OPTIND - 1 ))
   commit="$1"; shift 1
   checks
   git_setup
