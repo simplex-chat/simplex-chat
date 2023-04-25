@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import SectionBottomSpacer
 import android.content.ClipboardManager
 import android.content.res.Configuration
 import android.net.Uri
@@ -8,11 +9,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -93,21 +93,22 @@ fun PasteToConnectLayout(
       horizontalArrangement = Arrangement.Start,
     ) {
       if (connectionLink.value == "") {
-        SimpleButton(text = stringResource(R.string.paste_button), icon = Icons.Outlined.ContentPaste) {
+        SimpleButton(text = stringResource(R.string.paste_button), icon = painterResource(R.drawable.ic_content_paste)) {
           pasteFromClipboard()
         }
       } else {
-        SimpleButton(text = stringResource(R.string.clear_verb), icon = Icons.Outlined.Clear) {
+        SimpleButton(text = stringResource(R.string.clear_verb), icon = painterResource(R.drawable.ic_close)) {
           connectionLink.value = ""
         }
       }
       Spacer(Modifier.weight(1f).fillMaxWidth())
-      SimpleButton(text = stringResource(R.string.connect_button), icon = Icons.Outlined.Link) {
+      SimpleButton(text = stringResource(R.string.connect_button), icon = painterResource(R.drawable.ic_link)) {
         connectViaLink(connectionLink.value)
       }
     }
 
     Text(annotatedStringResource(R.string.you_can_also_connect_by_clicking_the_link))
+    SectionBottomSpacer()
   }
 }
 

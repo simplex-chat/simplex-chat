@@ -1037,8 +1037,6 @@
     <string name="file_will_be_received_when_contact_completes_uploading">檔案將會在你的聯絡人完成上傳後接收。</string>
     <string name="settings_section_title_experimenta">實驗性</string>
     <string name="upgrade_and_open_chat">升級和開始對話</string>
-    <string name="cancel_file__question">取消傳輸檔案？</string>
-    <string name="file_transfer_will_be_cancelled_warning">檔案傳遞將會取消。若是在傳遞檔案中，亦會暫停。</string>
     <string name="show_developer_options">顯示開發者選項</string>
     <string name="delete_profile">刪除資料</string>
     <string name="unhide_chat_profile">取消隱藏聊天資料</string>

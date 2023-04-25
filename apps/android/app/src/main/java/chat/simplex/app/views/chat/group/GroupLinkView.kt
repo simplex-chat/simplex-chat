@@ -1,19 +1,18 @@
 package chat.simplex.app.views.chat.group
 
-import SectionItemView
+import SectionBottomSpacer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -101,10 +100,7 @@ fun GroupLinkLayout(
 ) {
   Column(
     Modifier
-      .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
-    horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.Top
+      .verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.group_link))
     Text(
@@ -118,7 +114,7 @@ fun GroupLinkLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (groupLink == null) {
-        SimpleButton(stringResource(R.string.button_create_group_link), icon = Icons.Outlined.AddLink, disabled = creatingLink, click = createLink)
+        SimpleButton(stringResource(R.string.button_create_group_link), icon = painterResource(R.drawable.ic_add_link), disabled = creatingLink, click = createLink)
       } else {
         RoleSelectionRow(groupInfo, groupLinkMemberRole)
         var initialLaunch by remember { mutableStateOf(true) }
@@ -128,7 +124,7 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        QRCode(groupLink, Modifier.aspectRatio(1f).padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING))
+        QRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
@@ -136,18 +132,19 @@ fun GroupLinkLayout(
         ) {
           SimpleButton(
             stringResource(R.string.share_link),
-            icon = Icons.Outlined.Share,
+            icon = painterResource(R.drawable.ic_share),
             click = share
           )
           SimpleButton(
             stringResource(R.string.delete_link),
-            icon = Icons.Outlined.Delete,
+            icon = painterResource(R.drawable.ic_delete),
             color = Color.Red,
             click = deleteLink
           )
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -164,9 +161,8 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
       values,
       selectedRole,
       icon = null,
-      enabled = rememberUpdatedState(enabled),
-      onSelected = { selectedRole.value = it }
-    )
+      enabled = rememberUpdatedState(enabled)
+    ) { selectedRole.value = it }
   }
 }
 

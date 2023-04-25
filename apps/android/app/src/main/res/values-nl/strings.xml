@@ -1036,8 +1036,6 @@
     <string name="hide_dev_options">Verbergen:</string>
     <string name="show_developer_options">Ontwikkelaars opties tonen</string>
     <string name="settings_section_title_experimenta">EXPERIMENTEEL</string>
-    <string name="cancel_file__question">Bestand overdracht annuleren\?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Bestand overdracht wordt geannuleerd. Als het bezig is, wordt het gestopt.</string>
     <string name="delete_profile">Verwijder profiel</string>
     <string name="profile_password">Profiel wachtwoord</string>
     <string name="unhide_chat_profile">Chat profiel zichtbaar maken</string>

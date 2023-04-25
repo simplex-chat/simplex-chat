@@ -4,13 +4,11 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
@@ -41,9 +39,9 @@ fun PasscodeView(
       }
       PasscodeEntry(passcode, true)
       Row {
-        SimpleButton(generalGetString(R.string.cancel_verb), icon = Icons.Default.Close, click = cancel)
+        SimpleButton(generalGetString(R.string.cancel_verb), icon = painterResource(R.drawable.ic_close), click = cancel)
         Spacer(Modifier.size(20.dp))
-        SimpleButton(submitLabel, icon = Icons.Default.Done, disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
+        SimpleButton(submitLabel, icon = painterResource(R.drawable.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
       }
     }
   }
@@ -84,8 +82,8 @@ fun PasscodeView(
             Modifier.padding(start = 30.dp).height(s * 3),
             verticalArrangement = Arrangement.SpaceEvenly
           ) {
-            SimpleButton(generalGetString(R.string.cancel_verb), icon = Icons.Default.Close, click = cancel)
-            SimpleButton(submitLabel, icon = Icons.Default.Done, disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
+            SimpleButton(generalGetString(R.string.cancel_verb), icon = painterResource(R.drawable.ic_close), click = cancel)
+            SimpleButton(submitLabel, icon = painterResource(R.drawable.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
           }
         }
       }

@@ -1,24 +1,25 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
 import android.view.WindowManager
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.localauth.SetAppPasscodeView
@@ -41,15 +42,14 @@ fun PrivacySettingsView(
   setPerformLA: (Boolean, FragmentActivity) -> Unit
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
     AppBarTitle(stringResource(R.string.your_privacy))
     SectionView(stringResource(R.string.settings_section_title_device)) {
       ChatLockItem(chatModel, showSettingsModal, setPerformLA)
       val context = LocalContext.current
-      SettingsPreferenceItem(Icons.Outlined.VisibilityOff, stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
+      SettingsPreferenceItem(painterResource(R.drawable.ic_visibility_off), stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
         if (on) {
           (context as? FragmentActivity)?.window?.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
@@ -63,8 +63,8 @@ fun PrivacySettingsView(
     SectionDividerSpaced()
 
     SectionView(stringResource(R.string.settings_section_title_chats)) {
-      SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
+      SettingsPreferenceItem(painterResource(R.drawable.ic_image), stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      SettingsPreferenceItem(painterResource(R.drawable.ic_travel_explore), stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
@@ -73,6 +73,7 @@ fun PrivacySettingsView(
     if (chatModel.simplexLinkMode.value == SimplexLinkMode.BROWSER) {
       SectionTextFooter(stringResource(R.string.simplex_link_mode_browser_warning))
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -199,8 +200,7 @@ fun SimplexLockView(
   }
 
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.chat_lock))
     SectionView {
@@ -251,6 +251,7 @@ fun SimplexLockView(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -264,13 +265,9 @@ private fun EnableLock(performLA: MutableState<Boolean>, onCheckedChange: (Boole
           .fillMaxWidth()
           .weight(1F)
       )
-      Switch(
+      DefaultSwitch(
         checked = performLA.value,
         onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        )
       )
     }
   }

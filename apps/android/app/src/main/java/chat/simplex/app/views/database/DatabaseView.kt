@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
@@ -16,14 +17,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -153,8 +152,7 @@ fun DatabaseLayout(
   val operationsDisabled = !stopped || progressIndicator
 
   Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = DEFAULT_BOTTOM_PADDING),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.your_chat_database))
 
@@ -172,7 +170,7 @@ fun DatabaseLayout(
         }
       }
     )
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
@@ -182,16 +180,18 @@ fun DatabaseLayout(
     SectionView(stringResource(R.string.chat_database_section)) {
       val unencrypted = chatDbEncrypted == false
       SettingsActionItem(
-        if (unencrypted) Icons.Outlined.LockOpen else if (useKeyChain) Icons.Filled.VpnKey else Icons.Outlined.Lock,
+        if (unencrypted) painterResource(R.drawable.ic_lock_open) else if (useKeyChain) painterResource(R.drawable.ic_vpn_key_filled)
+        else painterResource(R
+          .drawable.ic_lock),
         stringResource(R.string.database_passphrase),
         click = showSettingsModal() { DatabaseEncryptionView(it) },
         iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
         disabled = operationsDisabled
       )
       AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxBottomPadding = false)
       SettingsActionItem(
-        Icons.Outlined.IosShare,
+        painterResource(R.drawable.ic_ios_share),
         stringResource(R.string.export_database),
         click = {
           if (initialRandomDBPassphrase.get()) {
@@ -205,7 +205,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
       SettingsActionItem(
-        Icons.Outlined.FileDownload,
+        painterResource(R.drawable.ic_download),
         stringResource(R.string.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
@@ -218,14 +218,14 @@ fun DatabaseLayout(
       if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
         val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
         SettingsActionItem(
-          Icons.Outlined.Inventory2,
+          painterResource(R.drawable.ic_inventory_2),
           title,
           click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = operationsDisabled
         )
       }
       SettingsActionItem(
-        Icons.Outlined.DeleteForever,
+        painterResource(R.drawable.ic_delete_forever),
         stringResource(R.string.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
@@ -240,7 +240,7 @@ fun DatabaseLayout(
         stringResource(R.string.stop_chat_to_enable_database_actions)
       }
     )
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.files_and_media_section).uppercase()) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
@@ -262,25 +262,25 @@ fun DatabaseLayout(
         String.format(stringResource(R.string.total_files_count_and_size), count, formatBytes(size))
       }
     )
+    SectionBottomSpacer()
   }
 }
 
 @Composable
 private fun AppDataBackupPreference(privacyFullBackup: SharedPreference<Boolean>, initialRandomDBPassphrase: SharedPreference<Boolean>) {
   SettingsPreferenceItem(
-    Icons.Outlined.Backup,
+    painterResource(R.drawable.ic_backup),
     iconColor = HighOrLowlight,
     pref = privacyFullBackup,
-    text = stringResource(R.string.full_backup),
-    onChange = {
-      if (initialRandomDBPassphrase.get()) {
-        exportProhibitedAlert()
-        privacyFullBackup.set(false)
-      } else {
-        privacyFullBackup.set(it)
-      }
+    text = stringResource(R.string.full_backup)
+  ) {
+    if (initialRandomDBPassphrase.get()) {
+      exportProhibitedAlert()
+      privacyFullBackup.set(false)
+    } else {
+      privacyFullBackup.set(it)
     }
-  )
+  }
 }
 
 private fun setChatItemTTLAlert(
@@ -335,11 +335,11 @@ fun RunChatSetting(
 ) {
   val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
   SettingsActionItemWithContent(
-    icon = if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
+    icon = if (stopped) painterResource(R.drawable.ic_report_filled) else painterResource(R.drawable.ic_play_arrow_filled),
     text = chatRunningText,
     iconColor = if (stopped) Color.Red else MaterialTheme.colors.primary,
   ) {
-    Switch(
+    DefaultSwitch(
       enabled = !chatDbDeleted,
       checked = runChat,
       onCheckedChange = { runChatSwitch ->
@@ -349,10 +349,6 @@ fun RunChatSetting(
           stopChatAlert()
         }
       },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }

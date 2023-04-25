@@ -1,16 +1,17 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -36,8 +37,7 @@ fun CallSettingsLayout(
   editIceServers: () -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(R.string.your_calls))
@@ -56,6 +56,7 @@ fun CallSettingsLayout(
         generalGetString(R.string.relay_server_if_necessary)
       }
     )
+    SectionBottomSpacer()
   }
 }
 
@@ -86,24 +87,20 @@ fun SharedPreferenceToggle(
   enabled: Boolean = true,
   onChange: ((Boolean) -> Unit)? = null,
 ) {
-  Switch(
+  DefaultSwitch(
     enabled = enabled,
     checked = remember { preference.state }.value,
     onCheckedChange = {
       preference.set(it)
       onChange?.invoke(it)
     },
-    colors = SwitchDefaults.colors(
-      checkedThumbColor = MaterialTheme.colors.primary,
-      uncheckedThumbColor = HighOrLowlight
-    )
   )
 }
 
 @Composable
 fun SharedPreferenceToggleWithIcon(
   text: String,
-  icon: ImageVector,
+  icon: Painter,
   stopped: Boolean = false,
   onClickInfo: () -> Unit,
   preference: SharedPreference<Boolean>,
@@ -119,16 +116,12 @@ fun SharedPreferenceToggleWithIcon(
       tint = MaterialTheme.colors.primary
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))
-    Switch(
+    DefaultSwitch(
       checked = prefState.value,
       onCheckedChange = {
         preference.set(it)
         prefState.value = it
       },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
       enabled = !stopped
     )
   }

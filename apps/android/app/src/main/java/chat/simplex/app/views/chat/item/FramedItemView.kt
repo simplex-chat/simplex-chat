@@ -4,10 +4,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,9 +11,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
@@ -72,7 +69,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: ImageVector? = null) {
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null) {
     Row(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
@@ -142,7 +139,7 @@ fun FramedItemView(
             ciQuotedMsgView(qi)
           }
           Icon(
-            if (qi.content is MsgContent.MCFile) Icons.Filled.InsertDriveFile else Icons.Filled.Mic,
+            if (qi.content is MsgContent.MCFile) painterResource(R.drawable.ic_draft_filled) else painterResource(R.drawable.ic_mic_filled),
             if (qi.content is MsgContent.MCFile) stringResource(R.string.icon_descr_file) else stringResource(R.string.voice_message),
             Modifier
               .padding(top = 6.dp, end = 4.dp)
@@ -181,9 +178,9 @@ fun FramedItemView(
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             if (ci.meta.itemDeleted is CIDeleted.Moderated) {
-              FramedItemHeader(String.format(stringResource(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, Icons.Outlined.Flag)
+              FramedItemHeader(String.format(stringResource(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(R.drawable.ic_flag))
             } else {
-              FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+              FramedItemHeader(stringResource(R.string.marked_deleted_description), true, painterResource(R.drawable.ic_delete))
             }
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(R.string.live), false)

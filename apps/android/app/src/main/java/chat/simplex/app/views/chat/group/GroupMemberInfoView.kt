@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.group
 
 import InfoRow
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionSpacer
 import SectionView
@@ -8,12 +9,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -151,7 +151,6 @@ fun GroupMemberInfoLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -213,7 +212,7 @@ fun GroupMemberInfoLayout(
     }
 
     if (member.canBeRemoved(groupInfo)) {
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxBottomPadding = false)
       SectionView {
         RemoveMemberButton(removeMember)
       }
@@ -225,9 +224,8 @@ fun GroupMemberInfoLayout(
         InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
         InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
       }
-      SectionSpacer()
     }
-    SectionSpacer()
+    SectionBottomSpacer()
   }
 }
 
@@ -240,7 +238,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (member.verified) {
-        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
       }
       Text(
         member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
@@ -263,7 +261,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
 @Composable
 fun RemoveMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     stringResource(R.string.button_remove_member),
     click = onClick,
     textColor = Color.Red,
@@ -274,7 +272,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Message,
+    painterResource(R.drawable.ic_chat),
     stringResource(R.string.button_send_direct_message),
     click = onClick,
     textColor = MaterialTheme.colors.primary,

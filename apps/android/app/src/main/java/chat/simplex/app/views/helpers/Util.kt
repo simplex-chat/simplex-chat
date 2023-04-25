@@ -557,7 +557,7 @@ fun getBitmapFromVideo(uri: Uri, timestamp: Long? = null, random: Boolean = true
   val image = when {
     timestamp != null -> mmr.getFrameAtTime(timestamp * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
     random -> mmr.frameAtTime
-    else -> mmr.getFrameAtIndex(0)
+    else -> mmr.getFrameAtTime(0)
   }
   mmr.release()
   return VideoPlayer.PreviewAndDuration(image, durationMs, timestamp ?: 0)

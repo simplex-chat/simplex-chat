@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemViewSpaceBetween
@@ -15,8 +16,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -25,6 +24,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -85,8 +85,7 @@ fun AppearanceView(m: ChatModel) {
   editPrimaryColor: (Color) -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.appearance_settings))
     SectionView(stringResource(R.string.settings_section_title_language), padding = PaddingValues()) {
@@ -141,7 +140,7 @@ fun AppearanceView(m: ChatModel) {
       }
     }
 
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true)
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(R.string.settings_section_title_themes)) {
       val darkTheme = isSystemInDarkTheme()
@@ -152,7 +151,7 @@ fun AppearanceView(m: ChatModel) {
       SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }) {
         val title = generalGetString(R.string.color_primary)
         Text(title)
-        Icon(Icons.Filled.Circle, title, tint = colors.primary)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primary)
       }
     }
     if (currentTheme.first.primary != LightColorPalette.primary) {
@@ -166,6 +165,7 @@ fun AppearanceView(m: ChatModel) {
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

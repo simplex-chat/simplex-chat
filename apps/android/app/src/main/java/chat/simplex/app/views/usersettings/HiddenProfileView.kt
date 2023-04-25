@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
@@ -55,8 +56,7 @@ private fun HiddenProfileLayout(
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
+      .verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.hide_profile))
     SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
@@ -81,5 +81,6 @@ private fun HiddenProfileLayout(
       }
     }
     SectionTextFooter(stringResource(R.string.to_reveal_profile_enter_password))
+    SectionBottomSpacer()
   }
 }

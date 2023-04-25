@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
@@ -11,15 +12,13 @@ import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.material.TextFieldDefaults.indicatorLine
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -136,7 +135,6 @@ fun DatabaseEncryptionLayout(
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.database_passphrase))
     SectionView(null) {
@@ -236,6 +234,7 @@ fun DatabaseEncryptionLayout(
         SectionTextFooter(generalGetString(R.string.impossible_to_recover_passphrase))
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -291,7 +290,7 @@ fun SavePassphraseSetting(
   SectionItemView(minHeight = minHeight) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
-        if (storedKey) Icons.Filled.VpnKey else Icons.Filled.VpnKeyOff,
+        if (storedKey) painterResource(R.drawable.ic_vpn_key_filled) else painterResource(R.drawable.ic_vpn_key_off_filled),
         stringResource(R.string.save_passphrase_in_keychain),
         tint = if (storedKey) SimplexGreen else HighOrLowlight
       )
@@ -302,13 +301,9 @@ fun SavePassphraseSetting(
         color = Color.Unspecified
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
-      Switch(
+      DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        ),
         enabled = !initialRandomDBPassphrase && !progressIndicator
       )
     }
@@ -362,8 +357,8 @@ fun PassphraseField(
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
   val icon = if (valid) {
-    if (showKey) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
-  } else Icons.Outlined.Error
+    if (showKey) painterResource(R.drawable.ic_visibility_off_filled) else painterResource(R.drawable.ic_visibility_filled)
+  } else painterResource(R.drawable.ic_error)
   val iconColor = if (valid) {
     if (showStrength && key.value.isNotEmpty()) PassphraseStrength.check(key.value).color else HighOrLowlight
   } else Color.Red

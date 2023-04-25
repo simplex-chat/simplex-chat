@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.group
 
 import InfoRow
+import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
@@ -11,7 +12,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
@@ -71,7 +71,6 @@ private fun GroupPreferencesLayout(
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.group_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
@@ -85,29 +84,30 @@ private fun GroupPreferencesLayout(
         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
       }
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
     FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
     FeatureSection(GroupFeature.FullDelete, allowFullDeletion, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
     }
     if (groupInfo.canEdit) {
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       ResetSaveButtons(
         reset = reset,
         save = savePrefs,
         disabled = preferences == currentPreferences
       )
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -122,7 +122,7 @@ private fun FeatureSection(
 ) {
   SectionView {
     val on = enableFeature.value == GroupFeatureEnabled.ON
-    val icon = if (on) feature.iconFilled else feature.icon
+    val icon = if (on) feature.iconFilled() else feature.icon
     val iconTint = if (on) SimplexGreen else HighOrLowlight
     val timedOn = feature == GroupFeature.TimedMessages && enableFeature.value == GroupFeatureEnabled.ON
     if (groupInfo.canEdit) {

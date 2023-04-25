@@ -3,16 +3,16 @@ package chat.simplex.app.views.chatlist
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
@@ -21,7 +21,7 @@ import chat.simplex.app.views.helpers.ProfileImage
 fun ContactConnectionView(contactConnection: PendingContactConnection) {
   Row {
     Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
-      ProfileImage(size = 54.dp, null, if (contactConnection.initiated) Icons.Outlined.AddLink else Icons.Outlined.Link)
+      ProfileImage(size = 54.dp, null, if (contactConnection.initiated) R.drawable.ic_add_link else R.drawable.ic_link)
     }
     Column(
       modifier = Modifier
@@ -42,7 +42,6 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
     val ts = getTimestampText(contactConnection.updatedAt)
     Column(
       Modifier.fillMaxHeight(),
-      verticalArrangement = Arrangement.Top
     ) {
       Text(
         ts,

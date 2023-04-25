@@ -1,7 +1,7 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
 import SectionView
@@ -11,12 +11,11 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.Font
@@ -159,30 +158,33 @@ fun NetworkAndServersView(
   updateSessionMode: (TransportSessionMode) -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(R.string.network_and_servers))
     SectionView(generalGetString(R.string.settings_section_title_messages)) {
-      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
+      SettingsActionItem(painterResource(R.drawable.ic_dns), stringResource(R.string.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
 
-      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
+      SettingsActionItem(painterResource(R.drawable.ic_dns), stringResource(R.string.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
 
       UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
       UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
       if (developerTools) {
         SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
       }
-      SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
+      SettingsActionItem(painterResource(R.drawable.ic_cable), stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
     if (networkUseSocksProxy.value) {
       SectionCustomFooter { Text(annotatedStringResource(R.string.disable_onion_hosts_when_not_supported)) }
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+    } else {
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
-    SectionDividerSpaced()
+
     SectionView(generalGetString(R.string.settings_section_title_calls)) {
-      SettingsActionItem(Icons.Outlined.ElectricalServices, stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
+      SettingsActionItem(painterResource(R.drawable.ic_electrical_services), stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -203,7 +205,7 @@ fun UseSocksProxySwitch(
       verticalAlignment = Alignment.CenterVertically
     ) {
       Icon(
-        Icons.Outlined.SettingsEthernet,
+        painterResource(R.drawable.ic_settings_ethernet),
         stringResource(R.string.network_socks_toggle),
         tint = HighOrLowlight
       )
@@ -234,13 +236,9 @@ fun UseSocksProxySwitch(
         Text(stringResource(R.string.network_socks_toggle))
       }
     }
-    Switch(
+    DefaultSwitch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }
@@ -251,7 +249,6 @@ fun SockProxySettings(m: ChatModel) {
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
   ) {
     val defaultHostPort = remember { "localhost:9050" }
     AppBarTitle(generalGetString(R.string.network_socks_proxy_settings))
@@ -317,6 +314,7 @@ fun SockProxySettings(m: ChatModel) {
             remember { derivedStateOf { !validPort(portUnsaved.value.text) } }.value
       )
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -339,7 +337,6 @@ private fun UseOnionHosts(
   val onSelected = showModal {
     Column(
       Modifier.fillMaxWidth(),
-      horizontalAlignment = Alignment.Start,
     ) {
       AppBarTitle(stringResource(R.string.network_use_onion_hosts))
       SectionViewSelectable(null, onionHosts, values, useOnion)
@@ -350,7 +347,7 @@ private fun UseOnionHosts(
     generalGetString(R.string.network_use_onion_hosts),
     onionHosts,
     values,
-    icon = Icons.Outlined.Security,
+    icon = painterResource(R.drawable.ic_security),
     enabled = enabled,
     onSelected = onSelected
   )
@@ -375,11 +372,10 @@ private fun SessionModePicker(
     generalGetString(R.string.network_session_mode_transport_isolation),
     sessionMode,
     values,
-    icon = Icons.Outlined.SafetyDivider,
+    icon = painterResource(R.drawable.ic_safety_divider),
     onSelected = showModal {
       Column(
         Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.Start,
       ) {
         AppBarTitle(stringResource(R.string.network_session_mode_transport_isolation))
         SectionViewSelectable(null, sessionMode, values, updateSessionMode)
@@ -395,8 +391,8 @@ private fun NetworkSectionFooter(revert: () -> Unit, save: () -> Unit, revertDis
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(Icons.Outlined.Replay, stringResource(R.string.network_options_revert), revert, revertDisabled)
-    FooterButton(Icons.Outlined.Check, stringResource(R.string.network_options_save), save, saveDisabled)
+    FooterButton(painterResource(R.drawable.ic_replay), stringResource(R.string.network_options_revert), revert, revertDisabled)
+    FooterButton(painterResource(R.drawable.ic_check), stringResource(R.string.network_options_save), save, saveDisabled)
   }
 }
 

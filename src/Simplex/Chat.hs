@@ -1463,7 +1463,7 @@ processChatCommand = \case
                 fsFilePath <- toFSFilePath filePath
                 removeFile fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
               forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
-                withAgent $ \a -> xftpDeleteRcvFile a (aUserId user) aFileId
+                withAgent (`xftpDeleteRcvFile` aFileId)
               ci <- withStore $ \db -> do
                 liftIO $ do
                   updateCIFileStatus db user fileId CIFSRcvInvitation
@@ -2384,7 +2384,9 @@ processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> SndFileId -> AComm
 processAgentMsgSndFile _corrId aFileId msg =
   withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
     Just user -> process user `catchError` (toView . CRChatError (Just user))
-    _ -> throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
+    _ -> do
+      withAgent (`xftpDeleteSndFileInternal` aFileId)
+      throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
     process :: User -> m ()
     process user = do
@@ -2412,7 +2414,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                   withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                   msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
                   withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
-                  agentXFTPDeleteSndFileInternal user aFileId
+                  withAgent (`xftpDeleteSndFileInternal` aFileId)
                 (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
                   ms <- withStore' $ \db -> getGroupMembers db user g
                   let rfdsMemberFTs = zip rfds $ memberFTs ms
@@ -2422,7 +2424,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                   ci' <- withStore $ \db -> do
                     liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                     getChatItemByFileId db user fileId
-                  agentXFTPDeleteSndFileInternal user aFileId
+                  withAgent (`xftpDeleteSndFileInternal` aFileId)
                   toView $ CRSndFileCompleteXFTP user ci' ft
                   where
                     memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
@@ -2446,7 +2448,7 @@ processAgentMsgSndFile _corrId aFileId msg =
             ci <- withStore $ \db -> do
               liftIO $ updateFileCancelled db user fileId CIFSSndError
               getChatItemByFileId db user fileId
-            agentXFTPDeleteSndFileInternal user aFileId
+            withAgent (`xftpDeleteSndFileInternal` aFileId)
             toView $ CRSndFileError user ci
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
@@ -2471,7 +2473,9 @@ processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> RcvFileId -> AComm
 processAgentMsgRcvFile _corrId aFileId msg =
   withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
     Just user -> process user `catchError` (toView . CRChatError (Just user))
-    _ -> throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
+    _ -> do
+      withAgent (`xftpDeleteRcvFile` aFileId)
+      throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
   where
     process :: User -> m ()
     process user = do
@@ -2496,7 +2500,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
                   updateRcvFileStatus db fileId FSComplete
                   updateCIFileStatus db user fileId CIFSRcvComplete
                 getChatItemByFileId db user fileId
-              agentXFTPDeleteRcvFile user aFileId fileId
+              agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileComplete user ci
         RFERR e
           | temporaryAgentError e ->
@@ -2505,7 +2509,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
             ci <- withStore $ \db -> do
               liftIO $ updateFileCancelled db user fileId CIFSRcvError
               getChatItemByFileId db user fileId
-            agentXFTPDeleteRcvFile user aFileId fileId
+            agentXFTPDeleteRcvFile aFileId fileId
             toView $ CRRcvFileError user ci
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
@@ -4061,7 +4065,7 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInlin
         deleteRcvFileChunks db ft
       case xftpRcvFile of
         Just XFTPRcvFile {agentRcvFileId = Just (AgentRcvFileId aFileId), agentRcvFileDeleted} ->
-          unless agentRcvFileDeleted $ agentXFTPDeleteRcvFile user aFileId fileId
+          unless agentRcvFileDeleted $ agentXFTPDeleteRcvFile aFileId fileId
         _ -> pure ()
       pure fileConnId
     fileConnId = if isNothing xftpRcvFile && isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
@@ -4319,14 +4323,10 @@ deleteAgentConnectionsAsync _ [] = pure ()
 deleteAgentConnectionsAsync user acIds =
   withAgent (`deleteConnectionsAsync` acIds) `catchError` (toView . CRChatError (Just user))
 
-agentXFTPDeleteRcvFile :: ChatMonad m => User -> RcvFileId -> FileTransferId -> m ()
-agentXFTPDeleteRcvFile user aFileId fileId = do
-  withAgent $ \a -> xftpDeleteRcvFile a (aUserId user) aFileId
+agentXFTPDeleteRcvFile :: ChatMonad m => RcvFileId -> FileTransferId -> m ()
+agentXFTPDeleteRcvFile aFileId fileId = do
+  withAgent (`xftpDeleteRcvFile` aFileId)
   withStore' $ \db -> setRcvFTAgentDeleted db fileId
-
-agentXFTPDeleteSndFileInternal :: ChatMonad m => User -> SndFileId -> m ()
-agentXFTPDeleteSndFileInternal user aFileId = do
-  withAgent (\a -> xftpDeleteSndFileInternal a (aUserId user) aFileId) `catchError` (toView . CRChatError (Just user))
 
 agentXFTPDeleteSndFileRemote :: ChatMonad m => User -> XFTPSndFile -> FileTransferId -> m ()
 agentXFTPDeleteSndFileRemote user XFTPSndFile {agentSndFileId = AgentSndFileId aFileId, privateSndFileDescr, agentSndFileDeleted} fileId =

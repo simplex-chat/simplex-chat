@@ -1,5 +1,19 @@
 # Blog
 
+Apr 22, 2023 [SimpleX Chat: vision and funding, v5.0 released](./20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md)
+
+SimpleX Chat vision and funding:
+- why is it a commercial company?
+- how is it funded and what is the business model?
+- what is next?
+
+What's new in v5.0:
+- send videos and files up to 1gb
+- app passcode independent from system authentication
+- networking improvements
+
+Also, we added Polish language interface, thanks to our users and Weblate!
+
 Mar 28, 2023 [SimpleX Chat v4.6 released](./20230328-simplex-chat-v4-6-hidden-profiles.md)
 
 - ARMv7a and Android 8+ support!

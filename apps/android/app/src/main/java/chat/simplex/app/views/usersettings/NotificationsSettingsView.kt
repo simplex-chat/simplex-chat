@@ -1,9 +1,12 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionView
 import SectionViewSelectable
 import android.os.Build
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -76,8 +79,7 @@ fun NotificationsSettingsLayout(
   val previewModes = remember { notificationPreviewModes() }
 
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.notifications))
     SectionView(null) {
@@ -98,6 +100,7 @@ fun NotificationsSettingsLayout(
         )
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -109,7 +112,6 @@ fun NotificationsModeView(
   val modes = remember { notificationModes() }
   Column(
     Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
     SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected)
@@ -124,7 +126,6 @@ fun NotificationPreviewView(
   val previewModes = remember { notificationPreviewModes() }
   Column(
     Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.settings_notification_preview_title))
     SectionViewSelectable(null, notificationPreviewMode, previewModes, onNotificationPreviewModeSelected)

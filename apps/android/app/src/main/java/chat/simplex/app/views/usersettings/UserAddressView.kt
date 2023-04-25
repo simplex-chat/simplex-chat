@@ -1,18 +1,18 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -69,8 +69,6 @@ fun UserAddressLayout(
 ) {
   Column(
     Modifier.verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.Top
   ) {
     AppBarTitle(stringResource(R.string.your_contact_address), false)
     Text(
@@ -84,7 +82,7 @@ fun UserAddressLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (userAddress == null) {
-        SimpleButton(stringResource(R.string.create_address), icon = Icons.Outlined.QrCode, click = createAddress)
+        SimpleButton(stringResource(R.string.create_address), icon = painterResource(R.drawable.ic_qr_code), click = createAddress)
       } else {
         QRCode(userAddress.connReqContact, Modifier.aspectRatio(1f))
         Row(
@@ -94,22 +92,23 @@ fun UserAddressLayout(
         ) {
           SimpleButton(
             stringResource(R.string.share_link),
-            icon = Icons.Outlined.Share,
+            icon = painterResource(R.drawable.ic_share),
             click = { share(userAddress.connReqContact) })
           SimpleButtonIconEnded(
             stringResource(R.string.contact_requests),
-            icon = Icons.Outlined.ChevronRight,
+            icon = painterResource(R.drawable.ic_chevron_right),
             click = acceptRequests
           )
         }
         SimpleButton(
           stringResource(R.string.delete_address),
-          icon = Icons.Outlined.Delete,
+          icon = painterResource(R.drawable.ic_delete),
           color = Color.Red,
           click = deleteAddress
         )
       }
     }
+    SectionBottomSpacer()
   }
 }
 

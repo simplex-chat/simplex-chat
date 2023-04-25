@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 cp -R blog website/src
 cp -R images website/src
 rm website/src/blog/README.md
@@ -20,7 +22,7 @@ node merge_translations.js
 
 # creating folders for each language for internationalization
 for lang in "${langs[@]}"; do
-  mkdir src/$lang
+  mkdir -p src/$lang
   cp src/index.html src/$lang
   cp src/contact.html src/$lang
   cp src/invitation.html src/$lang
