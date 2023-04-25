@@ -1037,8 +1037,6 @@
     <string name="image_will_be_received_when_contact_completes_uploading">L\'immagine verrà ricevuta quando il tuo contatto completerà l\'invio.</string>
     <string name="mtr_error_no_down_migration">la versione del database è più recente di quella dell\'app, ma nessuna migrazione downgrade per: %s</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Il file verrà ricevuto quando il tuo contatto completerà l\'invio.</string>
-    <string name="cancel_file__question">Annullare il trasferimento di file\?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Il trasferimento di file verrà annullato. Se è in corso, verrà interrotto.</string>
     <string name="unhide_chat_profile">Svela il profilo chat</string>
     <string name="unhide_profile">Svela profilo</string>
     <string name="delete_chat_profile">Elimina il profilo di chat</string>

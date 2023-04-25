@@ -278,7 +278,6 @@
     <string name="settings_section_title_develop">विकास करना</string>
     <string name="user_mute">आवाज़ बंद करना</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">अपने संपर्कों को गायब होने वाले संदेश भेजने की अनुमति दें।</string>
-    <string name="cancel_file__question">फ़ाइल स्थानांतरण रद्द करें\?</string>
     <string name="v4_6_audio_video_calls">ऑडियो और वीडियो कॉल</string>
     <string name="v4_6_reduced_battery_usage_descr">अधिक सुधार जल्द ही आ रहे हैं!</string>
     <string name="icon_descr_video_asked_to_receive">वीडियो प्राप्त करने के लिए कहा</string>

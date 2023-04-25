@@ -779,8 +779,6 @@
     <string name="whats_new">Novidades</string>
     <string name="v4_6_audio_video_calls">Chamadas de áudio e vídeo</string>
     <string name="v4_6_hidden_chat_profiles_descr">Proteja seus perfis de chat com uma senha!</string>
-    <string name="cancel_file__question">Cancelar transferência de arquivo\?</string>
-    <string name="file_transfer_will_be_cancelled_warning">A transferência do arquivo será cancelada. Se estiver em andamento, será interrompida.</string>
     <string name="this_text_is_available_in_settings">Este texto está disponível nas configurações</string>
     <string name="scan_code">Escanear código</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Hosts Onion não serão usados.</string>
