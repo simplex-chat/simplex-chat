@@ -1,6 +1,8 @@
-#!/bin/bash
-
-set -e
+#!/usr/bin/env bash
+# Safety measures
+set -euo pipefail
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
 
 function readlink() {
   echo "$(cd "$(dirname "$1")"; pwd -P)"
@@ -35,7 +37,7 @@ for ((i = 0 ; i < ${#arches[@]}; i++)); do
     output_arch="${output_arches[$i]}"
     output_dir="$HOME/Downloads"
 
-    curl --location -o "$output_dir"/pkg-ios-"$arch"-swift-json.zip "$job_repo"/"$arch"-darwin-ios:lib:simplex-chat."$arch"-darwin/latest/download/1 && \
-    unzip -o "$output_dir"/pkg-ios-"$output_arch"-swift-json.zip -d ~/Downloads/pkg-ios-"$output_arch"-swift-json
+    curl --location -o "$output_dir/pkg-ios-$arch-swift-json.zip" "$job_repo/$arch-darwin-ios:lib:simplex-chat.$arch-darwin/latest/download/1" && \
+    unzip -o "$output_dir/pkg-ios-$output_arch-swift-json.zip" -d "$output_dir/pkg-ios-$output_arch-swift-json"
 done
 sh "$root_dir"/scripts/ios/prepare-x86_64.sh
