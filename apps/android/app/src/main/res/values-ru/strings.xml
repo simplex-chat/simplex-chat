@@ -1116,8 +1116,6 @@
     <string name="mtr_error_different">разная миграция в приложении/базе данных: %s / %s</string>
     <string name="downgrade_and_open_chat">Откатить версию и открыть чат</string>
     <string name="database_downgrade_warning">Предупреждение: Вы можете потерять какие то данные!</string>
-    <string name="cancel_file__question">Прекратить передачу файла\?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Передача файла будет прекращена. Если она в процессе, она будет остановлена.</string>
     <string name="developer_options">ID базы данных и опция Отдельные транспортные сессии.</string>
     <string name="show_developer_options">Показать опции для девелоперов</string>
     <string name="delete_chat_profile">Удалить профиль чата</string>

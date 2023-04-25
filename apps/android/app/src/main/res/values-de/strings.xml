@@ -1118,8 +1118,6 @@
     <string name="database_migrations">Migrationen: %s</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
-    <string name="cancel_file__question">Dateitransfer abbrechen\?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Der Dateitransfer wird abgebrochen. Falls er gerade abläuft, wird er angehalten.</string>
     <string name="delete_chat_profile">Chat-Profil löschen</string>
     <string name="delete_profile">Profil löschen</string>
     <string name="unhide_profile">Verbergen des Profils aufheben</string>
@@ -1155,7 +1153,6 @@
     <string name="change_lock_mode">Sperr-Modus ändern</string>
     <string name="passcode_not_changed">Passwort wurde nicht geändert!</string>
     <string name="decryption_error">Entschlüsselungsfehler</string>
-    <string name="decryption_error_permanent">Dauerhafter Entschlüsselungsfehler</string>
     <string name="error_loading_xftp_servers">Fehler beim Laden der XFTP-Server</string>
     <string name="la_lock_mode_passcode">Passworteingabe</string>
     <string name="la_enter_app_passcode">Passwort eingeben</string>
