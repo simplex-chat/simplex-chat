@@ -1041,8 +1041,6 @@
     <string name="unhide_profile">Dévoiler le profil</string>
     <string name="delete_chat_profile">Supprimer le profil de chat</string>
     <string name="delete_profile">Supprimer le profil</string>
-    <string name="cancel_file__question">Annuler le transfert de fichiers \?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Le transfert de fichiers sera annulé. S\'il est en cours, il sera interrompu.</string>
     <string name="profile_password">Mot de passe de profil</string>
     <string name="videos_limit_title">Trop de vidéos !</string>
     <string name="video_descr">Vidéo</string>

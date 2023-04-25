@@ -86,7 +86,7 @@ class VideoPlayer private constructor(
     .build()
     .apply {
     // Repeat the same track endlessly
-    repeatMode = 1
+    repeatMode = Player.REPEAT_MODE_ONE
     currentVolume = volume
     if (!soundEnabled) {
       volume = 0f
