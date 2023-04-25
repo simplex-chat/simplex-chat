@@ -228,7 +228,7 @@ fun ClickableText(
         }
       }
     }, shouldConsumeEvent = { pos ->
-      var consume = false
+        var consume = false
         layoutResult.value?.let { layoutResult ->
           consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
         }
