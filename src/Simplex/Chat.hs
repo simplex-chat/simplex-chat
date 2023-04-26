@@ -1121,13 +1121,17 @@ processChatCommand = \case
     pure $ CRUserContactLinkCreated user cReq
   CreateMyAddress -> withUser $ \User {userId} ->
     processChatCommand $ APICreateMyAddress userId
-  APIDeleteMyAddress userId -> withUserId userId $ \user -> withChatLock "deleteMyAddress" $ do
+  APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do
     conns <- withStore (`getUserAddressConnections` user)
-    -- TODO if same link is in profile, remove it and notify contacts
-    procCmd $ do
+    withChatLock "deleteMyAddress" $ do
       deleteAgentConnectionsAsync user $ map aConnId conns
       withStore' (`deleteUserAddress` user)
-      pure $ CRUserContactLinkDeleted user
+    let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
+    r <- updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user Nothing
+    let user' = case r of
+          CRUserProfileUpdated u' _ _ -> u'
+          _ -> user
+    pure $ CRUserContactLinkDeleted user'
   DeleteMyAddress -> withUser $ \User {userId} ->
     processChatCommand $ APIDeleteMyAddress userId
   APIShowMyAddress userId -> withUserId userId $ \user ->

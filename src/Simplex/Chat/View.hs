@@ -987,8 +987,8 @@ viewContactUpdated
     | n == n' && fullName == fullName' && contactLink == contactLink' = []
     | n == n' && fullName == fullName' =
       if isNothing contactLink'
-        then ["removed contact address"]
-        else ["set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
+        then [ttyContact n <> " removed contact address"]
+        else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
       [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
