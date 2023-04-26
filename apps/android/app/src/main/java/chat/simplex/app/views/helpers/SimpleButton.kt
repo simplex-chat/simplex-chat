@@ -1,14 +1,15 @@
 package chat.simplex.app.ui.theme
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
@@ -79,7 +80,7 @@ fun SimpleButtonIconEnded(
 
 @Composable
 fun SimpleButtonFrame(click: () -> Unit, modifier: Modifier = Modifier, disabled: Boolean = false, content: @Composable () -> Unit) {
-  Surface(shape = RoundedCornerShape(20.dp)) {
+  Box(Modifier.clip(RoundedCornerShape(20.dp))) {
     val modifier = if (disabled) modifier else modifier.clickable { click() }
     Row(
       verticalAlignment = Alignment.CenterVertically,

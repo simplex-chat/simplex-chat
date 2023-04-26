@@ -134,8 +134,9 @@ fun SettingsLayout(
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
+  val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
-  Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).background(MaterialTheme.colors.background)) {
+  Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).themedBackground(theme.value.base)) {
     Column(
       Modifier
         .fillMaxSize()

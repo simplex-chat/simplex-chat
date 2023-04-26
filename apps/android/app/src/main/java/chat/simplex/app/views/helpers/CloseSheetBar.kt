@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -48,7 +49,7 @@ fun AppBarTitle(title: String, withPadding: Boolean = true) {
       .padding(bottom = DEFAULT_PADDING * 1.5f, start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,),
     overflow = TextOverflow.Ellipsis,
     style = MaterialTheme.typography.h1,
-    color = MaterialTheme.colors.primary,
+    color = if (CurrentColors.collectAsState().value.base == DefaultTheme.BLUE) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.primary,
     textAlign = TextAlign.Center
   )
 }

@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,7 +20,7 @@ fun DefaultDropdownMenu(
   dropdownMenuItems: (@Composable () -> Unit)?
 ) {
   MaterialTheme(
-    colors = MaterialTheme.colors.copy(surface = if (isInDarkTheme()) Color(0xFF0B0B0B) else MaterialTheme.colors.background),
+    colors = MaterialTheme.colors.copy(surface = MaterialTheme.colors.surface),
     shapes = MaterialTheme.shapes.copy(medium = RoundedCornerShape(corner = CornerSize(25.dp)))
   ) {
     DropdownMenu(
@@ -27,6 +28,7 @@ fun DefaultDropdownMenu(
       onDismissRequest = { showMenu.value = false },
       Modifier
         .widthIn(min = 250.dp)
+        .background(MaterialTheme.colors.surface)
         .padding(vertical = 4.dp),
       offset = offset,
     ) {

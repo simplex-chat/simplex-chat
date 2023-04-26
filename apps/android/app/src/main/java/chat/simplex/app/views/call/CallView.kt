@@ -367,7 +367,7 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 //    horizontalAlignment = Alignment.CenterHorizontally,
 //    verticalArrangement = Arrangement.spacedBy(12.dp),
 //    modifier = Modifier
-//      .background(MaterialTheme.colors.background)
+//      .themedBackground()
 //      .fillMaxSize()
 //  ) {
 //    WebRTCView(callCommand) { apiMsg ->

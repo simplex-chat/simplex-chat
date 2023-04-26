@@ -1156,12 +1156,15 @@
   <string name="theme_system">System</string>
   <string name="theme_light">Light</string>
   <string name="theme_dark">Dark</string>
+  <string name="theme_blue">Blue</string>
 
   <!-- Languages -->
   <string name="language_system">System</string>
 
   <!-- Appearance.kt -->
   <string name="theme">Theme</string>
+  <string name="simplex_blue_as_dark_theme">Blue in dark mode</string>
+  <string name="dark_theme" translatable="false">Dark theme</string>
   <string name="save_color">Save color</string>
   <string name="reset_color">Reset colors</string>
   <string name="color_primary">Accent</string>

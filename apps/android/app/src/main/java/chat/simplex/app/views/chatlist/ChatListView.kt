@@ -96,7 +96,6 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
       Column(
         modifier = Modifier
           .fillMaxSize()
-          .background(MaterialTheme.colors.background)
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)

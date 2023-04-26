@@ -7,22 +7,41 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.views.helpers.generalGetString
+import okhttp3.internal.toHexString
 
 object ThemeManager {
   private val appPrefs: AppPreferences by lazy {
-    AppPreferences(SimplexApp.context)
+    SimplexApp.context.chatModel.controller.appPrefs
   }
 
-  fun currentColors(darkForSystemTheme: Boolean): Pair<Colors, DefaultTheme> {
-    val theme = appPrefs.currentTheme.get()!!
-    val systemThemeColors = if (darkForSystemTheme) DarkColorPalette else LightColorPalette
-    val res = when (theme) {
-      DefaultTheme.SYSTEM.name -> Pair(systemThemeColors, DefaultTheme.SYSTEM)
-      DefaultTheme.DARK.name -> Pair(DarkColorPalette, DefaultTheme.DARK)
-      DefaultTheme.LIGHT.name -> Pair(LightColorPalette, DefaultTheme.LIGHT)
-      else -> Pair(systemThemeColors, DefaultTheme.SYSTEM)
+  data class ActiveTheme(val name: String, val base: DefaultTheme, val colors: Colors)
+
+  private fun systemDarkThemeColors(): Pair<Colors, DefaultTheme> = when (appPrefs.systemDarkTheme.get()) {
+    DefaultTheme.DARK.name -> DarkColorPalette to DefaultTheme.DARK
+    DefaultTheme.BLUE.name -> BlueColorPalette to DefaultTheme.BLUE
+    else -> BlueColorPalette to DefaultTheme.BLUE
+  }
+
+  fun currentColors(darkForSystemTheme: Boolean): ActiveTheme {
+    val themeName = appPrefs.currentTheme.get()!!
+    val themeOverrides = appPrefs.themeOverrides.get()
+
+    val theme = if (themeName != DefaultTheme.SYSTEM.name) {
+      themeOverrides[themeName]
+    } else {
+      themeOverrides[if (darkForSystemTheme) appPrefs.systemDarkTheme.get() else DefaultTheme.LIGHT.name]
     }
-    return res.copy(first = res.first.copy(primary = Color(appPrefs.primaryColor.get())))
+    val baseTheme = when (themeName) {
+      DefaultTheme.SYSTEM.name -> if (darkForSystemTheme) systemDarkThemeColors() else Pair(LightColorPalette, DefaultTheme.LIGHT)
+      DefaultTheme.LIGHT.name -> Pair(LightColorPalette, DefaultTheme.LIGHT)
+      DefaultTheme.DARK.name -> Pair(DarkColorPalette, DefaultTheme.DARK)
+      DefaultTheme.BLUE.name -> Pair(BlueColorPalette, DefaultTheme.BLUE)
+      else -> if (theme != null) theme.colors.toColors(theme.base) to theme.base else Pair(LightColorPalette, DefaultTheme.LIGHT)
+    }
+    if (theme == null) {
+      return ActiveTheme(themeName, baseTheme.second, baseTheme.first)
+    }
+    return ActiveTheme(themeName, baseTheme.second, theme.colors.toColors(theme.base))
   }
 
   // colors, default theme enum, localized name of theme
@@ -30,7 +49,7 @@ object ThemeManager {
     val allThemes = ArrayList<Triple<Colors, DefaultTheme, String>>()
     allThemes.add(
       Triple(
-        if (darkForSystemTheme) DarkColorPalette else LightColorPalette,
+        if (darkForSystemTheme) systemDarkThemeColors().first else LightColorPalette,
         DefaultTheme.SYSTEM,
         generalGetString(R.string.theme_system)
       )
@@ -49,16 +68,47 @@ object ThemeManager {
         generalGetString(R.string.theme_dark)
       )
     )
+    allThemes.add(
+      Triple(
+        BlueColorPalette,
+        DefaultTheme.BLUE,
+        generalGetString(R.string.theme_blue)
+      )
+    )
     return allThemes
   }
 
-  fun applyTheme(name: String, darkForSystemTheme: Boolean) {
-    appPrefs.currentTheme.set(name)
+  fun applyTheme(theme: String, darkForSystemTheme: Boolean) {
+    appPrefs.currentTheme.set(theme)
     CurrentColors.value = currentColors(darkForSystemTheme)
   }
 
-  fun saveAndApplyPrimaryColor(color: Color) {
-    appPrefs.primaryColor.set(color.toArgb())
-    CurrentColors.value = currentColors(!CurrentColors.value.first.isLight)
+  fun changeDarkTheme(theme: String, darkForSystemTheme: Boolean) {
+    appPrefs.systemDarkTheme.set(theme)
+    CurrentColors.value = currentColors(darkForSystemTheme)
+  }
+
+  fun saveAndApplyPrimaryColor(color: Color? = null, darkForSystemTheme: Boolean) {
+    val themeName = appPrefs.currentTheme.get()!!
+    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
+      themeName
+    } else {
+      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
+    }
+    val color = color ?: when(themeName) {
+      DefaultTheme.LIGHT.name -> LightColorPalette.primary
+      DefaultTheme.DARK.name -> DarkColorPalette.primary
+      DefaultTheme.BLUE.name -> BlueColorPalette.primary
+      else -> (if (darkForSystemTheme) systemDarkThemeColors().first else LightColorPalette).primary
+    }
+    val overrides = appPrefs.themeOverrides.get().toMutableMap()
+    val prevValue = overrides[nonSystemThemeName]
+    val current = prevValue?.copy(colors = prevValue.colors.copy(primary = color.toReadableHex()))
+      ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors(primary = color.toReadableHex()))
+    overrides[nonSystemThemeName] = current
+    appPrefs.themeOverrides.set(overrides)
+    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight)
   }
 }
+
+private fun Color.toReadableHex(): String = "#" + toArgb().toHexString()

@@ -39,6 +39,7 @@ import chat.simplex.app.views.helpers.*
 import com.godaddy.android.colorpicker.*
 import kotlinx.coroutines.delay
 import java.util.*
+import kotlin.collections.ArrayList
 
 enum class AppIcon(val resId: Int) {
   DEFAULT(R.mipmap.icon),
@@ -69,6 +70,7 @@ fun AppearanceView(m: ChatModel) {
   AppearanceLayout(
     appIcon,
     m.controller.appPrefs.appLanguage,
+    m.controller.appPrefs.systemDarkTheme,
     changeIcon = ::setAppIcon,
     editPrimaryColor = { primary ->
       ModalManager.shared.showModalCloseable { close ->
@@ -81,6 +83,7 @@ fun AppearanceView(m: ChatModel) {
 @Composable fun AppearanceLayout(
   icon: MutableState<AppIcon>,
   languagePref: SharedPreference<String?>,
+  systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
   editPrimaryColor: (Color) -> Unit,
 ) {
@@ -144,21 +147,31 @@ fun AppearanceView(m: ChatModel) {
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(R.string.settings_section_title_themes)) {
       val darkTheme = isSystemInDarkTheme()
-      val state = remember { derivedStateOf { currentTheme.second } }
+      val state = remember { derivedStateOf { currentTheme.name } }
       ThemeSelector(state) {
-        ThemeManager.applyTheme(it.name, darkTheme)
+        ThemeManager.applyTheme(it, darkTheme)
       }
-      SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }) {
+      if (state.value == DefaultTheme.SYSTEM.name) {
+        val systemDarkTheme = remember { systemDarkTheme.state }
+        PreferenceToggle(generalGetString(R.string.simplex_blue_as_dark_theme), systemDarkTheme.value == DefaultTheme.BLUE.name) {
+          ThemeManager.changeDarkTheme(if (it) DefaultTheme.BLUE.name else DefaultTheme.DARK.name, darkTheme)
+        }
+        /*DarkThemeSelector(systemDarkTheme) {
+          ThemeManager.changeDarkTheme(it, darkTheme)
+        }*/
+      }
+      SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.colors.primary) }) {
         val title = generalGetString(R.string.color_primary)
         Text(title)
         Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primary)
       }
     }
-    if (currentTheme.first.primary != LightColorPalette.primary) {
+    if (currentTheme.base.hasChangedPrimary(currentTheme.colors)) {
       SectionCustomFooter(PaddingValues(start = 7.dp, end = 7.dp, top = 5.dp)) {
+        val isInDarkTheme = isInDarkTheme()
         TextButton(
           onClick = {
-            ThemeManager.saveAndApplyPrimaryColor(LightColorPalette.primary)
+            ThemeManager.saveAndApplyPrimaryColor(darkForSystemTheme = isInDarkTheme)
           },
         ) {
           Text(generalGetString(R.string.reset_color))
@@ -185,10 +198,10 @@ fun ColorEditor(
     }
 
     SectionSpacer()
-
+    val isInDarkTheme = isInDarkTheme()
     TextButton(
       onClick = {
-        ThemeManager.saveAndApplyPrimaryColor(currentColor)
+        ThemeManager.saveAndApplyPrimaryColor(currentColor, isInDarkTheme)
         close()
       },
       Modifier.align(Alignment.CenterHorizontally),
@@ -241,9 +254,9 @@ private fun LangSelector(state: State<String>, onSelected: (String) -> Unit) {
 }
 
 @Composable
-private fun ThemeSelector(state: State<DefaultTheme>, onSelected: (DefaultTheme) -> Unit) {
+private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
   val darkTheme = isSystemInDarkTheme()
-  val values by remember { mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second to it.third }) }
+  val values by remember { mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.name to it.third }) }
   ExposedDropDownSettingRow(
     generalGetString(R.string.theme),
     values,
@@ -251,6 +264,24 @@ private fun ThemeSelector(state: State<DefaultTheme>, onSelected: (DefaultTheme)
     icon = null,
     enabled = remember { mutableStateOf(true) },
     onSelected = onSelected
+  )
+}
+
+@Composable
+private fun DarkThemeSelector(state: State<String?>, onSelected: (String) -> Unit) {
+  val values by remember {
+    val darkThemes = ArrayList<Pair<String, String>>()
+    darkThemes.add(DefaultTheme.DARK.name to generalGetString(R.string.theme_dark))
+    darkThemes.add(DefaultTheme.BLUE.name to generalGetString(R.string.theme_blue))
+    mutableStateOf(darkThemes.toList())
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(R.string.dark_theme),
+    values,
+    state,
+    icon = null,
+    enabled = remember { mutableStateOf(true) },
+    onSelected = { if (it != null) onSelected(it) }
   )
 }
 
@@ -271,6 +302,7 @@ fun PreviewAppearanceSettings() {
     AppearanceLayout(
       icon = remember { mutableStateOf(AppIcon.DARK_BLUE) },
       languagePref = SharedPreference({ null }, {}),
+      systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
       editPrimaryColor = {},
     )

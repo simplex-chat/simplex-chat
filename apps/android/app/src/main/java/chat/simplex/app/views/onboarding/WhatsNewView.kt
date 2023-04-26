@@ -9,6 +9,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -71,7 +72,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
     ) {
       if (currentVersion.value > 0) {
         val prev = currentVersion.value - 1
-        Surface(shape = RoundedCornerShape(20.dp)) {
+        Box(Modifier.clip(RoundedCornerShape(20.dp))) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -87,7 +88,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       Spacer(Modifier.fillMaxWidth().weight(1f))
       if (currentVersion.value < versionDescriptions.lastIndex) {
         val next = currentVersion.value + 1
-        Surface(shape = RoundedCornerShape(20.dp)) {
+        Box(Modifier.clip(RoundedCornerShape(20.dp))) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -113,17 +114,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         .verticalScroll(rememberScrollState()),
       verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
     ) {
-      Text(
-        String.format(generalGetString(R.string.new_in_version), v.version),
-        Modifier
-          .fillMaxWidth()
-          .padding(DEFAULT_PADDING),
-        textAlign = TextAlign.Center,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.h1,
-        fontWeight = FontWeight.Normal,
-        color = HighOrLowlight
-      )
+      AppBarTitle(String.format(generalGetString(R.string.new_in_version), v.version))
 
       v.features.forEach { feature ->
         featureDescription(painterResource(feature.icon), feature.titleId, feature.descrId, feature.link)
