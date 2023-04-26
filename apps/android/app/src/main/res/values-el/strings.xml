@@ -1,2 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="chat_item_ttl_day">1 μέρα</string>
+    <string name="chat_item_ttl_month">1 μήνας</string>
+    <string name="about_simplex">Για το SimpleX</string>
+    <string name="scan_QR_code">Σαρώστε τον QR κωδικό</string>
+    <string name="a_plus_b">α + β</string>
+    <string name="about_simplex_chat">Για το <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="scan_code_from_contacts_app">Σαρώστε τον κωδικό ασφαλείας από την εφαρμογή επαφών σας</string>
+    <string name="smp_server_test_secure_queue">Ασφαλή ουρά</string>
+    <string name="network_option_seconds_label">δε</string>
+    <string name="security_code">Κωδικός ασφαλείας</string>
+    <string name="smp_servers_scan_qr">Σαρώστε τον κωδικό QR διακομιστή</string>
+    <string name="secret">μυστικό</string>
+    <string name="chat_item_ttl_week">1 εβδομάδα</string>
+    <string name="v4_2_security_assessment">αξιολόγηση ασφαλείας</string>
+</resources>
