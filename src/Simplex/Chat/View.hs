@@ -811,8 +811,9 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias}} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}} stats incognitoProfile =
   ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
+    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) l]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -877,7 +878,7 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, p
   where
     profileUpdated
       | n == n' && fullName == fullName' && image == image' && contactLink == contactLink' = []
-      | n == n' && fullName == fullName' && image == image' = ["contact link " <> if isNothing contactLink' then "removed" else if isNothing contactLink then "added" else "updated"]
+      | n == n' && fullName == fullName' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
       | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
       | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
       | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
@@ -943,7 +944,11 @@ viewGroupUpdated
         ["changed to " <> ttyFullGroup g' | n /= n']
           <> ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to: " <> plain fullName' | n == n' && fullName /= fullName']
           <> ["profile image " <> maybe "removed" (const "updated") image' | image /= image']
-          <> ["group link " <> maybe "removed" (const $ maybe "added" (const "updated") groupLink) groupLink' | groupLink /= groupLink']
+          <> [ if isNothing groupLink'
+                 then "group link removed"
+                 else "new group link set, use " <> highlight ("/group_profile #" <> n') <> " to view"
+               | groupLink /= groupLink'
+             ]
           <> (if description == description' then [] else maybe ["description removed"] ((bold' "description changed to:" :) . map plain . T.lines) description')
       groupPrefsUpdated
         | null prefs = []
@@ -957,9 +962,10 @@ viewGroupUpdated
               pref = getGroupPreference f . mergeGroupPreferences
 
 viewGroupProfile :: GroupInfo -> [StyledString]
-viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
+viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupLink, groupPreferences = gps}} =
   [ttyFullGroup g]
     <> maybe [] (const ["has profile image"]) image
+    <> maybe [] (\l -> ["group link: " <> (plain . strEncode) l]) groupLink
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
@@ -982,9 +988,13 @@ viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
-  Contact {localDisplayName = n, profile = LocalProfile {fullName}}
-  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName'}}
-    | n == n' && fullName == fullName' = []
+  Contact {localDisplayName = n, profile = LocalProfile {fullName, contactLink}}
+  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', contactLink = contactLink'}}
+    | n == n' && fullName == fullName' && contactLink == contactLink' = []
+    | n == n' && fullName == fullName' =
+      if isNothing contactLink'
+        then ["removed contact address"]
+        else ["set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
       [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',

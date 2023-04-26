@@ -9,11 +9,11 @@ m20230422_profile_contact_links :: Query
 m20230422_profile_contact_links =
   [sql|
 ALTER TABLE group_profiles ADD COLUMN group_link BLOB;
-ALTER TABLE group_profiles ADD COLUMN user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE RESTRICT;
+ALTER TABLE group_profiles ADD COLUMN user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE SET NULL;
 CREATE INDEX idx_group_profiles_user_contact_link_id ON group_profiles (user_contact_link_id);
 
 ALTER TABLE contact_profiles ADD COLUMN contact_link BLOB;
-ALTER TABLE contact_profiles ADD COLUMN user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE RESTRICT;
+ALTER TABLE contact_profiles ADD COLUMN user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE SET NULL;
 CREATE INDEX idx_contact_profiles_user_contact_link_id ON contact_profiles (user_contact_link_id);
 |]
 

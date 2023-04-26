@@ -19,7 +19,7 @@ CREATE TABLE contact_profiles(
   local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
   preferences TEXT,
   contact_link BLOB,
-  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE RESTRICT
+  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE SET NULL
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -127,7 +127,7 @@ CREATE TABLE group_profiles(
   preferences TEXT,
   description TEXT NULL,
   group_link BLOB,
-  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE RESTRICT
+  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE SET NULL
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID

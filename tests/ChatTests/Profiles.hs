@@ -111,7 +111,7 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   alice ##> "/ad"
   cLink <- getContactLink alice True
   alice ##> "/pa on"
-  alice <## "contact link added"
+  alice <## "new contact address set"
   bob ##> ("/c " <> cLink)
   alice <#? bob
   alice @@@ [("<@bob", "")]

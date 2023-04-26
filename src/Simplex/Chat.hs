@@ -1123,6 +1123,7 @@ processChatCommand = \case
     processChatCommand $ APICreateMyAddress userId
   APIDeleteMyAddress userId -> withUserId userId $ \user -> withChatLock "deleteMyAddress" $ do
     conns <- withStore (`getUserAddressConnections` user)
+    -- TODO if same link is in profile, remove it and notify contacts
     procCmd $ do
       deleteAgentConnectionsAsync user $ map aConnId conns
       withStore' (`deleteUserAddress` user)
@@ -1348,6 +1349,7 @@ processChatCommand = \case
     pure $ CRGroupLink user gInfo groupLink mRole'
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    -- TODO if same link is in profile, remove it and notify group members
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
@@ -4691,12 +4693,12 @@ chatCommandP =
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
-      "/_profile link #" *> (APISetGroupProfileLink  <$> A.decimal <* A.space <*> onOffP),
+      "/_share link #" *> (APISetGroupProfileLink  <$> A.decimal <* A.space <*> onOffP),
       "/create link #" *> (CreateGroupLink <$> displayName <*> (memberRole <|> pure GRMember)),
       "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
-      "/profile link #" *> (SetGroupProfileLink  <$> displayName <* A.space <*> onOffP),
+      "/share link #" *> (SetGroupProfileLink  <$> displayName <* A.space <*> onOffP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),

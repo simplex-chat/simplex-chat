@@ -139,7 +139,7 @@ groupsHelpInfo =
       indent <> highlight "/set link role #<group> role       " <> " - change role assigned to the users joining via the link (member/observer)",
       indent <> highlight "/show link #<group>                " <> " - show public group link and initial member role",
       indent <> highlight "/delete link #<group>              " <> " - delete link to join the group (does NOT delete any members)",
-      indent <> highlight "/profile link #<group> [link]      " <> " - set or remove group link included in group profile",
+      indent <> highlight "/share link #<group> [link]      " <> " - set or remove group link included in group profile",
       "",
       green "Mute group messages:",
       indent <> highlight "/mute #<group>                     " <> " - do not show contact's messages",
