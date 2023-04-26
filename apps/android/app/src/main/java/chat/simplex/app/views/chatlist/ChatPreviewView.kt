@@ -7,15 +7,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -46,7 +43,7 @@ fun ChatPreviewView(
   @Composable
   fun groupInactiveIcon() {
     Icon(
-      Icons.Filled.Cancel,
+      painterResource(R.drawable.ic_cancel_filled),
       stringResource(R.string.icon_descr_group_inactive),
       Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
       tint = HighOrLowlight
@@ -79,15 +76,15 @@ fun ChatPreviewView(
 
   @Composable
   fun VerifiedIcon() {
-    Icon(Icons.Outlined.VerifiedUser, null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
+    Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
   }
 
   fun messageDraft(draft: ComposeState): Pair<AnnotatedString, Map<String, InlineTextContent>> {
-    fun attachment(): Pair<ImageVector, String?>? =
+    fun attachment(): Pair<Int, String?>? =
       when (draft.preview) {
-        is ComposePreview.FilePreview -> Icons.Filled.InsertDriveFile to draft.preview.fileName
-        is ComposePreview.MediaPreview -> Icons.Outlined.Image to null
-        is ComposePreview.VoicePreview -> Icons.Filled.PlayArrow to durationText(draft.preview.durationMs / 1000)
+        is ComposePreview.FilePreview -> R.drawable.ic_draft_filled to draft.preview.fileName
+        is ComposePreview.MediaPreview -> R.drawable.ic_image to null
+        is ComposePreview.VoicePreview -> R.drawable.ic_play_arrow_filled to durationText(draft.preview.durationMs / 1000)
         else -> null
       }
 
@@ -108,12 +105,12 @@ fun ChatPreviewView(
       "editIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(Icons.Outlined.EditNote, null, tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_edit_note), null, tint = MaterialTheme.colors.primary)
       },
       "attachmentIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(attachment?.first ?: Icons.Outlined.EditNote, null, tint = HighOrLowlight)
+        Icon(if (attachment?.first != null) painterResource(attachment.first) else painterResource(R.drawable.ic_edit_note), null, tint = HighOrLowlight)
       }
     )
     return text to inlineContent
@@ -239,7 +236,7 @@ fun ChatPreviewView(
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            Icons.Filled.NotificationsOff,
+            painterResource(R.drawable.ic_notifications_off_filled),
             contentDescription = generalGetString(R.string.notifications),
             tint = HighOrLowlight,
             modifier = Modifier
@@ -281,7 +278,7 @@ fun ChatStatusImage(s: NetworkStatus?) {
   val descr = s?.statusString
   if (s is NetworkStatus.Error) {
     Icon(
-      Icons.Outlined.ErrorOutline,
+      painterResource(R.drawable.ic_error),
       contentDescription = descr,
       tint = HighOrLowlight,
       modifier = Modifier

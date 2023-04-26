@@ -48,7 +48,23 @@
 
 ## Join user groups
 
-You can join an English-speaking users group if you want to ask any questions: [#SimpleX-Group-3](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FeDEgekVhh0zIBYvUupGWZ96kiBEMbXwK%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAS7Z3zQyOhZ9o1qzI9OTZRySpkFTagdLMa6Rc7opuNh4%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22cG3W1qxZGzyrvHTugx16bg%3D%3D%22%7D)
+**Please note**: The groups below are created for the users to be able to ask questions, make suggestions and ask questions about SimpleX Chat only.
+
+You also can:
+- criticize the app, and make comparisons with other messengers.
+- share new messengers you think could be interesting for privacy, as long as you don't spam.
+- share some privacy related publications, infrequently.
+- having preliminary approved with the admin in direct message, share the link to a group you created.
+
+You must:
+- be polite to other users
+- avoid spam (too frequent messages, even if they are relevant)
+- avoid any personal attacks or hostility.
+- avoid sharing any content that is not relevant to the above (that includes, but is not limited to, discussing politics or any aspects of society other than privacy, security, technology and communications, sharing any content that may be found offensive by other users, etc.).
+
+Messages not following these rules will be deleted, the right to send messages may be revoked, and the access to the new members to the group may be temporarily restricted, to prevent re-joining under a different name - our imperfect group moderation does not have a better solution at the moment.
+
+You can join an English-speaking users group if you want to ask any questions: [#SimpleX-Group-3](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fp-j-D_PrY2UMDchFHEUtbSES0nmzCnvD%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA3gBfMjB_GDEmKQwjNdqGbnX91yfuZ7nRJgQijsx5Khc%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%2262MvNZ_Ec2mmlS8V0QNtLQ%3D%3D%22%7D)
 
 There are groups in other languages, that we have the apps interface translated into. These groups are for testing, and asking questions to other SimpleX Chat users:
 
@@ -181,6 +197,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
+[Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
+
 [Mar 28, 2023. v4.6 released - with Android 8+ and ARMv7a support, hidden profiles, community moderation, improved audio/video calls and reduced battery usage](./blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
 
 [Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
@@ -295,13 +313,15 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Improved audio & video calls.
 - ✅ Support older Android OS and 32-bit CPUs.
 - ✅ Hidden chat profiles.
-- 🏗 Sending and receiving large files via [XFTP protocol](./blog/20230301-simplex-file-transfer-protocol.md).
-- 🏗 Video messages.
+- ✅ Sending and receiving large files via [XFTP protocol](./blog/20230301-simplex-file-transfer-protocol.md).
+- ✅ Video messages.
+- ✅ App access passcode.
+- 🏗 Improved Android app UI design.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
 - 🏗 Reduced battery and traffic usage in large groups.
 - Include optional message into connection request sent via contact address.
 - Ephemeral/disappearing/OTR conversations with the existing contacts.
-- Access password/pin (with optional alternative access password).
+- Optional alternative access password.
 - Local app files encryption.
 - Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).
 - Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).

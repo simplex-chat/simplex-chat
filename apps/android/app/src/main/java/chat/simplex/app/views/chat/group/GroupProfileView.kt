@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.group
 
+import SectionBottomSpacer
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.*
@@ -64,7 +65,7 @@ fun GroupProfileLayout(
   val dataUnchanged =
     displayName.value == groupProfile.displayName &&
         fullName.value == groupProfile.fullName &&
-        chosenImage.value == null
+        groupProfile.image == profileImage.value
   val closeWithAlert = {
     if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
       close()
@@ -167,7 +168,7 @@ fun GroupProfileLayout(
             }
           }
 
-          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
+          SectionBottomSpacer()
 
           LaunchedEffect(Unit) {
             delay(300)

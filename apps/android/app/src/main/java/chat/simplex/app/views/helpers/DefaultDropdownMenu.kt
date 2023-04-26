@@ -19,7 +19,7 @@ fun DefaultDropdownMenu(
   dropdownMenuItems: (@Composable () -> Unit)?
 ) {
   MaterialTheme(
-    colors = MaterialTheme.colors.copy(surface = if (isInDarkTheme()) Color(0xFF080808) else MaterialTheme.colors.background),
+    colors = MaterialTheme.colors.copy(surface = if (isInDarkTheme()) Color(0xFF0B0B0B) else MaterialTheme.colors.background),
     shapes = MaterialTheme.shapes.copy(medium = RoundedCornerShape(corner = CornerSize(25.dp)))
   ) {
     DropdownMenu(

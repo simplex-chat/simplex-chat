@@ -1040,10 +1040,8 @@
     <string name="delete_profile">删除个人资料</string>
     <string name="profile_password">个人资料密码</string>
     <string name="unhide_chat_profile">取消隐藏聊天资料</string>
-    <string name="cancel_file__question">取消文件传输？</string>
     <string name="delete_chat_profile">删除聊天资料</string>
     <string name="unhide_profile">取消隐藏个人资料</string>
-    <string name="file_transfer_will_be_cancelled_warning">文件传输将被取消。文件传输将被终止如果它正在进行中。</string>
     <string name="videos_limit_desc">同一时间只能发送10个视频</string>
     <string name="videos_limit_title">过多视频！</string>
     <string name="video_descr">视频</string>
@@ -1108,12 +1106,10 @@
     <string name="alert_text_fragment_permanent_error_reconnect">此错误对于此连接是永久性的，请重新连接。</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">当您或您的连接使用旧数据库备份时，可能会发生这种情况。</string>
     <string name="decryption_error">解密错误</string>
-    <string name="decryption_error_permanent">永久解密错误</string>
     <string name="alert_text_fragment_please_report_to_developers">请向开发者报告。</string>
     <string name="alert_text_msg_bad_hash">上一条消息的散列不同。</string>
     <string name="alert_text_msg_bad_id">下一条消息的 ID 不正确（小于或等于上一条）。
 \n它可能是由于某些错误或连接被破坏才发生。</string>
-    <string name="alert_text_decryption_error_earlier"><xliff:g id="message count" example="1">%1$d</xliff:g> 消息解密失败并且不会显示。</string>
     <string name="no_spaces">没有空格！</string>
     <string name="stop_file__action">停止文件</string>
     <string name="stop_snd_file__title">停止发送文件？</string>

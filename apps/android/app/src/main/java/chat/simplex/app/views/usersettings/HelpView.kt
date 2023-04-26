@@ -27,7 +27,6 @@ fun HelpLayout(userDisplayName: String) {
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start
   ){
     AppBarTitle(String.format(stringResource(R.string.personal_welcome), userDisplayName), false)
     ChatHelpView()

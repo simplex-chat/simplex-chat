@@ -1,28 +1,21 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDivider
-import SectionItemView
+import SectionDividerSpaced
 import SectionItemViewSpaceBetween
-import SectionItemWithValue
 import SectionSpacer
 import SectionView
 import android.app.Activity
 import android.content.ComponentName
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -31,6 +24,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -91,8 +85,7 @@ fun AppearanceView(m: ChatModel) {
   editPrimaryColor: (Color) -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.appearance_settings))
     SectionView(stringResource(R.string.settings_section_title_language), padding = PaddingValues()) {
@@ -105,26 +98,24 @@ fun AppearanceView(m: ChatModel) {
 //          onSelected = { openSystemLangPicker(context as? Activity ?: return@SectionItemWithValue) }
 //        )
 //      } else {
-        val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
-        SectionItemView {
-          LangSelector(state) {
-            state.value = it
-            withApi {
-              delay(200)
-              val activity = context as? Activity
-              if (activity != null) {
-                if (it == "system") {
-                  saveAppLocale(languagePref, activity)
-                } else {
-                  saveAppLocale(languagePref, activity, it)
-                }
-              }
+      val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
+      LangSelector(state) {
+        state.value = it
+        withApi {
+          delay(200)
+          val activity = context as? Activity
+          if (activity != null) {
+            if (it == "system") {
+              saveAppLocale(languagePref, activity)
+            } else {
+              saveAppLocale(languagePref, activity, it)
             }
           }
         }
+      }
 //      }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     SectionView(stringResource(R.string.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
@@ -149,21 +140,18 @@ fun AppearanceView(m: ChatModel) {
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced(maxTopPadding = true)
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(R.string.settings_section_title_themes)) {
-      SectionItemViewSpaceBetween {
-        val darkTheme = isSystemInDarkTheme()
-        val state = remember { derivedStateOf { currentTheme.second } }
-        ThemeSelector(state) {
-          ThemeManager.applyTheme(it.name, darkTheme)
-        }
+      val darkTheme = isSystemInDarkTheme()
+      val state = remember { derivedStateOf { currentTheme.second } }
+      ThemeSelector(state) {
+        ThemeManager.applyTheme(it.name, darkTheme)
       }
-      SectionDivider()
       SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }) {
         val title = generalGetString(R.string.color_primary)
         Text(title)
-        Icon(Icons.Filled.Circle, title, tint = colors.primary)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primary)
       }
     }
     if (currentTheme.first.primary != LightColorPalette.primary) {
@@ -177,6 +165,7 @@ fun AppearanceView(m: ChatModel) {
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

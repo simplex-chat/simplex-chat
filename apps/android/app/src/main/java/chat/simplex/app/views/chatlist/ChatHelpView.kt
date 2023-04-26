@@ -4,8 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +27,6 @@ val bold = SpanStyle(fontWeight = FontWeight.Bold)
 @Composable
 fun ChatHelpView(addContact: (() -> Unit)? = null) {
   Column(
-    horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
     val uriHandler = LocalUriHandler.current
@@ -44,7 +42,6 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
 
     Column(
       Modifier.padding(top = 24.dp),
-      horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       Text(
@@ -58,7 +55,7 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
       ) {
         Text(stringResource(R.string.chat_help_tap_button))
         Icon(
-          Icons.Outlined.PersonAdd,
+          painterResource(R.drawable.ic_person_add),
           stringResource(R.string.add_contact),
           modifier = if (addContact != null) Modifier.clickable(onClick = addContact) else Modifier,
         )
@@ -70,7 +67,6 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
 
     Column(
       Modifier.padding(top = 24.dp),
-      horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       Text(stringResource(R.string.to_connect_via_link_title), style = MaterialTheme.typography.h2)
@@ -81,7 +77,6 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
 
     Column(
       Modifier.padding(vertical = 24.dp),
-      horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       Text(stringResource(R.string.markdown_in_messages), style = MaterialTheme.typography.h2)

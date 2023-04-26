@@ -6,11 +6,10 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 
 @Composable
@@ -42,30 +41,15 @@ fun CloseSheetBar(close: (() -> Unit)?, endButtons: @Composable RowScope.() -> U
 
 @Composable
 fun AppBarTitle(title: String, withPadding: Boolean = true) {
-  val padding = if (withPadding)
-    PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
-  else
-    PaddingValues(bottom = DEFAULT_PADDING)
   Text(
     title,
     Modifier
       .fillMaxWidth()
-      .padding(padding),
-    overflow = TextOverflow.Ellipsis,
-    style = MaterialTheme.typography.h1
-  )
-}
-
-@Composable
-fun ColumnScope.AppBarTitleCentered(title: String, withPadding: Boolean = true) {
-  Text(
-    title,
-    Modifier
-      .padding(bottom = if (withPadding) DEFAULT_PADDING * 1.5f else 0.dp)
-      .align(Alignment.CenterHorizontally),
+      .padding(bottom = DEFAULT_PADDING * 1.5f, start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,),
     overflow = TextOverflow.Ellipsis,
     style = MaterialTheme.typography.h1,
-    color = MaterialTheme.colors.primary
+    color = MaterialTheme.colors.primary,
+    textAlign = TextAlign.Center
   )
 }
 

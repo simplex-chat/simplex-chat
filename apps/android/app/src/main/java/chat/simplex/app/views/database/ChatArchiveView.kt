@@ -1,6 +1,6 @@
 package chat.simplex.app.views.database
 
-import SectionDivider
+import SectionBottomSpacer
 import SectionTextFooter
 import SectionView
 import android.content.Context
@@ -13,16 +13,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
@@ -57,20 +55,18 @@ fun ChatArchiveLayout(
 ) {
   Column(
     Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(title)
     SectionView(stringResource(R.string.chat_archive_section)) {
       SettingsActionItem(
-        Icons.Outlined.IosShare,
+        painterResource(R.drawable.ic_ios_share),
         stringResource(R.string.save_archive),
         saveArchive,
         textColor = MaterialTheme.colors.primary,
         iconColor = MaterialTheme.colors.primary,
       )
-      SectionDivider()
       SettingsActionItem(
-        Icons.Outlined.Delete,
+        painterResource(R.drawable.ic_delete),
         stringResource(R.string.delete_archive),
         deleteArchiveAlert,
         textColor = Color.Red,
@@ -81,6 +77,7 @@ fun ChatArchiveLayout(
     SectionTextFooter(
       String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
     )
+    SectionBottomSpacer()
   }
 }
 

@@ -1,14 +1,12 @@
 package chat.simplex.app.views.newchat
 
+import SectionBottomSpacer
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TheaterComedy
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Share
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,7 +17,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
@@ -39,8 +36,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
     val screenHeight = maxHeight
     Column(
       Modifier
-        .verticalScroll(rememberScrollState())
-        .padding(bottom = 16.dp),
+        .verticalScroll(rememberScrollState()),
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
       AppBarTitle(stringResource(R.string.add_contact), false)
@@ -75,14 +71,15 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
         annotatedStringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         lineHeight = 22.sp,
         modifier = Modifier
-          .padding(top = 16.dp, bottom = if (screenHeight > 600.dp) 16.dp else 0.dp)
+          .padding(top = DEFAULT_PADDING, bottom = if (screenHeight > 600.dp) DEFAULT_PADDING else 0.dp)
       )
       Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
       ) {
-        SimpleButton(stringResource(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
+        SimpleButton(stringResource(R.string.share_invitation_link), icon = painterResource(R.drawable.ic_share), click = share)
       }
+      SectionBottomSpacer()
     }
   }
 }
@@ -98,7 +95,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
       horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
     ) {
       Icon(
-        if (supportedIncognito) Icons.Filled.TheaterComedy else Icons.Outlined.Info,
+        if (supportedIncognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_info),
         stringResource(R.string.incognito),
         tint = if (supportedIncognito) Indigo else WarningOrange,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
@@ -114,7 +111,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
       horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
     ) {
       Icon(
-        Icons.Outlined.Info,
+        painterResource(R.drawable.ic_info),
         stringResource(R.string.incognito),
         tint = HighOrLowlight,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)

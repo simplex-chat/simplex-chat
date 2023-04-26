@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.group
 
+import SectionBottomSpacer
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -44,7 +45,6 @@ fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
       if (welcomeText.value == groupInfo.groupProfile.description || (welcomeText.value == "" && groupInfo.groupProfile.description == null)) close()
       else showUnsavedChangesAlert({ save(close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     GroupWelcomeLayout(
       welcomeText,
@@ -71,6 +71,7 @@ private fun GroupWelcomeLayout(
       save = save,
       disabled = welcomeText.value == groupInfo.groupProfile.description || (welcomeText.value == "" && groupInfo.groupProfile.description == null)
     )
+    SectionBottomSpacer()
   }
 }
 

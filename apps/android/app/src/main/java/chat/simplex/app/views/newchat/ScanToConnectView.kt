@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import SectionBottomSpacer
 import android.Manifest
 import android.content.res.Configuration
 import android.net.Uri
@@ -141,6 +142,7 @@ fun ConnectContactLayout(chatModelIncognito: Boolean, qrCodeScanner: @Composable
       annotatedStringResource(R.string.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link),
       lineHeight = 22.sp
     )
+    SectionBottomSpacer()
   }
 }
 

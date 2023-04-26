@@ -1,17 +1,14 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDivider
-import SectionItemView
 import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TheaterComedy
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,25 +50,20 @@ private fun AcceptRequestsLayout(
     val autoAcceptState = remember { mutableStateOf(AutoAcceptState(contactLink)) }
     val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
     SectionView(stringResource(R.string.accept_requests).uppercase()) {
-      SectionItemView {
-        PreferenceToggleWithIcon(stringResource(R.string.accept_automatically), Icons.Outlined.Check, checked = autoAcceptState.value.enable) {
-          autoAcceptState.value = if (!it)
-            AutoAcceptState()
-          else
-            AutoAcceptState(it, autoAcceptState.value.incognito, autoAcceptState.value.welcomeText)
-        }
+      PreferenceToggleWithIcon(stringResource(R.string.accept_automatically), painterResource(R.drawable.ic_check), checked = autoAcceptState.value.enable) {
+        autoAcceptState.value = if (!it)
+          AutoAcceptState()
+        else
+          AutoAcceptState(it, autoAcceptState.value.incognito, autoAcceptState.value.welcomeText)
       }
       if (autoAcceptState.value.enable) {
-        SectionDivider()
-        SectionItemView {
-          PreferenceToggleWithIcon(
-            stringResource(R.string.incognito),
-            if (autoAcceptState.value.incognito) Icons.Filled.TheaterComedy else Icons.Outlined.TheaterComedy,
-            if (autoAcceptState.value.incognito) Indigo else HighOrLowlight,
-            autoAcceptState.value.incognito,
-          ) {
-            autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.welcomeText)
-          }
+        PreferenceToggleWithIcon(
+          stringResource(R.string.incognito),
+          if (autoAcceptState.value.incognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_theater_comedy),
+          if (autoAcceptState.value.incognito) Indigo else HighOrLowlight,
+          autoAcceptState.value.incognito,
+        ) {
+          autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.welcomeText)
         }
       }
     }
@@ -99,6 +91,7 @@ private fun AcceptRequestsLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -109,8 +102,8 @@ private fun ButtonsFooter(cancel: () -> Unit, save: () -> Unit, disabled: Boolea
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(Icons.Outlined.Replay, stringResource(R.string.cancel_verb), cancel, disabled)
-    FooterButton(Icons.Outlined.Check, stringResource(R.string.save_verb), save, disabled)
+    FooterButton(painterResource(R.drawable.ic_replay), stringResource(R.string.cancel_verb), cancel, disabled)
+    FooterButton(painterResource(R.drawable.ic_check), stringResource(R.string.save_verb), save, disabled)
   }
 }
 

@@ -37,7 +37,7 @@ class AlertManager {
   ) {
     showAlert {
       AlertDialog(
-        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
+        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         onDismissRequest = this::hideAlert,
         title = alertTitle(title),
         text = alertText(text),
@@ -56,7 +56,7 @@ class AlertManager {
       Dialog(onDismissRequest = this::hideAlert) {
         Column(
           Modifier
-            .background(if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
+            .background(if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
             .padding(bottom = DEFAULT_PADDING)
         ) {
           Text(
@@ -106,7 +106,7 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
+        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -129,7 +129,7 @@ class AlertManager {
         text = alertText(text),
         buttons = {
           Column(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(top = 16.dp, bottom = 2.dp),
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING_HALF).padding(top = DEFAULT_PADDING, bottom = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             TextButton(onClick = {
@@ -142,7 +142,7 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
+        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -168,7 +168,7 @@ class AlertManager {
             }) { Text(confirmText, color = Color.Unspecified) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
+        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }

@@ -1,20 +1,19 @@
 package chat.simplex.app.views.chat.group
 
 import InfoRow
-import SectionDivider
-import SectionItemView
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionSpacer
 import SectionView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -152,7 +151,6 @@ fun GroupMemberInfoLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -169,9 +167,6 @@ fun GroupMemberInfoLayout(
           val chat = getContactChat(contactId)
           if ((chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) || groupInfo.fullGroupPreferences.directMessages.on) {
             OpenChatButton(onClick = { openDirectChat(contactId) })
-            if (connectionCode != null) {
-              SectionDivider()
-            }
           }
           if (connectionCode != null) {
             VerifyCodeButton(member.verified, verifyClicked)
@@ -183,36 +178,30 @@ fun GroupMemberInfoLayout(
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
       InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)
-      SectionDivider()
       val roles = remember { member.canChangeRoleTo(groupInfo) }
       if (roles != null) {
-        SectionItemView {
-          RoleSelectionRow(roles, newRole, onRoleSelected)
-        }
+        RoleSelectionRow(roles, newRole, onRoleSelected)
       } else {
         InfoRow(stringResource(R.string.role_in_group), member.memberRole.text)
       }
       val conn = member.activeConn
       if (conn != null) {
-        SectionDivider()
         val connLevelDesc =
           if (conn.connLevel == 0) stringResource(R.string.conn_level_desc_direct)
           else String.format(generalGetString(R.string.conn_level_desc_indirect), conn.connLevel)
         InfoRow(stringResource(R.string.info_row_connection), connLevelDesc)
       }
     }
-    SectionSpacer()
     if (connStats != null) {
+      SectionDividerSpaced()
       SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
       SwitchAddressButton(switchMemberAddress)
-      SectionDivider()
         val rcvServers = connStats.rcvServers
         val sndServers = connStats.sndServers
         if ((rcvServers != null && rcvServers.isNotEmpty()) || (sndServers != null && sndServers.isNotEmpty())) {
           if (rcvServers != null && rcvServers.isNotEmpty()) {
             SimplexServers(stringResource(R.string.receiving_via), rcvServers)
             if (sndServers != null && sndServers.isNotEmpty()) {
-              SectionDivider()
               SimplexServers(stringResource(R.string.sending_via), sndServers)
             }
           } else if (sndServers != null && sndServers.isNotEmpty()) {
@@ -220,24 +209,23 @@ fun GroupMemberInfoLayout(
           }
         }
       }
-      SectionSpacer()
     }
 
     if (member.canBeRemoved(groupInfo)) {
+      SectionDividerSpaced(maxBottomPadding = false)
       SectionView {
         RemoveMemberButton(removeMember)
       }
-      SectionSpacer()
     }
 
     if (developerTools) {
+      SectionDividerSpaced()
       SectionView(title = stringResource(R.string.section_title_for_console)) {
         InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
-        SectionDivider()
         InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
       }
-      SectionSpacer()
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -250,7 +238,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (member.verified) {
-        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
       }
       Text(
         member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
@@ -273,7 +261,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
 @Composable
 fun RemoveMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     stringResource(R.string.button_remove_member),
     click = onClick,
     textColor = Color.Red,
@@ -284,7 +272,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Message,
+    painterResource(R.drawable.ic_chat),
     stringResource(R.string.button_send_direct_message),
     click = onClick,
     textColor = MaterialTheme.colors.primary,

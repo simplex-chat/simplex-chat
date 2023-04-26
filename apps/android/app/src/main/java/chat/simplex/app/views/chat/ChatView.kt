@@ -12,9 +12,6 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
@@ -392,7 +390,7 @@ fun ChatInfoToolbar(
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {
-    ItemAction(stringResource(android.R.string.search_go).capitalize(Locale.current), Icons.Outlined.Search, onClick = {
+    ItemAction(stringResource(android.R.string.search_go).capitalize(Locale.current), painterResource(R.drawable.ic_search), onClick = {
       showMenu.value = false
       showSearch = true
     })
@@ -404,11 +402,11 @@ fun ChatInfoToolbar(
         showMenu.value = false
         startCall(CallMediaType.Audio)
       }) {
-        Icon(Icons.Outlined.Phone, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_call_500), stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
     }
     menuItems.add {
-      ItemAction(stringResource(R.string.icon_descr_video_call).capitalize(Locale.current), Icons.Outlined.Videocam, onClick = {
+      ItemAction(stringResource(R.string.icon_descr_video_call).capitalize(Locale.current), painterResource(R.drawable.ic_videocam), onClick = {
         showMenu.value = false
         startCall(CallMediaType.Video)
       })
@@ -419,7 +417,7 @@ fun ChatInfoToolbar(
         showMenu.value = false
         addMembers(chat.chatInfo.groupInfo)
       }) {
-        Icon(Icons.Outlined.PersonAdd, stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_person_add_500), stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -427,7 +425,7 @@ fun ChatInfoToolbar(
   menuItems.add {
     ItemAction(
       if (ntfsEnabled.value) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
-      if (ntfsEnabled.value) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
+      if (ntfsEnabled.value) painterResource(R.drawable.ic_notifications_off) else painterResource(R.drawable.ic_notifications),
       onClick = {
         showMenu.value = false
         // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
@@ -441,7 +439,7 @@ fun ChatInfoToolbar(
 
   barButtons.add {
     IconButton({ showMenu.value = true }) {
-      Icon(Icons.Default.MoreVert, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      Icon(MoreVertFilled, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
     }
   }
 
@@ -498,7 +496,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 
 @Composable
 private fun ContactVerifiedShield() {
-  Icon(Icons.Outlined.VerifiedUser, null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
+  Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
 }
 
 data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
@@ -787,17 +785,17 @@ fun BoxWithConstraintsScope.FloatingButtons(
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
-    Modifier.padding(end = 16.dp, top = 24.dp).align(Alignment.TopEnd),
+    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp).align(Alignment.TopEnd),
     topUnreadCount,
     showButtonWithCounter,
     onClick = { scope.launch { listState.animateScrollBy(height) } },
     onLongClick = { showDropDown.value = true }
   )
 
-  DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - 16.dp, 24.dp + fabSize)) {
+  DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
     ItemAction(
       generalGetString(R.string.mark_read),
-      Icons.Outlined.Check,
+      painterResource(R.drawable.ic_check),
       onClick = {
         markRead(
           CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
@@ -901,7 +899,7 @@ private fun bottomEndFloatingButton(
         modifier = Modifier.size(48.dp)
       ) {
         Icon(
-          imageVector = Icons.Default.KeyboardArrowDown,
+          painter = painterResource(R.drawable.ic_keyboard_arrow_down),
           contentDescription = null,
           tint = MaterialTheme.colors.primary
         )

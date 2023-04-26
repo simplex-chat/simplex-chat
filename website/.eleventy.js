@@ -6,6 +6,8 @@ const uri = require('fast-uri')
 const i18n = require('eleventy-plugin-i18n');
 const fs = require("fs");
 const path = require("path");
+const pluginRss = require('@11ty/eleventy-plugin-rss');
+
 
 const globalConfig = {
   onionLocation: "http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion",
@@ -62,6 +64,8 @@ module.exports = function (ty) {
       return `/${obj.lang}/${urlParts.slice(2).join('/')}`
     }
   })
+
+  ty.addPlugin(pluginRss);
 
   ty.addPlugin(i18n, {
     translations,

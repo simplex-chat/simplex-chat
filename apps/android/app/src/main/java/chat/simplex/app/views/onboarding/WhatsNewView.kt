@@ -1,17 +1,17 @@
 package chat.simplex.app.views.onboarding
 
 import android.content.res.Configuration
+import androidx.annotation.IntegerRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -28,19 +28,18 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   val currentVersion = remember { mutableStateOf(versionDescriptions.lastIndex) }
 
   @Composable
-  fun featureDescription(icon: ImageVector, titleId: Int, descrId: Int, link: String?) {
+  fun featureDescription(icon: Painter, titleId: Int, descrId: Int, link: String?) {
     @Composable
     fun linkButton(link: String) {
       val uriHandler = LocalUriHandler.current
       Icon(
-        Icons.Outlined.OpenInNew, stringResource(titleId), tint = MaterialTheme.colors.primary,
+        painterResource(R.drawable.ic_open_in_new), stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
           .clickable { uriHandler.openUriCatching(link) }
       )
     }
 
     Column(
-      horizontalAlignment = Alignment.Start,
       modifier = Modifier.padding(bottom = 12.dp)
     ) {
       Row(
@@ -68,7 +67,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   fun pagination() {
     Row(
       Modifier
-        .padding(bottom = 16.dp)
+        .padding(bottom = DEFAULT_PADDING)
     ) {
       if (currentVersion.value > 0) {
         val prev = currentVersion.value - 1
@@ -80,7 +79,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
               .clickable { currentVersion.value = prev }
               .padding(8.dp)
           ) {
-            Icon(Icons.Outlined.ArrowBackIosNew, "previous", tint = MaterialTheme.colors.primary)
+            Icon(painterResource(R.drawable.ic_arrow_back_ios_new), "previous", tint = MaterialTheme.colors.primary)
             Text(versionDescriptions[prev].version, color = MaterialTheme.colors.primary)
           }
         }
@@ -97,7 +96,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
               .padding(8.dp)
           ) {
             Text(versionDescriptions[next].version, color = MaterialTheme.colors.primary)
-            Icon(Icons.Outlined.ArrowForwardIos, "next", tint = MaterialTheme.colors.primary)
+            Icon(painterResource(R.drawable.ic_arrow_forward_ios), "next", tint = MaterialTheme.colors.primary)
           }
         }
       }
@@ -112,8 +111,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         .fillMaxSize()
         .padding(horizontal = DEFAULT_PADDING)
         .verticalScroll(rememberScrollState()),
-      horizontalAlignment = Alignment.Start,
-      verticalArrangement = Arrangement.spacedBy(16.dp)
+      verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
     ) {
       Text(
         String.format(generalGetString(R.string.new_in_version), v.version),
@@ -128,7 +126,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       )
 
       v.features.forEach { feature ->
-        featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link)
+        featureDescription(painterResource(feature.icon), feature.titleId, feature.descrId, feature.link)
       }
 
       if (!viaSettings) {
@@ -154,7 +152,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
 }
 
 private data class FeatureDescription(
-  val icon: ImageVector,
+  val icon: Int,
   val titleId: Int,
   val descrId: Int,
   val link: String? = null
@@ -170,18 +168,18 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     version = "v4.2",
     features = listOf(
       FeatureDescription(
-        icon = Icons.Outlined.VerifiedUser,
+        icon = R.drawable.ic_verified_user,
         titleId = R.string.v4_2_security_assessment,
         descrId = R.string.v4_2_security_assessment_desc,
         link = "https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Group,
+        icon = R.drawable.ic_group,
         titleId = R.string.v4_2_group_links,
         descrId = R.string.v4_2_group_links_desc
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Check,
+        icon = R.drawable.ic_check,
         titleId = R.string.v4_2_auto_accept_contact_requests,
         descrId = R.string.v4_2_auto_accept_contact_requests_desc
       ),
@@ -191,22 +189,22 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     version = "v4.3",
     features = listOf(
       FeatureDescription(
-        icon = Icons.Outlined.Mic,
+        icon = R.drawable.ic_mic,
         titleId = R.string.v4_3_voice_messages,
         descrId = R.string.v4_3_voice_messages_desc
       ),
       FeatureDescription(
-        icon = Icons.Outlined.DeleteForever,
+        icon = R.drawable.ic_delete_forever,
         titleId = R.string.v4_3_irreversible_message_deletion,
         descrId = R.string.v4_3_irreversible_message_deletion_desc
       ),
       FeatureDescription(
-        icon = Icons.Outlined.WifiTethering,
+        icon = R.drawable.ic_wifi_tethering,
         titleId = R.string.v4_3_improved_server_configuration,
         descrId = R.string.v4_3_improved_server_configuration_desc
       ),
       FeatureDescription(
-        icon = Icons.Outlined.VisibilityOff,
+        icon = R.drawable.ic_visibility_off,
         titleId = R.string.v4_3_improved_privacy_and_security,
         descrId = R.string.v4_3_improved_privacy_and_security_desc
       ),
@@ -216,22 +214,22 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     version = "v4.4",
     features = listOf(
       FeatureDescription(
-        icon = Icons.Outlined.Timer,
+        icon = R.drawable.ic_timer,
         titleId = R.string.v4_4_disappearing_messages,
         descrId = R.string.v4_4_disappearing_messages_desc
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Pending,
+        icon = R.drawable.ic_pending,
         titleId = R.string.v4_4_live_messages,
         descrId = R.string.v4_4_live_messages_desc
       ),
       FeatureDescription(
-        icon = Icons.Outlined.VerifiedUser,
+        icon = R.drawable.ic_verified_user,
         titleId = R.string.v4_4_verify_connection_security,
         descrId = R.string.v4_4_verify_connection_security_desc
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Translate,
+        icon = R.drawable.ic_translate,
         titleId = R.string.v4_4_french_interface,
         descrId = R.string.v4_4_french_interface_descr
       )
@@ -241,33 +239,33 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     version = "v4.5",
     features = listOf(
       FeatureDescription(
-        icon = Icons.Outlined.ManageAccounts,
+        icon = R.drawable.ic_manage_accounts,
         titleId = R.string.v4_5_multiple_chat_profiles,
         descrId = R.string.v4_5_multiple_chat_profiles_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.EditNote,
+        icon = R.drawable.ic_edit_note,
         titleId = R.string.v4_5_message_draft,
         descrId = R.string.v4_5_message_draft_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.SafetyDivider,
+        icon = R.drawable.ic_safety_divider,
         titleId = R.string.v4_5_transport_isolation,
         descrId = R.string.v4_5_transport_isolation_descr,
         link = "https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation"
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Task,
+        icon = R.drawable.ic_task,
         titleId = R.string.v4_5_private_filenames,
         descrId = R.string.v4_5_private_filenames_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Battery2Bar,
+        icon = R.drawable.ic_battery_2_bar,
         titleId = R.string.v4_5_reduced_battery_usage,
         descrId = R.string.v4_5_reduced_battery_usage_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Translate,
+        icon = R.drawable.ic_translate,
         titleId = R.string.v4_5_italian_interface,
         descrId = R.string.v4_5_italian_interface_descr,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
@@ -278,32 +276,32 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     version = "v4.6",
     features = listOf(
       FeatureDescription(
-        icon = Icons.Outlined.Lock,
+        icon = R.drawable.ic_lock,
         titleId = R.string.v4_6_hidden_chat_profiles,
         descrId = R.string.v4_6_hidden_chat_profiles_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Flag,
+        icon = R.drawable.ic_flag,
         titleId = R.string.v4_6_group_moderation,
         descrId = R.string.v4_6_group_moderation_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.MapsUgc,
+        icon = R.drawable.ic_maps_ugc,
         titleId = R.string.v4_6_group_welcome_message,
         descrId = R.string.v4_6_group_welcome_message_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Call,
+        icon = R.drawable.ic_call,
         titleId = R.string.v4_6_audio_video_calls,
         descrId = R.string.v4_6_audio_video_calls_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Battery3Bar,
+        icon = R.drawable.ic_battery_3_bar,
         titleId = R.string.v4_6_reduced_battery_usage,
         descrId = R.string.v4_6_reduced_battery_usage_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Translate,
+        icon = R.drawable.ic_translate,
         titleId = R.string.v4_6_chinese_spanish_interface,
         descrId = R.string.v4_6_chinese_spanish_interface_descr,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
@@ -314,17 +312,17 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     version = "v5.0",
     features = listOf(
       FeatureDescription(
-        icon = Icons.Outlined.UploadFile,
+        icon = R.drawable.ic_upload_file,
         titleId = R.string.v5_0_large_files_support,
         descrId = R.string.v5_0_large_files_support_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Lock,
+        icon = R.drawable.ic_lock,
         titleId = R.string.v5_0_app_passcode,
         descrId = R.string.v5_0_app_passcode_descr
       ),
       FeatureDescription(
-        icon = Icons.Outlined.Translate,
+        icon = R.drawable.ic_translate,
         titleId = R.string.v5_0_polish_interface,
         descrId = R.string.v5_0_polish_interface_descr,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"

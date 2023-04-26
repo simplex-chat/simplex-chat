@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -19,7 +17,9 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -171,7 +171,7 @@ private fun PlayPauseButton(
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+        if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
         contentDescription = null,
         Modifier.size(36.dp),
         tint = if (error) WarningOrange else if (!enabled) HighOrLowlight else MaterialTheme.colors.primary
@@ -200,7 +200,7 @@ private fun VoiceMsgIndicator(
     if (hasText) {
       IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
-          imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+          if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
           contentDescription = null,
           Modifier.size(36.dp),
           tint = MaterialTheme.colors.primary

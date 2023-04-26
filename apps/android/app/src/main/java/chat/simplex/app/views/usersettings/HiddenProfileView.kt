@@ -1,6 +1,6 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
@@ -12,9 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -58,8 +56,7 @@ private fun HiddenProfileLayout(
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_BOTTOM_PADDING),
+      .verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(R.string.hide_profile))
     SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
@@ -76,15 +73,14 @@ private fun HiddenProfileLayout(
       SectionItemView {
         PassphraseField(hidePassword, generalGetString(R.string.password_to_show), isValid = { passwordValid }, showStrength = true)
       }
-      SectionDivider()
       SectionItemView {
         PassphraseField(confirmHidePassword, stringResource(R.string.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
       }
-      SectionDivider()
       SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {
         Text(generalGetString(R.string.save_profile_password), color = if (saveDisabled) HighOrLowlight else MaterialTheme.colors.primary)
       }
     }
     SectionTextFooter(stringResource(R.string.to_reveal_profile_enter_password))
+    SectionBottomSpacer()
   }
 }
