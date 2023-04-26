@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# shellcheck disable=SC2154
 trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
 IFS=$'\n\t'
 
@@ -40,11 +41,12 @@ else
 fi
 
 # If chat binary not found, check v0 initial migration and offer to abort or continue
+# shellcheck disable=SC2143
 if [[ -z $binary ]]; then
   agent_db="$HOME/.simplex/simplex.agent.db"
   if [[ \
     -f "$agent_db" && \
-    $(echo "select * from migrations;" | sqlite3 "$agent_db" | grep 20210101_initial) \
+    $(<<< "select * from migrations;" sqlite3 "$agent_db" | grep 20210101_initial) \
   ]]; then
     echo "Warning: found SimpleX Chat database, the current version is not backwards compatible."
     echo "If you continue, the current version will be installed as $APP_NAME with a clean database, the old database will be preserved."
@@ -93,6 +95,7 @@ chmod +x "$BIN_PATH"
 echo "$APP_NAME installed successfully!"
 
 if [ -z "$(command -v $APP_NAME)" ]; then
+  # shellcheck disable=SC2016
   if [ -n "$($SHELL -c 'echo $ZSH_VERSION')" ]; then
     SHELL_FILE="$HOME/.zshrc"
   elif [ -n "$($SHELL -c 'echo $BASH_VERSION')" ]; then

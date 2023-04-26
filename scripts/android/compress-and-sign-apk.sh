@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Safety measures
 set -euo pipefail
+# shellcheck disable=SC2154
 trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
 IFS=$'\n\t'
 
@@ -20,11 +21,12 @@ fi
 cd "$apk_parent_dir"
 
 touch remove_this_file remove_this_FILE
-(( $(ls | grep "remove_this" | wc -l)==1 )) && case_insensitive=1 || case_insensitive=0
+#shellcheck disable=SC2012
+(( $(ls -1 remove_this* | wc -l)==1 )) && case_insensitive=1 || case_insensitive=0
 #echo Case-insensitive file system: $case_insensitive
 rm remove_this_file remove_this_FILE 2> /dev/null || true
 
-ORIG_NAMES=( $(echo app*.apk) )
+ORIG_NAMES=( "$(echo app*.apk)" )
 for ORIG_NAME in "${ORIG_NAMES[@]}"; do
     unzip -o -q -d apk "$ORIG_NAME"
     ORIG_NAME_COPY=$ORIG_NAME-copy
