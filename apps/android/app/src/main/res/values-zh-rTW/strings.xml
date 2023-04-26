@@ -12,7 +12,7 @@
     <string name="about_simplex_chat">關於 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="accept_connection_request__question">接受連線請求？</string>
     <string name="callstatus_accepted">已接受通話</string>
-    <string name="network_enable_socks_info">要在端口 9050 啟動 SOCKS 代理伺服器嗎？在啟用這個選項之前，必須先啟動代理伺服器。</string>
+    <string name="network_enable_socks_info">要在端口 9050 啟用SOCKS 代理伺服器嗎？在啟用這個選項之前，必須先啟用代理伺服器。</string>
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後選按：</string>
     <string name="smp_servers_preset_add">加入預設伺服器</string>
@@ -158,12 +158,12 @@
     <string name="chat_preferences_default">預設 (%s)</string>
     <string name="group_preferences">群組設定</string>
     <string name="contact_preferences">聯絡人設定</string>
-    <string name="share_image">分享圖片 …</string>
+    <string name="share_image">分享媒體 …</string>
     <string name="both_you_and_your_contacts_can_delete">你和你的聯絡人都可以不可逆地刪除已經傳送的訊息。</string>
     <string name="server_connected">已連接</string>
     <string name="simplex_link_mode_description">簡介</string>
     <string name="simplex_link_mode_full">完整連結</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>你可以通過設定關閉</b> – 當應用程式運行時，通知服務仍然會運行。</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>你可以透過設定關閉</b> – 當應用程式運行時，通知服務仍然會運行。</string>
     <string name="notifications_mode_service_desc">通知服務會一直在後台中運行 - 一但接收到新訊息就會顯示於通知內。</string>
     <string name="notifications_mode_off_desc">應用程式只會在運行中的時候才會收到訊息的通知。</string>
     <string name="icon_descr_asked_to_receive">要求接收圖片</string>
@@ -205,7 +205,7 @@
     <string name="failed_to_create_user_duplicate_desc">你已經有一個個人檔案的顯示名稱和現在選擇建立的個人檔案名稱相同。請選擇其他名稱。</string>
     <string name="failed_to_active_user_title">個人檔案切換失敗！</string>
     <string name="error_joining_group">加入群組時出錯</string>
-    <string name="sender_cancelled_file_transfer">傳送者已取消傳遞檔案。</string>
+    <string name="sender_cancelled_file_transfer">傳送者已取消傳送檔案。</string>
     <string name="error_receiving_file">接收檔案時出錯</string>
     <string name="error_creating_address">建立地址時出錯</string>
     <string name="v4_5_private_filenames_descr">為了保護私人檔案，圖片或語音檔案會使用 UTC。</string>
@@ -226,21 +226,21 @@
     <string name="simplex_link_contact">SimpleX 聯絡人地址</string>
     <string name="simplex_link_invitation">SimpleX 一次性連結</string>
     <string name="simplex_link_mode">SimpleX 連結</string>
-    <string name="simplex_link_connection">通過 <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
-    <string name="simplex_link_mode_browser">通過瀏覽器</string>
+    <string name="simplex_link_connection">透過 <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_mode_browser">透過瀏覽器</string>
     <string name="error_sending_message">傳送訊息時出錯</string>
     <string name="contact_already_exists">聯絡人已存在</string>
     <string name="you_are_already_connected_to_vName_via_this_link">你已經連接到 <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>。</string>
     <string name="v4_5_transport_isolation_descr">使用個人檔案（預設值）或使用連接（測試版）。</string>
     <string name="v4_5_reduced_battery_usage">減少電量使用</string>
-    <string name="v4_5_reduced_battery_usage_descr">更多功能即將推出！</string>
+    <string name="v4_5_reduced_battery_usage_descr">更多改進即將推出！</string>
     <string name="v4_5_italian_interface">意大利語言界面</string>
     <string name="v4_5_italian_interface_descr">感謝用戶 - 使用 Weblate 的翻譯貢獻！</string>
     <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="thousand_abbreviation">k</string>
     <string name="connect_via_contact_link">透過連結連接聯絡人？</string>
     <string name="connect_via_invitation_link">透過邀請連結連接？</string>
-    <string name="connect_via_group_link">通過邀請連結連接群組？</string>
+    <string name="connect_via_group_link">透過邀請連結連接群組？</string>
     <string name="profile_will_be_sent_to_contact_sending_link">你的個人檔案將會傳送給你收到此連結的聯絡人</string>
     <string name="you_will_join_group">你將會加入此連結內的群組並且連接到此群組成為群組內的成員。</string>
     <string name="connect_via_link_verb">連接</string>
@@ -289,7 +289,7 @@
     <string name="settings_notifications_mode_title">通知服務</string>
     <string name="settings_notification_preview_mode_title">顯示預覽</string>
     <string name="settings_notification_preview_title">通知預覽</string>
-    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">如果你解鎖程式三十秒後再次啟動或返回應用程式，你會需要進行多一次解鎖程式。</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">如果你解鎖程式三十秒後在後台再次啟動或返回應用程式，你會需要進行多一次認證。</string>
     <string name="auth_unlock">已解鎖</string>
     <string name="auth_log_in_using_credential">使用你的憑據登入</string>
     <string name="auth_open_chat_console">使用終端機開啟對話</string>
@@ -314,7 +314,7 @@
     <string name="voice_message_send_text">語音訊息 …</string>
     <string name="icon_descr_record_voice_message">錄製語音訊息</string>
     <string name="you_need_to_allow_to_send_voice">你需要在設定上開放權限允許你的聯絡人傳送語音訊息。</string>
-    <string name="voice_messages_prohibited">禁止語音訊息！</string>
+    <string name="voice_messages_prohibited">禁用語音訊息！</string>
     <string name="ask_your_contact_to_enable_voice">請你的聯絡人開放權限允許你傳送語音訊息</string>
     <string name="only_group_owners_can_enable_voice">只有群組的負責人才能啟用語音訊息</string>
     <string name="send_verb">傳送</string>
@@ -348,7 +348,7 @@
 \n在啟用此功能之前，系統將提示你完成螢幕鎖定的功能。</string>
     <string name="la_notice_turn_on">打開</string>
     <string name="auth_simplex_lock_turned_on">SimpleX 鎖定已開啟</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">你的裝置沒有啟動螢幕鎖定。你可以通過設定內啟動螢幕鎖定，當你啟動後就可以使用 SimpleX 鎖定。</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">你的裝置沒有啟用螢幕鎖定。你可以通過設定內啟用螢幕鎖定，當你啟用後就可以使用 SimpleX 鎖定。</string>
     <string name="edit_verb">修改</string>
     <string name="delete_verb">刪除</string>
     <string name="reveal_verb">展露</string>
@@ -358,7 +358,7 @@
     <string name="icon_descr_received_msg_status_unread">未讀</string>
     <string name="you_have_no_chats">你沒有聯絡人</string>
     <string name="image_decoding_exception_title">解碼錯誤</string>
-    <string name="contact_sent_large_file">你的聯絡人傳送的檔案大於目前支持的最大上限 (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
+    <string name="contact_sent_large_file">你的聯絡人傳送的檔案大於目前支援的最大上限 (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
     <string name="images_limit_desc">只能同一時間傳送十張圖片</string>
     <string name="maximum_supported_file_size">目前支援的最大檔案大小為 <xliff:g id="maxFileSize">%1$s</xliff:g>。</string>
     <string name="file_will_be_received_when_contact_is_online">下載檔案需要傳送者上線的時候才能下載檔案，請等待對方上線！</string>
@@ -537,7 +537,7 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">一個保護你的隱私和傳送安全通訊的應用程式平台。</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">我們不會在伺服器內儲存你的任何聯絡人和訊息（一旦傳送）。</string>
     <string name="create_profile">建立個人檔案</string>
-    <string name="callstate_received_confirmation">回應已確認</string>
+    <string name="callstate_received_confirmation">已確認回應…</string>
     <string name="you_can_connect_to_simplex_chat_founder">你可以透過 <font color="#0088ff">連接到 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 開發人員提出任何問題並同意更新</font>。</string>
     <string name="to_start_a_new_chat_help_header">開始新的對話</string>
     <string name="set_contact_name">設定聯絡人名稱</string>
@@ -622,7 +622,7 @@
     <string name="delete_link_question">刪除連結？</string>
     <string name="button_remove_member">移除成員</string>
     <string name="member_role_will_be_changed_with_notification">成員的身份會修改為 \"%s\". 所有在群組內的成員都會收到通知</string>
-    <string name="member_role_will_be_changed_with_invitation">成員的身份會修改為 \"%s\". 該成員將收到新的邀請</string>
+    <string name="member_role_will_be_changed_with_invitation">成員的身份會修改為 \"%s\"。該成員將接收到新的邀請。</string>
     <string name="network_status">網路狀態</string>
     <string name="network_options_reset_to_defaults">重置為預設值</string>
     <string name="incognito_info_share">當你與某人分享已啟用匿名聊天模式的個人檔案時，此個人檔案將用於他們邀請你參加的群組。</string>
@@ -664,10 +664,10 @@
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">你可以分享連結或二維碼 - 任何人也可以加入至此群組內。直到你刪除群組前你也不會失去遺失群組。</string>
     <string name="group_main_profile_sent">你的個人檔案會傳送給群組內的成員。</string>
     <string name="save_group_profile">儲存群組檔案</string>
-    <string name="voice_prohibited_in_this_chat">語音訊息於這個聊天窒是禁止的。</string>
+    <string name="voice_prohibited_in_this_chat">語音訊息於這個聊天窒是禁用的。</string>
     <string name="v4_3_irreversible_message_deletion_desc">允許你的聯絡人可以完全刪除訊息</string>
     <string name="first_platform_without_user_ids">第一個沒有任何用戶識別符的通訊平台 – 以私隱為設計</string>
-    <string name="next_generation_of_private_messaging">新一代的私人訊息平台</string>
+    <string name="next_generation_of_private_messaging">新一代的私密訊息平台</string>
     <string name="decentralized">去中心化的</string>
     <string name="people_can_connect_only_via_links_you_share">人們只能在你分享了連結後，才能和你連接。</string>
     <string name="privacy_redefined">重新定義私隱</string>
@@ -682,7 +682,7 @@
     <string name="status_e2e_encrypted">已經完成端對端加密</string>
     <string name="status_no_e2e_encryption">沒有端對端加密</string>
     <string name="icon_descr_speaker_off">關閉喇叭</string>
-    <string name="settings_section_title_messages">訊息</string>
+    <string name="settings_section_title_messages">訊息和檔案</string>
     <string name="privacy_and_security">私隱 &amp; 安全性</string>
     <string name="settings_section_title_themes">主題</string>
     <string name="v4_4_french_interface">法語界面</string>
@@ -773,13 +773,13 @@
     <string name="theme_light">明亮</string>
     <string name="reset_color">重設顏色</string>
     <string name="feature_off">關閉</string>
-    <string name="feature_received_prohibited">已接收，已禁止</string>
+    <string name="feature_received_prohibited">已接收，已禁用</string>
     <string name="accept_feature_set_1_day">設定為一日</string>
     <string name="contacts_can_mark_messages_for_deletion">聯絡人可以標記訊息為已刪除；你仍可以看到那些訊息。</string>
     <string name="prohibit_sending_voice_messages">禁止傳送語音訊息</string>
     <string name="only_your_contact_can_send_disappearing">只有你的聯絡人可以傳送自動銷毀的訊息</string>
-    <string name="disappearing_prohibited_in_this_chat">自動銷毀訊息已被禁止於此聊天室。</string>
-    <string name="message_deletion_prohibited">此聊天室禁止不可逆的訊息刪除。</string>
+    <string name="disappearing_prohibited_in_this_chat">自動銷毀訊息已被禁用於此聊天室。</string>
+    <string name="message_deletion_prohibited">此聊天室禁用不可逆地訊息刪除。</string>
     <string name="only_you_can_send_voice">只有你可以傳送語音訊息。</string>
     <string name="direct_messages_are_prohibited_in_chat">私訊群組內的成員於這個群組內是禁用的。</string>
     <string name="group_members_can_delete">群組內的成員可以不可逆地刪除訊息。</string>
@@ -888,11 +888,9 @@
     <string name="database_encryption_will_be_updated">受加密的數據庫密碼會再次更新和儲存於金鑰庫。</string>
     <string name="how_simplex_works"><xliff:g id="appName">SimpleX</xliff:g> 是怎樣運作</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">當發生：
-\n1. 如果三十天內沒有收到訊息，那麼這些訊息將會在伺服器內過時。
-\n2. 你用來接收該聯絡人的訊息伺服器已更新並且重新啟動。
-\n3. 連接受到影響或被破壞。
-\n請透過設定列尋找開發人員並且報告你的伺服器問題。
-\n我們將會新增重複的伺服器以防止遺失伺服器。</string>
+\n1.訊息將會在發送客戶端後兩天或在伺服器內三十天時過時。
+\n2. 訊息解密失敗，因為你或你的聯絡人用了舊的數據庫備份
+\n3.連接被破壞。</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">只有對方的裝置才會儲存你的個人檔案，聯絡人，群組，所有訊息都會經過兩層的端對端加密</string>
     <string name="store_passphrase_securely">請放置你的密碼於安全的地方，如果你遺失了密碼，將不可能更改你的密碼。</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天室以匯出對話，匯入或刪除對話存檔。當聊天室停止後你將不能接收或傳送訊息。</string>
@@ -912,7 +910,7 @@
     <string name="onboarding_notifications_mode_off">當應用程式是開啟</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">你可以控制通過哪一個伺服器 <b>來接收</b> 你的聯絡人訊息 – 這些伺服器用來接收他們傳送給你的訊息。</string>
     <string name="allow_accepting_calls_from_lock_screen">透過設定啟用於上鎖畫面顯示來電通知。</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">這操作不能還原 - 你現有的個人檔案，聯絡人，訊息和檔案將會不可逆地的失去。</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">這操作不能還原 - 你現有的個人檔案，聯絡人，訊息和檔案將會不可逆地遺失。</string>
     <string name="you_must_use_the_most_recent_version_of_database">你必須在裝置上使用最新版本的對話數據庫，否則你可能會停止接收某些聯絡人的訊息。</string>
     <string name="delete_files_and_media_desc">這操作不能還原 - 所有已經接收和傳送的檔案和媒體檔案將會刪除。低解析度圖片將保留。</string>
     <string name="messages_section_description">這設置適用於你當前的個人檔案</string>
@@ -948,7 +946,7 @@
     <string name="passphrase_is_different">數據庫密碼與儲存在金鑰庫中的密碼不同。</string>
     <string name="unknown_error">不明的錯誤</string>
     <string name="restore_database_alert_desc">還原數據庫備份後請輸入舊密碼。這個操作是不能撤銷的！</string>
-    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">你可以透過應用程式的設定或透過數據庫去重新啟動應用程式來開始新的對話。</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">你可以透過應用程式的設定或透過數據庫去重新啟用應用程式來開始新的對話。</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">你已經被邀请加入至群組。加入後可與群組內的成員對話。</string>
     <string name="you_joined_this_group">你已加入至群組</string>
     <string name="icon_descr_contact_checked">已確認聯絡人</string>
@@ -993,7 +991,7 @@
     <string name="cant_delete_user_profile">無法刪除用戶個人資料！</string>
     <string name="user_hide">隱藏</string>
     <string name="make_profile_private">將個人資料設為私密！</string>
-    <string name="v4_6_audio_video_calls">語音和視頻通話</string>
+    <string name="v4_6_audio_video_calls">語音和視訊通話</string>
     <string name="v4_6_chinese_spanish_interface">中文和西班牙文界面</string>
     <string name="v4_6_reduced_battery_usage">進一步減少電池使用</string>
     <string name="v4_6_group_moderation">群組審核</string>
@@ -1004,7 +1002,7 @@
     <string name="v4_6_hidden_chat_profiles_descr">使用密碼保護你的聊天資料！</string>
     <string name="relay_server_protects_ip">中繼伺服器保護你的 IP 地址，但它可以觀察通話的持續時間。</string>
     <string name="button_add_welcome_message">添加歡迎信息</string>
-    <string name="error_saving_user_password">保存用戶密碼時出錯</string>
+    <string name="error_saving_user_password">儲存用戶密碼時出錯</string>
     <string name="error_updating_user_privacy">更新用戶隱私時出錯</string>
     <string name="relay_server_if_necessary">中繼伺服器僅在必要時使用。 另一方可以觀察到你的 IP 地址。</string>
     <string name="enter_password_to_show">輸入密碼去搜尋！</string>
@@ -1015,10 +1013,10 @@
     <string name="muted_when_inactive">Muted when inactive!</string>
     <string name="v4_6_group_welcome_message_descr">設置向新成員顯示的訊息！</string>
     <string name="tap_to_activate_profile">點擊以激活配置檔案。</string>
-    <string name="v4_6_audio_video_calls_descr">支持藍牙和其他改進。</string>
+    <string name="v4_6_audio_video_calls_descr">支援藍牙和其他改進。</string>
     <string name="should_be_at_least_one_visible_profile">至少要有一個可見的用戶配置檔案。</string>
     <string name="group_welcome_title">歡迎訊息</string>
-    <string name="v4_6_chinese_spanish_interface_descr">感謝用戶——通過 Weblate 做出貢獻！</string>
+    <string name="v4_6_chinese_spanish_interface_descr">感謝用戶-透過 Weblate 做出貢獻！</string>
     <string name="should_be_at_least_one_profile">應該至少有一個用戶配置檔案。</string>
     <string name="user_unmute">取消靜音</string>
     <string name="you_will_still_receive_calls_and_ntfs">當靜音配置檔案處於活動狀態時，你仍會收到來自靜音配置檔案的通話和通知。</string>
@@ -1032,7 +1030,7 @@
     <string name="mtr_error_no_down_migration">數據庫現行版本比應用程式新，但是無法降級遷出：%s</string>
     <string name="mtr_error_different">在應用程式/數據庫的不同遷移：%s/%s</string>
     <string name="database_migrations">遷移：%s</string>
-    <string name="database_downgrade_warning">警告：你可能會遺失部分數據！</string>
+    <string name="database_downgrade_warning">警告：你可能會遺失一些數據！</string>
     <string name="image_will_be_received_when_contact_completes_uploading">圖片將會在你的聯絡人完成上傳後接收。</string>
     <string name="file_will_be_received_when_contact_completes_uploading">檔案將會在你的聯絡人完成上傳後接收。</string>
     <string name="settings_section_title_experimenta">實驗性</string>
@@ -1057,4 +1055,76 @@
     <string name="developer_options">數據庫IDs和傳輸隔離選項。</string>
     <string name="downgrade_and_open_chat">降級和開啟對話</string>
     <string name="profile_password">個人資料密碼</string>
+    <string name="error_saving_xftp_servers">儲存XFTP 伺服器時出錯</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">請確保 XFTP 伺服器連結格式正確，隔行顯示且不重複。</string>
+    <string name="error_loading_smp_servers">加載SMP 伺服器時失敗</string>
+    <string name="error_loading_xftp_servers">加載XFTP 伺服器時出錯</string>
+    <string name="smp_server_test_create_file">建立檔案</string>
+    <string name="error_xftp_test_server_auth">伺服器需要認證後才能上傳，檢查密碼</string>
+    <string name="smp_server_test_compare_file">對比檔案</string>
+    <string name="smp_server_test_delete_file">刪除檔案</string>
+    <string name="smp_server_test_download_file">下載檔案</string>
+    <string name="la_current_app_passcode">現行密碼</string>
+    <string name="la_auth_failed">認證失敗</string>
+    <string name="la_enter_app_passcode">輸入密碼</string>
+    <string name="la_no_app_password">沒有程式密碼</string>
+    <string name="la_lock_mode_passcode">輸入密碼</string>
+    <string name="la_lock_mode">SimpleX 鎖定模式</string>
+    <string name="lock_not_enabled">未啟用SimpleX 鎖定！</string>
+    <string name="host_verb">主機</string>
+    <string name="disable_onion_hosts_when_not_supported">如果SOCKS 代理不支援它們，請設定 <i>Use .onion hosts</i>為否。</string>
+    <string name="lock_mode">鎖定模式</string>
+    <string name="la_mode_passcode">密碼</string>
+    <string name="passcode_changed">已更改密碼！</string>
+    <string name="passcode_set">已設定密碼！</string>
+    <string name="authentication_cancelled">已取消認證</string>
+    <string name="new_passcode">新密碼</string>
+    <string name="decryption_error">解密錯誤</string>
+    <string name="enable_lock">啟用鎖定</string>
+    <string name="alert_text_fragment_please_report_to_developers">請向開發人員報告。</string>
+    <string name="la_minutes">"%d  分鐘"</string>
+    <string name="la_seconds">"%d  秒"</string>
+    <string name="la_authenticate">認證</string>
+    <string name="la_change_app_passcode">修改密碼</string>
+    <string name="la_immediately">立刻</string>
+    <string name="la_please_remember_to_store_password">請銘記或將密碼私密地儲存-無法復原已遺失的密碼！</string>
+    <string name="network_proxy_port">端口 %d</string>
+    <string name="network_socks_proxy_settings">SOCKS 代理伺服器設定</string>
+    <string name="alert_title_msg_bad_hash">錯誤訊息雜湊值</string>
+    <string name="lock_after">在此之後鎖定</string>
+    <string name="incorrect_passcode">密碼錯誤</string>
+    <string name="stop_file__action">停止檔案</string>
+    <string name="stop_snd_file__title">停止傳送檔案？</string>
+    <string name="revoke_file__message">檔案將會在伺服器中刪除。</string>
+    <string name="stop_rcv_file__message">將會停止接收檔案。</string>
+    <string name="revoke_file__confirm">撤銷</string>
+    <string name="revoke_file__action">撤銷檔案</string>
+    <string name="revoke_file__title">撤銷檔案？</string>
+    <string name="stop_snd_file__message">將會停止傳送檔案。</string>
+    <string name="stop_file__confirm">停止</string>
+    <string name="stop_rcv_file__title">停止接收檔案？</string>
+    <string name="alert_title_msg_bad_id">錯誤的訊息 ID</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">當你或你的連結在用舊的數據庫備份時會發生。</string>
+    <string name="alert_text_msg_bad_hash">上一則訊息的雜奏則是不同的。</string>
+    <string name="no_spaces">沒有空位！</string>
+    <string name="v5_0_app_passcode">程式密碼</string>
+    <string name="v5_0_large_files_support_descr">迅速以及不用等待發送者在線！</string>
+    <string name="v5_0_polish_interface">波蘭文界面</string>
+    <string name="v5_0_app_passcode_descr">設定它而不需用系統認證。</string>
+    <string name="v5_0_polish_interface_descr">感謝用戶-透過 Weblate 做出貢獻！</string>
+    <string name="both_you_and_your_contact_can_make_calls">你和你的聯絡人都可以撥打通話。</string>
+    <string name="prohibit_calls">禁用語言/視訊通話。</string>
+    <string name="allow_calls_only_if">只有你的聯絡人允許的情況下，才允許通話。</string>
+    <string name="only_you_can_make_calls">只有你可以撥打通話。</string>
+    <string name="only_your_contact_can_make_calls">只有你的聯絡人可以撥打通話。</string>
+    <string name="calls_prohibited_with_this_contact">禁用語言/視像通話。</string>
+    <string name="gallery_image_button">圖片</string>
+    <string name="port_verb">端口</string>
+    <string name="confirm_passcode">確定密碼</string>
+    <string name="change_lock_mode">修改鎖定模式</string>
+    <string name="passcode_not_changed">未更改密碼！</string>
+    <string name="audio_video_calls">語言/視訊通話</string>
+    <string name="available_in_v51">"
+\n在 v5.1中可用"</string>
+    <string name="allow_your_contacts_to_call">允許你的聯絡人與你進行通話。</string>
 </resources>
