@@ -1073,7 +1073,7 @@
     <string name="network_socks_proxy_settings">SOCKS 代理设置</string>
     <string name="la_lock_mode">SimpleX 锁定模式</string>
     <string name="la_lock_mode_system">系统验证</string>
-    <string name="la_minutes">%d 分鐘</string>
+    <string name="la_minutes">%d 分钟</string>
     <string name="la_seconds">%d 秒</string>
     <string name="la_enter_app_passcode">输入密码</string>
     <string name="la_no_app_password">没有应用程序密码</string>
