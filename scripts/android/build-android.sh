@@ -1,8 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/sh
+# shellcheck shell=sh
+# NOTE: Keep this file POSIX compliant!
+
 # Safety measures
-set -euo pipefail
-trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
-IFS=$'\n\t'
+set -eu
 
 u="$USER"
 tmp=$(mktemp -d -t)
@@ -22,6 +23,7 @@ nix_install() {
   printf "%s %s" "$nix_hash" "$tmp/nix-install" | sha256sum -c
   chmod +x "$tmp/nix-install" && "$tmp/nix-install" --no-daemon
 
+  # shellcheck disable=SC1091
   . "$HOME/.nix-profile/etc/profile.d/nix.sh"
 }
 
@@ -86,6 +88,7 @@ build() {
   nix build "$folder#hydraJobs.armv7a-android:lib:support.x86_64-linux"
   unzip -o "$PWD/result/pkg-armv7a-android-libsupport.zip" -d "$folder/apps/android/app/src/main/cpp/libs/armeabi-v7a"
 
+  # shellcheck disable=SC2016
   sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/android/app/src/main/AndroidManifest.xml"
   sed -i.bak '/android {/a lint {abortOnError false}' "$folder/apps/android/app/build.gradle"
 
