@@ -453,7 +453,9 @@ processChatCommand = \case
       pure $ CRApiChat user (AChat SCTGroup groupChat)
     CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APIGetChatItems _pagination -> pure $ chatCmdError Nothing "not implemented"
+  APIGetChatItems pagination search -> withUser $ \user -> do
+    chatItems <- withStore $ \db -> getAllChatItems db user pagination search
+    pure $ CRChatItems user chatItems
   APISendMessage (ChatRef cType chatId) live (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
@@ -4565,7 +4567,7 @@ chatCommandP =
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/_get chats " *> (APIGetChats <$> A.decimal <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
-      "/_get items count=" *> (APIGetChatItems <$> A.decimal),
+      "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
