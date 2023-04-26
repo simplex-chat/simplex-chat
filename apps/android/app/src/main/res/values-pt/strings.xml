@@ -215,17 +215,10 @@
     <string name="you_can_also_connect_by_clicking_the_link">Você também se pode conectar clicando no link. Se ele abrir no navegador, clique no botão <b>Abrir na aplicação móvel</b>.</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Você está convidado para o grupo. Junte-se para se conectar com os membros do grupo.</string>
     <string name="info_row_group">Grupo</string>
-    <string name="next_generation_of_private_messaging"/>
     <string name="submit_passcode"/>
-    <string name="group_invitation_tap_to_join"/>
     <string name="theme_system"/>
-    <string name="error_smp_test_failed_at_step"/>
     <string name="moderate_message_will_be_deleted_warning"/>
-    <string name="database_backup_can_be_restored"/>
     <string name="alert_message_no_group"/>
-    <string name="image_decoding_exception_desc"/>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect"/>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security"/>
     <string name="switch_receiving_address_desc"/>
-    <string name="enable_automatic_deletion_message"/>
 </resources>
