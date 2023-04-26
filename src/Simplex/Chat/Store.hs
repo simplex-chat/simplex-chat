@@ -4242,10 +4242,11 @@ updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, grou
 
 getAllChatItems :: DB.Connection -> User -> ChatPagination -> Maybe String -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db user@User {userId} pagination search_ = do
-  itemRefs <- rights . map toChatItemRef <$> case pagination of
-    CPLast count -> liftIO $ getAllChatItemsLast_ count
-    CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem db user afterId
-    CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem db user beforeId
+  itemRefs <-
+    rights . map toChatItemRef <$> case pagination of
+      CPLast count -> liftIO $ getAllChatItemsLast_ count
+      CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem db user afterId
+      CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem db user beforeId
   mapM (uncurry $ getAChatItem_ db user) itemRefs
   where
     search = fromMaybe "" search_
@@ -4267,7 +4268,7 @@ getAllChatItems db user@User {userId} pagination search_ = do
         [sql|
           SELECT chat_item_id, contact_id, group_id
           FROM chat_items
-          WHERE user_id = ? item_text LIKE '%' || ? || '%'
+          WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
             AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
           ORDER BY item_ts ASC, chat_item_id ASC
           LIMIT ?
