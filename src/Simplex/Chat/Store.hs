@@ -882,15 +882,15 @@ setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profil
     db
     [sql|
       UPDATE contact_profiles
-      SET user_contact_link_id = ?, contact_link = ?, updated_at = ?
+      SET contact_link = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (userContactLinkId_, connReqContact_, ts, userId, profileId)
+    (connReqContact_, ts, userId, profileId)
   pure (user :: User) {profile = p {contactLink = connReqContact_}}
   where
-    (userContactLinkId_, connReqContact_) = case ucl_ of
-      Just UserContactLink {userContactLinkId, connReqContact} -> (Just userContactLinkId, Just connReqContact)
-      _ -> (Nothing, Nothing)
+    connReqContact_ = case ucl_ of
+      Just UserContactLink {connReqContact} -> Just connReqContact
+      _ -> Nothing
 
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db user@User {userId} c p'
@@ -1142,8 +1142,7 @@ deleteUserAddress db user@User {userId} = do
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
 data UserContactLink = UserContactLink
-  { userContactLinkId :: Int64,
-    connReqContact :: ConnReqContact,
+  { connReqContact :: ConnReqContact,
     autoAccept :: Maybe AutoAccept
   }
   deriving (Show, Generic)
@@ -1158,9 +1157,9 @@ data AutoAccept = AutoAccept
 
 instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
 
-toUserContactLink :: (Int64, ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
-toUserContactLink (userContactLinkId, connReq, autoAccept, acceptIncognito, autoReply) =
-  UserContactLink userContactLinkId connReq $
+toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
+toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
+  UserContactLink connReq $
     if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
 
 getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
@@ -1169,7 +1168,7 @@ getUserAddress db User {userId} =
     DB.query
       db
       [sql|
-        SELECT user_contact_link_id, conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
         FROM user_contact_links
         WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
       |]
@@ -1181,7 +1180,7 @@ getUserContactLinkById db userId userContactLinkId =
     DB.query
       db
       [sql|
-        SELECT user_contact_link_id, conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
