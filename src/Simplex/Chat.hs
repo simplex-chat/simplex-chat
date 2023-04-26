@@ -1349,18 +1349,12 @@ processChatCommand = \case
     pure $ CRGroupLink user gInfo groupLink mRole'
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
-    -- TODO if same link is in profile, remove it and notify group members
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     (_, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo groupLink mRole
-  APISetGroupProfileLink groupId onOff -> withUser $ \user -> do
-    g@(Group gInfo _) <- withStore $ \db -> getGroup db user groupId
-    assertUserGroupRole gInfo GROwner
-    g'@GroupInfo {groupProfile = p'} <- withStore $ \db -> setProfileGroupLink db user gInfo onOff
-    broadcaseUpdateGroupProfile user g g' p'
   CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APICreateGroupLink groupId mRole
@@ -1373,9 +1367,6 @@ processChatCommand = \case
   ShowGroupLink gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGetGroupLink groupId
-  SetGroupProfileLink gName onOff -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APISetGroupProfileLink groupId onOff
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
@@ -1669,12 +1660,9 @@ processChatCommand = \case
             when (directOrUsed ct') $ createSndFeatureItems user ct ct'
         pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
-    runUpdateGroupProfile user group@(Group g _) p' = do
+    runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
       assertUserGroupRole g GROwner
       g' <- withStore $ \db -> updateGroupProfile db user g p'
-      broadcaseUpdateGroupProfile user group g' p'
-    broadcaseUpdateGroupProfile :: User -> Group -> GroupInfo -> GroupProfile -> m ChatResponse
-    broadcaseUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) g' p' = do
       msg <- sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
       unless (sameGroupProfileInfo p p') $ do
@@ -4693,12 +4681,10 @@ chatCommandP =
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
-      "/_share link #" *> (APISetGroupProfileLink  <$> A.decimal <* A.space <*> onOffP),
       "/create link #" *> (CreateGroupLink <$> displayName <*> (memberRole <|> pure GRMember)),
       "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
-      "/share link #" *> (SetGroupProfileLink  <$> displayName <* A.space <*> onOffP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
@@ -4799,7 +4785,7 @@ chatCommandP =
       gName <- displayName
       fullName <- fullNameP gName
       let groupPreferences = Just (emptyGroupPrefs :: GroupPreferences) {directMessages = Just DirectMessagesGroupPreference {enable = FEOn}}
-      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupLink = Nothing, groupPreferences}
+      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n

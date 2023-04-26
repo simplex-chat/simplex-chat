@@ -301,7 +301,6 @@ type GroupId = Int64
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
-    ownGroupLink :: Maybe OwnGroupLink,
     groupProfile :: GroupProfile,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
@@ -314,15 +313,6 @@ data GroupInfo = GroupInfo
   deriving (Eq, Show, Generic)
 
 instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOptions
-
-data OwnGroupLink = OwnGroupLink
-  { userContactLinkId :: Int64,
-    groupLinkConnReqContact :: ConnReqContact,
-    groupLinkRole :: GroupMemberRole
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON OwnGroupLink where toEncoding = J.genericToEncoding J.defaultOptions
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
@@ -1136,7 +1126,6 @@ data GroupProfile = GroupProfile
     fullName :: Text,
     description :: Maybe Text,
     image :: Maybe ImageData,
-    groupLink :: Maybe ConnReqContact,
     groupPreferences :: Maybe GroupPreferences
   }
   deriving (Eq, Show, Generic, FromJSON)

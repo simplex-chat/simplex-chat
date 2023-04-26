@@ -81,7 +81,6 @@ module Simplex.Chat.Store
     getGroupLink,
     getGroupLinkId,
     setGroupLinkMemberRole,
-    setProfileGroupLink,
     createOrUpdateContactRequest,
     getContactRequest',
     getContactRequest,
@@ -1270,7 +1269,6 @@ deleteGroupLink db User {userId} GroupInfo {groupId} = do
       )
     |]
     (userId, groupId)
-  setProfileGroupLink_ db userId groupId Nothing Nothing
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO (Int64, ConnReqContact, GroupMemberRole)
@@ -1288,26 +1286,6 @@ getGroupLinkId db User {userId} GroupInfo {groupId} =
 setGroupLinkMemberRole :: DB.Connection -> User -> Int64 -> GroupMemberRole -> IO ()
 setGroupLinkMemberRole db User {userId} userContactLinkId memberRole =
   DB.execute db "UPDATE user_contact_links SET group_link_member_role = ? WHERE user_id = ? AND user_contact_link_id = ?" (memberRole, userId, userContactLinkId)
-
-setProfileGroupLink :: DB.Connection -> User -> GroupInfo -> Bool -> ExceptT StoreError IO GroupInfo
-setProfileGroupLink db User {userId} g@GroupInfo {groupId, groupProfile = p} False = do
-  liftIO $ setProfileGroupLink_ db userId groupId Nothing Nothing
-  pure (g :: GroupInfo) {groupProfile = p {groupLink = Nothing}}
-setProfileGroupLink db user@User {userId} g@GroupInfo {groupId, groupProfile = p} True = do
-  (linkId, cReq, _) <- getGroupLink db user g
-  liftIO $ setProfileGroupLink_ db userId groupId (Just linkId) (Just cReq)
-  pure (g :: GroupInfo) {groupProfile = p {groupLink = Just cReq}}
-
-setProfileGroupLink_ :: DB.Connection -> UserId -> Int64 -> Maybe Int64 -> Maybe ConnReqContact -> IO ()
-setProfileGroupLink_ db userId groupId linkId_ cReq_ =
-  DB.execute
-    db
-    [sql|
-      UPDATE group_profiles
-      SET user_contact_link_id = ?, group_link = ?
-      WHERE user_id = ? AND group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ? LIMIT 1)
-    |]
-    (linkId_, cReq_, userId, groupId)
 
 createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
 createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profile {displayName, fullName, image, contactLink, preferences} xContactId_ =
@@ -1821,8 +1799,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, ucl.user_contact_link_id, ucl.conn_req_contact, ucl.group_link_member_role,
-              gp.display_name, gp.full_name, gp.description, gp.image, gp.group_link, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
+              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
               mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1834,7 +1811,6 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             JOIN groups g ON g.group_id = m.group_id
-            LEFT JOIN user_contact_links ucl ON ucl.group_id = g.group_id
             JOIN group_profiles gp USING (group_profile_id)
             JOIN group_members mu ON g.group_id = mu.group_id
             JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
@@ -1926,8 +1902,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, ucl.user_contact_link_id, ucl.conn_req_contact, ucl.group_link_member_role,
-          gp.display_name, gp.full_name, gp.description, gp.image, gp.group_link, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1941,7 +1916,6 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
         JOIN groups g ON g.group_id = m.group_id
-        LEFT JOIN user_contact_links ucl ON ucl.group_id = g.group_id
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members mu ON g.group_id = mu.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
@@ -1986,7 +1960,7 @@ createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
     memberId <- liftIO $ encodedRandomBytes gVar 12
     membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs
     let chatSettings = ChatSettings {enableNtfs = True}
-    pure GroupInfo {groupId, localDisplayName = ldn, ownGroupLink = Nothing, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId = Nothing, chatSettings, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs}
+    pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId = Nothing, chatSettings, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
@@ -2031,7 +2005,7 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId, activeCo
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs
           membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs
           let chatSettings = ChatSettings {enableNtfs = True}
-          pure (GroupInfo {groupId, localDisplayName, ownGroupLink = Nothing, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId = customUserProfileId, chatSettings, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs}, groupMemberId)
+          pure (GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId = customUserProfileId, chatSettings, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs}, groupMemberId)
 
 getHostMemberId_ :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId
 getHostMemberId_ db User {userId} groupId =
@@ -2167,12 +2141,10 @@ getUserGroupDetails db User {userId, userContactId} =
     <$> DB.query
       db
       [sql|
-        SELECT g.group_id, g.local_display_name, ucl.user_contact_link_id, ucl.conn_req_contact, ucl.group_link_member_role,
-          gp.display_name, gp.full_name, gp.description, gp.image, gp.group_link, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
+        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           mu.group_member_id, g.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
           mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
         FROM groups g
-        LEFT JOIN user_contact_links ucl ON ucl.group_id = g.group_id
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members mu USING (group_id)
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
@@ -2203,18 +2175,15 @@ getGroupInfoByName db user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db user gId
 
-type GroupInfoRow = (Int64, GroupName, Maybe Int64, Maybe ConnReqContact, Maybe GroupMemberRole) :. (GroupName, Text, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe ProfileId, Maybe Bool, Maybe GroupPreferences, UTCTime, UTCTime, Maybe UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName) :. (GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe Bool, Maybe GroupPreferences, UTCTime, UTCTime, Maybe UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, ownGLId, ownGLConnReqContact, ownGLRole) :. (displayName, fullName, description, image, groupLink, hostConnCustomUserProfileId, enableNtfs_, groupPreferences, createdAt, updatedAt, chatTs) :. userMemberRow) =
-  let ownGroupLink = case (ownGLId, ownGLConnReqContact, ownGLRole) of
-        (Just userContactLinkId, Just groupLinkConnReqContact, Just groupLinkRole) -> Just $ OwnGroupLink {userContactLinkId, groupLinkConnReqContact, groupLinkRole}
-        _ -> Nothing
-      membership = toGroupMember userContactId userMemberRow
+toGroupInfo userContactId ((groupId, localDisplayName) :. (displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, groupPreferences, createdAt, updatedAt, chatTs) :. userMemberRow) =
+  let membership = toGroupMember userContactId userMemberRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
-      groupProfile = GroupProfile {displayName, fullName, description, image, groupLink, groupPreferences}
-   in GroupInfo {groupId, localDisplayName, ownGroupLink, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs}
+      groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
+   in GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs}
 
 groupMemberQuery :: Query
 groupMemberQuery =
@@ -2678,8 +2647,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, ucl.user_contact_link_id, ucl.conn_req_contact, ucl.group_link_member_role,
-          gp.display_name, gp.full_name, gp.description, gp.image, gp.group_link, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -2694,7 +2662,6 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
         JOIN contacts ct ON ct.contact_id = m.contact_id
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
         JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        LEFT JOIN user_contact_links ucl ON ucl.group_id = g.group_id
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members mu ON g.group_id = mu.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
@@ -3859,8 +3826,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, ucl.user_contact_link_id, ucl.conn_req_contact, ucl.group_link_member_role,
-          gp.display_name, gp.full_name, gp.description, gp.image, gp.group_link, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -3886,7 +3852,6 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           dbm.member_status, dbm.invited_by, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
           dbp.display_name, dbp.full_name, dbp.image, dbp.contact_link, dbp.local_alias, dbp.preferences
         FROM groups g
-        LEFT JOIN user_contact_links ucl ON ucl.group_id = g.group_id
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
@@ -4251,14 +4216,12 @@ getGroupInfo db User {userId, userContactId} groupId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, ucl.user_contact_link_id, ucl.conn_req_contact, ucl.group_link_member_role,
-          gp.display_name, gp.full_name, gp.description, gp.image, gp.group_link, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
           pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
         FROM groups g
-        LEFT JOIN user_contact_links ucl ON ucl.group_id = g.group_id
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
@@ -4267,7 +4230,7 @@ getGroupInfo db User {userId, userContactId} groupId =
       (groupId, userId, userContactId)
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
-updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, description, image, groupLink, groupPreferences}
+updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, description, image, groupPreferences}
   | displayName == newName = liftIO $ do
     currentTs <- getCurrentTime
     updateGroupProfile_ currentTs
@@ -4285,14 +4248,14 @@ updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, grou
         db
         [sql|
           UPDATE group_profiles
-          SET display_name = ?, full_name = ?, description = ?, image = ?, group_link = ?, preferences = ?, updated_at = ?
+          SET display_name = ?, full_name = ?, description = ?, image = ?, preferences = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
             FROM groups
             WHERE user_id = ? AND group_id = ?
           )
         |]
-        (newName, fullName, description, image, groupLink, groupPreferences, currentTs, userId, groupId)
+        (newName, fullName, description, image, groupPreferences, currentTs, userId, groupId)
     updateGroup_ ldn currentTs = do
       DB.execute
         db

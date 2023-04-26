@@ -336,8 +336,6 @@ data ChatCommand
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
-  | APISetGroupProfileLink GroupId Bool
-  | SetGroupProfileLink GroupName Bool
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)

@@ -931,8 +931,8 @@ countactUserPrefText cup = case cup of
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, description, image, groupLink, groupPreferences = gps}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', description = description', image = image', groupLink = groupLink', groupPreferences = gps'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, description, image, groupPreferences = gps}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', description = description', image = image', groupPreferences = gps'}}
   m = do
     let update = groupProfileUpdated <> groupPrefsUpdated
     if null update
@@ -944,11 +944,6 @@ viewGroupUpdated
         ["changed to " <> ttyFullGroup g' | n /= n']
           <> ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to: " <> plain fullName' | n == n' && fullName /= fullName']
           <> ["profile image " <> maybe "removed" (const "updated") image' | image /= image']
-          <> [ if isNothing groupLink'
-                 then "group link removed"
-                 else "new group link set, use " <> highlight ("/group_profile #" <> n') <> " to view"
-               | groupLink /= groupLink'
-             ]
           <> (if description == description' then [] else maybe ["description removed"] ((bold' "description changed to:" :) . map plain . T.lines) description')
       groupPrefsUpdated
         | null prefs = []
@@ -962,10 +957,9 @@ viewGroupUpdated
               pref = getGroupPreference f . mergeGroupPreferences
 
 viewGroupProfile :: GroupInfo -> [StyledString]
-viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupLink, groupPreferences = gps}} =
+viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
   [ttyFullGroup g]
     <> maybe [] (const ["has profile image"]) image
-    <> maybe [] (\l -> ["group link: " <> (plain . strEncode) l]) groupLink
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
