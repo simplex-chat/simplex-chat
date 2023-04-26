@@ -33,6 +33,10 @@ public struct User: Decodable, NamedChat, Identifiable {
         activeUser || showNtfs
     }
 
+    public var addressShared: Bool {
+        profile.contactLink != nil
+    }
+
     public static let sampleData = User(
         userId: 1,
         userContactId: 1,
@@ -71,16 +75,24 @@ public typealias ContactName = String
 public typealias GroupName = String
 
 public struct Profile: Codable, NamedChat {
-    public init(displayName: String, fullName: String, image: String? = nil, preferences: Preferences? = nil) {
+    public init(
+        displayName: String,
+        fullName: String,
+        image: String? = nil,
+        contactLink: String? = nil,
+        preferences: Preferences? = nil
+    ) {
         self.displayName = displayName
         self.fullName = fullName
         self.image = image
+        self.contactLink = contactLink
         self.preferences = preferences
     }
 
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var contactLink: String?
     public var preferences: Preferences?
     public var localAlias: String { get { "" } }
 
@@ -95,11 +107,20 @@ public struct Profile: Codable, NamedChat {
 }
 
 public struct LocalProfile: Codable, NamedChat {
-    public init(profileId: Int64, displayName: String, fullName: String, image: String? = nil, preferences: Preferences? = nil, localAlias: String) {
+    public init(
+        profileId: Int64,
+        displayName: String,
+        fullName: String,
+        image: String? = nil,
+        contactLink: String? = nil,
+        preferences: Preferences? = nil,
+        localAlias: String
+    ) {
         self.profileId = profileId
         self.displayName = displayName
         self.fullName = fullName
         self.image = image
+        self.contactLink = contactLink
         self.preferences = preferences
         self.localAlias = localAlias
     }
@@ -108,6 +129,7 @@ public struct LocalProfile: Codable, NamedChat {
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var contactLink: String?
     public var preferences: Preferences?
     public var localAlias: String
 
@@ -127,11 +149,11 @@ public struct LocalProfile: Codable, NamedChat {
 }
 
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
-    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, preferences: profile.preferences, localAlias: localAlias)
+    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, contactLink: profile.contactLink, preferences: profile.preferences, localAlias: localAlias)
 }
 
 public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
-    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, preferences: profile.preferences)
+    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, contactLink: profile.contactLink, preferences: profile.preferences)
 }
 
 public enum ChatType: String {
@@ -1164,6 +1186,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
+    public var contactLink: String? { get { profile.contactLink } }
     public var localAlias: String { profile.localAlias }
     public var verified: Bool { activeConn.connectionCode != nil }
 
@@ -1508,6 +1531,7 @@ public struct GroupMember: Identifiable, Decodable {
     }
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
+    public var contactLink: String? { get { memberProfile.contactLink } }
     public var verified: Bool { activeConn?.connectionCode != nil }
 
     var directChatId: ChatId? {

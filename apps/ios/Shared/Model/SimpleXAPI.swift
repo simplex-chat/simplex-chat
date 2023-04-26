@@ -618,6 +618,16 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     }
 }
 
+func apiSetProfileAddress(on: Bool) async throws -> User? {
+    let userId = try currentUserId("apiSetProfileAddress")
+    let r = await chatSendCmd(.apiSetProfileAddress(userId: userId, on: on))
+    switch r {
+    case .userProfileNoChange: return nil
+    case let .userProfileUpdated(user, _, _): return user
+    default: throw r
+    }
+}
+
 func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
     let r = await chatSendCmd(.apiSetContactPrefs(contactId: contactId, preferences: preferences))
     if case let .contactPrefsUpdated(_, _, toContact) = r { return toContact }

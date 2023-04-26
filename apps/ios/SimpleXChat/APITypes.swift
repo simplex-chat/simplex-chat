@@ -85,6 +85,7 @@ public enum ChatCommand {
     case apiCreateMyAddress(userId: Int64)
     case apiDeleteMyAddress(userId: Int64)
     case apiShowMyAddress(userId: Int64)
+    case apiSetProfileAddress(userId: Int64, on: Bool)
     case apiAddressAutoAccept(userId: Int64, autoAccept: AutoAccept?)
     case apiAcceptContact(contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
@@ -189,6 +190,7 @@ public enum ChatCommand {
             case let .apiCreateMyAddress(userId): return "/_address \(userId)"
             case let .apiDeleteMyAddress(userId): return "/_delete_address \(userId)"
             case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
+            case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiAddressAutoAccept(userId, autoAccept): return "/_auto_accept \(userId) \(AutoAccept.cmdString(autoAccept))"
             case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
@@ -290,6 +292,7 @@ public enum ChatCommand {
             case .apiCreateMyAddress: return "apiCreateMyAddress"
             case .apiDeleteMyAddress: return "apiDeleteMyAddress"
             case .apiShowMyAddress: return "apiShowMyAddress"
+            case .apiSetProfileAddress: return "apiSetProfileAddress"
             case .apiAddressAutoAccept: return "apiAddressAutoAccept"
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"

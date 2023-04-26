@@ -65,6 +65,21 @@ struct GroupMemberInfoView: View {
                     }
                 }
 
+                if let contactLink = member.contactLink {
+                    Section {
+                        QRCode(uri: contactLink)
+                        Button {
+                            showShareSheet(items: [contactLink])
+                        } label: {
+                            Label("Share address", systemImage: "square.and.arrow.up")
+                        }
+                    } header: {
+                        Text("Address")
+                    } footer: {
+                        Text("You can share this address with your contacts to let them connect with **\(member.displayName)**.")
+                    }
+                }
+
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
 
