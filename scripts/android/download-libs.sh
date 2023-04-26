@@ -1,6 +1,9 @@
-#!/bin/bash
-
-set -e
+#!/usr/bin/env bash
+# Safety measures
+set -euo pipefail
+# shellcheck disable=SC2154
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
 
 function readlink() {
   echo "$(cd "$(dirname "$1")"; pwd -P)"
@@ -37,12 +40,12 @@ for ((i = 0 ; i < ${#arches[@]}; i++)); do
 
     mkdir -p "$output_dir" 2> /dev/null
 
-    curl --location -o libsupport.zip $job_repo/$arch-android:lib:support.x86_64-linux/latest/download/1 && \
+    curl --location -o libsupport.zip "$job_repo/$arch-android:lib:support.x86_64-linux/latest/download/1" && \
     unzip -o libsupport.zip && \
     mv libsupport.so "$output_dir" && \
     rm libsupport.zip
 
-    curl --location -o libsimplex.zip "$job_repo"/"$arch"-android:lib:simplex-chat.x86_64-linux/latest/download/1 && \
+    curl --location -o libsimplex.zip "$job_repo/$arch-android:lib:simplex-chat.x86_64-linux/latest/download/1" && \
     unzip -o libsimplex.zip && \
     mv libsimplex.so "$output_dir" && \
     rm libsimplex.zip

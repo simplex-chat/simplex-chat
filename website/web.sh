@@ -1,9 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Safety measures
+set -euo pipefail
+# shellcheck disable=SC2154
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
 
 cp -R blog website/src
 cp -R images website/src
 rm website/src/blog/README.md
-cd website
+cd website || exit 1
 
 langs=()
 
@@ -12,7 +17,7 @@ for file in langs/*.json; do
   if [ -f "$file" ]; then
     file_name=$(basename "$file")
     file_name=${file_name%.*}
-    langs+=($file_name)
+    langs+=("$file_name")
   fi
 done
 
@@ -20,11 +25,11 @@ node merge_translations.js
 
 # creating folders for each language for internationalization
 for lang in "${langs[@]}"; do
-  mkdir src/$lang
-  cp src/index.html src/$lang
-  cp src/contact.html src/$lang
-  cp src/invitation.html src/$lang
-  echo "{\"lang\":\"$lang\"}" > src/$lang/$lang.json
+  mkdir "src/$lang"
+  cp src/index.html "src/$lang"
+  cp src/contact.html "src/$lang"
+  cp src/invitation.html "src/$lang"
+  echo "{\"lang\":\"$lang\"}" > "src/$lang/$lang.json"
   echo "done $lang copying"
 done
 
@@ -32,7 +37,7 @@ npm install
 npm run build
 
 for lang in "${langs[@]}"; do
-  rm -rf src/$lang
+  rm -rf "src/$lang"
   echo "done $lang deletion"
 done
 

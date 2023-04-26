@@ -1,4 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
+# Safety measures
+set -euo pipefail
+# shellcheck disable=SC2154
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
 
 # libsimplex.so and libsupport.so binaries should be in ~/Downloads folder in their directories based on archive name
 mkdir -p ./apps/android/app/src/main/cpp/libs/arm64-v8a/

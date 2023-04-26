@@ -1,7 +1,9 @@
-#!/bin/bash
-
-# Fail fast in case any command fails
-set -e
+#!/usr/bin/env bash
+# Safety measures
+set -euo pipefail
+# shellcheck disable=SC2154
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
 
 level=$1
 apk_parent_dir=$2
@@ -19,13 +21,14 @@ fi
 cd "$apk_parent_dir"
 
 touch remove_this_file remove_this_FILE
-(( $(ls | grep "remove_this" | wc -l)==1 )) && case_insensitive=1 || case_insensitive=0
+#shellcheck disable=SC2012
+(( $(ls -1 remove_this* | wc -l)==1 )) && case_insensitive=1 || case_insensitive=0
 #echo Case-insensitive file system: $case_insensitive
 rm remove_this_file remove_this_FILE 2> /dev/null || true
 
-ORIG_NAMES=( $(echo app*.apk) )
+ORIG_NAMES=( "$(echo app*.apk)" )
 for ORIG_NAME in "${ORIG_NAMES[@]}"; do
-    unzip -o -q -d apk $ORIG_NAME
+    unzip -o -q -d apk "$ORIG_NAME"
     ORIG_NAME_COPY=$ORIG_NAME-copy
     mv "$ORIG_NAME" "$ORIG_NAME_COPY"
 
@@ -33,7 +36,7 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
     # Shouldn't be compressed because of Android requirement
     (cd apk && zip -r -q -0 ../"$ORIG_NAME" resources.arsc)
 
-    if [ $case_insensitive -eq 1 ]; then
+    if [ "$case_insensitive" -eq 1 ]; then
         # For case-insensitive file systems
         list_of_files=$(unzip -l "$ORIG_NAME_COPY" | grep res/ | sed -e "s|.*res/|res/|")
         for file in $list_of_files; do unzip -o -q -d apk "$ORIG_NAME_COPY" "$file" && (cd apk && zip -r -q -0 ../"$ORIG_NAME" "$file"); done
