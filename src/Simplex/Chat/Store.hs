@@ -2177,7 +2177,7 @@ getGroupInfoByName db user gName = do
 type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe Bool, Maybe GroupPreferences, UTCTime, UTCTime, Maybe UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo userContactId (groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, groupPreferences, createdAt, updatedAt, chatTs) :. userMemberRow) =
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, groupPreferences, createdAt, updatedAt, chatTs) :. userMemberRow) =
   let membership = toGroupMember userContactId userMemberRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
