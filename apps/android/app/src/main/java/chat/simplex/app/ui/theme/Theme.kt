@@ -118,6 +118,7 @@ data class ThemeColors(
       DefaultTheme.SYSTEM -> LightColorPaletteApp
     }
     return baseColors.copy(
+      title = title?.colorFromReadableHex() ?: baseColors.title,
       sentMessage = sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage,
       receivedMessage = receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
     )
