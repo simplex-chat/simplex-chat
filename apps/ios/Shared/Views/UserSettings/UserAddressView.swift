@@ -61,40 +61,15 @@ struct UserAddressView: View {
 
     @ViewBuilder private func userAddressView() -> some View {
         List {
-            if let userAdress = chatModel.userAddress {
-                if viaCreateLinkView {
-                    HStack {
-                        Text(Image(systemName: "info.circle")) + Text(" ") + Text("Configure auto-accept and sharing via profile in **Settings**.")
-                    }
-                    .foregroundColor(.secondary)
-                    .listRowBackground(Color.clear)
-                }
-
-                Section {
-                    QRCode(uri: userAdress.connReqContact)
-                    shareQRCodeButton(userAdress)
-                    shareWithContactsButton()
-                    learnMoreButton()
-                } header: {
-                    Text("Address")
-                } footer: {
-                    Text("You can share this address to let people connect with you.")
-                }
-
-                aasView()
+            if let userAddress = chatModel.userAddress {
+                existingAddressView(userAddress)
                     .onAppear {
-                        aas = AutoAcceptState(userAdress: userAdress)
+                        aas = AutoAcceptState(userAddress: userAddress)
                         savedAAS = aas
                     }
                     .onChange(of: aas.enable) { _ in
                         if !aas.enable { aas = AutoAcceptState() }
                     }
-
-                Section {
-                    deleteAddressButton()
-                } footer: {
-                    Text("Your contacts will remain connected.")
-                }
             } else {
                 Section {
                     createAddressButton()
@@ -172,6 +147,28 @@ struct UserAddressView: View {
         }
     }
 
+    @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
+        Section {
+            QRCode(uri: userAddress.connReqContact)
+            shareQRCodeButton(userAddress)
+            shareWithContactsButton()
+            autoAcceptToggle()
+            learnMoreButton()
+        } header: {
+            Text("Address")
+        }
+
+        if aas.enable {
+            autoAcceptSection()
+        }
+
+        Section {
+            deleteAddressButton()
+        } footer: {
+            Text("Your contacts will remain connected.")
+        }
+    }
+
     private func createAddressButton() -> some View {
         Button {
             Task {
@@ -188,7 +185,7 @@ struct UserAddressView: View {
                 }
             }
         } label: {
-            Label("Create address", systemImage: "qrcode")
+            Label("Create SimpleX address", systemImage: "qrcode")
         }
     }
 
@@ -209,6 +206,12 @@ struct UserAddressView: View {
         }
     }
 
+    private func autoAcceptToggle() -> some View {
+        settingsRow("checkmark") {
+            Toggle("Auto-accept", isOn: $aas.enable)
+        }
+    }
+
     private func learnMoreButton() -> some View {
         NavigationLink {
             UserAddressLearnMore()
@@ -220,14 +223,16 @@ struct UserAddressView: View {
     }
 
     private func shareWithContactsButton() -> some View {
-        Toggle("Share with contacts", isOn: $shareViaProfile)
-            .onChange(of: shareViaProfile) { on in
-                if ignoreShareViaProfileChange {
-                    ignoreShareViaProfileChange = false
-                } else {
-                    alert = .profileAddress(on: on)
+        settingsRow("person") {
+            Toggle("Share with contacts", isOn: $shareViaProfile)
+                .onChange(of: shareViaProfile) { on in
+                    if ignoreShareViaProfileChange {
+                        ignoreShareViaProfileChange = false
+                    } else {
+                        alert = .profileAddress(on: on)
+                    }
                 }
-            }
+        }
     }
 
     private func setProfileAddress(_ on: Bool) {
@@ -255,8 +260,8 @@ struct UserAddressView: View {
             self.welcomeText = welcomeText
         }
 
-        init(userAdress: UserContactLink) {
-            if let aa = userAdress.autoAccept {
+        init(userAddress: UserContactLink) {
+            if let aa = userAddress.autoAccept {
                 enable = true
                 incognito = aa.acceptIncognito
                 if let msg = aa.autoReply {
@@ -282,54 +287,52 @@ struct UserAddressView: View {
         }
     }
 
-    @ViewBuilder private func aasView() -> some View {
+    @ViewBuilder private func autoAcceptSection() -> some View {
         Section {
-            settingsRow("checkmark") {
-                Toggle("Automatically", isOn: $aas.enable)
-            }
-            if aas.enable {
-                settingsRow(
-                    aas.incognito ? "theatermasks.fill" : "theatermasks",
-                    color: aas.incognito ? .indigo : .secondary
-                ) {
-                    Toggle("Incognito", isOn: $aas.incognito)
-                }
-            }
+            acceptIncognitoToggle()
+            welcomeMessageEditor()
+            saveAASButton()
+                .disabled(aas == savedAAS)
         } header: {
             Text("Accept requests")
-        } footer: {
-            saveAASButtons()
         }
-        if aas.enable {
-            Section {
-                TextEditor(text: $aas.welcomeText)
-                    .focused($keyboardVisible)
+    }
+
+    private func acceptIncognitoToggle() -> some View {
+        settingsRow(
+            aas.incognito ? "theatermasks.fill" : "theatermasks",
+            color: aas.incognito ? .indigo : .secondary
+        ) {
+            Toggle("Accept incognito", isOn: $aas.incognito)
+        }
+    }
+
+    private func welcomeMessageEditor() -> some View {
+        ZStack {
+            if aas.welcomeText.isEmpty {
+                TextEditor(text: Binding.constant("Type welcome message… (optional)"))
+                    .foregroundColor(.secondary)
+                    .disabled(true)
                     .padding(.horizontal, -5)
                     .padding(.top, -8)
                     .frame(height: 90, alignment: .topLeading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-            } header: {
-                Text("Welcome message")
             }
+            TextEditor(text: $aas.welcomeText)
+                .focused($keyboardVisible)
+                .padding(.horizontal, -5)
+                .padding(.top, -8)
+                .frame(height: 90, alignment: .topLeading)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    @ViewBuilder private func saveAASButtons() -> some View {
-        HStack {
-            Button {
-                aas = savedAAS
-            } label: {
-                Label("Cancel", systemImage: "arrow.counterclockwise")
-            }
-            Spacer()
-            Button {
-                saveAAS()
-            } label: {
-                Label("Save", systemImage: "checkmark")
-            }
+    private func saveAASButton() -> some View {
+        Button {
+            saveAAS()
+        } label: {
+            Text("Save")
         }
-        .font(.body)
-        .disabled(aas == savedAAS)
     }
 
     private func saveAAS() {
