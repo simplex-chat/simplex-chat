@@ -294,7 +294,8 @@ private fun setChatItemTTLAlert(
     text = generalGetString(R.string.enable_automatic_deletion_message),
     confirmText = generalGetString(R.string.delete_messages),
     onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator, appFilesCountAndSize, context) },
-    onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value }
+    onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value },
+    destructive = true,
   )
 }
 
@@ -543,7 +544,8 @@ private fun importArchiveAlert(
     title = generalGetString(R.string.import_database_question),
     text = generalGetString(R.string.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
     confirmText = generalGetString(R.string.import_database_confirmation),
-    onConfirm = { importArchive(m, context, importedArchiveUri, appFilesCountAndSize, progressIndicator) }
+    onConfirm = { importArchive(m, context, importedArchiveUri, appFilesCountAndSize, progressIndicator) },
+    destructive = true,
   )
 }
 
@@ -608,7 +610,8 @@ private fun deleteChatAlert(m: ChatModel, progressIndicator: MutableState<Boolea
     title = generalGetString(R.string.delete_chat_profile_question),
     text = generalGetString(R.string.delete_chat_profile_action_cannot_be_undone_warning),
     confirmText = generalGetString(R.string.delete_verb),
-    onConfirm = { deleteChat(m, progressIndicator) }
+    onConfirm = { deleteChat(m, progressIndicator) },
+    destructive = true,
   )
 }
 

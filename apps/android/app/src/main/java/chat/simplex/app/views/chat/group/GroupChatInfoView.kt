@@ -108,7 +108,7 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
   val alertTextKey =
     if (groupInfo.membership.memberCurrent) R.string.delete_group_for_all_members_cannot_undo_warning
     else R.string.delete_group_for_self_cannot_undo_warning
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_group_question),
     text = generalGetString(alertTextKey),
     confirmText = generalGetString(R.string.delete_verb),
@@ -122,12 +122,13 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
           close?.invoke()
         }
       }
-    }
+    },
+    destructive = true,
   )
 }
 
 fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.leave_group_question),
     text = generalGetString(R.string.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
     confirmText = generalGetString(R.string.leave_group_button),
@@ -136,7 +137,8 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
         chatModel.controller.leaveGroup(groupInfo.groupId)
         close?.invoke()
       }
-    }
+    },
+    destructive = true,
   )
 }
 

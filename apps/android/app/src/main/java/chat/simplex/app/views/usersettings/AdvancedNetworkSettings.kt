@@ -387,7 +387,7 @@ fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boo
 }
 
 fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.update_network_settings_question),
     text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
     confirmText = generalGetString(R.string.update_network_settings_confirmation),

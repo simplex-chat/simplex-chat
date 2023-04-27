@@ -111,7 +111,7 @@ fun ChatInfoView(
 }
 
 fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_contact_question),
     text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
     confirmText = generalGetString(R.string.delete_verb),
@@ -125,12 +125,13 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
           close?.invoke()
         }
       }
-    }
+    },
+    destructive = true,
   )
 }
 
 fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.clear_chat_question),
     text = generalGetString(R.string.clear_chat_warning),
     confirmText = generalGetString(R.string.clear_verb),
@@ -143,7 +144,8 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
           close?.invoke()
         }
       }
-    }
+    },
+    destructive = true,
   )
 }
 
@@ -421,13 +423,14 @@ private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: C
 }
 
 private fun showSwitchContactAddressAlert(m: ChatModel, contactId: Long) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.switch_receiving_address_question),
     text = generalGetString(R.string.switch_receiving_address_desc),
     confirmText = generalGetString(R.string.switch_verb),
     onConfirm = {
       switchContactAddress(m, contactId)
-    }
+    },
+    destructive = true,
   )
 }
 

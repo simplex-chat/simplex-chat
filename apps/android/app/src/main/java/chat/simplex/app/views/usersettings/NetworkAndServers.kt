@@ -59,7 +59,7 @@ fun NetworkAndServersView(
     showCustomModal = showCustomModal,
     toggleSocksProxy = { enable ->
       if (enable) {
-        AlertManager.shared.showAlertMsg(
+        AlertManager.shared.showAlertDialog(
           title = generalGetString(R.string.network_enable_socks),
           text = generalGetString(R.string.network_enable_socks_info),
           confirmText = generalGetString(R.string.confirm_verb),
@@ -73,7 +73,7 @@ fun NetworkAndServersView(
           }
         )
       } else {
-        AlertManager.shared.showAlertMsg(
+        AlertManager.shared.showAlertDialog(
           title = generalGetString(R.string.network_disable_socks),
           text = generalGetString(R.string.network_disable_socks_info),
           confirmText = generalGetString(R.string.confirm_verb),

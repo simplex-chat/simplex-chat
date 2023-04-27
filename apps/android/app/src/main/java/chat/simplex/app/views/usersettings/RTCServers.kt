@@ -70,7 +70,8 @@ fun RTCServersView(
               resetRTCServers()
               isUserRTCServers = false
               userRTCServersStr.value = ""
-            }
+            },
+            destructive = true,
           )
         } else {
         isUserRTCServers = false
