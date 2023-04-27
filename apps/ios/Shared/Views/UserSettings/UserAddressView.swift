@@ -19,6 +19,7 @@ struct UserAddressView: View {
     @State private var ignoreShareViaProfileChange = false
     @State private var alert: UserAddressAlert?
     @State private var showSaveDialogue = false
+    @State private var progressIndicator = false
     @FocusState private var keyboardVisible: Bool
 
     private enum UserAddressAlert: Identifiable {
@@ -38,24 +39,37 @@ struct UserAddressView: View {
     }
     
     var body: some View {
-        if viaCreateLinkView {
-            userAddressView()
-        } else {
-            userAddressView()
-                .modifier(BackButton {
-                    if savedAAS == aas {
-                        dismiss()
-                    } else {
-                        showSaveDialogue = true
+        ZStack {
+            if viaCreateLinkView {
+                userAddressView()
+            } else {
+                userAddressView()
+                    .modifier(BackButton {
+                        if savedAAS == aas {
+                            dismiss()
+                        } else {
+                            showSaveDialogue = true
+                        }
+                    })
+                    .confirmationDialog("Save settings?", isPresented: $showSaveDialogue) {
+                        Button("Save auto-accept settings") {
+                            saveAAS()
+                            dismiss()
+                        }
+                        Button("Exit without saving") { dismiss() }
                     }
-                })
-                .confirmationDialog("Save settings?", isPresented: $showSaveDialogue) {
-                    Button("Save auto-accept settings") {
-                        saveAAS()
-                        dismiss()
+            }
+            if progressIndicator {
+                ZStack {
+                    if chatModel.userAddress != nil {
+                        Circle()
+                            .fill(.white)
+                            .opacity(0.7)
+                            .frame(width: 56, height: 56)
                     }
-                    Button("Exit without saving") { dismiss() }
+                    ProgressView().scaleEffect(2)
                 }
+            }
         }
     }
 
@@ -89,6 +103,7 @@ struct UserAddressView: View {
                     title: Text("Delete address?"),
                     message: Text("All your contacts will remain connected"),
                     primaryButton: .destructive(Text("Delete")) {
+                        progressIndicator = true
                         Task {
                             do {
                                 if let u = try await apiDeleteUserAddress() {
@@ -101,8 +116,10 @@ struct UserAddressView: View {
                                         }
                                     }
                                 }
+                                await MainActor.run { progressIndicator = false }
                             } catch let error {
                                 logger.error("UserAddressView apiDeleteUserAddress: \(responseError(error))")
+                                await MainActor.run { progressIndicator = false }
                             }
                         }
                     }, secondaryButton: .cancel()
@@ -171,17 +188,20 @@ struct UserAddressView: View {
 
     private func createAddressButton() -> some View {
         Button {
+            progressIndicator = true
             Task {
                 do {
                     let connReqContact = try await apiCreateUserAddress()
                     DispatchQueue.main.async {
                         chatModel.userAddress = UserContactLink(connReqContact: connReqContact)
                         alert = .shareOnCreate
+                        progressIndicator = false
                     }
                 } catch let error {
                     logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")
                     let a = getErrorAlert(error, "Error creating address")
                     alert = .error(title: a.title, error: a.message)
+                    await MainActor.run { progressIndicator = false }
                 }
             }
         } label: {
@@ -236,6 +256,7 @@ struct UserAddressView: View {
     }
 
     private func setProfileAddress(_ on: Bool) {
+        progressIndicator = true
         Task {
             do {
                 if let u = try await apiSetProfileAddress(on: on) {
@@ -243,8 +264,10 @@ struct UserAddressView: View {
                         chatModel.updateUser(u)
                     }
                 }
+                await MainActor.run { progressIndicator = false }
             } catch let error {
                 logger.error("UserAddressView apiSetProfileAddress: \(responseError(error))")
+                await MainActor.run { progressIndicator = false }
             }
         }
     }
