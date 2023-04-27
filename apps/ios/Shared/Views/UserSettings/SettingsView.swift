@@ -146,14 +146,6 @@ struct SettingsView: View {
 
                     incognitoRow()
 
-                    // TODO remove
-                    NavigationLink {
-                        CreateLinkView(selection: .longTerm, viaNavLink: true)
-                            .navigationBarTitleDisplayMode(.inline)
-                    } label: {
-                        settingsRow("qrcode") { Text("Your SimpleX contact address") }
-                    }
-
                     NavigationLink {
                         UserAddressView(shareViaProfile: chatModel.currentUser!.addressShared)
                             .navigationBarTitleDisplayMode(.inline)
