@@ -273,7 +273,7 @@
     <string name="callstatus_in_progress">llamada en curso</string>
     <string name="colored">coloreado</string>
     <string name="rcv_group_event_changed_your_role">ha cambiado tu rol a %s</string>
-    <string name="snd_conn_event_switch_queue_phase_changing_for_member">cambiando dirección por %s</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">cambiando de servidor para %s</string>
     <string name="group_member_status_complete">completado</string>
     <string name="invite_prohibited">¡No se puede invitar el contacto!</string>
     <string name="cannot_receive_file">No se puede recibir el archivo</string>
@@ -284,13 +284,13 @@
     <string name="rcv_group_event_changed_member_role">rol de %s cambiado a %s</string>
     <string name="change_role">Cambiar rol</string>
     <string name="v4_5_transport_isolation_descr">Mediante perfil de Chat (por defecto) o por conexión (BETA)</string>
-    <string name="snd_conn_event_switch_queue_phase_changing">cambiando dirección…</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">cambiando de servidor…</string>
     <string name="chat_preferences">Preferencias de Chat</string>
     <string name="feature_cancelled_item">cancelado %s</string>
     <string name="chat_is_stopped">Chat está detenido</string>
     <string name="settings_section_title_calls">LLAMADAS</string>
     <string name="chat_is_running">Chat está en ejecución</string>
-    <string name="rcv_conn_event_switch_queue_phase_changing">cambiando dirección…</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">cambiando de servidor…</string>
     <string name="chat_with_developers">habla con los desarrolladores</string>
     <string name="icon_descr_cancel_file_preview">Cancelar vista previa del archivo</string>
     <string name="icon_descr_cancel_image_preview">Cancelar vista previa de la imagen</string>
@@ -303,10 +303,10 @@
     <string name="cancel_verb">Cancelar</string>
     <string name="icon_descr_cancel_live_message">Cancelar mensaje en directo</string>
     <string name="confirm_verb">Confirmar</string>
-    <string name="clear_chat_menu_action">Limpiar</string>
+    <string name="clear_chat_menu_action">Vaciar</string>
     <string name="app_version_code">Build de la aplicación</string>
     <string name="call_already_ended">¡La llamada ha terminado!</string>
-    <string name="rcv_conn_event_switch_queue_phase_completed">su dirección ha cambiado para tí</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">el servidor de envío ha cambiado para tí</string>
     <string name="icon_descr_cancel_link_preview">cancelar vista previa del enlace</string>
     <string name="call_on_lock_screen">Llamadas en la ventana de bloqueo</string>
     <string name="alert_title_cant_invite_contacts">¡No se puede invitar a los contactos!</string>
