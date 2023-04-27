@@ -4241,18 +4241,17 @@ updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, grou
       DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getAllChatItems :: DB.Connection -> User -> ChatPagination -> Maybe String -> ExceptT StoreError IO [AChatItem]
-getAllChatItems db user pagination search_ = do
-  let search = fromMaybe "" search_
-  case pagination of
-    CPLast count -> getAllChatItemsLast_ db user count search
-    CPAfter _afterId _count -> throwError $ SEInternalError "not implemented"
-    CPBefore _beforeId _count -> throwError $ SEInternalError "not implemented"
-
-getAllChatItemsLast_ :: DB.Connection -> User -> Int -> String -> ExceptT StoreError IO [AChatItem]
-getAllChatItemsLast_ db user@User {userId} count search = do
+getAllChatItems db user@User {userId} pagination search_ = do
   itemRefs <-
-    liftIO $
-      reverse . rights . map toChatItemRef
+    rights . map toChatItemRef <$> case pagination of
+      CPLast count -> liftIO $ getAllChatItemsLast_ count
+      CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem db user afterId
+      CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem db user beforeId
+  mapM (uncurry $ getAChatItem_ db user) itemRefs
+  where
+    search = fromMaybe "" search_
+    getAllChatItemsLast_ count =
+      reverse
         <$> DB.query
           db
           [sql|
@@ -4263,7 +4262,31 @@ getAllChatItemsLast_ db user@User {userId} count search = do
             LIMIT ?
           |]
           (userId, search, count)
-  mapM (uncurry $ getAChatItem_ db user) itemRefs
+    getAllChatItemsAfter_ afterId count afterTs =
+      DB.query
+        db
+        [sql|
+          SELECT chat_item_id, contact_id, group_id
+          FROM chat_items
+          WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
+            AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
+          ORDER BY item_ts ASC, chat_item_id ASC
+          LIMIT ?
+        |]
+        (userId, search, afterTs, afterTs, afterId, count)
+    getAllChatItemsBefore_ beforeId count beforeTs =
+      reverse
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id, contact_id, group_id
+            FROM chat_items
+            WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
+              AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
+            ORDER BY item_ts DESC, chat_item_id DESC
+            LIMIT ?
+          |]
+          (userId, search, beforeTs, beforeTs, beforeId, count)
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
 getGroupIdByName db User {userId} gName =

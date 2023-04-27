@@ -299,6 +299,9 @@ aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
 aChatItemId :: AChatItem -> Int64
 aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
 
+aChatItemTs :: AChatItem -> UTCTime
+aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
+
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
   Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}
