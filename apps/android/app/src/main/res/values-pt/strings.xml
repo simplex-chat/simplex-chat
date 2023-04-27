@@ -232,4 +232,12 @@
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="la_authenticate">Autenticar</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b> Digitalize o código QR </b>: para se conectar ao seu contato que mostra o código QR a si.</string>
+    <string name="callstatus_ended">chamada finalizada <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_calling">a chamar…</string>
+    <string name="callstatus_error">erro de chamada</string>
+    <string name="callstatus_in_progress">chamada em curso</string>
+    <string name="call_already_ended">Chamada já finalizada!</string>
+    <string name="icon_descr_call_progress">Chamada em curso</string>
+    <string name="icon_descr_call_ended">Chamada finalizada</string>
+    <string name="settings_section_title_calls">CHAMADAS</string>
 </resources>
