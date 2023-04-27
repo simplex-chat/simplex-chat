@@ -41,13 +41,14 @@ struct UserAddressView: View {
     var body: some View {
         ZStack {
             if viaCreateLinkView {
-                userAddressView()
+                userAddressScrollView()
             } else {
-                userAddressView()
+                userAddressScrollView()
                     .modifier(BackButton {
                         if savedAAS == aas {
                             dismiss()
                         } else {
+                            keyboardVisible = false
                             showSaveDialogue = true
                         }
                     })
@@ -73,7 +74,24 @@ struct UserAddressView: View {
         }
     }
 
-    @ViewBuilder private func userAddressView() -> some View {
+    @Namespace private var bottomID
+
+    private func userAddressScrollView() -> some View {
+        ScrollViewReader { proxy in
+            userAddressView()
+                .onChange(of: keyboardVisible) { _ in
+                    if keyboardVisible {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            withAnimation {
+                                proxy.scrollTo(bottomID, anchor: .top)
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
+    private func userAddressView() -> some View {
         List {
             if let userAddress = chatModel.userAddress {
                 existingAddressView(userAddress)
@@ -187,6 +205,7 @@ struct UserAddressView: View {
         } footer: {
             Text("Your contacts will remain connected.")
         }
+        .id(bottomID)
     }
 
     private func createAddressButton() -> some View {
@@ -247,7 +266,7 @@ struct UserAddressView: View {
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             settingsRow("info.circle") {
-                Text("Learn more")
+                Text("About SimpleX address")
             }
         }
     }
@@ -327,7 +346,7 @@ struct UserAddressView: View {
             saveAASButton()
                 .disabled(aas == savedAAS)
         } header: {
-            Text("Accept requests")
+            Text("Auto-accept")
         }
     }
 
@@ -342,26 +361,25 @@ struct UserAddressView: View {
 
     private func welcomeMessageEditor() -> some View {
         ZStack {
-            if aas.welcomeText.isEmpty {
-                TextEditor(text: Binding.constant("Enter welcome message… (optional)"))
-                    .foregroundColor(.secondary)
-                    .disabled(true)
-                    .padding(.horizontal, -5)
-                    .padding(.top, -8)
-                    .frame(height: 90, alignment: .topLeading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            Group {
+                if aas.welcomeText.isEmpty {
+                    TextEditor(text: Binding.constant(NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder")))
+                        .foregroundColor(.secondary)
+                        .disabled(true)
+                }
+                TextEditor(text: $aas.welcomeText)
+                    .focused($keyboardVisible)
             }
-            TextEditor(text: $aas.welcomeText)
-                .focused($keyboardVisible)
-                .padding(.horizontal, -5)
-                .padding(.top, -8)
-                .frame(height: 90, alignment: .topLeading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, -5)
+            .padding(.top, -8)
+            .frame(height: 90, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private func saveAASButton() -> some View {
         Button {
+            keyboardVisible = false
             saveAAS()
         } label: {
             Text("Save")
