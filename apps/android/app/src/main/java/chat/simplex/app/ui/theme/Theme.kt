@@ -144,7 +144,14 @@ data class ThemeOverrides (
 
 fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, shape: Shape = RectangleShape): Modifier {
   return if (baseTheme == DefaultTheme.SIMPLEX) {
-    this.background(brush = Brush.linearGradient(listOf(CurrentColors.value.colors.background.darker(0.5f), CurrentColors.value.colors.background.lighter(0.35f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f)), shape = shape)
+    this.background(brush = Brush.linearGradient(
+      listOf(
+        CurrentColors.value.colors.background.darker(0.4f),
+        CurrentColors.value.colors.background.lighter(0.4f)
+      ),
+      Offset(0f, Float.POSITIVE_INFINITY),
+      Offset(Float.POSITIVE_INFINITY, 0f)
+    ), shape = shape)
   } else {
     this.background(color = CurrentColors.value.colors.background, shape = shape)
   }
@@ -194,11 +201,12 @@ val LightColorPaletteApp = AppColors(
 val SimplexColorPalette = darkColors(
   primary = Color(0xff70F0F9),  // If this value changes also need to update #0088ff in string resource files
   primaryVariant = Color(0xff267BE5),
+  //  primaryVariant = Color(0xff12a0a5),
   secondary = Color(0xff2C464D),
   background = Color(0xff111528),
   //  surface = Color.Black,
   //  background = Color(0xFF121212),
-  surface = Color(0xff151b38),
+  surface = Color(0xff111a32),
   error = Color.Red,
 //  onBackground = Color(0xFFFFFBFA),
 //  onSurface = Color(0xFFFFFBFA),
