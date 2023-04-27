@@ -97,7 +97,6 @@ struct ContactConnectionInfo: View {
         }
         .onAppear {
             localAlias = contactConnection.localAlias
-            aliasTextFieldFocused = true
         }
     }
 
