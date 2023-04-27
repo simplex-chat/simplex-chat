@@ -16,47 +16,66 @@ struct AddContactView: View {
     var connReqInvitation: String
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading) {
-                Text("Your contact can scan it from the app.")
-                    .padding(.bottom, 4)
-                if (contactConnection?.incognito ?? chatModel.incognito) {
-                    HStack {
-                        Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("A random profile will be sent to your contact").font(.footnote)
-                    }
-                    .padding(.bottom)
-                } else {
-                    HStack {
-                        Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("Your chat profile will be sent to your contact").font(.footnote)
-                    }
-                    .padding(.bottom)
-                }
-                if connReqInvitation != "" {
-                    QRCode(uri: connReqInvitation).padding(.bottom)
-                } else {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .scaleEffect(2)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical)
-                }
-                Text("If you can't meet in person, **show QR code in the video call**, or share the link.")
-                    .padding(.bottom)
-                Button {
-                    showShareSheet(items: [connReqInvitation])
-                } label: {
-                    Label("Share invitation link", systemImage: "square.and.arrow.up")
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
+        List {
+            Section {
+                oneTimeLinkSection(contactConnection: contactConnection, connReqInvitation: connReqInvitation)
+            } header: {
+                Text("1-time link")
+            } footer: {
+                OneTimeLinkFooter(contactConnection: contactConnection, connReqInvitation: connReqInvitation)
             }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .onAppear { chatModel.connReqInv = connReqInvitation }
+    }
+}
+
+@ViewBuilder func oneTimeLinkSection(contactConnection: PendingContactConnection? = nil, connReqInvitation: String) -> some View {
+    if connReqInvitation != "" {
+        QRCode(uri: connReqInvitation)
+    } else {
+        ProgressView()
+            .progressViewStyle(.circular)
+            .scaleEffect(2)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical)
+    }
+    shareLinkButton(connReqInvitation)
+    oneTimeLinkLearnMoreButton()
+}
+
+private func shareLinkButton(_ connReqInvitation: String) -> some View {
+    Button {
+        showShareSheet(items: [connReqInvitation])
+    } label: {
+        settingsRow("square.and.arrow.up") {
+            Text("Share 1-time link")
+        }
+    }
+}
+
+func oneTimeLinkLearnMoreButton() -> some View {
+    NavigationLink {
+        AddContactLearnMore()
+            .navigationTitle("One-time invitation link")
+            .navigationBarTitleDisplayMode(.large)
+    } label: {
+        settingsRow("info.circle") {
+            Text("Learn more")
+        }
+    }
+}
+
+struct OneTimeLinkFooter: View {
+    @EnvironmentObject private var chatModel: ChatModel
+    var contactConnection: PendingContactConnection? = nil
+    var connReqInvitation: String
+
+    var body: some View {
+        if (contactConnection?.incognito ?? chatModel.incognito) {
+            Text(Image(systemName: "theatermasks")).foregroundColor(.indigo) + Text(" ") + Text("A random profile will be sent to your contact")
+        } else {
+            Text("Your chat profile will be sent to your contact")
+        }
     }
 }
 
