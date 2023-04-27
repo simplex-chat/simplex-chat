@@ -564,6 +564,8 @@
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported">Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.</string>
   <string name="appearance_settings">Appearance</string>
+  <string name="customize_theme_title">Customize theme</string>
+  <string name="theme_colors_section_title">THEME COLORS</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
   <string name="app_version_code">App build: %s</string>

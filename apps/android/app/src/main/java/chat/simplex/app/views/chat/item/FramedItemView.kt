@@ -50,7 +50,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun Color.toQuote(): Color = if (isInDarkTheme()) lighter(0.2f) else darker(0.2f)
+  fun Color.toQuote(): Color = if (isInDarkTheme()) lighter(0.12f) else darker(0.12f)
 
   @Composable
   fun ciQuotedMsgView(qi: CIQuote) {

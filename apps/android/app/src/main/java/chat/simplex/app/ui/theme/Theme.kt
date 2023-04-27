@@ -171,7 +171,7 @@ val DEFAULT_BOTTOM_BUTTON_PADDING = 20.dp
 
 val DarkColorPalette = darkColors(
   primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xff12a0a5),
+  primaryVariant = SimplexBlue,
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
 //  background = Color.Black,
@@ -191,7 +191,7 @@ val DarkColorPaletteApp = AppColors(
 
 val LightColorPalette = lightColors(
   primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xff12a0a5),
+  primaryVariant = SimplexBlue,
   secondary = HighOrLowlight,
   secondaryVariant = LightGray,
   error = Color.Red,
@@ -209,21 +209,21 @@ val LightColorPaletteApp = AppColors(
 )
 
 val SimplexColorPalette = darkColors(
-  primary = Color(0xff70F0F9),  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xff12a0a5),
+  primary = Color(0xFF70F0F9),  // If this value changes also need to update #0088ff in string resource files
+  primaryVariant = Color(0xFF1298A5),
   secondary = HighOrLowlight,
-  secondaryVariant = Color(0xff2C464D),
-  background = Color(0xff111528),
+  secondaryVariant = Color(0xFF2C464D),
+  background = Color(0xFF111528),
   //  surface = Color.Black,
   //  background = Color(0xFF121212),
-  surface = Color(0xff111a32),
+  surface = Color(0xFF121C37),
   error = Color.Red,
 //  onBackground = Color(0xFFFFFBFA),
 //  onSurface = Color(0xFFFFFBFA),
   //  onError: Color = Color.Black,
 )
 val SimplexColorPaletteApp = AppColors(
-  title = Color(0xff267BE5),
+  title = Color(0xFF267BE5),
   sentMessage = Color(0x1E45B8FF),
   receivedMessage = Color(0x20B1B0B5)
 )

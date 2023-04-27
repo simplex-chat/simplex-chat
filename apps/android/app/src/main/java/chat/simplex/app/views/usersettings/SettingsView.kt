@@ -97,7 +97,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
               }
             }
             Box(
-              Modifier.fillMaxSize(),
+              Modifier.fillMaxSize().background(MaterialTheme.colors.background),
               contentAlignment = Alignment.Center
             ) {
               SimpleButton(
@@ -161,7 +161,7 @@ fun SettingsLayout(
         SettingsActionItem(painterResource(R.drawable.ic_wifi_tethering), stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_videocam), stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_lock), stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(R.drawable.ic_light_mode), stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_light_mode), stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it, showSettingsModal) }, extraPadding = true)
         DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionDividerSpaced()

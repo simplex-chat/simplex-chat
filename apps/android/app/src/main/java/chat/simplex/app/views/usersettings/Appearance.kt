@@ -55,7 +55,7 @@ enum class AppIcon(val resId: Int) {
 }
 
 @Composable
-fun AppearanceView(m: ChatModel) {
+fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
 
   fun setAppIcon(newIcon: AppIcon) {
@@ -80,6 +80,7 @@ fun AppearanceView(m: ChatModel) {
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     changeIcon = ::setAppIcon,
+    showSettingsModal = showSettingsModal,
     editColor = { name, initialColor ->
       ModalManager.shared.showModalCloseable { close ->
         ColorEditor(name, initialColor, close)
@@ -93,6 +94,7 @@ fun AppearanceView(m: ChatModel) {
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   editColor: (ThemeColor, Color) -> Unit,
 ) {
   Column(
@@ -164,6 +166,22 @@ fun AppearanceView(m: ChatModel) {
           ThemeManager.changeDarkTheme(it, darkTheme)
         }
       }
+    }
+    SectionItemView(showSettingsModal { _ -> CustomizeThemeView(editColor) }) { Text(stringResource(R.string.customize_theme_title)) }
+    SectionBottomSpacer()
+  }
+}
+
+@Composable
+fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
+  Column(
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+  ) {
+    val currentTheme by CurrentColors.collectAsState()
+
+    AppBarTitle(stringResource(R.string.customize_theme_title))
+
+    SectionView(stringResource(R.string.theme_colors_section_title)) {
       SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY, currentTheme.colors.primary) }) {
         val title = generalGetString(R.string.color_primary)
         Text(title)
@@ -398,6 +416,7 @@ fun PreviewAppearanceSettings() {
       languagePref = SharedPreference({ null }, {}),
       systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
+      showSettingsModal = { {} },
       editColor = { _, _ -> },
     )
   }

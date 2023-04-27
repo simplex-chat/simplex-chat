@@ -47,7 +47,7 @@ fun AppBarTitle(title: String, withPadding: Boolean = true) {
   val theme = CurrentColors.collectAsState()
   val titleColor = CurrentColors.collectAsState().value.appColors.title
   val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
-    Brush.linearGradient(listOf(titleColor.darker(0.2f), titleColor.lighter(0.4f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
+    Brush.linearGradient(listOf(titleColor.darker(0.2f), titleColor.lighter(0.35f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   else // color is not updated when changing themes if I pass null here
     Brush.linearGradient(listOf(titleColor, titleColor), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   Text(

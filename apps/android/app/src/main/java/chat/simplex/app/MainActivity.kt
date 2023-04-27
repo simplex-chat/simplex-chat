@@ -414,7 +414,7 @@ fun MainPage(
   @Composable
   fun authView() {
     Box(
-      Modifier.fillMaxSize(),
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
       contentAlignment = Alignment.Center
     ) {
       SimpleButton(

@@ -135,7 +135,7 @@ private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
     ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatSheet)
-    val color = MaterialTheme.colors.primary
+    val color = MaterialTheme.colors.primaryVariant
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
       val trianglePath = Path().apply {
         moveTo(0.dp.toPx(), 0f)
@@ -158,7 +158,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
     onClick,
     shape = RoundedCornerShape(21.dp),
     colors = ButtonDefaults.textButtonColors(
-      backgroundColor = MaterialTheme.colors.primary
+      backgroundColor = MaterialTheme.colors.primaryVariant
     ),
     elevation = null,
     contentPadding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
