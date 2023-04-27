@@ -215,7 +215,6 @@
     <string name="you_can_also_connect_by_clicking_the_link">Você também se pode conectar clicando no link. Se ele abrir no navegador, clique no botão <b>Abrir na aplicação móvel</b>.</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Você está convidado para o grupo. Junte-se para se conectar com os membros do grupo.</string>
     <string name="info_row_group">Grupo</string>
-    <string name="alert_message_no_group"/>
     <string name="icon_descr_audio_on">Áudio ligado</string>
     <string name="authentication_cancelled">Autenticação cancelada</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b> Adicionar novo contato</b>: para criar o seu código QR único para seu contato.</string>
