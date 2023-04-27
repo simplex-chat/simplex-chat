@@ -817,9 +817,9 @@ Disponible en v5.1</target>
         <target>Elige de la biblioteca</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear" xml:space="preserve">
+      <trans-unit id="Clear" xml:space="preserve" approved="no">
         <source>Clear</source>
-        <target>Eliminar</target>
+        <target state="translated">Vaciar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear conversation" xml:space="preserve" approved="no">
@@ -4675,9 +4675,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>cancelado %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="changed address for you" xml:space="preserve">
+      <trans-unit id="changed address for you" xml:space="preserve" approved="no">
         <source>changed address for you</source>
-        <target>su dirección ha cambiado para tí</target>
+        <target state="translated">el servidor de envío ha cambiado para tí</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
@@ -4690,14 +4690,14 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>ha cambiado tu rol a %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="changing address for %@..." xml:space="preserve">
+      <trans-unit id="changing address for %@..." xml:space="preserve" approved="no">
         <source>changing address for %@...</source>
-        <target>la dirección ha cambiado para %@...</target>
+        <target state="translated">cambiando de servidor para %@...</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="changing address..." xml:space="preserve">
+      <trans-unit id="changing address..." xml:space="preserve" approved="no">
         <source>changing address...</source>
-        <target>cambiando la dirección...</target>
+        <target state="translated">cambiando de servidor...</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
@@ -5166,14 +5166,14 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>Tu rol es observador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you changed address" xml:space="preserve">
+      <trans-unit id="you changed address" xml:space="preserve" approved="no">
         <source>you changed address</source>
-        <target>has cambiado la dirección</target>
+        <target state="translated">has cambiado de servidor</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="you changed address for %@" xml:space="preserve">
+      <trans-unit id="you changed address for %@" xml:space="preserve" approved="no">
         <source>you changed address for %@</source>
-        <target>has cambiado la dirección por %@</target>
+        <target state="translated">has cambiado de servidor para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
