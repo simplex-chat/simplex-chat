@@ -10,12 +10,14 @@ import SwiftUI
 import SimpleXChat
 
 struct UserAddressView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var chatModel: ChatModel
     @State private var aas = AutoAcceptState()
     @State private var savedAAS = AutoAcceptState()
     @State var shareViaProfile = false
     @State private var ignoreShareViaProfileChange = false
     @State private var alert: UserAddressAlert?
+    @State private var showSaveDialogue = false
     @FocusState private var keyboardVisible: Bool
 
     private enum UserAddressAlert: Identifiable {
@@ -35,57 +37,62 @@ struct UserAddressView: View {
     }
     
     var body: some View {
-        NavigationView {
-            List {
-                if let userAdress = chatModel.userAddress {
-                    aasView()
-                        .onAppear {
-                            aas = AutoAcceptState(userAdress: userAdress)
-                            savedAAS = aas
-                        }
-                        .onChange(of: aas.enable) { _ in
-                            if !aas.enable { aas = AutoAcceptState() }
-                        }
-
-                    Section {
-                        Toggle("Share with contacts", isOn: $shareViaProfile)
-                            .onChange(of: shareViaProfile) { on in
-                                if ignoreShareViaProfileChange {
-                                    ignoreShareViaProfileChange = false
-                                } else {
-                                    alert = .profileAddress(on: on)
-                                }
+        List {
+            if let userAdress = chatModel.userAddress {
+                aasView()
+                    .onAppear {
+                        aas = AutoAcceptState(userAdress: userAdress)
+                        savedAAS = aas
+                    }
+                    .onChange(of: aas.enable) { _ in
+                        if !aas.enable { aas = AutoAcceptState() }
+                    }
+                
+                Section {
+                    Toggle("Share with contacts", isOn: $shareViaProfile)
+                        .onChange(of: shareViaProfile) { on in
+                            if ignoreShareViaProfileChange {
+                                ignoreShareViaProfileChange = false
+                            } else {
+                                alert = .profileAddress(on: on)
                             }
-                    } header: {
-                        Text("Add to profile")
-                    } footer: {
-                        Text("Add address to your profile, so that your contacts can share it with other people.")
-                    }
-
-                    Section {
-                        QRCode(uri: userAdress.connReqContact)
-                        Button {
-                            showShareSheet(items: [userAdress.connReqContact])
-                        } label: {
-                            Label("Share address", systemImage: "square.and.arrow.up")
                         }
-                    } header: {
-                        Text("Address")
-                    } footer: {
-                        Text("You can share this address to let people connect with you.")
+                } header: {
+                    Text("Add to profile")
+                } footer: {
+                    Text("Add address to your profile, so that your contacts can share it with other people.")
+                }
+                
+                Section {
+                    QRCode(uri: userAdress.connReqContact)
+                    Button {
+                        showShareSheet(items: [userAdress.connReqContact])
+                    } label: {
+                        Label("Share address", systemImage: "square.and.arrow.up")
                     }
-
-                    Section {
-                        deleteAddressButton()
-                    } footer: {
-                        Text("Your contacts will remain connected.")
+                    NavigationLink {
+                        UserAddressLearnMore()
+                            .navigationTitle("About SimpleX address")
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label("Learn more", systemImage: "info.circle")
                     }
-                } else {
-                    Section {
-                        createAddressButton()
-                    } footer: {
-                        Text("Create an address to let people connect with you.")
-                    }
+                } header: {
+                    Text("Address")
+                } footer: {
+                    Text("You can share this address to let people connect with you.")
+                }
+                
+                Section {
+                    deleteAddressButton()
+                } footer: {
+                    Text("Your contacts will remain connected.")
+                }
+            } else {
+                Section {
+                    createAddressButton()
+                } footer: {
+                    Text("Create an address to let people connect with you.")
                 }
             }
         }
@@ -98,10 +105,15 @@ struct UserAddressView: View {
                     primaryButton: .destructive(Text("Delete")) {
                         Task {
                             do {
-                                // TODO update user in chat model to reset contactLink in profile
-                                try await apiDeleteUserAddress()
-                                DispatchQueue.main.async {
-                                    chatModel.userAddress = nil
+                                if let u = try await apiDeleteUserAddress() {
+                                    DispatchQueue.main.async {
+                                        chatModel.userAddress = nil
+                                        chatModel.updateUser(u)
+                                        if shareViaProfile {
+                                            ignoreShareViaProfileChange = true
+                                            shareViaProfile = false
+                                        }
+                                    }
                                 }
                             } catch let error {
                                 logger.error("UserAddressView apiDeleteUserAddress: \(responseError(error))")
@@ -146,6 +158,20 @@ struct UserAddressView: View {
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
+        }
+        .modifier(BackButton {
+            if savedAAS == aas {
+                dismiss()
+            } else {
+                showSaveDialogue = true
+            }
+        })
+        .confirmationDialog("Save settings?", isPresented: $showSaveDialogue) {
+            Button("Save auto-accept settings") {
+                saveAAS()
+                dismiss()
+            }
+            Button("Exit without saving") { dismiss() }
         }
     }
 
@@ -271,22 +297,26 @@ struct UserAddressView: View {
             }
             Spacer()
             Button {
-                Task {
-                    do {
-                        if let address = try await userAddressAutoAccept(aas.autoAccept) {
-                            chatModel.userAddress = address
-                            savedAAS = aas
-                        }
-                    } catch let error {
-                        logger.error("userAddressAutoAccept error: \(responseError(error))")
-                    }
-                }
+                saveAAS()
             } label: {
                 Label("Save", systemImage: "checkmark")
             }
         }
         .font(.body)
         .disabled(aas == savedAAS)
+    }
+
+    private func saveAAS() {
+        Task {
+            do {
+                if let address = try await userAddressAutoAccept(aas.autoAccept) {
+                    chatModel.userAddress = address
+                    savedAAS = aas
+                }
+            } catch let error {
+                logger.error("userAddressAutoAccept error: \(responseError(error))")
+            }
+        }
     }
 }
 

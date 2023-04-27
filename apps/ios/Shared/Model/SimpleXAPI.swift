@@ -653,10 +653,10 @@ func apiCreateUserAddress() async throws -> String {
     throw r
 }
 
-func apiDeleteUserAddress() async throws {
+func apiDeleteUserAddress() async throws -> User? {
     let userId = try currentUserId("apiDeleteUserAddress")
     let r = await chatSendCmd(.apiDeleteMyAddress(userId: userId))
-    if case .userContactLinkDeleted = r { return }
+    if case let .userContactLinkDeleted(user) = r { return user }
     throw r
 }
 

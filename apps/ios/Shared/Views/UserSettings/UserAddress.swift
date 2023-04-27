@@ -96,7 +96,7 @@ struct UserAddress: View {
                         primaryButton: .destructive(Text("Delete")) {
                             Task {
                                 do {
-                                    try await apiDeleteUserAddress()
+                                    _ = try await apiDeleteUserAddress()
                                     DispatchQueue.main.async {
                                         chatModel.userAddress = nil
                                     }
