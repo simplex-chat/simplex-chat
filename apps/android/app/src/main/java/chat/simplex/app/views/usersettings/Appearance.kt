@@ -194,6 +194,11 @@ fun AppearanceView(m: ChatModel) {
         Text(title)
         Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.surface)
       }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE, currentTheme.appColors.title) }) {
+        val title = generalGetString(R.string.color_title)
+        Text(title)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.title)
+      }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE, currentTheme.appColors.sentMessage) }) {
         val title = generalGetString(R.string.color_sent_message)
         Text(title)

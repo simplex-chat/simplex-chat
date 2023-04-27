@@ -40,12 +40,13 @@ enum class DefaultTheme {
 }
 
 data class AppColors(
+  val title: Color,
   val sentMessage: Color,
   val receivedMessage: Color
 )
 
 enum class ThemeColor {
-  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, SENT_MESSAGE, RECEIVED_MESSAGE;
+  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TITLE, SENT_MESSAGE, RECEIVED_MESSAGE;
 
   fun fromColors(colors: Colors, appColors: AppColors): Color {
     return when (this) {
@@ -55,6 +56,7 @@ enum class ThemeColor {
       SECONDARY_VARIANT -> colors.secondaryVariant
       BACKGROUND -> colors.background
       SURFACE -> colors.surface
+      TITLE -> appColors.title
       SENT_MESSAGE -> appColors.sentMessage
       RECEIVED_MESSAGE -> appColors.receivedMessage
     }
@@ -68,6 +70,7 @@ enum class ThemeColor {
       SECONDARY_VARIANT -> generalGetString(R.string.color_secondary_variant)
       BACKGROUND -> generalGetString(R.string.color_background)
       SURFACE -> generalGetString(R.string.color_surface)
+      TITLE -> generalGetString(R.string.color_title)
       SENT_MESSAGE -> generalGetString(R.string.color_sent_message)
       RECEIVED_MESSAGE -> generalGetString(R.string.color_received_message)
     }
@@ -84,6 +87,7 @@ data class ThemeColors(
   val background: String? = null,
   @SerialName("menus")
   val surface: String? = null,
+  val title: String? = null,
   val sentMessage: String? = null,
   val receivedMessage: String? = null,
 ) {
@@ -136,6 +140,7 @@ data class ThemeOverrides (
       ThemeColor.SECONDARY_VARIANT -> colors.copy(secondaryVariant = color)
       ThemeColor.BACKGROUND -> colors.copy(background = color)
       ThemeColor.SURFACE -> colors.copy(surface = color)
+      ThemeColor.TITLE -> colors.copy(title = color)
       ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
       ThemeColor.RECEIVED_MESSAGE -> colors.copy(receivedMessage = color)
     })
@@ -165,7 +170,7 @@ val DEFAULT_BOTTOM_BUTTON_PADDING = 20.dp
 
 val DarkColorPalette = darkColors(
   primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = SimplexBlue,
+  primaryVariant = Color(0xff12a0a5),
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
 //  background = Color.Black,
@@ -178,13 +183,14 @@ val DarkColorPalette = darkColors(
 //  onError: Color = Color.Black,
 )
 val DarkColorPaletteApp = AppColors(
+  title = SimplexBlue,
   sentMessage = Color(0x1E45B8FF),
   receivedMessage = Color(0x20B1B0B5)
 )
 
 val LightColorPalette = lightColors(
   primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = SimplexBlue,
+  primaryVariant = Color(0xff12a0a5),
   secondary = HighOrLowlight,
   secondaryVariant = LightGray,
   error = Color.Red,
@@ -196,14 +202,14 @@ val LightColorPalette = lightColors(
 //  onSurface = Color.Black,
 )
 val LightColorPaletteApp = AppColors(
+  title = SimplexBlue,
   sentMessage = Color(0x1E45B8FF),
   receivedMessage = Color(0x20B1B0B5)
 )
 
 val SimplexColorPalette = darkColors(
   primary = Color(0xff70F0F9),  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xff267BE5),
-  //  primaryVariant = Color(0xff12a0a5),
+  primaryVariant = Color(0xff12a0a5),
   secondary = HighOrLowlight,
   secondaryVariant = Color(0xff2C464D),
   background = Color(0xff111528),
@@ -216,6 +222,7 @@ val SimplexColorPalette = darkColors(
   //  onError: Color = Color.Black,
 )
 val SimplexColorPaletteApp = AppColors(
+  title = Color(0xff267BE5),
   sentMessage = Color(0x1E45B8FF),
   receivedMessage = Color(0x20B1B0B5)
 )
