@@ -4,12 +4,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.HighOrLowlight
 
 enum class ConnectViaLinkTab {
   SCAN, PASTE
@@ -44,7 +44,7 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
     }
     TabRow(
       selectedTabIndex = selection.value.ordinal,
-      backgroundColor = MaterialTheme.colors.background,
+      backgroundColor = Color.Transparent,
       contentColor = MaterialTheme.colors.primary,
     ) {
       tabTitles.forEachIndexed { index, it ->
@@ -62,7 +62,7 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
             )
           },
           selectedContentColor = MaterialTheme.colors.primary,
-          unselectedContentColor = HighOrLowlight,
+          unselectedContentColor = MaterialTheme.colors.secondary,
         )
       }
     }

@@ -2,6 +2,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -10,16 +11,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.item.SentColorLight
 
 @Composable
 fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boolean) {
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   Row(
     Modifier
       .height(60.dp)
       .fillMaxWidth()
       .padding(top = 8.dp)
-      .background(SentColorLight),
+      .background(sentColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(

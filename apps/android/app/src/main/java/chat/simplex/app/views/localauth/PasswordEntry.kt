@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 
 @Composable
 fun PasscodeEntry(
@@ -129,7 +128,7 @@ private fun PasswordDigit(size: Dp, d: Int, password: MutableState<String>) {
         fontSize = 30.sp,
         letterSpacing = (-0.5).sp
       ),
-      color = HighOrLowlight
+      color = MaterialTheme.colors.secondary
     )
   }
 }
@@ -137,7 +136,7 @@ private fun PasswordDigit(size: Dp, d: Int, password: MutableState<String>) {
 @Composable
 private fun PasswordEdit(size: Dp, image: Painter, action: () -> Unit) {
   PasswordButton(size, action) {
-    Icon(image, null, tint = HighOrLowlight)
+    Icon(image, null, tint = MaterialTheme.colors.secondary)
   }
 }
 

@@ -137,7 +137,7 @@ private fun DurationText(text: State<String>, padding: PaddingValues) {
     Modifier
       .padding(padding)
       .widthIn(min = minWidth),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     fontSize = 16.sp,
     maxLines = 1
   )
@@ -156,9 +156,11 @@ private fun PlayPauseButton(
   pause: () -> Unit,
   longClick: () -> Unit
 ) {
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
-    color = if (sent) SentColorLight else ReceivedColorLight,
+    color = if (sent) sentColor else receivedColor,
     shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
   ) {
     Box(
@@ -174,7 +176,7 @@ private fun PlayPauseButton(
         if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
         contentDescription = null,
         Modifier.size(36.dp),
-        tint = if (error) WarningOrange else if (!enabled) HighOrLowlight else MaterialTheme.colors.primary
+        tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
   }

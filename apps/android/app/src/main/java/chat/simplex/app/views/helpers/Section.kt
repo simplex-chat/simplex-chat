@@ -25,7 +25,7 @@ fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(),
   Column {
     if (title != null) {
       Text(
-        title, color = HighOrLowlight, style = MaterialTheme.typography.body2,
+        title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
       )
     }
@@ -37,7 +37,7 @@ fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(),
 fun SectionView(
   title: String,
   icon: Painter,
-  iconTint: Color = HighOrLowlight,
+  iconTint: Color = MaterialTheme.colors.secondary,
   leadingIcon: Boolean = false,
   padding: PaddingValues = PaddingValues(),
   content: (@Composable ColumnScope.() -> Unit)
@@ -46,7 +46,7 @@ fun SectionView(
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
-      Text(title, color = HighOrLowlight, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+      Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
     Column(Modifier.padding(padding).fillMaxWidth()) { content() }
@@ -147,7 +147,7 @@ fun <T> SectionItemWithValue(
   values: List<ValueTitle<T>>,
   label: String? = null,
   icon: Painter? = null,
-  iconTint: Color = HighOrLowlight,
+  iconTint: Color = MaterialTheme.colors.secondary,
   enabled: State<Boolean> = mutableStateOf(true),
   onSelected: () -> Unit
 ) {
@@ -161,7 +161,7 @@ fun <T> SectionItemWithValue(
         values.first { it.value == currentValue.value }.title + (if (label != null) " $label" else ""),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        color = HighOrLowlight
+        color = MaterialTheme.colors.secondary
       )
     }
   }
@@ -177,7 +177,7 @@ fun SectionTextFooter(text: AnnotatedString) {
   Text(
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     lineHeight = 18.sp,
     fontSize = 14.sp
   )
@@ -228,10 +228,10 @@ fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color
   SectionItemViewSpaceBetween {
     Row {
       val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
-      if (icon != null) Icon(icon, title, Modifier.padding(end = 8.dp).size(iconSize), tint = iconTint ?: HighOrLowlight)
+      if (icon != null) Icon(icon, title, Modifier.padding(end = 8.dp).size(iconSize), tint = iconTint ?: MaterialTheme.colors.secondary)
       Text(title)
     }
-    Text(value, color = HighOrLowlight)
+    Text(value, color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -247,7 +247,7 @@ fun InfoRowEllipsis(title: String, value: String, onClick: () -> Unit) {
         .widthIn(max = (configuration.screenWidthDp / 2).dp),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
-      color = HighOrLowlight
+      color = MaterialTheme.colors.secondary
     )
   }
 }

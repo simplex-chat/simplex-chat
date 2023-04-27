@@ -42,7 +42,7 @@ fun ContactRequestView(chatModelIncognito: Boolean, contactRequest: ChatInfo.Con
     ) {
       Text(
         ts,
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(bottom = 5.dp)
       )

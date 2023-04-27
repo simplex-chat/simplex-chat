@@ -37,7 +37,6 @@ class AlertManager {
   ) {
     showAlert {
       AlertDialog(
-        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         onDismissRequest = this::hideAlert,
         title = alertTitle(title),
         text = alertText(text),
@@ -56,7 +55,7 @@ class AlertManager {
       Dialog(onDismissRequest = this::hideAlert) {
         Column(
           Modifier
-            .background(if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
+            .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
             .padding(bottom = DEFAULT_PADDING)
         ) {
           Text(
@@ -67,7 +66,7 @@ class AlertManager {
           )
           CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
             if (text != null) {
-              Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = HighOrLowlight)
+              Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
             }
             buttons()
           }
@@ -106,7 +105,6 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -142,7 +140,6 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -167,7 +164,6 @@ class AlertManager {
             }) { Text(confirmText, color = Color.Unspecified) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -209,7 +205,7 @@ private fun alertText(text: String?): (@Composable () -> Unit)? {
         Modifier.fillMaxWidth(),
         textAlign = TextAlign.Center,
         fontSize = 16.sp,
-        color = HighOrLowlight
+        color = MaterialTheme.colors.secondary
       )
     })
   }

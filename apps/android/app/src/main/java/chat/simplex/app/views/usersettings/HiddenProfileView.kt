@@ -77,7 +77,7 @@ private fun HiddenProfileLayout(
         PassphraseField(confirmHidePassword, stringResource(R.string.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
       }
       SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(R.string.save_profile_password), color = if (saveDisabled) HighOrLowlight else MaterialTheme.colors.primary)
+        Text(generalGetString(R.string.save_profile_password), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
     }
     SectionTextFooter(stringResource(R.string.to_reveal_profile_enter_password))

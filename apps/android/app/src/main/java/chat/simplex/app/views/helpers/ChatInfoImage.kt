@@ -20,7 +20,7 @@ import chat.simplex.app.model.ChatInfo
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondary) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   val icon =
     if (chatInfo is ChatInfo.Group) R.drawable.ic_supervised_user_circle_filled
                                     else R.drawable.ic_account_circle_filled
@@ -28,7 +28,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
 }
 
 @Composable
-fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondary) {
+fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   Box(Modifier.size(size)) {
     Icon(
       painterResource(R.drawable.ic_theater_comedy_filled), stringResource(R.string.incognito),
@@ -43,7 +43,7 @@ fun ProfileImage(
   size: Dp,
   image: String? = null,
   icon: Int = R.drawable.ic_account_circle_filled,
-  color: Color = MaterialTheme.colors.secondary
+  color: Color = MaterialTheme.colors.secondaryVariant
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {

@@ -1,8 +1,7 @@
 package chat.simplex.app.views.chat.item
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,15 +34,15 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
       CICallStatus.Negotiated -> ConnectingCallIcon()
       CICallStatus.Progress -> Icon(painterResource(R.drawable.ic_phone_in_talk_filled), stringResource(R.string.icon_descr_call_progress), tint = SimplexGreen)
       CICallStatus.Ended -> Row {
-        Icon(painterResource(R.drawable.ic_call_end), stringResource(R.string.icon_descr_call_ended), tint = HighOrLowlight, modifier = Modifier.padding(end = 4.dp))
-        Text(durationText(duration), color = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_call_end), stringResource(R.string.icon_descr_call_ended), tint = MaterialTheme.colors.secondary, modifier = Modifier.padding(end = 4.dp))
+        Text(durationText(duration), color = MaterialTheme.colors.secondary)
       }
       CICallStatus.Error -> {}
     }
 
     Text(
       cItem.timestampText,
-      color = HighOrLowlight,
+      color = MaterialTheme.colors.secondary,
       fontSize = 14.sp,
       modifier = Modifier.padding(start = 3.dp)
     )
@@ -55,7 +54,7 @@ fun AcceptCallButton(cInfo: ChatInfo, acceptCall: (Contact) -> Unit) {
   if (cInfo is ChatInfo.Direct) {
     SimpleButton(stringResource(R.string.answer_call), painterResource(R.drawable.ic_ring_volume)) { acceptCall(cInfo.contact) }
   } else {
-    Icon(painterResource(R.drawable.ic_ring_volume), stringResource(R.string.answer_call), tint = HighOrLowlight)
+    Icon(painterResource(R.drawable.ic_ring_volume), stringResource(R.string.answer_call), tint = MaterialTheme.colors.secondary)
   }
 //    if case let .direct(contact) = chatInfo {
 //      Button {

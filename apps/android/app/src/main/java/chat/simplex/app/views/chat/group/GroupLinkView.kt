@@ -4,8 +4,7 @@ import SectionBottomSpacer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -177,7 +176,7 @@ fun ProgressIndicator() {
       Modifier
         .padding(horizontal = 2.dp)
         .size(30.dp),
-      color = HighOrLowlight,
+      color = MaterialTheme.colors.secondary,
       strokeWidth = 2.5.dp
     )
   }

@@ -60,7 +60,7 @@ private fun AcceptRequestsLayout(
         PreferenceToggleWithIcon(
           stringResource(R.string.incognito),
           if (autoAcceptState.value.incognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_theater_comedy),
-          if (autoAcceptState.value.incognito) Indigo else HighOrLowlight,
+          if (autoAcceptState.value.incognito) Indigo else MaterialTheme.colors.secondary,
           autoAcceptState.value.incognito,
         ) {
           autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.welcomeText)
@@ -81,7 +81,7 @@ private fun AcceptRequestsLayout(
     Spacer(Modifier.height(DEFAULT_PADDING))
     if (autoAcceptState.value.enable) {
       Text(
-        stringResource(R.string.section_title_welcome_message), color = HighOrLowlight, style = MaterialTheme.typography.body2,
+        stringResource(R.string.section_title_welcome_message), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
       )
       TextEditor(Modifier.padding(horizontal = DEFAULT_PADDING).height(160.dp), text = welcomeText)

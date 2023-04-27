@@ -65,7 +65,7 @@ private fun VerifyCodeLayout(
     val splitCode = splitToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {
       if (connectionVerified) {
-        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 4.dp).size(22.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 4.dp).size(22.dp), tint = MaterialTheme.colors.secondary)
         Text(String.format(stringResource(R.string.is_verified), displayName))
       } else {
         Text(String.format(stringResource(R.string.is_not_verified), displayName))

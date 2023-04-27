@@ -155,7 +155,7 @@ fun RTCServersLayout(
               .height(160.dp)
               .fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
+            border = BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant)
           ) {
             SelectionContainer(
               Modifier.verticalScroll(rememberScrollState())

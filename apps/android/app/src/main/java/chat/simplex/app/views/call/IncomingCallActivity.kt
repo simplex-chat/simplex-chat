@@ -97,7 +97,7 @@ fun IncomingCallActivityView(m: ChatModel) {
   SimpleXTheme {
     Surface(
       Modifier
-        .background(MaterialTheme.colors.background)
+        .themedBackground()
         .fillMaxSize()) {
       if (showCallView) {
         Box {
@@ -212,7 +212,7 @@ private fun LockScreenCallButton(text: String, icon: Painter, color: Color, acti
         Icon(icon, text, tint = color, modifier = Modifier.scale(1.75f))
       }
       Spacer(Modifier.height(DEFAULT_PADDING))
-      Text(text, style = MaterialTheme.typography.body2, color = HighOrLowlight)
+      Text(text, style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -226,7 +226,7 @@ fun PreviewIncomingCallLockScreenAlert() {
   SimpleXTheme(true) {
     Surface(
       Modifier
-        .background(MaterialTheme.colors.background)
+        .themedBackground()
         .fillMaxSize()) {
       IncomingCallLockScreenAlertLayout(
         invitation = RcvCallInvitation(

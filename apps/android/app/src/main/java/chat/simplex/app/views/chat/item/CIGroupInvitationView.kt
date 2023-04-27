@@ -8,7 +8,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -69,12 +68,14 @@ fun CIGroupInvitationView(
     }
   }
 
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     modifier = if (action) Modifier.clickable(onClick = {
       joinGroup(groupInvitation.groupId)
     }) else Modifier,
     shape = RoundedCornerShape(18.dp),
-    color = if (sent) SentColorLight else ReceivedColorLight,
+    color = if (sent) sentColor else receivedColor,
   ) {
     Box(
       Modifier
@@ -105,7 +106,7 @@ fun CIGroupInvitationView(
       }
       Text(
         ci.timestampText,
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         fontSize = 14.sp,
         modifier = Modifier.padding(start = 3.dp)
       )
