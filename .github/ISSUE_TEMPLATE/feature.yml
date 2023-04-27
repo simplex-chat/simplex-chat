@@ -1,7 +1,7 @@
 name: Feature
 description: Suggest your feature
 title: "[Feature]: "
-labels: ["enhancement", "triage"]
+labels: ["type:enhancement", "type:triage"]
 body:
 - type: checkboxes
   attributes:
