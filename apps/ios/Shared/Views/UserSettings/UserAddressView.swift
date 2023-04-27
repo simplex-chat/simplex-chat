@@ -12,9 +12,10 @@ import SimpleXChat
 struct UserAddressView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var chatModel: ChatModel
+    @State var viaCreateLinkView = false
+    @State var shareViaProfile = false
     @State private var aas = AutoAcceptState()
     @State private var savedAAS = AutoAcceptState()
-    @State var shareViaProfile = false
     @State private var ignoreShareViaProfileChange = false
     @State private var alert: UserAddressAlert?
     @State private var showSaveDialogue = false
@@ -37,32 +38,61 @@ struct UserAddressView: View {
     }
     
     var body: some View {
+        if viaCreateLinkView {
+            userAddressView()
+        } else {
+            userAddressView()
+                .modifier(BackButton {
+                    if savedAAS == aas {
+                        dismiss()
+                    } else {
+                        showSaveDialogue = true
+                    }
+                })
+                .confirmationDialog("Save settings?", isPresented: $showSaveDialogue) {
+                    Button("Save auto-accept settings") {
+                        saveAAS()
+                        dismiss()
+                    }
+                    Button("Exit without saving") { dismiss() }
+                }
+        }
+    }
+
+    @ViewBuilder private func userAddressView() -> some View {
         List {
             if let userAdress = chatModel.userAddress {
-                aasView()
-                    .onAppear {
-                        aas = AutoAcceptState(userAdress: userAdress)
-                        savedAAS = aas
+                if viaCreateLinkView {
+                    HStack {
+                        Text(Image(systemName: "info.circle")) + Text(" ") + Text("Configure auto-accept and sharing via profile in **Settings**.")
                     }
-                    .onChange(of: aas.enable) { _ in
-                        if !aas.enable { aas = AutoAcceptState() }
-                    }
-                
-                Section {
-                    Toggle("Share with contacts", isOn: $shareViaProfile)
-                        .onChange(of: shareViaProfile) { on in
-                            if ignoreShareViaProfileChange {
-                                ignoreShareViaProfileChange = false
-                            } else {
-                                alert = .profileAddress(on: on)
-                            }
+                    .listRowBackground(Color.clear)
+                } else {
+                    aasView()
+                        .onAppear {
+                            aas = AutoAcceptState(userAdress: userAdress)
+                            savedAAS = aas
                         }
-                } header: {
-                    Text("Add to profile")
-                } footer: {
-                    Text("Add address to your profile, so that your contacts can share it with other people.")
+                        .onChange(of: aas.enable) { _ in
+                            if !aas.enable { aas = AutoAcceptState() }
+                        }
+
+                    Section {
+                        Toggle("Share with contacts", isOn: $shareViaProfile)
+                            .onChange(of: shareViaProfile) { on in
+                                if ignoreShareViaProfileChange {
+                                    ignoreShareViaProfileChange = false
+                                } else {
+                                    alert = .profileAddress(on: on)
+                                }
+                            }
+                    } header: {
+                        Text("Add to profile")
+                    } footer: {
+                        Text("Add address to your profile, so that your contacts can share it with other people.")
+                    }
                 }
-                
+
                 Section {
                     QRCode(uri: userAdress.connReqContact)
                     Button {
@@ -82,7 +112,7 @@ struct UserAddressView: View {
                 } footer: {
                     Text("You can share this address to let people connect with you.")
                 }
-                
+
                 Section {
                     deleteAddressButton()
                 } footer: {
@@ -158,20 +188,6 @@ struct UserAddressView: View {
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
-        }
-        .modifier(BackButton {
-            if savedAAS == aas {
-                dismiss()
-            } else {
-                showSaveDialogue = true
-            }
-        })
-        .confirmationDialog("Save settings?", isPresented: $showSaveDialogue) {
-            Button("Save auto-accept settings") {
-                saveAAS()
-                dismiss()
-            }
-            Button("Exit without saving") { dismiss() }
         }
     }
 

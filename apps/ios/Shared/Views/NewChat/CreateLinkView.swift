@@ -49,7 +49,7 @@ struct CreateLinkView: View {
                     )
                 }
                 .tag(CreateLinkTab.oneTime)
-            UserAddress()
+            UserAddressView(viaCreateLinkView: true)
                 .tabItem {
                     Label("Your contact address", systemImage: "infinity.circle")
                 }
