@@ -79,7 +79,7 @@ private fun GroupWelcomeLayout(
 private fun SaveButton(save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_update_group_profile), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.save_and_update_group_profile), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }

@@ -189,7 +189,7 @@ fun GroupChatInfoLayout(
         }
 
         val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
-        val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
+        val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         AddMembersButton(tint, onAddMembersClick)
       }
       SectionItemView(minHeight = 54.dp) {
@@ -303,7 +303,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
         val statusDescr = if (user) String.format(generalGetString(R.string.group_info_member_you), s) else s
         Text(
           statusDescr,
-          color = HighOrLowlight,
+          color = MaterialTheme.colors.secondary,
           fontSize = 12.sp,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis
@@ -312,14 +312,14 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
     }
     val role = member.memberRole
     if (role == GroupMemberRole.Owner || role == GroupMemberRole.Admin) {
-      Text(role.text, color = HighOrLowlight)
+      Text(role.text, color = MaterialTheme.colors.secondary)
     }
   }
 }
 
 @Composable
 private fun MemberVerifiedShield() {
-  Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = HighOrLowlight)
+  Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = MaterialTheme.colors.secondary)
 }
 
 @Composable
@@ -328,7 +328,7 @@ private fun GroupLinkButton(onClick: () -> Unit) {
     painterResource(R.drawable.ic_link),
     stringResource(R.string.group_link),
     onClick,
-    iconColor = HighOrLowlight
+    iconColor = MaterialTheme.colors.secondary
   )
 }
 
@@ -338,7 +338,7 @@ private fun CreateGroupLinkButton(onClick: () -> Unit) {
     painterResource(R.drawable.ic_add_link),
     stringResource(R.string.create_group_link),
     onClick,
-    iconColor = HighOrLowlight
+    iconColor = MaterialTheme.colors.secondary
   )
 }
 
@@ -348,7 +348,7 @@ fun EditGroupProfileButton(onClick: () -> Unit) {
     painterResource(R.drawable.ic_edit),
     stringResource(R.string.button_edit_group_profile),
     onClick,
-    iconColor = HighOrLowlight
+    iconColor = MaterialTheme.colors.secondary
   )
 }
 
@@ -363,7 +363,7 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
     painterResource(R.drawable.ic_maps_ugc),
     text,
     onClick,
-    iconColor = HighOrLowlight
+    iconColor = MaterialTheme.colors.secondary
   )
 }
 

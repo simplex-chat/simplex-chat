@@ -14,11 +14,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.CurrentColors
 import kotlinx.datetime.Clock
 
 @Composable
-fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = HighOrLowlight) {
+fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = MaterialTheme.colors.secondary) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
       Text(
@@ -72,7 +72,7 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
       res += TimedMessagesPreference.shortTtlText(ttl)
     }
   }
-  if (meta.statusIcon(HighOrLowlight) != null || !meta.disappearing) {
+  if (meta.statusIcon(CurrentColors.value.colors.secondary) != null || !meta.disappearing) {
     res += iconSpace
   }
   return res + meta.timestampText

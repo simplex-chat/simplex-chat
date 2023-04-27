@@ -194,10 +194,10 @@ private fun TimedMessagesFeatureSection(
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }

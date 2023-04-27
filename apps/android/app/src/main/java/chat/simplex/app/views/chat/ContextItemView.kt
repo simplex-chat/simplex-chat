@@ -47,7 +47,7 @@ fun ContextItemView(
           .height(20.dp)
           .width(20.dp),
         contentDescription = stringResource(R.string.icon_descr_context),
-        tint = HighOrLowlight,
+        tint = MaterialTheme.colors.secondary,
       )
       MarkdownText(
         contextItem.text, contextItem.formattedText,

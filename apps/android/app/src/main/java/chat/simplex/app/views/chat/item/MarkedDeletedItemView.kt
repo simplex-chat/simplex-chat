@@ -49,7 +49,7 @@ private fun MarkedDeletedText(text: String) {
   Text(
     buildAnnotatedString {
       // appendSender(this, if (showMember) ci.memberDisplayName else null, true) // TODO font size
-      withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = HighOrLowlight)) { append(text) }
+      withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
     },
     style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
     modifier = Modifier.padding(end = 8.dp),

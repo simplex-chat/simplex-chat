@@ -87,7 +87,7 @@ fun FramedItemView(
       }
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = HighOrLowlight)) {
+          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
             append(caption)
           }
         },
@@ -176,7 +176,7 @@ fun FramedItemView(
         else -> receivedColor
       }
     )) {
-    var metaColor = HighOrLowlight
+    var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {

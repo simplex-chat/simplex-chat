@@ -169,7 +169,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
     if (u.activeUser) {
         Icon(painterResource(R.drawable.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
-        Icon(painterResource(R.drawable.ic_lock), null, Modifier.size(20.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     } else if (unreadCount > 0) {
       Box(
         contentAlignment = Alignment.Center
@@ -185,7 +185,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
         )
       }
     } else if (!u.showNtfs) {
-      Icon(painterResource(R.drawable.ic_notifications_off), null, Modifier.size(20.dp), tint = HighOrLowlight)
+      Icon(painterResource(R.drawable.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     }  else {
       Box(Modifier.size(20.dp))
     }

@@ -106,7 +106,7 @@ fun CIGroupInvitationView(
       }
       Text(
         ci.timestampText,
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         fontSize = 14.sp,
         modifier = Modifier.padding(start = 3.dp)
       )

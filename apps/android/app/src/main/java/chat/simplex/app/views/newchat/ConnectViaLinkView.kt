@@ -10,7 +10,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.HighOrLowlight
 
 enum class ConnectViaLinkTab {
   SCAN, PASTE
@@ -63,7 +62,7 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
             )
           },
           selectedContentColor = MaterialTheme.colors.primary,
-          unselectedContentColor = HighOrLowlight,
+          unselectedContentColor = MaterialTheme.colors.secondary,
         )
       }
     }

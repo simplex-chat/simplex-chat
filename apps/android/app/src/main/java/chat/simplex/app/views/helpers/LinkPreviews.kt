@@ -90,7 +90,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit) {
       ) {
         CircularProgressIndicator(
           Modifier.size(16.dp),
-          color = HighOrLowlight,
+          color = MaterialTheme.colors.secondary,
           strokeWidth = 2.dp
         )
       }
@@ -134,7 +134,7 @@ fun ChatItemLinkView(linkPreview: LinkPreview) {
       if (linkPreview.description != "") {
         Text(linkPreview.description, maxLines = 12, overflow = TextOverflow.Ellipsis, fontSize = 14.sp, lineHeight = 20.sp)
       }
-      Text(linkPreview.uri, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp, color = HighOrLowlight)
+      Text(linkPreview.uri, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp, color = MaterialTheme.colors.secondary)
     }
   }
 }

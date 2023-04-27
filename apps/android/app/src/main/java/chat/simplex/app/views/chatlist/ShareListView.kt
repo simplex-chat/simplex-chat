@@ -53,7 +53,7 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
 @Composable
 private fun EmptyList() {
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Text(stringResource(R.string.you_have_no_chats), color = HighOrLowlight)
+    Text(stringResource(R.string.you_have_no_chats), color = MaterialTheme.colors.secondary)
   }
 }
 

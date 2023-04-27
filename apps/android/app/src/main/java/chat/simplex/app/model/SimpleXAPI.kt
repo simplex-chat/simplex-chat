@@ -2600,7 +2600,7 @@ data class FeatureEnabled(
     }
 
   val iconColor: Color
-    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else HighOrLowlight
+    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else CurrentColors.value.colors.secondary
 
   companion object {
     fun enabled(asymmetric: Boolean, user: ChatPreference, contact: ChatPreference): FeatureEnabled =
@@ -2984,7 +2984,7 @@ enum class GroupFeatureEnabled {
     }
 
   val iconColor: Color
-    get() = if (this == ON) SimplexGreen else HighOrLowlight
+    get() = if (this == ON) SimplexGreen else CurrentColors.value.colors.secondary
 
 }
 

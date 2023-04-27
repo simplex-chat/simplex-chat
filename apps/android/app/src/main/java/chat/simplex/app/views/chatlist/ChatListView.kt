@@ -84,7 +84,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
             hoveredElevation = 0.dp,
             focusedElevation = 0.dp,
           ),
-          backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
+          backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White
         ) {
           Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(R.drawable.ic_edit_filled) else painterResource(R.drawable.ic_close), stringResource(R.string.add_contact_or_create_group))
@@ -104,7 +104,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
             }
-            Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
+            Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
           }
         }
       }
@@ -281,7 +281,7 @@ private fun ProgressIndicator() {
     Modifier
       .padding(horizontal = 2.dp)
       .size(30.dp),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     strokeWidth = 2.5.dp
   )
 }

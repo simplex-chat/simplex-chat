@@ -137,7 +137,7 @@ private fun DurationText(text: State<String>, padding: PaddingValues) {
     Modifier
       .padding(padding)
       .widthIn(min = minWidth),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     fontSize = 16.sp,
     maxLines = 1
   )
@@ -176,7 +176,7 @@ private fun PlayPauseButton(
         if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
         contentDescription = null,
         Modifier.size(36.dp),
-        tint = if (error) WarningOrange else if (!enabled) HighOrLowlight else MaterialTheme.colors.primary
+        tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
   }

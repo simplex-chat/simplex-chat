@@ -240,7 +240,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
       if (contact.verified) {
-        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
       }
       Text(
         contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
@@ -281,13 +281,13 @@ fun LocalAliasEditor(
         Text(
           generalGetString(R.string.text_field_set_contact_placeholder),
           textAlign = if (center) TextAlign.Center else TextAlign.Start,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       },
       leadingIcon = if (leadingIcon) {
         { Icon(painterResource(R.drawable.ic_edit_filled), null, Modifier.padding(start = 7.dp)) }
       } else null,
-      color = HighOrLowlight,
+      color = MaterialTheme.colors.secondary,
       focus = focus,
       textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })
@@ -334,7 +334,7 @@ private fun NetworkStatusRow(networkStatus: NetworkStatus) {
     ) {
       Text(
         networkStatus.statusString,
-        color = HighOrLowlight
+        color = MaterialTheme.colors.secondary
       )
       ServerImage(networkStatus)
     }
@@ -348,10 +348,10 @@ private fun ServerImage(networkStatus: NetworkStatus) {
       is NetworkStatus.Connected ->
         Icon(painterResource(R.drawable.ic_circle_filled), stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
       is NetworkStatus.Disconnected ->
-        Icon(painterResource(R.drawable.ic_pending_filled), stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_pending_filled), stringResource(R.string.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
       is NetworkStatus.Error ->
-        Icon(painterResource(R.drawable.ic_error_filled), stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
-      else -> Icon(painterResource(R.drawable.ic_circle), stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_error_filled), stringResource(R.string.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
+      else -> Icon(painterResource(R.drawable.ic_circle), stringResource(R.string.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -379,7 +379,7 @@ fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
     if (contactVerified) painterResource(R.drawable.ic_verified_user) else painterResource(R.drawable.ic_shield),
     stringResource(if (contactVerified) R.string.view_security_code else R.string.verify_security_code),
     click = onClick,
-    iconColor = HighOrLowlight,
+    iconColor = MaterialTheme.colors.secondary,
   )
 }
 

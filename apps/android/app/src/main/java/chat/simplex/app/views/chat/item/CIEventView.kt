@@ -13,8 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.ChatItem
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 
 @Composable
 fun CIEventView(ci: ChatItem) {
@@ -40,7 +39,7 @@ fun CIEventView(ci: ChatItem) {
   }
 }
 
-val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)
+val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
 fun chatEventText(ci: ChatItem): AnnotatedString =
   buildAnnotatedString {

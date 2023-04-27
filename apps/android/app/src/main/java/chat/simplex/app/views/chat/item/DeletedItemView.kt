@@ -32,7 +32,7 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = 
       Text(
         buildAnnotatedString {
           appendSender(this, if (showMember) ci.memberDisplayName else null, true)
-          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = HighOrLowlight)) { append(ci.content.text) }
+          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)

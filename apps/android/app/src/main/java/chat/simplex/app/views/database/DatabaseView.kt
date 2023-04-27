@@ -114,7 +114,7 @@ fun DatabaseView(
           Modifier
             .padding(horizontal = 2.dp)
             .size(30.dp),
-          color = HighOrLowlight,
+          color = MaterialTheme.colors.secondary,
           strokeWidth = 2.5.dp
         )
       }
@@ -185,7 +185,7 @@ fun DatabaseLayout(
           .drawable.ic_lock),
         stringResource(R.string.database_passphrase),
         click = showSettingsModal() { DatabaseEncryptionView(it) },
-        iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
+        iconColor = if (unencrypted) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
       AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
@@ -250,7 +250,7 @@ fun DatabaseLayout(
       ) {
         Text(
           stringResource(if (users.size > 1) R.string.delete_files_and_media_for_all_users else R.string.delete_files_and_media_all),
-          color = if (deleteFilesDisabled) HighOrLowlight else Color.Red
+          color = if (deleteFilesDisabled) MaterialTheme.colors.secondary else Color.Red
         )
       }
     }
@@ -270,7 +270,7 @@ fun DatabaseLayout(
 private fun AppDataBackupPreference(privacyFullBackup: SharedPreference<Boolean>, initialRandomDBPassphrase: SharedPreference<Boolean>) {
   SettingsPreferenceItem(
     painterResource(R.drawable.ic_backup),
-    iconColor = HighOrLowlight,
+    iconColor = MaterialTheme.colors.secondary,
     pref = privacyFullBackup,
     text = stringResource(R.string.full_backup)
   ) {

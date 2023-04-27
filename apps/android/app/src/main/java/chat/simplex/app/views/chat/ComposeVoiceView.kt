@@ -80,7 +80,7 @@ fun ComposeVoiceView(
           Modifier
             .padding(start = 4.dp, end = 2.dp)
             .size(36.dp),
-          tint = if (finishedRecording) MaterialTheme.colors.primary else HighOrLowlight
+          tint = if (finishedRecording) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
         )
       }
       val numberInText = remember(recordedDurationMs, progress.value) {
@@ -95,7 +95,7 @@ fun ComposeVoiceView(
       Text(
         durationText(numberInText.value),
         fontSize = 18.sp,
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
       )
       Spacer(Modifier.weight(1f))
       if (cancelEnabled) {

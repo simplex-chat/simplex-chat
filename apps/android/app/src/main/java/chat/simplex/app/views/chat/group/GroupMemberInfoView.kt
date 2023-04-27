@@ -238,7 +238,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (member.verified) {
-        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
       }
       Text(
         member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),

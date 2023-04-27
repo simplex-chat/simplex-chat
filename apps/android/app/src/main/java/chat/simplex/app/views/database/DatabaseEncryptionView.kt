@@ -112,7 +112,7 @@ fun DatabaseEncryptionView(m: ChatModel) {
           Modifier
             .padding(horizontal = 2.dp)
             .size(30.dp),
-          color = HighOrLowlight,
+          color = MaterialTheme.colors.secondary,
           strokeWidth = 2.5.dp
         )
       }
@@ -211,7 +211,7 @@ fun DatabaseEncryptionLayout(
       )
 
       SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+        Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
     }
 
@@ -292,7 +292,7 @@ fun SavePassphraseSetting(
       Icon(
         if (storedKey) painterResource(R.drawable.ic_vpn_key_filled) else painterResource(R.drawable.ic_vpn_key_off_filled),
         stringResource(R.string.save_passphrase_in_keychain),
-        tint = if (storedKey) SimplexGreen else HighOrLowlight
+        tint = if (storedKey) SimplexGreen else MaterialTheme.colors.secondary
       )
       Spacer(Modifier.padding(horizontal = 4.dp))
       Text(
@@ -360,7 +360,7 @@ fun PassphraseField(
     if (showKey) painterResource(R.drawable.ic_visibility_off_filled) else painterResource(R.drawable.ic_visibility_filled)
   } else painterResource(R.drawable.ic_error)
   val iconColor = if (valid) {
-    if (showStrength && key.value.isNotEmpty()) PassphraseStrength.check(key.value).color else HighOrLowlight
+    if (showStrength && key.value.isNotEmpty()) PassphraseStrength.check(key.value).color else MaterialTheme.colors.secondary
   } else Color.Red
   val keyboard = LocalSoftwareKeyboardController.current
   val keyboardOptions = KeyboardOptions(
@@ -417,7 +417,7 @@ fun PassphraseField(
       TextFieldDefaults.TextFieldDecorationBox(
         value = state.value.text,
         innerTextField = innerTextField,
-        placeholder = { Text(placeholder, color = HighOrLowlight) },
+        placeholder = { Text(placeholder, color = MaterialTheme.colors.secondary) },
         singleLine = true,
         enabled = enabled,
         isError = !valid,

@@ -138,7 +138,7 @@ fun AppearanceView(m: ChatModel) {
             contentDescription = "",
             contentScale = ContentScale.Fit,
             modifier = Modifier
-              .shadow(if (item == icon.value) 1.dp else 0.dp, ambientColor = colors.secondary)
+              .shadow(if (item == icon.value) 1.dp else 0.dp, ambientColor = colors.secondaryVariant)
               .size(70.dp)
               .clickable { changeIcon(item) }
               .padding(10.dp)
@@ -179,12 +179,11 @@ fun AppearanceView(m: ChatModel) {
         Text(title)
         Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.secondary)
       }
-      // Not using it yet
-      /*SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT, currentTheme.colors.secondaryVariant) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT, currentTheme.colors.secondaryVariant) }) {
         val title = generalGetString(R.string.color_secondary_variant)
         Text(title)
         Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.secondaryVariant)
-      }*/
+      }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.BACKGROUND, currentTheme.colors.background) }) {
         val title = generalGetString(R.string.color_background)
         Text(title)

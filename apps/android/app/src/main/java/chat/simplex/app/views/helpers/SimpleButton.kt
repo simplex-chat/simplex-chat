@@ -55,10 +55,10 @@ fun SimpleButton(
 ) {
   SimpleButtonFrame(click, disabled = disabled) {
     Icon(
-      icon, text, tint = if (disabled) HighOrLowlight else color,
+      icon, text, tint = if (disabled) MaterialTheme.colors.secondary else color,
       modifier = Modifier.padding(end = 8.dp)
     )
-    Text(text, style = MaterialTheme.typography.caption, color = if (disabled) HighOrLowlight else color)
+    Text(text, style = MaterialTheme.typography.caption, color = if (disabled) MaterialTheme.colors.secondary else color)
   }
 }
 

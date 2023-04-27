@@ -66,7 +66,7 @@ class AlertManager {
           )
           CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
             if (text != null) {
-              Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = HighOrLowlight)
+              Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
             }
             buttons()
           }
@@ -208,7 +208,7 @@ private fun alertText(text: String?): (@Composable () -> Unit)? {
         Modifier.fillMaxWidth(),
         textAlign = TextAlign.Center,
         fontSize = 16.sp,
-        color = HighOrLowlight
+        color = MaterialTheme.colors.secondary
       )
     })
   }

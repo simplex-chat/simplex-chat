@@ -23,7 +23,7 @@ fun <T> ExposedDropDownSettingRow(
   selection: State<T>,
   label: String? = null,
   icon: Painter? = null,
-  iconTint: Color = HighOrLowlight,
+  iconTint: Color = MaterialTheme.colors.secondary,
   enabled: State<Boolean> = mutableStateOf(true),
   onSelected: (T) -> Unit
 ) {
@@ -46,13 +46,13 @@ fun <T> ExposedDropDownSettingRow(
           Modifier.widthIn(max = maxWidth),
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.size(12.dp))
         Icon(
           if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
           generalGetString(R.string.icon_descr_more_button),
-          tint = HighOrLowlight
+          tint = MaterialTheme.colors.secondary
         )
       }
       DefaultExposedDropdownMenu(

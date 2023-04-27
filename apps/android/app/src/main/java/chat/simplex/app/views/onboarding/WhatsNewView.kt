@@ -1,6 +1,7 @@
 package chat.simplex.app.views.onboarding
 
 import android.content.res.Configuration
+import android.os.Build
 import androidx.annotation.IntegerRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.BuildConfig
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
@@ -48,7 +50,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(bottom = 4.dp)
       ) {
-        Icon(icon, stringResource(titleId), tint = HighOrLowlight)
+        Icon(icon, stringResource(titleId), tint = MaterialTheme.colors.secondary)
         Text(
           generalGetString(titleId),
           maxLines = 1,
