@@ -179,7 +179,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
           color = Color.White,
           fontSize = 11.sp,
           modifier = Modifier
-            .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape)
+            .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
             .padding(2.dp)
             .badgeLayout()
         )

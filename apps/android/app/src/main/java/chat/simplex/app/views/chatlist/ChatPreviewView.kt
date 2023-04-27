@@ -221,10 +221,10 @@ fun ChatPreviewView(
         ) {
           Text(
             if (n > 0) unreadCountStr(n) else "",
-            color = MaterialTheme.colors.onPrimary,
+            color = Color.White,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(if (stopped || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primary, shape = CircleShape)
+              .background(if (stopped || showNtfsIcon) HighOrLowlight else MaterialTheme.colors.primaryVariant, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
