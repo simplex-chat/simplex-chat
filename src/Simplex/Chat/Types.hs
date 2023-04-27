@@ -1071,6 +1071,7 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
+    contactLink :: Maybe ConnReqContact,
     preferences :: Maybe Preferences
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
@@ -1099,6 +1100,7 @@ data LocalProfile = LocalProfile
     displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
+    contactLink :: Maybe ConnReqContact,
     preferences :: Maybe Preferences,
     localAlias :: LocalAlias
   }
@@ -1112,12 +1114,12 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, image, preferences} localAlias =
-  LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, image, contactLink, preferences} localAlias =
+  LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, image, preferences} =
-  Profile {displayName, fullName, image, preferences}
+fromLocalProfile LocalProfile {displayName, fullName, image, contactLink, preferences} =
+  Profile {displayName, fullName, image, contactLink, preferences}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
