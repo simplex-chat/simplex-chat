@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,7 +46,7 @@ fun CloseSheetBar(close: (() -> Unit)?, endButtons: @Composable RowScope.() -> U
 fun AppBarTitle(title: String, withPadding: Boolean = true) {
   val theme = CurrentColors.collectAsState()
   val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
-    Brush.linearGradient(listOf(MaterialTheme.colors.primaryVariant.darker(0.2f), MaterialTheme.colors.primaryVariant.lighter(0.2f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
+    Brush.linearGradient(listOf(MaterialTheme.colors.primaryVariant.darker(0.2f), MaterialTheme.colors.primaryVariant.lighter(0.4f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   else // color is not updated when changing themes if I pass null here
     Brush.linearGradient(listOf(MaterialTheme.colors.primaryVariant, MaterialTheme.colors.primaryVariant), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   Text(
