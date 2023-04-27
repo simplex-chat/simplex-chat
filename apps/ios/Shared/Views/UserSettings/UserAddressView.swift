@@ -101,13 +101,7 @@ struct UserAddressView: View {
                     } label: {
                         Label("Share address", systemImage: "square.and.arrow.up")
                     }
-                    NavigationLink {
-                        UserAddressLearnMore()
-                            .navigationTitle("About SimpleX address")
-                            .navigationBarTitleDisplayMode(.inline)
-                    } label: {
-                        Label("Learn more", systemImage: "info.circle")
-                    }
+                    learnMoreButton()
                 } header: {
                     Text("Address")
                 } footer: {
@@ -124,6 +118,10 @@ struct UserAddressView: View {
                     createAddressButton()
                 } footer: {
                     Text("Create an address to let people connect with you.")
+                }
+
+                Section {
+                    learnMoreButton()
                 }
             }
         }
@@ -218,6 +216,16 @@ struct UserAddressView: View {
         } label: {
             Label("Delete address", systemImage: "trash")
                 .foregroundColor(Color.red)
+        }
+    }
+
+    private func learnMoreButton() -> some View {
+        NavigationLink {
+            UserAddressLearnMore()
+                .navigationTitle("About SimpleX address")
+                .navigationBarTitleDisplayMode(.inline)
+        } label: {
+            Label("Learn more", systemImage: "info.circle")
         }
     }
 
