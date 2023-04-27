@@ -149,10 +149,7 @@ class AppPreferences(val context: Context) {
   val initializationVectorAppPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_APP_PASSPHRASE, null)
   val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null, true)
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
-    .also {
-      sharedPreferences.edit().remove(SHARED_PREFS_CURRENT_THEME).remove(SHARED_PREFS_SYSTEM_DARK_THEME).apply()
-      sharedPreferencesThemes.edit().remove(SHARED_PREFS_THEMES).apply()
-    }
+
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
   val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
