@@ -3,14 +3,22 @@ package chat.simplex.app.views.usersettings
 import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
+import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionView
 import android.app.Activity
 import android.content.ComponentName
+import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+import android.net.Uri
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -32,12 +40,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.SharedPreference
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.godaddy.android.colorpicker.*
 import kotlinx.coroutines.delay
+import kotlinx.serialization.encodeToString
+import java.io.BufferedOutputStream
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -72,9 +81,9 @@ fun AppearanceView(m: ChatModel) {
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     changeIcon = ::setAppIcon,
-    editPrimaryColor = { primary ->
+    editColor = { name, initialColor ->
       ModalManager.shared.showModalCloseable { close ->
-        ColorEditor(primary, close)
+        ColorEditor(name, initialColor, close)
       }
     },
   )
@@ -85,7 +94,7 @@ fun AppearanceView(m: ChatModel) {
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
-  editPrimaryColor: (Color) -> Unit,
+  editColor: (ThemeColor, Color) -> Unit,
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -152,30 +161,77 @@ fun AppearanceView(m: ChatModel) {
         ThemeManager.applyTheme(it, darkTheme)
       }
       if (state.value == DefaultTheme.SYSTEM.name) {
-        val systemDarkTheme = remember { systemDarkTheme.state }
-        PreferenceToggle(generalGetString(R.string.simplex_blue_as_dark_theme), systemDarkTheme.value == DefaultTheme.BLUE.name) {
-          ThemeManager.changeDarkTheme(if (it) DefaultTheme.BLUE.name else DefaultTheme.DARK.name, darkTheme)
-        }
-        /*DarkThemeSelector(systemDarkTheme) {
+        DarkThemeSelector(remember { systemDarkTheme.state }) {
           ThemeManager.changeDarkTheme(it, darkTheme)
-        }*/
+        }
       }
-      SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.colors.primary) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY, currentTheme.colors.primary) }) {
         val title = generalGetString(R.string.color_primary)
         Text(title)
         Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primary)
       }
-    }
-    if (currentTheme.base.hasChangedPrimary(currentTheme.colors)) {
-      SectionCustomFooter(PaddingValues(start = 7.dp, end = 7.dp, top = 5.dp)) {
-        val isInDarkTheme = isInDarkTheme()
-        TextButton(
-          onClick = {
-            ThemeManager.saveAndApplyPrimaryColor(darkForSystemTheme = isInDarkTheme)
-          },
-        ) {
-          Text(generalGetString(R.string.reset_color))
+      // Not allowed to change title color since it is using gradient brush with custom colors
+      if (currentTheme.base != DefaultTheme.BLUE) {
+        SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT, currentTheme.colors.primaryVariant) }) {
+          val title = generalGetString(R.string.color_primary_variant)
+          Text(title)
+          Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primaryVariant)
         }
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY, currentTheme.colors.secondary) }) {
+        val title = generalGetString(R.string.color_secondary)
+        Text(title)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.secondary)
+      }
+      // Not using it yet
+      /*SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT, currentTheme.colors.secondaryVariant) }) {
+        val title = generalGetString(R.string.color_secondary_variant)
+        Text(title)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.secondaryVariant)
+      }*/
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.BACKGROUND, currentTheme.colors.background) }) {
+        val title = generalGetString(R.string.color_background)
+        Text(title)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.background)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SURFACE, currentTheme.colors.surface) }) {
+        val title = generalGetString(R.string.color_surface)
+        Text(title)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.surface)
+      }
+    }
+    val isInDarkTheme = isInDarkTheme()
+    if (currentTheme.base.hasChangedAnyColor(currentTheme.colors)) {
+      SectionItemView({ ThemeManager.resetAllThemeColors(darkForSystemTheme = isInDarkTheme) }) {
+        Text(generalGetString(R.string.reset_color), color = colors.error)
+      }
+    }
+    SectionSpacer()
+    SectionView {
+      if (currentTheme.base.hasChangedAnyColor(currentTheme.colors)) {
+        val context = LocalContext.current
+        val theme = remember { mutableStateOf(null as String?) }
+        val exportThemeLauncher = rememberSaveThemeLauncher(context, theme)
+        SectionItemView({
+          val overrides = ThemeManager.currentThemeOverrides(isInDarkTheme)
+          theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
+          exportThemeLauncher.launch("SimpleX-${overrides.base.name}.yml")
+        }) {
+          Text(generalGetString(R.string.export_theme), color = colors.primary)
+        }
+      }
+
+      val importThemeLauncher = rememberGetContentLauncher { uri: Uri? ->
+        if (uri != null) {
+          val theme = getThemeFromUri(uri)
+          if (theme != null) {
+            ThemeManager.saveAndApplyThemeOverrides(theme, isInDarkTheme)
+          }
+        }
+      }
+      // Can not limit to YAML mime type since it's unsupported by Android
+      SectionItemView({ importThemeLauncher.launch("*/*") }) {
+        Text(generalGetString(R.string.import_theme), color = colors.error)
       }
     }
     SectionBottomSpacer()
@@ -184,6 +240,7 @@ fun AppearanceView(m: ChatModel) {
 
 @Composable
 fun ColorEditor(
+  name: ThemeColor,
   initialColor: Color,
   close: () -> Unit,
 ) {
@@ -191,7 +248,7 @@ fun ColorEditor(
     Modifier
       .fillMaxWidth()
   ) {
-    AppBarTitle(stringResource(R.string.color_primary))
+    AppBarTitle(name.text)
     var currentColor by remember { mutableStateOf(initialColor) }
     ColorPicker(initialColor) {
       currentColor = it
@@ -201,7 +258,7 @@ fun ColorEditor(
     val isInDarkTheme = isInDarkTheme()
     TextButton(
       onClick = {
-        ThemeManager.saveAndApplyPrimaryColor(currentColor, isInDarkTheme)
+        ThemeManager.saveAndApplyThemeColor(name, currentColor, isInDarkTheme)
         close()
       },
       Modifier.align(Alignment.CenterHorizontally),
@@ -289,6 +346,33 @@ private fun DarkThemeSelector(state: State<String?>, onSelected: (String) -> Uni
 //  activity.startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:" + SimplexApp.context.packageName)))
 //}
 
+@Composable
+private fun rememberSaveThemeLauncher(cxt: Context, theme: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument(),
+    onResult = { destination ->
+      try {
+        destination?.let {
+          val theme = theme.value
+          if (theme != null) {
+            val contentResolver = cxt.contentResolver
+            contentResolver.openOutputStream(destination)?.let { stream ->
+              BufferedOutputStream(stream).use { outputStream ->
+                theme.byteInputStream().use { it.copyTo(outputStream) }
+              }
+              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            }
+          }
+        }
+      } catch (e: Error) {
+        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Log.e(TAG, "rememberSaveThemeLauncher error saving theme $e")
+      } finally {
+        theme.value = null
+      }
+    }
+  )
+
 private fun findEnabledIcon(): AppIcon = AppIcon.values().first { icon ->
   SimplexApp.context.packageManager.getComponentEnabledSetting(
     ComponentName(BuildConfig.APPLICATION_ID, "chat.simplex.app.MainActivity_${icon.name.lowercase()}")
@@ -304,7 +388,7 @@ fun PreviewAppearanceSettings() {
       languagePref = SharedPreference({ null }, {}),
       systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
-      editPrimaryColor = {},
+      editColor = { _, _ -> },
     )
   }
 }

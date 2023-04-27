@@ -26,22 +26,33 @@ object ThemeManager {
     val themeName = appPrefs.currentTheme.get()!!
     val themeOverrides = appPrefs.themeOverrides.get()
 
-    val theme = if (themeName != DefaultTheme.SYSTEM.name) {
-      themeOverrides[themeName]
+    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
+      themeName
     } else {
-      themeOverrides[if (darkForSystemTheme) appPrefs.systemDarkTheme.get() else DefaultTheme.LIGHT.name]
+      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
     }
-    val baseTheme = when (themeName) {
-      DefaultTheme.SYSTEM.name -> if (darkForSystemTheme) systemDarkThemeColors() else Pair(LightColorPalette, DefaultTheme.LIGHT)
+    val theme = themeOverrides[nonSystemThemeName]
+    val baseTheme = when (nonSystemThemeName) {
       DefaultTheme.LIGHT.name -> Pair(LightColorPalette, DefaultTheme.LIGHT)
       DefaultTheme.DARK.name -> Pair(DarkColorPalette, DefaultTheme.DARK)
       DefaultTheme.BLUE.name -> Pair(BlueColorPalette, DefaultTheme.BLUE)
-      else -> if (theme != null) theme.colors.toColors(theme.base) to theme.base else Pair(LightColorPalette, DefaultTheme.LIGHT)
+      else -> Pair(LightColorPalette, DefaultTheme.LIGHT)
     }
     if (theme == null) {
       return ActiveTheme(themeName, baseTheme.second, baseTheme.first)
     }
     return ActiveTheme(themeName, baseTheme.second, theme.colors.toColors(theme.base))
+  }
+
+  fun currentThemeOverrides(darkForSystemTheme: Boolean): ThemeOverrides {
+    val themeName = appPrefs.currentTheme.get()!!
+    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
+      themeName
+    } else {
+      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
+    }
+    val overrides = appPrefs.themeOverrides.get().toMutableMap()
+    return overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors())
   }
 
   // colors, default theme enum, localized name of theme
@@ -88,24 +99,50 @@ object ThemeManager {
     CurrentColors.value = currentColors(darkForSystemTheme)
   }
 
-  fun saveAndApplyPrimaryColor(color: Color? = null, darkForSystemTheme: Boolean) {
+  fun saveAndApplyThemeColor(name: ThemeColor, color: Color? = null, darkForSystemTheme: Boolean) {
     val themeName = appPrefs.currentTheme.get()!!
     val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
       themeName
     } else {
       if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
     }
-    val color = color ?: when(themeName) {
-      DefaultTheme.LIGHT.name -> LightColorPalette.primary
-      DefaultTheme.DARK.name -> DarkColorPalette.primary
-      DefaultTheme.BLUE.name -> BlueColorPalette.primary
-      else -> (if (darkForSystemTheme) systemDarkThemeColors().first else LightColorPalette).primary
+    var colorToSet = color
+    if (colorToSet == null) {
+      // Setting default color from a base theme
+      colorToSet = when(nonSystemThemeName) {
+        DefaultTheme.LIGHT.name -> name.fromColors(LightColorPalette)
+        DefaultTheme.DARK.name -> name.fromColors(DarkColorPalette)
+        DefaultTheme.BLUE.name -> name.fromColors(BlueColorPalette)
+        // Will not be here
+        else -> return
+      }
     }
     val overrides = appPrefs.themeOverrides.get().toMutableMap()
-    val prevValue = overrides[nonSystemThemeName]
-    val current = prevValue?.copy(colors = prevValue.colors.copy(primary = color.toReadableHex()))
-      ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors(primary = color.toReadableHex()))
-    overrides[nonSystemThemeName] = current
+    val prevValue = overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors())
+    overrides[nonSystemThemeName] = prevValue.withUpdatedColor(name, colorToSet.toReadableHex())
+    appPrefs.themeOverrides.set(overrides)
+    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight)
+  }
+
+  fun saveAndApplyThemeOverrides(theme: ThemeOverrides, darkForSystemTheme: Boolean) {
+    val overrides = appPrefs.themeOverrides.get().toMutableMap()
+    val prevValue = overrides[theme.base.name] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors())
+    overrides[theme.base.name] = prevValue.copy(colors = theme.colors)
+    appPrefs.themeOverrides.set(overrides)
+    appPrefs.currentTheme.set(theme.base.name)
+    CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight)
+  }
+
+  fun resetAllThemeColors(darkForSystemTheme: Boolean) {
+    val themeName = appPrefs.currentTheme.get()!!
+    val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
+      themeName
+    } else {
+      if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
+    }
+    val overrides = appPrefs.themeOverrides.get().toMutableMap()
+    val prevValue = overrides[nonSystemThemeName] ?: return
+    overrides[nonSystemThemeName] = prevValue.copy(colors = ThemeColors())
     appPrefs.themeOverrides.set(overrides)
     CurrentColors.value = currentColors(!CurrentColors.value.colors.isLight)
   }

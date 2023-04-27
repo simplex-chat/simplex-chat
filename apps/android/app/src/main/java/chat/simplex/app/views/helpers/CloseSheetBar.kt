@@ -3,10 +3,12 @@ package chat.simplex.app.views.helpers
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,14 +44,19 @@ fun CloseSheetBar(close: (() -> Unit)?, endButtons: @Composable RowScope.() -> U
 
 @Composable
 fun AppBarTitle(title: String, withPadding: Boolean = true) {
+  val theme = CurrentColors.collectAsState()
+  val brush = if (theme.value.base == DefaultTheme.BLUE)
+    Brush.linearGradient(listOf(Color(0xff1068D9), Color(0xff41A9F5)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
+  else // color is not updated when changing themes if I pass null here
+    Brush.linearGradient(listOf(MaterialTheme.colors.primaryVariant, MaterialTheme.colors.primaryVariant), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   Text(
     title,
     Modifier
       .fillMaxWidth()
       .padding(bottom = DEFAULT_PADDING * 1.5f, start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,),
     overflow = TextOverflow.Ellipsis,
-    style = MaterialTheme.typography.h1,
-    color = if (CurrentColors.collectAsState().value.base == DefaultTheme.BLUE) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.primary,
+    style = MaterialTheme.typography.h1.copy(brush = brush),
+    color = MaterialTheme.colors.primaryVariant,
     textAlign = TextAlign.Center
   )
 }

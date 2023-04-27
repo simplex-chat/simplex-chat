@@ -37,6 +37,8 @@ import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.ThemeOverrides
+import com.charleskorn.kaml.decodeFromStream
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -386,6 +388,22 @@ fun getDrawableFromUri(uri: Uri, withAlertOnException: Boolean = true): Drawable
   } else {
     Drawable.createFromPath(getAppFilePath(SimplexApp.context, uri))
   }
+}
+
+fun getThemeFromUri(uri: Uri, withAlertOnException: Boolean = true): ThemeOverrides? {
+  SimplexApp.context.contentResolver.openInputStream(uri).use {
+    runCatching {
+      return yaml.decodeFromStream<ThemeOverrides>(it!!)
+    }.onFailure {
+      if (withAlertOnException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.import_theme_error),
+          text = generalGetString(R.string.import_theme_error_desc),
+        )
+      }
+    }
+  }
+  return null
 }
 
 fun saveImage(context: Context, uri: Uri): String? {

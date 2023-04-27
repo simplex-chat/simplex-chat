@@ -25,6 +25,8 @@ import chat.simplex.app.views.call.*
 import chat.simplex.app.views.newchat.ConnectViaLinkTab
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.*
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -2990,6 +2992,11 @@ val json = Json {
   encodeDefaults = true
   explicitNulls = false
 }
+
+val yaml = Yaml(configuration = YamlConfiguration(
+  strictMode = false,
+  encodeDefaults = false,
+))
 
 @Serializable
 class APIResponse(val resp: CR, val corr: String? = null) {

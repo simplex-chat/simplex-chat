@@ -10,34 +10,84 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
+import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 
 enum class DefaultTheme {
   SYSTEM, LIGHT, DARK, BLUE;
 
-  // Call in only with base theme, not SYSTEM
-  fun hasChangedPrimary(colors: Colors): Boolean {
-    return when (this) {
+  // Call it only with base theme, not SYSTEM
+  fun hasChangedAnyColor(colors: Colors): Boolean {
+    val palette = when (this) {
       SYSTEM -> return false
-      LIGHT -> colors.primary != LightColorPalette.primary
-      DARK -> colors.primary != DarkColorPalette.primary
-      BLUE -> colors.primary != BlueColorPalette.primary
+      LIGHT -> LightColorPalette
+      DARK -> DarkColorPalette
+      BLUE -> BlueColorPalette
+    }
+    return with(palette) {
+      colors.primary != primary ||
+          colors.primaryVariant != primaryVariant ||
+          colors.secondary != secondary ||
+          colors.secondaryVariant != secondaryVariant ||
+          colors.background != background ||
+          colors.surface != surface
     }
   }
 }
 
+enum class ThemeColor {
+  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE;
+
+  fun fromColors(colors: Colors): Color {
+    return when (this) {
+      PRIMARY -> colors.primary
+      PRIMARY_VARIANT -> colors.primaryVariant
+      SECONDARY -> colors.secondary
+      SECONDARY_VARIANT -> colors.secondaryVariant
+      BACKGROUND -> colors.background
+      SURFACE -> colors.surface
+    }
+  }
+
+  val text: String
+    get() = when (this) {
+      PRIMARY -> generalGetString(R.string.color_primary)
+      PRIMARY_VARIANT -> generalGetString(R.string.color_primary_variant)
+      SECONDARY -> generalGetString(R.string.color_secondary)
+      SECONDARY_VARIANT -> generalGetString(R.string.color_secondary_variant)
+      BACKGROUND -> generalGetString(R.string.color_background)
+      SURFACE -> generalGetString(R.string.color_surface)
+    }
+}
+
 @Serializable
 data class ThemeColors(
-  val primary: String? = null
+  val primary: String? = null,
+  val primaryVariant: String? = null,
+  val secondary: String? = null,
+  val secondaryVariant: String? = null,
+  val background: String? = null,
+  val surface: String? = null,
 ) {
-  fun toColors(base: DefaultTheme): Colors = when (base) {
-    DefaultTheme.LIGHT -> LightColorPalette.copy(primary = primary?.colorFromReadableHex() ?: LightColorPalette.primary)
-    DefaultTheme.DARK -> DarkColorPalette.copy(primary = primary?.colorFromReadableHex() ?: DarkColorPalette.primary)
-    DefaultTheme.BLUE -> BlueColorPalette.copy(primary = primary?.colorFromReadableHex() ?: BlueColorPalette.primary)
-    // shouldn't be here
-    DefaultTheme.SYSTEM -> LightColorPalette.copy(primary = primary?.colorFromReadableHex() ?: LightColorPalette.primary)
+  fun toColors(base: DefaultTheme): Colors {
+    val baseColors = when (base) {
+      DefaultTheme.LIGHT -> LightColorPalette
+      DefaultTheme.DARK -> DarkColorPalette
+      DefaultTheme.BLUE -> BlueColorPalette
+      // shouldn't be here
+      DefaultTheme.SYSTEM -> LightColorPalette
+    }
+    return baseColors.copy(
+      primary = primary?.colorFromReadableHex() ?: baseColors.primary,
+      primaryVariant = primaryVariant?.colorFromReadableHex() ?: baseColors.primaryVariant,
+      secondary = secondary?.colorFromReadableHex() ?: baseColors.secondary,
+      secondaryVariant = secondaryVariant?.colorFromReadableHex() ?: baseColors.secondaryVariant,
+      background = background?.colorFromReadableHex() ?: baseColors.background,
+      surface = surface?.colorFromReadableHex() ?: baseColors.surface,
+    )
   }
 }
 
@@ -48,7 +98,18 @@ private fun String.colorFromReadableHex(): Color =
 data class ThemeOverrides (
   val base: DefaultTheme,
   val colors: ThemeColors
-)
+) {
+  fun withUpdatedColor(name: ThemeColor, color: String): ThemeOverrides {
+    return copy(colors = when (name) {
+      ThemeColor.PRIMARY -> colors.copy(primary = color)
+      ThemeColor.PRIMARY_VARIANT -> colors.copy(primaryVariant = color)
+      ThemeColor.SECONDARY -> colors.copy(secondary = color)
+      ThemeColor.SECONDARY_VARIANT -> colors.copy(secondaryVariant = color)
+      ThemeColor.BACKGROUND -> colors.copy(background = color)
+      ThemeColor.SURFACE -> colors.copy(surface = color)
+    })
+  }
+}
 
 fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, shape: Shape = RectangleShape): Modifier {
   return if (baseTheme == DefaultTheme.BLUE) {
