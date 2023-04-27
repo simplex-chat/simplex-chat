@@ -101,7 +101,10 @@ struct UserAddressView: View {
             case .deleteAddress:
                 return Alert(
                     title: Text("Delete address?"),
-                    message: Text("All your contacts will remain connected"),
+                    message:
+                        shareViaProfile
+                        ? Text("All your contacts will remain connected. Profile update will be sent to your contacts.")
+                        : Text("All your contacts will remain connected."),
                     primaryButton: .destructive(Text("Delete")) {
                         progressIndicator = true
                         Task {
