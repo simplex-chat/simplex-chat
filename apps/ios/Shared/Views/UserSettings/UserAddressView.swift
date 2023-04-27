@@ -225,13 +225,18 @@ struct UserAddressView: View {
         Button {
             showShareSheet(items: [userAdress.connReqContact])
         } label: {
-            Label("Share address", systemImage: "square.and.arrow.up")
+            settingsRow("square.and.arrow.up") {
+                Text("Share address")
+            }
         }
     }
 
     private func autoAcceptToggle() -> some View {
         settingsRow("checkmark") {
             Toggle("Auto-accept", isOn: $aas.enable)
+                .onChange(of: aas.enable) { _ in
+                    saveAAS()
+                }
         }
     }
 
@@ -241,7 +246,9 @@ struct UserAddressView: View {
                 .navigationTitle("SimpleX address")
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Label("Learn more", systemImage: "info.circle")
+            settingsRow("info.circle") {
+                Text("Learn more")
+            }
         }
     }
 
@@ -336,7 +343,7 @@ struct UserAddressView: View {
     private func welcomeMessageEditor() -> some View {
         ZStack {
             if aas.welcomeText.isEmpty {
-                TextEditor(text: Binding.constant("Type welcome message… (optional)"))
+                TextEditor(text: Binding.constant("Enter welcome message… (optional)"))
                     .foregroundColor(.secondary)
                     .disabled(true)
                     .padding(.horizontal, -5)
