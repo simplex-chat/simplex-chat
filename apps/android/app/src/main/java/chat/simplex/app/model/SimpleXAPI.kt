@@ -159,6 +159,7 @@ class AppPreferences(val context: Context) {
   }, sharedPreferencesThemes)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
+  val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -277,6 +278,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
     private const val SHARED_PREFS_THEMES = "Themes"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
+    private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
   }
 }
 
