@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -13,8 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.*
 import kotlinx.datetime.Clock
 
@@ -25,10 +25,12 @@ fun ContextItemView(
   cancelContextItem: () -> Unit
 ) {
   val sent = contextItem.chatDir.sent
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Row(
     Modifier
       .padding(top = 8.dp)
-      .background(if (sent) SentColorLight else ReceivedColorLight),
+      .background(if (sent) sentColor else receivedColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(

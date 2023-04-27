@@ -12,12 +12,13 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
-import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 enum class DefaultTheme {
-  SYSTEM, LIGHT, DARK, BLUE;
+  SYSTEM, LIGHT, DARK, SIMPLEX;
 
   // Call it only with base theme, not SYSTEM
   fun hasChangedAnyColor(colors: Colors): Boolean {
@@ -25,7 +26,7 @@ enum class DefaultTheme {
       SYSTEM -> return false
       LIGHT -> LightColorPalette
       DARK -> DarkColorPalette
-      BLUE -> BlueColorPalette
+      SIMPLEX -> SimplexColorPalette
     }
     return with(palette) {
       colors.primary != primary ||
@@ -38,10 +39,15 @@ enum class DefaultTheme {
   }
 }
 
-enum class ThemeColor {
-  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE;
+data class AppColors(
+  val sentMessage: Color,
+  val receivedMessage: Color
+)
 
-  fun fromColors(colors: Colors): Color {
+enum class ThemeColor {
+  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, SENT_MESSAGE, RECEIVED_MESSAGE;
+
+  fun fromColors(colors: Colors, appColors: AppColors): Color {
     return when (this) {
       PRIMARY -> colors.primary
       PRIMARY_VARIANT -> colors.primaryVariant
@@ -49,6 +55,8 @@ enum class ThemeColor {
       SECONDARY_VARIANT -> colors.secondaryVariant
       BACKGROUND -> colors.background
       SURFACE -> colors.surface
+      SENT_MESSAGE -> appColors.sentMessage
+      RECEIVED_MESSAGE -> appColors.receivedMessage
     }
   }
 
@@ -60,23 +68,30 @@ enum class ThemeColor {
       SECONDARY_VARIANT -> generalGetString(R.string.color_secondary_variant)
       BACKGROUND -> generalGetString(R.string.color_background)
       SURFACE -> generalGetString(R.string.color_surface)
+      SENT_MESSAGE -> generalGetString(R.string.color_sent_message)
+      RECEIVED_MESSAGE -> generalGetString(R.string.color_received_message)
     }
 }
 
 @Serializable
 data class ThemeColors(
+  @SerialName("accent")
   val primary: String? = null,
+  @SerialName("accentVariant")
   val primaryVariant: String? = null,
   val secondary: String? = null,
   val secondaryVariant: String? = null,
   val background: String? = null,
+  @SerialName("menus")
   val surface: String? = null,
+  val sentMessage: String? = null,
+  val receivedMessage: String? = null,
 ) {
   fun toColors(base: DefaultTheme): Colors {
     val baseColors = when (base) {
       DefaultTheme.LIGHT -> LightColorPalette
       DefaultTheme.DARK -> DarkColorPalette
-      DefaultTheme.BLUE -> BlueColorPalette
+      DefaultTheme.SIMPLEX -> SimplexColorPalette
       // shouldn't be here
       DefaultTheme.SYSTEM -> LightColorPalette
     }
@@ -87,6 +102,20 @@ data class ThemeColors(
       secondaryVariant = secondaryVariant?.colorFromReadableHex() ?: baseColors.secondaryVariant,
       background = background?.colorFromReadableHex() ?: baseColors.background,
       surface = surface?.colorFromReadableHex() ?: baseColors.surface,
+    )
+  }
+
+  fun toAppColors(base: DefaultTheme): AppColors {
+    val baseColors = when (base) {
+      DefaultTheme.LIGHT -> LightColorPaletteApp
+      DefaultTheme.DARK -> DarkColorPaletteApp
+      DefaultTheme.SIMPLEX -> SimplexColorPaletteApp
+      // shouldn't be here
+      DefaultTheme.SYSTEM -> LightColorPaletteApp
+    }
+    return baseColors.copy(
+      sentMessage = sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage,
+      receivedMessage = receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
     )
   }
 }
@@ -107,13 +136,15 @@ data class ThemeOverrides (
       ThemeColor.SECONDARY_VARIANT -> colors.copy(secondaryVariant = color)
       ThemeColor.BACKGROUND -> colors.copy(background = color)
       ThemeColor.SURFACE -> colors.copy(surface = color)
+      ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
+      ThemeColor.RECEIVED_MESSAGE -> colors.copy(receivedMessage = color)
     })
   }
 }
 
 fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, shape: Shape = RectangleShape): Modifier {
-  return if (baseTheme == DefaultTheme.BLUE) {
-    this.background(brush = Brush.linearGradient(listOf(Color(0xff0C0B13), Color(0xff151D36)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f)), shape = shape)
+  return if (baseTheme == DefaultTheme.SIMPLEX) {
+    this.background(brush = Brush.linearGradient(listOf(CurrentColors.value.colors.background.darker(0.5f), CurrentColors.value.colors.background.lighter(0.2f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f)), shape = shape)
   } else {
     this.background(color = CurrentColors.value.colors.background, shape = shape)
   }
@@ -130,7 +161,7 @@ val DarkColorPalette = darkColors(
   primaryVariant = SimplexBlue,
   secondary = DarkGray,
 //  background = Color.Black,
-  surface = Color(0xFF121212),
+  surface = Color(0xFF222222),
 //  background = Color(0xFF121212),
 //  surface = Color(0xFF121212),
   error = Color.Red,
@@ -138,6 +169,11 @@ val DarkColorPalette = darkColors(
   onSurface = Color(0xFFFFFBFA),
 //  onError: Color = Color.Black,
 )
+val DarkColorPaletteApp = AppColors(
+  sentMessage = Color(0x1E45B8FF),
+  receivedMessage = Color(0x20B1B0B5)
+)
+
 val LightColorPalette = lightColors(
   primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
   primaryVariant = SimplexBlue,
@@ -150,19 +186,27 @@ val LightColorPalette = lightColors(
 //  onBackground = Color.Black,
 //  onSurface = Color.Black,
 )
+val LightColorPaletteApp = AppColors(
+  sentMessage = Color(0x1E45B8FF),
+  receivedMessage = Color(0x20B1B0B5)
+)
 
-val BlueColorPalette = darkColors(
+val SimplexColorPalette = darkColors(
   primary = Color(0xff70F0F9),  // If this value changes also need to update #0088ff in string resource files
   primaryVariant = Color(0xff298AE7),
   secondary = Color(0xff2C464D),
   background = Color(0xff111528),
   //  surface = Color.Black,
   //  background = Color(0xFF121212),
-  surface = Color(0xFF1C1C22),
+  surface = Color(0xff151b38),
   error = Color.Red,
-  onBackground = Color(0xFFFFFBFA),
-  onSurface = Color(0xFFFFFBFA),
+//  onBackground = Color(0xFFFFFBFA),
+//  onSurface = Color(0xFFFFFBFA),
   //  onError: Color = Color.Black,
+)
+val SimplexColorPaletteApp = AppColors(
+  sentMessage = Color(0x1E45B8FF),
+  receivedMessage = Color(0x20B1B0B5)
 )
 
 val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(isInNightMode()))

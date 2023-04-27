@@ -14,12 +14,12 @@ object ThemeManager {
     SimplexApp.context.chatModel.controller.appPrefs
   }
 
-  data class ActiveTheme(val name: String, val base: DefaultTheme, val colors: Colors)
+  data class ActiveTheme(val name: String, val base: DefaultTheme, val colors: Colors, val appColors: AppColors)
 
   private fun systemDarkThemeColors(): Pair<Colors, DefaultTheme> = when (appPrefs.systemDarkTheme.get()) {
     DefaultTheme.DARK.name -> DarkColorPalette to DefaultTheme.DARK
-    DefaultTheme.BLUE.name -> BlueColorPalette to DefaultTheme.BLUE
-    else -> BlueColorPalette to DefaultTheme.BLUE
+    DefaultTheme.SIMPLEX.name -> SimplexColorPalette to DefaultTheme.SIMPLEX
+    else -> SimplexColorPalette to DefaultTheme.SIMPLEX
   }
 
   fun currentColors(darkForSystemTheme: Boolean): ActiveTheme {
@@ -33,15 +33,15 @@ object ThemeManager {
     }
     val theme = themeOverrides[nonSystemThemeName]
     val baseTheme = when (nonSystemThemeName) {
-      DefaultTheme.LIGHT.name -> Pair(LightColorPalette, DefaultTheme.LIGHT)
-      DefaultTheme.DARK.name -> Pair(DarkColorPalette, DefaultTheme.DARK)
-      DefaultTheme.BLUE.name -> Pair(BlueColorPalette, DefaultTheme.BLUE)
-      else -> Pair(LightColorPalette, DefaultTheme.LIGHT)
+      DefaultTheme.LIGHT.name -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
+      DefaultTheme.DARK.name -> Triple(DefaultTheme.DARK, DarkColorPalette, DarkColorPaletteApp)
+      DefaultTheme.SIMPLEX.name -> Triple(DefaultTheme.SIMPLEX, SimplexColorPalette, SimplexColorPaletteApp)
+      else -> Triple(DefaultTheme.LIGHT, LightColorPalette, LightColorPaletteApp)
     }
     if (theme == null) {
-      return ActiveTheme(themeName, baseTheme.second, baseTheme.first)
+      return ActiveTheme(themeName, baseTheme.first, baseTheme.second, baseTheme.third)
     }
-    return ActiveTheme(themeName, baseTheme.second, theme.colors.toColors(theme.base))
+    return ActiveTheme(themeName, baseTheme.first, theme.colors.toColors(theme.base), theme.colors.toAppColors(theme.base))
   }
 
   fun currentThemeOverrides(darkForSystemTheme: Boolean): ThemeOverrides {
@@ -81,9 +81,9 @@ object ThemeManager {
     )
     allThemes.add(
       Triple(
-        BlueColorPalette,
-        DefaultTheme.BLUE,
-        generalGetString(R.string.theme_blue)
+        SimplexColorPalette,
+        DefaultTheme.SIMPLEX,
+        generalGetString(R.string.theme_simplex)
       )
     )
     return allThemes
@@ -110,9 +110,9 @@ object ThemeManager {
     if (colorToSet == null) {
       // Setting default color from a base theme
       colorToSet = when(nonSystemThemeName) {
-        DefaultTheme.LIGHT.name -> name.fromColors(LightColorPalette)
-        DefaultTheme.DARK.name -> name.fromColors(DarkColorPalette)
-        DefaultTheme.BLUE.name -> name.fromColors(BlueColorPalette)
+        DefaultTheme.LIGHT.name -> name.fromColors(LightColorPalette, LightColorPaletteApp)
+        DefaultTheme.DARK.name -> name.fromColors(DarkColorPalette, DarkColorPaletteApp)
+        DefaultTheme.SIMPLEX.name -> name.fromColors(SimplexColorPalette, SimplexColorPaletteApp)
         // Will not be here
         else -> return
       }

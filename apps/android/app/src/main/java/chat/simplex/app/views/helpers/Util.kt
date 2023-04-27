@@ -584,6 +584,9 @@ fun getBitmapFromVideo(uri: Uri, timestamp: Long? = null, random: Boolean = true
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
 
+fun Color.lighter(factor: Float = 0.1f): Color =
+  Color(min(red * (1 + factor), 1f), min(green * (1 + factor), 1f), min(blue * (1 + factor), 1f), alpha)
+
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 
 fun String.toByteArrayFromBase64() = Base64.decode(this, Base64.DEFAULT)

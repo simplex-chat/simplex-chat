@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -19,9 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.LinkPreview
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.chat.item.SentColorLight
+import chat.simplex.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -79,8 +78,9 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
 
 @Composable
 fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit) {
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   Row(
-    Modifier.fillMaxWidth().padding(top = 8.dp).background(SentColorLight),
+    Modifier.fillMaxWidth().padding(top = 8.dp).background(sentColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (linkPreview == null) {

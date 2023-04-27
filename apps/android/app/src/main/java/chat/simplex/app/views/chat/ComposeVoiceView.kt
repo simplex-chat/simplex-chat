@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.durationText
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.item.SentColorLight
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -57,12 +56,13 @@ fun ComposeVoiceView(
         .height(3.dp)
         .background(MaterialTheme.colors.primary)
     )
+    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
     Row(
       Modifier
         .height(60.dp)
         .fillMaxWidth()
         .padding(top = 8.dp)
-        .background(SentColorLight),
+        .background(sentColor),
       verticalAlignment = Alignment.CenterVertically
     ) {
       IconButton(

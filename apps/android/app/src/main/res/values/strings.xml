@@ -1156,7 +1156,7 @@
   <string name="theme_system">System</string>
   <string name="theme_light">Light</string>
   <string name="theme_dark">Dark</string>
-  <string name="theme_blue">Blue</string>
+  <string name="theme_simplex">SimpleX</string>
 
   <!-- Languages -->
   <string name="language_system">System</string>
@@ -1175,7 +1175,9 @@
   <string name="color_secondary">Secondary</string>
   <string name="color_secondary_variant">Additional secondary</string>
   <string name="color_background">Background</string>
-  <string name="color_surface">Surface</string>
+  <string name="color_surface">Menus &amp; alerts</string>
+  <string name="color_sent_message">Sent message</string>
+  <string name="color_received_message">Received message</string>
 
   <!-- Preferences.kt -->
   <string name="chat_preferences_you_allow">You allow</string>

@@ -22,23 +22,20 @@ fun CIEventView(ci: ChatItem) {
   fun chatEventTextView(text: AnnotatedString) {
     Text(text, style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp))
   }
-
-  Surface {
-    Row(
-      Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      val memberDisplayName = ci.memberDisplayName
-      if (memberDisplayName != null) {
-        chatEventTextView(
-          buildAnnotatedString {
-            withStyle(chatEventStyle) { append(memberDisplayName) }
-            append(" ")
-          }.plus(chatEventText(ci))
-        )
-      } else {
-        chatEventTextView(chatEventText(ci))
-      }
+  Row(
+    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    val memberDisplayName = ci.memberDisplayName
+    if (memberDisplayName != null) {
+      chatEventTextView(
+        buildAnnotatedString {
+          withStyle(chatEventStyle) { append(memberDisplayName) }
+          append(" ")
+        }.plus(chatEventText(ci))
+      )
+    } else {
+      chatEventTextView(chatEventText(ci))
     }
   }
 }

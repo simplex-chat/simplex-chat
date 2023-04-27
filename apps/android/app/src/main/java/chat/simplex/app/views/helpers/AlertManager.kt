@@ -37,7 +37,6 @@ class AlertManager {
   ) {
     showAlert {
       AlertDialog(
-        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         onDismissRequest = this::hideAlert,
         title = alertTitle(title),
         text = alertText(text),
@@ -56,7 +55,7 @@ class AlertManager {
       Dialog(onDismissRequest = this::hideAlert) {
         Column(
           Modifier
-            .background(if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
+            .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
             .padding(bottom = DEFAULT_PADDING)
         ) {
           Text(
@@ -106,7 +105,6 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -142,7 +140,6 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -168,7 +165,6 @@ class AlertManager {
             }) { Text(confirmText, color = Color.Unspecified) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }

@@ -1,7 +1,6 @@
 package chat.simplex.app.views.usersettings
 
 import SectionBottomSpacer
-import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
@@ -170,13 +169,10 @@ fun AppearanceView(m: ChatModel) {
         Text(title)
         Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primary)
       }
-      // Not allowed to change title color since it is using gradient brush with custom colors
-      if (currentTheme.base != DefaultTheme.BLUE) {
-        SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT, currentTheme.colors.primaryVariant) }) {
-          val title = generalGetString(R.string.color_primary_variant)
-          Text(title)
-          Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primaryVariant)
-        }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT, currentTheme.colors.primaryVariant) }) {
+        val title = generalGetString(R.string.color_primary_variant)
+        Text(title)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primaryVariant)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY, currentTheme.colors.secondary) }) {
         val title = generalGetString(R.string.color_secondary)
@@ -199,11 +195,21 @@ fun AppearanceView(m: ChatModel) {
         Text(title)
         Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.surface)
       }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE, currentTheme.appColors.sentMessage) }) {
+        val title = generalGetString(R.string.color_sent_message)
+        Text(title)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
+      }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE, currentTheme.appColors.receivedMessage) }) {
+        val title = generalGetString(R.string.color_received_message)
+        Text(title)
+        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
+      }
     }
     val isInDarkTheme = isInDarkTheme()
     if (currentTheme.base.hasChangedAnyColor(currentTheme.colors)) {
       SectionItemView({ ThemeManager.resetAllThemeColors(darkForSystemTheme = isInDarkTheme) }) {
-        Text(generalGetString(R.string.reset_color), color = colors.error)
+        Text(generalGetString(R.string.reset_color), color = colors.primary)
       }
     }
     SectionSpacer()
@@ -215,7 +221,7 @@ fun AppearanceView(m: ChatModel) {
         SectionItemView({
           val overrides = ThemeManager.currentThemeOverrides(isInDarkTheme)
           theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
-          exportThemeLauncher.launch("SimpleX-${overrides.base.name}.yml")
+          exportThemeLauncher.launch("simplex.theme")
         }) {
           Text(generalGetString(R.string.export_theme), color = colors.primary)
         }
@@ -231,7 +237,7 @@ fun AppearanceView(m: ChatModel) {
       }
       // Can not limit to YAML mime type since it's unsupported by Android
       SectionItemView({ importThemeLauncher.launch("*/*") }) {
-        Text(generalGetString(R.string.import_theme), color = colors.error)
+        Text(generalGetString(R.string.import_theme), color = colors.primary)
       }
     }
     SectionBottomSpacer()
@@ -276,7 +282,7 @@ fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
     modifier = Modifier
       .fillMaxWidth()
       .height(300.dp),
-    showAlphaBar = false,
+    showAlphaBar = true,
     onColorChanged = { color: HsvColor ->
       onColorChanged(color.toColor())
     }
@@ -329,7 +335,7 @@ private fun DarkThemeSelector(state: State<String?>, onSelected: (String) -> Uni
   val values by remember {
     val darkThemes = ArrayList<Pair<String, String>>()
     darkThemes.add(DefaultTheme.DARK.name to generalGetString(R.string.theme_dark))
-    darkThemes.add(DefaultTheme.BLUE.name to generalGetString(R.string.theme_blue))
+    darkThemes.add(DefaultTheme.SIMPLEX.name to generalGetString(R.string.theme_simplex))
     mutableStateOf(darkThemes.toList())
   }
   ExposedDropDownSettingRow(

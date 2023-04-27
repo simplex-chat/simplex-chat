@@ -29,11 +29,6 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 import kotlin.math.min
 
-val SentColorLight = Color(0x1E45B8FF)
-val ReceivedColorLight = Color(0x20B1B0B5)
-val SentQuoteColorLight = Color(0x2545B8FF)
-val ReceivedQuoteColorLight = Color(0x25B1B0B5)
-
 @Composable
 fun FramedItemView(
   chatInfo: ChatInfo,
@@ -55,6 +50,9 @@ fun FramedItemView(
   }
 
   @Composable
+  fun Color.toQuote(): Color = if (isInDarkTheme()) lighter(0.2f) else darker(0.2f)
+
+  @Composable
   fun ciQuotedMsgView(qi: CIQuote) {
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
@@ -70,9 +68,11 @@ fun FramedItemView(
 
   @Composable
   fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null) {
+    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+    val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
     Row(
       Modifier
-        .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
+        .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
         .fillMaxWidth()
         .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -100,9 +100,11 @@ fun FramedItemView(
 
   @Composable
   fun ciQuoteView(qi: CIQuote) {
+    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+    val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
     Row(
       Modifier
-        .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
+        .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
         .fillMaxWidth()
         .combinedClickable(
           onLongClick = { showMenu.value = true },
@@ -163,13 +165,15 @@ fun FramedItemView(
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
       !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
 
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
     .background(
       when {
         transparentBackground -> Color.Transparent
-        sent -> SentColorLight
-        else -> ReceivedColorLight
+        sent -> sentColor
+        else -> receivedColor
       }
     )) {
     var metaColor = HighOrLowlight

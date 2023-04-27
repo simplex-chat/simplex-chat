@@ -151,7 +151,7 @@ class AppPreferences(val context: Context) {
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
-  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.BLUE.name)
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
   val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
     json.encodeToString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
   }, decode = {

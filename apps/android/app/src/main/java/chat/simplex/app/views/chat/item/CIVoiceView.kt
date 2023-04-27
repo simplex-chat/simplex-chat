@@ -156,9 +156,11 @@ private fun PlayPauseButton(
   pause: () -> Unit,
   longClick: () -> Unit
 ) {
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
-    color = if (sent) SentColorLight else ReceivedColorLight,
+    color = if (sent) sentColor else receivedColor,
     shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
   ) {
     Box(

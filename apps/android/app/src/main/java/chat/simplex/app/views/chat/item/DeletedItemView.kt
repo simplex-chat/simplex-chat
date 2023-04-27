@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
@@ -13,15 +14,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.ChatItem
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 
 @Composable
 fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
   val sent = ci.chatDir.sent
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     shape = RoundedCornerShape(18.dp),
-    color = if (sent) SentColorLight else ReceivedColorLight,
+    color = if (sent) sentColor else receivedColor,
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),

@@ -14,21 +14,18 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.model.durationText
-import chat.simplex.app.ui.theme.DEFAULT_PADDING_HALF
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.views.chat.item.SentColorLight
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.UploadContent
 import chat.simplex.app.views.helpers.base64ToBitmap
 
 @Composable
 fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Unit, cancelEnabled: Boolean) {
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   Row(
     Modifier
       .padding(top = 8.dp)
-      .background(SentColorLight),
+      .background(sentColor),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     LazyRow(
