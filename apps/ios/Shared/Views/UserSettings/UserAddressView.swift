@@ -68,45 +68,27 @@ struct UserAddressView: View {
                     }
                     .foregroundColor(.secondary)
                     .listRowBackground(Color.clear)
-                } else {
-                    aasView()
-                        .onAppear {
-                            aas = AutoAcceptState(userAdress: userAdress)
-                            savedAAS = aas
-                        }
-                        .onChange(of: aas.enable) { _ in
-                            if !aas.enable { aas = AutoAcceptState() }
-                        }
-
-                    Section {
-                        Toggle("Share with contacts", isOn: $shareViaProfile)
-                            .onChange(of: shareViaProfile) { on in
-                                if ignoreShareViaProfileChange {
-                                    ignoreShareViaProfileChange = false
-                                } else {
-                                    alert = .profileAddress(on: on)
-                                }
-                            }
-                    } header: {
-                        Text("Add to profile")
-                    } footer: {
-                        Text("Add address to your profile, so that your contacts can share it with other people.")
-                    }
                 }
 
                 Section {
                     QRCode(uri: userAdress.connReqContact)
-                    Button {
-                        showShareSheet(items: [userAdress.connReqContact])
-                    } label: {
-                        Label("Share address", systemImage: "square.and.arrow.up")
-                    }
+                    shareQRCodeButton(userAdress)
+                    shareWithContactsButton()
                     learnMoreButton()
                 } header: {
                     Text("Address")
                 } footer: {
                     Text("You can share this address to let people connect with you.")
                 }
+
+                aasView()
+                    .onAppear {
+                        aas = AutoAcceptState(userAdress: userAdress)
+                        savedAAS = aas
+                    }
+                    .onChange(of: aas.enable) { _ in
+                        if !aas.enable { aas = AutoAcceptState() }
+                    }
 
                 Section {
                     deleteAddressButton()
@@ -219,14 +201,33 @@ struct UserAddressView: View {
         }
     }
 
+    private func shareQRCodeButton(_ userAdress: UserContactLink) -> some View {
+        Button {
+            showShareSheet(items: [userAdress.connReqContact])
+        } label: {
+            Label("Share address", systemImage: "square.and.arrow.up")
+        }
+    }
+
     private func learnMoreButton() -> some View {
         NavigationLink {
             UserAddressLearnMore()
-                .navigationTitle("About SimpleX address")
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("SimpleX address")
+                .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Learn more", systemImage: "info.circle")
         }
+    }
+
+    private func shareWithContactsButton() -> some View {
+        Toggle("Share with contacts", isOn: $shareViaProfile)
+            .onChange(of: shareViaProfile) { on in
+                if ignoreShareViaProfileChange {
+                    ignoreShareViaProfileChange = false
+                } else {
+                    alert = .profileAddress(on: on)
+                }
+            }
     }
 
     private func setProfileAddress(_ on: Bool) {

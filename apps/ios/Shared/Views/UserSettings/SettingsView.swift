@@ -148,7 +148,8 @@ struct SettingsView: View {
 
                     NavigationLink {
                         UserAddressView(shareViaProfile: chatModel.currentUser!.addressShared)
-                            .navigationBarTitleDisplayMode(.inline)
+                            .navigationTitle("SimpleX address")
+                            .navigationBarTitleDisplayMode(.large)
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX address") }
                     }
