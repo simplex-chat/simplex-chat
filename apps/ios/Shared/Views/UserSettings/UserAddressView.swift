@@ -66,6 +66,7 @@ struct UserAddressView: View {
                     HStack {
                         Text(Image(systemName: "info.circle")) + Text(" ") + Text("Configure auto-accept and sharing via profile in **Settings**.")
                     }
+                    .foregroundColor(.secondary)
                     .listRowBackground(Color.clear)
                 } else {
                     aasView()
