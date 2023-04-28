@@ -48,6 +48,7 @@ struct GroupWelcomeView: View {
         }
         .onAppear {
             welcomeText = groupInfo.groupProfile.description ?? ""
+            keyboardVisible = true
         }
     }
 
@@ -80,16 +81,16 @@ struct GroupWelcomeView: View {
                         .frame(height: 90, alignment: .topLeading)
                 }
 
-                Button {
-                    editMode = !editMode
-                } label: {
-                    if editMode {
-                        Label ("Preview", systemImage: "character")
-                    } else {
-                        Label ("Edit", systemImage: "pencil")
+                if editMode {
+                    editButton(false) {
+                        Label("Preview", systemImage: "character")
+                    }
+                    .disabled(welcomeText.isEmpty)
+                } else {
+                    editButton(true) {
+                        Label("Edit", systemImage: "pencil")
                     }
                 }
-                .disabled(welcomeText.isEmpty)
                 copyButton()
             }
 
@@ -97,6 +98,13 @@ struct GroupWelcomeView: View {
                 saveButton()
             }
         }
+    }
+
+    private func editButton<V: View>(_ enable: Bool, _ label: @escaping () -> V) -> some View {
+        Button(action: {
+            editMode = enable
+            keyboardVisible = enable
+        }, label: label)
     }
 
     private func copyButton() -> some View {
