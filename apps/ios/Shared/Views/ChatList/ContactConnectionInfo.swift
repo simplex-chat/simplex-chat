@@ -39,6 +39,7 @@ struct ContactConnectionInfo: View {
                         .padding(.bottom, 16)
 
                     Text(contactConnectionText(contactConnection))
+                        .padding(.bottom, 16)
 
                     if let connReqInv = contactConnection.connReqInv {
                         OneTimeLinkProfileText(contactConnection: contactConnection, connReqInvitation: connReqInv)
