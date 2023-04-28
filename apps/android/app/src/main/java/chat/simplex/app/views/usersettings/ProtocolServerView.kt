@@ -60,7 +60,7 @@ fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerPr
         Modifier
           .padding(horizontal = 2.dp)
           .size(30.dp),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
       )
     }
@@ -107,7 +107,7 @@ private fun PresetServer(
         Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
         style = TextStyle(
           fontFamily = FontFamily.Monospace, fontSize = 16.sp,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       )
     }
@@ -172,13 +172,13 @@ private fun UseServerSection(
 ) {
   SectionView(stringResource(R.string.smp_servers_use_server).uppercase()) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
-      Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else HighOrLowlight)
+      Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server)
     }
     val enabled = rememberUpdatedState(server.enabled)
     PreferenceToggle(stringResource(R.string.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
     SectionItemView(onDelete, disabled = testing) {
-      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) HighOrLowlight else MaterialTheme.colors.error)
+      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
     }
   }
 }

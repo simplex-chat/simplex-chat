@@ -316,7 +316,7 @@ private fun ActiveCallOverlayLayout(
 private fun ControlButton(call: Call, icon: Painter, @StringRes iconText: Int, action: () -> Unit, enabled: Boolean = true) {
   if (call.hasMedia) {
     IconButton(onClick = action, enabled = enabled) {
-      Icon(icon, stringResource(iconText), tint = if (enabled) Color(0xFFFFFFD8) else HighOrLowlight, modifier = Modifier.size(40.dp))
+      Icon(icon, stringResource(iconText), tint = if (enabled) Color(0xFFFFFFD8) else MaterialTheme.colors.secondary, modifier = Modifier.size(40.dp))
     }
   } else {
     Spacer(Modifier.size(40.dp))
@@ -367,7 +367,7 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 //    horizontalAlignment = Alignment.CenterHorizontally,
 //    verticalArrangement = Arrangement.spacedBy(12.dp),
 //    modifier = Modifier
-//      .background(MaterialTheme.colors.background)
+//      .themedBackground()
 //      .fillMaxSize()
 //  ) {
 //    WebRTCView(callCommand) { apiMsg ->

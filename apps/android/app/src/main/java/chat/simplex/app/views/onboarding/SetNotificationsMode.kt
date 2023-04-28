@@ -53,7 +53,7 @@ fun SetNotificationsMode(m: ChatModel) {
 private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mode: NotificationsMode, @StringRes title: Int, @StringRes description: Int) {
   TextButton(
     onClick = { currentMode.value = mode },
-    border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
+    border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),
     shape = RoundedCornerShape(35.dp),
   ) {
     Column(Modifier.padding(horizontal = 14.dp).padding(top = 4.dp, bottom = 8.dp)) {
@@ -61,7 +61,7 @@ private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mod
         stringResource(title),
         style = MaterialTheme.typography.h2,
         fontWeight = FontWeight.Medium,
-        color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight,
+        color = if (currentMode.value == mode) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         modifier = Modifier.padding(bottom = 8.dp).align(Alignment.CenterHorizontally),
         textAlign = TextAlign.Center
       )

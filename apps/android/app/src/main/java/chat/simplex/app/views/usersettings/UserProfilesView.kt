@@ -281,7 +281,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
           PassphraseField(actionPassword, generalGetString(R.string.profile_password), isValid = { passwordValid }, showStrength = true)
         }
         SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
-          Text(generalGetString(label), color = if (actionEnabled) color else HighOrLowlight)
+          Text(generalGetString(label), color = if (actionEnabled) color else MaterialTheme.colors.secondary)
         }
       }
     }

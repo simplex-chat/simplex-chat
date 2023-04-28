@@ -1516,7 +1516,7 @@ data class CIMeta (
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
 
-  fun statusIcon(primaryColor: Color, metaColor: Color = HighOrLowlight): Pair<Int, Color>? =
+  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<Int, Color>? =
     when (itemStatus) {
       is CIStatus.SndSent -> R.drawable.ic_check_filled to metaColor
       is CIStatus.SndErrorAuth -> R.drawable.ic_close to Color.Red
