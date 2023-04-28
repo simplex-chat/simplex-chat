@@ -40,9 +40,7 @@ enum class DefaultTheme {
         colors.secondaryVariant != palette.secondaryVariant ||
         colors.background != palette.background ||
         colors.surface != palette.surface ||
-        appColors.title != appPalette.title ||
-        appColors.sentMessage != appPalette.sentMessage ||
-        appColors.receivedMessage != appPalette.receivedMessage
+        appColors != appPalette
   }
 }
 
