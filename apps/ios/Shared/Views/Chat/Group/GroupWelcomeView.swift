@@ -15,57 +15,95 @@ struct GroupWelcomeView: View {
     var groupId: Int64
     @Binding var groupInfo: GroupInfo
     @State private var welcomeText: String = ""
+    @State private var editMode = true
     @FocusState private var keyboardVisible: Bool
     @State private var showSaveDialog = false
 
     var body: some View {
-        List {
+        VStack {
             if groupInfo.canEdit {
-                Section {
-                    TextEditor(text: $welcomeText)
-                        .focused($keyboardVisible)
-                        .padding(.horizontal, -5)
-                        .padding(.top, -8)
-                        .frame(height: 90, alignment: .topLeading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                Section {
-                    saveButton()
-                }
-            }
-            Section {
-                if groupInfo.canEdit {
-                    Text("Here's what new group members will see:")
-                        .listRowBackground(Color.clear)
-                }
-                messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
-                Button {
-                    UIPasteboard.general.string = welcomeText
-                } label: {
-                    Label ("Copy", systemImage: "doc.on.doc")
+                editorView()
+                    .modifier(BackButton {
+                        if welcomeText == groupInfo.groupProfile.description || (welcomeText == "" && groupInfo.groupProfile.description == nil) {
+                            dismiss()
+                        } else {
+                            showSaveDialog = true
+                        }
+                    })
+                    .confirmationDialog("Save welcome message?", isPresented: $showSaveDialog) {
+                        Button("Save and update group profile") {
+                            save()
+                            dismiss()
+                        }
+                        Button("Exit without saving") { dismiss() }
+                    }
+            } else {
+                List {
+                    Section {
+                        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
+                        copyButton()
+                    }
                 }
             }
         }
         .onAppear {
             welcomeText = groupInfo.groupProfile.description ?? ""
         }
-        .modifier(BackButton {
-            if welcomeText == groupInfo.groupProfile.description || (welcomeText == "" && groupInfo.groupProfile.description == nil) {
-                dismiss()
-            } else {
-                showSaveDialog = true
+    }
+
+    private func editorView() -> some View {
+        List {
+            Section {
+                if editMode {
+                    ZStack {
+                        Group {
+                            if welcomeText.isEmpty {
+                                TextEditor(text: Binding.constant(NSLocalizedString("Enter welcome message…", comment: "placeholder")))
+                                    .foregroundColor(.secondary)
+                                    .disabled(true)
+                            }
+                            TextEditor(text: $welcomeText)
+                                .focused($keyboardVisible)
+                        }
+                        .padding(.horizontal, -5)
+                        .padding(.top, -8)
+                        .frame(height: 90, alignment: .topLeading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                } else {
+                    messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
+                        .frame(height: 90, alignment: .topLeading)
+                }
+
+                Button {
+                    editMode = !editMode
+                } label: {
+                    if editMode {
+                        Label ("Preview", systemImage: "character")
+                    } else {
+                        Label ("Edit", systemImage: "pencil")
+                    }
+                }
+                .disabled(welcomeText.isEmpty)
+                copyButton()
             }
-        })
-        .confirmationDialog("Save welcome message?", isPresented: $showSaveDialog) {
-            Button("Save and update group profile") {
-                save()
-                dismiss()
+
+            Section {
+                saveButton()
             }
-            Button("Exit without saving") { dismiss() }
         }
     }
 
-    @ViewBuilder private func saveButton() -> some View {
+    private func copyButton() -> some View {
+        Button {
+            UIPasteboard.general.string = welcomeText
+        } label: {
+            Label ("Copy", systemImage: "doc.on.doc")
+        }
+    }
+
+    private func saveButton() -> some View {
         Button("Save and update group profile") {
             save()
         }
