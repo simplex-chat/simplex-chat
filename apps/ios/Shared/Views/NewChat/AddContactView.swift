@@ -17,12 +17,14 @@ struct AddContactView: View {
 
     var body: some View {
         List {
+            OneTimeLinkProfileText(contactConnection: contactConnection, connReqInvitation: connReqInvitation, font: .body)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+
             Section {
                 oneTimeLinkSection(contactConnection: contactConnection, connReqInvitation: connReqInvitation)
             } header: {
                 Text("1-time link")
-            } footer: {
-                OneTimeLinkFooter(contactConnection: contactConnection, connReqInvitation: connReqInvitation)
             }
         }
         .onAppear { chatModel.connReqInv = connReqInvitation }
@@ -65,16 +67,21 @@ func oneTimeLinkLearnMoreButton() -> some View {
     }
 }
 
-struct OneTimeLinkFooter: View {
+struct OneTimeLinkProfileText: View {
     @EnvironmentObject private var chatModel: ChatModel
     var contactConnection: PendingContactConnection? = nil
     var connReqInvitation: String
+    var font: Font
 
     var body: some View {
         if (contactConnection?.incognito ?? chatModel.incognito) {
-            Text(Image(systemName: "theatermasks")).foregroundColor(.indigo) + Text(" ") + Text("A random profile will be sent to your contact")
+            HStack(alignment: .top) {
+                Image(systemName: "theatermasks").foregroundColor(.indigo).font(font)
+                Spacer().frame(width: 8)
+                Text("A random profile will be sent to your contact").font(font)
+            }
         } else {
-            Text("Your chat profile will be sent to your contact")
+            Text("Your chat profile will be sent to your contact").font(font)
         }
     }
 }

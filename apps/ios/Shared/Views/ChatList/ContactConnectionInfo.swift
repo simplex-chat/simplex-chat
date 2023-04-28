@@ -39,6 +39,10 @@ struct ContactConnectionInfo: View {
                         .padding(.bottom, 16)
 
                     Text(contactConnectionText(contactConnection))
+
+                    if let connReqInv = contactConnection.connReqInv {
+                        OneTimeLinkProfileText(contactConnection: contactConnection, connReqInvitation: connReqInv, font: .footnote)
+                    }
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -47,11 +51,7 @@ struct ContactConnectionInfo: View {
 
                 Section {
                     if contactConnection.groupLinkId == nil {
-                        HStack(spacing: 20) {
-                            Image(systemName: "pencil")
-                                .foregroundColor(.secondary)
-                                .padding(.leading, 6)
-                                .onTapGesture { aliasTextFieldFocused = true }
+                        settingsRow("pencil") {
                             TextField("Set contact name…", text: $localAlias)
                                 .autocapitalization(.none)
                                 .autocorrectionDisabled(true)
@@ -59,6 +59,7 @@ struct ContactConnectionInfo: View {
                                 .submitLabel(.done)
                                 .onSubmit(setConnectionAlias)
                         }
+                        .onTapGesture { aliasTextFieldFocused = true }
                     }
 
                     if contactConnection.initiated,
@@ -66,10 +67,6 @@ struct ContactConnectionInfo: View {
                         oneTimeLinkSection(contactConnection: contactConnection, connReqInvitation: connReqInv)
                     } else {
                         oneTimeLinkLearnMoreButton()
-                    }
-                } footer: {
-                    if let connReqInv = contactConnection.connReqInv {
-                        OneTimeLinkFooter(contactConnection: contactConnection, connReqInvitation: connReqInv)
                     }
                 }
 
@@ -82,7 +79,6 @@ struct ContactConnectionInfo: View {
                     }
                 }
             }
-            .listStyle(.insetGrouped)
         }
         .alert(item: $alert) { _alert in
             switch _alert {
