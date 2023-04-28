@@ -68,7 +68,7 @@
     <string name="ttl_mth">%dmês</string>
     <string name="v4_2_group_links_desc">Administradores podem criar os links para entrar em grupos.</string>
     <string name="v4_3_voice_messages">Mensagens de voz</string>
-    <string name="v4_2_auto_accept_contact_requests">Aceitar automaticamente solicitações de contato</string>
+    <string name="v4_2_auto_accept_contact_requests">Aceitar automaticamente pedidos de contato</string>
     <string name="v4_3_improved_server_configuration_desc">Adicionar servidores lendo QR codes.</string>
     <string name="v4_4_disappearing_messages">Mensagens que desaparecem</string>
     <string name="v4_4_live_messages">Mensagens ao vivo</string>
@@ -240,4 +240,19 @@
     <string name="icon_descr_call_progress">Chamada em curso</string>
     <string name="icon_descr_call_ended">Chamada finalizada</string>
     <string name="settings_section_title_calls">CHAMADAS</string>
+    <string name="v4_5_transport_isolation_descr">Por perfil de chat (padrão) ou por ligação (BETA).</string>
+    <string name="cannot_access_keychain">Não é possível aceder à Keystore para salvar a senha da base de dados</string>
+    <string name="invite_prohibited">Não é possível convidar o contato!</string>
+    <string name="icon_descr_cancel_link_preview">cancelar pré-visualização do link</string>
+    <string name="call_on_lock_screen">Chamadas no ecrã de bloqueio:</string>
+    <string name="alert_title_cant_invite_contacts">Não é possível convidar contatos!</string>
+    <string name="change_verb">Alterar</string>
+    <string name="cant_delete_user_profile">Não é possível eliminar o perfil do utilizador!</string>
+    <string name="feature_cancelled_item">cancelado %s</string>
+    <string name="cannot_receive_file">Não é possível receber o ficheiro</string>
+    <string name="icon_descr_cancel_image_preview">Cancelar pré-visualização da imagem</string>
+    <string name="icon_descr_cancel_file_preview">Cancelar pré-visualização do ficheiro</string>
+    <string name="cancel_verb">Cancelar</string>
+    <string name="icon_descr_cancel_live_message">Cancelar mensagem ao vivo</string>
+    <string name="use_camera_button">Câmera</string>
 </resources>
