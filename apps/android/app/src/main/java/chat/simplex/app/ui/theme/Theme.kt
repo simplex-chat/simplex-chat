@@ -21,12 +21,18 @@ enum class DefaultTheme {
   SYSTEM, LIGHT, DARK, SIMPLEX;
 
   // Call it only with base theme, not SYSTEM
-  fun hasChangedAnyColor(colors: Colors): Boolean {
+  fun hasChangedAnyColor(colors: Colors, appColors: AppColors): Boolean {
     val palette = when (this) {
       SYSTEM -> return false
       LIGHT -> LightColorPalette
       DARK -> DarkColorPalette
       SIMPLEX -> SimplexColorPalette
+    }
+    val appPalette = when (this) {
+      SYSTEM -> return false
+      LIGHT -> LightColorPaletteApp
+      DARK -> DarkColorPaletteApp
+      SIMPLEX -> SimplexColorPaletteApp
     }
     return with(palette) {
       colors.primary != primary ||
@@ -35,6 +41,10 @@ enum class DefaultTheme {
           colors.secondaryVariant != secondaryVariant ||
           colors.background != background ||
           colors.surface != surface
+    } || with(appPalette) {
+      appColors.title != title ||
+          appColors.sentMessage != sentMessage ||
+          appColors.receivedMessage != receivedMessage
     }
   }
 }
