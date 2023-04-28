@@ -4379,8 +4379,8 @@ SimpleX Lock must be enabled.</source>
         <source>You can share this address with your contacts to let them connect with **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share your address as a link or QR code - anybody can to connect to you." xml:space="preserve">
-        <source>You can share your address as a link or QR code - anybody can to connect to you.</source>
+      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
+        <source>You can share your address as a link or QR code - anybody can connect to you.</source>
         <target>您可以将您的地址作为链接或二维码共享——任何人都可以连接到您。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

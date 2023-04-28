@@ -4400,9 +4400,9 @@ SimpleX Lock must be enabled.</target>
         <target>You can share this address with your contacts to let them connect with **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share your address as a link or QR code - anybody can to connect to you." xml:space="preserve">
-        <source>You can share your address as a link or QR code - anybody can to connect to you.</source>
-        <target>You can share your address as a link or QR code - anybody can to connect to you.</target>
+      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
+        <source>You can share your address as a link or QR code - anybody can connect to you.</source>
+        <target>You can share your address as a link or QR code - anybody can connect to you.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
