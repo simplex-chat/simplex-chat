@@ -3622,9 +3622,9 @@ Beschikbaar in v5.1</target>
         <target>Bestand stoppen</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Stop receiving file?" xml:space="preserve">
+      <trans-unit id="Stop receiving file?" xml:space="preserve" approved="no">
         <source>Stop receiving file?</source>
-        <target>Stopt met het ontvangen van een bestand?</target>
+        <target state="translated">Stoppen met het ontvangen van bestand?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop sending file?" xml:space="preserve">
