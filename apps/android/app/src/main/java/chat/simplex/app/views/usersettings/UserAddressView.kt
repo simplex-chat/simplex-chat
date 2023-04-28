@@ -44,7 +44,7 @@ fun UserAddressView(chatModel: ChatModel) {
       }
     },
     deleteAddress = {
-      AlertManager.shared.showAlertMsg(
+      AlertManager.shared.showAlertDialog(
         title = generalGetString(R.string.delete_address__question),
         text = generalGetString(R.string.all_your_contacts_will_remain_connected),
         confirmText = generalGetString(R.string.delete_verb),
@@ -53,7 +53,8 @@ fun UserAddressView(chatModel: ChatModel) {
             chatModel.controller.apiDeleteUserAddress()
             chatModel.userAddress.value = null
           }
-        }
+        },
+        destructive = true,
       )
     }
   )

@@ -133,7 +133,7 @@ fun AddGroupMembersLayout(
         Text(
           stringResource(R.string.no_contacts_to_add),
           Modifier.padding(),
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       }
     } else {
@@ -214,7 +214,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
     if (selectedContactsCount >= 1) {
       Text(
         String.format(generalGetString(R.string.num_contacts_selected), selectedContactsCount),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         fontSize = 12.sp
       )
       Box(
@@ -222,14 +222,14 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
       ) {
         Text(
           stringResource(R.string.clear_contacts_selection_button),
-          color = if (enabled) MaterialTheme.colors.primary else HighOrLowlight,
+          color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           fontSize = 12.sp
         )
       }
     } else {
       Text(
         stringResource(R.string.no_contacts_selected),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         fontSize = 12.sp
       )
     }
@@ -270,13 +270,13 @@ fun ContactCheckRow(
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
     icon = painterResource(R.drawable.ic_theater_comedy_filled)
-    iconColor = HighOrLowlight
+    iconColor = MaterialTheme.colors.secondary
   } else if (checked) {
     icon = painterResource(R.drawable.ic_check_circle_filled)
-    iconColor = if (enabled) MaterialTheme.colors.primary else HighOrLowlight
+    iconColor = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
   } else {
     icon = painterResource(R.drawable.ic_circle)
-    iconColor = HighOrLowlight
+    iconColor = MaterialTheme.colors.secondary
   }
   SectionItemView(
     click = if (enabled) {
@@ -294,7 +294,7 @@ fun ContactCheckRow(
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     Text(
       contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
-      color = if (prohibitedToInviteIncognito) HighOrLowlight else Color.Unspecified
+      color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))
     Icon(

@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -26,10 +25,14 @@ import chat.simplex.app.views.call.*
 import chat.simplex.app.views.newchat.ConnectViaLinkTab
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.*
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.*
 import java.util.Date
 
@@ -57,6 +60,7 @@ enum class SimplexLinkMode {
 
 class AppPreferences(val context: Context) {
   private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+  private val sharedPreferencesThemes: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_THEMES_ID, Context.MODE_PRIVATE)
 
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
@@ -147,9 +151,15 @@ class AppPreferences(val context: Context) {
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
-  val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
+  val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
+    json.encodeToString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+  }, decode = {
+    json.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+  }, sharedPreferencesThemes)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
+  val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -204,8 +214,15 @@ class AppPreferences(val context: Context) {
       }
     )
 
+  private fun <K, V> mkMapPreference(prefName: String, default: Map<K, V>, encode: (Map<K, V>) -> String, decode: (String) -> Map<K, V>, prefs: SharedPreferences = sharedPreferences): SharedPreference<Map<K,V>> =
+    SharedPreference(
+      get = fun() = decode(prefs.getString(prefName, encode(default))!!),
+      set = fun(value) = prefs.edit().putString(prefName, encode(value)).apply()
+    )
+
   companion object {
     internal const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    internal const val SHARED_PREFS_THEMES_ID = "chat.simplex.app.THEMES"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
@@ -258,8 +275,10 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
-    private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
+    private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
+    private const val SHARED_PREFS_THEMES = "Themes"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
+    private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
   }
 }
 
@@ -2581,7 +2600,7 @@ data class FeatureEnabled(
     }
 
   val iconColor: Color
-    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else HighOrLowlight
+    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else CurrentColors.value.colors.secondary
 
   companion object {
     fun enabled(asymmetric: Boolean, user: ChatPreference, contact: ChatPreference): FeatureEnabled =
@@ -2965,7 +2984,7 @@ enum class GroupFeatureEnabled {
     }
 
   val iconColor: Color
-    get() = if (this == ON) SimplexGreen else HighOrLowlight
+    get() = if (this == ON) SimplexGreen else CurrentColors.value.colors.secondary
 
 }
 
@@ -2975,6 +2994,11 @@ val json = Json {
   encodeDefaults = true
   explicitNulls = false
 }
+
+val yaml = Yaml(configuration = YamlConfiguration(
+  strictMode = false,
+  encodeDefaults = false,
+))
 
 @Serializable
 class APIResponse(val resp: CR, val corr: String? = null) {

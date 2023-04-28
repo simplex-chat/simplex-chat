@@ -5,13 +5,13 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.UserAddressView
@@ -67,7 +67,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
     }
     TabRow(
       selectedTabIndex = selection.value.ordinal,
-      backgroundColor = MaterialTheme.colors.background,
+      backgroundColor = Color.Transparent,
       contentColor = MaterialTheme.colors.primary,
     ) {
       tabTitles.forEachIndexed { index, it ->
@@ -84,7 +84,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
             )
           },
           selectedContentColor = MaterialTheme.colors.primary,
-          unselectedContentColor = HighOrLowlight,
+          unselectedContentColor = MaterialTheme.colors.secondary,
         )
       }
     }

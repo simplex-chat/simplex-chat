@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.DefaultTheme
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationsMode
@@ -95,6 +96,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     initChatController()
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     context.getDir("temp", MODE_PRIVATE).deleteRecursively()
+    runMigrations()
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
@@ -182,6 +184,23 @@ class SimplexApp: Application(), LifecycleEventObserver {
       return@launch
     }
     MessagesFetcherWorker.scheduleWork()
+  }
+
+  private fun runMigrations() {
+    val lastMigration = chatModel.controller.appPrefs.lastMigratedVersionCode
+    if (lastMigration.get() < BuildConfig.VERSION_CODE) {
+      while (true) {
+        if (lastMigration.get() < 117) {
+          if (chatModel.controller.appPrefs.currentTheme.get() == DefaultTheme.DARK.name) {
+            chatModel.controller.appPrefs.currentTheme.set(DefaultTheme.SIMPLEX.name)
+          }
+          lastMigration.set(117)
+        } else {
+          lastMigration.set(BuildConfig.VERSION_CODE)
+          break
+        }
+      }
+    }
   }
 
   companion object {

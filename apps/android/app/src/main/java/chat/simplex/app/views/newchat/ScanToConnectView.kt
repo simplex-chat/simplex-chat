@@ -48,7 +48,7 @@ fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
               }
             }
             if (linkType == ConnectionLinkType.GROUP) {
-              AlertManager.shared.showAlertMsg(
+              AlertManager.shared.showAlertDialog(
                 title = generalGetString(R.string.connect_via_group_link),
                 text = generalGetString(R.string.you_will_join_group),
                 confirmText = generalGetString(R.string.connect_via_link_verb),

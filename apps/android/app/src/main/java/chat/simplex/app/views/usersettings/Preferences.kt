@@ -112,7 +112,7 @@ private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onS
     PreferenceToggleWithIcon(
       ChatFeature.TimedMessages.text,
       ChatFeature.TimedMessages.icon,
-      HighOrLowlight,
+      MaterialTheme.colors.secondary,
       allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
       extraPadding = false,
       onSelected
@@ -125,10 +125,10 @@ private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onS
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }

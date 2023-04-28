@@ -194,7 +194,7 @@ fun CIFileView(
         )
         Text(
           formatBytes(file.fileSize) + metaReserve,
-          color = HighOrLowlight,
+          color = MaterialTheme.colors.secondary,
           fontSize = 14.sp,
           maxLines = 1
         )

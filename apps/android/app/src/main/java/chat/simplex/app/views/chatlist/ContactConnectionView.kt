@@ -34,7 +34,7 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold,
-        color = HighOrLowlight
+        color = MaterialTheme.colors.secondary
       )
       val height = with(LocalDensity.current) { 46.sp.toDp() }
       Text(contactConnection.description, Modifier.heightIn(min = height), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
@@ -45,7 +45,7 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
     ) {
       Text(
         ts,
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(bottom = 5.dp)
       )

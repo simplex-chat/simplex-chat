@@ -101,7 +101,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
           createColor = MaterialTheme.colors.primary
         } else {
           createModifier = Modifier.padding(8.dp)
-          createColor = HighOrLowlight
+          createColor = MaterialTheme.colors.secondary
         }
         Surface(shape = RoundedCornerShape(20.dp)) {
           Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
@@ -147,9 +147,9 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
     derivedStateOf {
       if (valid) {
         if (focused) {
-          HighOrLowlight.copy(alpha = 0.6f)
+          CurrentColors.value.colors.secondary.copy(alpha = 0.6f)
         } else {
-          HighOrLowlight.copy(alpha = 0.3f)
+          CurrentColors.value.colors.secondary.copy(alpha = 0.3f)
         }
       } else Color.Red
     }
@@ -176,7 +176,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
         autoCorrect = false
       ),
       singleLine = true,
-      cursorBrush = SolidColor(HighOrLowlight)
+      cursorBrush = SolidColor(MaterialTheme.colors.secondary)
     )
   }
   LaunchedEffect(Unit) {

@@ -180,7 +180,7 @@ fun DatabaseErrorView(
         Modifier
           .padding(horizontal = 2.dp)
           .size(30.dp),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
       )
     }

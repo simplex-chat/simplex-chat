@@ -115,7 +115,7 @@ fun UserProfileLayout(
             ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(108.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
+                  ProfileImage(108.dp, profileImage.value, color = MaterialTheme.colors.secondary.copy(alpha = 0.1f))
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {
@@ -156,7 +156,7 @@ fun UserProfileLayout(
               saveColor = MaterialTheme.colors.primary
             } else {
               saveModifier = Modifier
-              saveColor = HighOrLowlight
+              saveColor = MaterialTheme.colors.secondary
             }
             Text(
               stringResource(R.string.save_and_notify_contacts),

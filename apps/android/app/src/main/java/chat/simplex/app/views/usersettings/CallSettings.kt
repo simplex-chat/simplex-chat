@@ -16,7 +16,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -108,7 +107,7 @@ fun SharedPreferenceToggleWithIcon(
 ) {
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Text(text, Modifier.padding(end = 4.dp), color = if (stopped) HighOrLowlight else Color.Unspecified)
+    Text(text, Modifier.padding(end = 4.dp), color = if (stopped) MaterialTheme.colors.secondary else Color.Unspecified)
     Icon(
       icon,
       null,

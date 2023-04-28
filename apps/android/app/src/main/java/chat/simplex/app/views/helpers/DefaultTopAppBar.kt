@@ -47,7 +47,7 @@ fun DefaultTopAppBar(
 fun NavigationButtonBack(onButtonClicked: (() -> Unit)?) {
   IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
     Icon(
-      painterResource(R.drawable.ic_arrow_back_ios_new), stringResource(R.string.back), tint = if (onButtonClicked != null) MaterialTheme.colors.primary else HighOrLowlight
+      painterResource(R.drawable.ic_arrow_back_ios_new), stringResource(R.string.back), tint = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
     )
   }
 }

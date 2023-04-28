@@ -247,7 +247,7 @@ fun ChatItemView(
           val ct = if (cInfo is ChatInfo.Direct) cInfo.contact else null
           CIFeaturePreferenceView(cItem, ct, c.feature, c.allowed, acceptFeature)
         }
-        is CIContent.SndChatPreference -> CIChatFeatureView(cItem, c.feature, HighOrLowlight, icon = c.feature.icon,)
+        is CIContent.SndChatPreference -> CIChatFeatureView(cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon,)
         is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
@@ -380,13 +380,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
         TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
-        }) { Text(stringResource(R.string.for_me_only)) }
+        }) { Text(stringResource(R.string.for_me_only), color = MaterialTheme.colors.error) }
         if (chatItem.meta.editable) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(R.string.for_everybody)) }
+          }) { Text(stringResource(R.string.for_everybody), color = MaterialTheme.colors.error) }
         }
       }
     }

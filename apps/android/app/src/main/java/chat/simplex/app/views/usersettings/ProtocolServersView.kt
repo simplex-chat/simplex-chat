@@ -166,7 +166,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
           Modifier
             .padding(horizontal = 2.dp)
             .size(30.dp),
-          color = HighOrLowlight,
+          color = MaterialTheme.colors.secondary,
           strokeWidth = 2.5.dp
         )
       }
@@ -207,8 +207,8 @@ private fun ProtocolServersLayout(
         stringResource(R.string.smp_servers_add),
         addServer,
         disabled = testing,
-        textColor = if (testing) HighOrLowlight else MaterialTheme.colors.primary,
-        iconColor = if (testing) HighOrLowlight else MaterialTheme.colors.primary
+        textColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+        iconColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
     SectionTextFooter(
@@ -225,14 +225,14 @@ private fun ProtocolServersLayout(
     SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     SectionView {
       SectionItemView(resetServers, disabled = serversUnchanged) {
-        Text(stringResource(R.string.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else HighOrLowlight)
+        Text(stringResource(R.string.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
       val testServersDisabled = testing || allServersDisabled
       SectionItemView(testServers, disabled = testServersDisabled) {
-        Text(stringResource(R.string.smp_servers_test_servers), color = if (!testServersDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
+        Text(stringResource(R.string.smp_servers_test_servers), color = if (!testServersDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
       SectionItemView(saveSMPServers, disabled = saveDisabled) {
-        Text(stringResource(R.string.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
+        Text(stringResource(R.string.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
     }
     SectionDividerSpaced(maxBottomPadding = false)
@@ -248,15 +248,15 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
-    !srv.enabled -> Icon(painterResource(R.drawable.ic_do_not_disturb_on), null, tint = HighOrLowlight)
+    !srv.enabled -> Icon(painterResource(R.drawable.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
     else -> ShowTestStatus(srv)
   }
   Spacer(Modifier.padding(horizontal = 4.dp))
   val text = address?.hostnames?.firstOrNull() ?: srv.server
   if (srv.enabled) {
-    Text(text, color = if (disabled) HighOrLowlight else MaterialTheme.colors.onBackground, maxLines = 1)
+    Text(text, color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground, maxLines = 1)
   } else {
-    Text(text, maxLines = 1, color = HighOrLowlight)
+    Text(text, maxLines = 1, color = MaterialTheme.colors.secondary)
   }
 }
 

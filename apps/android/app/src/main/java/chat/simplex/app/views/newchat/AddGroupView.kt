@@ -141,7 +141,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
               }
               .padding(8.dp))
           } else {
-            CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
+            CreateGroupButton(MaterialTheme.colors.secondary, Modifier.padding(8.dp))
           }
           LaunchedEffect(Unit) {
             delay(300)

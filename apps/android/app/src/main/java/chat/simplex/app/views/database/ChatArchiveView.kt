@@ -116,7 +116,8 @@ private fun deleteArchiveAlert(m: ChatModel, archivePath: String) {
       } else {
         Log.e(TAG, "deleteArchiveAlert delete() error")
       }
-    }
+    },
+    destructive = true,
   )
 }
 

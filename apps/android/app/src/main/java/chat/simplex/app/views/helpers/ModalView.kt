@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.app.TAG
 import chat.simplex.app.ui.theme.isInDarkTheme
+import chat.simplex.app.ui.theme.themedBackground
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
@@ -24,7 +25,7 @@ fun ModalView(
 ) {
   BackHandler(onBack = close)
   Surface(Modifier.fillMaxSize()) {
-    Column(Modifier.background(background)) {
+    Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
       CloseSheetBar(close, endButtons)
       Box(modifier) { content() }
     }
