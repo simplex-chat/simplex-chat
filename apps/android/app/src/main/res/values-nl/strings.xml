@@ -1118,7 +1118,7 @@
     <string name="revoke_file__title">Bestand intrekken\?</string>
     <string name="stop_file__confirm">Stop</string>
     <string name="stop_file__action">Bestand stoppen</string>
-    <string name="stop_rcv_file__title">Stopt met het ontvangen van een bestand\?</string>
+    <string name="stop_rcv_file__title">Stoppen met het ontvangen van bestand\?</string>
     <string name="stop_snd_file__title">Bestand verzenden stoppen\?</string>
     <string name="only_your_contact_can_make_calls">Alleen je contact kan bellen.</string>
     <string name="revoke_file__message">Het bestand wordt van de servers verwijderd.</string>
