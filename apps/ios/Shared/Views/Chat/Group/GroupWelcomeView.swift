@@ -80,20 +80,21 @@ struct GroupWelcomeView: View {
                     textPreview()
                         .frame(height: 90, alignment: .topLeading)
                 }
-
-                if editMode {
-                    editButton(false) {
-                        Label("Preview", systemImage: "character")
-                    }
-                    .disabled(welcomeText.isEmpty)
-                } else {
-                    editButton(true) {
-                        Label("Edit", systemImage: "pencil")
+                
+                Button {
+                    editMode = !editMode
+                    keyboardVisible = editMode
+                } label: {
+                    if editMode {
+                        Label ("Preview", systemImage: "character")
+                    } else {
+                        Label ("Edit", systemImage: "pencil")
                     }
                 }
+                .disabled(welcomeText.isEmpty)
                 copyButton()
             }
-
+            
             Section {
                 saveButton()
             }
