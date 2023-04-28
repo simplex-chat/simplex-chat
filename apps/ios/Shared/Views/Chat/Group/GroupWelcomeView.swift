@@ -40,7 +40,7 @@ struct GroupWelcomeView: View {
             } else {
                 List {
                     Section {
-                        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
+                        textPreview()
                         copyButton()
                     }
                 }
@@ -49,6 +49,11 @@ struct GroupWelcomeView: View {
         .onAppear {
             welcomeText = groupInfo.groupProfile.description ?? ""
         }
+    }
+
+    private func textPreview() -> some View {
+        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
+            .allowsHitTesting(false)
     }
 
     private func editorView() -> some View {
@@ -72,7 +77,7 @@ struct GroupWelcomeView: View {
                     }
 
                 } else {
-                    messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
+                    textPreview()
                         .frame(height: 90, alignment: .topLeading)
                 }
 
