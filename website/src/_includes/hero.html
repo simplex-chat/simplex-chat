@@ -1,4 +1,4 @@
-<div class="first-two-sections flex flex-col items-center pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial relative">
+<div class="first-two-sections pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="md:flex md:flex-col-reverse md:items-center xl:flex xl:flex-row xl:items-start relative xl:justify-between xl:gap-10 container">
         <div class="">
             <section class="xl:h-[calc(100vh-66px)] xl:max-h-[888px] m-auto w-full flex items-center justify-between landing-page-header px-5">
@@ -17,14 +17,25 @@
                         <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[0].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left xl:rtl:text-right text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">{{ "hero-overlay-2-textlink" | i18n({}, lang ) | safe }}</a>
                         {{ overlay(hero_overlays.sections[0], lang) }}
                     </article>
+
                     <article class="w-full xl:max-w-[600px]">
-                        <p class="text-black dark:text-white hidden md:block text-center xl:text-left xl:rtl:text-right text-[16px] leading-[26px] mb-[11px] md:mt-6">{{ "get-simplex" | i18n({}, lang ) | safe }}</p>
-                        <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
-                            <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
-                            <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
-                            <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
-                            <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
-                            <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
+                        <div class="flex items-center flex-wrap gap-1">
+                            <a class="block rounded overflow-hidden" title="placeholder for title" href="https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html" target="_blank"><img class="h-[40px] w-auto" src="/images/trail-of-bits.jpg" alt=""></a>
+                            <a class="block rounded overflow-hidden" title="placeholder for title" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank"><img class="h-[40px] w-auto" src="/images/kuketz-blog-light.jpg" alt=""></a>
+                            <a class="block rounded overflow-hidden" title="placeholder for title" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank"><img class="h-[40px] w-auto" src="/images/HeiseOnline.jpg" alt=""></a>
+                            <a class="block rounded overflow-hidden" title="placeholder for title" href="https://optoutpod.com/episodes/s3e02-simplexchat/" target="_blank"><img class="h-[40px] w-auto" src="/images/optout.jpg" alt=""></a>
+                            <a class="block rounded overflow-hidden" title="placeholder for title" href="https://www.privacyguides.org/en/real-time-communication/#simplex-chat" target="_blank"><img class="h-[40px] w-auto" src="/images/privacy-guides.jpg" alt=""></a>
+                        </div>
+    
+                        <div>
+                            <p class="text-black dark:text-white hidden md:block text-center xl:text-left xl:rtl:text-right text-[16px] leading-[26px] mb-[11px] md:mt-6">{{ "get-simplex" | i18n({}, lang ) | safe }}</p>
+                            <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
+                                <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+                                <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+                                <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
+                                <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
+                                <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -69,6 +80,13 @@
                             {{ "hero-2-header-desc" | i18n({}, lang ) | safe }}
                         </p>
                     </article>
+
+                    <div class="w-full container px-5 hidden md:flex items-center justify-center gap-[50px] py-[24px] xl:absolute bottom-0 z-10">
+                        <a href="#why-simplex" class="menu-link">{{ "why-simplex" | i18n({}, lang ) | safe }}</a>
+                        <a href="#features" class="menu-link">{{ "features" | i18n({}, lang ) | safe }}</a>
+                        <a href="#privacy" class="menu-link">{{ "simplex-privacy" | i18n({}, lang ) | safe }}</a>
+                        <a href="#network" class="menu-link">{{ "simplex-network" | i18n({}, lang ) | safe }}</a>
+                    </div>
                 </div>
             </section>
         </div>
@@ -80,28 +98,6 @@
                 <source src="/video/connect.mp4" type="video/mp4">
             </video>
         </div>
-    </div>
-
-    <div class="w-full container px-5 xl:pb-[150px]">
-        <p class="text-active-blue text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[35px] leading-[36px] md:leading-[43px] mb-[40px]">SimpleX Reviews</p>
-
-        <div class="flex items-center justify-evenly flex-wrap gap-4">
-            <a class="block" href="https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html" target="_blank"><img class="h-[90px] w-auto" src="/images/trail-of-bits.jpg" alt=""></a>
-            <a class="block" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank"><img class="h-[90px] w-auto" src="/images/kuketz-blog.jpg" alt=""></a>
-            <a class="block" href="https://www.privacyguides.org/en/real-time-communication/#simplex-chat" target="_blank"><img class="h-[90px] w-auto" src="/images/privacy-guides.jpg" alt=""></a>
-            <a class="block h-[90px] w-auto px-4 py-4 bg-white" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank">
-                <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 193 36" role="img" preserveAspectRatio="xMinYMin" class="heise-online-logo topnavigation__heiseonline-logo">
-                    <path fill="#323232" d="M42.3 27.67V5.83h3.56v5.63l-.12 2.94c.64-.6 1.35-1.13 2.12-1.59s1.69-.7 2.74-.7c1.63 0 2.82.52 3.56 1.56s1.11 2.53 1.11 4.47v9.53H51.7v-9.06c0-1.26-.19-2.15-.56-2.66-.37-.52-.98-.77-1.83-.77-.66 0-1.24.16-1.75.48s-1.08.79-1.72 1.41v10.61l-3.54-.01zM65.44 28.04c-1.05 0-2.03-.18-2.94-.54s-1.7-.88-2.38-1.56-1.21-1.51-1.59-2.49-.57-2.1-.57-3.36c0-1.24.2-2.35.59-3.34s.91-1.83 1.56-2.51 1.4-1.21 2.24-1.58a6.44 6.44 0 0 1 2.6-.56c1.03 0 1.94.18 2.72.53.78.35 1.44.85 1.96 1.49.53.64.92 1.4 1.19 2.29.27.89.4 1.86.4 2.91 0 .35-.02.68-.05.99-.03.31-.07.56-.11.74h-9.65c.16 1.36.64 2.41 1.44 3.14.79.73 1.81 1.1 3.05 1.1.66 0 1.27-.1 1.84-.29.57-.2 1.13-.47 1.69-.82l1.21 2.23c-.72.48-1.53.87-2.41 1.18-.89.3-1.82.45-2.79.45zm-4.05-9.4h6.74c0-1.18-.25-2.1-.76-2.77s-1.28-1.01-2.34-1.01c-.91 0-1.7.32-2.38.96-.67.64-1.1 1.58-1.26 2.82zM75.8 9.82c-.64 0-1.17-.19-1.58-.56-.41-.37-.62-.86-.62-1.45 0-.6.21-1.09.62-1.47s.94-.57 1.58-.57 1.16.19 1.58.57.62.87.62 1.47-.21 1.08-.62 1.45c-.41.37-.94.56-1.58.56zm-1.79 17.85V12.48h3.56v15.19h-3.56zM85.74 28.04c-1.05 0-2.09-.2-3.11-.6-1.02-.4-1.9-.9-2.65-1.5l1.67-2.29c.68.54 1.36.95 2.03 1.25s1.4.45 2.18.45c.82 0 1.43-.17 1.82-.51s.59-.78.59-1.32c0-.31-.09-.58-.28-.82s-.43-.45-.74-.63c-.31-.19-.66-.36-1.05-.51s-.78-.31-1.18-.48c-.49-.19-1-.4-1.52-.65s-.97-.55-1.38-.9c-.4-.35-.73-.76-.99-1.22-.26-.46-.39-1.02-.39-1.65 0-1.34.49-2.43 1.48-3.28.99-.85 2.34-1.27 4.05-1.27 1.05 0 2 .19 2.85.56.85.37 1.58.79 2.2 1.27L89.7 16.1c-.54-.39-1.08-.71-1.62-.94s-1.12-.36-1.72-.36c-.76 0-1.33.16-1.69.48s-.54.72-.54 1.19c0 .31.09.57.26.79.18.22.41.41.7.57.29.17.62.32 1.01.46.38.14.78.29 1.19.43.52.19 1.03.4 1.55.63.52.24.98.53 1.41.88.42.35.76.78 1.02 1.28.26.51.39 1.11.39 1.81 0 .66-.13 1.27-.39 1.84s-.63 1.06-1.13 1.48c-.49.42-1.11.76-1.86 1.01-.75.27-1.6.39-2.54.39zM100.71 28.04c-1.05 0-2.03-.18-2.94-.54s-1.7-.88-2.38-1.56-1.21-1.51-1.59-2.49-.57-2.1-.57-3.36c0-1.24.2-2.35.59-3.34s.91-1.83 1.56-2.51a6.97 6.97 0 0 1 2.24-1.58 6.44 6.44 0 0 1 2.6-.56c1.03 0 1.94.18 2.72.53.78.35 1.44.85 1.96 1.49.53.64.92 1.4 1.19 2.29.27.89.4 1.86.4 2.91 0 .35-.02.68-.05.99-.03.31-.07.56-.11.74h-9.65c.16 1.36.64 2.41 1.44 3.14.79.73 1.81 1.1 3.05 1.1.66 0 1.27-.1 1.84-.29.57-.2 1.13-.47 1.69-.82l1.21 2.23c-.72.48-1.53.87-2.41 1.18s-1.82.45-2.79.45zm-4.05-9.4h6.74c0-1.18-.25-2.1-.76-2.77s-1.28-1.01-2.34-1.01c-.91 0-1.7.32-2.38.96-.68.64-1.1 1.58-1.26 2.82zM121.07 28.04c-.95 0-1.86-.18-2.72-.53-.87-.35-1.64-.87-2.31-1.55-.67-.68-1.2-1.52-1.59-2.51s-.59-2.11-.59-3.37c0-1.26.2-2.38.59-3.37.39-.99.92-1.83 1.59-2.51s1.44-1.2 2.31-1.56c.87-.36 1.77-.54 2.72-.54.95 0 1.86.18 2.74.54s1.64.88 2.31 1.56c.66.68 1.19 1.52 1.59 2.51s.6 2.11.6 3.37c0 1.26-.2 2.38-.6 3.37-.4.99-.93 1.83-1.59 2.51-.66.68-1.43 1.2-2.31 1.55-.88.36-1.79.53-2.74.53zm0-2.91c1.11 0 1.99-.46 2.63-1.38s.96-2.14.96-3.67c0-1.55-.32-2.78-.96-3.7S122.18 15 121.07 15s-1.99.46-2.61 1.38c-.63.92-.94 2.15-.94 3.7 0 1.53.31 2.75.94 3.67.62.93 1.49 1.38 2.61 1.38zM131.21 27.67V12.48h2.94l.25 2.04h.12c.68-.66 1.42-1.23 2.21-1.7s1.72-.71 2.77-.71c1.63 0 2.82.52 3.56 1.56.74 1.04 1.11 2.53 1.11 4.47v9.53h-3.56v-9.06c0-1.26-.19-2.15-.56-2.66-.37-.52-.98-.77-1.83-.77-.66 0-1.24.16-1.75.48s-1.08.79-1.72 1.41v10.61l-3.54-.01zM151.39 28.04c-1.28 0-2.18-.38-2.69-1.15-.52-.76-.77-1.8-.77-3.12V5.83h3.56v18.13c0 .43.08.74.25.91.16.18.34.26.53.26h.23c.07 0 .18-.02.32-.06l.46 2.66c-.48.21-1.11.31-1.89.31zM157.48 9.82c-.64 0-1.17-.19-1.58-.56-.41-.37-.62-.86-.62-1.45 0-.6.21-1.09.62-1.47.41-.38.94-.57 1.58-.57s1.16.19 1.58.57.62.87.62 1.47-.21 1.08-.62 1.45c-.41.37-.94.56-1.58.56zm-1.79 17.85V12.48h3.56v15.19h-3.56zM163.17 27.67V12.48h2.94l.25 2.04h.12c.68-.66 1.42-1.23 2.21-1.7s1.72-.71 2.77-.71c1.63 0 2.82.52 3.56 1.56.74 1.04 1.11 2.53 1.11 4.47v9.53h-3.56v-9.06c0-1.26-.19-2.15-.56-2.66-.37-.52-.98-.77-1.83-.77-.66 0-1.24.16-1.75.48s-1.08.79-1.72 1.41v10.61l-3.54-.01zM186.38 28.04c-1.05 0-2.03-.18-2.94-.54s-1.7-.88-2.38-1.56c-.68-.68-1.21-1.51-1.59-2.49-.38-.98-.57-2.1-.57-3.36 0-1.24.2-2.35.59-3.34s.91-1.83 1.56-2.51 1.4-1.21 2.24-1.58a6.44 6.44 0 0 1 2.6-.56c1.03 0 1.94.18 2.72.53.78.35 1.44.85 1.96 1.49.53.64.92 1.4 1.19 2.29.27.89.4 1.86.4 2.91 0 .35-.02.68-.05.99s-.07.56-.11.74h-9.65c.16 1.36.64 2.41 1.44 3.14.79.73 1.81 1.1 3.05 1.1.66 0 1.27-.1 1.84-.29.57-.2 1.13-.47 1.69-.82l1.21 2.23c-.72.48-1.53.87-2.41 1.18-.89.3-1.82.45-2.79.45zm-4.05-9.4h6.74c0-1.18-.25-2.1-.76-2.77s-1.28-1.01-2.34-1.01c-.91 0-1.7.32-2.38.96s-1.1 1.58-1.26 2.82zM22 11.12c.7-1.5.05-3.28-1.45-3.98s-3.28-.05-3.98 1.45L9.67 23.4c-.7 1.5-.05 3.28 1.45 3.98 1.5.7 3.28.05 3.98-1.45L22 11.12zm-.64 6.93-2.5 5.36c-.7 1.5-.05 3.28 1.45 3.98 1.5.7 3.28.05 3.98-1.45l2.5-5.36c.7-1.5.05-3.28-1.45-3.98s-3.28-.05-3.98 1.45zm13.25-3.26C34.61 6.76 27.6 0 18.06 0 7.72 0 0 8.06 0 18s7.84 18 18.24 18c4.97 0 9.62-1.89 12.87-5.05.42-.41.39-1.13 0-1.51-.47-.45-1.03-.35-1.34-.13-2.96 2-6.47 3.43-11.17 3.43C10.24 32.74 3.92 26 3.92 18S10.25 3.52 17.75 3.52c8.25 0 13.93 5.52 13.93 12.58 0 2.43-.69 4.44-2.41 6.19-.37.37-.37.96 0 1.33.34.33.88.37 1.25.08 2.74-2.18 4.09-5.56 4.09-8.91z"></path>
-                </svg>
-            </a> 
-        </div>
-    </div>
-
-    <div class="w-full container px-5 hidden md:flex items-center justify-center gap-[50px] py-[24px] xl:absolute bottom-0 z-10">
-        <a href="#why-simplex" class="menu-link">{{ "why-simplex" | i18n({}, lang ) | safe }}</a>
-        <a href="#features" class="menu-link">{{ "features" | i18n({}, lang ) | safe }}</a>
-        <a href="#privacy" class="menu-link">{{ "simplex-privacy" | i18n({}, lang ) | safe }}</a>
-        <a href="#network" class="menu-link">{{ "simplex-network" | i18n({}, lang ) | safe }}</a>
     </div>
 </div>
 
