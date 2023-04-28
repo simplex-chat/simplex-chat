@@ -41,7 +41,7 @@ struct ContactConnectionInfo: View {
                     Text(contactConnectionText(contactConnection))
 
                     if let connReqInv = contactConnection.connReqInv {
-                        OneTimeLinkProfileText(contactConnection: contactConnection, connReqInvitation: connReqInv, font: .footnote)
+                        OneTimeLinkProfileText(contactConnection: contactConnection, connReqInvitation: connReqInv)
                     }
                 }
                 .listRowBackground(Color.clear)
