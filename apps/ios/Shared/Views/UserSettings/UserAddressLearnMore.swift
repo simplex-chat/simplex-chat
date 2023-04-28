@@ -15,7 +15,7 @@ struct UserAddressLearnMore: View {
                 Text("You can share your address as a link or QR code - anybody can connect to you.")
                 Text("You won't lose your contacts if you later delete your address.")
                 Text("When people request to connect, you can accept or reject it.")
-                Text("Learn more in [User Guide](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/guide/app-settings.md#your-simplex-contact-address).")
+                Text("Read more in [User Guide](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/guide/app-settings.md#your-simplex-contact-address).")
             }
             .listRowBackground(Color.clear)
         }
