@@ -110,7 +110,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 }
 
-private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
+func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
     let t = ft.text
     if let f = ft.format {
         switch (f) {

@@ -20,16 +20,30 @@ struct GroupWelcomeView: View {
 
     var body: some View {
         List {
-            Section {
-                TextEditor(text: $welcomeText)
-                .focused($keyboardVisible)
-                .padding(.horizontal, -5)
-                .padding(.top, -8)
-                .frame(height: 90, alignment: .topLeading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if groupInfo.canEdit {
+                Section {
+                    TextEditor(text: $welcomeText)
+                        .focused($keyboardVisible)
+                        .padding(.horizontal, -5)
+                        .padding(.top, -8)
+                        .frame(height: 90, alignment: .topLeading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                Section {
+                    saveButton()
+                }
             }
             Section {
-                saveButton()
+                if groupInfo.canEdit {
+                    Text("Here's what new group members will see:")
+                        .listRowBackground(Color.clear)
+                }
+                messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
+                Button {
+                    UIPasteboard.general.string = welcomeText
+                } label: {
+                    Label ("Copy", systemImage: "doc.on.doc")
+                }
             }
         }
         .onAppear {
