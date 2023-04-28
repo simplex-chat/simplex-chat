@@ -75,7 +75,6 @@ struct GroupWelcomeView: View {
                         .frame(height: 90, alignment: .topLeading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
-
                 } else {
                     textPreview()
                         .frame(height: 90, alignment: .topLeading)
