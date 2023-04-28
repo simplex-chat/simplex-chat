@@ -229,14 +229,14 @@ fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
       }
     }
     val isInDarkTheme = isInDarkTheme()
-    if (currentTheme.base.hasChangedAnyColor(currentTheme.colors)) {
+    if (currentTheme.base.hasChangedAnyColor(currentTheme.colors, currentTheme.appColors)) {
       SectionItemView({ ThemeManager.resetAllThemeColors(darkForSystemTheme = isInDarkTheme) }) {
         Text(generalGetString(R.string.reset_color), color = colors.primary)
       }
     }
     SectionSpacer()
     SectionView {
-      if (currentTheme.base.hasChangedAnyColor(currentTheme.colors)) {
+      if (currentTheme.base.hasChangedAnyColor(currentTheme.colors, currentTheme.appColors)) {
         val context = LocalContext.current
         val theme = remember { mutableStateOf(null as String?) }
         val exportThemeLauncher = rememberSaveThemeLauncher(context, theme)
