@@ -122,8 +122,8 @@ private fun FeatureSection(
 ) {
   SectionView {
     val on = enableFeature.value == GroupFeatureEnabled.ON
-    val icon = if (on) feature.iconFilled else feature.icon
-    val iconTint = if (on) SimplexGreen else HighOrLowlight
+    val icon = if (on) feature.iconFilled() else feature.icon
+    val iconTint = if (on) SimplexGreen else MaterialTheme.colors.secondary
     val timedOn = feature == GroupFeature.TimedMessages && enableFeature.value == GroupFeatureEnabled.ON
     if (groupInfo.canEdit) {
       PreferenceToggleWithIcon(
@@ -157,10 +157,10 @@ private fun FeatureSection(
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_group_members), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.save_and_notify_group_members), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }

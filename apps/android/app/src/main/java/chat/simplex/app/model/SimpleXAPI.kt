@@ -9,14 +9,12 @@ import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import chat.simplex.app.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,14 +22,17 @@ import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
-import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ConnectViaLinkTab
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.*
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.*
 import java.util.Date
 
@@ -59,6 +60,7 @@ enum class SimplexLinkMode {
 
 class AppPreferences(val context: Context) {
   private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+  private val sharedPreferencesThemes: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_THEMES_ID, Context.MODE_PRIVATE)
 
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
@@ -149,9 +151,15 @@ class AppPreferences(val context: Context) {
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
-  val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
+  val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
+    json.encodeToString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+  }, decode = {
+    json.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+  }, sharedPreferencesThemes)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
+  val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -206,8 +214,15 @@ class AppPreferences(val context: Context) {
       }
     )
 
+  private fun <K, V> mkMapPreference(prefName: String, default: Map<K, V>, encode: (Map<K, V>) -> String, decode: (String) -> Map<K, V>, prefs: SharedPreferences = sharedPreferences): SharedPreference<Map<K,V>> =
+    SharedPreference(
+      get = fun() = decode(prefs.getString(prefName, encode(default))!!),
+      set = fun(value) = prefs.edit().putString(prefName, encode(value)).apply()
+    )
+
   companion object {
     internal const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    internal const val SHARED_PREFS_THEMES_ID = "chat.simplex.app.THEMES"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
@@ -260,8 +275,10 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
-    private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
+    private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
+    private const val SHARED_PREFS_THEMES = "Themes"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
+    private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
   }
 }
 
@@ -1633,7 +1650,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -1670,7 +1687,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -1701,7 +1718,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -2583,7 +2600,7 @@ data class FeatureEnabled(
     }
 
   val iconColor: Color
-    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else HighOrLowlight
+    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else CurrentColors.value.colors.secondary
 
   companion object {
     fun enabled(asymmetric: Boolean, user: ChatPreference, contact: ChatPreference): FeatureEnabled =
@@ -2628,7 +2645,8 @@ sealed class ContactUserPrefTimed {
 interface Feature {
 //  val icon: ImageVector
   val text: String
-  val iconFilled: ImageVector
+  @Composable
+  fun iconFilled(): Painter
   val hasParam: Boolean
 }
 
@@ -2657,21 +2675,21 @@ enum class ChatFeature: Feature {
       Calls -> generalGetString(R.string.audio_video_calls)
     }
 
-  val icon: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Outlined.Timer
-      FullDelete -> Icons.Outlined.DeleteForever
-      Voice -> Icons.Outlined.KeyboardVoice
-      Calls -> Icons.Outlined.Phone
+  val icon: Painter
+    @Composable get() = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice)
+      Calls -> painterResource(R.drawable.ic_call)
     }
 
-  override val iconFilled: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Filled.Timer
-      FullDelete -> Icons.Filled.DeleteForever
-      Voice -> Icons.Filled.KeyboardVoice
-      Calls -> Icons.Filled.Phone
-    }
+  @Composable
+  override fun iconFilled(): Painter = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer_filled)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
+      Calls -> painterResource(R.drawable.ic_call_filled)
+  }
 
   fun allowDescription(allowed: FeatureAllowed): String =
     when (this) {
@@ -2746,21 +2764,21 @@ enum class GroupFeature: Feature {
       Voice -> generalGetString(R.string.voice_messages)
     }
 
-  val icon: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Outlined.Timer
-      DirectMessages -> Icons.Outlined.SwapHorizontalCircle
-      FullDelete -> Icons.Outlined.DeleteForever
-      Voice -> Icons.Outlined.KeyboardVoice
+  val icon: Painter
+    @Composable get() = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer)
+      DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice)
     }
 
-  override val iconFilled: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Filled.Timer
-      DirectMessages -> Icons.Filled.SwapHorizontalCircle
-      FullDelete -> Icons.Filled.DeleteForever
-      Voice -> Icons.Filled.KeyboardVoice
-    }
+  @Composable
+  override fun iconFilled(): Painter = when(this) {
+    TimedMessages -> painterResource(R.drawable.ic_timer_filled)
+    DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle_filled)
+    FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
+    Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
+  }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
     if (canEdit) {
@@ -2966,7 +2984,7 @@ enum class GroupFeatureEnabled {
     }
 
   val iconColor: Color
-    get() = if (this == ON) SimplexGreen else HighOrLowlight
+    get() = if (this == ON) SimplexGreen else CurrentColors.value.colors.secondary
 
 }
 
@@ -2976,6 +2994,11 @@ val json = Json {
   encodeDefaults = true
   explicitNulls = false
 }
+
+val yaml = Yaml(configuration = YamlConfiguration(
+  strictMode = false,
+  encodeDefaults = false,
+))
 
 @Serializable
 class APIResponse(val resp: CR, val corr: String? = null) {

@@ -130,7 +130,7 @@ private fun FeatureSection(
 
   SectionView(
     feature.text.uppercase(),
-    icon = feature.iconFilled,
+    icon = feature.iconFilled(),
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {
@@ -166,7 +166,7 @@ private fun TimedMessagesFeatureSection(
 
   SectionView(
     ChatFeature.TimedMessages.text.uppercase(),
-    icon = ChatFeature.TimedMessages.iconFilled,
+    icon = ChatFeature.TimedMessages.iconFilled(),
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {
@@ -194,10 +194,10 @@ private fun TimedMessagesFeatureSection(
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }

@@ -7,15 +7,13 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
@@ -86,10 +84,10 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
             hoveredElevation = 0.dp,
             focusedElevation = 0.dp,
           ),
-          backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
+          backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White
         ) {
-          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(R.drawable.ic_edit_filled) else painterResource(R.drawable.ic_close), stringResource(R.string.add_contact_or_create_group))
         }
       }
     }
@@ -98,7 +96,6 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
       Column(
         modifier = Modifier
           .fillMaxSize()
-          .background(MaterialTheme.colors.background)
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
@@ -107,7 +104,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
             }
-            Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
+            Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
           }
         }
       }
@@ -138,7 +135,7 @@ private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
     ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatSheet)
-    val color = MaterialTheme.colors.primary
+    val color = MaterialTheme.colors.primaryVariant
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
       val trianglePath = Path().apply {
         moveTo(0.dp.toPx(), 0f)
@@ -161,7 +158,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
     onClick,
     shape = RoundedCornerShape(21.dp),
     colors = ButtonDefaults.textButtonColors(
-      backgroundColor = MaterialTheme.colors.primary
+      backgroundColor = MaterialTheme.colors.primaryVariant
     ),
     elevation = null,
     contentPadding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
@@ -182,7 +179,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
   if (chatModel.chats.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(Icons.Outlined.Search, stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -195,7 +192,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
         )
       }) {
         Icon(
-          Icons.Filled.Report,
+          painterResource(R.drawable.ic_report_filled),
           generalGetString(R.string.chat_is_stopped_indication),
           tint = Color.Red,
         )
@@ -232,7 +229,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
         )
         if (chatModel.incognito.value) {
           Icon(
-            Icons.Filled.TheaterComedy,
+            painterResource(R.drawable.ic_theater_comedy_filled),
             stringResource(R.string.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)
@@ -284,7 +281,7 @@ private fun ProgressIndicator() {
     Modifier
       .padding(horizontal = 2.dp)
       .size(30.dp),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     strokeWidth = 2.5.dp
   )
 }

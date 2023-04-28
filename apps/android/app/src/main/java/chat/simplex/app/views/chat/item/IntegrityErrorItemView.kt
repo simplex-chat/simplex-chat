@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.model.MsgErrorType
+import chat.simplex.app.ui.theme.CurrentColors
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.generalGetString
@@ -50,10 +52,11 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTT
 
 @Composable
 fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false, onClick: () -> Unit) {
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
-    color = ReceivedColorLight,
+    color = receivedColor,
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),

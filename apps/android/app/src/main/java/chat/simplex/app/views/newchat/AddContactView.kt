@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TheaterComedy
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Share
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +63,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
               .size(36.dp)
               .padding(4.dp)
               .align(Alignment.CenterHorizontally),
-            color = HighOrLowlight,
+            color = MaterialTheme.colors.secondary,
             strokeWidth = 3.dp
           )
       }
@@ -80,7 +77,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
       ) {
-        SimpleButton(stringResource(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
+        SimpleButton(stringResource(R.string.share_invitation_link), icon = painterResource(R.drawable.ic_share), click = share)
       }
       SectionBottomSpacer()
     }
@@ -98,7 +95,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
       horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
     ) {
       Icon(
-        if (supportedIncognito) Icons.Filled.TheaterComedy else Icons.Outlined.Info,
+        if (supportedIncognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_info),
         stringResource(R.string.incognito),
         tint = if (supportedIncognito) Indigo else WarningOrange,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
@@ -114,9 +111,9 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
       horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
     ) {
       Icon(
-        Icons.Outlined.Info,
+        painterResource(R.drawable.ic_info),
         stringResource(R.string.incognito),
-        tint = HighOrLowlight,
+        tint = MaterialTheme.colors.secondary,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
       Text(offText, textAlign = if (centered) TextAlign.Center else TextAlign.Left, style = MaterialTheme.typography.body2)

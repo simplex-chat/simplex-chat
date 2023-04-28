@@ -7,9 +7,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBackIosNew
-import androidx.compose.material.icons.outlined.ArrowForwardIos
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -17,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -89,7 +87,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         if (chatModel.users.isEmpty()) {
           SimpleButtonDecorated(
             text = stringResource(R.string.about_simplex),
-            icon = Icons.Outlined.ArrowBackIosNew,
+            icon = painterResource(R.drawable.ic_arrow_back_ios_new),
             textDecoration = TextDecoration.None,
             fontWeight = FontWeight.Medium
           ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
@@ -103,12 +101,12 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
           createColor = MaterialTheme.colors.primary
         } else {
           createModifier = Modifier.padding(8.dp)
-          createColor = HighOrLowlight
+          createColor = MaterialTheme.colors.secondary
         }
         Surface(shape = RoundedCornerShape(20.dp)) {
           Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
             Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
-            Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = createColor)
+            Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = createColor)
           }
         }
       }
@@ -149,9 +147,9 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
     derivedStateOf {
       if (valid) {
         if (focused) {
-          HighOrLowlight.copy(alpha = 0.6f)
+          CurrentColors.value.colors.secondary.copy(alpha = 0.6f)
         } else {
-          HighOrLowlight.copy(alpha = 0.3f)
+          CurrentColors.value.colors.secondary.copy(alpha = 0.3f)
         }
       } else Color.Red
     }
@@ -178,7 +176,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
         autoCorrect = false
       ),
       singleLine = true,
-      cursorBrush = SolidColor(HighOrLowlight)
+      cursorBrush = SolidColor(MaterialTheme.colors.secondary)
     )
   }
   LaunchedEffect(Unit) {

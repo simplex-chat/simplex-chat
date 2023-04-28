@@ -8,12 +8,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -71,7 +70,8 @@ fun RTCServersView(
               resetRTCServers()
               isUserRTCServers = false
               userRTCServersStr.value = ""
-            }
+            },
+            destructive = true,
           )
         } else {
         isUserRTCServers = false
@@ -155,7 +155,7 @@ fun RTCServersLayout(
               .height(160.dp)
               .fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
+            border = BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant)
           ) {
             SelectionContainer(
               Modifier.verticalScroll(rememberScrollState())
@@ -201,7 +201,7 @@ private fun howToButton() {
   ) {
     Text(stringResource(R.string.how_to), color = MaterialTheme.colors.primary)
     Icon(
-      Icons.Outlined.OpenInNew, stringResource(R.string.how_to), tint = MaterialTheme.colors.primary,
+      painterResource(R.drawable.ic_open_in_new), stringResource(R.string.how_to), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 5.dp)
     )
   }

@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chatlist
 
 import SectionItemView
-import SectionItemViewSpaceBetween
 import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -9,9 +8,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
@@ -19,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
@@ -110,7 +107,7 @@ fun UserPicker(
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
         .shadow(8.dp, RoundedCornerShape(corner = CornerSize(25.dp)), clip = true)
-        .background(if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
+        .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
         .clip(RoundedCornerShape(corner = CornerSize(25.dp)))
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
@@ -170,9 +167,9 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
   ) {
     UserProfileRow(u)
     if (u.activeUser) {
-        Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        Icon(painterResource(R.drawable.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
-        Icon(Icons.Outlined.Lock, null, Modifier.size(20.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     } else if (unreadCount > 0) {
       Box(
         contentAlignment = Alignment.Center
@@ -182,13 +179,13 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
           color = Color.White,
           fontSize = 11.sp,
           modifier = Modifier
-            .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape)
+            .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
             .padding(2.dp)
             .badgeLayout()
         )
       }
     } else if (!u.showNtfs) {
-      Icon(Icons.Outlined.NotificationsOff, null, Modifier.size(20.dp), tint = HighOrLowlight)
+      Icon(painterResource(R.drawable.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     }  else {
       Box(Modifier.size(20.dp))
     }
@@ -221,7 +218,7 @@ fun UserProfileRow(u: User) {
 private fun SettingsPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(R.string.settings_section_title_settings).lowercase().capitalize(Locale.current)
-    Icon(Icons.Outlined.Settings, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(R.drawable.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
       text,
@@ -234,7 +231,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
 private fun CancelPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(R.string.cancel_verb)
-    Icon(Icons.Outlined.Close, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(R.drawable.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
       text,

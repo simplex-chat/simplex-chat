@@ -80,10 +80,16 @@ suspend fun PointerInputScope.detectGesture(
           pressScope.release()
         }
       } catch (_: PointerEventTimeoutCancellationException) {
-        onLongPress?.invoke(down.position)
-        if (shouldConsume)
-          consumeUntilUp()
-        pressScope.release()
+        if (onLongPress != null) {
+          onLongPress(down.position)
+          if (shouldConsume)
+            consumeUntilUp()
+          pressScope.cancel()
+        } else {
+          if (shouldConsume)
+            consumeUntilUp()
+          pressScope.release()
+        }
       }
     }
   }

@@ -8,9 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TheaterComedy
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +50,7 @@ private fun AcceptRequestsLayout(
     val autoAcceptState = remember { mutableStateOf(AutoAcceptState(contactLink)) }
     val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
     SectionView(stringResource(R.string.accept_requests).uppercase()) {
-      PreferenceToggleWithIcon(stringResource(R.string.accept_automatically), Icons.Outlined.Check, checked = autoAcceptState.value.enable) {
+      PreferenceToggleWithIcon(stringResource(R.string.accept_automatically), painterResource(R.drawable.ic_check), checked = autoAcceptState.value.enable) {
         autoAcceptState.value = if (!it)
           AutoAcceptState()
         else
@@ -61,8 +59,8 @@ private fun AcceptRequestsLayout(
       if (autoAcceptState.value.enable) {
         PreferenceToggleWithIcon(
           stringResource(R.string.incognito),
-          if (autoAcceptState.value.incognito) Icons.Filled.TheaterComedy else Icons.Outlined.TheaterComedy,
-          if (autoAcceptState.value.incognito) Indigo else HighOrLowlight,
+          if (autoAcceptState.value.incognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_theater_comedy),
+          if (autoAcceptState.value.incognito) Indigo else MaterialTheme.colors.secondary,
           autoAcceptState.value.incognito,
         ) {
           autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.welcomeText)
@@ -83,7 +81,7 @@ private fun AcceptRequestsLayout(
     Spacer(Modifier.height(DEFAULT_PADDING))
     if (autoAcceptState.value.enable) {
       Text(
-        stringResource(R.string.section_title_welcome_message), color = HighOrLowlight, style = MaterialTheme.typography.body2,
+        stringResource(R.string.section_title_welcome_message), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
       )
       TextEditor(Modifier.padding(horizontal = DEFAULT_PADDING).height(160.dp), text = welcomeText)
@@ -104,8 +102,8 @@ private fun ButtonsFooter(cancel: () -> Unit, save: () -> Unit, disabled: Boolea
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(Icons.Outlined.Replay, stringResource(R.string.cancel_verb), cancel, disabled)
-    FooterButton(Icons.Outlined.Check, stringResource(R.string.save_verb), save, disabled)
+    FooterButton(painterResource(R.drawable.ic_replay), stringResource(R.string.cancel_verb), cancel, disabled)
+    FooterButton(painterResource(R.drawable.ic_check), stringResource(R.string.save_verb), save, disabled)
   }
 }
 

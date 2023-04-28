@@ -6,21 +6,16 @@ import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -104,7 +99,7 @@ fun SharedPreferenceToggle(
 @Composable
 fun SharedPreferenceToggleWithIcon(
   text: String,
-  icon: ImageVector,
+  icon: Painter,
   stopped: Boolean = false,
   onClickInfo: () -> Unit,
   preference: SharedPreference<Boolean>,
@@ -112,7 +107,7 @@ fun SharedPreferenceToggleWithIcon(
 ) {
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Text(text, Modifier.padding(end = 4.dp), color = if (stopped) HighOrLowlight else Color.Unspecified)
+    Text(text, Modifier.padding(end = 4.dp), color = if (stopped) MaterialTheme.colors.secondary else Color.Unspecified)
     Icon(
       icon,
       null,

@@ -11,12 +11,11 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -161,7 +160,7 @@ private fun UserProfilesView(
   ) {
     if (profileHidden.value) {
       SectionView {
-        SettingsActionItem(Icons.Outlined.LockOpen, stringResource(R.string.enter_password_to_show), click = {
+        SettingsActionItem(painterResource(R.drawable.ic_lock_open), stringResource(R.string.enter_password_to_show), click = {
           profileHidden.value = false
         }
         )
@@ -177,7 +176,7 @@ private fun UserProfilesView(
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
         SectionItemView(addUser, minHeight = 68.dp) {
-          Icon(Icons.Outlined.Add, stringResource(R.string.users_add), tint = MaterialTheme.colors.primary)
+          Icon(painterResource(R.drawable.ic_add), stringResource(R.string.users_add), tint = MaterialTheme.colors.primary)
           Spacer(Modifier.padding(horizontal = 4.dp))
           Text(stringResource(R.string.users_add), color = MaterialTheme.colors.primary)
         }
@@ -221,30 +220,30 @@ private fun UserView(
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
-        ItemAction(stringResource(R.string.user_unhide), Icons.Outlined.LockOpen, onClick = {
+        ItemAction(stringResource(R.string.user_unhide), painterResource(R.drawable.ic_lock_open), onClick = {
           showMenu.value = false
           unhideUser(user)
         })
       } else {
         if (visibleUsersCount > 1 && prefPerformLA) {
-          ItemAction(stringResource(R.string.user_hide), Icons.Outlined.Lock, onClick = {
+          ItemAction(stringResource(R.string.user_hide), painterResource(R.drawable.ic_lock), onClick = {
             showMenu.value = false
             showHiddenProfile(user)
           })
         }
         if (user.showNtfs) {
-          ItemAction(stringResource(R.string.user_mute), Icons.Outlined.NotificationsOff, onClick = {
+          ItemAction(stringResource(R.string.user_mute), painterResource(R.drawable.ic_notifications_off), onClick = {
             showMenu.value = false
             muteUser(user)
           })
         } else {
-          ItemAction(stringResource(R.string.user_unmute), Icons.Outlined.Notifications, onClick = {
+          ItemAction(stringResource(R.string.user_unmute), painterResource(R.drawable.ic_notifications), onClick = {
             showMenu.value = false
             unmuteUser(user)
           })
         }
       }
-      ItemAction(stringResource(R.string.delete_verb), Icons.Outlined.Delete, color = Color.Red, onClick = {
+      ItemAction(stringResource(R.string.delete_verb), painterResource(R.drawable.ic_delete), color = Color.Red, onClick = {
         removeUser(user)
         showMenu.value = false
       })
@@ -282,7 +281,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
           PassphraseField(actionPassword, generalGetString(R.string.profile_password), isValid = { passwordValid }, showStrength = true)
         }
         SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
-          Text(generalGetString(label), color = if (actionEnabled) color else HighOrLowlight)
+          Text(generalGetString(label), color = if (actionEnabled) color else MaterialTheme.colors.secondary)
         }
       }
     }

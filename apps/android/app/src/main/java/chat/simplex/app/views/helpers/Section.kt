@@ -3,18 +3,18 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ValueTitleDesc
 import chat.simplex.app.views.helpers.ValueTitle
@@ -25,7 +25,7 @@ fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(),
   Column {
     if (title != null) {
       Text(
-        title, color = HighOrLowlight, style = MaterialTheme.typography.body2,
+        title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
       )
     }
@@ -36,8 +36,8 @@ fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(),
 @Composable
 fun SectionView(
   title: String,
-  icon: ImageVector,
-  iconTint: Color = HighOrLowlight,
+  icon: Painter,
+  iconTint: Color = MaterialTheme.colors.secondary,
   leadingIcon: Boolean = false,
   padding: PaddingValues = PaddingValues(),
   content: (@Composable ColumnScope.() -> Unit)
@@ -46,7 +46,7 @@ fun SectionView(
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
-      Text(title, color = HighOrLowlight, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+      Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
     Column(Modifier.padding(padding).fillMaxWidth()) { content() }
@@ -67,7 +67,7 @@ fun <T> SectionViewSelectable(
         SectionItemViewSpaceBetween({ onSelected(item.value) }) {
           Text(item.title)
           if (currentValue.value == item.value) {
-            Icon(Icons.Outlined.Check, item.title, tint = MaterialTheme.colors.primary)
+            Icon(painterResource(R.drawable.ic_check), item.title, tint = MaterialTheme.colors.primary)
           }
         }
         Spacer(Modifier.padding(horizontal = 4.dp))
@@ -146,8 +146,8 @@ fun <T> SectionItemWithValue(
   currentValue: State<T>,
   values: List<ValueTitle<T>>,
   label: String? = null,
-  icon: ImageVector? = null,
-  iconTint: Color = HighOrLowlight,
+  icon: Painter? = null,
+  iconTint: Color = MaterialTheme.colors.secondary,
   enabled: State<Boolean> = mutableStateOf(true),
   onSelected: () -> Unit
 ) {
@@ -161,7 +161,7 @@ fun <T> SectionItemWithValue(
         values.first { it.value == currentValue.value }.title + (if (label != null) " $label" else ""),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        color = HighOrLowlight
+        color = MaterialTheme.colors.secondary
       )
     }
   }
@@ -177,7 +177,7 @@ fun SectionTextFooter(text: AnnotatedString) {
   Text(
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     lineHeight = 18.sp,
     fontSize = 14.sp
   )
@@ -224,14 +224,14 @@ fun TextIconSpaced(extraPadding: Boolean = false) {
 }
 
 @Composable
-fun InfoRow(title: String, value: String, icon: ImageVector? = null, iconTint: Color? = null) {
+fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null) {
   SectionItemViewSpaceBetween {
     Row {
       val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
-      if (icon != null) Icon(icon, title, Modifier.padding(end = 8.dp).size(iconSize), tint = iconTint ?: HighOrLowlight)
+      if (icon != null) Icon(icon, title, Modifier.padding(end = 8.dp).size(iconSize), tint = iconTint ?: MaterialTheme.colors.secondary)
       Text(title)
     }
-    Text(value, color = HighOrLowlight)
+    Text(value, color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -247,7 +247,7 @@ fun InfoRowEllipsis(title: String, value: String, onClick: () -> Unit) {
         .widthIn(max = (configuration.screenWidthDp / 2).dp),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
-      color = HighOrLowlight
+      color = MaterialTheme.colors.secondary
     )
   }
 }

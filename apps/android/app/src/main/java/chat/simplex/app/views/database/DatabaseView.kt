@@ -17,14 +17,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -116,7 +114,7 @@ fun DatabaseView(
           Modifier
             .padding(horizontal = 2.dp)
             .size(30.dp),
-          color = HighOrLowlight,
+          color = MaterialTheme.colors.secondary,
           strokeWidth = 2.5.dp
         )
       }
@@ -182,16 +180,18 @@ fun DatabaseLayout(
     SectionView(stringResource(R.string.chat_database_section)) {
       val unencrypted = chatDbEncrypted == false
       SettingsActionItem(
-        if (unencrypted) Icons.Outlined.LockOpen else if (useKeyChain) Icons.Filled.VpnKey else Icons.Outlined.Lock,
+        if (unencrypted) painterResource(R.drawable.ic_lock_open) else if (useKeyChain) painterResource(R.drawable.ic_vpn_key_filled)
+        else painterResource(R
+          .drawable.ic_lock),
         stringResource(R.string.database_passphrase),
         click = showSettingsModal() { DatabaseEncryptionView(it) },
-        iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
+        iconColor = if (unencrypted) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
       AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
       SectionDividerSpaced(maxBottomPadding = false)
       SettingsActionItem(
-        Icons.Outlined.IosShare,
+        painterResource(R.drawable.ic_ios_share),
         stringResource(R.string.export_database),
         click = {
           if (initialRandomDBPassphrase.get()) {
@@ -205,7 +205,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
       SettingsActionItem(
-        Icons.Outlined.FileDownload,
+        painterResource(R.drawable.ic_download),
         stringResource(R.string.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
@@ -218,14 +218,14 @@ fun DatabaseLayout(
       if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
         val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
         SettingsActionItem(
-          Icons.Outlined.Inventory2,
+          painterResource(R.drawable.ic_inventory_2),
           title,
           click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = operationsDisabled
         )
       }
       SettingsActionItem(
-        Icons.Outlined.DeleteForever,
+        painterResource(R.drawable.ic_delete_forever),
         stringResource(R.string.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
@@ -250,7 +250,7 @@ fun DatabaseLayout(
       ) {
         Text(
           stringResource(if (users.size > 1) R.string.delete_files_and_media_for_all_users else R.string.delete_files_and_media_all),
-          color = if (deleteFilesDisabled) HighOrLowlight else Color.Red
+          color = if (deleteFilesDisabled) MaterialTheme.colors.secondary else Color.Red
         )
       }
     }
@@ -269,19 +269,18 @@ fun DatabaseLayout(
 @Composable
 private fun AppDataBackupPreference(privacyFullBackup: SharedPreference<Boolean>, initialRandomDBPassphrase: SharedPreference<Boolean>) {
   SettingsPreferenceItem(
-    Icons.Outlined.Backup,
-    iconColor = HighOrLowlight,
+    painterResource(R.drawable.ic_backup),
+    iconColor = MaterialTheme.colors.secondary,
     pref = privacyFullBackup,
-    text = stringResource(R.string.full_backup),
-    onChange = {
-      if (initialRandomDBPassphrase.get()) {
-        exportProhibitedAlert()
-        privacyFullBackup.set(false)
-      } else {
-        privacyFullBackup.set(it)
-      }
+    text = stringResource(R.string.full_backup)
+  ) {
+    if (initialRandomDBPassphrase.get()) {
+      exportProhibitedAlert()
+      privacyFullBackup.set(false)
+    } else {
+      privacyFullBackup.set(it)
     }
-  )
+  }
 }
 
 private fun setChatItemTTLAlert(
@@ -295,7 +294,8 @@ private fun setChatItemTTLAlert(
     text = generalGetString(R.string.enable_automatic_deletion_message),
     confirmText = generalGetString(R.string.delete_messages),
     onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator, appFilesCountAndSize, context) },
-    onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value }
+    onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value },
+    destructive = true,
   )
 }
 
@@ -336,7 +336,7 @@ fun RunChatSetting(
 ) {
   val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
   SettingsActionItemWithContent(
-    icon = if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
+    icon = if (stopped) painterResource(R.drawable.ic_report_filled) else painterResource(R.drawable.ic_play_arrow_filled),
     text = chatRunningText,
     iconColor = if (stopped) Color.Red else MaterialTheme.colors.primary,
   ) {
@@ -544,7 +544,8 @@ private fun importArchiveAlert(
     title = generalGetString(R.string.import_database_question),
     text = generalGetString(R.string.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
     confirmText = generalGetString(R.string.import_database_confirmation),
-    onConfirm = { importArchive(m, context, importedArchiveUri, appFilesCountAndSize, progressIndicator) }
+    onConfirm = { importArchive(m, context, importedArchiveUri, appFilesCountAndSize, progressIndicator) },
+    destructive = true,
   )
 }
 
@@ -609,7 +610,8 @@ private fun deleteChatAlert(m: ChatModel, progressIndicator: MutableState<Boolea
     title = generalGetString(R.string.delete_chat_profile_question),
     text = generalGetString(R.string.delete_chat_profile_action_cannot_be_undone_warning),
     confirmText = generalGetString(R.string.delete_verb),
-    onConfirm = { deleteChat(m, progressIndicator) }
+    onConfirm = { deleteChat(m, progressIndicator) },
+    destructive = true,
   )
 }
 

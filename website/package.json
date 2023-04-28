@@ -17,6 +17,7 @@
   "license": "ISC",
   "devDependencies": {
     "@11ty/eleventy": "^1.0.1",
+    "@11ty/eleventy-plugin-rss": "^1.2.0",
     "@simplex-chat/webrtc": "^0.1.1",
     "common-tags": "^1.8.2",
     "fast-uri": "^2.1.0",

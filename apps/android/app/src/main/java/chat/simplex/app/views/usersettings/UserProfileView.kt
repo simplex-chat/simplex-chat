@@ -7,14 +7,13 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -87,7 +86,7 @@ fun UserProfileLayout(
       val dataUnchanged =
         displayName.value == profile.displayName &&
             fullName.value == profile.fullName &&
-            chosenImage.value == null
+            profile.image == profileImage.value
 
       val closeWithAlert = {
         if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
@@ -116,7 +115,7 @@ fun UserProfileLayout(
             ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(108.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
+                  ProfileImage(108.dp, profileImage.value, color = MaterialTheme.colors.secondary.copy(alpha = 0.1f))
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {
@@ -157,7 +156,7 @@ fun UserProfileLayout(
               saveColor = MaterialTheme.colors.primary
             } else {
               saveModifier = Modifier
-              saveColor = HighOrLowlight
+              saveColor = MaterialTheme.colors.secondary
             }
             Text(
               stringResource(R.string.save_and_notify_contacts),
@@ -188,7 +187,7 @@ fun EditImageButton(click: () -> Unit) {
     modifier = Modifier.size(30.dp)
   ) {
     Icon(
-      Icons.Outlined.PhotoCamera,
+      painterResource(R.drawable.ic_photo_camera),
       contentDescription = stringResource(R.string.edit_image),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.size(30.dp)
@@ -200,7 +199,7 @@ fun EditImageButton(click: () -> Unit) {
 fun DeleteImageButton(click: () -> Unit) {
   IconButton(onClick = click) {
     Icon(
-      Icons.Outlined.Close,
+      painterResource(R.drawable.ic_close),
       contentDescription = stringResource(R.string.delete_image),
       tint = MaterialTheme.colors.primary,
     )

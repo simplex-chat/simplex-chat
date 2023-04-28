@@ -4,19 +4,17 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
-import SectionSpacer
 import SectionView
 import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -62,7 +60,7 @@ fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerPr
         Modifier
           .padding(horizontal = 2.dp)
           .size(30.dp),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
       )
     }
@@ -109,7 +107,7 @@ private fun PresetServer(
         Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
         style = TextStyle(
           fontFamily = FontFamily.Monospace, fontSize = 16.sp,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       )
     }
@@ -137,7 +135,7 @@ private fun CustomServer(
   }
   SectionView(
     stringResource(R.string.smp_servers_your_server_address).uppercase(),
-    icon = Icons.Outlined.ErrorOutline,
+    icon = painterResource(R.drawable.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
@@ -174,13 +172,13 @@ private fun UseServerSection(
 ) {
   SectionView(stringResource(R.string.smp_servers_use_server).uppercase()) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
-      Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else HighOrLowlight)
+      Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server)
     }
     val enabled = rememberUpdatedState(server.enabled)
     PreferenceToggle(stringResource(R.string.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
     SectionItemView(onDelete, disabled = testing) {
-      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) HighOrLowlight else MaterialTheme.colors.error)
+      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
     }
   }
 }
@@ -188,9 +186,9 @@ private fun UseServerSection(
 @Composable
 fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
   when (server.tested) {
-    true -> Icon(Icons.Outlined.Check, null, modifier, tint = SimplexGreen)
-    false -> Icon(Icons.Outlined.Clear, null, modifier, tint = MaterialTheme.colors.error)
-    else -> Icon(Icons.Outlined.Check, null, modifier, tint = Color.Transparent)
+    true -> Icon(painterResource(R.drawable.ic_check), null, modifier, tint = SimplexGreen)
+    false -> Icon(painterResource(R.drawable.ic_close), null, modifier, tint = MaterialTheme.colors.error)
+    else -> Icon(painterResource(R.drawable.ic_check), null, modifier, tint = Color.Transparent)
   }
 
 suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, ProtocolTestFailure?> =
