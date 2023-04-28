@@ -101,13 +101,6 @@ struct GroupWelcomeView: View {
         }
     }
 
-    private func editButton<V: View>(_ enable: Bool, _ label: @escaping () -> V) -> some View {
-        Button(action: {
-            editMode = enable
-            keyboardVisible = enable
-        }, label: label)
-    }
-
     private func copyButton() -> some View {
         Button {
             UIPasteboard.general.string = welcomeText
