@@ -80,7 +80,7 @@ struct GroupWelcomeView: View {
                     textPreview()
                         .frame(height: 90, alignment: .topLeading)
                 }
-                
+
                 Button {
                     editMode = !editMode
                     keyboardVisible = editMode
@@ -94,7 +94,7 @@ struct GroupWelcomeView: View {
                 .disabled(welcomeText.isEmpty)
                 copyButton()
             }
-            
+
             Section {
                 saveButton()
             }
