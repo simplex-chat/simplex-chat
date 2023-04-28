@@ -34,18 +34,15 @@ enum class DefaultTheme {
       DARK -> DarkColorPaletteApp
       SIMPLEX -> SimplexColorPaletteApp
     }
-    return with(palette) {
-      colors.primary != primary ||
-          colors.primaryVariant != primaryVariant ||
-          colors.secondary != secondary ||
-          colors.secondaryVariant != secondaryVariant ||
-          colors.background != background ||
-          colors.surface != surface
-    } || with(appPalette) {
-      appColors.title != title ||
-          appColors.sentMessage != sentMessage ||
-          appColors.receivedMessage != receivedMessage
-    }
+    return colors.primary != palette.primary ||
+        colors.primaryVariant != palette.primaryVariant ||
+        colors.secondary != palette.secondary ||
+        colors.secondaryVariant != palette.secondaryVariant ||
+        colors.background != palette.background ||
+        colors.surface != palette.surface ||
+        appColors.title != appPalette.title ||
+        appColors.sentMessage != appPalette.sentMessage ||
+        appColors.receivedMessage != appPalette.receivedMessage
   }
 }
 
