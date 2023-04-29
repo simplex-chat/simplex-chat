@@ -3,6 +3,8 @@ const path = require('path');
 const matter = require('gray-matter');
 
 const directoryPath = path.resolve(__dirname, '../docs');
+const langFolder = 'lang';
+const enFiles = {};
 
 function traverseDirectory(directory, currentLanguage = 'en', result = {}, callback) {
     const filesAndDirectories = fs.readdirSync(directory);
@@ -47,10 +49,11 @@ Object.entries(fileLanguageMapping).forEach(([fileName, languages]) => {
             // Read the existing frontmatter
             const fileContent = fs.readFileSync(fullPath, 'utf-8');
             const parsedMatter = matter(fileContent);
+            const relativePath = path.relative(directoryPath, fullPath);
 
             // Calculate the permalink based on the file's location
-            const relativePath = path.relative(directoryPath, fullPath).replace(/\.md$/, '.html');
-            const permalink = `/docs/${relativePath}`.toLowerCase();
+            const linkPath = path.relative(directoryPath, fullPath).replace(/\.md$/, '.html');
+            const permalink = `/docs/${linkPath}`.toLowerCase();
             parsedMatter.data.permalink = permalink;
 
             // Update the frontmatter with the new languages list
@@ -58,6 +61,26 @@ Object.entries(fileLanguageMapping).forEach(([fileName, languages]) => {
 
             // Add the layout value
             parsedMatter.data.layout = 'layouts/doc.html';
+
+            if (fullPath.startsWith(path.join(directoryPath, langFolder))) {
+                // Non-English files
+                const [language, ...rest] = relativePath.split(path.sep).slice(1);
+                const enFilePath = path.join(directoryPath, ...rest);
+
+                if (enFiles[enFilePath]) {
+                    const enRevision = new Date(enFiles[enFilePath].revision);
+                    const currentRevision = new Date(parsedMatter.data.revision);
+
+                    const isOld = currentRevision < enRevision;
+                    // Add the version value
+                    parsedMatter.data.version = isOld ? 'old' : 'new';
+                }
+            } else {
+                // English files
+                enFiles[fullPath] = { revision: parsedMatter.data.revision };
+                // Add the version value
+                parsedMatter.data.version = 'new';
+            }
 
             // Save the updated frontmatter and content back to the file
             const updatedFileContent = matter.stringify(parsedMatter.content, parsedMatter.data);
