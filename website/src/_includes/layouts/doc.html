@@ -1,3 +1,4 @@
+{% set lang = page.url | getlang %}
 <!DOCTYPE html>
 <html lang="{{ page.url | getlang }}"
     {% for language in languages.languages %}
@@ -29,8 +30,12 @@
         <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
             <div>
                 <main>
-                    <aside class="sidebar px-4 py-4 lg:px-7">
-                        <ul>
+                    <aside class="sidebar px-4 lg:px-7">
+                        <div class="h-[66px] lg:h-0">
+                            <a href="/{{ "" if lang == "en" else lang }}" class="h-full flex dark:hidden lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
+                            <a href="/{{ "" if lang == "en" else lang }}" class="h-full hidden dark:flex lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
+                        </div>
+                        <ul class="!my-4">
                             {% for doc in collections.docs %}
                                 {% if doc.lang == page.url | getlang %}
                                     {% if doc.menu != 'root' %}
