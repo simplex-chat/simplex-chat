@@ -58,7 +58,16 @@
                             {% endfor %}
                         </ul>
                     </aside>
-                    <article class="content px-4 lg:px-7 ">
+                    <article class="content px-4 lg:px-7">
+
+                        {% if version == 'old' %}
+                        <div class="px-4 lg:px-7 !py-2">
+                            <div class="bg-yellow-200 px-4 lg:px-7 py-6 rounded-md">
+                                There is a newer version of this page in English. <a class="!no-underline !text-primary-pressed-light" href="{% completeRoute {url:page.url,lang:'en'} %}">Click to see</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
                         <div class="sticky top-[66px] bg-white dark:bg-[#17203D] z-[49] !py-2 lg:hidden">
                             <div class="relative flex items-center justify-between">
                                 <button class="menu flex items-center gap-2">
