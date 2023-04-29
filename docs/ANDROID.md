@@ -1,5 +1,6 @@
 ---
 title: Accessing files in Android app
+revision: 07.02.2023
 ---
 
 | 07.02.2023 | EN, [CZ](/docs/lang/cs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md) |

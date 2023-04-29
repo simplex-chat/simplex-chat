@@ -1,5 +1,6 @@
 ---
 title: chat history deletion
+revision: 20.09.2022
 ---
 # Chat history deletion
 

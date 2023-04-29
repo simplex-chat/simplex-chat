@@ -1,5 +1,6 @@
 ---
 title: SimpleX Chat Protocol
+revision: 08.08.2022
 ---
 DRAFT Revision 0.1, 2022-08-08
 

@@ -1,5 +1,6 @@
 ---
 title: Hosting your own XFTP Server
+revision: 21.04.2023
 ---
 # Hosting your own XFTP Server
 

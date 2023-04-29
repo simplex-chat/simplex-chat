@@ -1,5 +1,6 @@
 ---
 title: Přístup ke zprávám v databázi
+revision: 31.01.2023
 ---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/SQL.md), [FR](/docs/lang/fr/SQL.md) |
 

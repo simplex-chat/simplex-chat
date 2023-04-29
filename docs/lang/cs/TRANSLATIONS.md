@@ -1,5 +1,6 @@
 ---
 title: Přispívání překladů do SimpleX Chat
+revision: 07.02.2023
 ---
 | Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/TRANSLATIONS.md) |
 

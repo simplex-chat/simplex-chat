@@ -1,5 +1,6 @@
 ---
 title: Hostování vlastního serveru SMP
+revision: 31.01.2023
 ---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md) |
 

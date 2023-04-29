@@ -1,5 +1,6 @@
 ---
 title: Plateforme SimpleX
+revision: 07.02.2023
 ---
 | 07.02.2023 | FR, [EN](/docs/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md) |
 

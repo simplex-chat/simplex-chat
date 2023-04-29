@@ -1,5 +1,6 @@
 ---
 title: Guide pour contribuer
+revision: 31.01.2023
 ---
 | 31.01.2023 | FR, [EN](/docs/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md) |
 

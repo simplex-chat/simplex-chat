@@ -1,6 +1,7 @@
 ---
 title: Simplex Docs
 ignoreForWeb: true
+revision: 30.03.2023
 ---
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 

@@ -1,5 +1,6 @@
 ---
 title: Průvodce přispíváním
+revision: 31.01.2023
 ---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/CONTRIBUTING.md), [FR](/docs/lang/fr/CONTRIBUTING.md) |
 

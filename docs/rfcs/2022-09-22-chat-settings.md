@@ -1,5 +1,6 @@
 ---
 title: Chat settings
+revision: 22.09.2022
 ---
 # Chat settings
 
