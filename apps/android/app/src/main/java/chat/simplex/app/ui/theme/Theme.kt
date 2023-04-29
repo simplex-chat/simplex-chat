@@ -153,6 +153,9 @@ data class ThemeOverrides (
   }
 }
 
+@Serializable
+data class ThemeData (val colors: ThemeColors)
+
 fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, shape: Shape = RectangleShape): Modifier {
   return if (baseTheme == DefaultTheme.SIMPLEX) {
     this.background(brush = Brush.linearGradient(
