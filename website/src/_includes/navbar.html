@@ -1,13 +1,20 @@
 {% set lang = page.url | getlang %}
+{% set langName = "aaa" %}
+{% for language in languages.languages %}
+    {% if language.label == page.url | getlang %}
+        {% set langName = language.name %}
+    {% endif %}
+{% endfor %}
+
 <header class="">
-    <div class="flex items-center flex-row rtl:flex-row-reverse justify-end m-auto px-4 lg:px-7 h-[66px]">
-        <a href="/{{ "" if lang == "en" else lang }}" class="h-full hidden dark:hidden lg:flex items-center mr-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
-        <a href="/{{ "" if lang == "en" else lang }}" class="h-full hidden dark:lg:flex items-center mr-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
-        <a href="/{{ "" if lang == "en" else lang }}" class="dark:hidden lg:hidden mr-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
-        <a href="/{{ "" if lang == "en" else lang }}" class="hidden dark:inline-block dark:lg:hidden lg:hidden mr-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
+    <div class="flex items-center flex-row justify-end m-auto px-4 lg:px-7 h-[66px]">
+        <a href="/{{ "" if lang == "en" else lang }}" class="h-full hidden dark:hidden lg:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
+        <a href="/{{ "" if lang == "en" else lang }}" class="h-full hidden dark:lg:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
+        <a href="/{{ "" if lang == "en" else lang }}" class="dark:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
+        <a href="/{{ "" if lang == "en" else lang }}" class="hidden dark:inline-block dark:lg:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
         
         <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 lg:top-0 lg:relative" id="menu">
-            <div class="flex flex-col lg:flex-row lg:rtl:flex-row-reverse justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
+            <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
                 <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-5 xl:gap-8">
                     
                     <li class="nav-link relative {% if active_home %}active{% endif %}">
@@ -90,8 +97,11 @@
                         </a>
                         
                         <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            {% set noDocs = true %}
+
                             {% for doc in collections.docs %}
                                 {% if doc.lang == page.url | getlang %}
+                                    {% set noDocs = false %}
                                     {% if doc.menu == 'root' %}
                                         {% for submenu in doc.data %}
                                             <li>
@@ -103,6 +113,12 @@
                                     {% endif %}
                                 {% endif %}
                             {% endfor %}
+
+                            {% if noDocs %}
+                                <li class="lg:px-[20px] italic no-hover whitespace-nowrap">
+                                    Docs not available in {{ langName }}
+                                </li>
+                            {% endif %}
                         </ul>
                     </li>
                 </ul>

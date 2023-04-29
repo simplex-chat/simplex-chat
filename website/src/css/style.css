@@ -230,8 +230,13 @@ html {
   color: #505158;
 }
 
-.dark .sub-menu {
-  color: #fff;
+.sub-menu .no-hover{
+  color: #505158 !important;
+}
+
+.dark .sub-menu,
+.dark .sub-menu .no-hover {
+  color: #fff !important;
 }
 
 .dark .sub-menu li:hover {
