@@ -39,6 +39,13 @@ html {
   letter-spacing: 0.003em;
 }
 
+img{
+  user-select: none;
+  -webkit-user-select: none; /* For Safari and older Chrome versions */
+  -moz-user-select: none; /* For Firefox */
+  -ms-user-select: none; /* For Internet Explorer and Edge */
+}
+
 /* #comparison::before {
   display: block;
   content: " ";
