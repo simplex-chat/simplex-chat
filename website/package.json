@@ -9,8 +9,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:js": "cp ./node_modules/qrcode/build/qrcode.js ./src/js/ && ./copy_call.sh",
     "build:eleventy": "eleventy",
-    "build:tailwind": "npx tailwindcss -i ./tailwind.css -o ./_site/css/tailwind.css",
-    "watch:tailwind": "npx tailwindcss -i ./tailwind.css -o ./_site/css/tailwind.css --watch"
+    "build:tailwind": "npx tailwindcss -i tailwind.css -o _site/css/tailwind.css",
+    "watch:tailwind": "npx tailwindcss -i tailwind.css -o _site/css/tailwind.css --watch"
   },
   "keywords": [],
   "author": "",
