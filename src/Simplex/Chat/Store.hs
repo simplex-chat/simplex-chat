@@ -4867,9 +4867,8 @@ toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toDirectChatItem :: TimeZone -> UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
 toDirectChatItem tz currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_, fileProtocol_)) :. quoteRow) =
-  chatItem $ fromRight invalid itemContent_
+  chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
-    itemContent_ = J.eitherDecodeStrict' $ encodeUtf8 itemContentText
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
     chatItem itemContent = case (itemContent, itemStatus, fileStatus_) of
       (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Just (AFS SMDSnd fileStatus)) ->
@@ -4918,12 +4917,11 @@ toGroupQuote qr@(_, _, _, _, quotedSent) quotedMember_ = toQuote qr $ direction 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toGroupChatItem :: TimeZone -> UTCTime -> Int64 -> ChatItemRow :. MaybeGroupMemberRow :. GroupQuoteRow :. MaybeGroupMemberRow -> Either StoreError (CChatItem 'CTGroup)
 toGroupChatItem tz currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_, fileProtocol_)) :. memberRow_ :. (quoteRow :. quotedMemberRow_) :. deletedByGroupMemberRow_) = do
-  chatItem $ fromRight invalid itemContent_
+  chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     member_ = toMaybeGroupMember userContactId memberRow_
     quotedMember_ = toMaybeGroupMember userContactId quotedMemberRow_
     deletedByGroupMember_ = toMaybeGroupMember userContactId deletedByGroupMemberRow_
-    itemContent_ = J.eitherDecodeStrict' $ encodeUtf8 itemContentText
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
     chatItem itemContent = case (itemContent, itemStatus, member_, fileStatus_) of
       (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Just (AFS SMDSnd fileStatus)) ->

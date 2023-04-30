@@ -997,6 +997,10 @@ data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIC
 
 deriving instance Show ACIContent
 
+-- platform independent
+dbParseACIContent :: Text -> Either String ACIContent
+dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
+
 -- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
