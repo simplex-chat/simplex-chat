@@ -36,7 +36,7 @@
                             <a href="/{{ '' if lang == 'en' else lang }}" class="h-full hidden dark:flex dark:lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
                         </div>
                         <ul class="!my-4">
-                            {% for doc in docs_sidebar.items %}
+                            {% for doc in collections.docs %}
                                 {% if doc.lang == page.url | getlang %}
                                     {% if doc.menu != 'root' %}
                                         <p class="">{{ doc.menu | capitalize }}</p>

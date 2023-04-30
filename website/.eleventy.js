@@ -122,6 +122,83 @@ module.exports = function (ty) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()
   })
 
+  ty.addCollection('docs', function (collection) {
+    const docs = collection.getFilteredByGlob('src/docs/**/*.md')
+      .map(doc => {
+        return { url: doc.url, title: doc.data.title, inputPath: doc.inputPath }
+      })
+
+    let referenceContent = fs.readFileSync(path.resolve(__dirname, 'src/_data/docs_sidebar.json'), 'utf-8')
+    referenceContent = JSON.parse(referenceContent).items
+
+    const newDocs = []
+
+    referenceContent.forEach(referenceMenu => {
+      referenceMenu.data.forEach(referenceSubmenu => {
+        docs.forEach(doc => {
+          const url = doc.url.replace("/docs/", "")
+          const urlParts = url.split("/")
+
+          if (doc.inputPath.includes(referenceSubmenu)) {
+            if (urlParts.length === 1 && urlParts[0] !== "") {
+              const index = newDocs.findIndex((ele) => ele.lang === 'en' && ele.menu === referenceMenu.menu)
+              if (index !== -1) {
+                newDocs[index].data.push(doc)
+              }
+              else {
+                newDocs.push({
+                  lang: 'en',
+                  menu: referenceMenu.menu,
+                  data: [doc],
+                })
+              }
+            }
+            else if (urlParts.length > 1 && urlParts[0] !== "" && urlParts[0] !== "lang") {
+              const index = newDocs.findIndex((ele) => ele.lang === 'en' && ele.menu === referenceMenu.menu)
+              if (index !== -1) {
+                newDocs[index].data.push(doc)
+              } else {
+                newDocs.push({
+                  lang: 'en',
+                  menu: referenceMenu.menu,
+                  data: [doc],
+                })
+              }
+            }
+            else if (urlParts.length === 3 && urlParts[0] === "lang" && urlParts[2] !== '') {
+              const index = newDocs.findIndex((ele) => ele.lang === urlParts[1] && ele.menu === referenceMenu.menu)
+              if (index !== -1) {
+                newDocs[index].data.push(doc)
+              }
+              else {
+                newDocs.push({
+                  lang: urlParts[1],
+                  menu: referenceMenu.menu,
+                  data: [doc],
+                })
+              }
+            }
+            else if (urlParts.length > 3 && urlParts[0] === "lang" && urlParts[2] !== '') {
+              const index = newDocs.findIndex((ele) => ele.lang === urlParts[1] && ele.menu === referenceMenu.menu)
+              if (index !== -1) {
+                newDocs[index].data.push(doc)
+              }
+              else {
+                newDocs.push({
+                  lang: urlParts[1],
+                  menu: referenceMenu.menu,
+                  data: [doc],
+                })
+              }
+            }
+          }
+        })
+      })
+    })
+
+    return newDocs
+  })
+
   ty.addWatchTarget("src/css")
   ty.addWatchTarget("markdown/")
   ty.addWatchTarget("components/Card.js")

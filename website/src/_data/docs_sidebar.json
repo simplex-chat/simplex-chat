@@ -1,173 +1,37 @@
 {
     "items": [
         {
-            "menu": "root",
-            "lang": "en",
+            "menu": "Guide",
             "data": [
-                {
-                    "title": "SimpleX platform",
-                    "url": "/docs/simplex.html"
-                },
-                {
-                    "title": "Accessing files in Android app",
-                    "url": "/docs/android.html"
-                },
-                {
-                    "title": "SimpleX Chat terminal",
-                    "url": "/docs/cli.html"
-                },
-                {
-                    "title": "Accessing messages in the database",
-                    "url": "/docs/sql.html"
-                },
-                {
-                    "title": "Contributing guide",
-                    "url": "/docs/contributing.html"
-                },
-                {
-                    "title": "Hosting your own SMP Server",
-                    "url": "/docs/server.html"
-                },
-                {
-                    "title": "Contributing translations to SimpleX Chat",
-                    "url": "/docs/translations.html"
-                },
-                {
-                    "title": "Using custom WebRTC ICE servers in SimpleX Chat",
-                    "url": "/docs/webrtc.html"
-                },
-                {
-                    "title": "Hosting your own XFTP Server",
-                    "url": "/docs/xftp-server.html"
-                }
+                "README.md",
+                "send-messages.md",
+                "secret-groups.md",
+                "chat-profiles.md",
+                "managing-data.md",
+                "audio-video-calls.md",
+                "privacy-security.md",
+                "app-settings.md",
+                "making-connections.md"
             ]
         },
         {
-            "menu": "Guide",
-            "lang": "en",
+            "menu": "Reference",
             "data": [
-                {
-                    "title": "Quick start",
-                    "url": "/docs/guide/readme.html"
-                },
-                {
-                    "title": "Sending messages",
-                    "url": "/docs/guide/send-messages.html"
-                },
-                {
-                    "title": "Secret groups",
-                    "url": "/docs/guide/secret-groups.html"
-                },
-                {
-                    "title": "Chat profiles",
-                    "url": "/docs/guide/chat-profiles.html"
-                },
-                {
-                    "title": "Managing data",
-                    "url": "/docs/guide/managing-data.html"
-                },
-                {
-                    "title": "Audio & video Calls",
-                    "url": "/docs/guide/audio-video-calls.html"
-                },
-                {
-                    "title": "Privacy & security",
-                    "url": "/docs/guide/privacy-security.html"
-                },
-                {
-                    "title": "App settings",
-                    "url": "/docs/guide/app-settings.html"
-                },
-                {
-                    "title": "Making connections",
-                    "url": "/docs/guide/making-connections.html"
-                }
+                "SIMPLEX.md",
+                "ANDROID.md",
+                "CLI.md",
+                "SQL.md",
+                "CONTRIBUTING.md",
+                "SERVER.md",
+                "TRANSLATIONS.md",
+                "WEBRTC.md",
+                "XFTP-SERVER.md"
             ]
         },
         {
             "menu": "Protocol",
-            "lang": "en",
             "data": [
-                {
-                    "title": "SimpleX Chat Protocol",
-                    "url": "/docs/protocol/simplex-chat.html"
-                }
-            ]
-        },
-        {
-            "menu": "root",
-            "lang": "cs",
-            "data": [
-                {
-                    "title": "Platforma SimpleX",
-                    "url": "/docs/lang/cs/simplex.html"
-                },
-                {
-                    "title": "Přístup k souborům v aplikaci Android",
-                    "url": "/docs/lang/cs/android.html"
-                },
-                {
-                    "title": "SimpleX Chat terminálová",
-                    "url": "/docs/lang/cs/cli.html"
-                },
-                {
-                    "title": "Přístup ke zprávám v databázi",
-                    "url": "/docs/lang/cs/sql.html"
-                },
-                {
-                    "title": "Průvodce přispíváním",
-                    "url": "/docs/lang/cs/contributing.html"
-                },
-                {
-                    "title": "Hostování vlastního serveru SMP",
-                    "url": "/docs/lang/cs/server.html"
-                },
-                {
-                    "title": "Přispívání překladů do SimpleX Chat",
-                    "url": "/docs/lang/cs/translations.html"
-                },
-                {
-                    "title": "Použití vlastních serverů WebRTC ICE v SimpleX Chat",
-                    "url": "/docs/lang/cs/webrtc.html"
-                }
-            ]
-        },
-        {
-            "menu": "root",
-            "lang": "fr",
-            "data": [
-                {
-                    "title": "Plateforme SimpleX",
-                    "url": "/docs/lang/fr/simplex.html"
-                },
-                {
-                    "title": "Accès aux fichiers dans l'application Android",
-                    "url": "/docs/lang/fr/android.html"
-                },
-                {
-                    "title": "Application de terminal",
-                    "url": "/docs/lang/fr/cli.html"
-                },
-                {
-                    "title": "Accès aux messages de la base de données",
-                    "url": "/docs/lang/fr/sql.html"
-                },
-                {
-                    "title": "Guide pour contribuer",
-                    "url": "/docs/lang/fr/contributing.html"
-                },
-                {
-                    "title": "Héberger votre propre serveur SMP",
-                    "url": "/docs/lang/fr/server.html"
-                },
-                {
-                    "title": "Contribuer aux traductions de SimpleX Chat",
-                    "url": "/docs/lang/fr/translations.html"
-                },
-                {
-                    "title": "Utilisation de serveurs WebRTC ICE personnalisés dans SimpleX Chat",
-                    "url": "/docs/lang/fr/webrtc.html"
-                }
+                "simplex-chat.md"
             ]
         }
     ]
