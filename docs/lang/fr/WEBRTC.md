@@ -1,3 +1,7 @@
+---
+title: Utilisation de serveurs WebRTC ICE personnalisés dans SimpleX Chat
+revision: 31.01.2023
+---
 | 31.01.2023 | FR, [EN](/docs/WEBRTC.md), [CZ](/docs/lang/cs/WEBRTC.md) |
 
 # Utilisation de serveurs WebRTC ICE personnalisés dans SimpleX Chat

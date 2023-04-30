@@ -1,3 +1,6 @@
+---
+title: Sending messages
+---
 # Sending, editing and deleting messages
 
 Sending text messages on SimpleX Chat is pretty straightforward, tap on your contact and then tap on text area, type in your message and tap on "Send" button.

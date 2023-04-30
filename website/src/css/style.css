@@ -182,6 +182,14 @@ img{
   color: #fff;
 }
 
+.nav-link ul li a.active{
+  color: #0053D0;
+
+}
+.dark .nav-link ul li a.active{
+  color: #66D9E2;
+}
+
 @media (min-width:1024px) {
   .nav-link-text,
   .menu-link {
@@ -229,8 +237,13 @@ img{
   color: #505158;
 }
 
-.dark .sub-menu {
-  color: #fff;
+.sub-menu .no-hover{
+  color: #505158 !important;
+}
+
+.dark .sub-menu,
+.dark .sub-menu .no-hover {
+  color: #fff !important;
 }
 
 .dark .sub-menu li:hover {
@@ -282,7 +295,7 @@ header nav {
   }
 
   .active .sub-menu {
-    max-height: 200px;
+    max-height: 600px;
     transform: translateY(0px);
     opacity: 1;
     visibility: visible;
