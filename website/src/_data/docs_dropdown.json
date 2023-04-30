@@ -1,31 +1,31 @@
 {
     "items": [
         {
-            "title": "SimpleX platform",
+            "title": "docs-dropdown-1",
             "url": "/docs/simplex.html"
         },
         {
-            "title": "Accessing Android files",
+            "title": "docs-dropdown-2",
             "url": "/docs/android.html"
         },
         {
-            "title": "Accessing chat database",
+            "title": "docs-dropdown-3",
             "url": "/docs/sql.html"
         },
         {
-            "title": "Host SMP Server",
+            "title": "docs-dropdown-4",
             "url": "/docs/server.html"
         },
         {
-            "title": "Host XFTP Server",
+            "title": "docs-dropdown-5",
             "url": "/docs/xftp-server.html"
         },
         {
-            "title": "WebRTC servers",
+            "title": "docs-dropdown-6",
             "url": "/docs/webrtc.html"
         },
         {
-            "title": "Translate SimpleX Chat",
+            "title": "docs-dropdown-7",
             "url": "/docs/translations.html"
         }
     ]
