@@ -1,5 +1,5 @@
 ---
-title: SimpleX Chat terminal
+title: Terminal CLI
 revision: 31.01.2023
 ---
 

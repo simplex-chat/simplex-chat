@@ -8,17 +8,17 @@
 
 <header class="">
     <div class="flex items-center flex-row justify-end m-auto px-4 lg:px-7 h-[66px]">
-        <a href="/{{ "" if lang == "en" else lang }}" class="h-full hidden dark:hidden xl:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
-        <a href="/{{ "" if lang == "en" else lang }}" class="h-full hidden dark:xl:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
-        <a href="/{{ "" if lang == "en" else lang }}" class="dark:hidden xl:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
-        <a href="/{{ "" if lang == "en" else lang }}" class="hidden dark:inline-block dark:xl:hidden xl:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
+        <a href="/{{ '' if lang == 'en' else lang }}" class="h-full hidden dark:hidden xl:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
+        <a href="/{{ '' if lang == 'en' else lang }}" class="h-full hidden dark:xl:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
+        <a href="/{{ '' if lang == 'en' else lang }}" class="dark:hidden xl:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
+        <a href="/{{ '' if lang == 'en' else lang }}" class="hidden dark:inline-block dark:xl:hidden xl:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
         
         <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 lg:top-0 lg:relative" id="menu">
             <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
                 <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-5 xl:gap-8">
                     
                     <li class="nav-link relative {% if active_home %}active{% endif %}">
-                        <a href="/{{ "" if lang == "en" else lang }}" class="flex items-center justify-between gap-2 lg:py-5 ">
+                        <a href="/{{ '' if lang == 'en' else lang }}" class="flex items-center justify-between gap-2 lg:py-5 ">
                             <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{{ "home" | i18n({}, lang ) | safe }}</span>
                         </a>                        
                     </li>
@@ -27,7 +27,7 @@
 
                     <li class="nav-link relative">
                         <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">{{ "developers" | i18n({}, lang ) | safe }}</span>
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Guide</span>
                             <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
                                 <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
@@ -35,20 +35,11 @@
                             </span>
                         </a>
                         
-                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[200px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
-                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
-                                target="_blank" class="lg:px-[20px] inline-block"
-                                >{{ "chat-bot-example" | i18n({}, lang ) | safe }}</a></li>
-                            <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
-                                target="_blank" class="lg:px-[20px] inline-block"
-                                >TypeScript SDK</a></li>
-                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md"
-                                target="_blank" class="lg:px-[20px] inline-block"
-                                >{{ "terminal-cli" | i18n({}, lang ) | safe }}</a></li>
-                            <li><a href="https://github.com/simplex-chat/simplexmq"
-                                target="_blank" class="lg:px-[20px] inline-block"
-                                >SimpleXMQ</a></li>
-                            </ul>
+                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            {% for guide in guide_dropdown.items %}
+                                <li><a href="{{ guide.url | url }}" class="{{ "active" if page.url == guide.url | url else '' }} lg:px-[20px] inline-block whitespace-nowrap">{{ guide.title }}</a></li>
+                            {% endfor %}
+                        </ul>
                     </li>
 
                     <hr class="dark:opacity-[0.1]" >
@@ -70,8 +61,7 @@
                             <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
                                 target="_blank" class="lg:px-[20px] inline-block"
                                 >{{ "smp-protocol" | i18n({}, lang ) | safe }}</a></li>
-                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md"
-                                target="_blank" class="lg:px-[20px] inline-block"
+                            <li><a href="/docs/protocol/simplex-chat.html" class="lg:px-[20px] inline-block"
                                 >{{ "chat-protocol" | i18n({}, lang ) | safe }}</a></li>
                             {% for doc in docs_dropdown.items %}
                                 <li><a href="{{ doc.url | url }}" class="{{ "active" if page.url == doc.url | url else '' }} lg:px-[20px] inline-block whitespace-nowrap">{{ doc.title }}</a></li>
@@ -83,7 +73,7 @@
 
                     <li class="nav-link relative">
                         <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Guide</span>
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">{{ "developers" | i18n({}, lang ) | safe }}</span>
                             <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
                                 <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
@@ -91,10 +81,18 @@
                             </span>
                         </a>
                         
-                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
-                            {% for guide in guide_dropdown.items %}
-                                <li><a href="{{ guide.url | url }}" class="{{ "active" if page.url == guide.url | url else '' }} lg:px-[20px] inline-block whitespace-nowrap">{{ guide.title }}</a></li>
-                            {% endfor %}
+                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[200px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >{{ "chat-bot-example" | i18n({}, lang ) | safe }}</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >TypeScript SDK</a></li>
+                            <li><a href="/docs/cli.html" class="lg:px-[20px] inline-block"
+                                >{{ "terminal-cli" | i18n({}, lang ) | safe }}</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplexmq"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >SimpleXMQ</a></li>
                         </ul>
                     </li>
 

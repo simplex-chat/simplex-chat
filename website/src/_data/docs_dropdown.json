@@ -5,36 +5,28 @@
             "url": "/docs/simplex.html"
         },
         {
-            "title": "Accessing files in Android app",
+            "title": "Accessing Android files",
             "url": "/docs/android.html"
         },
         {
-            "title": "SimpleX Chat terminal",
-            "url": "/docs/cli.html"
-        },
-        {
-            "title": "Accessing messages in the database",
+            "title": "Accessing chat database",
             "url": "/docs/sql.html"
         },
         {
-            "title": "Contributing guide",
-            "url": "/docs/contributing.html"
-        },
-        {
-            "title": "Hosting your own SMP Server",
+            "title": "Host SMP Server",
             "url": "/docs/server.html"
         },
         {
-            "title": "Contributing translations to SimpleX Chat",
-            "url": "/docs/translations.html"
+            "title": "Host XFTP Server",
+            "url": "/docs/xftp-server.html"
         },
         {
-            "title": "Using custom WebRTC ICE servers in SimpleX Chat",
+            "title": "WebRTC servers",
             "url": "/docs/webrtc.html"
         },
         {
-            "title": "Hosting your own XFTP Server",
-            "url": "/docs/xftp-server.html"
+            "title": "Translate SimpleX Chat",
+            "url": "/docs/translations.html"
         }
     ]
 }
