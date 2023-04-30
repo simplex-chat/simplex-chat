@@ -1,6 +1,6 @@
 | Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md) |
 
-<img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
+<img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - první platforma pro zasílání zpráv, která neobsahuje žádné identifikační údaje uživatelů - 100% soukromá!
 
@@ -10,15 +10,15 @@
 [![Přidejte se na Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 [![Sledovat na Mastodonu](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)](https://mastodon.social/@simplex)
 
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/apple_store.svg" alt="Aplikace pro iOS" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="Aplikace pro iOS" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
-[![Aplikace pro Android](https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
+[![Aplikace pro Android](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
 &nbsp;
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
 &nbsp;
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
 
 - 🖲 Chrání vaše zprávy a metadata - s kým a kdy mluvíte.
 - 🔐 Koncové šifrování s další vrstvou šifrování.
@@ -106,9 +106,9 @@ Pro navázání spojení a zahájení zasílání zpráv je třeba sdílet odkaz
 
 Kanál, jehož prostřednictvím odkaz sdílíte, nemusí být zabezpečený - stačí, když můžete potvrdit, kdo vám zprávu poslal, a že je navázáno spojení SimpleX.
 
-<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/app1.png" alt="Navázat soukromé spojení" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/arrow.png" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/app2.png" alt="Konverzace" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/arrow.png" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/app3.png" alt="Videohovor" height="360">
+<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Navázat soukromé spojení" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Konverzace" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Videohovor" height="360">
 
-## ⚡ Rychlá instalace terminálové aplikace
+## :zap: Rychlá instalace terminálové aplikace
 
 ```sh
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash
@@ -116,7 +116,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/inst
 
 Po instalaci chatovacího klienta jednoduše spusťte `simplex-chat` z terminálu.
 
-![simplex-chat](/images/connection.gif)
+![simplex-chat](./images/connection.gif)
 
 Více informací o [instalaci a používání terminálové aplikace](./docs/CLI.md).
 
@@ -316,12 +316,12 @@ Jakákoli zjištění možných útoků korelace provozu umožňujících korelo
 
 [AGPL v3](./LICENSE)
 
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/apple_store.svg" alt="Aplikace iOS" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="Aplikace iOS" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
-[![Aplikace pro Android](https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
+[![Aplikace pro Android](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
 &nbsp;
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
 &nbsp;
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
