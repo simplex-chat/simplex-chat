@@ -1,7 +1,3 @@
----
-title: Video Calls
-revision: 20.04.2022
----
 # Adding Audio/Video Call Functionality to SimpleX Apps
 
 To extend the functionality of the SimpleX mobile apps in pursuit of supporting all kinds of communication, we seek to add the ability for already connected users to call each other with audio and optionally video.

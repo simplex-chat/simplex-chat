@@ -1,7 +1,3 @@
----
-title: Group connections recovery
-revision: 26.08.2022
----
 # Group connections recovery after asynchronous commands
 
 ## Problem

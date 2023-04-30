@@ -1,7 +1,3 @@
----
-title: Mobile app
-revision: 26.01.2022
----
 # Porting SimpleX Chat to mobile
 
 ## Background and motivation

@@ -1,7 +1,3 @@
----
-title: Number chat items
-revision: 02.03.2022
----
 # Message replies and chat item sequential numbers
 
 ## Problem

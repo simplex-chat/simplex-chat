@@ -1,7 +1,3 @@
----
-title: Chat item integrity
-revision: 28.05.2022
----
 # Chat item integrity
 
 ## Problem

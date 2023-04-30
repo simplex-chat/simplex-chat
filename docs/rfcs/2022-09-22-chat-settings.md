@@ -1,7 +1,3 @@
----
-title: Chat settings
-revision: 22.09.2022
----
 # Chat settings
 
 Scope: this doc covers permissions and configuration that is specific for one contact or group, and should or should not be taken into account when sending messages.

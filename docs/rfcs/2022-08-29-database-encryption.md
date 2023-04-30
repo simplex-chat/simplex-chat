@@ -1,7 +1,3 @@
----
-title: Database encryption
-revision: 29.08.2022
----
 # Database encryption
 
 ## Approach

@@ -1,7 +1,3 @@
----
-title: Group contacts management
-revision: 19.10.2022
----
 # Group contacts management
 
 ## Problem

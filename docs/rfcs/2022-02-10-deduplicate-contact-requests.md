@@ -1,7 +1,3 @@
----
-title: Deduplicate contact requests
-revision: 10.02.2022
----
 # Deduplicate contact requests
 
 1. add nullable fields `via_contact_uri_hash` and `xcontact_id` to `connections`

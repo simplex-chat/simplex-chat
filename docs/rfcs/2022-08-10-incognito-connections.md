@@ -1,7 +1,3 @@
----
-title: Incognito connections
-revision: 10.08.2022
----
 # Incognito connections
 
 ## Problems

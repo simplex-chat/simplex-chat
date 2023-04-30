@@ -1,7 +1,3 @@
----
-title: Disappearing messages
-revision: 12.12.2022
----
 # Disappearing messages
 
 - ability to turn on/off disappearing messages feature per conversation, specify ttl
