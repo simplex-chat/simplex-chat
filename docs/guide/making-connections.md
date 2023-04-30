@@ -1,6 +1,5 @@
 ---
 title: Making connections
-displayAt: 9
 ---
 # Connect to somebody in the chat
 

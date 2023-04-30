@@ -1,6 +1,5 @@
 ---
 title: Secret groups
-displayAt: 3
 ---
 # Secret groups
 

@@ -1,6 +1,5 @@
 ---
 title: App settings
-displayAt: 8
 ---
 # App settings
 

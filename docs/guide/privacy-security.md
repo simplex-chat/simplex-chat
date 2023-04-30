@@ -1,6 +1,5 @@
 ---
 title: Privacy & security
-displayAt: 7
 ---
 # Privacy and Security
 

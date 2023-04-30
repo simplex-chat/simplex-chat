@@ -1,6 +1,5 @@
 ---
 title: Sending messages
-displayAt: 2
 ---
 # Sending, editing and deleting messages
 

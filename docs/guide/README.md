@@ -1,6 +1,5 @@
 ---
 title: Quick start
-displayAt: 1
 ---
 # SimpleX Chat User Guide
 
