@@ -134,8 +134,6 @@ module.exports = function (ty) {
       const url = doc.url.replace("/docs/", "")
       const urlParts = url.split("/")
 
-      if (urlParts.includes("rfcs")) return false
-
       if (urlParts.length === 1 && urlParts[0] !== "") {
         const index = newDocs.findIndex((ele) => ele.lang === 'en' && ele.menu === 'root')
         if (index !== -1) {
