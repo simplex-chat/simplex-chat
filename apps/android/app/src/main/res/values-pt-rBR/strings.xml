@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="about_simplex_chat">Sobre o <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="about_simplex">Sobre SimpleX</string>
+    <string name="about_simplex">Sobre o SimpleX</string>
     <string name="chat_item_ttl_day">1 dia</string>
     <string name="chat_item_ttl_week">1 semana</string>
     <string name="chat_item_ttl_month">1 mês</string>
@@ -263,7 +263,7 @@
     <string name="settings_section_title_device">DISPOSITIVO</string>
     <string name="settings_developer_tools">Ferramentas de desenvolvimento</string>
     <string name="group_member_status_introduced">conectando (introduzido)</string>
-    <string name="color_primary">Realçar</string>
+    <string name="color_primary">Destaque</string>
     <string name="error_removing_member">Erro ao remover membro</string>
     <string name="error_changing_role">Erro ao alterar função</string>
     <string name="conn_level_desc_direct">direto</string>
@@ -458,7 +458,7 @@
     <string name="reveal_verb">Revelar</string>
     <string name="icon_descr_server_status_pending">Pendente</string>
     <string name="prohibit_direct_messages">Proibir o envio de DMs para membros.</string>
-    <string name="scan_QR_code">Escanear código QR</string>
+    <string name="scan_QR_code">Escanear QR Code</string>
     <string name="reject_contact_button">Rejeitar</string>
     <string name="feature_offered_item">ofereceu %s</string>
     <string name="icon_descr_address"><xliff:g id="appName">Endereço</xliff:g> SimpleX</string>
@@ -738,7 +738,7 @@
     <string name="send_live_message">Enviar mensagem ao vivo</string>
     <string name="above_then_preposition_continuation">acima, então:</string>
     <string name="to_connect_via_link_title">Para conectar via link</string>
-    <string name="image_descr_qr_code">Código QR</string>
+    <string name="image_descr_qr_code">QR Code</string>
     <string name="mark_code_verified">Marcado como verificado</string>
     <string name="to_verify_compare">Para verificar a criptografia de ponta-a-ponta com seu contato, compare (ou escaneie) o código em seus dispositivos.</string>
     <string name="smp_save_servers_question">Salvar servidores\?</string>
