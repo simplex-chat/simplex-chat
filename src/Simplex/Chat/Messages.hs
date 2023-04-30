@@ -768,9 +768,7 @@ instance FromJSON MsgDecryptError where
 
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
-  SMDSnd -> case content of
-    CIInvalidJSON _ -> False
-    _ -> True
+  SMDSnd -> True
   SMDRcv -> case content of
     CIRcvMsgContent _ -> True
     CIRcvDeleted _ -> True
@@ -796,7 +794,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvChatFeatureRejected _ -> True
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
-    _ -> False
+    CIInvalidJSON _ -> False
 
 ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
