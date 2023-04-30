@@ -22,8 +22,8 @@ for file in langs/*.json; do
 done
 
 npm install
-node src/js/merge_translations.js
-node src/js/customize_docs_frontmatter.js
+node merge_translations.js
+node customize_docs_frontmatter.js
 
 # creating folders for each language for internationalization
 for lang in "${langs[@]}"; do

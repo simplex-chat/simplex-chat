@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const matter = require('gray-matter');
 
-const directoryPath = path.resolve(__dirname, '../docs');
+const directoryPath = path.resolve(__dirname, 'src/docs');
 const langFolder = 'lang';
 const enFiles = {};
 
