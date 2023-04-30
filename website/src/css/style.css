@@ -295,7 +295,7 @@ header nav {
   }
 
   .active .sub-menu {
-    max-height: 200px;
+    max-height: 600px;
     transform: translateY(0px);
     opacity: 1;
     visibility: visible;
