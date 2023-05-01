@@ -361,6 +361,10 @@ Dostupné ve verzi 5.1</target>
         <target>O SimpleX chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="About SimpleX address" xml:space="preserve">
+        <source>About SimpleX address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Accent color" xml:space="preserve">
         <source>Accent color</source>
         <target>Zbarvení</target>
@@ -387,9 +391,8 @@ Dostupné ve verzi 5.1</target>
         <target>Přijmout inkognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept requests" xml:space="preserve">
-        <source>Accept requests</source>
-        <target>Přijímat žádosti</target>
+      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
+        <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add preset servers" xml:space="preserve">
@@ -422,6 +425,10 @@ Dostupné ve verzi 5.1</target>
         <target>Přidat uvítací zprávu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Address" xml:space="preserve">
+        <source>Address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
         <target>Správci mohou vytvářet odkazy pro připojení ke skupinám.</target>
@@ -447,9 +454,12 @@ Dostupné ve verzi 5.1</target>
         <target>Všechny zprávy budou smazány – tuto akci nelze vrátit zpět! Zprávy budou smazány POUZE pro vás.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts will remain connected" xml:space="preserve">
-        <source>All your contacts will remain connected</source>
-        <target>Všechny vaše kontakty zůstanou připojeny</target>
+      <trans-unit id="All your contacts will remain connected." xml:space="preserve">
+        <source>All your contacts will remain connected.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve">
+        <source>All your contacts will remain connected. Profile update will be sent to your contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -612,6 +622,10 @@ Dostupné ve verzi 5.1</target>
         <target>Ověřování není k dispozici</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Auto-accept" xml:space="preserve">
+        <source>Auto-accept</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Auto-accept contact requests" xml:space="preserve">
         <source>Auto-accept contact requests</source>
         <target>Automatické přijímání žádostí o kontakt</target>
@@ -620,11 +634,6 @@ Dostupné ve verzi 5.1</target>
       <trans-unit id="Auto-accept images" xml:space="preserve">
         <source>Auto-accept images</source>
         <target>Automaticky přijímat obrázky</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Automatically" xml:space="preserve">
-        <source>Automatically</source>
-        <target>Automaticky</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
@@ -992,11 +1001,6 @@ Dostupné ve verzi 5.1</target>
         <target>Předvolby kontaktů</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact requests" xml:space="preserve">
-        <source>Contact requests</source>
-        <target>Žádosti o kontakt</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Contacts can mark messages for deletion; you will be able to view them." xml:space="preserve">
         <source>Contacts can mark messages for deletion; you will be able to view them.</source>
         <target>Kontakty mohou označit zprávy ke smazání; vy je budete moci zobrazit.</target>
@@ -1017,9 +1021,12 @@ Dostupné ve verzi 5.1</target>
         <target>Vytvořit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create address" xml:space="preserve">
-        <source>Create address</source>
-        <target>Vytvořit adresu</target>
+      <trans-unit id="Create SimpleX address" xml:space="preserve">
+        <source>Create SimpleX address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
+        <source>Create an address to let people connect with you.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -1589,6 +1596,10 @@ Dostupné ve verzi 5.1</target>
         <source>Enter server manually</source>
         <target>Zadejte server ručně</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
+        <source>Enter welcome message… (optional)</source>
+        <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve">
         <source>Error</source>
@@ -2343,6 +2354,10 @@ Dostupné ve verzi 5.1</target>
         <target>Velký soubor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Read more in [User Guide](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/guide/app-settings.md#your-simplex-contact-address)." xml:space="preserve">
+        <source>Read more in [User Guide](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/guide/app-settings.md#your-simplex-contact-address).</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
         <target>Opustit</target>
@@ -2987,6 +3002,10 @@ Dostupné ve verzi 5.1</target>
         <target>Heslo profilu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve">
+        <source>Profile update will be sent to your contacts.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
         <target>Zákaz audio/video hovorů.</target>
@@ -3247,6 +3266,10 @@ Dostupné ve verzi 5.1</target>
         <target>Uložit archiv</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Save auto-accept settings" xml:space="preserve">
+        <source>Save auto-accept settings</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
         <source>Save group profile</source>
         <target>Uložení profilu skupiny</target>
@@ -3280,6 +3303,10 @@ Dostupné ve verzi 5.1</target>
       <trans-unit id="Save servers?" xml:space="preserve">
         <source>Save servers?</source>
         <target>Uložit servery?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save settings?" xml:space="preserve">
+        <source>Save settings?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save welcome message?" xml:space="preserve">
@@ -3472,6 +3499,14 @@ Dostupné ve verzi 5.1</target>
         <target>Sdílet</target>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Share address" xml:space="preserve">
+        <source>Share address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share address with contacts?" xml:space="preserve">
+        <source>Share address with contacts?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share invitation link" xml:space="preserve">
         <source>Share invitation link</source>
         <target>Sdílet odkaz na pozvánku</target>
@@ -3485,6 +3520,10 @@ Dostupné ve verzi 5.1</target>
       <trans-unit id="Share one-time invitation link" xml:space="preserve">
         <source>Share one-time invitation link</source>
         <target>Jednorázový zvací odkaz</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share with contacts" xml:space="preserve">
+        <source>Share with contacts</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
@@ -3535,6 +3574,10 @@ Dostupné ve verzi 5.1</target>
       <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
         <source>SimpleX Lock turned on</source>
         <target>Zapnutý zámek SimpleX Lock</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX address" xml:space="preserve">
+        <source>SimpleX address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
@@ -3630,6 +3673,14 @@ Dostupné ve verzi 5.1</target>
       <trans-unit id="Stop sending file?" xml:space="preserve">
         <source>Stop sending file?</source>
         <target>Zastavit odesílání souboru?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Stop sharing" xml:space="preserve">
+        <source>Stop sharing</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Stop sharing address?" xml:space="preserve">
+        <source>Stop sharing address?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -4228,6 +4279,10 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Když je k dispozici</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
+        <source>When people request to connect, you can accept or reject it.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
         <target>Pokud s někým sdílíte inkognito profil, bude tento profil použit pro skupiny, do kterých vás pozve.</target>
@@ -4320,9 +4375,13 @@ SimpleX zámek musí být povolen.</target>
         <target>Můžete sdílet odkaz nebo QR kód - ke skupině se bude moci připojit kdokoli. O členy skupiny nepřijdete, pokud ji později odstraníte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve">
-        <source>You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.</source>
-        <target>Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit. O své kontakty nepřijdete, pokud ji později smažete.</target>
+      <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
+        <source>You can share this address with your contacts to let them connect with **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
+        <source>You can share your address as a link or QR code - anybody can connect to you.</source>
+        <target>Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
@@ -4435,6 +4494,11 @@ SimpleX zámek musí být povolen.</target>
         <target>Přestanete dostávat zprávy z této skupiny. Historie chatu bude zachována.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You won't lose your contacts if you later delete your address." xml:space="preserve">
+        <source>You won't lose your contacts if you later delete your address.</source>
+        <target>O své kontakty nepřijdete, pokud ji později smažete.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
         <target>Snažíte se pozvat kontakt, se kterým jste sdíleli inkognito profil, do skupiny, ve které používáte svůj hlavní profil</target>
@@ -4462,7 +4526,7 @@ SimpleX zámek musí být povolen.</target>
       </trans-unit>
       <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
-        <target>Vaše kontaktní adresa SimpleX</target>
+        <target>Vaše adresa SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your XFTP servers" xml:space="preserve">
@@ -4530,6 +4594,10 @@ Toto připojení můžete zrušit a kontakt odebrat (a zkusit to později s nov�
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
         <source>Your contacts can allow full message deletion.</source>
         <target>Vaše kontakty mohou povolit úplné mazání zpráv.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contacts will remain connected." xml:space="preserve">
+        <source>Your contacts will remain connected.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">

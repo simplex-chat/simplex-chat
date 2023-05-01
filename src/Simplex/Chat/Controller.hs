@@ -304,6 +304,8 @@ data ChatCommand
   | DeleteMyAddress
   | APIShowMyAddress UserId
   | ShowMyAddress
+  | APISetProfileAddress UserId Bool
+  | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)
   | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact ContactName

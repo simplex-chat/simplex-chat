@@ -811,8 +811,9 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias}} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}} stats incognitoProfile =
   ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
+    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) l]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -872,11 +873,12 @@ viewSwitchPhase SPCompleted = "changed address"
 viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} Profile {displayName = n', fullName = fullName', image = image', preferences = prefs'} =
+viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     profileUpdated
-      | n == n' && fullName == fullName' && image == image' = []
+      | n == n' && fullName == fullName' && image == image' && contactLink == contactLink' = []
+      | n == n' && fullName == fullName' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
       | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
       | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
       | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
@@ -980,9 +982,13 @@ viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
-  Contact {localDisplayName = n, profile = LocalProfile {fullName}}
-  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName'}}
-    | n == n' && fullName == fullName' = []
+  Contact {localDisplayName = n, profile = LocalProfile {fullName, contactLink}}
+  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', contactLink = contactLink'}}
+    | n == n' && fullName == fullName' && contactLink == contactLink' = []
+    | n == n' && fullName == fullName' =
+      if isNothing contactLink'
+        then [ttyContact n <> " removed contact address"]
+        else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
       [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',

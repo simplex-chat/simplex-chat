@@ -15,7 +15,7 @@ enum CreateLinkTab {
     var title: LocalizedStringKey {
         switch self {
         case .oneTime: return "One-time invitation link"
-        case .longTerm: return "Your contact address"
+        case .longTerm: return "Your SimpleX address"
         }
     }
 }
@@ -49,9 +49,9 @@ struct CreateLinkView: View {
                     )
                 }
                 .tag(CreateLinkTab.oneTime)
-            UserAddress()
+            UserAddressView(viaCreateLinkView: true)
                 .tabItem {
-                    Label("Your contact address", systemImage: "infinity.circle")
+                    Label("Your SimpleX address", systemImage: "infinity.circle")
                 }
                 .tag(CreateLinkTab.longTerm)
         }
