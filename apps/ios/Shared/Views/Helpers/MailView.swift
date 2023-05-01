@@ -11,7 +11,6 @@ import UIKit
 import MessageUI
 
 struct MailView: UIViewControllerRepresentable {
-
     @Binding var isShowing: Bool
     @Binding var result: Result<MFMailComposeResult, Error>?
     var recipients = [String]()
@@ -19,7 +18,6 @@ struct MailView: UIViewControllerRepresentable {
     var messageBody = ""
 
     class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
-
         @Binding var isShowing: Bool
         @Binding var result: Result<MFMailComposeResult, Error>?
 
@@ -29,9 +27,11 @@ struct MailView: UIViewControllerRepresentable {
             _result = result
         }
 
-        func mailComposeController(_ controller: MFMailComposeViewController,
-                                   didFinishWith result: MFMailComposeResult,
-                                   error: Error?) {
+        func mailComposeController(
+            _ controller: MFMailComposeViewController,
+            didFinishWith result: MFMailComposeResult,
+            error: Error?
+        ) {
             defer {
                 isShowing = false
             }
@@ -44,8 +44,7 @@ struct MailView: UIViewControllerRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        return Coordinator(isShowing: $isShowing,
-                           result: $result)
+        return Coordinator(isShowing: $isShowing, result: $result)
     }
 
     func makeUIViewController(context: UIViewControllerRepresentableContext<MailView>) -> MFMailComposeViewController {
