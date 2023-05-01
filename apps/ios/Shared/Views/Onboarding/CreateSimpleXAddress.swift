@@ -7,16 +7,28 @@
 //
 
 import SwiftUI
+import Contacts
+import ContactsUI
 import SimpleXChat
 
 struct CreateSimpleXAddress: View {
     @EnvironmentObject var m: ChatModel
     @State private var progressIndicator = false
+    @State private var showContactPicker = false
+    @State private var selectedContacts: [CNContact]?
 
     var body: some View {
         GeometryReader { g in
             ScrollView {
                 ZStack {
+                    ContactPicker(
+                        showPicker: $showContactPicker,
+                        predicateForEnablingContact: NSPredicate(format: "emailAddresses.@count > 0"),
+                        onSelectContacts: { cs in
+                            selectedContacts = cs
+                        }
+                    )
+
                     VStack(alignment: .leading) {
                         Text("SimpleX Address").font(.largeTitle)
 
@@ -124,15 +136,32 @@ struct CreateSimpleXAddress: View {
 
     private func shareViaEmailButton(_ userAdress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [userAdress.connReqContact])
+            showContactPicker = true
         } label: {
             VStack {
                 Image(systemName: "envelope")
                     .resizable()
                     .scaledToFill()
                     .frame(width: 30, height: 30)
-                Text("Send to people you know")
+                Text("Send to 3 friends")
                     .font(.title2)
+            }
+        }
+        .onChange(of: selectedContacts) { cs in
+            if let cs = cs {
+                let emails = Array(cs
+                    .compactMap { $0.emailAddresses.first }
+                    .prefix(3)
+                    .map { String($0.value) }
+                ).joined(separator: ",")
+                let mailTo = "mailto:\(emails)?subject=Invitation to SimpleX Chat&body=Hello! Let's talk in SimpleX Chat:\n\n\(userAdress.connReqContact.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+                    .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+                let mailToUrl = URL(string: mailTo!)!
+                if UIApplication.shared.canOpenURL(mailToUrl) {
+                    UIApplication.shared.open(mailToUrl, options: [:], completionHandler: { _ in
+                        m.onboardingStage = .step4_SetNotificationsMode
+                    })
+                }
             }
         }
     }
