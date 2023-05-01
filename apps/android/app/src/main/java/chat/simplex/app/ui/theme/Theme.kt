@@ -16,6 +16,7 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import okhttp3.internal.toHexString
 
 enum class DefaultTheme {
   SYSTEM, LIGHT, DARK, SIMPLEX;
@@ -128,10 +129,28 @@ data class ThemeColors(
       receivedMessage = receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage,
     )
   }
+
+  fun withFilledColors(base: DefaultTheme): ThemeColors {
+    val c = toColors(base)
+    val ac = toAppColors(base)
+    return ThemeColors(
+      primary = c.primary.toReadableHex(),
+      primaryVariant = c.primaryVariant.toReadableHex(),
+      secondary = c.secondary.toReadableHex(),
+      secondaryVariant = c.secondaryVariant.toReadableHex(),
+      background = c.background.toReadableHex(),
+      surface = c.surface.toReadableHex(),
+      title = ac.title.toReadableHex(),
+      sentMessage = ac.sentMessage.toReadableHex(),
+      receivedMessage = ac.receivedMessage.toReadableHex()
+    )
+  }
 }
 
 private fun String.colorFromReadableHex(): Color =
   Color(this.replace("#", "").toLongOrNull(16) ?: Color.White.toArgb().toLong())
+
+private fun Color.toReadableHex(): String = "#" + toArgb().toHexString()
 
 @Serializable
 data class ThemeOverrides (

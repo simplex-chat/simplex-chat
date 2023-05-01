@@ -44,7 +44,7 @@ object ThemeManager {
     return ActiveTheme(themeName, baseTheme.first, theme.colors.toColors(theme.base), theme.colors.toAppColors(theme.base))
   }
 
-  fun currentThemeOverrides(darkForSystemTheme: Boolean): ThemeOverrides {
+  fun currentThemeOverridesForExport(darkForSystemTheme: Boolean): ThemeOverrides {
     val themeName = appPrefs.currentTheme.get()!!
     val nonSystemThemeName = if (themeName != DefaultTheme.SYSTEM.name) {
       themeName
@@ -52,7 +52,8 @@ object ThemeManager {
       if (darkForSystemTheme) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.name
     }
     val overrides = appPrefs.themeOverrides.get().toMutableMap()
-    return overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors())
+    val nonFilledTheme = overrides[nonSystemThemeName] ?: ThemeOverrides(base = CurrentColors.value.base, colors = ThemeColors())
+    return nonFilledTheme.copy(colors = nonFilledTheme.colors.withFilledColors(CurrentColors.value.base))
   }
 
   // colors, default theme enum, localized name of theme

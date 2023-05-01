@@ -83,14 +83,16 @@ class MainActivity: FragmentActivity() {
     }
     setContent {
       SimpleXTheme {
-        MainPage(
-          m,
-          userAuthorized,
-          laFailed,
-          ::runAuthenticate,
-          ::setPerformLA,
-          showLANotice = { showLANotice(m.controller.appPrefs.laNoticeShown, this) }
-        )
+        Surface(color = MaterialTheme.colors.background) {
+          MainPage(
+            m,
+            userAuthorized,
+            laFailed,
+            ::runAuthenticate,
+            ::setPerformLA,
+            showLANotice = { showLANotice(m.controller.appPrefs.laNoticeShown, this) }
+          )
+        }
       }
     }
     SimplexApp.context.schedulePeriodicServiceRestartWorker()
