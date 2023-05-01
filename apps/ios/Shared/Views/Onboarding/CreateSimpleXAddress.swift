@@ -154,10 +154,13 @@ struct CreateSimpleXAddress: View {
                     .prefix(3)
                     .map { String($0.value) }
                 ).joined(separator: ",")
-                let mailTo = "mailto:\(emails)?subject=Invitation to SimpleX Chat&body=Hello! Let's talk in SimpleX Chat:\n\n\(userAdress.connReqContact.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+                let allowedCharacterSet = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&"))
+                let addressStr = userAdress.connReqContact.addingPercentEncoding(withAllowedCharacters: allowedCharacterSet) ?? ""
+                let mailTo = "mailto:\(emails)?subject=Invitation to SimpleX Chat&body=Hello! Let's talk in SimpleX Chat:\n\n\(addressStr)"
                     .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-                let mailToUrl = URL(string: mailTo!)!
-                if UIApplication.shared.canOpenURL(mailToUrl) {
+                if let mailTo = mailTo,
+                   let mailToUrl = URL(string: mailTo),
+                   UIApplication.shared.canOpenURL(mailToUrl) {
                     UIApplication.shared.open(mailToUrl, options: [:], completionHandler: { _ in
                         m.onboardingStage = .step4_SetNotificationsMode
                     })
