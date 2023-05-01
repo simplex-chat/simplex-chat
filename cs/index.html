@@ -392,6 +392,7 @@ const moonIcon = document.querySelector('.moon');
 
 const userTheme = localStorage.getItem('theme');
 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const prismThemeLink = document.getElementById('prism-theme')
 
 const iconToggle = () => {
     sunIcon.classList.toggle('hidden');
@@ -402,9 +403,15 @@ const themeCheck = () => {
     if(userTheme === 'dark' || (!userTheme && systemTheme)){
         document.documentElement.classList.add('dark');
         moonIcon.classList.add('hidden');
+        if(prismThemeLink){
+            prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
+        }
     }
     else{
         sunIcon.classList.add('hidden');
+        if(prismThemeLink){
+            prismThemeLink.setAttribute('href','/css/prism-light.min.css')
+        }
     }
 }
 
@@ -412,11 +419,17 @@ const themeSwitch = () => {
     if(document.documentElement.classList.contains('dark')){
         document.documentElement.classList.remove('dark');
         localStorage.setItem('theme','light');
+        if(prismThemeLink){
+            prismThemeLink.setAttribute('href','/css/prism-light.min.css')
+        }
         iconToggle();
     }
     else{
         document.documentElement.classList.add('dark');
         localStorage.setItem('theme','dark');
+        if(prismThemeLink){
+            prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
+        }
         iconToggle();
     }
 }
