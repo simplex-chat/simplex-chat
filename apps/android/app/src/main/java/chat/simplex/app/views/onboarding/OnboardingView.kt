@@ -31,7 +31,6 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(color = MaterialTheme.colors.background)
         .padding(20.dp)
     ) {
       CreateProfilePanel(chatModel, close)

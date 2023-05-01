@@ -102,7 +102,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         createModifier = Modifier.padding(8.dp)
         createColor = MaterialTheme.colors.secondary
       }
-      Surface(shape = RoundedCornerShape(20.dp), color = colors.background) {
+      Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
           Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
           Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = createColor)
