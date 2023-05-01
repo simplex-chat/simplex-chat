@@ -15,8 +15,6 @@ import SimpleXChat
 struct CreateSimpleXAddress: View {
     @EnvironmentObject var m: ChatModel
     @State private var progressIndicator = false
-    @State private var showContactPicker = false
-    @State private var selectedRecipients: [String]?
     @State private var showMailView = false
     @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
 
@@ -24,17 +22,6 @@ struct CreateSimpleXAddress: View {
         GeometryReader { g in
             ScrollView {
                 ZStack {
-                    ContactPicker(
-                        isPresented: $showContactPicker,
-                        onSelectContacts: { cs in
-                            selectedRecipients = Array(cs
-                                .compactMap { $0.emailAddresses.first }
-                                .prefix(3)
-                                .map { String($0.value) }
-                            )
-                        }
-                    )
-
                     VStack(alignment: .leading) {
                         Text("SimpleX Address")
                             .font(.largeTitle)
@@ -124,7 +111,7 @@ struct CreateSimpleXAddress: View {
                 }
             } label: {
                 HStack {
-                    Text("Skip creating address")
+                    Text("Don't create address")
                     Image(systemName: "chevron.right")
                 }
             }
@@ -132,51 +119,46 @@ struct CreateSimpleXAddress: View {
         }
     }
 
-    private func shareQRCodeButton(_ userAdress: UserContactLink) -> some View {
+    private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [userAdress.connReqContact])
+            showShareSheet(items: [userAddress.connReqContact])
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }
     }
 
-    private func shareViaEmailButton(_ userAdress: UserContactLink) -> some View {
+    private func shareViaEmailButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showContactPicker = true
-        } label: {
-            VStack {
-                Label("Invite friends", systemImage: "envelope")
-                    .font(.title2)
-            }
-        }
-        .onChange(of: selectedRecipients) { _ in
             showMailView = true
+        } label: {
+            Label("Invite friends", systemImage: "envelope")
+                .font(.title2)
         }
         .sheet(isPresented: $showMailView) {
-            let messageBody = """
-                <p>Hi!</p>
-                <p><a href="\(userAdress.connReqContact)">Connect to me via SimpleX Chat</a></p>
-                """
-            MailView(
-                isShowing: self.$showMailView,
-                result: $mailViewResult,
-                recipients: selectedRecipients ?? [],
-                subject: "Let's talk in SimpleX Chat",
-                messageBody: messageBody
+            SendAddressMailView(
+                showMailView: $showMailView,
+                mailViewResult: $mailViewResult,
+                userAddress: userAddress
             )
         }
         .onChange(of: mailViewResult == nil) { _ in
             if let r = mailViewResult {
                 switch r {
-                case .success:
-                    m.onboardingStage = .step4_SetNotificationsMode
+                case let .success(composeResult):
+                    switch composeResult {
+                    case .sent:
+                        m.onboardingStage = .step4_SetNotificationsMode
+                    default: ()
+                    }
                 case let .failure(error):
+                    logger.error("CreateSimpleXAddress share via email: \(responseError(error))")
                     let a = getErrorAlert(error, "Error sending email")
                     AlertManager.shared.showAlertMsg(
                         title: a.title,
                         message: a.message
                     )
                 }
+                mailViewResult = nil
             }
         }
     }
@@ -192,6 +174,26 @@ struct CreateSimpleXAddress: View {
                 Image(systemName: "greaterthan")
             }
         }
+    }
+}
+
+struct SendAddressMailView: View {
+    @Binding var showMailView: Bool
+    @Binding var mailViewResult: Result<MFMailComposeResult, Error>?
+    var userAddress: UserContactLink
+
+    var body: some View {
+        let messageBody = """
+            <p>Hi!</p>
+            <p><a href="\(userAddress.connReqContact)">Connect to me via SimpleX Chat</a></p>
+            """
+        MailView(
+            isShowing: self.$showMailView,
+            result: $mailViewResult,
+            subject: "Let's talk in SimpleX Chat",
+            messageBody: messageBody
+        )
+        .edgesIgnoringSafeArea(.bottom)
     }
 }
 

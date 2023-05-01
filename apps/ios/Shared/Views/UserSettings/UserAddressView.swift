@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import MessageUI
 import SimpleXChat
 
 struct UserAddressView: View {
@@ -17,6 +18,8 @@ struct UserAddressView: View {
     @State private var aas = AutoAcceptState()
     @State private var savedAAS = AutoAcceptState()
     @State private var ignoreShareViaProfileChange = false
+    @State private var showMailView = false
+    @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
     @State private var alert: UserAddressAlert?
     @State private var showSaveDialogue = false
     @State private var progressIndicator = false
@@ -189,6 +192,7 @@ struct UserAddressView: View {
         Section {
             QRCode(uri: userAddress.connReqContact)
             shareQRCodeButton(userAddress)
+            shareViaEmailButton(userAddress)
             shareWithContactsButton()
             autoAcceptToggle()
             learnMoreButton()
@@ -240,12 +244,41 @@ struct UserAddressView: View {
         }
     }
 
-    private func shareQRCodeButton(_ userAdress: UserContactLink) -> some View {
+    private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [userAdress.connReqContact])
+            showShareSheet(items: [userAddress.connReqContact])
         } label: {
             settingsRow("square.and.arrow.up") {
                 Text("Share address")
+            }
+        }
+    }
+
+    private func shareViaEmailButton(_ userAddress: UserContactLink) -> some View {
+        Button {
+            showMailView = true
+        } label: {
+            settingsRow("envelope") {
+                Text("Invite friends")
+            }
+        }
+        .sheet(isPresented: $showMailView) {
+            SendAddressMailView(
+                showMailView: $showMailView,
+                mailViewResult: $mailViewResult,
+                userAddress: userAddress
+            )
+        }
+        .onChange(of: mailViewResult == nil) { _ in
+            if let r = mailViewResult {
+                switch r {
+                case .success: ()
+                case let .failure(error):
+                    logger.error("UserAddressView share via email: \(responseError(error))")
+                    let a = getErrorAlert(error, "Error sending email")
+                    alert = .error(title: a.title, error: a.message)
+                }
+                mailViewResult = nil
             }
         }
     }
