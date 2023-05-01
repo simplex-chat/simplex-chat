@@ -62,9 +62,10 @@ struct SetNotificationsMode: View {
                         m.notificationMode = mode
                     }
                 } catch let error {
+                    let a = getErrorAlert(error, "Error enabling notifications")
                     AlertManager.shared.showAlertMsg(
-                        title: "Error enabling notifications",
-                        message: "\(responseError(error))"
+                        title: a.title,
+                        message: a.message
                     )
                 }
             }

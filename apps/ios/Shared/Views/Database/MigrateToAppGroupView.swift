@@ -109,7 +109,7 @@ struct MigrateToAppGroupView: View {
                         do {
                             resetChatCtrl()
                             try initializeChat(start: true)
-                            chatModel.onboardingStage = .step3_SetNotificationsMode
+                            chatModel.onboardingStage = .step4_SetNotificationsMode
                             setV3DBMigration(.ready)
                         } catch let error {
                             dbContainerGroupDefault.set(.documents)
