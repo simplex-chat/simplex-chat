@@ -184,13 +184,13 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
         }
       } else {
         SectionItemView {
-          Text("TCP_KEEPIDLE", color = HighOrLowlight)
+          Text("TCP_KEEPIDLE", color = MaterialTheme.colors.secondary)
         }
         SectionItemView {
-          Text("TCP_KEEPINTVL", color = HighOrLowlight)
+          Text("TCP_KEEPINTVL", color = MaterialTheme.colors.secondary)
         }
         SectionItemView {
-          Text("TCP_KEEPCNT", color = HighOrLowlight)
+          Text("TCP_KEEPCNT", color = MaterialTheme.colors.secondary)
         }
       }
     }
@@ -208,7 +208,7 @@ fun ResetToDefaultsButton(reset: () -> Unit, disabled: Boolean) {
     modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    val color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+    val color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
     Text(stringResource(R.string.network_options_reset_to_defaults), color = color)
   }
 }
@@ -256,14 +256,14 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
           "${selection.value} $label",
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.size(4.dp))
         Icon(
           if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
           generalGetString(R.string.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
-          tint = HighOrLowlight
+          tint = MaterialTheme.colors.secondary
         )
       }
       DefaultExposedDropdownMenu(
@@ -317,14 +317,14 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
           "${df.format(selection.value / 1_000_000.toDouble())} $label",
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.size(4.dp))
         Icon(
           if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
           generalGetString(R.string.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
-          tint = HighOrLowlight
+          tint = MaterialTheme.colors.secondary
         )
       }
       DefaultExposedDropdownMenu(
@@ -376,18 +376,18 @@ fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boo
       Icon(
         icon,
         title,
-        tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+        tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
       Text(
         title,
-        color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+        color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
   }
 }
 
 fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.update_network_settings_question),
     text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
     confirmText = generalGetString(R.string.update_network_settings_confirmation),

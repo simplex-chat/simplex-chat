@@ -19,8 +19,7 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.Indigo
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -36,7 +35,6 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       Column(
         modifier = Modifier
           .fillMaxSize()
-          .background(MaterialTheme.colors.background)
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ShareList(chatModel, search = searchInList)
@@ -54,7 +52,7 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
 @Composable
 private fun EmptyList() {
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Text(stringResource(R.string.you_have_no_chats), color = HighOrLowlight)
+    Text(stringResource(R.string.you_have_no_chats), color = MaterialTheme.colors.secondary)
   }
 }
 

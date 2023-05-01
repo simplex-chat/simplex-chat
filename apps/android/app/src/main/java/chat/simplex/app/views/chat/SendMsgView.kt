@@ -44,7 +44,7 @@ import androidx.core.widget.*
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.CurrentColors
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
@@ -187,7 +187,7 @@ private fun NativeKeyboard(
 ) {
   val cs = composeState.value
   val textColor = MaterialTheme.colors.onBackground
-  val tintColor = MaterialTheme.colors.secondary
+  val tintColor = MaterialTheme.colors.secondaryVariant
   val padding = PaddingValues(12.dp, 7.dp, 45.dp, 0.dp)
   val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
@@ -240,7 +240,7 @@ private fun NativeKeyboard(
     editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
     if (Build.VERSION.SDK_INT >= 29) {
-      editText.textCursorDrawable?.let { DrawableCompat.setTint(it, HighOrLowlight.toArgb()) }
+      editText.textCursorDrawable?.let { DrawableCompat.setTint(it, CurrentColors.value.colors.secondary.toArgb()) }
     } else {
       try {
         val f: Field = TextView::class.java.getDeclaredField("mCursorDrawableRes")
@@ -284,7 +284,7 @@ private fun ComposeOverlay(textId: Int, textStyle: MutableState<TextStyle>, padd
   Text(
     generalGetString(textId),
     Modifier.padding(padding),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     style = textStyle.value.copy(fontStyle = FontStyle.Italic)
   )
 }
@@ -295,7 +295,7 @@ private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) 
     { composeState.value = composeState.value.copy(message = "") },
     Modifier.align(Alignment.TopEnd).size(36.dp)
   ) {
-    Icon(painterResource(R.drawable.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = HighOrLowlight)
+    Icon(painterResource(R.drawable.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
   }
 }
 
@@ -354,7 +354,7 @@ private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
     Icon(
       painterResource(R.drawable.ic_keyboard_voice),
       stringResource(R.string.icon_descr_record_voice_message),
-      tint = HighOrLowlight,
+      tint = MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)
@@ -424,7 +424,7 @@ private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
 
 @Composable
 private fun ProgressIndicator() {
-  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
+  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
 }
 
 @Composable
@@ -474,7 +474,7 @@ private fun SendMsgButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(if (enabled) MaterialTheme.colors.primary else HighOrLowlight)
+        .background(if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
         .padding(3.dp)
     )
   }
@@ -497,7 +497,7 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
     Icon(
       BoltFilled,
       stringResource(R.string.icon_descr_send_message),
-      tint = if (enabled) MaterialTheme.colors.primary else HighOrLowlight,
+      tint = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)

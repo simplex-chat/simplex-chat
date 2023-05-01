@@ -17,7 +17,8 @@ CREATE TABLE contact_profiles(
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   incognito INTEGER,
   local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
-  preferences TEXT
+  preferences TEXT,
+  contact_link BLOB
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,

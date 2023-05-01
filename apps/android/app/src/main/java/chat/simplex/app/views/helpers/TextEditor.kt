@@ -18,7 +18,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.*
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
-import chat.simplex.app.ui.theme.HighOrLowlight
 
 @Composable
 fun TextEditor(
@@ -41,11 +40,11 @@ fun TextEditor(
       autoCorrect = false
     ),
     modifier = modifier,
-    cursorBrush = SolidColor(HighOrLowlight),
+    cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->
       Surface(
         shape = if (border) RoundedCornerShape(10.dp) else RectangleShape,
-        border = if (border) BorderStroke(1.dp, MaterialTheme.colors.secondary) else null
+        border = if (border) BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant) else null
       ) {
         Row(
           Modifier.background(background),

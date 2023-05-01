@@ -63,7 +63,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
               .size(36.dp)
               .padding(4.dp)
               .align(Alignment.CenterHorizontally),
-            color = HighOrLowlight,
+            color = MaterialTheme.colors.secondary,
             strokeWidth = 3.dp
           )
       }
@@ -113,7 +113,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
       Icon(
         painterResource(R.drawable.ic_info),
         stringResource(R.string.incognito),
-        tint = HighOrLowlight,
+        tint = MaterialTheme.colors.secondary,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
       Text(offText, textAlign = if (centered) TextAlign.Center else TextAlign.Left, style = MaterialTheme.typography.body2)

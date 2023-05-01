@@ -1,0 +1,38 @@
+{
+    "items": [
+        {
+            "menu": "Guide",
+            "data": [
+                "README.md",
+                "send-messages.md",
+                "secret-groups.md",
+                "chat-profiles.md",
+                "managing-data.md",
+                "audio-video-calls.md",
+                "privacy-security.md",
+                "app-settings.md",
+                "making-connections.md"
+            ]
+        },
+        {
+            "menu": "Reference",
+            "data": [
+                "SIMPLEX.md",
+                "ANDROID.md",
+                "CLI.md",
+                "SQL.md",
+                "CONTRIBUTING.md",
+                "SERVER.md",
+                "TRANSLATIONS.md",
+                "WEBRTC.md",
+                "XFTP-SERVER.md"
+            ]
+        },
+        {
+            "menu": "Protocol",
+            "data": [
+                "simplex-chat.md"
+            ]
+        }
+    ]
+}

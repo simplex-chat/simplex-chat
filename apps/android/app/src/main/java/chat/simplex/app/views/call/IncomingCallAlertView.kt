@@ -50,13 +50,13 @@ fun IncomingCallAlertLayout(
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit
 ) {
-  val color = if (isInDarkTheme()) IncomingCallDark else IncomingCallLight
+  val color = if (isInDarkTheme()) MaterialTheme.colors.surface else IncomingCallLight
   Column(Modifier.fillMaxWidth().background(color).padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING, start = DEFAULT_PADDING, end = 8.dp)) {
     IncomingCallInfo(invitation, chatModel)
     Spacer(Modifier.height(8.dp))
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
       Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
-        ProfilePreview(profileOf = invitation.contact, size = 64.dp, color = Color.White)
+        ProfilePreview(profileOf = invitation.contact, size = 64.dp)
       }
       Row(verticalAlignment = Alignment.CenterVertically) {
         CallButton(stringResource(R.string.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
@@ -72,13 +72,13 @@ fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
   @Composable fun CallIcon(icon: Painter, descr: String) = Icon(icon, descr, tint = SimplexGreen)
   Row(verticalAlignment = Alignment.CenterVertically) {
     if (chatModel.users.size > 1) {
-      ProfileImage(size = 32.dp, image = invitation.user.profile.image, color = MaterialTheme.colors.secondary)
+      ProfileImage(size = 32.dp, image = invitation.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
       Spacer(Modifier.width(4.dp))
     }
     if (invitation.callType.media == CallMediaType.Video) CallIcon(painterResource(R.drawable.ic_videocam_filled), stringResource(R.string.icon_descr_video_call))
     else CallIcon(painterResource(R.drawable.ic_call_filled), stringResource(R.string.icon_descr_audio_call))
     Spacer(Modifier.width(4.dp))
-    Text(invitation.callTypeText)
+    Text(invitation.callTypeText, color = MaterialTheme.colors.onBackground)
   }
 }
 
@@ -96,7 +96,7 @@ private fun CallButton(text: String, icon: Painter, color: Color, action: () -> 
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Icon(icon, text, tint = color, modifier = Modifier.scale(1.2f))
-      Text(text, style = MaterialTheme.typography.body2, color = HighOrLowlight)
+      Text(text, style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary)
     }
   }
 }

@@ -88,7 +88,7 @@ fun NotificationsSettingsLayout(
           modes.first { it.value == notificationsMode.value }.title,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       }
       SettingsActionItemWithContent(null, stringResource(R.string.settings_notification_preview_mode_title), { showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
@@ -96,7 +96,7 @@ fun NotificationsSettingsLayout(
           previewModes.first { it.value == notificationPreviewMode.value }.title,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       }
     }

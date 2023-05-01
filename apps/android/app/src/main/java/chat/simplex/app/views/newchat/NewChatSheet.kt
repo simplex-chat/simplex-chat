@@ -150,7 +150,7 @@ private fun NewChatSheetLayout(
         hoveredElevation = 0.dp,
         focusedElevation = 0.dp,
       ),
-      backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
+      backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       contentColor = Color.White
     ) {
       Icon(
@@ -173,14 +173,14 @@ fun ActionButton(
   disabled: Boolean = false,
   click: () -> Unit = {}
 ) {
-  Surface(shape = RoundedCornerShape(18.dp)) {
+  Surface(shape = RoundedCornerShape(18.dp), color = Color.Transparent) {
     Column(
       Modifier
         .clickable(onClick = click)
         .padding(8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      val tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       Icon(
         icon, text,
         tint = tint,
@@ -226,7 +226,7 @@ fun ActionButton(
         .padding(8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      val tint = if (disabled) HighOrLowlight else tint
+      val tint = if (disabled) MaterialTheme.colors.secondary else tint
       Icon(
         icon, text,
         tint = tint,

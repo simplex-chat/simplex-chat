@@ -328,7 +328,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
 @Composable
 private fun InvalidDataView() {
   Row {
-    ProfileImage(72.dp, null, R.drawable.ic_account_circle_filled, HighOrLowlight)
+    ProfileImage(72.dp, null, R.drawable.ic_account_circle_filled, MaterialTheme.colors.secondary)
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
@@ -466,7 +466,8 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
           onSuccess()
         }
       }
-    }
+    },
+    destructive = true,
   )
 }
 
@@ -484,6 +485,7 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
         }
       }
     },
+    destructive = true,
     dismissText = generalGetString(R.string.cancel_verb),
   )
 }

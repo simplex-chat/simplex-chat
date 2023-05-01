@@ -141,7 +141,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
               }
               .padding(8.dp))
           } else {
-            CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
+            CreateGroupButton(MaterialTheme.colors.secondary, Modifier.padding(8.dp))
           }
           LaunchedEffect(Unit) {
             delay(300)
@@ -159,7 +159,7 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.End
   ) {
-    Surface(shape = RoundedCornerShape(20.dp)) {
+    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
       Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = color, fontWeight = FontWeight.Bold)
         Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = color)

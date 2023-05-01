@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -26,8 +27,7 @@ import androidx.lifecycle.*
 import chat.simplex.app.MainActivity.Companion.enteredBackground
 import chat.simplex.app.model.*
 import chat.simplex.app.model.NtfManager.Companion.getUserIdFromIntent
-import chat.simplex.app.ui.theme.SimpleButton
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
@@ -83,11 +83,7 @@ class MainActivity: FragmentActivity() {
     }
     setContent {
       SimpleXTheme {
-        Surface(
-          Modifier
-            .background(MaterialTheme.colors.background)
-            .fillMaxSize()
-        ) {
+        Surface(color = MaterialTheme.colors.background) {
           MainPage(
             m,
             userAuthorized,
@@ -420,7 +416,7 @@ fun MainPage(
   @Composable
   fun authView() {
     Box(
-      Modifier.fillMaxSize(),
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
       contentAlignment = Alignment.Center
     ) {
       SimpleButton(
@@ -633,7 +629,7 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
         ConnectionLinkType.INVITATION -> generalGetString(R.string.connect_via_invitation_link)
         ConnectionLinkType.GROUP -> generalGetString(R.string.connect_via_group_link)
       }
-      AlertManager.shared.showAlertMsg(
+      AlertManager.shared.showAlertDialog(
         title = title,
         text = if (linkType == ConnectionLinkType.GROUP)
           generalGetString(R.string.you_will_join_group)

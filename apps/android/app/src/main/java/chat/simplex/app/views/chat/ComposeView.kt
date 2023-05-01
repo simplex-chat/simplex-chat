@@ -33,7 +33,6 @@ import androidx.core.content.ContextCompat
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.*
@@ -689,7 +688,7 @@ fun ComposeView(
         Icon(
           painterResource(R.drawable.ic_attach_file_filled_500),
           contentDescription = stringResource(R.string.attach),
-          tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else HighOrLowlight,
+          tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)

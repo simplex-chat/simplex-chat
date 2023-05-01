@@ -8,7 +8,6 @@ import SectionView
 import TextIconSpaced
 import android.content.Context
 import android.content.res.Configuration
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -97,7 +96,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
               }
             }
             Box(
-              Modifier.fillMaxSize(),
+              Modifier.fillMaxSize().background(MaterialTheme.colors.background),
               contentAlignment = Alignment.Center
             ) {
               SimpleButton(
@@ -134,8 +133,9 @@ fun SettingsLayout(
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
+  val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
-  Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).background(MaterialTheme.colors.background)) {
+  Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).themedBackground(theme.value.base)) {
     Column(
       Modifier
         .fillMaxSize()
@@ -160,7 +160,7 @@ fun SettingsLayout(
         SettingsActionItem(painterResource(R.drawable.ic_wifi_tethering), stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_videocam), stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_lock), stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(R.drawable.ic_light_mode), stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_light_mode), stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it, showSettingsModal) }, extraPadding = true)
         DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionDividerSpaced()
@@ -199,7 +199,7 @@ fun SettingsIncognitoActionItem(
 ) {
   SettingsPreferenceItemWithInfo(
     if (incognito.value) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_theater_comedy),
-    if (incognito.value) Indigo else HighOrLowlight,
+    if (incognito.value) Indigo else MaterialTheme.colors.secondary,
     stringResource(R.string.incognito),
     stopped,
     onClickInfo,
@@ -237,7 +237,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
         Icon(
           painterResource(R.drawable.ic_database),
           contentDescription = stringResource(R.string.database_passphrase_and_export),
-          tint = if (encrypted) HighOrLowlight else WarningOrange,
+          tint = if (encrypted) MaterialTheme.colors.secondary else WarningOrange,
         )
         TextIconSpaced(true)
         Text(stringResource(R.string.database_passphrase_and_export))
@@ -282,10 +282,10 @@ fun ChatLockItem(
     click = showSettingsModal { SimplexLockView(chatModel, currentLAMode, setPerformLA) },
     icon = if (performLA.value) painterResource(R.drawable.ic_lock_filled) else painterResource(R.drawable.ic_lock),
     text = stringResource(R.string.chat_lock),
-    iconColor = if (performLA.value) SimplexGreen else HighOrLowlight,
+    iconColor = if (performLA.value) SimplexGreen else MaterialTheme.colors.secondary,
     extraPadding = false,
   ) {
-    Text(if (performLA.value) remember { currentLAMode.state }.value.text else generalGetString(androidx.compose.ui.R.string.off), color = HighOrLowlight)
+    Text(if (performLA.value) remember { currentLAMode.state }.value.text else generalGetString(androidx.compose.ui.R.string.off), color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -294,7 +294,7 @@ fun ChatLockItem(
     Icon(
       painterResource(R.drawable.ic_keyboard),
       contentDescription = "GitHub",
-      tint = HighOrLowlight,
+      tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced(extraPadding = true)
     Text(generalGetString(R.string.contribute), color = MaterialTheme.colors.primary)
@@ -310,7 +310,7 @@ fun ChatLockItem(
     Icon(
       painterResource(R.drawable.ic_star),
       contentDescription = "Google Play",
-      tint = HighOrLowlight,
+      tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced(extraPadding = true)
     Text(generalGetString(R.string.rate_the_app), color = MaterialTheme.colors.primary)
@@ -322,7 +322,7 @@ fun ChatLockItem(
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
       contentDescription = "GitHub",
-      tint = HighOrLowlight,
+      tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced(extraPadding = true)
     Text(generalGetString(R.string.star_on_github), color = MaterialTheme.colors.primary)
@@ -334,7 +334,7 @@ fun ChatLockItem(
     Icon(
       painter = painterResource(id = R.drawable.ic_outline_terminal),
       contentDescription = stringResource(R.string.chat_console),
-      tint = HighOrLowlight,
+      tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced()
     Text(stringResource(R.string.chat_console))
@@ -346,7 +346,7 @@ fun ChatLockItem(
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
       contentDescription = "GitHub",
-      tint = HighOrLowlight,
+      tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced()
     Text(generalGetString(R.string.install_simplex_chat_for_terminal), color = MaterialTheme.colors.primary)
@@ -361,15 +361,15 @@ fun ChatLockItem(
   Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
 }
 
-@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary, stopped: Boolean = false) {
-  ProfileImage(size = size, image = profileOf.image, color = color)
+@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, textColor: Color = MaterialTheme.colors.onBackground, stopped: Boolean = false) {
+  ProfileImage(size = size, image = profileOf.image, color = iconColor)
   Spacer(Modifier.padding(horizontal = 8.dp))
   Column(Modifier.height(size), verticalArrangement = Arrangement.Center) {
     Text(
       profileOf.displayName,
       style = MaterialTheme.typography.caption,
       fontWeight = FontWeight.Bold,
-      color = if (stopped) HighOrLowlight else Color.Unspecified,
+      color = if (stopped) MaterialTheme.colors.secondary else textColor,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
@@ -377,7 +377,7 @@ fun ChatLockItem(
       Text(
         profileOf.fullName,
         Modifier.padding(vertical = 5.dp),
-        color = if (stopped) HighOrLowlight else Color.Unspecified,
+        color = if (stopped) MaterialTheme.colors.secondary else textColor,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -386,16 +386,16 @@ fun ChatLockItem(
 }
 
 @Composable
-fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false) {
+fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false) {
   SectionItemView(click, disabled = disabled, extraPadding = extraPadding) {
-    Icon(icon, text, tint = if (disabled) HighOrLowlight else iconColor)
+    Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
     TextIconSpaced(extraPadding)
-    Text(text, color = if (disabled) HighOrLowlight else textColor)
+    Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
   }
 }
 
 @Composable
-fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = HighOrLowlight, disabled: Boolean = false, extraPadding: Boolean = false, content: @Composable RowScope.() -> Unit) {
+fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false, content: @Composable RowScope.() -> Unit) {
   SectionItemView(
     click,
     extraPadding = extraPadding,
@@ -406,11 +406,11 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
     disabled = disabled
   ) {
     if (icon != null) {
-      Icon(icon, text, Modifier, tint = if (disabled) HighOrLowlight else iconColor)
+      Icon(icon, text, Modifier, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
       TextIconSpaced(extraPadding)
     }
     if (text != null) {
-      Text(text, Modifier.weight(1f), color = if (disabled) HighOrLowlight else MaterialTheme.colors.onBackground)
+      Text(text, Modifier.weight(1f), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground)
       Spacer(Modifier.width(DEFAULT_PADDING))
     }
     content()
@@ -422,7 +422,7 @@ fun SettingsPreferenceItem(
   icon: Painter?,
   text: String,
   pref: SharedPreference<Boolean>,
-  iconColor: Color = HighOrLowlight,
+  iconColor: Color = MaterialTheme.colors.secondary,
   enabled: Boolean = true,
   onChange: ((Boolean) -> Unit)? = null,
 ) {
@@ -464,12 +464,12 @@ fun PreferenceToggle(
 fun PreferenceToggleWithIcon(
   text: String,
   icon: Painter? = null,
-  iconColor: Color? = HighOrLowlight,
+  iconColor: Color? = MaterialTheme.colors.secondary,
   checked: Boolean,
   extraPadding: Boolean = false,
   onChange: (Boolean) -> Unit = {},
 ) {
-  SettingsActionItemWithContent(icon, text, iconColor = iconColor ?: HighOrLowlight, extraPadding = extraPadding) {
+  SettingsActionItemWithContent(icon, text, iconColor = iconColor ?: MaterialTheme.colors.secondary, extraPadding = extraPadding) {
     DefaultSwitch(
       checked = checked,
       onCheckedChange = {

@@ -1544,7 +1544,9 @@ testUserPrivacy =
       showActiveUser alice "alisa"
       -- connect using second user
       connectUsers alice bob
+      threadDelay 1000000
       alice #> "@bob hello"
+      threadDelay 1000000
       bob <# "alisa> hello"
       bob #> "@alisa hey"
       alice <# "bob> hey"
@@ -1576,12 +1578,19 @@ testUserPrivacy =
       alice <## "alisa (active, hidden, muted)"
       -- hidden message is saved
       alice ##> "/tail"
+      alice <##? chatHistory
+      alice ##> "/_get items count=10"
+      alice <##? chatHistory
+      alice ##> "/_get items before=9 count=10"
       alice
         <##? [ "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Voice messages: enabled",
-               "bob> Audio/video calls: enabled",
-               "@bob hello",
+               "bob> Audio/video calls: enabled"
+             ]
+      alice ##> "/_get items after=8 count=10"
+      alice
+        <##? [ "@bob hello",
                "bob> hey",
                "bob> hello again",
                "bob> this won't show"
@@ -1634,6 +1643,16 @@ testUserPrivacy =
       alice <## (current <> "user alisa:")
       alice <## "messages are shown"
       alice <## "profile is visible"
+    chatHistory =
+      [ "bob> Disappearing messages: allowed",
+        "bob> Full deletion: off",
+        "bob> Voice messages: enabled",
+        "bob> Audio/video calls: enabled",
+        "@bob hello",
+        "bob> hey",
+        "bob> hello again",
+        "bob> this won't show"
+      ]
 
 testSetChatItemTTL :: HasCallStack => FilePath -> IO ()
 testSetChatItemTTL =

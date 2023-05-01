@@ -107,7 +107,7 @@ fun UserPicker(
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
         .shadow(8.dp, RoundedCornerShape(corner = CornerSize(25.dp)), clip = true)
-        .background(if (isInDarkTheme()) DarkGrayBackground else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
+        .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
         .clip(RoundedCornerShape(corner = CornerSize(25.dp)))
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
@@ -169,7 +169,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
     if (u.activeUser) {
         Icon(painterResource(R.drawable.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
-        Icon(painterResource(R.drawable.ic_lock), null, Modifier.size(20.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     } else if (unreadCount > 0) {
       Box(
         contentAlignment = Alignment.Center
@@ -179,13 +179,13 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
           color = Color.White,
           fontSize = 11.sp,
           modifier = Modifier
-            .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape)
+            .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
             .padding(2.dp)
             .badgeLayout()
         )
       }
     } else if (!u.showNtfs) {
-      Icon(painterResource(R.drawable.ic_notifications_off), null, Modifier.size(20.dp), tint = HighOrLowlight)
+      Icon(painterResource(R.drawable.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     }  else {
       Box(Modifier.size(20.dp))
     }

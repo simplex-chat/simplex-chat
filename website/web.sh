@@ -2,6 +2,9 @@
 
 set -e
 
+cp -R docs website/src
+rm -rf website/src/docs/rfcs
+rm website/src/docs/lang/*/README.md
 cp -R blog website/src
 cp -R images website/src
 rm website/src/blog/README.md
@@ -18,7 +21,9 @@ for file in langs/*.json; do
   fi
 done
 
+npm install
 node merge_translations.js
+node customize_docs_frontmatter.js
 
 # creating folders for each language for internationalization
 for lang in "${langs[@]}"; do
@@ -30,7 +35,6 @@ for lang in "${langs[@]}"; do
   echo "done $lang copying"
 done
 
-npm install
 npm run build
 
 for lang in "${langs[@]}"; do
