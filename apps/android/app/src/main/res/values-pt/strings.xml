@@ -306,4 +306,8 @@
     <string name="clear_chat_question">Limpar conversa\?</string>
     <string name="clear_verb">Limpar</string>
     <string name="clear_chat_menu_action">Limpar</string>
+    <string name="icon_descr_close_button">Botão fechar</string>
+    <string name="clear_verification">Limpar verificação</string>
+    <string name="v4_6_chinese_spanish_interface">Interface em chinês e espanhol</string>
+    <string name="notifications_mode_periodic_desc">Verifica novas mensagens a cada 10 minutos durante até 1 minuto</string>
 </resources>
