@@ -35,10 +35,14 @@ struct CreateSimpleXAddress: View {
                                 .frame(maxHeight: g.size.width)
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
+
                             Spacer()
+
                             shareViaEmailButton(userAddress)
                                 .frame(maxWidth: .infinity)
+
                             Spacer()
+
                             continueButton()
                                 .padding(.bottom, 8)
                                 .frame(maxWidth: .infinity)
