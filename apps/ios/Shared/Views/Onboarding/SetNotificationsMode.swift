@@ -17,7 +17,10 @@ struct SetNotificationsMode: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Push notifications").font(.largeTitle)
+                Text("Push notifications")
+                    .font(.largeTitle)
+                    .bold()
+                    .frame(maxWidth: .infinity)
 
                 Text("Send notifications:")
                 ForEach(NotificationsMode.values) { mode in

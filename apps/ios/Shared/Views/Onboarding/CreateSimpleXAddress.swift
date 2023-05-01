@@ -25,8 +25,7 @@ struct CreateSimpleXAddress: View {
             ScrollView {
                 ZStack {
                     ContactPicker(
-                        showPicker: $showContactPicker,
-                        predicateForEnablingContact: NSPredicate(format: "emailAddresses.@count > 0"),
+                        isPresented: $showContactPicker,
                         onSelectContacts: { cs in
                             selectedRecipients = Array(cs
                                 .compactMap { $0.emailAddresses.first }
@@ -37,7 +36,10 @@ struct CreateSimpleXAddress: View {
                     )
 
                     VStack(alignment: .leading) {
-                        Text("SimpleX Address").font(.largeTitle)
+                        Text("SimpleX Address")
+                            .font(.largeTitle)
+                            .bold()
+                            .frame(maxWidth: .infinity)
 
                         Spacer()
 
@@ -46,13 +48,10 @@ struct CreateSimpleXAddress: View {
                                 .frame(maxHeight: g.size.width)
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
-                            Divider()
-                                .padding(.vertical, 12)
+                            Spacer()
                             shareViaEmailButton(userAddress)
                                 .frame(maxWidth: .infinity)
-
                             Spacer()
-
                             continueButton()
                                 .padding(.bottom, 8)
                                 .frame(maxWidth: .infinity)
@@ -106,11 +105,10 @@ struct CreateSimpleXAddress: View {
                     }
                 }
             } label: {
-                Text("Create SimpleX address")
-                    .font(.title)
+                Text("Create SimpleX address").font(.title)
             }
             Group {
-                Text("Address will be shared with your future contacts. You can change it in Settings.")
+                Text("Your contacts in SimpleX will see it.\nYou can change it in Settings.")
             }
             .multilineTextAlignment(.center)
             .font(.footnote)
@@ -125,11 +123,12 @@ struct CreateSimpleXAddress: View {
                     m.onboardingStage = .step4_SetNotificationsMode
                 }
             } label: {
-                Text("Don't create address")
-                    .font(.title2)
+                HStack {
+                    Text("Skip creating address")
+                    Image(systemName: "chevron.right")
+                }
             }
-            Text("You can create it later.")
-                .font(.footnote)
+            Text("You can create it later").font(.footnote)
         }
     }
 
@@ -146,11 +145,7 @@ struct CreateSimpleXAddress: View {
             showContactPicker = true
         } label: {
             VStack {
-                Image(systemName: "envelope")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 30, height: 30)
-                Text("Send to 3 friends")
+                Label("Invite friends", systemImage: "envelope")
                     .font(.title2)
             }
         }
@@ -159,14 +154,14 @@ struct CreateSimpleXAddress: View {
         }
         .sheet(isPresented: $showMailView) {
             let messageBody = """
-                <p>Hello! Let's talk in SimpleX Chat:</p>
-                <a href="\(userAdress.connReqContact)">Connect via SimpleX address</a>
+                <p>Hi!</p>
+                <p><a href="\(userAdress.connReqContact)">Connect to me via SimpleX Chat</a></p>
                 """
             MailView(
                 isShowing: self.$showMailView,
                 result: $mailViewResult,
                 recipients: selectedRecipients ?? [],
-                subject: "Invitation to SimpleX Chat",
+                subject: "Let's talk in SimpleX Chat",
                 messageBody: messageBody
             )
         }

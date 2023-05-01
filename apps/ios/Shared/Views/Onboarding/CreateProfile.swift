@@ -34,7 +34,9 @@ struct CreateProfile: View {
         VStack(alignment: .leading) {
             Text("Create your profile")
                 .font(.largeTitle)
+                .bold()
                 .padding(.bottom, 4)
+                .frame(maxWidth: .infinity)
             Text("Your profile, contacts and delivered messages are stored on your device.")
                 .padding(.bottom, 4)
             Text("The profile is only shared with your contacts.")
