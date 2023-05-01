@@ -8,7 +8,6 @@ import SectionView
 import TextIconSpaced
 import android.content.Context
 import android.content.res.Configuration
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -362,15 +361,15 @@ fun ChatLockItem(
   Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
 }
 
-@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondaryVariant, stopped: Boolean = false) {
-  ProfileImage(size = size, image = profileOf.image, color = color)
+@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, textColor: Color = MaterialTheme.colors.onBackground, stopped: Boolean = false) {
+  ProfileImage(size = size, image = profileOf.image, color = iconColor)
   Spacer(Modifier.padding(horizontal = 8.dp))
   Column(Modifier.height(size), verticalArrangement = Arrangement.Center) {
     Text(
       profileOf.displayName,
       style = MaterialTheme.typography.caption,
       fontWeight = FontWeight.Bold,
-      color = if (stopped) MaterialTheme.colors.secondary else Color.Unspecified,
+      color = if (stopped) MaterialTheme.colors.secondary else textColor,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
@@ -378,7 +377,7 @@ fun ChatLockItem(
       Text(
         profileOf.fullName,
         Modifier.padding(vertical = 5.dp),
-        color = if (stopped) MaterialTheme.colors.secondary else Color.Unspecified,
+        color = if (stopped) MaterialTheme.colors.secondary else textColor,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
