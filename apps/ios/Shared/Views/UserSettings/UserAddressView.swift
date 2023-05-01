@@ -268,6 +268,7 @@ struct UserAddressView: View {
                 mailViewResult: $mailViewResult,
                 userAddress: userAddress
             )
+            .edgesIgnoringSafeArea(.bottom)
         }
         .onChange(of: mailViewResult == nil) { _ in
             if let r = mailViewResult {

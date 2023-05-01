@@ -140,6 +140,7 @@ struct CreateSimpleXAddress: View {
                 mailViewResult: $mailViewResult,
                 userAddress: userAddress
             )
+            .edgesIgnoringSafeArea(.bottom)
         }
         .onChange(of: mailViewResult == nil) { _ in
             if let r = mailViewResult {
@@ -193,7 +194,6 @@ struct SendAddressMailView: View {
             subject: "Let's talk in SimpleX Chat",
             messageBody: messageBody
         )
-        .edgesIgnoringSafeArea(.bottom)
     }
 }
 
