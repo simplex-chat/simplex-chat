@@ -236,22 +236,24 @@ fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
     }
     SectionSpacer()
     SectionView {
-      val context = LocalContext.current
-      val theme = remember { mutableStateOf(null as String?) }
-      val exportThemeLauncher = rememberSaveThemeLauncher(context, theme)
-      SectionItemView({
-        val themeData = ThemeManager.currentThemeData(isInDarkTheme)
-        theme.value = yaml.encodeToString<ThemeData>(themeData)
-        exportThemeLauncher.launch("simplex.theme")
-      }) {
-        Text(generalGetString(R.string.export_theme), color = colors.primary)
+      if (currentTheme.base.hasChangedAnyColor(currentTheme.colors, currentTheme.appColors)) {
+        val context = LocalContext.current
+        val theme = remember { mutableStateOf(null as String?) }
+        val exportThemeLauncher = rememberSaveThemeLauncher(context, theme)
+        SectionItemView({
+          val overrides = ThemeManager.currentThemeOverrides(isInDarkTheme)
+          theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
+          exportThemeLauncher.launch("simplex.theme")
+        }) {
+          Text(generalGetString(R.string.export_theme), color = colors.primary)
+        }
       }
 
       val importThemeLauncher = rememberGetContentLauncher { uri: Uri? ->
         if (uri != null) {
           val theme = getThemeFromUri(uri)
           if (theme != null) {
-            ThemeManager.saveAndApplyThemeData(currentTheme.name, theme, isInDarkTheme)
+            ThemeManager.saveAndApplyThemeOverrides(theme, isInDarkTheme)
           }
         }
       }
