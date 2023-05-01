@@ -9,13 +9,16 @@
 import SwiftUI
 import Contacts
 import ContactsUI
+import MessageUI
 import SimpleXChat
 
 struct CreateSimpleXAddress: View {
     @EnvironmentObject var m: ChatModel
     @State private var progressIndicator = false
     @State private var showContactPicker = false
-    @State private var selectedContacts: [CNContact]?
+    @State private var selectedRecipients: [String]?
+    @State private var showMailView = false
+    @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
 
     var body: some View {
         GeometryReader { g in
@@ -25,7 +28,11 @@ struct CreateSimpleXAddress: View {
                         showPicker: $showContactPicker,
                         predicateForEnablingContact: NSPredicate(format: "emailAddresses.@count > 0"),
                         onSelectContacts: { cs in
-                            selectedContacts = cs
+                            selectedRecipients = Array(cs
+                                .compactMap { $0.emailAddresses.first }
+                                .prefix(3)
+                                .map { String($0.value) }
+                            )
                         }
                     )
 
@@ -147,23 +154,33 @@ struct CreateSimpleXAddress: View {
                     .font(.title2)
             }
         }
-        .onChange(of: selectedContacts) { cs in
-            if let cs = cs {
-                let emails = Array(cs
-                    .compactMap { $0.emailAddresses.first }
-                    .prefix(3)
-                    .map { String($0.value) }
-                ).joined(separator: ",")
-                let allowedCharacterSet = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&"))
-                let addressStr = userAdress.connReqContact.addingPercentEncoding(withAllowedCharacters: allowedCharacterSet) ?? ""
-                let mailTo = "mailto:\(emails)?subject=Invitation to SimpleX Chat&body=Hello! Let's talk in SimpleX Chat:\n\n\(addressStr)"
-                    .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-                if let mailTo = mailTo,
-                   let mailToUrl = URL(string: mailTo),
-                   UIApplication.shared.canOpenURL(mailToUrl) {
-                    UIApplication.shared.open(mailToUrl, options: [:], completionHandler: { _ in
-                        m.onboardingStage = .step4_SetNotificationsMode
-                    })
+        .onChange(of: selectedRecipients) { _ in
+            showMailView = true
+        }
+        .sheet(isPresented: $showMailView) {
+            let messageBody = """
+                <p>Hello! Let's talk in SimpleX Chat:</p>
+                <a href="\(userAdress.connReqContact)">Connect via SimpleX address</a>
+                """
+            MailView(
+                isShowing: self.$showMailView,
+                result: $mailViewResult,
+                recipients: selectedRecipients ?? [],
+                subject: "Invitation to SimpleX Chat",
+                messageBody: messageBody
+            )
+        }
+        .onChange(of: mailViewResult == nil) { _ in
+            if let r = mailViewResult {
+                switch r {
+                case .success:
+                    m.onboardingStage = .step4_SetNotificationsMode
+                case let .failure(error):
+                    let a = getErrorAlert(error, "Error sending email")
+                    AlertManager.shared.showAlertMsg(
+                        title: a.title,
+                        message: a.message
+                    )
                 }
             }
         }
