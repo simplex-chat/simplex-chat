@@ -97,8 +97,9 @@ fun IncomingCallActivityView(m: ChatModel) {
   SimpleXTheme {
     Surface(
       Modifier
-        .themedBackground()
-        .fillMaxSize()) {
+        .fillMaxSize(),
+      color = MaterialTheme.colors.background
+    ) {
       if (showCallView) {
         Box {
           ActiveCallView(m)
@@ -226,8 +227,9 @@ fun PreviewIncomingCallLockScreenAlert() {
   SimpleXTheme(true) {
     Surface(
       Modifier
-        .themedBackground()
-        .fillMaxSize()) {
+        .fillMaxSize(),
+      color = MaterialTheme.colors.background
+    ) {
       IncomingCallLockScreenAlertLayout(
         invitation = RcvCallInvitation(
           user = User.sampleData,

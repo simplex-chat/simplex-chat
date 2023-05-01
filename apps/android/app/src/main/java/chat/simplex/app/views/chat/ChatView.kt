@@ -326,7 +326,6 @@ fun ChatLayout(
   Box(
     Modifier
       .fillMaxWidth()
-      .themedBackground()
   ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       ModalBottomSheetLayout(

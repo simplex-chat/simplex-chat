@@ -35,7 +35,6 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       Column(
         modifier = Modifier
           .fillMaxSize()
-          .themedBackground()
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ShareList(chatModel, search = searchInList)

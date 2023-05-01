@@ -50,13 +50,13 @@ fun IncomingCallAlertLayout(
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit
 ) {
-  val color = if (isInDarkTheme()) IncomingCallDark else IncomingCallLight
+  val color = if (isInDarkTheme()) MaterialTheme.colors.surface else IncomingCallLight
   Column(Modifier.fillMaxWidth().background(color).padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING, start = DEFAULT_PADDING, end = 8.dp)) {
     IncomingCallInfo(invitation, chatModel)
     Spacer(Modifier.height(8.dp))
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
       Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
-        ProfilePreview(profileOf = invitation.contact, size = 64.dp, color = Color.White)
+        ProfilePreview(profileOf = invitation.contact, size = 64.dp)
       }
       Row(verticalAlignment = Alignment.CenterVertically) {
         CallButton(stringResource(R.string.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
@@ -78,7 +78,7 @@ fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
     if (invitation.callType.media == CallMediaType.Video) CallIcon(painterResource(R.drawable.ic_videocam_filled), stringResource(R.string.icon_descr_video_call))
     else CallIcon(painterResource(R.drawable.ic_call_filled), stringResource(R.string.icon_descr_audio_call))
     Spacer(Modifier.width(4.dp))
-    Text(invitation.callTypeText)
+    Text(invitation.callTypeText, color = MaterialTheme.colors.onBackground)
   }
 }
 

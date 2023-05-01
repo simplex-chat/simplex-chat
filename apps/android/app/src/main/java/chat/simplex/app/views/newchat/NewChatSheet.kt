@@ -173,7 +173,7 @@ fun ActionButton(
   disabled: Boolean = false,
   click: () -> Unit = {}
 ) {
-  Surface(shape = RoundedCornerShape(18.dp)) {
+  Surface(shape = RoundedCornerShape(18.dp), color = Color.Transparent) {
     Column(
       Modifier
         .clickable(onClick = click)

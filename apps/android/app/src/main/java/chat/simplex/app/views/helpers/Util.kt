@@ -37,7 +37,6 @@ import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.ThemeData
 import chat.simplex.app.ui.theme.ThemeOverrides
 import com.charleskorn.kaml.decodeFromStream
 import kotlinx.coroutines.*
@@ -391,10 +390,10 @@ fun getDrawableFromUri(uri: Uri, withAlertOnException: Boolean = true): Drawable
   }
 }
 
-fun getThemeFromUri(uri: Uri, withAlertOnException: Boolean = true): ThemeData? {
+fun getThemeFromUri(uri: Uri, withAlertOnException: Boolean = true): ThemeOverrides? {
   SimplexApp.context.contentResolver.openInputStream(uri).use {
     runCatching {
-      return yaml.decodeFromStream<ThemeData>(it!!)
+      return yaml.decodeFromStream<ThemeOverrides>(it!!)
     }.onFailure {
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
