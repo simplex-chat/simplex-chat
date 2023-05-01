@@ -62,7 +62,8 @@ class AlertManager {
             title,
             Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING),
             textAlign = TextAlign.Center,
-            fontSize = 20.sp
+            fontSize = 20.sp,
+            color = MaterialTheme.colors.onBackground
           )
           CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
             if (text != null) {

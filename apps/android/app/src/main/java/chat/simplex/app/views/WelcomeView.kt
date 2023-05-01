@@ -44,77 +44,75 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
   val fullName = rememberSaveable { mutableStateOf("") }
   val focusRequester = remember { FocusRequester() }
 
-  Surface(Modifier.background(MaterialTheme.colors.onBackground)) {
-    Column(
-      modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-    ) {
-      /*CloseSheetBar(close = {
-        if (chatModel.users.isEmpty()) {
-          chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
-        } else {
-          close()
-        }
-      })*/
-      Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
-        AppBarTitle(stringResource(R.string.create_profile))
-        ReadableText(R.string.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues())
-        ReadableText(R.string.profile_is_only_shared_with_your_contacts, TextAlign.Center)
-        Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
-        Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-          Text(
-            stringResource(R.string.display_name),
-            fontSize = 16.sp
-          )
-          if (!isValidDisplayName(displayName.value)) {
-            Text(
-              stringResource(R.string.no_spaces),
-              fontSize = 16.sp,
-              color = Color.Red
-            )
-          }
-        }
-        ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
-        Spacer(Modifier.height(DEFAULT_PADDING))
+  Column(
+    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+  ) {
+    /*CloseSheetBar(close = {
+      if (chatModel.users.isEmpty()) {
+        chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
+      } else {
+        close()
+      }
+    })*/
+    Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
+      AppBarTitle(stringResource(R.string.create_profile))
+      ReadableText(R.string.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues())
+      ReadableText(R.string.profile_is_only_shared_with_your_contacts, TextAlign.Center)
+      Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
+      Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(
-          stringResource(R.string.full_name_optional__prompt),
-          fontSize = 16.sp,
-          modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+          stringResource(R.string.display_name),
+          fontSize = 16.sp
         )
-        ProfileNameField(fullName, "", ::isValidDisplayName)
-      }
-      Spacer(Modifier.fillMaxHeight().weight(1f))
-      Row {
-        if (chatModel.users.isEmpty()) {
-          SimpleButtonDecorated(
-            text = stringResource(R.string.about_simplex),
-            icon = painterResource(R.drawable.ic_arrow_back_ios_new),
-            textDecoration = TextDecoration.None,
-            fontWeight = FontWeight.Medium
-          ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
-        }
-        Spacer(Modifier.fillMaxWidth().weight(1f))
-        val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-        val createModifier: Modifier
-        val createColor: Color
-        if (enabled) {
-          createModifier = Modifier.clickable { createProfile(chatModel, displayName.value, fullName.value, close) }.padding(8.dp)
-          createColor = MaterialTheme.colors.primary
-        } else {
-          createModifier = Modifier.padding(8.dp)
-          createColor = MaterialTheme.colors.secondary
-        }
-        Surface(shape = RoundedCornerShape(20.dp)) {
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
-            Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
-            Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = createColor)
-          }
+        if (!isValidDisplayName(displayName.value)) {
+          Text(
+            stringResource(R.string.no_spaces),
+            fontSize = 16.sp,
+            color = Color.Red
+          )
         }
       }
+      ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
+      Spacer(Modifier.height(DEFAULT_PADDING))
+      Text(
+        stringResource(R.string.full_name_optional__prompt),
+        fontSize = 16.sp,
+        modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+      )
+      ProfileNameField(fullName, "", ::isValidDisplayName)
+    }
+    Spacer(Modifier.fillMaxHeight().weight(1f))
+    Row {
+      if (chatModel.users.isEmpty()) {
+        SimpleButtonDecorated(
+          text = stringResource(R.string.about_simplex),
+          icon = painterResource(R.drawable.ic_arrow_back_ios_new),
+          textDecoration = TextDecoration.None,
+          fontWeight = FontWeight.Medium
+        ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
+      }
+      Spacer(Modifier.fillMaxWidth().weight(1f))
+      val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+      val createModifier: Modifier
+      val createColor: Color
+      if (enabled) {
+        createModifier = Modifier.clickable { createProfile(chatModel, displayName.value, fullName.value, close) }.padding(8.dp)
+        createColor = MaterialTheme.colors.primary
+      } else {
+        createModifier = Modifier.padding(8.dp)
+        createColor = MaterialTheme.colors.secondary
+      }
+      Surface(shape = RoundedCornerShape(20.dp), color = colors.background) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
+          Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
+          Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = createColor)
+        }
+      }
+    }
 
-      LaunchedEffect(Unit) {
-        delay(300)
-        focusRequester.requestFocus()
-      }
+    LaunchedEffect(Unit) {
+      delay(300)
+      focusRequester.requestFocus()
     }
   }
 }
