@@ -522,7 +522,6 @@
     <string name="connect_button">連接</string>
     <string name="network_and_servers">網路 &amp; 伺服器</string>
     <string name="network_settings_title">網路設定</string>
-    <string name="network_socks_toggle">使用 SOCKS 代理伺服器 （端口 9050)</string>
     <string name="network_enable_socks">使用 SOCKS 代理伺服器</string>
     <string name="save_and_notify_group_members">儲存並通知群組內的聯絡人</string>
     <string name="exit_without_saving">退出並且不儲存記錄</string>

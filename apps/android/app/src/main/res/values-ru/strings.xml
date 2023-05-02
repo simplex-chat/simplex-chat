@@ -394,9 +394,8 @@
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
     <string name="network_settings_title">Настройки сети</string>
-    <string name="network_socks_toggle">Использовать SOCKS прокси (порт 9050)</string>
     <string name="network_enable_socks">Использовать SOCKS прокси?</string>
-    <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт 9050? Прокси должен быть запущен до включения этой опции.</string>
+    <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
     <string name="network_disable_socks_info">Если Вы подтвердите, серверы смогут видеть Ваш IP адрес, а провайдер - с какими серверами Вы соединяетесь.</string>
     <string name="update_onion_hosts_settings_question">Обновить настройки .onion хостов?</string>

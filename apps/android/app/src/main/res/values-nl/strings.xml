@@ -16,7 +16,7 @@
     <string name="icon_descr_asked_to_receive">Gevraagd om de afbeelding te ontvangen</string>
     <string name="change_verb">Wijziging</string>
     <string name="network_settings">Geavanceerde netwerk instellingen</string>
-    <string name="network_enable_socks_info">Toegang tot de servers via SOCKS proxy op poort 9050\? De proxy moet worden gestart voordat u deze optie inschakelt.</string>
+    <string name="network_enable_socks_info">Toegang tot de servers via SOCKS proxy op poort %d\? De proxy moet worden gestart voordat u deze optie inschakelt.</string>
     <string name="alert_title_cant_invite_contacts">Kan geen contacten uitnodigen!</string>
     <string name="allow_direct_messages">Sta het verzenden van directe berichten naar leden toe.</string>
     <string name="allow_to_delete_messages">Sta toe om verzonden berichten onomkeerbaar te verwijderen.</string>
@@ -720,7 +720,6 @@
     <string name="smp_servers_your_server_address">Uw server adres</string>
     <string name="smp_servers_your_server">Uw server</string>
     <string name="network_session_mode_transport_isolation">Transport isolation</string>
-    <string name="network_socks_toggle">SOCKS-proxy gebruiken (poort 9050)</string>
     <string name="save_preferences_question">Voorkeuren opslaan\?</string>
     <string name="save_and_notify_contact">Opslaan en Contact melden</string>
     <string name="your_current_profile">Je huidige profiel</string>

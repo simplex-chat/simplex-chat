@@ -140,7 +140,7 @@
     <string name="accept_call_on_lock_screen">응답</string>
     <string name="accept_connection_request__question">연결 요청을 수락할까요\?</string>
     <string name="accept_feature">수락</string>
-    <string name="network_enable_socks_info">SOCKS 프록시(포트 9050)를 통해 서버에 액세스할까요\? 이 설정을 활성화하기 전에 프록시를 시작해야 해요.</string>
+    <string name="network_enable_socks_info">SOCKS 프록시(포트 %d)를 통해 서버에 액세스할까요\? 이 설정을 활성화하기 전에 프록시를 시작해야 해요.</string>
     <string name="smp_servers_add_to_another_device">다른 기기에 추가</string>
     <string name="v4_3_improved_server_configuration_desc">QR 코드 스캔으로 서버 추가</string>
     <string name="button_add_welcome_message">환영 메시지 추가</string>
@@ -667,7 +667,6 @@
     <string name="mark_unread">읽지 않음으로 표시</string>
     <string name="mute_chat">음소거</string>
     <string name="markdown_in_messages">메시지에 사용된 마크다운</string>
-    <string name="network_socks_toggle">SOCKS 프록시 사용 (포트 9050)</string>
     <string name="network_disable_socks">직접적인 인터넷 연결을 사용할까요\?</string>
     <string name="network_enable_socks">SOCKS 프록시를 사용할까요\?</string>
     <string name="network_disable_socks_info">설정하면 메시징 서버에서 내 IP 주소와 내가 연결하려는 서버를 볼 수 있어요.</string>

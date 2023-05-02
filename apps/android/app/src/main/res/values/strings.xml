@@ -548,14 +548,13 @@
   <string name="network_and_servers">Network &amp; servers</string>
   <string name="network_settings">Advanced network settings</string>
   <string name="network_settings_title">Network settings</string>
-  <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
   <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
   <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
   <string name="network_proxy_port">port %d</string>
   <string name="host_verb">Host</string>
   <string name="port_verb">Port</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
-  <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
+  <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port %d? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
   <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
   <string name="update_onion_hosts_settings_question">Update .onion hosts setting?</string>
