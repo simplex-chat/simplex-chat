@@ -854,6 +854,7 @@ private fun TopEndFloatingButton(
     FloatingActionButton(
       {}, // no action here
       modifier.size(48.dp),
+      backgroundColor = MaterialTheme.colors.secondaryVariant,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
       interactionSource = interactionSource,
     ) {
@@ -880,7 +881,8 @@ private fun bottomEndFloatingButton(
       FloatingActionButton(
         onClick = onClickCounter,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.size(48.dp)
+        modifier = Modifier.size(48.dp),
+        backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         Text(
           unreadCountStr(unreadCount),
@@ -895,7 +897,8 @@ private fun bottomEndFloatingButton(
       FloatingActionButton(
         onClick = onClickArrowDown,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.size(48.dp)
+        modifier = Modifier.size(48.dp),
+        backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         Icon(
           painter = painterResource(R.drawable.ic_keyboard_arrow_down),
