@@ -1,2 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="color_primary">צבע הדגשה</string>
+    <string name="accept_contact_button">אשר</string>
+    <string name="accept_connection_request__question">האם לאשר את בקשת החיבור\?</string>
+    <string name="about_simplex_chat">אודות <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="accept_requests">אשר בקשות</string>
+    <string name="about_simplex">אודות SimpleX</string>
+    <string name="accept_call_on_lock_screen">ענה</string>
+    <string name="chat_item_ttl_week">שבוע 1</string>
+    <string name="accept_feature">קבל</string>
+    <string name="chat_item_ttl_day">יום 1</string>
+    <string name="chat_item_ttl_month">חודש 1</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="above_then_preposition_continuation">למעלה, אז:</string>
+    <string name="accept">אשר</string>
+    <string name="callstatus_accepted">שיחה שהתקבלה</string>
+</resources>
