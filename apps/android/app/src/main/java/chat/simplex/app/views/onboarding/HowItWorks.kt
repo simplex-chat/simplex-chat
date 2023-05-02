@@ -73,9 +73,7 @@ fun ReadableTextWithLink(@StringRes stringResId: Int, link: String, textAlign: T
     newStyles
   }
   val uriHandler = LocalUriHandler.current
-  Box(Modifier.clickable { uriHandler.openUriCatching(link) }) {
-    Text(AnnotatedString(annotated.text, newStyles), modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp)
-  }
+  Text(AnnotatedString(annotated.text, newStyles), modifier = Modifier.padding(padding).clickable { uriHandler.openUriCatching(link) }, textAlign = textAlign, lineHeight = 22.sp)
 }
 
 @Composable
