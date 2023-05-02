@@ -52,7 +52,7 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
   describe "group message errors" $ do
-    it "show message decryption error and update count" testGroupMsgDecryptError
+    xit "show message decryption error and update count" testGroupMsgDecryptError
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup

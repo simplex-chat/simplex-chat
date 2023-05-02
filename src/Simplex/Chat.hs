@@ -2882,17 +2882,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- TODO add debugging output
       _ -> pure ()
 
+    -- TODO revert to commented function to enable creation of decryption errors chat items
     agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
-    agentMsgDecryptError = \case
-      AGENT (A_CRYPTO RATCHET_HEADER) -> Just (MDERatchetHeader, 1)
-      AGENT (A_CRYPTO (RATCHET_SKIPPED n)) -> Just (MDETooManySkipped, n)
-      -- we are not treating this as decryption error, as in many cases it happens as the result of duplicate or redundant delivery,
-      -- and we don't have a way to differentiate.
-      -- we could store the hashes of past messages in the agent, or delaying message deletion after ACK
-      -- A_DUPLICATE -> Nothing
-      -- earlier messages may be received in case of redundant delivery, and do not necessarily indicate an error
-      -- AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Nothing
-      _ -> Nothing
+    agentMsgDecryptError _ = Nothing
+
+    -- agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
+    -- agentMsgDecryptError = \case
+    --   AGENT (A_CRYPTO RATCHET_HEADER) -> Just (MDERatchetHeader, 1)
+    --   AGENT (A_CRYPTO (RATCHET_SKIPPED n)) -> Just (MDETooManySkipped, n)
+    --   -- we are not treating this as decryption error, as in many cases it happens as the result of duplicate or redundant delivery,
+    --   -- and we don't have a way to differentiate.
+    --   -- we could store the hashes of past messages in the agent, or delaying message deletion after ACK
+    --   -- A_DUPLICATE -> Nothing
+    --   -- earlier messages may be received in case of redundant delivery, and do not necessarily indicate an error
+    --   -- AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Nothing
+    --   _ -> Nothing
 
     mdeUpdatedCI :: (MsgDecryptError, Word32) -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
     mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
