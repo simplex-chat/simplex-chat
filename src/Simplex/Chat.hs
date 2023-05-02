@@ -2882,17 +2882,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- TODO add debugging output
       _ -> pure ()
 
+    -- TODO revert to commented function to enable creation of decryption errors chat items
     agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
-    agentMsgDecryptError = \case
-      AGENT (A_CRYPTO RATCHET_HEADER) -> Just (MDERatchetHeader, 1)
-      AGENT (A_CRYPTO (RATCHET_SKIPPED n)) -> Just (MDETooManySkipped, n)
-      -- we are not treating this as decryption error, as in many cases it happens as the result of duplicate or redundant delivery,
-      -- and we don't have a way to differentiate.
-      -- we could store the hashes of past messages in the agent, or delaying message deletion after ACK
-      -- A_DUPLICATE -> Nothing
-      -- earlier messages may be received in case of redundant delivery, and do not necessarily indicate an error
-      -- AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Nothing
-      _ -> Nothing
+    agentMsgDecryptError _ = Nothing
+
+    -- agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
+    -- agentMsgDecryptError = \case
+    --   AGENT (A_CRYPTO RATCHET_HEADER) -> Just (MDERatchetHeader, 1)
+    --   AGENT (A_CRYPTO (RATCHET_SKIPPED n)) -> Just (MDETooManySkipped, n)
+    --   -- we are not treating this as decryption error, as in many cases it happens as the result of duplicate or redundant delivery,
+    --   -- and we don't have a way to differentiate.
+    --   -- we could store the hashes of past messages in the agent, or delaying message deletion after ACK
+    --   -- A_DUPLICATE -> Nothing
+    --   -- earlier messages may be received in case of redundant delivery, and do not necessarily indicate an error
+    --   -- AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Nothing
+    --   _ -> Nothing
 
     mdeUpdatedCI :: (MsgDecryptError, Word32) -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
     mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
@@ -3591,10 +3595,18 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         sameGroupLinkId (Just gli) (Just gli') = gli == gli'
         sameGroupLinkId _ _ = False
 
+    -- TODO revert to commented function
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
       MsgOk -> pure ()
-      MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
+      MsgError e -> case e of
+        MsgSkipped {} -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
+        _ -> toView $ CRMsgIntegrityError user e
+
+    -- checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
+    -- checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
+    --   MsgOk -> pure ()
+    --   MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
