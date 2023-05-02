@@ -225,5 +225,11 @@
     "menu": "菜单",
     "guide-dropdown-1": "快速指南",
     "docs-dropdown-1": "SimpleX 平台",
-    "docs-dropdown-5": "托管 XFTP 服务器"
+    "docs-dropdown-5": "托管 XFTP 服务器",
+    "newer-version-of-eng-msg": "本页面的英文版本有更新。",
+    "guide-dropdown-4": "聊天资料",
+    "guide-dropdown-6": "语音和视频通话",
+    "guide-dropdown-9": "建立连接",
+    "back-to-top": "回到顶部",
+    "on-this-page": "在此页面上"
 }
