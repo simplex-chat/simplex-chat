@@ -3595,18 +3595,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         sameGroupLinkId (Just gli) (Just gli') = gli == gli'
         sameGroupLinkId _ _ = False
 
-    -- TODO revert to commented function
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
       MsgOk -> pure ()
-      MsgError e -> case e of
-        MsgSkipped {} -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
-        _ -> toView $ CRMsgIntegrityError user e
-
-    -- checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
-    -- checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
-    --   MsgOk -> pure ()
-    --   MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
+      MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
