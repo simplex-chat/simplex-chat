@@ -369,4 +369,8 @@
     <string name="create_group_link">Criar link de grupo</string>
     <string name="v4_2_group_links">Links de grupo</string>
     <string name="callstatus_connecting">conectando chamada…</string>
+    <string name="connect_via_link">Conectar via link</string>
+    <string name="connection_error">Erro de conexão</string>
+    <string name="connection_local_display_name">conexão <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="contact_already_exists">O contato já existe</string>
 </resources>
