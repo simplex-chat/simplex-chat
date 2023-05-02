@@ -1057,7 +1057,7 @@ func startChat(refreshInvitations: Bool = true) throws {
         }
         withAnimation {
             m.onboardingStage = m.onboardingStage == .step2_CreateProfile && m.users.count == 1
-                                ? .step3_SetNotificationsMode
+                                ? .step3_CreateSimpleXAddress
                                 : .onboardingComplete
         }
     }
