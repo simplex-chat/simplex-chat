@@ -5,8 +5,11 @@ import InfoRowEllipsis
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
+import SectionItemViewWithIcon
 import SectionSpacer
+import SectionTextFooter
 import SectionView
+import TextIconSpaced
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -18,8 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ClipboardManager
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -34,6 +36,7 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.QRCode
 import chat.simplex.app.views.usersettings.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -195,6 +198,15 @@ fun ChatInfoLayout(
     }
 
     SectionDividerSpaced()
+    if (contact.contactLink != null) {
+      val context = LocalContext.current
+      SectionView(stringResource(R.string.address_section_title).uppercase()) {
+        QRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        ShareAddressButton { shareText(context, contact.contactLink) }
+        SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(contact.displayName))
+      }
+      SectionDividerSpaced()
+    }
 
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
       SwitchAddressButton(switchContactAddress)
@@ -413,6 +425,17 @@ private fun DeleteContactButton(onClick: () -> Unit) {
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+  )
+}
+
+@Composable
+fun ShareAddressButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(R.drawable.ic_share_filled),
+    stringResource(R.string.share_address),
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
   )
 }
 

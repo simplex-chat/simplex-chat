@@ -175,6 +175,8 @@ fun GroupChatInfoLayout(
     SectionView {
       if (groupInfo.canEdit) {
         EditGroupProfileButton(editGroupProfile)
+      }
+      if (groupInfo.groupProfile.description != null || groupInfo.canEdit) {
         AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
       }
       GroupPreferencesButton(openPreferences)

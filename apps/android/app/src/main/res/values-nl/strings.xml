@@ -75,7 +75,6 @@
     <string name="about_simplex">Over SimpleX</string>
     <string name="about_simplex_chat">Over <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="above_then_preposition_continuation">hier boven, dan:</string>
-    <string name="accept_requests">Verzoeken accepteren</string>
     <string name="users_delete_all_chats_deleted">Alle gesprekken en berichten worden verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="clear_chat_warning">Alle berichten worden verwijderd, dit kan niet ongedaan worden gemaakt! De berichten worden ALLEEN voor jou verwijderd.</string>
     <string name="allow_disappearing_messages_only_if">Sta verdwijnende berichten alleen toe als uw contactpersoon dit toestaat.</string>
@@ -96,7 +95,6 @@
     <string name="app_version_name">App versie: v%s</string>
     <string name="network_session_mode_user_description">Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chat profiel dat je in de app hebt </b>.</string>
     <string name="audio_call_no_encryption">audio oproep (niet e2e versleuteld)</string>
-    <string name="accept_automatically">Automatisch</string>
     <string name="notifications_mode_service_desc">Achtergrondservice is altijd actief, meldingen worden weergegeven zodra de berichten beschikbaar zijn.</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Nieuw contact toevoegen</b>: om uw eenmalige QR-code voor uw contact te maken.</string>
     <string name="icon_descr_call_ended">Oproep beëindigd</string>
@@ -210,7 +208,6 @@
     <string name="create_one_time_link">Maak een eenmalige uitnodiging link</string>
     <string name="colored">gekleurd</string>
     <string name="callstatus_connecting">Oproep verbinden…</string>
-    <string name="contact_requests">Contact verzoeken</string>
     <string name="create_profile_button">Maak</string>
     <string name="create_profile">Maak een profiel aan</string>
     <string name="delete_address">Adres verwijderen</string>
@@ -625,10 +622,8 @@
     <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g>-Team</string>
     <string name="this_QR_code_is_not_a_link">Deze QR-code is geen link!</string>
     <string name="this_link_is_not_a_valid_connection_link">Deze link is geen geldige link!</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Uw contactpersoon kan de QR-code vanuit de app scannen.</string>
     <string name="share_invitation_link">Uitnodiging link delen</string>
     <string name="scan_code">Code scannen</string>
-    <string name="your_contact_address">Uw contact adres</string>
     <string name="your_settings">Uw instellingen</string>
     <string name="share_link">Deel link</string>
     <string name="you_control_your_chat">Jij beheert je gesprek!</string>
@@ -728,7 +723,6 @@
     <string name="network_socks_toggle">SOCKS-proxy gebruiken (poort 9050)</string>
     <string name="save_preferences_question">Voorkeuren opslaan\?</string>
     <string name="save_and_notify_contact">Opslaan en Contact melden</string>
-    <string name="section_title_welcome_message">WELKOMST BERICHT</string>
     <string name="your_current_profile">Je huidige profiel</string>
     <string name="save_and_notify_contacts">Opslaan en Contacten melden</string>
     <string name="save_and_notify_group_members">Opslaan en Groepsleden melden</string>
@@ -927,7 +921,6 @@
     <string name="use_simplex_chat_servers__question"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers gebruiken\?</string>
     <string name="voice_messages_are_prohibited">Spraak berichten zijn verboden in deze groep.</string>
     <string name="personal_welcome">Welkom <xliff:g>%1$s</xliff:g>!</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">U kunt uw adres delen als een link of als een QR-code. Iedereen kan verbinding met u maken. U verliest uw contacten niet als u deze later verwijdert.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">U kunt de chat starten via app Instellingen / Database of door de app opnieuw op te starten.</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">je hebt het adres gewijzigd voor %s</string>
     <string name="snd_group_event_member_deleted">je hebt <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> verwijderd</string>

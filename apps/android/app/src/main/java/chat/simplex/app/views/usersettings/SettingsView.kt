@@ -150,7 +150,7 @@ fun SettingsLayout(
         val profileHidden = rememberSaveable { mutableStateOf(false) }
         SettingsActionItem(painterResource(R.drawable.ic_manage_accounts), stringResource(R.string.your_chat_profiles), { withAuth(generalGetString(R.string.auth_open_chat_profiles), generalGetString(R.string.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
-        SettingsActionItem(painterResource(R.drawable.ic_qr_code), stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_qr_code), stringResource(R.string.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
         ChatPreferencesItem(showCustomModal, stopped = stopped)
       }
       SectionDividerSpaced()

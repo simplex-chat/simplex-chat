@@ -290,7 +290,6 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">Twój profil czatu zostanie wysłany
 \ndo Twojego kontaktu</string>
     <string name="your_profile_will_be_sent">Twój profil czatu zostanie wysłany do Twojego kontaktu</string>
-    <string name="your_contact_address">Twój adres kontaktowy</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Zostaniesz połączony do grupy, gdy urządzenie gospodarza grupy będzie online, proszę czekać lub sprawdzić później!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Zostaniesz połączony, gdy urządzenie Twojego kontaktu będzie online, proszę czekać lub sprawdzić później!</string>
     <string name="smp_servers_preset_add">Dodaj gotowe serwery</string>
@@ -364,10 +363,7 @@
     <string name="network_use_onion_hosts">Użyj hostów .onion</string>
     <string name="network_enable_socks">Użyć proxy SOCKS\?</string>
     <string name="network_socks_toggle">Użyj proxy SOCKS (port 9050)</string>
-    <string name="accept_requests">Akceptuj prośby</string>
     <string name="all_your_contacts_will_remain_connected">Wszystkie Twoje kontakty pozostaną połączone.</string>
-    <string name="accept_automatically">Automatycznie</string>
-    <string name="contact_requests">Prośby kontaktu</string>
     <string name="create_address">Utwórz adres</string>
     <string name="developer_options">ID bazy danych i opcja izolacji transportu.</string>
     <string name="delete_address">Usuń adres</string>
@@ -387,8 +383,6 @@
     <string name="show_dev_options">Pokaż:</string>
     <string name="show_developer_options">Pokaż opcje dewelopera</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-    <string name="section_title_welcome_message">WIADOMOŚĆ POWITALNA</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Możesz udostępnić swój adres jako link lub jako kod QR - każdy będzie mógł się z Tobą połączyć. Nie stracisz swoich kontaktów, jeśli później go usuniesz.</string>
     <string name="your_current_profile">Twój obecny profil</string>
     <string name="confirm_password">Potwierdź hasło</string>
     <string name="create_profile">Utwórz profil</string>
@@ -1041,7 +1035,6 @@
     <string name="you_must_use_the_most_recent_version_of_database">Musisz używać najnowszej wersji bazy danych czatu TYLKO na jednym urządzeniu, w przeciwnym razie możesz przestać otrzymywać wiadomości od niektórych kontaktów.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Możesz rozpocząć czat poprzez Ustawienia aplikacji / Bazę danych lub poprzez ponowne uruchomienie aplikacji.</string>
     <string name="your_settings">Twoje ustawienia</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Twój kontakt może zeskanować kod QR z aplikacji.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Twoja obecna baza danych czatu zostanie USUNIĘTA i ZASTĄPIONA zaimportowaną.
 \nTej czynności nie można cofnąć - Twój profil, kontakty, wiadomości i pliki zostaną nieodwracalnie utracone.</string>
     <string name="contact_sent_large_file">Twój kontakt wysłał plik, który jest większy niż obecnie obsługiwany maksymalny rozmiar (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>

@@ -14,7 +14,6 @@
     <string name="allow_your_contacts_to_send_disappearing_messages">Povolte svým kontaktům odesílat mizící zprávy.</string>
     <string name="about_simplex_chat">O <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="smp_servers_add_to_another_device">Přidat do jiného zařízení</string>
-    <string name="accept_requests">Přijímat žádosti</string>
     <string name="allow_verb">Povolit</string>
     <string name="allow_voice_messages_question">Povolit hlasové zprávy\?</string>
     <string name="about_simplex">O SimpleX</string>
@@ -241,8 +240,6 @@
     <string name="network_session_mode_entity">Připojení</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="create_address">Vytvořit adresu</string>
-    <string name="accept_automatically">Automaticky</string>
-    <string name="section_title_welcome_message">UVÍTACÍ ZPRÁVA</string>
     <string name="save_and_notify_group_members">Uložit a upozornit členy skupiny</string>
     <string name="exit_without_saving">Ukončit bez uložení</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Platforma pro zasílání zpráv a aplikace chránící vaše soukromí a bezpečnost.</string>
@@ -378,7 +375,6 @@
     <string name="delete_pending_connection__question">Smazat čekající připojení\?</string>
     <string name="icon_descr_settings">Nastavení</string>
     <string name="image_descr_qr_code">QR kód</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Váš kontakt může z aplikace naskenovat QR kód.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Pokud se nemůžete setkat osobně, ukažte ve <b>videohovoru QR kód</b> nebo sdílejte odkaz.</string>
     <string name="scan_code">Skenovat kód</string>
     <string name="incorrect_code">Nesprávný bezpečnostní kód!</string>
@@ -396,7 +392,6 @@
     <string name="network_use_onion_hosts_required_desc">Pro připojení budou vyžadováni Onion hostitelé.</string>
     <string name="update_network_session_mode_question">Aktualizovat režim dopravní izolace\?</string>
     <string name="app_version_code">Sestavení aplikace: %s</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit. O své kontakty nepřijdete, pokud ji později smažete.</string>
     <string name="share_link">Sdílet odkaz</string>
     <string name="delete_address">Smazat adresu</string>
     <string name="full_name__field">Celé jméno:</string>
@@ -659,7 +654,6 @@
     <string name="core_version">Verze jádra: v%s</string>
     <string name="delete_address__question">Smazat adresu\?</string>
     <string name="all_your_contacts_will_remain_connected">Všechny vaše kontakty zůstanou připojeny.</string>
-    <string name="contact_requests">Žádosti o kontakt</string>
     <string name="display_name__field">Zobrazované jméno:</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Váš profil je uložen v zařízení a je sdílen pouze s vašimi kontakty. <xliff:g id="appName">SimpleX</xliff:g> servery váš profil vidět nemohou.</string>
     <string name="save_preferences_question">Uložit předvolby\?</string>
@@ -957,7 +951,6 @@
     <string name="v4_5_italian_interface">Italské rozhraní</string>
     <string name="v4_5_italian_interface_descr">Díky uživatelům - překládejte prostřednictvím Weblate!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Budete připojeni, jakmile bude zařízení vašeho kontaktu online, vyčkejte prosím nebo se podívejte později!</string>
-    <string name="your_contact_address">Vaše adresa</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Váš chat profil bude odeslán
 \nvašemu kontaktu</string>
     <string name="your_chats">Vaše konverzace</string>

@@ -45,14 +45,13 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
     when {
       it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() -> stringResource(R.string.create_one_time_link)
       it == CreateLinkTab.ONE_TIME -> stringResource(R.string.one_time_link)
-      it == CreateLinkTab.LONG_TERM -> stringResource(R.string.your_contact_address)
+      it == CreateLinkTab.LONG_TERM -> stringResource(R.string.your_simplex_contact_address)
       else -> ""
     }
   }
   Column(
     Modifier
-      .fillMaxHeight()
-      .padding(horizontal = DEFAULT_PADDING),
+      .fillMaxHeight(),
     verticalArrangement = Arrangement.SpaceBetween
   ) {
     Column(Modifier.weight(1f)) {
@@ -61,7 +60,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
           AddContactView(connReqInvitation.value ?: "", m.incognito.value)
         }
         CreateLinkTab.LONG_TERM -> {
-          UserAddressView(m)
+          UserAddressView(m, viaCreateLinkView = true, close = {})
         }
       }
     }

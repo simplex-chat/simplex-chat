@@ -27,6 +27,8 @@ import chat.simplex.app.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -140,14 +142,16 @@ private fun CustomServer(
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
     TextEditor(
-      Modifier.height(144.dp),
-      text = serverAddress,
-      border = false,
-      fontSize = 16.sp,
-      background = if (isInDarkTheme()) GroupDark else MaterialTheme.colors.background
-    ) {
-      testedPreviously[server.server] = server.tested
-      onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
+      serverAddress,
+      Modifier.height(144.dp)
+    )
+    LaunchedEffect(Unit) {
+      snapshotFlow { serverAddress.value }
+        .distinctUntilChanged()
+        .collect {
+          testedPreviously[server.server] = server.tested
+          onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
+        }
     }
   }
   SectionDividerSpaced()

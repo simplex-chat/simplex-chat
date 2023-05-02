@@ -240,7 +240,6 @@
     <string name="this_QR_code_is_not_a_link">Ce code QR n\'est pas un lien !</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Vous serez connecté·e lorsque votre demande de connexion sera acceptée, veuillez attendre ou vérifier plus tard !</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Vous serez connecté·e lorsque l\'appareil de votre contact sera en ligne, veuillez attendre ou vérifier plus tard !</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Votre contact peut scanner le code QR depuis l\'app.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Votre profil de chat sera envoyé
 \nà votre contact</string>
     <string name="share_invitation_link">Partager le lien d\'invitation</string>
@@ -260,7 +259,6 @@
     <string name="connect_via_link">Se connecter via un lien</string>
     <string name="clear_verification">Retirer la vérification</string>
     <string name="one_time_link">Lien d\'invitation unique</string>
-    <string name="your_contact_address">Votre adresse de contact</string>
     <string name="scan_code">Scanner le code</string>
     <string name="incorrect_code">Code de sécurité incorrect !</string>
     <string name="security_code">Code de sécurité</string>
@@ -361,7 +359,6 @@
     <string name="network_use_onion_hosts_prefer_desc">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
     <string name="appearance_settings">Apparence</string>
     <string name="create_address">Créer une adresse</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Vous pouvez partager votre adresse sous forme de lien ou de code QR - n\'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous la supprimez par la suite.</string>
     <string name="your_current_profile">Votre profil de chat</string>
     <string name="edit_image">Modifier l\'image</string>
     <string name="save_and_notify_contacts">Sauvegarder et notifier les contacts</string>
@@ -433,10 +430,6 @@
     <string name="all_your_contacts_will_remain_connected">Tous vos contacts resteront connectés.</string>
     <string name="share_link">Partager le lien</string>
     <string name="delete_address">Supprimer l\'adresse</string>
-    <string name="contact_requests">Demandes de contact</string>
-    <string name="accept_requests">Accepter les demandes</string>
-    <string name="accept_automatically">Automatiquement</string>
-    <string name="section_title_welcome_message">MESSAGE DE BIENVENUE</string>
     <string name="display_name__field">Nom affiché :</string>
     <string name="full_name__field">Nom complet :</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Votre profil est stocké sur votre appareil et partagé uniquement avec vos contacts. Les serveurs <xliff:g id="appName">SimpleX</xliff:g> ne peuvent pas voir votre profil.</string>

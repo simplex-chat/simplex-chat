@@ -120,7 +120,7 @@ fun RTCServersLayout(
       } else {
         Text(stringResource(R.string.enter_one_ICE_server_per_line))
         if (editRTCServers) {
-          TextEditor(Modifier.height(160.dp), text = userRTCServersStr)
+          TextEditor(userRTCServersStr, Modifier.height(160.dp), contentPadding = PaddingValues())
 
           Row(
             Modifier.fillMaxWidth(),
