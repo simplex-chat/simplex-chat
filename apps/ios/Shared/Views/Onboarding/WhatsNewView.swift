@@ -126,7 +126,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "character",
                 title: "Italian interface",
-                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!"
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             )
         ]
     ),
@@ -161,7 +161,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "character",
                 title: "Chinese and Spanish interface",
-                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!"
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
     ),
@@ -181,7 +181,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "character",
                 title: "Polish interface",
-                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!"
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
     )

@@ -18,6 +18,6 @@ fun AddContactLearnMore() {
     AppBarTitle(stringResource(R.string.one_time_link))
     ReadableText(R.string.scan_qr_to_connect_to_contact)
     ReadableText(R.string.if_you_cant_meet_in_person)
-    ReadableTextWithLink(R.string.read_more_in_user_guide_with_link, "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/guide/README.md#connect-to-friends")
+    ReadableTextWithLink(R.string.read_more_in_user_guide_with_link, "https://simplex.chat/docs/guide/readme.html#connect-to-friends")
   }
 }

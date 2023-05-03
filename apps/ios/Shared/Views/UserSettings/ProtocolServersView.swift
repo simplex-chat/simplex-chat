@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-private let howToUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md")!
+private let howToUrl = URL(string: "https://simplex.chat/docs/server.html")!
 
 struct ProtocolServersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
