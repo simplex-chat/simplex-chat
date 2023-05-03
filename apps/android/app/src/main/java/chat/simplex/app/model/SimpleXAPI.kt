@@ -1812,10 +1812,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     )
   }
 
-  fun setNetCfg(cfg: NetCfg, withHostPort: Boolean = false) {
-    if (withHostPort) {
-      appPrefs.networkProxyHostPort.set(cfg.socksProxy)
-    }
+  /**
+   * [AppPreferences.networkProxyHostPort] is not changed here, use appPrefs to set it
+   * */
+  fun setNetCfg(cfg: NetCfg) {
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
     appPrefs.networkHostMode.set(cfg.hostMode.name)
     appPrefs.networkRequiredHostMode.set(cfg.requiredHostMode)
