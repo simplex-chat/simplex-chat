@@ -427,6 +427,8 @@ struct ComposeView: View {
                 clearCurrentDraft()
                 sendMessage()
                 resetLinkPreview()
+            } else if (composeState.inProgress) {
+                clearCurrentDraft()
             } else if !composeState.empty  {
                 saveCurrentDraft()
             } else {
