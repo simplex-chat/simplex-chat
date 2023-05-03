@@ -103,4 +103,26 @@
     <string name="onboarding_notifications_mode_periodic_desc"><b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות חדשות כל 10 דקות. שיחות והודעות דחופות עלולות להתפספס.</string>
     <string name="both_you_and_your_contacts_can_delete">גם אתם וגם איש הקשר שלכם יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">גם אתם וגם איש הקשר שלכם יכולים לשלוח הודעות נעלמות.</string>
+    <string name="cannot_receive_file">לא ניתן לקבל את הקובץ</string>
+    <string name="icon_descr_cancel_image_preview">בטל תצוגה מקדימה של תמונות</string>
+    <string name="cancel_verb">בטל</string>
+    <string name="icon_descr_cancel_live_message">בטל הודעה חיה</string>
+    <string name="use_camera_button">מצלמה</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>סריקת קוד QR</b>: כדי להתחבר לאיש הקשר שלכם שמציג לכם קוד QR.</string>
+    <string name="icon_descr_cancel_link_preview">בטל תצוגה מקדימה של קישורים</string>
+    <string name="callstatus_error">שגיאת שיחה</string>
+    <string name="callstatus_in_progress">שיחה מתמשכת</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>צורך יותר סוללה</b>! שירות רקע תמיד מופעל - התראות יוצגו מיד כאשר הודעות מגיעות.</string>
+    <string name="call_already_ended">השיחה כבר הסתיימה!</string>
+    <string name="call_on_lock_screen">שיחות במסך הנעילה:</string>
+    <string name="icon_descr_call_ended">השיחה הסתיימה</string>
+    <string name="icon_descr_call_progress">שיחה מתמשכת</string>
+    <string name="settings_section_title_calls">שיחות</string>
+    <string name="cannot_access_keychain">לא ניתן לגשת ל- Keystore כדי לאחסן את סיסמת מסד הנתונים</string>
+    <string name="cant_delete_user_profile">לא ניתן למחוק פרופיל משתמש!</string>
+    <string name="feature_cancelled_item">בוטל %s</string>
+    <string name="v4_5_transport_isolation_descr">לפי פרופיל צ\'אט (ברירת מחדל) או לפי חיבור (בביטא).</string>
+    <string name="callstatus_calling">מתקשר…</string>
+    <string name="callstatus_ended">השיחה הסתיימה <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="icon_descr_cancel_file_preview">בטל תצוגה מקדימה של קבצים</string>
 </resources>
