@@ -49,7 +49,7 @@ fun ContactConnectionInfoView(
   ContactConnectionInfoLayout(
     connReq = connReqInvitation,
     contactConnection,
-    connIncognito = chatModel.incognito.value,
+    connIncognito = contactConnection.incognito,
     focusAlias,
     deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },

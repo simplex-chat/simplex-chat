@@ -9,12 +9,14 @@ import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -55,10 +57,10 @@ fun UserAddressView(
       }
     }
   }
-
+  val userAddress = remember { chatModel.userAddress }
   val showLayout = @Composable {
     UserAddressLayout(
-      userAddress = remember { chatModel.userAddress }.value,
+      userAddress = userAddress.value,
       shareViaProfile,
       onCloseHandler,
       createAddress = {
@@ -139,6 +141,9 @@ fun UserAddressView(
       Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center
     ) {
+      if (userAddress.value != null) {
+        Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), shape = RoundedCornerShape(50)){}
+      }
       CircularProgressIndicator(
         Modifier
           .padding(horizontal = 2.dp)

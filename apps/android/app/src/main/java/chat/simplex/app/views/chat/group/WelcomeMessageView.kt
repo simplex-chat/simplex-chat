@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.group
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -94,15 +95,15 @@ private fun GroupWelcomeLayout(
         welcomeText.value.isEmpty()
       )
       CopyTextButton { copyText(SimplexApp.context, welcomeText.value) }
+      SectionDividerSpaced(maxBottomPadding = false)
+      SaveButton(
+        save = save,
+        disabled = welcomeText.value == groupInfo.groupProfile.description || (welcomeText.value == "" && groupInfo.groupProfile.description == null)
+      )
     } else {
       TextEditorPreview(welcomeText.value, linkMode)
       CopyTextButton { copyText(SimplexApp.context, welcomeText.value) }
     }
-    SectionSpacer()
-    SaveButton(
-      save = save,
-      disabled = welcomeText.value == groupInfo.groupProfile.description || (welcomeText.value == "" && groupInfo.groupProfile.description == null)
-    )
     SectionBottomSpacer()
   }
 }
