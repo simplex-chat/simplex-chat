@@ -744,6 +744,8 @@ fun ComposeView(
               resetLinkPreview()
               clearCurrentDraft()
               deleteUnusedFiles()
+            } else if (composeState.value.inProgress) {
+              clearCurrentDraft()
             } else if (!composeState.value.empty) {
               if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
                 composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
