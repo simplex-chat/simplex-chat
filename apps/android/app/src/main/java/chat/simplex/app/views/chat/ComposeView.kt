@@ -118,7 +118,7 @@ data class ComposeState(
 
   val attachmentDisabled: Boolean
     get() {
-      if (editing || liveMessage != null) return true
+      if (editing || liveMessage != null || inProgress) return true
       return when (preview) {
         ComposePreview.NoPreview -> false
         is ComposePreview.CLinkPreview -> false
@@ -623,23 +623,27 @@ fun ComposeView(
   fun previewView() {
     when (val preview = composeState.value.preview) {
       ComposePreview.NoPreview -> {}
-      is ComposePreview.CLinkPreview -> ComposeLinkView(preview.linkPreview, ::cancelLinkPreview)
+      is ComposePreview.CLinkPreview -> ComposeLinkView(
+        preview.linkPreview,
+        ::cancelLinkPreview,
+        cancelEnabled = !composeState.value.inProgress
+      )
       is ComposePreview.MediaPreview -> ComposeImageView(
         preview,
         ::cancelImages,
-        cancelEnabled = !composeState.value.editing
+        cancelEnabled = !composeState.value.editing && !composeState.value.inProgress
       )
       is ComposePreview.VoicePreview -> ComposeVoiceView(
         preview.voice,
         preview.durationMs,
         preview.finished,
-        cancelEnabled = !composeState.value.editing,
+        cancelEnabled = !composeState.value.editing && !composeState.value.inProgress,
         ::cancelVoice
       )
       is ComposePreview.FilePreview -> ComposeFileView(
         preview.fileName,
         ::cancelFile,
-        cancelEnabled = !composeState.value.editing
+        cancelEnabled = !composeState.value.editing && !composeState.value.inProgress
       )
     }
   }
@@ -654,6 +658,14 @@ fun ComposeView(
       is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_edit_filled)) {
         clearState()
       }
+    }
+  }
+
+  // In case a user sent something, state is in progress, the user rotates a screen to different orientation.
+  // Without clearing the state the user will be unable to send anything until re-enters ChatView
+  LaunchedEffect(Unit) {
+    if (composeState.value.inProgress) {
+      clearState()
     }
   }
 
