@@ -63,4 +63,5 @@
     <string name="app_version_title">גירסת האפליקציה</string>
     <string name="incognito_random_profile_description">פרופיל אקראי יישלח לאיש הקשר</string>
     <string name="incognito_random_profile_from_contact_description">פרופיל אקראי יישלח לאיש הקשר שממנו קיבלת קישור זה</string>
+    <string name="network_session_mode_user_description">חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל פרופיל צ\'אט שיש ברשותך באפליקציה</b>.</string>
 </resources>
