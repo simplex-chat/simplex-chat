@@ -19,6 +19,6 @@ fun UserAddressLearnMore() {
     ReadableText(R.string.you_can_share_your_address)
     ReadableText(R.string.you_wont_lose_your_contacts_if_delete_address)
     ReadableText(R.string.you_can_accept_or_reject_connection)
-    ReadableTextWithLink(R.string.read_more_in_user_guide_with_link, "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/guide/app-settings.md#your-simplex-contact-address")
+    ReadableTextWithLink(R.string.read_more_in_user_guide_with_link, "https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address")
   }
 }
