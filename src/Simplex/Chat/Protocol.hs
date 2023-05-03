@@ -189,7 +189,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
-  XContact :: Profile -> Maybe XContactId -> ChatMsgEvent 'Json
+  XContact :: Profile -> Maybe XContactId -> Maybe MsgContent -> ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
@@ -605,7 +605,7 @@ toCMEventTag msg = case msg of
   XFileAcptInv {} -> XFileAcptInv_
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
-  XContact _ _ -> XContact_
+  XContact {} -> XContact_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
   XGrpMemNew _ -> XGrpMemNew_
@@ -692,7 +692,7 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
       XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
-      XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
+      XContact_ -> XContact <$> p "profile" <*> opt "contactReqId" <*> opt "content"
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
@@ -747,7 +747,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
-      XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
+      XContact profile xContactId content -> o $ ("contactReqId" .=? xContactId) $ ("content" .=? content) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]

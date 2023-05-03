@@ -291,9 +291,9 @@ data ChatCommand
   | Welcome
   | APIAddContact UserId
   | AddContact
-  | APIConnect UserId (Maybe AConnectionRequestUri)
-  | Connect (Maybe AConnectionRequestUri)
-  | ConnectSimplex -- UserId (not used in UI)
+  | APIConnect UserId (Maybe AConnectionRequestUri) (Maybe MsgContent)
+  | Connect (Maybe AConnectionRequestUri) (Maybe Text)
+  | ConnectSimplex (Maybe Text)
   | DeleteContact ContactName
   | ClearContact ContactName
   | APIListContacts UserId
@@ -767,6 +767,7 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
+  | CEConnReqMessageProhibited
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}

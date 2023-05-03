@@ -1095,8 +1095,9 @@ processChatCommand = \case
     pure $ CRInvitation user cReq
   AddContact -> withUser $ \User {userId} ->
     processChatCommand $ APIAddContact userId
-  APIConnect userId (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withChatLock "connect" . procCmd $ do
+  APIConnect userId (Just (ACR SCMInvitation cReq)) mc_ -> withUserId userId $ \user -> withChatLock "connect" . procCmd $ do
     -- [incognito] generate profile to send
+    when (isJust mc_) $ throwChatError CEConnReqMessageProhibited
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing
@@ -1104,13 +1105,11 @@ processChatCommand = \case
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined $ incognitoProfile $> profileToSend
     toView $ CRNewContactConnection user conn
     pure $ CRSentConfirmation user
-  APIConnect userId (Just (ACR SCMContact cReq)) -> withUserId userId (`connectViaContact` cReq)
-  APIConnect _ Nothing -> throwChatError CEInvalidConnReq
-  Connect cReqUri -> withUser $ \User {userId} ->
-    processChatCommand $ APIConnect userId cReqUri
-  ConnectSimplex -> withUser $ \user ->
-    -- [incognito] generate profile to send
-    connectViaContact user adminContactReq
+  APIConnect userId (Just (ACR SCMContact cReq)) mc_ -> withUserId userId $ \user -> connectViaContact user cReq mc_
+  APIConnect _ Nothing _ -> throwChatError CEInvalidConnReq
+  Connect cReqUri msg_ -> withUser $ \User {userId} ->
+    processChatCommand $ APIConnect userId cReqUri $ MCText <$> msg_
+  ConnectSimplex msg_ -> withUser $ \user -> connectViaContact user adminContactReq $ MCText <$> msg_
   DeleteContact cName -> withContactName cName $ APIDeleteChat . ChatRef CTDirect
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
@@ -1581,12 +1580,14 @@ processChatCommand = \case
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd msg
       CTGroup -> withStore $ \db -> getGroupChatItemIdByText db user cId (Just localDisplayName) msg
       _ -> throwChatError $ CECommandError "not supported"
-    connectViaContact :: User -> ConnectionRequestUri 'CMContact -> m ChatResponse
-    connectViaContact user@User {userId} cReq@(CRContactUri ConnReqUriData {crClientData}) = withChatLock "connectViaContact" $ do
+    connectViaContact :: User -> ConnectionRequestUri 'CMContact -> Maybe MsgContent -> m ChatResponse
+    connectViaContact user@User {userId} cReq@(CRContactUri ConnReqUriData {crClientData}) mc_ = withChatLock "connectViaContact" $ do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       withStore' (\db -> getConnReqContactXContactId db user cReqHash) >>= \case
         (Just contact, _) -> pure $ CRContactAlreadyExists user contact
         (_, xContactId_) -> procCmd $ do
+          let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+          when (isJust groupLinkId && isJust mc_) $ throwChatError CEConnReqMessageProhibited
           let randomXContactId = XContactId <$> drgRandomBytes 16
           xContactId <- maybe randomXContactId pure xContactId_
           -- [incognito] generate profile to send
@@ -1597,8 +1598,7 @@ processChatCommand = \case
           incognito <- readTVarIO =<< asks incognitoMode
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = userProfileToSend user incognitoProfile Nothing
-          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq $ directMessage (XContact profileToSend $ Just xContactId)
-          let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq $ directMessage (XContact profileToSend (Just xContactId) mc_)
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId
           toView $ CRNewContactConnection user conn
           pure $ CRSentInvitation user incognitoProfile
@@ -3049,8 +3049,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       REQ invId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
         case chatMsgEvent of
-          XContact p xContactId_ -> profileContactRequest invId p xContactId_
-          XInfo p -> profileContactRequest invId p Nothing
+          XContact p xContactId_ mc_ -> profileContactRequest invId p xContactId_ mc_
+          XInfo p -> profileContactRequest invId p Nothing Nothing
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -3062,19 +3062,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> Profile -> Maybe XContactId -> m ()
-        profileContactRequest invId p xContactId_ = do
+        profileContactRequest :: InvitationId -> Profile -> Maybe XContactId -> Maybe MsgContent -> m ()
+        profileContactRequest invId p xContactId_ _mc_ = do
           withStore (\db -> createOrUpdateContactRequest db user userContactLinkId invId p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
                 Just (UserContactLink {autoAccept}, groupId_, _) ->
+                  -- TODO add chat item for contact request
                   case autoAccept of
                     Just AutoAccept {acceptIncognito} -> case groupId_ of
                       Nothing -> do
                         -- [incognito] generate profile to send, create connection with incognito profile
                         incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
                         ct <- acceptContactRequestAsync user cReq incognitoProfile
+                        -- TODO move chat item to contact
                         toView $ CRAcceptingContactRequest user ct
                       Just groupId -> do
                         gInfo@GroupInfo {membership = membership@GroupMember {memberProfile}} <- withStore $ \db -> getGroupInfo db user groupId
@@ -4699,9 +4701,9 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
-      "/_connect " *> (APIConnect <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
+      "/_connect " *> (APIConnect <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> optional (A.space *> msgContentP)),
       "/_connect " *> (APIAddContact <$> A.decimal),
-      ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
+      ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> optional (A.space *> msgTextP)),
       ("/connect" <|> "/c") $> AddContact,
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
@@ -4726,7 +4728,7 @@ chatCommandP =
       "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
-      "/simplex" $> ConnectSimplex,
+      "/simplex" *> (ConnectSimplex <$> optional (A.space *> msgTextP)),
       "/_address " *> (APICreateMyAddress <$> A.decimal),
       ("/address" <|> "/ad") $> CreateMyAddress,
       "/_delete_address " *> (APIDeleteMyAddress <$> A.decimal),
