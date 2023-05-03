@@ -47,7 +47,7 @@
     "why-simplex": "为何选择 SimpleX",
     "simplex-network": "SimpleX 网络",
     "simplex-explained": "SimpleX 简述",
-    "simplex-explained-tab-3-text": "3. 服务器可见的内容",
+    "simplex-explained-tab-3-text": "3. 服务器能看到什么",
     "hero-header": "重新定义隐私",
     "simplex-explained-tab-1-p-2": "它如何在没有用户配置文件标识符的情况下使用单向队列？",
     "simplex-explained-tab-2-p-2": "服务器只传送单向消息，而无法全面了解用户的会话或连接。",
