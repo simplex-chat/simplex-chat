@@ -1812,7 +1812,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     )
   }
 
-  fun setNetCfg(cfg: NetCfg) {
+  fun setNetCfg(cfg: NetCfg, withHostPort: Boolean = false) {
+    if (withHostPort) {
+      appPrefs.networkProxyHostPort.set(cfg.socksProxy)
+    }
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
     appPrefs.networkHostMode.set(cfg.hostMode.name)
     appPrefs.networkRequiredHostMode.set(cfg.requiredHostMode)
@@ -2354,6 +2357,15 @@ data class NetCfg(
 ) {
   val useSocksProxy: Boolean get() = socksProxy != null
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null
+
+  fun withHostPort(hostPort: String?, default: String? = ":9050"): NetCfg {
+    val socksProxy = if (hostPort?.startsWith("localhost:") == true) {
+      hostPort.removePrefix("localhost")
+    } else {
+      hostPort ?: default
+    }
+    return copy(socksProxy = socksProxy)
+  }
 
   companion object {
     val defaults: NetCfg =

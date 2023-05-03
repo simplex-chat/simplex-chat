@@ -66,13 +66,7 @@ fun NetworkAndServersView(
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              val proxyHostPort  = chatModel.controller.appPrefs.networkProxyHostPort.get()
-              val socksProxy = if (proxyHostPort?.startsWith("localhost:") == true) {
-                proxyHostPort.removePrefix("localhost")
-              } else {
-                proxyHostPort ?: ":9050"
-              }
-              val conf = NetCfg.proxyDefaults.copy(socksProxy = socksProxy)
+              val conf = NetCfg.proxyDefaults.withHostPort(chatModel.controller.appPrefs.networkProxyHostPort.get())
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
               networkUseSocksProxy.value = true
@@ -87,10 +81,11 @@ fun NetworkAndServersView(
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.apiSetNetworkConfig(NetCfg.defaults)
-              chatModel.controller.setNetCfg(NetCfg.defaults)
+              val conf = NetCfg.defaults
+              chatModel.controller.apiSetNetworkConfig(conf)
+              chatModel.controller.setNetCfg(conf)
               networkUseSocksProxy.value = false
-              onionHosts.value = NetCfg.defaults.onionHosts
+              onionHosts.value = conf.onionHosts
             }
           }
         )
@@ -220,13 +215,9 @@ fun UseSocksProxySwitch(
       TextIconSpaced(false)
       val text = buildAnnotatedString {
         append(generalGetString(R.string.network_socks_toggle_use_socks_proxy) + " (")
-        if (networkUseSocksProxy.value) {
-          val style = SpanStyle(color = MaterialTheme.colors.primary)
-          withAnnotation(tag = "PORT", annotation = generalGetString(R.string.network_proxy_port).format(proxyPort.value)) {
-            withStyle(style) { append(generalGetString(R.string.network_proxy_port).format(proxyPort.value)) }
-          }
-        } else {
-          append(generalGetString(R.string.network_proxy_port).format(proxyPort.value))
+        val style = SpanStyle(color = MaterialTheme.colors.primary)
+        withAnnotation(tag = "PORT", annotation = generalGetString(R.string.network_proxy_port).format(proxyPort.value)) {
+          withStyle(style) { append(generalGetString(R.string.network_proxy_port).format(proxyPort.value)) }
         }
         append(")")
       }
@@ -270,19 +261,28 @@ fun SockProxySettings(m: ChatModel) {
     val save = {
       withBGApi {
         m.controller.appPrefs.networkProxyHostPort.set(hostUnsaved.value.text + ":" + portUnsaved.value.text)
-        m.controller.apiSetNetworkConfig(m.controller.getNetCfg())
+        if (m.controller.appPrefs.networkUseSocksProxy.get()) {
+          m.controller.apiSetNetworkConfig(m.controller.getNetCfg())
+        }
       }
     }
     SectionView {
       SectionItemView {
         ResetToDefaultsButton({
-          showUpdateNetworkSettingsDialog {
+          val reset = {
             m.controller.appPrefs.networkProxyHostPort.set(defaultHostPort)
             val newHost = defaultHostPort.split(":").first()
             val newPort = defaultHostPort.split(":").last()
             hostUnsaved.value = hostUnsaved.value.copy(newHost, TextRange(newHost.length))
             portUnsaved.value = portUnsaved.value.copy(newPort, TextRange(newPort.length))
             save()
+          }
+          if (m.controller.appPrefs.networkUseSocksProxy.get()) {
+            showUpdateNetworkSettingsDialog {
+              reset()
+            }
+          } else {
+            reset()
           }
         }, disabled = hostPort == defaultHostPort)
       }
@@ -315,7 +315,7 @@ fun SockProxySettings(m: ChatModel) {
           hostUnsaved.value = hostUnsaved.value.copy(prevHost, TextRange(prevHost.length))
           portUnsaved.value = portUnsaved.value.copy(prevPort, TextRange(prevPort.length))
         },
-        save = { showUpdateNetworkSettingsDialog { save() } },
+        save = { if (m.controller.appPrefs.networkUseSocksProxy.get()) showUpdateNetworkSettingsDialog { save() } else save() },
         revertDisabled = hostPort == (hostUnsaved.value.text + ":" + portUnsaved.value.text),
         saveDisabled = hostPort == (hostUnsaved.value.text + ":" + portUnsaved.value.text) ||
             remember { derivedStateOf { !validHost(hostUnsaved.value.text) } }.value ||
