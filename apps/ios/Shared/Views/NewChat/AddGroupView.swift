@@ -171,9 +171,6 @@ struct AddGroupView: View {
                 }
             }
             let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
-//            DispatchQueue.main.async {
-//                m.addChat(c)
-//            }
             m.addChat(c)
             withAnimation {
                 groupInfo = gInfo
