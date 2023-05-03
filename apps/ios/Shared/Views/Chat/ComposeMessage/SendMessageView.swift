@@ -65,6 +65,7 @@ struct SendMessageView: View {
 
                         NativeTextEditor(
                             text: $composeState.message,
+                            disableEditing: $composeState.inProgress,
                             height: teHeight,
                             font: teUiFont,
                             focused: $keyboardVisible,
@@ -83,7 +84,7 @@ struct SendMessageView: View {
                         .padding([.bottom, .trailing], 3)
                 } else {
                     VStack(alignment: .trailing) {
-                        if teHeight > 100 {
+                        if teHeight > 100 && !composeState.inProgress {
                             deleteTextButton()
                             Spacer()
                         }
