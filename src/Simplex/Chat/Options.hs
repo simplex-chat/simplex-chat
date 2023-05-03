@@ -36,6 +36,7 @@ data ChatOpts = ChatOpts
     chatServerPort :: Maybe String,
     optFilesFolder :: Maybe FilePath,
     allowInstantFiles :: Bool,
+    muteNotifications :: Bool,
     maintenance :: Bool
   }
 
@@ -221,6 +222,11 @@ chatOptsP appDir defaultDbFileName = do
           <> short 'f'
           <> help "Send and receive instant files without acceptance"
       )
+  muteNotifications <-
+    switch
+      ( long "mute"
+          <> help "Mute notifications"
+      )
   maintenance <-
     switch
       ( long "maintenance"
@@ -235,6 +241,7 @@ chatOptsP appDir defaultDbFileName = do
         chatServerPort,
         optFilesFolder,
         allowInstantFiles,
+        muteNotifications,
         maintenance
       }
 
