@@ -73,6 +73,7 @@ testOpts =
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       allowInstantFiles = True,
+      muteNotifications = True,
       maintenance = False
     }
 

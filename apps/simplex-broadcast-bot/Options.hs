@@ -105,5 +105,6 @@ mkChatOpts BroadcastBotOpts {coreOptions} =
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       allowInstantFiles = True,
+      muteNotifications = True,
       maintenance = False
     }
