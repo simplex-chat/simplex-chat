@@ -154,7 +154,7 @@
     <string name="alert_title_contact_connection_pending">Contato ainda não está conectado!</string>
     <string name="contribute">Contribuir</string>
     <string name="create_profile_button">Criar</string>
-    <string name="network_enable_socks_info">Acessar os servidores via proxy SOCKS na porta 9050\? O proxy deve ser iniciado antes de habilitar esta opção.</string>
+    <string name="network_enable_socks_info">Acessar os servidores via proxy SOCKS na porta %d\? O proxy deve ser iniciado antes de habilitar esta opção.</string>
     <string name="allow_your_contacts_irreversibly_delete">Permitir que seus contatos excluam de forma irreversível as mensagens enviadas.</string>
     <string name="smp_servers_add_to_another_device">Adicionar a outro dispositivo</string>
     <string name="v4_2_group_links_desc">Os administradores podem criar os links para ingressar em grupos.</string>
@@ -809,7 +809,6 @@
     <string name="network_settings_title">Configurações de conexão</string>
     <string name="no_details">sem detalhes</string>
     <string name="add_contact">Link de convite de uso único</string>
-    <string name="network_socks_toggle">Usar proxy SOCKS (porta 9050)</string>
     <string name="smp_servers_your_server_address">Seu endereço de servidor</string>
     <string name="your_settings">Suas configurações</string>
     <string name="is_verified">%s é verificado</string>

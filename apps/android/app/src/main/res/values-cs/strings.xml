@@ -9,7 +9,7 @@
     <string name="network_settings">Pokročilá nastavení sítě</string>
     <string name="accept">Přijmout</string>
     <string name="smp_servers_add">Přidat server…</string>
-    <string name="network_enable_socks_info">Přistupovat k serverům přes SOCKS proxy na portu 9050\? Před povolením této možnosti musí být spuštěna proxy.</string>
+    <string name="network_enable_socks_info">Přistupovat k serverům přes SOCKS proxy na portu %d\? Před povolením této možnosti musí být spuštěna proxy.</string>
     <string name="accept_feature">Přijmout</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Povolte svým kontaktům odesílat mizící zprávy.</string>
     <string name="about_simplex_chat">O <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
@@ -635,7 +635,6 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Ujistěte se, že adresy serverů WebRTC ICE jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.</string>
     <string name="save_servers_button">Uložit</string>
     <string name="network_and_servers">Síť a servery</string>
-    <string name="network_socks_toggle">Použít proxy server SOCKS (port 9050)</string>
     <string name="update_onion_hosts_settings_question">Aktualizovat nastavení hostitelů .onion\?</string>
     <string name="network_use_onion_hosts">Použít hostitele .onion</string>
     <string name="network_use_onion_hosts_prefer">Když bude dostupný</string>

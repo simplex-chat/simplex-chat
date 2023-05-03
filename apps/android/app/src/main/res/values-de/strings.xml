@@ -395,9 +395,8 @@
     <string name="network_and_servers">Netzwerk &amp; Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
     <string name="network_settings_title">Netzwerkeinstellungen</string>
-    <string name="network_socks_toggle">SOCKS-Proxy verwenden (Port 9050)</string>
     <string name="network_enable_socks">SOCKS-Proxy verwenden?</string>
-    <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port 9050? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
+    <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port %d? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
     <string name="network_disable_socks">Direkte Internetverbindung verwenden?</string>
     <string name="network_disable_socks_info">Wenn Sie dies bestätigen, können die Messaging-Server Ihre IP-Adresse und Ihren Provider sehen und mit welchen Servern Sie sich verbinden.</string>
     <string name="update_onion_hosts_settings_question">Einstellung für .onion-Hosts aktualisieren?</string>

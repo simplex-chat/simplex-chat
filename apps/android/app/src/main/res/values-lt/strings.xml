@@ -278,7 +278,6 @@
     <string name="use_camera_button">Naudoti kamerą</string>
     <string name="thank_you_for_installing_simplex">Dėkojame, kad įdiegėte <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
     <string name="smp_servers_use_server">Naudoti serverį</string>
-    <string name="network_socks_toggle">Naudoti SOCKS įgaliotąjį serverį (prievadas 9050)</string>
     <string name="network_enable_socks">Naudoti SOCKS įgaliotąjį serverį\?</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="share_link">Bendrinti nuorodą</string>

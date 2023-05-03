@@ -239,7 +239,7 @@
     <string name="allow_disappearing_messages_only_if">Consenti i messaggi a tempo solo se il tuo contatto li consente.</string>
     <string name="allow_to_delete_messages">Permetti di eliminare irreversibilmente i messaggi inviati.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permetti ai tuoi contatti di inviare messaggi a tempo.</string>
-    <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta 9050\? Il proxy deve essere avviato prima di attivare questa opzione.</string>
+    <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta %d\? Il proxy deve essere avviato prima di attivare questa opzione.</string>
     <string name="v4_3_improved_server_configuration_desc">Aggiungi server scansionando codici QR.</string>
     <string name="all_group_members_will_remain_connected">Tutti i membri del gruppo resteranno connessi.</string>
     <string name="allow_irreversible_message_deletion_only_if">Consenti l\'eliminazione irreversibile dei messaggi solo se il contatto la consente a te.</string>
@@ -633,7 +633,6 @@
     <string name="network_disable_socks">Usare una connessione internet diretta\?</string>
     <string name="network_use_onion_hosts">Usa gli host .onion</string>
     <string name="network_enable_socks">Usare il proxy SOCKS\?</string>
-    <string name="network_socks_toggle">Usa il proxy SOCKS (porta 9050)</string>
     <string name="use_simplex_chat_servers__question">Usare i server di <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\?</string>
     <string name="using_simplex_chat_servers">Stai usando i server di <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
     <string name="network_use_onion_hosts_prefer">Quando disponibili</string>

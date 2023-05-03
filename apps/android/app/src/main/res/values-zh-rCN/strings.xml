@@ -14,7 +14,7 @@
     <string name="color_primary">色调</string>
     <string name="callstatus_accepted">已接受通话</string>
     <string name="accept">接受</string>
-    <string name="network_enable_socks_info">通过 SOCKS 代理访问服务器在端口9050？允许该选项前必须开始代理。</string>
+    <string name="network_enable_socks_info">通过 SOCKS 代理访问服务器在端口%d？允许该选项前必须开始代理。</string>
     <string name="smp_servers_add">添加服务器……</string>
     <string name="smp_servers_add_to_another_device">添加另一设备</string>
     <string name="group_member_role_admin">管理员</string>
@@ -872,7 +872,6 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">当您的联系人设备在线时，您将可以连接，请稍等或稍后查看！</string>
     <string name="rate_the_app">评价此应用程序</string>
     <string name="network_enable_socks">使用 SOCKS 代理？</string>
-    <string name="network_socks_toggle">使用 SOCKS 代理（端口 9050）</string>
     <string name="total_files_count_and_size">%d 个文件，总大小为 %s</string>
     <string name="you_joined_this_group">您已加入此群组</string>
     <string name="you_are_invited_to_group">您被邀请加入群组</string>

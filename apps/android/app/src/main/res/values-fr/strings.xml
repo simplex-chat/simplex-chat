@@ -324,7 +324,7 @@
     <string name="use_simplex_chat_servers__question">Utiliser les serveurs <xliff:g id="appNameFull">SimpleX Chat</xliff:g> \?</string>
     <string name="smp_servers_delete_server">Supprimer le serveur</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.</string>
-    <string name="network_enable_socks_info">Accéder aux serveurs via un proxy SOCKS sur le port 9050 \? Le proxy doit être démarré avant d\'activer cette option.</string>
+    <string name="network_enable_socks_info">Accéder aux serveurs via un proxy SOCKS sur le port %d \? Le proxy doit être démarré avant d\'activer cette option.</string>
     <string name="network_use_onion_hosts">Utiliser les hôtes .onions</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Les hôtes .onion seront nécessaires pour la connexion.</string>
@@ -350,7 +350,6 @@
     <string name="configure_ICE_servers">Configurer les serveurs ICE</string>
     <string name="network_settings">Paramètres réseau avancés</string>
     <string name="network_settings_title">Paramètres réseau</string>
-    <string name="network_socks_toggle">Utiliser un proxy SOCKS (port 9050)</string>
     <string name="network_enable_socks">Utiliser un proxy SOCKS \?</string>
     <string name="network_disable_socks">Utiliser une connexion Internet directe \?</string>
     <string name="network_disable_socks_info">Si vous confirmez, les serveurs de messagerie seront en mesure de voir votre adresse IP, votre fournisseur ainsi que les serveurs auxquels vous vous connectez.</string>

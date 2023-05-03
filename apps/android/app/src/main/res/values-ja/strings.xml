@@ -22,7 +22,7 @@
     <string name="smp_servers_add_to_another_device">別の端末に追加</string>
     <string name="users_add">プロフィールを追加</string>
     <string name="smp_servers_add">サーバを追加…</string>
-    <string name="network_enable_socks_info">SOCKSプロキシ(ポート9050)経由で接続しますか？(※設定する前にプロキシ起動が必要※)</string>
+    <string name="network_enable_socks_info">SOCKSプロキシ(ポート%d)経由で接続しますか？(※設定する前にプロキシ起動が必要※)</string>
     <string name="users_delete_all_chats_deleted">全チャットとメッセージが削除されます(※元に戻せません※)！</string>
     <string name="allow_your_contacts_to_send_voice_messages">送信相手からの音声メッセージを許可する。</string>
     <string name="both_you_and_your_contact_can_send_voice">あなたと連絡相手が音声メッセージを送信できます。</string>
@@ -748,7 +748,6 @@
     <string name="your_ICE_servers">あなたのICEサーバ</string>
     <string name="network_disable_socks">直接にインタネットに繋がりますか？</string>
     <string name="network_enable_socks">SOCKSプロキシを使いますか？</string>
-    <string name="network_socks_toggle">SOCKSプロキシ (ポート9050) を使う</string>
     <string name="update_onion_hosts_settings_question">.onionのホスト設定を更新しますか？</string>
     <string name="network_use_onion_hosts">.onionホストを使う</string>
     <string name="network_use_onion_hosts_prefer">利用可能時に</string>
