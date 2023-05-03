@@ -69,4 +69,12 @@
     <string name="icon_descr_video_asked_to_receive">הנמען התבקש לקבל את הסרטון</string>
     <string name="icon_descr_asked_to_receive">הנמען התבקש לקבל את התמונה</string>
     <string name="attach">צרף</string>
+    <string name="icon_descr_audio_call">שיחת שמע</string>
+    <string name="icon_descr_audio_off">שמע כבוי</string>
+    <string name="icon_descr_audio_on">שמע פועל</string>
+    <string name="calls_prohibited_with_this_contact">שיחות שמע/וידאו אסורות.</string>
+    <string name="v4_6_audio_video_calls">שיחות שמע ווידאו</string>
+    <string name="audio_call_no_encryption">שיחת שמע (לא מוצפנת מקצה לקצה)</string>
+    <string name="audio_video_calls">שיחות שמע/וידאו</string>
+    <string name="settings_audio_video_calls">שיחות שמע ווידאו</string>
 </resources>
