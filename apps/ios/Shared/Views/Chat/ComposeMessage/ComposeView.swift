@@ -154,7 +154,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || liveMessage != nil { return true }
+        if editing || liveMessage != nil || inProgress { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -427,6 +427,8 @@ struct ComposeView: View {
                 clearCurrentDraft()
                 sendMessage()
                 resetLinkPreview()
+            } else if (composeState.inProgress) {
+                clearCurrentDraft()
             } else if !composeState.empty  {
                 saveCurrentDraft()
             } else {
@@ -522,7 +524,11 @@ struct ComposeView: View {
         case .noPreview:
             EmptyView()
         case let .linkPreview(linkPreview: preview):
-            ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
+            ComposeLinkView(
+                linkPreview: preview,
+                cancelPreview: cancelLinkPreview,
+                cancelEnabled: !composeState.inProgress
+            )
         case let .mediaPreviews(mediaPreviews: media):
             ComposeImageView(
                 images: media.map { (img, _) in img },
@@ -530,7 +536,7 @@ struct ComposeView: View {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenMedia = []
                 },
-                cancelEnabled: !composeState.editing)
+                cancelEnabled: !composeState.editing && !composeState.inProgress)
         case let .voicePreview(recordingFileName, _):
             ComposeVoiceView(
                 recordingFileName: recordingFileName,
@@ -540,7 +546,7 @@ struct ComposeView: View {
                     cancelVoiceMessageRecording($0)
                     clearState()
                 },
-                cancelEnabled: !composeState.editing,
+                cancelEnabled: !composeState.editing && !composeState.inProgress,
                 stopPlayback: $stopPlayback
             )
         case let .filePreview(fileName, _):
@@ -549,7 +555,7 @@ struct ComposeView: View {
                 cancelFile: {
                     composeState = composeState.copy(preview: .noPreview)
                 },
-                cancelEnabled: !composeState.editing)
+                cancelEnabled: !composeState.editing && !composeState.inProgress)
         }
     }
 

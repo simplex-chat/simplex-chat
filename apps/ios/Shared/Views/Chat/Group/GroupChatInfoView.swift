@@ -46,7 +46,9 @@ struct GroupChatInfoView: View {
                     if groupInfo.canEdit {
                         editGroupButton()
                     }
-                    addOrEditWelcomeMessage()
+                    if groupInfo.groupProfile.description != nil || groupInfo.canEdit {
+                        addOrEditWelcomeMessage()
+                    }
                     groupPreferencesButton($groupInfo)
                 } header: {
                     Text("")
