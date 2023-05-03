@@ -386,7 +386,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..))
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, diffInPicos)
 import UnliftIO.STM
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -3716,7 +3716,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         <$> DB.queryNamed
           db
           [sql|
-            SELECT i.chat_item_id, 
+            SELECT i.chat_item_id,
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
@@ -3724,8 +3724,9 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             LEFT JOIN contacts c ON m.contact_id = c.contact_id
-            LEFT JOIN chat_items i ON i.group_id = m.group_id
-                                      AND m.group_member_id = i.group_member_id
+            LEFT JOIN chat_items i ON i.user_id = m.user_id
+                                      AND i.group_id = m.group_id
+                                      AND i.group_member_id = m.group_member_id
                                       AND i.shared_msg_id = :msg_id
             WHERE m.user_id = :user_id AND m.group_id = :group_id AND m.member_id = :member_id
           |]
@@ -3790,7 +3791,7 @@ getDirectChatPreviews_ db user@User {userId} = do
           WHERE item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
-        LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+        LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE ct.user_id = ?
           AND ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
           AND c.connection_id = (
@@ -3870,7 +3871,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
         LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.group_id = i.group_id
+        LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.group_id = i.group_id AND ri.group_member_id = i.group_member_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
         LEFT JOIN contact_profiles rp ON rp.contact_profile_id = COALESCE(rm.member_profile_id, rm.contact_profile_id)
         LEFT JOIN group_members dbm ON dbm.group_member_id = i.item_deleted_by_group_member_id
@@ -3974,7 +3975,7 @@ toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUser
   PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, viaUserContactLink, groupLinkId, customUserProfileId, connReqInv, localAlias, createdAt, updatedAt}
 
 getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChat db user contactId pagination search_ = do
+getDirectChat db user contactId pagination search_ = timeItEIO "getDirectChat" $ do
   let search = fromMaybe "" search_
   case pagination of
     CPLast count -> getDirectChatLast_ db user contactId count search
@@ -3983,9 +3984,9 @@ getDirectChat db user contactId pagination search_ = do
 
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatLast_ db user contactId count search = do
-  contact <- getContact db user contactId
+  contact <- timeItEIO "getContact" $ getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItems <- getDirectChatItemsLast db user contactId count search
+  chatItems <- timeItEIO "getDirectChatItemsLast" $ getDirectChatItemsLast db user contactId count search
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
@@ -4006,7 +4007,7 @@ getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
           ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
         FROM chat_items i
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-        LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+        LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
         ORDER BY i.chat_item_id DESC
         LIMIT ?
@@ -4037,7 +4038,7 @@ getDirectChatAfter_ db user@User {userId} contactId afterChatItemId count search
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+            LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id > ?
             ORDER BY i.chat_item_id ASC
@@ -4069,7 +4070,7 @@ getDirectChatBefore_ db user@User {userId} contactId beforeChatItemId count sear
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+            LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id < ?
             ORDER BY i.chat_item_id DESC
@@ -4114,7 +4115,7 @@ getContact db user@User {userId} contactId =
       (userId, contactId, ConnReady, ConnSndReady)
 
 getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChat db user groupId pagination search_ = do
+getGroupChat db user groupId pagination search_ = timeItEIO "getGroupChat" $ do
   let search = fromMaybe "" search_
   case pagination of
     CPLast count -> getGroupChatLast_ db user groupId count search
@@ -4123,10 +4124,11 @@ getGroupChat db user groupId pagination search_ = do
 
 getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatLast_ db user@User {userId} groupId count search = do
-  groupInfo <- getGroupInfo db user groupId
+  groupInfo <- timeItEIO "getGroupInfo" $ getGroupInfo db user groupId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- liftIO getGroupChatItemIdsLast_
-  chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
+  chatItemIds <- timeItEIO "getGroupChatItemIdsLast_" $ liftIO getGroupChatItemIdsLast_
+  liftIO $ print $ "length chatItemIds: " <> show (length chatItemIds)
+  chatItems <- timeItEIO "mapM getGroupChatItem" $ mapM (getGroupChatItem db user groupId) chatItemIds
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
     getGroupChatItemIdsLast_ :: IO [ChatItemId]
@@ -4475,7 +4477,7 @@ getDirectChatItem db User {userId} contactId itemId = ExceptT $ do
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-          LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+          LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
           WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id = ?
         |]
         (userId, contactId, itemId)
@@ -4632,7 +4634,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
           LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-          LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.group_id = i.group_id
+          LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.group_id = i.group_id AND ri.group_member_id = i.group_member_id AND ri.shared_msg_id = i.quoted_shared_msg_id
           LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
           LEFT JOIN contact_profiles rp ON rp.contact_profile_id = COALESCE(rm.member_profile_id, rm.contact_profile_id)
           LEFT JOIN group_members dbm ON dbm.group_member_id = i.item_deleted_by_group_member_id
@@ -5360,3 +5362,24 @@ data StoreError
 instance ToJSON StoreError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
+
+timeItEIO :: String -> ExceptT StoreError IO a -> ExceptT StoreError IO a
+timeItEIO s action = do
+  t1 <- liftIO getCurrentTime
+  a <- action
+  t2 <- liftIO getCurrentTime
+  let diff = diffInMillis t2 t1
+  liftIO . print $ show diff <> " ms - " <> s
+  pure a
+
+timeItIO :: String -> IO a -> IO a
+timeItIO s action = do
+  t1 <- getCurrentTime
+  a <- action
+  t2 <- getCurrentTime
+  let diff = diffInMillis t2 t1
+  print $ show diff <> " ms - " <> s
+  pure a
+
+diffInMillis :: UTCTime -> UTCTime -> Int64
+diffInMillis a b = (`div` 1000000000) $ diffInPicos a b
