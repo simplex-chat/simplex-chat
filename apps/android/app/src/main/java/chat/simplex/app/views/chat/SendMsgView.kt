@@ -79,7 +79,7 @@ fun SendMsgView(
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     NativeKeyboard(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange)
     // Disable clicks on text field
-    if (cs.preview is ComposePreview.VoicePreview || !userCanSend) {
+    if (cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
       Box(Modifier
         .matchParentSize()
         .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
@@ -250,14 +250,20 @@ private fun NativeKeyboard(
         Log.e(chat.simplex.app.TAG, e.stackTraceToString())
       }
     }
-    editText.doOnTextChanged { text, _, _, _ -> onMessageChange(text.toString()) }
+    editText.doOnTextChanged { text, _, _, _ ->
+      if (!composeState.value.inProgress) {
+        onMessageChange(text.toString())
+      } else if (text.toString() != composeState.value.message) {
+        editText.setText(composeState.value.message)
+      }
+    }
     editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
     editText
   }) {
     it.setTextColor(textColor.toArgb())
     it.textSize = textStyle.value.fontSize.value
     DrawableCompat.setTint(it.background, tintColor.toArgb())
-    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
+    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview && !cs.inProgress
     it.isFocusableInTouchMode = it.isFocusable
     if (cs.message != it.text.toString()) {
       it.setText(cs.message)
@@ -270,7 +276,7 @@ private fun NativeKeyboard(
       imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
       showKeyboard = false
     }
-    showDeleteTextButton.value = it.lineCount >= 4
+    showDeleteTextButton.value = it.lineCount >= 4 && !cs.inProgress
   }
   if (composeState.value.preview is ComposePreview.VoicePreview) {
     ComposeOverlay(R.string.voice_message_send_text, textStyle, padding)

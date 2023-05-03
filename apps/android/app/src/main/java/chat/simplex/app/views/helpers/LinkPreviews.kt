@@ -77,7 +77,7 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
 }
 
 @Composable
-fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit) {
+fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancelEnabled: Boolean) {
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   Row(
     Modifier.fillMaxWidth().padding(top = 8.dp).background(sentColor),
@@ -109,13 +109,15 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit) {
         )
       }
     }
-    IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
-      Icon(
-        painterResource(R.drawable.ic_close),
-        contentDescription = stringResource(R.string.icon_descr_cancel_link_preview),
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
-      )
+    if (cancelEnabled) {
+      IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
+        Icon(
+          painterResource(R.drawable.ic_close),
+          contentDescription = stringResource(R.string.icon_descr_cancel_link_preview),
+          tint = MaterialTheme.colors.primary,
+          modifier = Modifier.padding(10.dp)
+        )
+      }
     }
   }
 }
@@ -193,7 +195,7 @@ fun PreviewChatItemLinkView() {
 @Composable
 fun PreviewComposeLinkView() {
   SimpleXTheme {
-    ComposeLinkView(LinkPreview.sampleData) { -> }
+    ComposeLinkView(LinkPreview.sampleData, cancelPreview = { -> }, true)
   }
 }
 
@@ -201,6 +203,6 @@ fun PreviewComposeLinkView() {
 @Composable
 fun PreviewComposeLinkViewLoading() {
   SimpleXTheme {
-    ComposeLinkView(null) { -> }
+    ComposeLinkView(null, cancelPreview = { -> }, true)
   }
 }

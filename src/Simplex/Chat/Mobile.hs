@@ -129,6 +129,7 @@ mobileChatOpts dbFilePrefix dbKey =
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       allowInstantFiles = True,
+      muteNotifications = True,
       maintenance = True
     }
 

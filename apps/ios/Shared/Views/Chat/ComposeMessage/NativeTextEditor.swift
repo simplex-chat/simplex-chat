@@ -13,6 +13,7 @@ import PhotosUI
 
 struct NativeTextEditor: UIViewRepresentable {
     @Binding var text: String
+    @Binding var disableEditing: Bool
     let height: CGFloat
     let font: UIFont
     @FocusState.Binding var focused: Bool
@@ -26,7 +27,11 @@ struct NativeTextEditor: UIViewRepresentable {
         field.textAlignment = alignment == .leading ? .left : .right
         field.autocapitalizationType = .sentences
         field.setOnTextChangedListener { newText, images in
-            text = newText
+            if !disableEditing {
+                text = newText
+            } else {
+                field.text = text
+            }
             if !images.isEmpty {
                 onImagesAdded(images)
             }
@@ -140,6 +145,7 @@ struct NativeTextEditor_Previews: PreviewProvider{
         @FocusState var keyboardVisible: Bool
         return NativeTextEditor(
             text: Binding.constant("Hello, world!"),
+            disableEditing: Binding.constant(false),
             height: 100,
             font: UIFont.preferredFont(forTextStyle: .body),
             focused: $keyboardVisible,
