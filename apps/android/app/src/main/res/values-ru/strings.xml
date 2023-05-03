@@ -330,7 +330,6 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено, когда Ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда Ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Ваш контакт может сосканировать QR код в приложении.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если Вы не можете встретиться лично, Вы можете <b>показать QR код во время видеозвонка</b> или поделиться ссылкой.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен
 \nВашему контакту</string>
@@ -344,7 +343,6 @@
     <!-- CreateLinkView.kt -->
     <string name="create_one_time_link">Создать одноразовую ссылку</string>
     <string name="one_time_link">Одноразовая ссылка</string>
-    <string name="your_contact_address">Ваш SimpleX адрес</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
@@ -417,14 +415,8 @@
     <string name="create_address">Создать адрес</string>
     <string name="delete_address__question">Удалить адрес?</string>
     <string name="all_your_contacts_will_remain_connected">Все контакты, которые соединились через этот адрес, сохранятся.</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
     <string name="share_link">Поделиться\nссылкой</string>
-    <string name="delete_address">Удалить\nадрес</string>
-    <!-- AcceptRequestsView.kt -->
-    <string name="contact_requests">Запросы контактов</string>
-    <string name="accept_requests">Принимать запросы</string>
-    <string name="accept_automatically">Автоматически</string>
-    <string name="section_title_welcome_message">ПРИВЕТСТВЕННОЕ СООБЩЕНИЕ</string>
+    <string name="delete_address">Удалить адрес</string>
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">"Полное имя:</string>

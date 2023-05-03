@@ -4,6 +4,7 @@ import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionSpacer
+import SectionTextFooter
 import SectionView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -20,10 +22,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.QRCode
 import chat.simplex.app.views.usersettings.SettingsActionItem
 import kotlinx.datetime.Clock
 
@@ -173,8 +177,18 @@ fun GroupMemberInfoLayout(
             VerifyCodeButton(member.verified, verifyClicked)
           }
         }
-        SectionSpacer()
+        SectionDividerSpaced()
       }
+    }
+
+    if (member.contactLink != null) {
+      val context = LocalContext.current
+      SectionView(stringResource(R.string.address_section_title).uppercase()) {
+        QRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        ShareAddressButton { shareText(context, member.contactLink) }
+        SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(member.displayName))
+      }
+      SectionDividerSpaced()
     }
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {

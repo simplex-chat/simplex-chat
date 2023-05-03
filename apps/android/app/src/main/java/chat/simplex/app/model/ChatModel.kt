@@ -461,6 +461,8 @@ data class User(
 
   val showNotifications: Boolean = activeUser || showNtfs
 
+  val addressShared: Boolean = profile.contactLink != null
+
   companion object {
     val sampleData = User(
       userId = 1,
@@ -734,6 +736,7 @@ data class Contact(
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
   override val image get() = profile.image
+  val contactLink: String? = profile.contactLink
   override val localAlias get() = profile.localAlias
   val verified get() = activeConn.connectionCode != null
 
@@ -814,6 +817,7 @@ data class Profile(
   override val fullName: String,
   override val image: String? = null,
   override val localAlias : String = "",
+  val contactLink: String? = null,
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String
@@ -821,7 +825,7 @@ data class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, preferences)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, contactLink, preferences)
 
   companion object {
     val sampleData = Profile(
@@ -832,17 +836,18 @@ data class Profile(
 }
 
 @Serializable
-class LocalProfile(
+data class LocalProfile(
   val profileId: Long,
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String,
+  val contactLink: String? = null,
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, preferences)
+  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, contactLink, preferences)
 
   companion object {
     val sampleData = LocalProfile(
@@ -952,6 +957,7 @@ data class GroupMember (
   val displayName: String get() = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
   val fullName: String get() = memberProfile.fullName
   val image: String? get() = memberProfile.image
+  val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
 
   val chatViewName: String

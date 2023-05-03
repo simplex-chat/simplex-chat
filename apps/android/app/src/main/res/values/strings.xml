@@ -103,6 +103,7 @@
   <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password</string>
   <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password</string>
   <string name="error_smp_test_certificate">Possibly, certificate fingerprint in server address is incorrect</string>
+  <string name="error_setting_address">Error setting address</string>
   <string name="smp_server_test_connect">Connect</string>
   <string name="smp_server_test_disconnect">Disconnect</string>
   <string name="smp_server_test_create_queue">Create queue</string>
@@ -446,13 +447,24 @@
   <string name="you_will_be_connected_when_group_host_device_is_online">You will be connected to group when the group host\'s device is online, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
-  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Your contact can scan QR code from the app.</string>
   <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">If you can\'t meet in person, <b>show QR code in the video call</b>, or share the link.</string>
   <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
   <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.</string>
-  <string name="share_invitation_link">Share invitation link</string>
+  <string name="share_invitation_link">Share 1-time link</string>
   <string name="paste_connection_link_below_to_connect">Paste the link you received into the box below to connect with your contact.</string>
   <string name="your_profile_will_be_sent">Your chat profile will be sent to your contact</string>
+  <string name="learn_more">Learn more</string>
+  <string name="learn_more_about_address">About SimpleX address</string>
+
+  <!-- Add Contact Learn More - AddContactLearnMore.kt -->
+  <string name="scan_qr_to_connect_to_contact">To connect, your contact can scan QR code or use the link in the app.</string>
+  <string name="if_you_cant_meet_in_person">If you can\'t meet in person, show QR code in a video call, or share the link.</string>
+
+  <!-- User Address Learn More - UserAddressLearnMore.kt -->
+  <string name="you_can_share_your_address">You can share your address as a link or QR code - anybody can connect to you.</string>
+  <string name="you_wont_lose_your_contacts_if_delete_address">You won\'t lose your contacts if you later delete your address.</string>
+  <string name="you_can_accept_or_reject_connection">When people request to connect, you can accept or reject it.</string>
+  <string name="read_more_in_user_guide_with_link">Read more in <font color="#0088ff">User Guide</font>.</string>
 
   <!-- PasteToConnect.kt -->
   <string name="connect_via_link">Connect via link</string>
@@ -464,7 +476,8 @@
   <!-- CreateLinkView.kt -->
   <string name="create_one_time_link">Create one-time invitation link</string>
   <string name="one_time_link">One-time invitation link</string>
-  <string name="your_contact_address">Your contact address</string>
+  <string name="one_time_link_short">1-time link</string>
+  <string name="simplex_address">SimpleX address</string>
 
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>
@@ -481,7 +494,7 @@
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
-  <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="your_simplex_contact_address">Your SimpleX address</string>
   <string name="your_chat_profiles">Your chat profiles</string>
   <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
@@ -579,16 +592,24 @@
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
+  <string name="your_contacts_will_remain_connected">Your contacts will remain connected.</string>
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
-  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you. You won\'t lose your contacts if you later delete it.</string>
+  <string name="all_your_contacts_will_remain_connected_update_sent">All your contacts will remain connected. Profile update will be sent to your contacts.</string>
   <string name="share_link">Share link</string>
+  <string name="delete_address_with_contacts_question">Share address with contacts?</string>
+  <string name="add_address_to_your_profile">Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</string>
+  <string name="create_address_and_let_people_connect">Create an address to let people connect with you.</string>
+  <string name="create_simplex_address">Create SimpleX address</string>
+  <string name="share_with_contacts">Share with contacts</string>
+  <string name="share_address_with_contacts_question">Share address with contacts?</string>
+  <string name="profile_update_will_be_sent_to_contacts">Profile update will be sent to your contacts.</string>
+  <string name="stop_sharing_address">Stop sharing address?</string>
+  <string name="stop_sharing">Stop sharing</string>
+  <string name="auto_accept_contact">Auto-accept</string>
+  <string name="enter_welcome_message_optional">Enter welcome message… (optional)</string>
+  <string name="save_settings_question">Save settings?</string>
+  <string name="save_auto_accept_settings">Save auto-accept settings</string>
   <string name="delete_address">Delete address</string>
-
-  <!-- AcceptRequestsView.kt -->
-  <string name="contact_requests">Contact requests</string>
-  <string name="accept_requests">Accept requests</string>
-  <string name="accept_automatically">Automatically</string>
-  <string name="section_title_welcome_message">WELCOME MESSAGE</string>
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>
@@ -1050,6 +1071,9 @@
   <string name="error_updating_link_for_group">Error updating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
+  <string name="address_section_title">Address</string>
+  <string name="share_address">Share address</string>
+  <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
 
   <!-- For Console chat info section -->
   <string name="section_title_for_console">FOR CONSOLE</string>
@@ -1080,6 +1104,8 @@
   <string name="group_welcome_title">Welcome message</string>
   <string name="save_welcome_message_question">Save welcome message?</string>
   <string name="save_and_update_group_profile">Save and update group profile</string>
+  <string name="group_welcome_preview">Preview</string>
+  <string name="enter_welcome_message">Enter welcome message…</string>
 
   <!-- ConnectionStats -->
   <string name="conn_stats_section_title_servers">SERVERS</string>

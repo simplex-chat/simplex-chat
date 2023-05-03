@@ -1,6 +1,7 @@
 package chat.simplex.app.views.newchat
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionView
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,13 +45,16 @@ fun ContactConnectionInfoView(
       }
     }
   }
+  val context = LocalContext.current
   ContactConnectionInfoLayout(
     connReq = connReqInvitation,
     contactConnection,
+    connIncognito = contactConnection.incognito,
     focusAlias,
     deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
-    showQr = {
+    share = { if (connReqInvitation != null) shareText(context, connReqInvitation) },
+    learnMore = {
       ModalManager.shared.showModal {
         Column(
           Modifier
@@ -57,7 +62,7 @@ fun ContactConnectionInfoView(
             .padding(horizontal = DEFAULT_PADDING),
           verticalArrangement = Arrangement.SpaceBetween
         ) {
-          AddContactView(connReqInvitation ?: return@showModal, contactConnection.incognito)
+          AddContactLearnMore()
         }
       }
     }
@@ -68,10 +73,12 @@ fun ContactConnectionInfoView(
 private fun ContactConnectionInfoLayout(
   connReq: String?,
   contactConnection: PendingContactConnection,
+  connIncognito: Boolean,
   focusAlias: Boolean,
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
-  showQr: () -> Unit,
+  share: () -> Unit,
+  learnMore: () -> Unit,
 ) {
   Column(
     Modifier
@@ -83,11 +90,6 @@ private fun ContactConnectionInfoLayout(
         else R.string.you_accepted_connection
       )
     )
-    if (contactConnection.groupLinkId == null) {
-      Row(Modifier.padding(bottom = DEFAULT_PADDING)) {
-        LocalAliasEditor(contactConnection.localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
-      }
-    }
     Text(
       stringResource(
         if (contactConnection.viaContactUri)
@@ -97,25 +99,26 @@ private fun ContactConnectionInfoLayout(
       ),
       Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
     )
+    OneTimeLinkProfileText(connIncognito)
+
+    if (contactConnection.groupLinkId == null) {
+      LocalAliasEditor(contactConnection.localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
+    }
+
     SectionView {
       if (!connReq.isNullOrEmpty() && contactConnection.initiated) {
-        ShowQrButton(contactConnection.incognito, showQr)
+        OneTimeLinkSection(connReq, share, learnMore)
+      } else {
+        OneTimeLinkLearnMoreButton(learnMore)
       }
-      DeleteButton(deleteConnection)
     }
+
+    SectionDividerSpaced(maxBottomPadding = false)
+
+    DeleteButton(deleteConnection)
+
     SectionBottomSpacer()
   }
-}
-
-@Composable
-fun ShowQrButton(incognito: Boolean, onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(R.drawable.ic_qr_code),
-    stringResource(R.string.show_QR_code),
-    click = onClick,
-    textColor = if (incognito) Indigo else MaterialTheme.colors.primary,
-    iconColor = if (incognito) Indigo else MaterialTheme.colors.primary,
-  )
 }
 
 @Composable
@@ -147,10 +150,12 @@ private fun PreviewContactConnectionInfoView() {
     ContactConnectionInfoLayout(
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
       PendingContactConnection.getSampleData(),
+      connIncognito = false,
       focusAlias = false,
       deleteConnection = {},
       onLocalAliasChanged = {},
-      showQr = {},
+      share = {},
+      learnMore = {}
     )
   }
 }

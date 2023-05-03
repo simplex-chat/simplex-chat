@@ -8,7 +8,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -18,7 +17,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.annotatedStringResource
-import chat.simplex.app.views.helpers.openUriCatching
+import chat.simplex.app.views.onboarding.ReadableTextWithLink
 import chat.simplex.app.views.usersettings.MarkdownHelpView
 import chat.simplex.app.views.usersettings.simplexTeamUri
 
@@ -29,17 +28,8 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
   Column(
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
-    val uriHandler = LocalUriHandler.current
-
     Text(stringResource(R.string.thank_you_for_installing_simplex), lineHeight = 22.sp)
-    Text(
-      annotatedStringResource(R.string.you_can_connect_to_simplex_chat_founder),
-      modifier = Modifier.clickable(onClick = {
-        uriHandler.openUriCatching(simplexTeamUri)
-      }),
-      lineHeight = 22.sp
-    )
-
+    ReadableTextWithLink(R.string.you_can_connect_to_simplex_chat_founder, simplexTeamUri)
     Column(
       Modifier.padding(top = 24.dp),
       verticalArrangement = Arrangement.spacedBy(10.dp)

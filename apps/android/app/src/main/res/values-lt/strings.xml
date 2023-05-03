@@ -12,7 +12,6 @@
     <string name="app_version_title">Programėlės versija</string>
     <string name="app_version_name">Programėlės versija: v%s</string>
     <string name="app_version_code">Programėlės darinys: %s</string>
-    <string name="accept_automatically">Automatiškai</string>
     <string name="callstatus_calling">skambinama…</string>
     <string name="callstatus_error">skambučio klaida</string>
     <string name="call_already_ended">Skambutis jau baigtas!</string>

@@ -75,8 +75,6 @@
     <string name="about_simplex_chat">Sobre <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="smp_servers_add_to_another_device">Añadir a otro dispositivo</string>
     <string name="app_version_name">Versión de la aplicación: v%s</string>
-    <string name="accept_requests">Aceptar solicitudes</string>
-    <string name="accept_automatically">Automáticamente</string>
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
     <string name="impossible_to_recover_passphrase"><b>Ten en cuenta</b>: NO podrás recuperar o cambiar la contraseña si la pierdes.</string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
@@ -254,7 +252,6 @@
 \nContraseña</string>
     <string name="contribute">Contribuye</string>
     <string name="core_version">Core versión: v%s</string>
-    <string name="contact_requests">Solicitud del contacto</string>
     <string name="delete_image">Eliminar imagen</string>
     <string name="edit_image">Editar imagen</string>
     <string name="settings_section_title_chats">CHATS</string>
@@ -858,7 +855,6 @@
     <string name="description_via_one_time_link">mediante enlace de un uso</string>
     <string name="your_chats">Tus chats</string>
     <string name="voice_message_send_text">Mensaje de voz…</string>
-    <string name="your_contact_address">Mi dirección de contacto</string>
     <string name="icon_descr_video_off">Desactivar vídeo</string>
     <string name="icon_descr_video_on">Activar vídeo</string>
     <string name="wrong_passphrase">Contraseña de base de datos incorrecta</string>
@@ -888,7 +884,6 @@
     <string name="failed_to_create_user_duplicate_desc">Tienes un perfil de chat con el mismo nombre mostrado. Debes elegir otro nombre.</string>
     <string name="you_can_also_connect_by_clicking_the_link">También puedes conectarte haciendo clic en el enlace. Si se abre en el navegador, haz clic en <b>Abrir en aplicación móvil</b>.</string>
     <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0088ff">ponerte en contacto con los desarrolladores de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para consultas y para recibir actualizaciones</font>.</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo. Si lo eliminas más tarde tus contactos no se perderán.</string>
     <string name="observer_cant_send_message_title">¡No puedes enviar mensajes!</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Puedes usar la sintaxis markdown para dar formato a los mensajes:</string>
     <string name="you_must_use_the_most_recent_version_of_database">Debes usar la versión más reciente de tu base de datos ÚNICAMENTE en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</string>
@@ -923,7 +918,6 @@
     <string name="you_accepted_connection">Has aceptado la conexión</string>
     <string name="you_invited_your_contact">Has invitado a tu contacto</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo del anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Tu contacto puede escanear el código QR desde la aplicación.</string>
     <string name="your_settings">Mi configuración</string>
     <string name="your_SMP_servers">Tus servidores SMP</string>
     <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
@@ -972,7 +966,6 @@
     <string name="your_simplex_contact_address">Mi dirección de contacto <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
-    <string name="section_title_welcome_message">MENSAJE DE BIENVENIDA</string>
     <string name="your_current_profile">Tu perfil actual</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores <xliff:g id="appName">SimpleX</xliff:g> no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
