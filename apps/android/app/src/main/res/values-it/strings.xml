@@ -239,8 +239,7 @@
     <string name="allow_disappearing_messages_only_if">Consenti i messaggi a tempo solo se il tuo contatto li consente.</string>
     <string name="allow_to_delete_messages">Permetti di eliminare irreversibilmente i messaggi inviati.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permetti ai tuoi contatti di inviare messaggi a tempo.</string>
-    <string name="accept_requests">Accetta le richieste</string>
-    <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta 9050\? Il proxy deve essere avviato prima di attivare questa opzione.</string>
+    <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta %d\? Il proxy deve essere avviato prima di attivare questa opzione.</string>
     <string name="v4_3_improved_server_configuration_desc">Aggiungi server scansionando codici QR.</string>
     <string name="all_group_members_will_remain_connected">Tutti i membri del gruppo resteranno connessi.</string>
     <string name="allow_irreversible_message_deletion_only_if">Consenti l\'eliminazione irreversibile dei messaggi solo se il contatto la consente a te.</string>
@@ -284,7 +283,6 @@
     <string name="snd_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="chat_is_stopped">Chat fermata</string>
     <string name="group_member_status_introduced">connessione (presentato)</string>
-    <string name="contact_requests">Richieste del contatto</string>
     <string name="connection_request_sent">Richiesta di connessione inviata!</string>
     <string name="delete_link_question">Eliminare il link\?</string>
     <string name="delete_link">Elimina link</string>
@@ -339,7 +337,6 @@
     <string name="how_to">Come si fa</string>
     <string name="how_to_use_your_servers">Come usare i tuoi server</string>
     <string name="enter_one_ICE_server_per_line">Server ICE (uno per riga)</string>
-    <string name="accept_automatically">Automaticamente</string>
     <string name="bold">grassetto</string>
     <string name="callstatus_ended">chiamata terminata <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="callstatus_error">errore di chiamata</string>
@@ -575,7 +572,6 @@
     <string name="you_invited_your_contact">Hai invitato il contatto</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Il tuo profilo di chat verrà inviato
 \nal tuo contatto</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Il tuo contatto può scansionare il codice QR dall\'app.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Il tuo contatto deve essere in linea per completare la connessione.
 \nPuoi annullare questa connessione e rimuovere il contatto (e riprovare più tardi con un link nuovo).</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Verrai connesso/a quando la tua richiesta di connessione verrà accettata, attendi o controlla più tardi!</string>
@@ -612,7 +608,6 @@
     <string name="smp_servers_use_server">Usa il server</string>
     <string name="you_can_also_connect_by_clicking_the_link">Puoi anche connetterti cliccando il link. Se si apre nel browser, clicca il pulsante <b>Apri nell\'app mobile</b>.</string>
     <string name="your_profile_will_be_sent">Il tuo profilo di chat verrà inviato al tuo contatto</string>
-    <string name="your_contact_address">Il tuo indirizzo di contatto</string>
     <string name="smp_servers_your_server">Il tuo server</string>
     <string name="smp_servers_your_server_address">L\'indirizzo del tuo server</string>
     <string name="your_simplex_contact_address">Il tuo indirizzo di contatto di <xliff:g id="appName">SimpleX</xliff:g></string>
@@ -638,11 +633,9 @@
     <string name="network_disable_socks">Usare una connessione internet diretta\?</string>
     <string name="network_use_onion_hosts">Usa gli host .onion</string>
     <string name="network_enable_socks">Usare il proxy SOCKS\?</string>
-    <string name="network_socks_toggle">Usa il proxy SOCKS (porta 9050)</string>
     <string name="use_simplex_chat_servers__question">Usare i server di <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\?</string>
     <string name="using_simplex_chat_servers">Stai usando i server di <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
     <string name="network_use_onion_hosts_prefer">Quando disponibili</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Puoi condividere il tuo indirizzo come link o come codice QR: chiunque potrà connettersi a te. Non perderai i tuoi contatti se in seguito lo elimini.</string>
     <string name="your_ICE_servers">I tuoi server ICE</string>
     <string name="your_SMP_servers">I tuoi server SMP</string>
     <string name="italic">corsivo</string>
@@ -662,7 +655,6 @@
     <string name="callstate_waiting_for_answer">in attesa di risposta…</string>
     <string name="callstate_waiting_for_confirmation">in attesa di conferma…</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Non memorizziamo nessuno dei tuoi contatti o messaggi (una volta recapitati) sui server.</string>
-    <string name="section_title_welcome_message">MESSAGGIO DI BENVENUTO</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Puoi usare il markdown per formattare i messaggi:</string>
     <string name="you_control_your_chat">Sei tu a controllare la tua chat!</string>
     <string name="your_current_profile">Il tuo profilo attuale</string>

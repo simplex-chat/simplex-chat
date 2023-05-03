@@ -48,12 +48,13 @@ fun NetworkAndServersView(
     chatModel.userSMPServersUnsaved.value = null
   }
 
+  val proxyPort = remember { derivedStateOf { chatModel.controller.appPrefs.networkProxyHostPort.state.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
   NetworkAndServersLayout(
     developerTools = developerTools,
     networkUseSocksProxy = networkUseSocksProxy,
     onionHosts = onionHosts,
     sessionMode = sessionMode,
-    proxyPort = remember { derivedStateOf { chatModel.controller.appPrefs.networkProxyHostPort.state.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } },
+    proxyPort = proxyPort,
     showModal = showModal,
     showSettingsModal = showSettingsModal,
     showCustomModal = showCustomModal,
@@ -61,14 +62,15 @@ fun NetworkAndServersView(
       if (enable) {
         AlertManager.shared.showAlertDialog(
           title = generalGetString(R.string.network_enable_socks),
-          text = generalGetString(R.string.network_enable_socks_info),
+          text = generalGetString(R.string.network_enable_socks_info).format(proxyPort.value),
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.apiSetNetworkConfig(NetCfg.proxyDefaults)
-              chatModel.controller.setNetCfg(NetCfg.proxyDefaults)
+              val conf = NetCfg.proxyDefaults.withHostPort(chatModel.controller.appPrefs.networkProxyHostPort.get())
+              chatModel.controller.apiSetNetworkConfig(conf)
+              chatModel.controller.setNetCfg(conf)
               networkUseSocksProxy.value = true
-              onionHosts.value = NetCfg.proxyDefaults.onionHosts
+              onionHosts.value = conf.onionHosts
             }
           }
         )
@@ -79,10 +81,11 @@ fun NetworkAndServersView(
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.apiSetNetworkConfig(NetCfg.defaults)
-              chatModel.controller.setNetCfg(NetCfg.defaults)
+              val conf = NetCfg.defaults
+              chatModel.controller.apiSetNetworkConfig(conf)
+              chatModel.controller.setNetCfg(conf)
               networkUseSocksProxy.value = false
-              onionHosts.value = NetCfg.defaults.onionHosts
+              onionHosts.value = conf.onionHosts
             }
           }
         )
@@ -206,35 +209,31 @@ fun UseSocksProxySwitch(
     ) {
       Icon(
         painterResource(R.drawable.ic_settings_ethernet),
-        stringResource(R.string.network_socks_toggle),
+        stringResource(R.string.network_socks_toggle_use_socks_proxy),
         tint = MaterialTheme.colors.secondary
       )
       TextIconSpaced(false)
-      if (networkUseSocksProxy.value) {
-          val text = buildAnnotatedString {
-            append(generalGetString(R.string.network_socks_toggle_use_socks_proxy) + " (")
-            val style = SpanStyle(color = MaterialTheme.colors.primary)
-            withAnnotation(tag = "PORT", annotation = generalGetString(R.string.network_proxy_port).format(proxyPort.value)) {
-              withStyle(style) { append(generalGetString(R.string.network_proxy_port).format(proxyPort.value)) }
-            }
-            append(")")
-          }
-          ClickableText(
-            text,
-            style = TextStyle(color =  MaterialTheme.colors.onBackground, fontSize = 16.sp, fontFamily = FontFamily(Font(R.font.inter_regular))),
-            onClick = { offset ->
-              text.getStringAnnotations(tag = "PORT", start = offset, end = offset)
-                .firstOrNull()?.let { _ ->
-                  showSettingsModal { SockProxySettings(it) }()
-                }
-            },
-            shouldConsumeEvent = { offset ->
-              text.getStringAnnotations(tag = "PORT", start = offset, end = offset).any()
-            }
-          )
-      } else {
-        Text(stringResource(R.string.network_socks_toggle))
+      val text = buildAnnotatedString {
+        append(generalGetString(R.string.network_socks_toggle_use_socks_proxy) + " (")
+        val style = SpanStyle(color = MaterialTheme.colors.primary)
+        withAnnotation(tag = "PORT", annotation = generalGetString(R.string.network_proxy_port).format(proxyPort.value)) {
+          withStyle(style) { append(generalGetString(R.string.network_proxy_port).format(proxyPort.value)) }
+        }
+        append(")")
       }
+      ClickableText(
+        text,
+        style = TextStyle(color = MaterialTheme.colors.onBackground, fontSize = 16.sp, fontFamily = FontFamily(Font(R.font.inter_regular))),
+        onClick = { offset ->
+          text.getStringAnnotations(tag = "PORT", start = offset, end = offset)
+            .firstOrNull()?.let { _ ->
+              showSettingsModal { SockProxySettings(it) }()
+            }
+        },
+        shouldConsumeEvent = { offset ->
+          text.getStringAnnotations(tag = "PORT", start = offset, end = offset).any()
+        }
+      )
     }
     DefaultSwitch(
       checked = networkUseSocksProxy.value,
@@ -262,19 +261,28 @@ fun SockProxySettings(m: ChatModel) {
     val save = {
       withBGApi {
         m.controller.appPrefs.networkProxyHostPort.set(hostUnsaved.value.text + ":" + portUnsaved.value.text)
-        m.controller.apiSetNetworkConfig(m.controller.getNetCfg())
+        if (m.controller.appPrefs.networkUseSocksProxy.get()) {
+          m.controller.apiSetNetworkConfig(m.controller.getNetCfg())
+        }
       }
     }
     SectionView {
       SectionItemView {
         ResetToDefaultsButton({
-          showUpdateNetworkSettingsDialog {
+          val reset = {
             m.controller.appPrefs.networkProxyHostPort.set(defaultHostPort)
             val newHost = defaultHostPort.split(":").first()
             val newPort = defaultHostPort.split(":").last()
             hostUnsaved.value = hostUnsaved.value.copy(newHost, TextRange(newHost.length))
             portUnsaved.value = portUnsaved.value.copy(newPort, TextRange(newPort.length))
             save()
+          }
+          if (m.controller.appPrefs.networkUseSocksProxy.get()) {
+            showUpdateNetworkSettingsDialog {
+              reset()
+            }
+          } else {
+            reset()
           }
         }, disabled = hostPort == defaultHostPort)
       }
@@ -307,7 +315,7 @@ fun SockProxySettings(m: ChatModel) {
           hostUnsaved.value = hostUnsaved.value.copy(prevHost, TextRange(prevHost.length))
           portUnsaved.value = portUnsaved.value.copy(prevPort, TextRange(prevPort.length))
         },
-        save = { showUpdateNetworkSettingsDialog { save() } },
+        save = { if (m.controller.appPrefs.networkUseSocksProxy.get()) showUpdateNetworkSettingsDialog { save() } else save() },
         revertDisabled = hostPort == (hostUnsaved.value.text + ":" + portUnsaved.value.text),
         saveDisabled = hostPort == (hostUnsaved.value.text + ":" + portUnsaved.value.text) ||
             remember { derivedStateOf { !validHost(hostUnsaved.value.text) } }.value ||

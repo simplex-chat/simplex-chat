@@ -50,7 +50,6 @@
     <string name="icon_descr_close_button">Botão Fechar</string>
     <string name="clear_verification">Limpar verificação</string>
     <string name="app_version_title">Versão do App</string>
-    <string name="accept_automatically">Automaticamente</string>
     <string name="bold">negrito</string>
     <string name="callstatus_error">erro de chamada</string>
     <string name="settings_audio_video_calls">Chamadas de áudio e vídeo</string>
@@ -67,7 +66,6 @@
     <string name="incognito_random_profile_description">Um perfil aleatório será enviado para o seu contato</string>
     <string name="chat_preferences">Preferências de chat</string>
     <string name="network_session_mode_user">perfil de chat</string>
-    <string name="accept_requests">Aceitar solicitações</string>
     <string name="icon_descr_audio_off">Áudio desligado</string>
     <string name="auto_accept_images">Aceitar imagens automaticamente</string>
     <string name="chat_database_deleted">Banco de dados de chat excluído</string>
@@ -123,7 +121,6 @@
     <string name="copied">Copiado para a área de transferência</string>
     <string name="accept_connection_request__question">Aceitar solicitação de conexão\?</string>
     <string name="network_settings">Configurações de rede avançadas</string>
-    <string name="contact_requests">Solicitações de contato</string>
     <string name="create_address">Criar endereço</string>
     <string name="all_your_contacts_will_remain_connected">Todos os seus contatos permanecerão conectados.</string>
     <string name="callstatus_accepted">chamada aceita</string>
@@ -157,7 +154,7 @@
     <string name="alert_title_contact_connection_pending">Contato ainda não está conectado!</string>
     <string name="contribute">Contribuir</string>
     <string name="create_profile_button">Criar</string>
-    <string name="network_enable_socks_info">Acessar os servidores via proxy SOCKS na porta 9050\? O proxy deve ser iniciado antes de habilitar esta opção.</string>
+    <string name="network_enable_socks_info">Acessar os servidores via proxy SOCKS na porta %d\? O proxy deve ser iniciado antes de habilitar esta opção.</string>
     <string name="allow_your_contacts_irreversibly_delete">Permitir que seus contatos excluam de forma irreversível as mensagens enviadas.</string>
     <string name="smp_servers_add_to_another_device">Adicionar a outro dispositivo</string>
     <string name="v4_2_group_links_desc">Os administradores podem criar os links para ingressar em grupos.</string>
@@ -462,7 +459,6 @@
     <string name="reject_contact_button">Rejeitar</string>
     <string name="feature_offered_item">ofereceu %s</string>
     <string name="icon_descr_address"><xliff:g id="appName">Endereço</xliff:g> SimpleX</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Seu contato pode escanear o código QR do aplicativo.</string>
     <string name="feature_offered_item_with_param">ofereceu %s: %2s</string>
     <string name="paste_connection_link_below_to_connect">Cole o link que você recebeu na caixa abaixo para conectar com o seu contato.</string>
     <string name="new_in_version">Novo em %s</string>
@@ -657,7 +653,6 @@
     <string name="this_QR_code_is_not_a_link">Esse código QR não é um link!</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Seu perfil de chat será enviado para seu
 \ncontato</string>
-    <string name="your_contact_address">Seu endereço de contato</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Você será conectado quando o dispositivo do seu contato estiver online, aguarde ou verifique mais tarde!</string>
     <string name="how_to">Como</string>
     <string name="smp_servers_test_failed">Teste do servidor falhou!</string>
@@ -784,7 +779,6 @@
     <string name="network_use_onion_hosts_no_desc_in_alert">Hosts Onion não serão usados.</string>
     <string name="network_use_onion_hosts_prefer_desc">Os hosts Onion serão usados quando disponíveis.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Os hosts Onion serão usados quando disponíveis.</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Você pode compartilhar seu endereço como um link ou como um código QR - qualquer pessoa poderá se conectar a você. Você não perderá seus contatos se excluí-los posteriormente.</string>
     <string name="your_current_profile">Seu perfil atual</string>
     <string name="privacy_redefined">Privacidade redefinida</string>
     <string name="onboarding_notifications_mode_title">Notificações privadas</string>
@@ -815,7 +809,6 @@
     <string name="network_settings_title">Configurações de conexão</string>
     <string name="no_details">sem detalhes</string>
     <string name="add_contact">Link de convite de uso único</string>
-    <string name="network_socks_toggle">Usar proxy SOCKS (porta 9050)</string>
     <string name="smp_servers_your_server_address">Seu endereço de servidor</string>
     <string name="your_settings">Suas configurações</string>
     <string name="is_verified">%s é verificado</string>
@@ -921,7 +914,6 @@
     <string name="you_are_observer">você é um observador</string>
     <string name="voice_message_with_duration">Mensagem de voz (<xliff:g id="duration">%1$s</xliff:g>)</string>
     <string name="share_link">Compartilhar link</string>
-    <string name="section_title_welcome_message">MENSAGEM DE BOAS-VINDAS</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger a privacidade, em vez dos IDs de usuário usados por todas as outras plataformas, <xliff:g id="appName">SimpleX</xliff:g> tem identificadores para filas de mensagens, separados para cada um de seus contatos.</string>
     <string name="icon_descr_video_call">chamada de vídeo</string>
     <string name="show_call_on_lock_screen">Mostrar</string>

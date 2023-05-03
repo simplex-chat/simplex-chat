@@ -261,7 +261,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = R.drawable.ic_translate,
         titleId = R.string.v4_5_italian_interface,
         descrId = R.string.v4_5_italian_interface_descr,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),
@@ -297,7 +297,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = R.drawable.ic_translate,
         titleId = R.string.v4_6_chinese_spanish_interface,
         descrId = R.string.v4_6_chinese_spanish_interface_descr,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),
@@ -318,7 +318,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = R.drawable.ic_translate,
         titleId = R.string.v5_0_polish_interface,
         descrId = R.string.v5_0_polish_interface_descr,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps"
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   )

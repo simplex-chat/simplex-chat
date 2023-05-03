@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-private let howToUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/WEBRTC.md#configure-mobile-apps")!
+private let howToUrl = URL(string: "https://simplex.chat/docs/webrtc.html#configure-mobile-apps")!
 
 let serversFont = Font.custom("Menlo", size: 14)
 

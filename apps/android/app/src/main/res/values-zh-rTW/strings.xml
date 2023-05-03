@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="chat_item_ttl_week">1 個星期</string>
-    <string name="accept_requests">接受請求</string>
     <string name="a_plus_b">a + b</string>
     <string name="about_simplex">關於 SimpleX</string>
     <string name="accept_call_on_lock_screen">接受</string>
@@ -70,7 +69,6 @@
     <string name="app_version_code">程式建構：%s</string>
     <string name="app_version_name">應用程式版本：v%s</string>
     <string name="share_link">分享連結</string>
-    <string name="accept_automatically">自動接受所有請求</string>
     <string name="your_current_profile">你目前的個人檔案</string>
     <string name="display_name_cannot_contain_whitespace">顯示的名稱字與字中間不能有空白。</string>
     <string name="save_preferences_question">儲存設定？</string>
@@ -434,8 +432,6 @@
     <string name="core_version">核心版本：v%s</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="create_address">建立地址</string>
-    <string name="contact_requests">聯絡人請求</string>
-    <string name="section_title_welcome_message">歡迎訊息</string>
     <string name="edit_image">編輯圖片</string>
     <string name="italic">斜體</string>
     <string name="callstatus_rejected">已拒絕通話</string>
@@ -487,7 +483,6 @@
     <string name="this_string_is_not_a_connection_link">這些字串不是連接連結！</string>
     <string name="you_can_also_connect_by_clicking_the_link">你也可以點擊連結連接。如果在瀏覧器中開啟，點擊 <b>程式內的開啟</b> 按扭。</string>
     <string name="one_time_link">一次性邀請連結</string>
-    <string name="your_contact_address">你的聯絡人地址</string>
     <string name="scan_code">掃描二碼碼</string>
     <string name="incorrect_code">錯誤的安全碼！</string>
     <string name="scan_code_from_contacts_app">在你聯絡人的程式內掃描安全碼</string>
@@ -511,7 +506,6 @@
     <string name="network_use_onion_hosts_prefer_desc">Onion 主機會當有的時侯啟用</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">連接時將需要 Onion 主機</string>
     <string name="delete_address__question">刪除地址？</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">你可以使用連結或二維碼分享你的地址 - 任何人也可以和你連線。如果你不主動刪除你的聯絡人，你並不會遺失你的聯絡人</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">你的個人檔案只會儲存於你的裝置和只會分享給你的聯絡人。 <xliff:g id="appName">SimpleX</xliff:g> 伺服器並不會看到你的個人檔案。</string>
     <string name="save_and_notify_contact">儲存並通知你的聯絡人</string>
     <string name="save_and_notify_contacts">儲存並通知你的多個聯絡人</string>
@@ -525,11 +519,9 @@
     <string name="callstate_received_answer">收到回應 …</string>
     <string name="callstate_connecting">連接中 …</string>
     <string name="callstate_ended">通話完結</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">你的聯絡人可以在程式內使用二維碼</string>
     <string name="connect_button">連接</string>
     <string name="network_and_servers">網路 &amp; 伺服器</string>
     <string name="network_settings_title">網路設定</string>
-    <string name="network_socks_toggle">使用 SOCKS 代理伺服器 （端口 9050)</string>
     <string name="network_enable_socks">使用 SOCKS 代理伺服器</string>
     <string name="save_and_notify_group_members">儲存並通知群組內的聯絡人</string>
     <string name="exit_without_saving">退出並且不儲存記錄</string>

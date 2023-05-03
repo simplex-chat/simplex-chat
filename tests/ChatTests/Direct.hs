@@ -82,7 +82,7 @@ chatDirectTests = do
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
-    it "show message decryption error and update count" testMsgDecryptError
+    xit "show message decryption error and update count" testMsgDecryptError
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact

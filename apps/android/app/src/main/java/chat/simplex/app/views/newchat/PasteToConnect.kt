@@ -85,7 +85,7 @@ fun PasteToConnectLayout(
     )
 
     Box(Modifier.padding(top = DEFAULT_PADDING, bottom = 6.dp)) {
-      TextEditor(Modifier.height(180.dp), text = connectionLink)
+      TextEditor(connectionLink, Modifier.height(180.dp), contentPadding = PaddingValues())
     }
 
     Row(

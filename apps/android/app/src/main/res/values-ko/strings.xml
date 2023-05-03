@@ -52,13 +52,10 @@
     <string name="network_settings">고급 네트워크 설정</string>
     <string name="network_session_mode_user">채팅 프로필</string>
     <string name="network_session_mode_entity">연결</string>
-    <string name="accept_requests">요청 수락</string>
     <string name="app_version_code">앱 빌드 : %s</string>
     <string name="appearance_settings">외관</string>
     <string name="app_version_title">앱 버전</string>
     <string name="app_version_name">앱 버전 : v%s</string>
-    <string name="accept_automatically">자동</string>
-    <string name="contact_requests">대화 상대의 요청</string>
     <string name="core_version">코어 버전 : v%s</string>
     <string name="callstatus_accepted">전화 받음</string>
     <string name="bold">굵게</string>
@@ -143,7 +140,7 @@
     <string name="accept_call_on_lock_screen">응답</string>
     <string name="accept_connection_request__question">연결 요청을 수락할까요\?</string>
     <string name="accept_feature">수락</string>
-    <string name="network_enable_socks_info">SOCKS 프록시(포트 9050)를 통해 서버에 액세스할까요\? 이 설정을 활성화하기 전에 프록시를 시작해야 해요.</string>
+    <string name="network_enable_socks_info">SOCKS 프록시(포트 %d)를 통해 서버에 액세스할까요\? 이 설정을 활성화하기 전에 프록시를 시작해야 해요.</string>
     <string name="smp_servers_add_to_another_device">다른 기기에 추가</string>
     <string name="v4_3_improved_server_configuration_desc">QR 코드 스캔으로 서버 추가</string>
     <string name="button_add_welcome_message">환영 메시지 추가</string>
@@ -670,7 +667,6 @@
     <string name="mark_unread">읽지 않음으로 표시</string>
     <string name="mute_chat">음소거</string>
     <string name="markdown_in_messages">메시지에 사용된 마크다운</string>
-    <string name="network_socks_toggle">SOCKS 프록시 사용 (포트 9050)</string>
     <string name="network_disable_socks">직접적인 인터넷 연결을 사용할까요\?</string>
     <string name="network_enable_socks">SOCKS 프록시를 사용할까요\?</string>
     <string name="network_disable_socks_info">설정하면 메시징 서버에서 내 IP 주소와 내가 연결하려는 서버를 볼 수 있어요.</string>
@@ -828,12 +824,10 @@
     <string name="send_live_message_desc">라이브 메시지 보내기 - 입력 과정을 실시간으로 상대에게 보여줘요.</string>
     <string name="send_verb">보내기</string>
     <string name="share_invitation_link">초대 링크 공유</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">연락하고자 하는 사람이 앱에서 QR 코드를 스캔할 수 있어요.</string>
     <string name="security_code">보안 코드</string>
     <string name="smp_servers_scan_qr">서버 QR코드 스캔</string>
     <string name="smp_servers_test_some_failed">일부 서버가 테스트에 통과하지 못했습니다 :</string>
     <string name="smp_servers_test_failed">서버 테스트 실패!</string>
-    <string name="section_title_welcome_message">환영 메시지</string>
     <string name="share_link">링크 공유</string>
     <string name="show_call_on_lock_screen">표시하기</string>
     <string name="select_contacts">연락처 선택</string>

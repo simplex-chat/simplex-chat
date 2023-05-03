@@ -266,7 +266,7 @@ private fun HowToButton() {
   SettingsActionItem(
     painterResource(R.drawable.ic_open_in_new),
     stringResource(R.string.how_to_use_your_servers),
-    { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
+    { uriHandler.openUriCatching("https://simplex.chat/docs/server.html") },
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary
   )

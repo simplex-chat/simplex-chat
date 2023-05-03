@@ -120,7 +120,7 @@ fun RTCServersLayout(
       } else {
         Text(stringResource(R.string.enter_one_ICE_server_per_line))
         if (editRTCServers) {
-          TextEditor(Modifier.height(160.dp), text = userRTCServersStr)
+          TextEditor(userRTCServersStr, Modifier.height(160.dp), contentPadding = PaddingValues())
 
           Row(
             Modifier.fillMaxWidth(),
@@ -197,7 +197,7 @@ private fun howToButton() {
   val uriHandler = LocalUriHandler.current
   Row(
     verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier.clickable { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/WEBRTC.md#configure-mobile-apps") }
+    modifier = Modifier.clickable { uriHandler.openUriCatching("https://simplex.chat/docs/webrtc.html#configure-mobile-apps") }
   ) {
     Text(stringResource(R.string.how_to), color = MaterialTheme.colors.primary)
     Icon(

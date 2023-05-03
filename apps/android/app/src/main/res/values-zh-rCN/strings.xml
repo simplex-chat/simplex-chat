@@ -14,7 +14,7 @@
     <string name="color_primary">色调</string>
     <string name="callstatus_accepted">已接受通话</string>
     <string name="accept">接受</string>
-    <string name="network_enable_socks_info">通过 SOCKS 代理访问服务器在端口9050？允许该选项前必须开始代理。</string>
+    <string name="network_enable_socks_info">通过 SOCKS 代理访问服务器在端口%d？允许该选项前必须开始代理。</string>
     <string name="smp_servers_add">添加服务器……</string>
     <string name="smp_servers_add_to_another_device">添加另一设备</string>
     <string name="group_member_role_admin">管理员</string>
@@ -23,7 +23,6 @@
     <string name="accept_connection_request__question">接受连接请求？</string>
     <string name="accept_contact_incognito_button">接受隐身聊天</string>
     <string name="v4_2_group_links_desc">管理员可以创建链接以加入群组。</string>
-    <string name="accept_requests">接受请求</string>
     <string name="smp_servers_preset_add">添加预设服务器</string>
     <string name="connect_via_link">通过链接连接</string>
     <string name="display_name_connection_established">已建立连接</string>
@@ -112,7 +111,6 @@
     <string name="integrity_msg_bad_hash">错误消息散列</string>
     <string name="integrity_msg_bad_id">错误消息 ID</string>
     <string name="settings_audio_video_calls">语音和视频通话</string>
-    <string name="accept_automatically">自动</string>
     <string name="turning_off_service_and_periodic">激活电池优化，关闭了后台服务和新消息的定期请求。您可以通过设置重新启用它们。</string>
     <string name="notifications_mode_service_desc">后台服务一直在运行——一旦有消息，就会显示通知。</string>
     <string name="icon_descr_audio_off">关闭音频</string>
@@ -328,7 +326,6 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">联系人和所有的消息都将被删除——这是不可逆回的！</string>
     <string name="notification_preview_mode_contact">联系人姓名</string>
     <string name="group_member_status_intro_invitation">连接（介绍邀请）</string>
-    <string name="contact_requests">联系人请求</string>
     <string name="callstate_connecting">连接中……</string>
     <string name="contacts_can_mark_messages_for_deletion">联系人可以将信息标记为删除；您将可以查看这些信息。</string>
     <string name="contribute">贡献</string>
@@ -516,7 +513,6 @@
     <string name="you_must_use_the_most_recent_version_of_database">您只能在一台设备上使用最新版本的聊天数据库，否则您可能会停止接收来自某些联系人的消息。</string>
     <string name="new_passphrase">新密码……</string>
     <string name="member_role_will_be_changed_with_notification">该角色将更改为“%s”。群组中每个人都会收到通知。</string>
-    <string name="your_contact_address">您的联系人地址</string>
     <string name="chat_lock">SimpleX 锁定</string>
     <string name="periodic_notifications">定期通知</string>
     <string name="notifications_mode_periodic">定期启动</string>
@@ -876,7 +872,6 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">当您的联系人设备在线时，您将可以连接，请稍等或稍后查看！</string>
     <string name="rate_the_app">评价此应用程序</string>
     <string name="network_enable_socks">使用 SOCKS 代理？</string>
-    <string name="network_socks_toggle">使用 SOCKS 代理（端口 9050）</string>
     <string name="total_files_count_and_size">%d 个文件，总大小为 %s</string>
     <string name="you_joined_this_group">您已加入此群组</string>
     <string name="you_are_invited_to_group">您被邀请加入群组</string>
@@ -891,9 +886,7 @@
     <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> 团队</string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> 成员</string>
     <string name="chat_preferences_yes">是</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">您可以将您的地址作为链接或二维码共享——任何人都可以连接到您。 如果您以后删除它，您不会丢失您的联系人。</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">您可以控制通过哪些服务器<b>接收</b>消息，您的联系人 - 您用来向他们发送消息的服务器。</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">您的联系人可以从应用程序中扫描二维码。</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">您将在组主设备上线时连接到该群组，请稍等或稍后再检查！</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。</string>
     <string name="archive_created_on_ts">创建于 <xliff:g id="archive_ts">%1$s</xliff:g></string>
@@ -942,7 +935,6 @@
     <string name="network_use_onion_hosts">使用 .onion 主机</string>
     <string name="your_ICE_servers">您的 ICE 服务器</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-    <string name="section_title_welcome_message">欢迎消息</string>
     <string name="you_control_your_chat">您的聊天由您掌控！</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">您可以使用 markdown 来编排消息格式：</string>
     <string name="ttl_h">%dh</string>

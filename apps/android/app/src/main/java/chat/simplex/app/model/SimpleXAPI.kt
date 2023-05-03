@@ -855,6 +855,15 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiSetProfileAddress(on: Boolean): User? {
+    val userId = try { currentUserId("apiSetProfileAddress") } catch (e: Exception) { return null }
+    return when (val r = sendCmd(CC.ApiSetProfileAddress(userId, on))) {
+      is CR.UserProfileNoChange -> null
+      is CR.UserProfileUpdated -> r.user
+      else -> throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+    }
+  }
+
   suspend fun apiSetContactPrefs(contactId: Long, prefs: ChatPreferences): Contact? {
     val r = sendCmd(CC.ApiSetContactPrefs(contactId, prefs))
     if (r is CR.ContactPrefsUpdated) return r.toContact
@@ -890,12 +899,12 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun apiDeleteUserAddress(): Boolean {
-    val userId = kotlin.runCatching { currentUserId("apiDeleteUserAddress") }.getOrElse { return false }
+  suspend fun apiDeleteUserAddress(): User? {
+    val userId = try { currentUserId("apiDeleteUserAddress") } catch (e: Exception) { return null }
     val r = sendCmd(CC.ApiDeleteMyAddress(userId))
-    if (r is CR.UserContactLinkDeleted) return true
+    if (r is CR.UserContactLinkDeleted) return r.user
     Log.e(TAG, "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
-    return false
+    return null
   }
 
   private suspend fun apiGetUserAddress(): UserContactLinkRec? {
@@ -1803,6 +1812,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     )
   }
 
+  /**
+   * [AppPreferences.networkProxyHostPort] is not changed here, use appPrefs to set it
+   * */
   fun setNetCfg(cfg: NetCfg) {
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
     appPrefs.networkHostMode.set(cfg.hostMode.name)
@@ -1905,6 +1917,7 @@ sealed class CC {
   class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
+  class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
   class ApiAddressAutoAccept(val userId: Long, val autoAccept: AutoAccept?): CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
   class ApiRejectCall(val contact: Contact): CC()
@@ -1989,6 +2002,7 @@ sealed class CC {
     is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
+    is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
     is ApiAddressAutoAccept -> "/_auto_accept $userId ${AutoAccept.cmdString(autoAccept)}"
     is ApiAcceptContact -> "/_accept $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
@@ -2074,6 +2088,7 @@ sealed class CC {
     is ApiCreateMyAddress -> "apiCreateMyAddress"
     is ApiDeleteMyAddress -> "apiDeleteMyAddress"
     is ApiShowMyAddress -> "apiShowMyAddress"
+    is ApiSetProfileAddress -> "apiSetProfileAddress"
     is ApiAddressAutoAccept -> "apiAddressAutoAccept"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
@@ -2342,6 +2357,15 @@ data class NetCfg(
 ) {
   val useSocksProxy: Boolean get() = socksProxy != null
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null
+
+  fun withHostPort(hostPort: String?, default: String? = ":9050"): NetCfg {
+    val socksProxy = if (hostPort?.startsWith("localhost:") == true) {
+      hostPort.removePrefix("localhost")
+    } else {
+      hostPort ?: default
+    }
+    return copy(socksProxy = socksProxy)
+  }
 
   companion object {
     val defaults: NetCfg =

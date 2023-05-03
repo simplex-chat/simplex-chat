@@ -10,13 +10,22 @@ import SwiftUI
 import SimpleXChat
 
 struct AddGroupMembersView: View {
-    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
+    var chat: Chat
+    var groupInfo: GroupInfo
+
+    var body: some View {
+        AddGroupMembersViewCommon(chat: chat, groupInfo: groupInfo, addedMembersCb: { _ in dismiss() })
+    }
+}
+
+struct AddGroupMembersViewCommon: View {
+    @EnvironmentObject var chatModel: ChatModel
     var chat: Chat
     @State var groupInfo: GroupInfo
     var creatingGroup: Bool = false
     var showFooterCounter: Bool = true
-    var addedMembersCb: ((Set<Int64>) -> Void)? = nil
+    var addedMembersCb: ((Set<Int64>) -> Void)
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .member
     @State private var alert: AddGroupMembersAlert?
@@ -39,7 +48,7 @@ struct AddGroupMembersView: View {
                 addGroupMembersView()
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            Button ("Skip") { addedMembersCb?(selectedContacts) }
+                            Button ("Skip") { addedMembersCb(selectedContacts) }
                         }
                     }
             }
@@ -128,8 +137,7 @@ struct AddGroupMembersView: View {
                     let member = try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
                     await MainActor.run { _ = ChatModel.shared.upsertGroupMember(groupInfo, member) }
                 }
-                await MainActor.run { dismiss() }
-                if let cb = addedMembersCb { cb(selectedContacts) }
+                addedMembersCb(selectedContacts)
             } catch {
                 let a = getErrorAlert(error, "Error adding member(s)")
                 alert = .error(title: a.title, error: a.message)
