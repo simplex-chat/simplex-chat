@@ -386,7 +386,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..))
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, diffInPicos)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -3975,7 +3975,7 @@ toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUser
   PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, viaUserContactLink, groupLinkId, customUserProfileId, connReqInv, localAlias, createdAt, updatedAt}
 
 getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChat db user contactId pagination search_ = timeItEIO "getDirectChat" $ do
+getDirectChat db user contactId pagination search_ = do
   let search = fromMaybe "" search_
   case pagination of
     CPLast count -> getDirectChatLast_ db user contactId count search
@@ -3984,9 +3984,9 @@ getDirectChat db user contactId pagination search_ = timeItEIO "getDirectChat" $
 
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatLast_ db user contactId count search = do
-  contact <- timeItEIO "getContact" $ getContact db user contactId
+  contact <- getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItems <- timeItEIO "getDirectChatItemsLast" $ getDirectChatItemsLast db user contactId count search
+  chatItems <- getDirectChatItemsLast db user contactId count search
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
@@ -4115,7 +4115,7 @@ getContact db user@User {userId} contactId =
       (userId, contactId, ConnReady, ConnSndReady)
 
 getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChat db user groupId pagination search_ = timeItEIO "getGroupChat" $ do
+getGroupChat db user groupId pagination search_ = do
   let search = fromMaybe "" search_
   case pagination of
     CPLast count -> getGroupChatLast_ db user groupId count search
@@ -4124,11 +4124,10 @@ getGroupChat db user groupId pagination search_ = timeItEIO "getGroupChat" $ do
 
 getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatLast_ db user@User {userId} groupId count search = do
-  groupInfo <- timeItEIO "getGroupInfo" $ getGroupInfo db user groupId
+  groupInfo <- getGroupInfo db user groupId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItemIds <- timeItEIO "getGroupChatItemIdsLast_" $ liftIO getGroupChatItemIdsLast_
-  liftIO $ print $ "length chatItemIds: " <> show (length chatItemIds)
-  chatItems <- timeItEIO "mapM getGroupChatItem" $ mapM (getGroupChatItem db user groupId) chatItemIds
+  chatItemIds <- liftIO getGroupChatItemIdsLast_
+  chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
     getGroupChatItemIdsLast_ :: IO [ChatItemId]
@@ -5362,24 +5361,3 @@ data StoreError
 instance ToJSON StoreError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
-
-timeItEIO :: String -> ExceptT StoreError IO a -> ExceptT StoreError IO a
-timeItEIO s action = do
-  t1 <- liftIO getCurrentTime
-  a <- action
-  t2 <- liftIO getCurrentTime
-  let diff = diffInMillis t2 t1
-  liftIO . print $ show diff <> " ms - " <> s
-  pure a
-
-timeItIO :: String -> IO a -> IO a
-timeItIO s action = do
-  t1 <- getCurrentTime
-  a <- action
-  t2 <- getCurrentTime
-  let diff = diffInMillis t2 t1
-  print $ show diff <> " ms - " <> s
-  pure a
-
-diffInMillis :: UTCTime -> UTCTime -> Int64
-diffInMillis a b = (`div` 1000000000) $ diffInPicos a b

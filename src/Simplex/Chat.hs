@@ -439,11 +439,11 @@ processChatCommand = \case
   APIImportArchive cfg -> withStoreChanged $ importArchive cfg
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
-  ExecChatStoreSQL query -> timeItM "ExecChatStoreSQL" $ CRSQLResult <$> withStore' (`execSQL` query)
+  ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
   APIGetChats userId withPCC -> withUserId userId $ \user ->
     CRApiChats user <$> withStore' (\db -> getChatPreviews db user withPCC)
-  APIGetChat (ChatRef cType cId) pagination search -> timeItM "APIGetChat" $ withUser' $ \user -> case cType of
+  APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
       directChat <- withStore (\db -> getDirectChat db user cId pagination search)
@@ -4864,15 +4864,3 @@ chatCommandP =
 adminContactReq :: ConnReqContact
 adminContactReq =
   either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
-
-timeItM :: ChatMonad m => String -> m a -> m a
-timeItM s action = do
-  t1 <- liftIO getCurrentTime
-  a <- action
-  t2 <- liftIO getCurrentTime
-  let diff = diffInMillis t2 t1
-  liftIO . print $ show diff <> " ms - " <> s
-  pure a
-
-diffInMillis :: UTCTime -> UTCTime -> Int64
-diffInMillis a b = (`div` 1000000000) $ diffInPicos a b
