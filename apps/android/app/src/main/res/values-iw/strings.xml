@@ -77,4 +77,30 @@
     <string name="audio_call_no_encryption">שיחת שמע (לא מוצפנת מקצה לקצה)</string>
     <string name="audio_video_calls">שיחות שמע/וידאו</string>
     <string name="settings_audio_video_calls">שיחות שמע ווידאו</string>
+    <string name="turning_off_service_and_periodic">מיטוב הסוללה פעיל, מכבה את שירות הרקע ובקשות מחזוריות לקבלת הודעות חדשות. ניתן להפעיל אותם מחדש בהגדרות.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>ניתן להשבית זאת בהגדרות</b> - התראות עדיין יוצגו בזמן שהאפליקציה פועלת.</string>
+    <string name="notifications_mode_service_desc">שירות רקע תמיד מופעל - התראות יוצגו מיד כאשר הודעות מגיעות.</string>
+    <string name="la_authenticate">אימות</string>
+    <string name="la_auth_failed">אימות נכשל</string>
+    <string name="back">חזרה</string>
+    <string name="accept_automatically">אוטומטית</string>
+    <string name="bold">מודגש</string>
+    <string name="integrity_msg_bad_hash">גיבוב הודעה שגוי</string>
+    <string name="integrity_msg_bad_id">מזהה הודעה שגוי</string>
+    <string name="alert_title_msg_bad_hash">גיבוב הודעה שגוי</string>
+    <string name="alert_title_msg_bad_id">מזהה הודעה שגוי</string>
+    <string name="auto_accept_images">קבל אוטומטית תמונות</string>
+    <string name="impossible_to_recover_passphrase"><b>שימו לב</b>: לא ניתן יהיה לשחזר או לשנות את הסיסמה אם תאבדו אותה.</string>
+    <string name="available_in_v51">"
+\nזמין מ- v5.1"</string>
+    <string name="both_you_and_your_contact_can_send_voice">גם אתם וגם איש הקשר שלכם יכולים לשלוח הודעות קוליות.</string>
+    <string name="both_you_and_your_contact_can_make_calls">גם אתם וגם איש הקשר שלכם יכולים לבצע שיחות.</string>
+    <string name="v4_2_auto_accept_contact_requests">אשר אוטומטית בקשות ליצירת קשר.</string>
+    <string name="authentication_cancelled">אימות בוטל</string>
+    <string name="auth_unavailable">אימות לא זמין</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>הוסף איש קשר חדש</b>: ליצירת קוד QR חד פעמי עבור איש הקשר שלך.</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת, שירות הרקע לא יופעל.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות חדשות כל 10 דקות. שיחות והודעות דחופות עלולות להתפספס.</string>
+    <string name="both_you_and_your_contacts_can_delete">גם אתם וגם איש הקשר שלכם יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">גם אתם וגם איש הקשר שלכם יכולים לשלוח הודעות נעלמות.</string>
 </resources>
