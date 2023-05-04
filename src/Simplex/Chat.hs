@@ -2261,7 +2261,7 @@ cleanupManager = do
       let (us, us') = partition activeUser users
       forM_ us cleanupUser
       forM_ us' cleanupUser
-      cleanupMessages
+      cleanupMessages `catchError` (toView . CRChatError Nothing)
     liftIO $ threadDelay' $ cleanupManagerInterval * 1000000
   where
     cleanupUser user =
