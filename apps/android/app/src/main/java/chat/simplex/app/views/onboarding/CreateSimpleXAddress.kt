@@ -56,10 +56,7 @@ fun CreateSimpleXAddress(m: ChatModel) {
         }
       }
     },
-    skip = {
-      m.onboardingStage.value = OnboardingStage.Step4_SetNotificationsMode
-    },
-    next = {
+    nextStep = {
       m.onboardingStage.value = OnboardingStage.Step4_SetNotificationsMode
     },
   )
@@ -75,8 +72,7 @@ private fun CreateSimpleXAddressLayout(
   share: (String) -> Unit,
   sendEmail: (UserContactLinkRec) -> Unit,
   createAddress: () -> Unit,
-  skip: () -> Unit,
-  next: () -> Unit,
+  nextStep: () -> Unit,
 ) {
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING),
@@ -92,12 +88,12 @@ private fun CreateSimpleXAddressLayout(
       Spacer(Modifier.weight(1f))
       ShareViaEmailButton { sendEmail(userAddress) }
       Spacer(Modifier.weight(1f))
-      ContinueButton(next)
+      ContinueButton(nextStep)
     } else {
       CreateAddressButton(createAddress)
       TextBelowButton(stringResource(R.string.your_contacts_will_see_it))
       Spacer(Modifier.weight(1f))
-      SkipButton(skip)
+      SkipButton(nextStep)
     }
     SectionBottomSpacer()
   }
