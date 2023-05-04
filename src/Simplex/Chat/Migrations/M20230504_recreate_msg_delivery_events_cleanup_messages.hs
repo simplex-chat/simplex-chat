@@ -18,7 +18,7 @@ CREATE TABLE msg_delivery_events (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-DELETE FROM messages WHERE created_at < datetime('now', '-30 days');;
+DELETE FROM messages WHERE created_at < datetime('now', '-30 days');
 |]
 
 down_m20230504_recreate_msg_delivery_events_cleanup_messages :: Query
