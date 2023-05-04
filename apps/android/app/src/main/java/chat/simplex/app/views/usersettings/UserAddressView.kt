@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,7 +36,7 @@ fun UserAddressView(
   shareViaProfile: Boolean = false,
   close: () -> Unit
 ) {
-  val cxt = LocalContext.current
+  val context = LocalContext.current
   val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
   var progressIndicator by remember { mutableStateOf(false) }
   val onCloseHandler: MutableState<(close: () -> Unit) -> Unit> = remember { mutableStateOf({ _ -> }) }
@@ -71,7 +70,7 @@ fun UserAddressView(
             chatModel.userAddress.value = UserContactLinkRec(connReqContact)
 
             AlertManager.shared.showAlertDialog(
-              title = generalGetString(R.string.delete_address_with_contacts_question),
+              title = generalGetString(R.string.share_address_with_contacts_question),
               text = generalGetString(R.string.add_address_to_your_profile),
               confirmText = generalGetString(R.string.share_verb),
               onConfirm = {
@@ -95,7 +94,14 @@ fun UserAddressView(
           }
         }
       },
-      share = { userAddress: String -> shareText(cxt, userAddress) },
+      share = { userAddress: String -> shareText(context, userAddress) },
+      sendEmail = { userAddress ->
+        sendEmail(
+        context,
+          generalGetString(R.string.email_invite_subject),
+          generalGetString(R.string.email_invite_body).format(userAddress.connReqContact)
+        )
+      },
       setProfileAddress = ::setProfileAddress,
       deleteAddress = {
         AlertManager.shared.showAlertDialog(
@@ -125,7 +131,8 @@ fun UserAddressView(
             savedAAS.value = aas
           }
         }
-      })
+      },
+    )
   }
 
   if (viaCreateLinkView) {
@@ -163,6 +170,7 @@ private fun UserAddressLayout(
   createAddress: () -> Unit,
   learnMore: () -> Unit,
   share: (String) -> Unit,
+  sendEmail: (UserContactLinkRec) -> Unit,
   setProfileAddress: (Boolean) -> Unit,
   deleteAddress: () -> Unit,
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
@@ -194,6 +202,7 @@ private fun UserAddressLayout(
         SectionView(stringResource(R.string.address_section_title).uppercase()) {
           QRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
           ShareAddressButton { share(userAddress.connReqContact) }
+          ShareViaEmailButton { sendEmail(userAddress) }
           ShareWithContactsButton(shareViaProfile, setProfileAddress)
           AutoAcceptToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
           LearnMoreButton(learnMore)
@@ -238,6 +247,17 @@ private fun LearnMoreButton(onClick: () -> Unit) {
     painterResource(R.drawable.ic_info),
     stringResource(R.string.learn_more_about_address),
     onClick,
+  )
+}
+
+@Composable
+fun ShareViaEmailButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(R.drawable.ic_mail),
+    stringResource(R.string.invite_friends),
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
   )
 }
 
@@ -416,7 +436,8 @@ fun PreviewUserAddressLayoutNoAddress() {
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
-      onCloseHandler = remember { mutableStateOf({}) }
+      onCloseHandler = remember { mutableStateOf({}) },
+      sendEmail = {},
     )
   }
 }
@@ -449,7 +470,8 @@ fun PreviewUserAddressLayoutAddressCreated() {
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
-      onCloseHandler = remember { mutableStateOf({}) }
+      onCloseHandler = remember { mutableStateOf({}) },
+      sendEmail = {},
     )
   }
 }
