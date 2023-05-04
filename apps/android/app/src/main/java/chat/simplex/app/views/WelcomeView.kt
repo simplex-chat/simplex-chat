@@ -125,7 +125,7 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
-      chatModel.onboardingStage.value = OnboardingStage.Step3_SetNotificationsMode
+      chatModel.onboardingStage.value = OnboardingStage.Step3_CreateSimpleXAddress
       SimplexApp.context.chatModel.controller.ntfManager.createNtfChannelsMaybeShowAlert()
     } else {
       val users = chatModel.controller.listUsers()
