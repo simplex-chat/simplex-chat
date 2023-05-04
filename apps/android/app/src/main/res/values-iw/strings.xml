@@ -125,9 +125,9 @@
     <string name="callstatus_calling">מתקשר…</string>
     <string name="callstatus_ended">השיחה הסתיימה <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="icon_descr_cancel_file_preview">בטל תצוגה מקדימה של קבצים</string>
-    <string name="connect_via_contact_link">להתחבר דרך קישור ליצירת קשר\?</string>
+    <string name="connect_via_contact_link">להתחבר באמצעות קישור ליצירת קשר\?</string>
     <string name="connect_via_link_verb">התחבר</string>
-    <string name="connect_via_group_link">להתחבר דרך קישור קבוצה\?</string>
+    <string name="connect_via_group_link">להתחבר באמצעות קישור קבוצה\?</string>
     <string name="server_connected">מחובר</string>
     <string name="server_connecting">מתחבר</string>
     <string name="display_name_connecting">מתחבר…</string>
@@ -205,4 +205,10 @@
     <string name="icon_descr_server_status_connected">מחובר</string>
     <string name="display_name_connection_established">חיבור נוצר</string>
     <string name="connection_local_display_name">חיבור <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="connect_via_invitation_link">להתחבר באמצעות קישור הזמנה\?</string>
+    <string name="contact_already_exists">איש הקשר כבר קיים</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">איש הקשר וכל ההודעות יימחקו - לא ניתן לבטל זאת!</string>
+    <string name="connect_via_link_or_qr">התחברות באמצעות קישור / קוד QR</string>
+    <string name="connect_via_link">התחברות באמצעות קישור</string>
+    <string name="chat_preferences_contact_allows">איש הקשר מאפשר</string>
 </resources>
