@@ -192,7 +192,9 @@ struct UserAddressView: View {
         Section {
             QRCode(uri: userAddress.connReqContact)
             shareQRCodeButton(userAddress)
-            shareViaEmailButton(userAddress)
+            if MFMailComposeViewController.canSendMail() {
+                shareViaEmailButton(userAddress)
+            }
             shareWithContactsButton()
             autoAcceptToggle()
             learnMoreButton()
