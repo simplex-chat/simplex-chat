@@ -347,14 +347,6 @@ CREATE TABLE msg_deliveries(
   agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   UNIQUE(connection_id, agent_msg_id)
 );
-CREATE TABLE msg_delivery_events(
-  msg_delivery_event_id INTEGER PRIMARY KEY,
-  msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery
-  delivery_status TEXT NOT NULL, -- see MsgDeliveryStatus for allowed values
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT CHECK(updated_at NOT NULL),
-  UNIQUE(msg_delivery_id, delivery_status)
-);
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
   group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
@@ -595,4 +587,11 @@ CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON extra_xftp_file_descrip
 );
 CREATE INDEX idx_xftp_file_descriptions_user_id ON xftp_file_descriptions(
   user_id
+);
+CREATE TABLE msg_delivery_events(
+  msg_delivery_event_id INTEGER PRIMARY KEY,
+  msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE,
+  delivery_status TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );

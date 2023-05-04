@@ -375,6 +375,7 @@ import Simplex.Chat.Migrations.M20230402_protocol_servers
 import Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
 import Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
 import Simplex.Chat.Migrations.M20230422_profile_contact_links
+import Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -450,7 +451,8 @@ schemaMigrations =
     ("20230402_protocol_servers", m20230402_protocol_servers, Just down_m20230402_protocol_servers),
     ("20230411_extra_xftp_file_descriptions", m20230411_extra_xftp_file_descriptions, Just down_m20230411_extra_xftp_file_descriptions),
     ("20230420_rcv_files_to_receive", m20230420_rcv_files_to_receive, Just down_m20230420_rcv_files_to_receive),
-    ("20230422_profile_contact_links", m20230422_profile_contact_links, Just down_m20230422_profile_contact_links)
+    ("20230422_profile_contact_links", m20230422_profile_contact_links, Just down_m20230422_profile_contact_links),
+    ("20230504_recreate_msg_delivery_events", m20230504_recreate_msg_delivery_events, Just down_m20230504_recreate_msg_delivery_events)
   ]
 
 -- | The list of migrations in ascending order by date
