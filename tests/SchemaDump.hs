@@ -65,7 +65,7 @@ testSchemaMigrations = withTmpFiles $ do
       schema''' `shouldBe` schema'
 
 skipComparisonForDownMigrations :: [String]
-skipComparisonForDownMigrations = ["20230504_recreate_msg_delivery_events"]
+skipComparisonForDownMigrations = ["20230504_recreate_msg_delivery_events_cleanup_messages"]
 
 getSchema :: FilePath -> FilePath -> IO String
 getSchema dpPath schemaPath = do

@@ -453,7 +453,7 @@ schemaMigrations =
     ("20230411_extra_xftp_file_descriptions", m20230411_extra_xftp_file_descriptions, Just down_m20230411_extra_xftp_file_descriptions),
     ("20230420_rcv_files_to_receive", m20230420_rcv_files_to_receive, Just down_m20230420_rcv_files_to_receive),
     ("20230422_profile_contact_links", m20230422_profile_contact_links, Just down_m20230422_profile_contact_links),
-    ("20230504_recreate_msg_delivery_events", m20230504_recreate_msg_delivery_events_cleanup_messages, Just down_m20230504_recreate_msg_delivery_events_cleanup_messages)
+    ("20230504_recreate_msg_delivery_events_cleanup_messages", m20230504_recreate_msg_delivery_events_cleanup_messages, Just down_m20230504_recreate_msg_delivery_events_cleanup_messages)
   ]
 
 -- | The list of migrations in ascending order by date
