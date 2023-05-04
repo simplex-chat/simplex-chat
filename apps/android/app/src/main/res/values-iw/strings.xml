@@ -217,4 +217,26 @@
     <string name="status_contact_has_e2e_encryption">לאיש הקשר יש הצפנה מקצה-לקצה</string>
     <string name="icon_descr_contact_checked">איש הקשר נבדק</string>
     <string name="status_contact_has_no_e2e_encryption">לאיש הקשר אין הצפנה מקצה-לקצה</string>
+    <string name="smp_server_test_create_queue">צור תור</string>
+    <string name="smp_server_test_create_file">צור קובץ</string>
+    <string name="copy_verb">העתק</string>
+    <string name="icon_descr_context">סמל מידע נוסף</string>
+    <string name="copied">הועתק ללוח</string>
+    <string name="share_one_time_link">צור קישור הזמנה חד-פעמי</string>
+    <string name="create_group">צור קבוצה סודית</string>
+    <string name="create_one_time_link">צור קישור הזמנה חד-פעמי</string>
+    <string name="contribute">תרומה</string>
+    <string name="core_version">גרסת ליבה: v%s</string>
+    <string name="create_address">צור כתובת</string>
+    <string name="contact_requests">בקשות ליצירת קשר</string>
+    <string name="create_profile_button">צור</string>
+    <string name="create_profile">צור פרופיל</string>
+    <string name="create_your_profile">יצירת הפרופיל שלך</string>
+    <string name="archive_created_on_ts">נוצר ב- <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="create_group_link">צור קישור קבוצה</string>
+    <string name="button_create_group_link">צור קישור</string>
+    <string name="group_member_status_creator">יוצר</string>
+    <string name="create_secret_group_title">צור קבוצה סודית</string>
+    <string name="contact_preferences">העדפות איש קשר</string>
+    <string name="contacts_can_mark_messages_for_deletion">אנשי קשר יכולים לסמן הודעות למחיקה; ניתן יהיה לראות אותן.</string>
 </resources>
