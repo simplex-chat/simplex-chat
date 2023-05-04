@@ -74,7 +74,7 @@
     <string name="icon_descr_audio_on">שמע פועל</string>
     <string name="calls_prohibited_with_this_contact">שיחות שמע/וידאו אסורות.</string>
     <string name="v4_6_audio_video_calls">שיחות שמע ווידאו</string>
-    <string name="audio_call_no_encryption">שיחת שמע (לא מוצפנת מקצה לקצה)</string>
+    <string name="audio_call_no_encryption">שיחת שמע (לא מוצפנת מקצה-לקצה)</string>
     <string name="audio_video_calls">שיחות שמע/וידאו</string>
     <string name="settings_audio_video_calls">שיחות שמע ווידאו</string>
     <string name="turning_off_service_and_periodic">מיטוב הסוללה פעיל, מכבה את שירות הרקע ובקשות מחזוריות לקבלת הודעות חדשות. ניתן להפעיל אותם מחדש בהגדרות.</string>
@@ -211,4 +211,10 @@
     <string name="connect_via_link_or_qr">התחברות באמצעות קישור / קוד QR</string>
     <string name="connect_via_link">התחברות באמצעות קישור</string>
     <string name="chat_preferences_contact_allows">איש הקשר מאפשר</string>
+    <string name="notification_preview_somebody">איש קשר מוסתר:</string>
+    <string name="notification_preview_mode_contact">שם איש הקשר</string>
+    <string name="alert_title_contact_connection_pending">איש הקשר עוד לא מחובר!</string>
+    <string name="status_contact_has_e2e_encryption">לאיש הקשר יש הצפנה מקצה-לקצה</string>
+    <string name="icon_descr_contact_checked">איש הקשר נבדק</string>
+    <string name="status_contact_has_no_e2e_encryption">לאיש הקשר אין הצפנה מקצה-לקצה</string>
 </resources>
