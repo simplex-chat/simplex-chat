@@ -69,6 +69,8 @@ struct ContentView: View {
     @ViewBuilder private func contentView() -> some View {
         if prefPerformLA && userAuthorized != true {
             lockButton()
+        } else if chatModel.chatDbStatus == nil {
+            initializationView()
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
@@ -102,6 +104,13 @@ struct ContentView: View {
 
     private func lockButton() -> some View {
         Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
+    }
+
+    private func initializationView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+            Text("Initialization…")
+        }
     }
 
     private func mainView() -> some View {
