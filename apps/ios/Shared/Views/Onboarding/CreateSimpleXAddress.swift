@@ -36,10 +36,12 @@ struct CreateSimpleXAddress: View {
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
 
-                            Spacer()
-
-                            shareViaEmailButton(userAddress)
-                                .frame(maxWidth: .infinity)
+                            if MFMailComposeViewController.canSendMail() {
+                                Spacer()
+                                
+                                shareViaEmailButton(userAddress)
+                                    .frame(maxWidth: .infinity)
+                            }
 
                             Spacer()
 
