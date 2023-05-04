@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events where
+module Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20230504_recreate_msg_delivery_events :: Query
-m20230504_recreate_msg_delivery_events =
+m20230504_recreate_msg_delivery_events_cleanup_messages :: Query
+m20230504_recreate_msg_delivery_events_cleanup_messages =
   [sql|
 DROP TABLE msg_delivery_events;
 
@@ -17,10 +17,12 @@ CREATE TABLE msg_delivery_events (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+DELETE FROM messages WHERE created_at < '2023-04-15';
 |]
 
-down_m20230504_recreate_msg_delivery_events :: Query
-down_m20230504_recreate_msg_delivery_events =
+down_m20230504_recreate_msg_delivery_events_cleanup_messages :: Query
+down_m20230504_recreate_msg_delivery_events_cleanup_messages =
   [sql|
 DROP TABLE msg_delivery_events;
 

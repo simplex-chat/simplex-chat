@@ -216,6 +216,7 @@ module Simplex.Chat.Store
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
+    deleteOldMessages,
     updateChatTs,
     createNewSndChatItem,
     createNewRcvChatItem,
@@ -375,7 +376,7 @@ import Simplex.Chat.Migrations.M20230402_protocol_servers
 import Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
 import Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
 import Simplex.Chat.Migrations.M20230422_profile_contact_links
-import Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events
+import Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -452,7 +453,7 @@ schemaMigrations =
     ("20230411_extra_xftp_file_descriptions", m20230411_extra_xftp_file_descriptions, Just down_m20230411_extra_xftp_file_descriptions),
     ("20230420_rcv_files_to_receive", m20230420_rcv_files_to_receive, Just down_m20230420_rcv_files_to_receive),
     ("20230422_profile_contact_links", m20230422_profile_contact_links, Just down_m20230422_profile_contact_links),
-    ("20230504_recreate_msg_delivery_events", m20230504_recreate_msg_delivery_events, Just down_m20230504_recreate_msg_delivery_events)
+    ("20230504_recreate_msg_delivery_events", m20230504_recreate_msg_delivery_events_cleanup_messages, Just down_m20230504_recreate_msg_delivery_events_cleanup_messages)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -3583,6 +3584,10 @@ getPendingGroupMessages db groupMemberId =
 deletePendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> IO ()
 deletePendingGroupMessage db groupMemberId messageId =
   DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
+
+deleteOldMessages :: DB.Connection -> UTCTime -> IO ()
+deleteOldMessages db createdAtCutoff = do
+  DB.execute db "DELETE FROM messages WHERE created_at <= ?" (Only createdAtCutoff)
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 
