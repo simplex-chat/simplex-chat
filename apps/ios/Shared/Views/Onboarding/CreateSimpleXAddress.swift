@@ -190,14 +190,14 @@ struct SendAddressMailView: View {
     var userAddress: UserContactLink
 
     var body: some View {
-        let messageBody = """
+        let messageBody = String(format: NSLocalizedString("""
             <p>Hi!</p>
-            <p><a href="\(userAddress.connReqContact)">Connect to me via SimpleX Chat</a></p>
-            """
+            <p><a href="%@">Connect to me via SimpleX Chat</a></p>
+            """, comment: "email text"), userAddress.connReqContact)
         MailView(
             isShowing: self.$showMailView,
             result: $mailViewResult,
-            subject: "Let's talk in SimpleX Chat",
+            subject: NSLocalizedString("Let's talk in SimpleX Chat", comment: "email subject"),
             messageBody: messageBody
         )
     }
