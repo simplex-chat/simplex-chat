@@ -40,7 +40,7 @@ struct UserAddressView: View {
             }
         }
     }
-    
+
     var body: some View {
         ZStack {
             if viaCreateLinkView {
@@ -192,9 +192,13 @@ struct UserAddressView: View {
         Section {
             QRCode(uri: userAddress.connReqContact)
             shareQRCodeButton(userAddress)
+
             if MFMailComposeViewController.canSendMail() {
                 shareViaEmailButton(userAddress)
+            } else {
+                shareViaEmailToButton(userAddress)
             }
+
             shareWithContactsButton()
             autoAcceptToggle()
             learnMoreButton()
@@ -282,6 +286,16 @@ struct UserAddressView: View {
                     alert = .error(title: a.title, error: a.message)
                 }
                 mailViewResult = nil
+            }
+        }
+    }
+
+    private func shareViaEmailToButton(_ userAddress: UserContactLink) -> some View {
+        Button {
+            UserAddressView.shareUserAddressViaMailTo(userAddress)
+        } label: {
+            settingsRow("envelope") {
+                Text("Invite friends")
             }
         }
     }
@@ -433,6 +447,36 @@ struct UserAddressView: View {
                 logger.error("userAddressAutoAccept error: \(responseError(error))")
             }
         }
+    }
+
+    static func shareUserAddressViaMailTo(_ userAddress: UserContactLink) {
+        guard
+            let subject = String(format: NSLocalizedString("Let's talk in SimpleX Chat", comment: "")).addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+            let addressStr = userAddress.connReqContact.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&"))),
+            let bodyWithoutAddress = (String(format: NSLocalizedString("Hi!\nConnect to me via SimpleX Chat:", comment: "")) + " ").addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+        else { return }
+
+        let body = bodyWithoutAddress + addressStr
+
+        let gmailUrl = URL(string: "googlegmail://co?subject=\(subject)&body=\(body)")
+        let outlookUrl = URL(string: "ms-outlook://compose?subject=\(subject)&body=\(body)")
+        let yahooUrl = URL(string: "ymail://mail/compose?subject=\(subject)&body=\(body)")
+        let sparkUrl = URL(string: "readdle-spark://compose?subject=\(subject)&body=\(body)")
+        var selectedUrl: URL
+
+        if let gmailUrl = gmailUrl, UIApplication.shared.canOpenURL(gmailUrl) {
+            selectedUrl = gmailUrl
+        } else if let outlookUrl = outlookUrl, UIApplication.shared.canOpenURL(outlookUrl) {
+            selectedUrl = outlookUrl
+        } else if let yahooUrl = yahooUrl, UIApplication.shared.canOpenURL(yahooUrl) {
+            selectedUrl = yahooUrl
+        } else if let sparkUrl = sparkUrl, UIApplication.shared.canOpenURL(sparkUrl) {
+            selectedUrl = sparkUrl
+        } else {
+            return
+        }
+
+        UIApplication.shared.open(selectedUrl, options: [:])
     }
 }
 

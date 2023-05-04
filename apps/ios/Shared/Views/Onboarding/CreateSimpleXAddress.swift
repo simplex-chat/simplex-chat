@@ -36,10 +36,13 @@ struct CreateSimpleXAddress: View {
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
 
+                            Spacer()
+
                             if MFMailComposeViewController.canSendMail() {
-                                Spacer()
-                                
                                 shareViaEmailButton(userAddress)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                shareViaEmailToButton(userAddress)
                                     .frame(maxWidth: .infinity)
                             }
 
@@ -170,6 +173,15 @@ struct CreateSimpleXAddress: View {
         }
     }
 
+    private func shareViaEmailToButton(_ userAddress: UserContactLink) -> some View {
+        Button {
+            UserAddressView.shareUserAddressViaMailTo(userAddress)
+        } label: {
+            Label("Invite friends", systemImage: "envelope")
+                .font(.title2)
+        }
+    }
+
     private func continueButton() -> some View {
         Button {
             withAnimation {
@@ -190,14 +202,14 @@ struct SendAddressMailView: View {
     var userAddress: UserContactLink
 
     var body: some View {
-        let messageBody = """
+        let messageBody = NSLocalizedString("""
             <p>Hi!</p>
             <p><a href="\(userAddress.connReqContact)">Connect to me via SimpleX Chat</a></p>
-            """
+            """, comment: "")
         MailView(
             isShowing: self.$showMailView,
             result: $mailViewResult,
-            subject: "Let's talk in SimpleX Chat",
+            subject: NSLocalizedString("Let's talk in SimpleX Chat", comment: ""),
             messageBody: messageBody
         )
     }
