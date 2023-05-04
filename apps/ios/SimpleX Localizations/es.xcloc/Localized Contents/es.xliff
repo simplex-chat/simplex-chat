@@ -4910,9 +4910,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>invitación al grupo %@</target>
         <note>group name</note>
       </trans-unit>
-      <trans-unit id="invited" xml:space="preserve">
+      <trans-unit id="invited" xml:space="preserve" approved="no">
         <source>invited</source>
-        <target>invitado</target>
+        <target state="translated">ha invitado a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="invited %@" xml:space="preserve">
