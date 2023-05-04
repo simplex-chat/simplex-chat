@@ -366,7 +366,7 @@
     <string name="core_version">核心版本: v%s</string>
     <string name="display_name__field">显示名：</string>
     <string name="full_name__field">全名：</string>
-    <string name="display_name">显示名。</string>
+    <string name="display_name">显示名</string>
     <string name="full_name_optional__prompt">全名（可选）</string>
     <string name="callstate_ended">已结束</string>
     <string name="group_member_status_group_deleted">群组已删除</string>
