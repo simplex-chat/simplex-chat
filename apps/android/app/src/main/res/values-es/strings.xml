@@ -558,7 +558,7 @@
     <string name="group_member_role_observer">observador</string>
     <string name="group_member_role_member">miembro</string>
     <string name="group_member_status_removed">eliminado</string>
-    <string name="group_member_status_invited">invitado</string>
+    <string name="group_member_status_invited">ha invitado a</string>
     <string name="no_contacts_to_add">Sin contactos que añadir</string>
     <string name="new_member_role">Nuevo rol de miembro</string>
     <string name="initial_member_role">Rol inicial</string>
