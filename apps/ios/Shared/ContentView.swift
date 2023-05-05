@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
+    @State private var showInitializationView = false
 
     var body: some View {
         ZStack {
@@ -52,6 +53,9 @@ struct ContentView: View {
         .onAppear {
             if prefPerformLA { requestNtfAuthorization() }
             initAuthenticate()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                showInitializationView = true
+            }
         }
         .onChange(of: doAuthenticate) { _ in
             initAuthenticate()
@@ -69,6 +73,8 @@ struct ContentView: View {
     @ViewBuilder private func contentView() -> some View {
         if prefPerformLA && userAuthorized != true {
             lockButton()
+        } else if chatModel.chatDbStatus == nil && showInitializationView {
+            initializationView()
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
@@ -102,6 +108,14 @@ struct ContentView: View {
 
     private func lockButton() -> some View {
         Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
+    }
+
+    private func initializationView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+            Text("Opening database…")
+                .padding()
+        }
     }
 
     private func mainView() -> some View {
