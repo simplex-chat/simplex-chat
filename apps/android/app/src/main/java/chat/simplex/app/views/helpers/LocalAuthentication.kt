@@ -53,7 +53,7 @@ fun authenticate(
     }
     LAMode.PASSCODE -> {
       val password = ksAppPassword.get() ?: return completed(LAResult.Unavailable(generalGetString(R.string.la_no_app_password)))
-      ModalManager.shared.showCustomModal(animated = false) { close ->
+      ModalManager.shared.showPasscodeCustomModal { close ->
         BackHandler {
           close()
           completed(LAResult.Error(generalGetString(R.string.authentication_cancelled)))
