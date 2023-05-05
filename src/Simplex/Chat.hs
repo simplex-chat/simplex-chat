@@ -409,6 +409,7 @@ processChatCommand = \case
   APIActivateChat -> withUser $ \_ -> do
     restoreCalls
     withAgent foregroundAgent
+    withStore' getUsers >>= void . forkIO . startFilesToReceive
     setAllExpireCIFlags True
     ok_
   APISuspendChat t -> do
