@@ -110,6 +110,7 @@ struct ContentView: View {
         VStack {
             ProgressView().scaleEffect(2)
             Text("Initialization…")
+                .padding()
         }
     }
 
