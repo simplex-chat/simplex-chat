@@ -73,7 +73,7 @@ struct ContentView: View {
     @ViewBuilder private func contentView() -> some View {
         if prefPerformLA && userAuthorized != true {
             lockButton()
-        } else if chatModel.chatDbStatus == nil {
+        } else if chatModel.chatDbStatus == nil && showInitializationView {
             initializationView()
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
