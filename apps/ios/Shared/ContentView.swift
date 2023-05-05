@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
+    @State private var showInitializationView = false
 
     var body: some View {
         ZStack {
@@ -71,6 +72,11 @@ struct ContentView: View {
             lockButton()
         } else if chatModel.chatDbStatus == nil {
             initializationView()
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        showInitializationView = true
+                    }
+                }
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
@@ -106,11 +112,15 @@ struct ContentView: View {
         Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
     }
 
-    private func initializationView() -> some View {
-        VStack {
-            ProgressView().scaleEffect(2)
-            Text("Preparing database…")
-                .padding()
+    @ViewBuilder private func initializationView() -> some View {
+        if showInitializationView {
+            VStack {
+                ProgressView().scaleEffect(2)
+                Text("Preparing database…")
+                    .padding()
+            }
+        } else {
+            EmptyView()
         }
     }
 
