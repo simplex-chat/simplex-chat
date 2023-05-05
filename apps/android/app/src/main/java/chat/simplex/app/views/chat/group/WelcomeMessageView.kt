@@ -3,10 +3,8 @@ package chat.simplex.app.views.chat.group
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionView
 import TextIconSpaced
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -18,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
@@ -28,8 +25,6 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
-import kotlinx.serialization.Serializable
-import java.lang.Exception
 
 @Composable
 fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
