@@ -424,18 +424,23 @@ fun MainPage(
 
   @Composable
   fun authView() {
-    Box(
-      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
-      contentAlignment = Alignment.Center
+    Surface(
+      Modifier.fillMaxSize(),
+      color = MaterialTheme.colors.background
     ) {
-      SimpleButton(
-        stringResource(R.string.auth_unlock),
-        icon = painterResource(R.drawable.ic_lock),
-        click = {
-          laFailed.value = false
-          runAuthenticate()
-        }
-      )
+      Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        SimpleButton(
+          stringResource(R.string.auth_unlock),
+          icon = painterResource(R.drawable.ic_lock),
+          click = {
+            laFailed.value = false
+            runAuthenticate()
+          }
+        )
+      }
     }
   }
 
