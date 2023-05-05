@@ -288,7 +288,7 @@
 "Allow" = "Consenti";
 
 /* No comment provided by engineer. */
-"Allow calls only if your contact allows them." = "Consenti le chiamate solo se il contatto le consente.";
+"Allow calls only if your contact allows them." = "Consenti le chiamate solo se il tuo contatto le consente.";
 
 /* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Consenti i messaggi a tempo solo se il contatto li consente a te.";
@@ -2323,7 +2323,7 @@
 "Set group preferences" = "Imposta le preferenze del gruppo";
 
 /* No comment provided by engineer. */
-"Set it instead of system authentication." = "Impostala al posto dell'autenticazione di sistema.";
+"Set it instead of system authentication." = "Impostalo al posto dell'autenticazione di sistema.";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Imposta la password per esportare";
@@ -2485,10 +2485,10 @@
 "Test failed at step %@." = "Test fallito al passo %@.";
 
 /* No comment provided by engineer. */
-"Test server" = "Testa server";
+"Test server" = "Prova server";
 
 /* No comment provided by engineer. */
-"Test servers" = "Testa i server";
+"Test servers" = "Prova i server";
 
 /* No comment provided by engineer. */
 "Tests failed!" = "Test falliti!";

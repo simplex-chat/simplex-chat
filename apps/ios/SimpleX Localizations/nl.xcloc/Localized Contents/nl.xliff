@@ -1200,9 +1200,9 @@ Beschikbaar in v5.1</target>
         <target>Gedecentraliseerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Decryption error" xml:space="preserve" approved="no">
+      <trans-unit id="Decryption error" xml:space="preserve">
         <source>Decryption error</source>
-        <target state="translated">Decodering fout</target>
+        <target>Decodering fout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
@@ -2914,9 +2914,9 @@ Beschikbaar in v5.1</target>
         <target>Periodiek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Permanent decryption error" xml:space="preserve" approved="no">
+      <trans-unit id="Permanent decryption error" xml:space="preserve">
         <source>Permanent decryption error</source>
-        <target state="translated">Decodering fout</target>
+        <target>Decodering fout</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -3707,9 +3707,9 @@ Beschikbaar in v5.1</target>
         <target>Bestand stoppen</target>
         <note>cancel file action</note>
       </trans-unit>
-      <trans-unit id="Stop receiving file?" xml:space="preserve" approved="no">
+      <trans-unit id="Stop receiving file?" xml:space="preserve">
         <source>Stop receiving file?</source>
-        <target state="translated">Stoppen met het ontvangen van bestand?</target>
+        <target>Stoppen met het ontvangen van bestand?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop sending file?" xml:space="preserve">

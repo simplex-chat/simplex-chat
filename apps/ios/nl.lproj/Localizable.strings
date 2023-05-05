@@ -801,7 +801,7 @@
 "Decentralized" = "Gedecentraliseerd";
 
 /* No comment provided by engineer. */
-"Decryption error" = "Decryptie fout";
+"Decryption error" = "Decodering fout";
 
 /* pref value */
 "default (%@)" = "standaard (%@)";
@@ -1951,7 +1951,7 @@
 "Periodically" = "Periodiek";
 
 /* message decrypt error item */
-"Permanent decryption error" = "Decryptie fout";
+"Permanent decryption error" = "Decodering fout";
 
 /* No comment provided by engineer. */
 "PING count" = "PING count";
@@ -2428,7 +2428,7 @@
 "Stop file" = "Bestand stoppen";
 
 /* No comment provided by engineer. */
-"Stop receiving file?" = "Stopt met het ontvangen van een bestand?";
+"Stop receiving file?" = "Stoppen met het ontvangen van bestand?";
 
 /* No comment provided by engineer. */
 "Stop sending file?" = "Bestand verzenden stoppen?";
