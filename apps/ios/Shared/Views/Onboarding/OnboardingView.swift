@@ -22,12 +22,14 @@ struct OnboardingView: View {
     }
 }
 
-enum OnboardingStage {
+enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
     case step2_CreateProfile
     case step3_CreateSimpleXAddress
     case step4_SetNotificationsMode
     case onboardingComplete
+
+    public var id: Self { self }
 }
 
 struct OnboardingStepsView_Previews: PreviewProvider {

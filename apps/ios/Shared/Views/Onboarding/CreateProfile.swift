@@ -124,7 +124,10 @@ struct CreateProfile: View {
             m.currentUser = try apiCreateActiveUser(profile)
             if m.users.isEmpty {
                 try startChat()
-                withAnimation { m.onboardingStage = .step3_CreateSimpleXAddress }
+                withAnimation {
+                    onboardingStageDefault.set(.step3_CreateSimpleXAddress)
+                    m.onboardingStage = .step3_CreateSimpleXAddress
+                }
             } else {
                 dismiss()
                 m.users = try listUsers()
