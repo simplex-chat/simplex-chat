@@ -595,7 +595,6 @@
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
   <string name="all_your_contacts_will_remain_connected_update_sent">All your contacts will remain connected. Profile update will be sent to your contacts.</string>
   <string name="share_link">Share link</string>
-  <string name="delete_address_with_contacts_question">Share address with contacts?</string>
   <string name="add_address_to_your_profile">Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</string>
   <string name="create_address_and_let_people_connect">Create an address to let people connect with you.</string>
   <string name="create_simplex_address">Create SimpleX address</string>
@@ -609,6 +608,15 @@
   <string name="save_settings_question">Save settings?</string>
   <string name="save_auto_accept_settings">Save auto-accept settings</string>
   <string name="delete_address">Delete address</string>
+  <string name="invite_friends">Invite friends</string>
+  <string name="email_invite_subject">Let\'s talk in SimpleX Chat</string>
+  <string name="email_invite_body">Hi!\nConnect to me via SimpleX Chat: %s</string>
+
+  <!-- CreateSimpleXAddress.kt -->
+  <string name="continue_to_next_step">Continue</string>
+  <string name="dont_create_address">Don\'t create address</string>
+  <string name="you_can_create_it_later">You can create it later</string>
+  <string name="your_contacts_will_see_it">Your contacts in SimpleX will see it.\nYou can change it in Settings.</string>
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>

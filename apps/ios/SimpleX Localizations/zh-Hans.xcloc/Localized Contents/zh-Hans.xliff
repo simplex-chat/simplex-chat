@@ -309,6 +309,10 @@ Available in v5.1</source>
         <target>1周</target>
         <note>message ttl</note>
       </trans-unit>
+      <trans-unit id="1-time link" xml:space="preserve">
+        <source>1-time link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="2 weeks" xml:space="preserve">
         <source>2 weeks</source>
         <target>2周</target>
@@ -323,6 +327,11 @@ Available in v5.1</source>
         <source>: </source>
         <target>: </target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve">
+        <source>&lt;p&gt;Hi!&lt;/p&gt;
+&lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
+        <note>email text</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
         <source>A new contact</source>
@@ -1006,6 +1015,10 @@ Available in v5.1</source>
         <target>联系人可以将信息标记为删除；您将可以查看这些信息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Continue" xml:space="preserve">
+        <source>Continue</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
         <source>Copy</source>
         <target>复制</target>
@@ -1457,6 +1470,10 @@ Available in v5.1</source>
         <target>稍后再做</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Don't create address" xml:space="preserve">
+        <source>Don't create address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
         <target>不再显示</target>
@@ -1596,6 +1613,10 @@ Available in v5.1</source>
         <source>Enter server manually</source>
         <target>手动输入服务器</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enter welcome message…" xml:space="preserve">
+        <source>Enter welcome message…</source>
+        <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
         <source>Enter welcome message… (optional)</source>
@@ -1764,6 +1785,10 @@ Available in v5.1</source>
       <trans-unit id="Error saving user password" xml:space="preserve">
         <source>Error saving user password</source>
         <target>保存用户密码时出错</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error sending email" xml:space="preserve">
+        <source>Error sending email</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -2101,9 +2126,8 @@ Available in v5.1</source>
         <target>ICE 服务器（每行一个）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
-        <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
-        <target>如果您不能亲自见面，**在视频通话中出示二维码**，或分享链接。</target>
+      <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve">
+        <source>If you can't meet in person, show QR code in a video call, or share the link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
@@ -2258,6 +2282,10 @@ Available in v5.1</source>
         <target>邀请已过期！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invite friends" xml:space="preserve">
+        <source>Invite friends</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
         <source>Invite members</source>
         <target>邀请成员</target>
@@ -2354,8 +2382,8 @@ Available in v5.1</source>
         <target>大文件！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
-        <source>Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</source>
+      <trans-unit id="Learn more" xml:space="preserve">
+        <source>Learn more</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
@@ -2372,6 +2400,10 @@ Available in v5.1</source>
         <source>Leave group?</source>
         <target>离开群组？</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
+        <source>Let's talk in SimpleX Chat</source>
+        <note>email subject</note>
       </trans-unit>
       <trans-unit id="Light" xml:space="preserve">
         <source>Light</source>
@@ -2972,6 +3004,10 @@ Available in v5.1</source>
         <target>预设服务器地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Preview" xml:space="preserve">
+        <source>Preview</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
         <source>Privacy &amp; security</source>
         <target>隐私和安全</target>
@@ -3059,6 +3095,14 @@ Available in v5.1</source>
       <trans-unit id="Read" xml:space="preserve">
         <source>Read</source>
         <target>已读</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
+        <source>Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
+        <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
@@ -3499,17 +3543,16 @@ Available in v5.1</source>
         <target>分享</target>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Share 1-time link" xml:space="preserve">
+        <source>Share 1-time link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share address" xml:space="preserve">
         <source>Share address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share address with contacts?" xml:space="preserve">
         <source>Share address with contacts?</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Share invitation link" xml:space="preserve">
-        <source>Share invitation link</source>
-        <target>分享邀请链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
@@ -3524,11 +3567,6 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Share with contacts" xml:space="preserve">
         <source>Share with contacts</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Show QR code" xml:space="preserve">
-        <source>Show QR code</source>
-        <target>显示二维码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show calls in phone history" xml:space="preserve">
@@ -3549,6 +3587,10 @@ Available in v5.1</source>
       <trans-unit id="Show:" xml:space="preserve">
         <source>Show:</source>
         <target>显示：</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Address" xml:space="preserve">
+        <source>SimpleX Address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve">
@@ -3923,6 +3965,10 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
         <source>To ask any questions and to receive updates:</source>
         <target>要提出任何问题并接收更新，请：</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve">
+        <source>To connect, your contact can scan QR code or use the link in the app.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To find the profile used for an incognito connection, tap the contact or group name on top of the chat." xml:space="preserve">
@@ -4353,6 +4399,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>您也可以通过点击链接进行连接。如果在浏览器中打开，请点击“在移动应用程序中打开”按钮。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can create it later" xml:space="preserve">
+        <source>You can create it later</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
         <source>You can hide or mute a user profile - swipe it to the right.
 SimpleX Lock must be enabled.</source>
@@ -4524,9 +4574,8 @@ SimpleX Lock must be enabled.</source>
         <target>您的 SMP 服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX contact address" xml:space="preserve">
-        <source>Your SimpleX contact address</source>
-        <target>您的 SimpleX 联系人地址</target>
+      <trans-unit id="Your SimpleX address" xml:space="preserve">
+        <source>Your SimpleX address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your XFTP servers" xml:space="preserve">
@@ -4569,16 +4618,6 @@ SimpleX Lock must be enabled.</source>
         <target>您的聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact address" xml:space="preserve">
-        <source>Your contact address</source>
-        <target>您的联系人地址</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your contact can scan it from the app." xml:space="preserve">
-        <source>Your contact can scan it from the app.</source>
-        <target>您的联系人可以通过应用程序扫描它。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
         <source>Your contact needs to be online for the connection to complete.
 You can cancel this connection and remove the contact (and try later with a new link).</source>
@@ -4594,6 +4633,11 @@ You can cancel this connection and remove the contact (and try later with a new 
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
         <source>Your contacts can allow full message deletion.</source>
         <target>您的联系人可以允许完全删除消息。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
+        <source>Your contacts in SimpleX will see it.
+You can change it in Settings.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts will remain connected." xml:space="preserve">

@@ -1025,6 +1025,7 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
+        onboardingStageDefault.set(.step1_SimpleXInfo)
         m.onboardingStage = .step1_SimpleXInfo
     } else if start {
         try startChat(refreshInvitations: refreshInvitations)
@@ -1050,9 +1051,10 @@ func startChat(refreshInvitations: Bool = true) throws {
             registerToken(token: token)
         }
         withAnimation {
-            m.onboardingStage = m.onboardingStage == .step2_CreateProfile && m.users.count == 1
+            let savedOnboardingStage = onboardingStageDefault.get()
+            m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
                                 ? .step3_CreateSimpleXAddress
-                                : .onboardingComplete
+                                : savedOnboardingStage
         }
     }
     ChatReceiver.shared.start()

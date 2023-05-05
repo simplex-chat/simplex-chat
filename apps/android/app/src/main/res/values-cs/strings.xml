@@ -568,7 +568,7 @@
     <string name="you_have_no_chats">Nemáte žádné konverzace</string>
     <string name="icon_descr_cancel_image_preview">Zrušit náhled obrázku</string>
     <string name="share_message">Sdílet zprávu…</string>
-    <string name="share_image">Sdílet obrázek…</string>
+    <string name="share_image">Sdílet média…</string>
     <string name="icon_descr_cancel_file_preview">Zrušit náhled souboru</string>
     <string name="images_limit_title">Příliš mnoho obrázků!</string>
     <string name="waiting_for_file">Čekání na soubor</string>

@@ -45,6 +45,7 @@ let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
 let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
+let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -71,6 +72,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
+    DEFAULT_ONBOARDING_STAGE: OnboardingStage.onboardingComplete.rawValue,
 ]
 
 enum SimpleXLinkMode: String, Identifiable {
@@ -104,6 +106,8 @@ let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefa
 let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
 
 let privacyLocalAuthModeDefault = EnumDefault<LAMode>(defaults: UserDefaults.standard, forKey: DEFAULT_LA_MODE, withDefault: .system)
+
+let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults.standard, forKey: DEFAULT_ONBOARDING_STAGE, withDefault: .onboardingComplete)
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))

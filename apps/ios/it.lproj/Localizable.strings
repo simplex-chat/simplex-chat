@@ -245,9 +245,6 @@
 /* No comment provided by engineer. */
 "Accept incognito" = "Accetta in incognito";
 
-/* No comment provided by engineer. */
-"Accept requests" = "Accetta le richieste";
-
 /* call status */
 "accepted call" = "chiamata accettata";
 
@@ -288,13 +285,10 @@
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Tutti i messaggi verranno eliminati, non è reversibile! I messaggi verranno eliminati SOLO per te.";
 
 /* No comment provided by engineer. */
-"All your contacts will remain connected" = "Tutti i tuoi contatti resteranno connessi";
-
-/* No comment provided by engineer. */
 "Allow" = "Consenti";
 
 /* No comment provided by engineer. */
-"Allow calls only if your contact allows them." = "Consenti le chiamate solo se il contatto le consente.";
+"Allow calls only if your contact allows them." = "Consenti le chiamate solo se il tuo contatto le consente.";
 
 /* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Consenti i messaggi a tempo solo se il contatto li consente a te.";
@@ -397,9 +391,6 @@
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Auto-accetta immagini";
-
-/* No comment provided by engineer. */
-"Automatically" = "Automaticamente";
 
 /* No comment provided by engineer. */
 "Back" = "Indietro";
@@ -702,9 +693,6 @@
 "Contact preferences" = "Preferenze del contatto";
 
 /* No comment provided by engineer. */
-"Contact requests" = "Richieste del contatto";
-
-/* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "I contatti possono contrassegnare i messaggi per l'eliminazione; potrai vederli.";
 
 /* chat item action */
@@ -715,9 +703,6 @@
 
 /* No comment provided by engineer. */
 "Create" = "Crea";
-
-/* No comment provided by engineer. */
-"Create address" = "Crea indirizzo";
 
 /* server test step */
 "Create file" = "Crea file";
@@ -1405,9 +1390,6 @@
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "Server ICE (uno per riga)";
-
-/* No comment provided by engineer. */
-"If you can't meet in person, **show QR code in the video call**, or share the link." = "Se non potete incontrarvi di persona, **mostra il codice QR durante la videochiamata** o condividi il link.";
 
 /* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Se non potete incontrarvi di persona, puoi **scansionare il codice QR durante la videochiamata** oppure il tuo contatto può condividere un link di invito.";
@@ -2341,7 +2323,7 @@
 "Set group preferences" = "Imposta le preferenze del gruppo";
 
 /* No comment provided by engineer. */
-"Set it instead of system authentication." = "Impostala al posto dell'autenticazione di sistema.";
+"Set it instead of system authentication." = "Impostalo al posto dell'autenticazione di sistema.";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Imposta la password per esportare";
@@ -2359,9 +2341,6 @@
 "Share" = "Condividi";
 
 /* No comment provided by engineer. */
-"Share invitation link" = "Condividi link di invito";
-
-/* No comment provided by engineer. */
 "Share link" = "Condividi link";
 
 /* No comment provided by engineer. */
@@ -2375,9 +2354,6 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Mostra anteprima";
-
-/* No comment provided by engineer. */
-"Show QR code" = "Mostra codice QR";
 
 /* No comment provided by engineer. */
 "Show:" = "Mostra:";
@@ -2509,10 +2485,10 @@
 "Test failed at step %@." = "Test fallito al passo %@.";
 
 /* No comment provided by engineer. */
-"Test server" = "Testa server";
+"Test server" = "Prova server";
 
 /* No comment provided by engineer. */
-"Test servers" = "Testa i server";
+"Test servers" = "Prova i server";
 
 /* No comment provided by engineer. */
 "Tests failed!" = "Test falliti!";
@@ -2917,7 +2893,7 @@
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Puoi condividere un link o un codice QR: chiunque potrà unirsi al gruppo. Non perderai i membri del gruppo se in seguito lo elimini.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Puoi condividere il tuo indirizzo come link o come codice QR: chiunque potrà connettersi a te. Non perderai i tuoi contatti se in seguito lo elimini.";
+"You can share your address as a link or QR code - anybody can connect to you." = "Puoi condividere il tuo indirizzo come link o come codice QR: chiunque potrà connettersi a te.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Puoi avviare la chat via Impostazioni / Database o riavviando l'app";
@@ -3010,6 +2986,9 @@
 "You will stop receiving messages from this group. Chat history will be preserved." = "Non riceverai più messaggi da questo gruppo. La cronologia della chat verrà conservata.";
 
 /* No comment provided by engineer. */
+"You won't lose your contacts if you later delete your address." = "Non perderai i tuoi contatti se in seguito lo elimini.";
+
+/* No comment provided by engineer. */
 "you: " = "tu: ";
 
 /* No comment provided by engineer. */
@@ -3041,12 +3020,6 @@
 
 /* No comment provided by engineer. */
 "Your chats" = "Le tue chat";
-
-/* No comment provided by engineer. */
-"Your contact address" = "Il tuo indirizzo di contatto";
-
-/* No comment provided by engineer. */
-"Your contact can scan it from the app." = "Il tuo contatto può scansionarlo dall'app.";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Il tuo contatto deve essere in linea per completare la connessione.\nPuoi annullare questa connessione e rimuovere il contatto (e riprovare più tardi con un link nuovo).";
@@ -3092,9 +3065,6 @@
 
 /* No comment provided by engineer. */
 "Your settings" = "Le tue impostazioni";
-
-/* No comment provided by engineer. */
-"Your SimpleX contact address" = "Il tuo indirizzo di contatto SimpleX";
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "I tuoi server SMP";

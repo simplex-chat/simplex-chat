@@ -113,6 +113,7 @@ struct CreateSimpleXAddress: View {
         VStack(spacing: 8) {
             Button {
                 withAnimation {
+                    onboardingStageDefault.set(.step4_SetNotificationsMode)
                     m.onboardingStage = .step4_SetNotificationsMode
                 }
             } label: {
@@ -154,6 +155,7 @@ struct CreateSimpleXAddress: View {
                 case let .success(composeResult):
                     switch composeResult {
                     case .sent:
+                        onboardingStageDefault.set(.step4_SetNotificationsMode)
                         m.onboardingStage = .step4_SetNotificationsMode
                     default: ()
                     }
@@ -173,6 +175,7 @@ struct CreateSimpleXAddress: View {
     private func continueButton() -> some View {
         Button {
             withAnimation {
+                onboardingStageDefault.set(.step4_SetNotificationsMode)
                 m.onboardingStage = .step4_SetNotificationsMode
             }
         } label: {
@@ -190,14 +193,14 @@ struct SendAddressMailView: View {
     var userAddress: UserContactLink
 
     var body: some View {
-        let messageBody = """
+        let messageBody = String(format: NSLocalizedString("""
             <p>Hi!</p>
-            <p><a href="\(userAddress.connReqContact)">Connect to me via SimpleX Chat</a></p>
-            """
+            <p><a href="%@">Connect to me via SimpleX Chat</a></p>
+            """, comment: "email text"), userAddress.connReqContact)
         MailView(
             isShowing: self.$showMailView,
             result: $mailViewResult,
-            subject: "Let's talk in SimpleX Chat",
+            subject: NSLocalizedString("Let's talk in SimpleX Chat", comment: "email subject"),
             messageBody: messageBody
         )
     }

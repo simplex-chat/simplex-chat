@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="about_simplex_chat">Sobre o <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="about_simplex">Sobre SimpleX</string>
+    <string name="about_simplex">Sobre o SimpleX</string>
     <string name="chat_item_ttl_day">1 dia</string>
     <string name="chat_item_ttl_week">1 semana</string>
     <string name="chat_item_ttl_month">1 mês</string>
@@ -260,7 +260,7 @@
     <string name="settings_section_title_device">DISPOSITIVO</string>
     <string name="settings_developer_tools">Ferramentas de desenvolvimento</string>
     <string name="group_member_status_introduced">conectando (introduzido)</string>
-    <string name="color_primary">Realçar</string>
+    <string name="color_primary">Destaque</string>
     <string name="error_removing_member">Erro ao remover membro</string>
     <string name="error_changing_role">Erro ao alterar função</string>
     <string name="conn_level_desc_direct">direto</string>
@@ -455,7 +455,7 @@
     <string name="reveal_verb">Revelar</string>
     <string name="icon_descr_server_status_pending">Pendente</string>
     <string name="prohibit_direct_messages">Proibir o envio de DMs para membros.</string>
-    <string name="scan_QR_code">Escanear código QR</string>
+    <string name="scan_QR_code">Escanear QR Code</string>
     <string name="reject_contact_button">Rejeitar</string>
     <string name="feature_offered_item">ofereceu %s</string>
     <string name="icon_descr_address"><xliff:g id="appName">Endereço</xliff:g> SimpleX</string>
@@ -733,7 +733,7 @@
     <string name="send_live_message">Enviar mensagem ao vivo</string>
     <string name="above_then_preposition_continuation">acima, então:</string>
     <string name="to_connect_via_link_title">Para conectar via link</string>
-    <string name="image_descr_qr_code">Código QR</string>
+    <string name="image_descr_qr_code">QR Code</string>
     <string name="mark_code_verified">Marcado como verificado</string>
     <string name="to_verify_compare">Para verificar a criptografia de ponta-a-ponta com seu contato, compare (ou escaneie) o código em seus dispositivos.</string>
     <string name="smp_save_servers_question">Salvar servidores\?</string>
@@ -785,11 +785,9 @@
     <string name="make_private_connection">Fazer uma conexão privada</string>
     <string name="people_can_connect_only_via_links_you_share">Pessoas podem se conectar com você somente via links compartilhados.</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Pode acontecer quando:
-\n1. As mensagens expiram no servidor se não forem recebidas por 30 dias,
-\n2. O servidor que você usa para receber as mensagens deste contato foi atualizado e reiniciado.
-\n3. A conexão está comprometida.
-\nPor favor, conecte-se aos desenvolvedores via Configurações para receber as atualizações sobre os servidores.
-\nEstaremos adicionando redundância de servidor para evitar perda de mensagens.</string>
+\n1. As mensagens expiraram no remetente após 2 dias ou no servidor após 30 dias.
+\n2. A descriptografia da mensagem falhou porque você ou seu contato usou o backup do banco de dados antigo.
+\n3. A conexão foi comprometida.</string>
     <string name="you_have_to_enter_passphrase_every_time">Você tem que digitar a senha toda vez que o aplicativo iniciar - ela não é armazenada no dispositivo.</string>
     <string name="save_welcome_message_question">Salvar mensagem de boas-vindas\?</string>
     <string name="delete_profile">Excluir perfil</string>
@@ -931,7 +929,7 @@
     <string name="auth_unlock">Desbloquear</string>
     <string name="moderate_message_will_be_deleted_warning">A mensagem será excluída para todos os membros.</string>
     <string name="moderate_message_will_be_marked_warning">A mensagem será marcada como moderada para todos os membros.</string>
-    <string name="share_image">Compartilhar imagem…</string>
+    <string name="share_image">Compartilhar mídia…</string>
     <string name="icon_descr_waiting_for_image">Aguardando imagem</string>
     <string name="share_file">Compartilhar arquivo…</string>
     <string name="image_decoding_exception_desc">A imagem não pode ser decodificada. Por favor, tente uma imagem diferente ou entre em contato com os desenvolvedores.</string>
@@ -1074,7 +1072,7 @@
     <string name="network_socks_toggle_use_socks_proxy">Usar proxy SOCKS</string>
     <string name="host_verb">Hospedar</string>
     <string name="disable_onion_hosts_when_not_supported">Definir <i>Usar hosts .onion</i> para não se o proxy SOCKS não oferecer suporte a eles.</string>
-    <string name="port_verb">Porta</string>
+    <string name="port_verb">Migrar</string>
     <string name="confirm_passcode">Confirmar senha</string>
     <string name="incorrect_passcode">Senha incorreta</string>
     <string name="lock_after">Bloquear após</string>
@@ -1090,4 +1088,44 @@
     <string name="enable_lock">Habilitar bloqueio</string>
     <string name="passcode_changed">Senha alterada!</string>
     <string name="you_can_turn_on_lock">Você pode ativar o bloqueio SimpleX via Configurações.</string>
+    <string name="alert_title_msg_bad_hash">Hash de mensagem incorreta</string>
+    <string name="alert_text_msg_bad_hash">O hash da mensagem anterior é diferente.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1"/> descriptografia das mensagens falhou</string>
+    <string name="alert_title_msg_bad_id">ID de mensagem incorreta</string>
+    <string name="alert_text_msg_bad_id">A ID da próxima mensagem está incorreta (menor ou igual à anterior).
+\n
+\nIsso pode acontecer por causa de algum bug ou quando a conexão está comprometida.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Isso pode acontecer quando você ou sua conexão usaram o backup do banco de dados antigo.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Por favor, informe aos desenvolvedores.</string>
+    <string name="stop_rcv_file__message">O recebimento do arquivo será interrompido.</string>
+    <string name="stop_snd_file__message">O envio do arquivo será interrompido.</string>
+    <string name="stop_file__action">Parar arquivo</string>
+    <string name="stop_rcv_file__title">Parar de receber arquivo\?</string>
+    <string name="stop_snd_file__title">Parar de enviar arquivo\?</string>
+    <string name="revoke_file__action">Revogar arquivo</string>
+    <string name="stop_file__confirm">Parar</string>
+    <string name="revoke_file__message">O arquivo será excluído dos servidores.</string>
+    <string name="revoke_file__title">Revogar arquivo\?</string>
+    <string name="no_spaces">Sem espaços!</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Este erro é permanente para esta conexão, por favor, reconecte.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1"/> mensagens ignoradas</string>
+    <string name="audio_video_calls">Chamadas de áudio/vídeo</string>
+    <string name="calls_prohibited_with_this_contact">Chamadas de áudio/vídeo são proibidas.</string>
+    <string name="available_in_v51">"
+\nDisponível em v5.1"</string>
+    <string name="both_you_and_your_contact_can_make_calls">Você e seu contato podem fazer chamadas.</string>
+    <string name="only_you_can_make_calls">Somente você pode fazer chamadas.</string>
+    <string name="only_your_contact_can_make_calls">Somente seu contato pode fazer chamadas.</string>
+    <string name="prohibit_calls">Proibir chamadas de áudio/vídeo.</string>
+    <string name="allow_calls_only_if">Permita chamadas somente se o seu contato permiti-las.</string>
+    <string name="allow_your_contacts_to_call">Permita que seus contatos liguem para você.</string>
+    <string name="v5_0_app_passcode">Senha do aplicativo</string>
+    <string name="v5_0_large_files_support_descr">Rápido e sem esperar até que o remetente esteja online!</string>
+    <string name="v5_0_polish_interface">interface polonesa</string>
+    <string name="v5_0_app_passcode_descr">Defina-o em vez da autenticação do sistema.</string>
+    <string name="v5_0_polish_interface_descr">Obrigado aos usuários – contribuam via Weblate!</string>
+    <string name="v5_0_large_files_support">Vídeos e arquivos de até 1gb</string>
+    <string name="gallery_image_button">Imagem</string>
+    <string name="decryption_error">erro de descriptografia</string>
+    <string name="revoke_file__confirm">Revogar</string>
 </resources>

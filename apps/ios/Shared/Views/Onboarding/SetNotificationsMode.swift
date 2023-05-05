@@ -35,6 +35,7 @@ struct SetNotificationsMode: View {
                     } else {
                         AlertManager.shared.showAlertMsg(title: "No device token!")
                     }
+                    onboardingStageDefault.set(.onboardingComplete)
                     m.onboardingStage = .onboardingComplete
                 } label: {
                     if case .off = notificationMode {

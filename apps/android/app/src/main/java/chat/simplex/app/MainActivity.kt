@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -500,7 +499,8 @@ fun MainPage(
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel) {}
-      onboarding == OnboardingStage.Step3_SetNotificationsMode -> SetNotificationsMode(chatModel)
+      onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel)
+      onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     ModalManager.shared.showInView()
     val invitation = chatModel.activeCallInvitation.value

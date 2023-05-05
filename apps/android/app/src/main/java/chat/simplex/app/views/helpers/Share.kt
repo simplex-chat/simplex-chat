@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.*
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
@@ -46,6 +47,17 @@ fun shareFile(cxt: Context, text: String, filePath: String) {
 fun copyText(cxt: Context, text: String) {
   val clipboard = ContextCompat.getSystemService(cxt, ClipboardManager::class.java)
   clipboard?.setPrimaryClip(ClipData.newPlainText("text", text))
+}
+
+fun sendEmail(context: Context, subject: String, body: CharSequence) {
+  val emailIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
+  emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject)
+  emailIntent.putExtra(Intent.EXTRA_TEXT, body)
+  try {
+    context.startActivity(emailIntent)
+  } catch (e: ActivityNotFoundException) {
+    Log.e(TAG, "No activity was found for handling email intent")
+  }
 }
 
 @Composable

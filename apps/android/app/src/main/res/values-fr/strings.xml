@@ -959,7 +959,7 @@
     <string name="moderated_description">modéré</string>
     <string name="moderated_item_description">modéré par %s</string>
     <string name="delete_member_message__question">Supprimer le message de ce membre \?</string>
-    <string name="moderate_verb">Modéré</string>
+    <string name="moderate_verb">Modérer</string>
     <string name="moderate_message_will_be_deleted_warning">Le message sera supprimé pour tous les membres.</string>
     <string name="moderate_message_will_be_marked_warning">Le message sera marqué comme modéré pour tous les membres.</string>
     <string name="you_are_observer">vous êtes observateur</string>

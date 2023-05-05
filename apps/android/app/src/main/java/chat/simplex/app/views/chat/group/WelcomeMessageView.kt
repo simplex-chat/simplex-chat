@@ -3,12 +3,11 @@ package chat.simplex.app.views.chat.group
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionView
 import TextIconSpaced
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -18,18 +17,19 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
+import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
-import kotlinx.serialization.Serializable
-import java.lang.Exception
 
 @Composable
 fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
-  var groupInfo by remember { mutableStateOf(groupInfo) }
-  val welcomeText = remember { mutableStateOf(groupInfo.groupProfile.description ?: "") }
+  var gInfo by remember { mutableStateOf(groupInfo) }
+  val welcomeText = remember { mutableStateOf(gInfo.groupProfile.description ?: "") }
 
   fun save(afterSave: () -> Unit = {}) {
     withApi {
@@ -37,10 +37,10 @@ fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
       if (welcome?.length == 0) {
         welcome = null
       }
-      val groupProfileUpdated = groupInfo.groupProfile.copy(description = welcome)
-      val res = m.controller.apiUpdateGroup(groupInfo.groupId, groupProfileUpdated)
+      val groupProfileUpdated = gInfo.groupProfile.copy(description = welcome)
+      val res = m.controller.apiUpdateGroup(gInfo.groupId, groupProfileUpdated)
       if (res != null) {
-        groupInfo = res
+        gInfo = res
         m.updateGroup(res)
         welcomeText.value = welcome ?: ""
       }
@@ -50,13 +50,13 @@ fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
 
   ModalView(
     close = {
-      if (welcomeText.value == groupInfo.groupProfile.description || (welcomeText.value == "" && groupInfo.groupProfile.description == null)) close()
+      if (welcomeText.value == gInfo.groupProfile.description || (welcomeText.value == "" && gInfo.groupProfile.description == null)) close()
       else showUnsavedChangesAlert({ save(close) }, close)
     },
   ) {
     GroupWelcomeLayout(
       welcomeText,
-      groupInfo,
+      gInfo,
       m.controller.appPrefs.simplexLinkMode.get(),
       save = ::save
     )
@@ -75,36 +75,59 @@ private fun GroupWelcomeLayout(
   ) {
     val editMode = remember { mutableStateOf(true) }
     AppBarTitle(stringResource(R.string.group_welcome_title))
-    val welcomeText = rememberSaveable { welcomeText }
+    val wt = rememberSaveable { welcomeText }
     if (groupInfo.canEdit) {
       if (editMode.value) {
         val focusRequester = remember { FocusRequester() }
-        TextEditor(welcomeText, Modifier.heightIn(min = 100.dp), stringResource(R.string.enter_welcome_message), focusRequester = focusRequester)
+        TextEditor(
+          wt,
+          Modifier.height(140.dp), stringResource(R.string.enter_welcome_message),
+          focusRequester = focusRequester
+        )
         LaunchedEffect(Unit) {
           delay(300)
           focusRequester.requestFocus()
         }
       } else {
-        TextEditorPreview(welcomeText.value, linkMode)
+        TextPreview(wt.value, linkMode)
       }
       ChangeModeButton(
         editMode.value,
         click = {
           editMode.value = !editMode.value
         },
-        welcomeText.value.isEmpty()
+        wt.value.isEmpty()
       )
-      CopyTextButton { copyText(SimplexApp.context, welcomeText.value) }
+      CopyTextButton { copyText(SimplexApp.context, wt.value) }
       SectionDividerSpaced(maxBottomPadding = false)
       SaveButton(
         save = save,
-        disabled = welcomeText.value == groupInfo.groupProfile.description || (welcomeText.value == "" && groupInfo.groupProfile.description == null)
+        disabled = wt.value == groupInfo.groupProfile.description || (wt.value == "" && groupInfo.groupProfile.description == null)
       )
     } else {
-      TextEditorPreview(welcomeText.value, linkMode)
-      CopyTextButton { copyText(SimplexApp.context, welcomeText.value) }
+      TextPreview(wt.value, linkMode)
+      CopyTextButton { copyText(SimplexApp.context, wt.value) }
     }
     SectionBottomSpacer()
+  }
+}
+
+@Composable
+private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boolean = true) {
+  Column(
+    Modifier.height(140.dp)
+  ) {
+    SelectionContainer(
+      Modifier.verticalScroll(rememberScrollState())
+    ) {
+      MarkdownText(
+        text,
+        formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
+        modifier = Modifier.fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
+        linkMode = linkMode,
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp)
+      )
+    }
   }
 }
 
