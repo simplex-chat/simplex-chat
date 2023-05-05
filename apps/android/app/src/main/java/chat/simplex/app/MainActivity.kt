@@ -10,7 +10,6 @@ import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -60,6 +59,7 @@ class MainActivity: FragmentActivity() {
     }
   }
   private val vm by viewModels<SimplexViewModel>()
+  private val destroyedAfterBackPress = mutableStateOf(false)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -87,6 +87,7 @@ class MainActivity: FragmentActivity() {
             m,
             userAuthorized,
             laFailed,
+            destroyedAfterBackPress,
             ::runAuthenticate,
             ::setPerformLA,
             showLANotice = { showLANotice(m.controller.appPrefs.laNoticeShown, this) }
@@ -109,7 +110,12 @@ class MainActivity: FragmentActivity() {
     val enteredBackgroundVal = enteredBackground.value
     val delay = vm.chatModel.controller.appPrefs.laLockDelay.get()
     if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= delay * 1000) {
-      runAuthenticate()
+      if (userAuthorized.value != false) {
+        /** [runAuthenticate] will be called in [MainPage] if needed. Making like this prevents double showing of passcode on start */
+        setAuthState()
+      } else if (!vm.chatModel.activeCallViewIsVisible.value) {
+        runAuthenticate()
+      }
     }
   }
 
@@ -143,6 +149,7 @@ class MainActivity: FragmentActivity() {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       clearAuthState()
       laFailed.value = true
+      destroyedAfterBackPress.value = true
     }
     if (!onBackPressedDispatcher.hasEnabledCallbacks()) {
       // Drop shared content
@@ -150,13 +157,14 @@ class MainActivity: FragmentActivity() {
     }
   }
 
+  private fun setAuthState() {
+    userAuthorized.value = !vm.chatModel.controller.appPrefs.performLA.get()
+  }
+
   private fun runAuthenticate() {
     val m = vm.chatModel
-    if (!m.controller.appPrefs.performLA.get()) {
-      userAuthorized.value = true
-    } else {
-      userAuthorized.value = false
-      ModalManager.shared.closeModals()
+    setAuthState()
+    if (userAuthorized.value == false) {
       // To make Main thread free in order to allow to Compose to show blank view that hiding content underneath of it faster on slow devices
       CoroutineScope(Dispatchers.Default).launch {
         delay(50)
@@ -377,6 +385,7 @@ fun MainPage(
   chatModel: ChatModel,
   userAuthorized: MutableState<Boolean?>,
   laFailed: MutableState<Boolean>,
+  destroyedAfterBackPress: MutableState<Boolean>,
   runAuthenticate: () -> Unit,
   setPerformLA: (Boolean, FragmentActivity) -> Unit,
   showLANotice: () -> Unit
@@ -413,19 +422,21 @@ fun MainPage(
   }
 
   @Composable
-  fun authView() {
-    Box(
-      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
-      contentAlignment = Alignment.Center
-    ) {
-      SimpleButton(
-        stringResource(R.string.auth_unlock),
-        icon = painterResource(R.drawable.ic_lock),
-        click = {
-          laFailed.value = false
-          runAuthenticate()
-        }
-      )
+  fun AuthView() {
+    Surface(color = MaterialTheme.colors.background) {
+      Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        SimpleButton(
+          stringResource(R.string.auth_unlock),
+          icon = painterResource(R.drawable.ic_lock),
+          click = {
+            laFailed.value = false
+            runAuthenticate()
+          }
+        )
+      }
     }
   }
 
@@ -439,17 +450,8 @@ fun MainPage(
         }
       }
       onboarding == null || userCreated == null -> SplashView()
-      userAuthorized.value != true -> {
-        if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
-          authView()
-        } else {
-          SplashView()
-        }
-      }
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         Box {
-          if (chatModel.showCallView.value) ActiveCallView(chatModel)
-          else {
             showAdvertiseLAAlert = true
             BoxWithConstraints {
               var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
@@ -495,7 +497,6 @@ fun MainPage(
               }
             }
           }
-        }
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel) {}
@@ -503,6 +504,24 @@ fun MainPage(
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     ModalManager.shared.showInView()
+    val unauthorized = remember { derivedStateOf { userAuthorized.value != true } }
+    if (unauthorized.value && !(chatModel.activeCallViewIsVisible.value && chatModel.showCallView.value)) {
+      LaunchedEffect(Unit) {
+        // With these constrains when user presses back button while on ChatList, activity destroys and shows auth request
+        // while the screen moves to a launcher. Detect it and prevent showing the auth
+        if (!(destroyedAfterBackPress.value && chatModel.controller.appPrefs.laMode.get() == LAMode.SYSTEM)) {
+          runAuthenticate()
+        }
+      }
+      if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
+        AuthView()
+      } else {
+        SplashView()
+      }
+    } else if (chatModel.showCallView.value) {
+      ActiveCallView(chatModel)
+    }
+    ModalManager.shared.showPasscodeInView()
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
