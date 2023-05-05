@@ -30,6 +30,7 @@ import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
+import chat.simplex.app.views.chat.group.ProgressIndicator
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
@@ -443,7 +444,9 @@ fun MainPage(
   Box {
     val onboarding = chatModel.onboardingStage.value
     val userCreated = chatModel.userCreated.value
+    var showInitializationView by remember { mutableStateOf(false) }
     when {
+      chatModel.chatDbStatus.value == null && showInitializationView -> InitializationView()
       showChatDatabaseError -> {
         chatModel.chatDbStatus.value?.let {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
@@ -525,6 +528,13 @@ fun MainPage(
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
+
+    LaunchedEffect(Unit) {
+      delay(1000)
+      if (chatModel.chatDbStatus.value == null) {
+        showInitializationView = true
+      }
+    }
   }
 
   DisposableEffectOnRotate {
@@ -532,6 +542,22 @@ fun MainPage(
     // Let's prolong the unlocked period to 3 sec for screen rotation to take place
     if (chatModel.controller.appPrefs.laLockDelay.get() == 0) {
       enteredBackground.value = elapsedRealtime() + 3000
+    }
+  }
+}
+
+@Composable
+private fun InitializationView() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      CircularProgressIndicator(
+        Modifier
+          .padding(bottom = DEFAULT_PADDING)
+          .size(30.dp),
+        color = MaterialTheme.colors.secondary,
+        strokeWidth = 2.5.dp
+      )
+      Text(stringResource(R.string.opening_database))
     }
   }
 }

@@ -11,6 +11,9 @@
   <string name="you_will_join_group">You will join a group this link refers to and connect to its group members.</string>
   <string name="connect_via_link_verb">Connect</string>
 
+  <!-- MainActivity.kt -->
+  <string name="opening_database">Opening database…</string>
+
   <!-- Server info - ChatModel.kt -->
   <string name="server_connected">connected</string>
   <string name="server_error">error</string>
