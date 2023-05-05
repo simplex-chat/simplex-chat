@@ -245,9 +245,6 @@
 /* No comment provided by engineer. */
 "Accept incognito" = "Přijmout inkognito";
 
-/* No comment provided by engineer. */
-"Accept requests" = "Přijímat žádosti";
-
 /* call status */
 "accepted call" = "přijatý hovor";
 
@@ -286,9 +283,6 @@
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Všechny zprávy budou smazány – tuto akci nelze vrátit zpět! Zprávy budou smazány POUZE pro vás.";
-
-/* No comment provided by engineer. */
-"All your contacts will remain connected" = "Všechny vaše kontakty zůstanou připojeny";
 
 /* No comment provided by engineer. */
 "Allow" = "Povolit";
@@ -397,9 +391,6 @@
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Automaticky přijímat obrázky";
-
-/* No comment provided by engineer. */
-"Automatically" = "Automaticky";
 
 /* No comment provided by engineer. */
 "Back" = "Zpět";
@@ -702,9 +693,6 @@
 "Contact preferences" = "Předvolby kontaktů";
 
 /* No comment provided by engineer. */
-"Contact requests" = "Žádosti o kontakt";
-
-/* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Kontakty mohou označit zprávy ke smazání; vy je budete moci zobrazit.";
 
 /* chat item action */
@@ -715,9 +703,6 @@
 
 /* No comment provided by engineer. */
 "Create" = "Vytvořit";
-
-/* No comment provided by engineer. */
-"Create address" = "Vytvořit adresu";
 
 /* server test step */
 "Create file" = "Vytvořit soubor";
@@ -1405,9 +1390,6 @@
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "Servery ICE (jeden na řádek)";
-
-/* No comment provided by engineer. */
-"If you can't meet in person, **show QR code in the video call**, or share the link." = "Pokud se nemůžete setkat osobně, **ukažte QR kód ve videohovoru**, nebo sdílejte odkaz.";
 
 /* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Pokud se nemůžete setkat osobně, můžete **naskenovat QR kód během videohovoru**, nebo váš kontakt může sdílet odkaz na pozvánku.";
@@ -2359,9 +2341,6 @@
 "Share" = "Sdílet";
 
 /* No comment provided by engineer. */
-"Share invitation link" = "Sdílet odkaz na pozvánku";
-
-/* No comment provided by engineer. */
 "Share link" = "Sdílet odkaz";
 
 /* No comment provided by engineer. */
@@ -2375,9 +2354,6 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Zobrazení náhledu";
-
-/* No comment provided by engineer. */
-"Show QR code" = "Zobrazit QR kód";
 
 /* No comment provided by engineer. */
 "Show:" = "Zobrazit:";
@@ -2917,7 +2893,7 @@
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Můžete sdílet odkaz nebo QR kód - ke skupině se bude moci připojit kdokoli. O členy skupiny nepřijdete, pokud ji později odstraníte.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit. O své kontakty nepřijdete, pokud ji později smažete.";
+"You can share your address as a link or QR code - anybody can connect to you." = "Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Chat můžete zahájit prostřednictvím aplikace Nastavení / Databáze nebo restartováním aplikace";
@@ -3010,6 +2986,9 @@
 "You will stop receiving messages from this group. Chat history will be preserved." = "Přestanete dostávat zprávy z této skupiny. Historie chatu bude zachována.";
 
 /* No comment provided by engineer. */
+"You won't lose your contacts if you later delete your address." = "O své kontakty nepřijdete, pokud ji později smažete.";
+
+/* No comment provided by engineer. */
 "you: " = "vy: ";
 
 /* No comment provided by engineer. */
@@ -3041,12 +3020,6 @@
 
 /* No comment provided by engineer. */
 "Your chats" = "Vaše konverzace";
-
-/* No comment provided by engineer. */
-"Your contact address" = "Vaše adresa";
-
-/* No comment provided by engineer. */
-"Your contact can scan it from the app." = "Váš kontakt jej může naskenovat z aplikace.";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "K dokončení připojení, musí být váš kontakt online.\nToto připojení můžete zrušit a kontakt odebrat (a zkusit to později s novým odkazem).";
@@ -3092,9 +3065,6 @@
 
 /* No comment provided by engineer. */
 "Your settings" = "Vaše nastavení";
-
-/* No comment provided by engineer. */
-"Your SimpleX contact address" = "Vaše kontaktní adresa SimpleX";
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Vaše servery SMP";
