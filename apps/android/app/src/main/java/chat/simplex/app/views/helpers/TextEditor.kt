@@ -66,7 +66,7 @@ fun TextEditor(
       value = value.value,
       onValueChange = { value.value = it },
       modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
-      textStyle = TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground),
+      textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
       keyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.None,
         autoCorrect = false
@@ -78,7 +78,7 @@ fun TextEditor(
         TextFieldDefaults.TextFieldDecorationBox(
           value = value.value,
           innerTextField = innerTextField,
-          placeholder = if (placeholder != null) {{ Text(placeholder, fontSize = 18.sp, color = MaterialTheme.colors.secondary) }} else null,
+          placeholder = if (placeholder != null) {{ Text(placeholder, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp)) }} else null,
           contentPadding = PaddingValues(),
           label = null,
           visualTransformation = VisualTransformation.None,
@@ -98,19 +98,6 @@ fun TextEditor(
       .collect {
         valid = isValid(it)
       }
-  }
-}
-
-@Composable
-fun TextEditorPreview(text: String, linkMode: SimplexLinkMode, markdown: Boolean = true) {
-  SelectionContainer {
-    MarkdownText(
-      text,
-      formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
-      modifier = Modifier.heightIn(min = 100.dp).padding(horizontal = DEFAULT_PADDING),
-      linkMode = linkMode,
-      style = TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground)
-    )
   }
 }
 
