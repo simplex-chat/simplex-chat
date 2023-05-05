@@ -11,8 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.app.TAG
-import chat.simplex.app.ui.theme.SettingsBackgroundLight
 import chat.simplex.app.ui.theme.isInDarkTheme
+import chat.simplex.app.ui.theme.themedBackground
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
@@ -25,7 +25,7 @@ fun ModalView(
 ) {
   BackHandler(onBack = close)
   Surface(Modifier.fillMaxSize()) {
-    Column(Modifier.background(background)) {
+    Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
       CloseSheetBar(close, endButtons)
       Box(modifier) { content() }
     }
@@ -40,13 +40,13 @@ class ModalManager {
 
   fun showModal(settings: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable () -> Unit) {
     showCustomModal { close ->
-      ModalView(close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, endButtons = endButtons, content = content)
+      ModalView(close, endButtons = endButtons, content = content)
     }
   }
 
   fun showModalCloseable(settings: Boolean = false, content: @Composable (close: () -> Unit) -> Unit) {
     showCustomModal { close ->
-      ModalView(close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = { content(close) })
+      ModalView(close, content = { content(close) })
     }
   }
 

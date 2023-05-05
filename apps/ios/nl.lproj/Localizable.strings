@@ -245,9 +245,6 @@
 /* No comment provided by engineer. */
 "Accept incognito" = "Accepteer incognito";
 
-/* No comment provided by engineer. */
-"Accept requests" = "Verzoeken accepteren";
-
 /* call status */
 "accepted call" = "geaccepteerde oproep";
 
@@ -286,9 +283,6 @@
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Alle berichten worden verwijderd, dit kan niet ongedaan worden gemaakt! De berichten worden ALLEEN voor jou verwijderd.";
-
-/* No comment provided by engineer. */
-"All your contacts will remain connected" = "Al uw contacten blijven verbonden";
 
 /* No comment provided by engineer. */
 "Allow" = "Toestaan";
@@ -397,9 +391,6 @@
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Afbeeldingen automatisch accepteren";
-
-/* No comment provided by engineer. */
-"Automatically" = "Automatisch";
 
 /* No comment provided by engineer. */
 "Back" = "Terug";
@@ -702,9 +693,6 @@
 "Contact preferences" = "Contact voorkeuren";
 
 /* No comment provided by engineer. */
-"Contact requests" = "Contact verzoeken";
-
-/* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Contact personen kunnen berichten markeren voor verwijdering; u kunt ze wel bekijken.";
 
 /* chat item action */
@@ -715,9 +703,6 @@
 
 /* No comment provided by engineer. */
 "Create" = "Maak";
-
-/* No comment provided by engineer. */
-"Create address" = "Adres aanmaken";
 
 /* server test step */
 "Create file" = "Bestand maken";
@@ -816,7 +801,7 @@
 "Decentralized" = "Gedecentraliseerd";
 
 /* No comment provided by engineer. */
-"Decryption error" = "Decryptie fout";
+"Decryption error" = "Decodering fout";
 
 /* pref value */
 "default (%@)" = "standaard (%@)";
@@ -1407,9 +1392,6 @@
 "ICE servers (one per line)" = "ICE servers (één per lijn)";
 
 /* No comment provided by engineer. */
-"If you can't meet in person, **show QR code in the video call**, or share the link." = "Als je elkaar niet persoonlijk kunt ontmoeten, **toon QR-code in het video gesprek** of deel de link.";
-
-/* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Als u elkaar niet persoonlijk kunt ontmoeten, kunt u **de QR-code scannen in het video gesprek**, of uw contactpersoon kan een uitnodiging link delen.";
 
 /* No comment provided by engineer. */
@@ -1969,7 +1951,7 @@
 "Periodically" = "Periodiek";
 
 /* message decrypt error item */
-"Permanent decryption error" = "Decryptie fout";
+"Permanent decryption error" = "Decodering fout";
 
 /* No comment provided by engineer. */
 "PING count" = "PING count";
@@ -2359,9 +2341,6 @@
 "Share" = "Deel";
 
 /* No comment provided by engineer. */
-"Share invitation link" = "Uitnodiging link delen";
-
-/* No comment provided by engineer. */
 "Share link" = "Deel link";
 
 /* No comment provided by engineer. */
@@ -2375,9 +2354,6 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Toon voorbeeld";
-
-/* No comment provided by engineer. */
-"Show QR code" = "Toon QR-code";
 
 /* No comment provided by engineer. */
 "Show:" = "Toon:";
@@ -2452,7 +2428,7 @@
 "Stop file" = "Bestand stoppen";
 
 /* No comment provided by engineer. */
-"Stop receiving file?" = "Stopt met het ontvangen van een bestand?";
+"Stop receiving file?" = "Stoppen met het ontvangen van bestand?";
 
 /* No comment provided by engineer. */
 "Stop sending file?" = "Bestand verzenden stoppen?";
@@ -2521,7 +2497,7 @@
 "Thank you for installing SimpleX Chat!" = "Bedankt voor het installeren van SimpleX Chat!";
 
 /* No comment provided by engineer. */
-"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "Dank aan de gebruikers - [draag bij via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!";
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Dank aan de gebruikers - [draag bij via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Dank aan de gebruikers – draag bij via Weblate!";
@@ -2917,7 +2893,7 @@
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "U kunt een link of een QR-code delen. Iedereen kan lid worden van de groep. U verliest geen leden van de groep als u deze later verwijdert.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "U kunt uw adres delen als een link of als een QR-code. Iedereen kan verbinding met u maken. U verliest uw contacten niet als u deze later verwijdert.";
+"You can share your address as a link or QR code - anybody can connect to you." = "U kunt uw adres delen als een link of als een QR-code. Iedereen kan verbinding met u maken.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "U kunt de chat starten via app Instellingen / Database of door de app opnieuw op te starten";
@@ -3010,6 +2986,9 @@
 "You will stop receiving messages from this group. Chat history will be preserved." = "Je ontvangt geen berichten meer van deze groep. Je gesprek geschiedenis blijft behouden.";
 
 /* No comment provided by engineer. */
+"You won't lose your contacts if you later delete your address." = "U verliest uw contacten niet als u deze later verwijdert.";
+
+/* No comment provided by engineer. */
 "you: " = "Jij: ";
 
 /* No comment provided by engineer. */
@@ -3041,12 +3020,6 @@
 
 /* No comment provided by engineer. */
 "Your chats" = "Jouw gesprekken";
-
-/* No comment provided by engineer. */
-"Your contact address" = "Uw contact adres";
-
-/* No comment provided by engineer. */
-"Your contact can scan it from the app." = "Uw contactpersoon kan het vanuit de app scannen.";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Uw contactpersoon moet online zijn om de verbinding te voltooien.\nU kunt deze verbinding verbreken en het contact verwijderen (en later proberen met een nieuwe link).";
@@ -3092,9 +3065,6 @@
 
 /* No comment provided by engineer. */
 "Your settings" = "Uw instellingen";
-
-/* No comment provided by engineer. */
-"Your SimpleX contact address" = "Uw SimpleX contact adres";
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Uw SMP servers";

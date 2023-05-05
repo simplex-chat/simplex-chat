@@ -618,6 +618,16 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     }
 }
 
+func apiSetProfileAddress(on: Bool) async throws -> User? {
+    let userId = try currentUserId("apiSetProfileAddress")
+    let r = await chatSendCmd(.apiSetProfileAddress(userId: userId, on: on))
+    switch r {
+    case .userProfileNoChange: return nil
+    case let .userProfileUpdated(user, _, _): return user
+    default: throw r
+    }
+}
+
 func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
     let r = await chatSendCmd(.apiSetContactPrefs(contactId: contactId, preferences: preferences))
     if case let .contactPrefsUpdated(_, _, toContact) = r { return toContact }
@@ -643,10 +653,10 @@ func apiCreateUserAddress() async throws -> String {
     throw r
 }
 
-func apiDeleteUserAddress() async throws {
+func apiDeleteUserAddress() async throws -> User? {
     let userId = try currentUserId("apiDeleteUserAddress")
     let r = await chatSendCmd(.apiDeleteMyAddress(userId: userId))
-    if case .userContactLinkDeleted = r { return }
+    if case let .userContactLinkDeleted(user) = r { return user }
     throw r
 }
 
@@ -943,12 +953,6 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     return []
 }
 
-func apiListMembersSync(_ groupId: Int64) -> [GroupMember] {
-    let r = chatSendCmdSync(.apiListMembers(groupId: groupId))
-    if case let .groupMembers(_, group) = r { return group.members }
-    return []
-}
-
 func filterMembersToAdd(_ ms: [GroupMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
     return ChatModel.shared.chats
@@ -1021,6 +1025,7 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
+        onboardingStageDefault.set(.step1_SimpleXInfo)
         m.onboardingStage = .step1_SimpleXInfo
     } else if start {
         try startChat(refreshInvitations: refreshInvitations)
@@ -1046,9 +1051,10 @@ func startChat(refreshInvitations: Bool = true) throws {
             registerToken(token: token)
         }
         withAnimation {
-            m.onboardingStage = m.onboardingStage == .step2_CreateProfile && m.users.count == 1
-                                ? .step3_SetNotificationsMode
-                                : .onboardingComplete
+            let savedOnboardingStage = onboardingStageDefault.get()
+            m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
+                                ? .step3_CreateSimpleXAddress
+                                : savedOnboardingStage
         }
     }
     ChatReceiver.shared.start()

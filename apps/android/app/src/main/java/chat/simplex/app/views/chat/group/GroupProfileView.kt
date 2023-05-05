@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.group
 
+import SectionBottomSpacer
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.*
@@ -64,7 +65,7 @@ fun GroupProfileLayout(
   val dataUnchanged =
     displayName.value == groupProfile.displayName &&
         fullName.value == groupProfile.fullName &&
-        chosenImage.value == null
+        groupProfile.image == profileImage.value
   val closeWithAlert = {
     if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
       close()
@@ -113,7 +114,7 @@ fun GroupProfileLayout(
             ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(108.dp, profileImage.value, color = HighOrLowlight.copy(alpha = 0.1f))
+                  ProfileImage(108.dp, profileImage.value, color = MaterialTheme.colors.secondary.copy(alpha = 0.1f))
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {
@@ -162,12 +163,12 @@ fun GroupProfileLayout(
             } else {
               Text(
                 stringResource(R.string.save_group_profile),
-                color = HighOrLowlight
+                color = MaterialTheme.colors.secondary
               )
             }
           }
 
-          Spacer(Modifier.height(DEFAULT_BOTTOM_BUTTON_PADDING))
+          SectionBottomSpacer()
 
           LaunchedEffect(Unit) {
             delay(300)

@@ -1,18 +1,17 @@
 package chat.simplex.app.views.chat
 
+import SectionBottomSpacer
 import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -66,7 +65,7 @@ private fun VerifyCodeLayout(
     val splitCode = splitToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {
       if (connectionVerified) {
-        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 4.dp).size(22.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 4.dp).size(22.dp), tint = MaterialTheme.colors.secondary)
         Text(String.format(stringResource(R.string.is_verified), displayName))
       } else {
         Text(String.format(stringResource(R.string.is_not_verified), displayName))
@@ -90,7 +89,7 @@ private fun VerifyCodeLayout(
       val context = LocalContext.current
       Box(Modifier.weight(1f)) {
         IconButton({ shareText(context, connectionCode) }, Modifier.size(20.dp).align(Alignment.CenterStart)) {
-          Icon(Icons.Filled.Share, null, tint = MaterialTheme.colors.primary)
+          Icon(painterResource(R.drawable.ic_share_filled), null, tint = MaterialTheme.colors.primary)
         }
       }
       Spacer(Modifier.weight(1f))
@@ -106,16 +105,16 @@ private fun VerifyCodeLayout(
       horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       if (connectionVerified) {
-        SimpleButton(generalGetString(R.string.clear_verification), Icons.Outlined.Shield) {
+        SimpleButton(generalGetString(R.string.clear_verification), painterResource(R.drawable.ic_shield)) {
           verifyCode(null) {}
         }
       } else {
-        SimpleButton(generalGetString(R.string.scan_code), Icons.Outlined.QrCode) {
+        SimpleButton(generalGetString(R.string.scan_code), painterResource(R.drawable.ic_qr_code)) {
           ModalManager.shared.showModal {
             ScanCodeView(verifyCode) { }
           }
         }
-        SimpleButton(generalGetString(R.string.mark_code_verified), Icons.Outlined.VerifiedUser) {
+        SimpleButton(generalGetString(R.string.mark_code_verified), painterResource(R.drawable.ic_verified_user)) {
           verifyCode(connectionCode) { verified ->
             if (!verified) {
               AlertManager.shared.showAlertMsg(
@@ -126,6 +125,7 @@ private fun VerifyCodeLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

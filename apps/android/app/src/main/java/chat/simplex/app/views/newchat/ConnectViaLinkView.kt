@@ -2,15 +2,14 @@ package chat.simplex.app.views.newchat
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.HighOrLowlight
 
 enum class ConnectViaLinkTab {
   SCAN, PASTE
@@ -45,7 +44,7 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
     }
     TabRow(
       selectedTabIndex = selection.value.ordinal,
-      backgroundColor = MaterialTheme.colors.background,
+      backgroundColor = Color.Transparent,
       contentColor = MaterialTheme.colors.primary,
     ) {
       tabTitles.forEachIndexed { index, it ->
@@ -58,12 +57,12 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
           text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
-              if (ConnectViaLinkTab.SCAN.ordinal == index) Icons.Outlined.QrCode else Icons.Outlined.Article,
+              if (ConnectViaLinkTab.SCAN.ordinal == index) painterResource(R.drawable.ic_qr_code) else painterResource(R.drawable.ic_article),
               it
             )
           },
           selectedContentColor = MaterialTheme.colors.primary,
-          unselectedContentColor = HighOrLowlight,
+          unselectedContentColor = MaterialTheme.colors.secondary,
         )
       }
     }

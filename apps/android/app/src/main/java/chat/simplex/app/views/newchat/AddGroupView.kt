@@ -5,14 +5,13 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowForwardIos
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -89,7 +88,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
-          AppBarTitleCentered(stringResource(R.string.create_secret_group_title))
+          AppBarTitle(stringResource(R.string.create_secret_group_title))
           ReadableText(R.string.group_is_decentralized, TextAlign.Center)
           Box(
             Modifier
@@ -142,7 +141,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
               }
               .padding(8.dp))
           } else {
-            CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
+            CreateGroupButton(MaterialTheme.colors.secondary, Modifier.padding(8.dp))
           }
           LaunchedEffect(Unit) {
             delay(300)
@@ -160,10 +159,10 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.End
   ) {
-    Surface(shape = RoundedCornerShape(20.dp)) {
+    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
       Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = color, fontWeight = FontWeight.Bold)
-        Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = color)
+        Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = color)
       }
     }
   }

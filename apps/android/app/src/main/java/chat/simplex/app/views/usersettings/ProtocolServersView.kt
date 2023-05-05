@@ -1,20 +1,19 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -92,7 +91,6 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
       if (saveDisabled.value) close()
       else showUnsavedChangesAlert({ saveServers(serverProtocol, currServers, servers, m, close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     ProtocolServersLayout(
       serverProtocol,
@@ -168,7 +166,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
           Modifier
             .padding(horizontal = 2.dp)
             .size(30.dp),
-          color = HighOrLowlight,
+          color = MaterialTheme.colors.secondary,
           strokeWidth = 2.5.dp
         )
       }
@@ -195,7 +193,6 @@ private fun ProtocolServersLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_PADDING),
   ) {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) R.string.your_SMP_servers else R.string.your_XFTP_servers))
 
@@ -204,15 +201,14 @@ private fun ProtocolServersLayout(
         SectionItemView({ showServer(srv) }, disabled = testing) {
           ProtocolServerView(serverProtocol, srv, servers, testing)
         }
-        SectionDivider()
       }
       SettingsActionItem(
-        Icons.Outlined.Add,
+        painterResource(R.drawable.ic_add),
         stringResource(R.string.smp_servers_add),
         addServer,
         disabled = testing,
-        textColor = if (testing) HighOrLowlight else MaterialTheme.colors.primary,
-        iconColor = if (testing) HighOrLowlight else MaterialTheme.colors.primary
+        textColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+        iconColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
     SectionTextFooter(
@@ -226,25 +222,24 @@ private fun ProtocolServersLayout(
         }
       }
     )
-    SectionSpacer()
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     SectionView {
       SectionItemView(resetServers, disabled = serversUnchanged) {
-        Text(stringResource(R.string.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else HighOrLowlight)
+        Text(stringResource(R.string.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
-      SectionDivider()
       val testServersDisabled = testing || allServersDisabled
       SectionItemView(testServers, disabled = testServersDisabled) {
-        Text(stringResource(R.string.smp_servers_test_servers), color = if (!testServersDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
+        Text(stringResource(R.string.smp_servers_test_servers), color = if (!testServersDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
-      SectionDivider()
       SectionItemView(saveSMPServers, disabled = saveDisabled) {
-        Text(stringResource(R.string.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
+        Text(stringResource(R.string.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced(maxBottomPadding = false)
     SectionView {
       HowToButton()
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -253,15 +248,15 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
-    !srv.enabled -> Icon(Icons.Outlined.DoNotDisturb, null, tint = HighOrLowlight)
+    !srv.enabled -> Icon(painterResource(R.drawable.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
     else -> ShowTestStatus(srv)
   }
   Spacer(Modifier.padding(horizontal = 4.dp))
   val text = address?.hostnames?.firstOrNull() ?: srv.server
   if (srv.enabled) {
-    Text(text, color = if (disabled) HighOrLowlight else MaterialTheme.colors.onBackground, maxLines = 1)
+    Text(text, color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground, maxLines = 1)
   } else {
-    Text(text, maxLines = 1, color = HighOrLowlight)
+    Text(text, maxLines = 1, color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -269,9 +264,9 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
 private fun HowToButton() {
   val uriHandler = LocalUriHandler.current
   SettingsActionItem(
-    Icons.Outlined.OpenInNew,
+    painterResource(R.drawable.ic_open_in_new),
     stringResource(R.string.how_to_use_your_servers),
-    { uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md") },
+    { uriHandler.openUriCatching("https://simplex.chat/docs/server.html") },
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary
   )
@@ -279,7 +274,7 @@ private fun HowToButton() {
 
 @Composable
 fun InvalidServer() {
-  Icon(Icons.Outlined.ErrorOutline, null, tint = MaterialTheme.colors.error)
+  Icon(painterResource(R.drawable.ic_error), null, tint = MaterialTheme.colors.error)
 }
 
 private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<ServerCfg>): Boolean = servers.all { srv ->

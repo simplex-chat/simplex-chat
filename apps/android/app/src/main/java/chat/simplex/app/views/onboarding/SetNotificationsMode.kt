@@ -10,10 +10,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
@@ -32,7 +30,7 @@ fun SetNotificationsMode(m: ChatModel) {
       .padding(vertical = 14.dp)
   ) {
     //CloseSheetBar(null)
-    AppBarTitleCentered(stringResource(R.string.onboarding_notifications_mode_title))
+    AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title))
     val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
     Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
       Text(stringResource(R.string.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
@@ -42,7 +40,7 @@ fun SetNotificationsMode(m: ChatModel) {
       NotificationButton(currentMode, NotificationsMode.SERVICE, R.string.onboarding_notifications_mode_service, R.string.onboarding_notifications_mode_service_desc)
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
-    Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
         OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
           changeNotificationsMode(currentMode.value, m)
         }
@@ -55,7 +53,7 @@ fun SetNotificationsMode(m: ChatModel) {
 private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mode: NotificationsMode, @StringRes title: Int, @StringRes description: Int) {
   TextButton(
     onClick = { currentMode.value = mode },
-    border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
+    border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),
     shape = RoundedCornerShape(35.dp),
   ) {
     Column(Modifier.padding(horizontal = 14.dp).padding(top = 4.dp, bottom = 8.dp)) {
@@ -63,7 +61,7 @@ private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mod
         stringResource(title),
         style = MaterialTheme.typography.h2,
         fontWeight = FontWeight.Medium,
-        color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight,
+        color = if (currentMode.value == mode) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         modifier = Modifier.padding(bottom = 8.dp).align(Alignment.CenterHorizontally),
         textAlign = TextAlign.Center
       )

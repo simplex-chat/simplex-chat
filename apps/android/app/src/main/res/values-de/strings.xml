@@ -328,7 +328,6 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Sie werden mit der Gruppe verbunden, sobald das Endgerät des Gruppen-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Sie werden verbunden, sobald das Endgerät Ihres Kontakts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Zeigen Sie Ihrem Kontakt den QR-Code aus der App zum Scannen.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs anzeigen</b> oder einen Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ihr Chat-Profil wird
 \nan Ihren Kontakt gesendet</string>
@@ -345,7 +344,6 @@
     <!-- CreateLinkView.kt -->
     <string name="create_one_time_link">Link / QR-Code erstellen</string>
     <string name="one_time_link">Einmaliger Einladungs-Link</string>
-    <string name="your_contact_address">Meine Kontaktadresse</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Meine Einstellungen</string>
     <string name="your_simplex_contact_address">Meine <xliff:g id="appName">SimpleX</xliff:g> Kontaktadresse</string>
@@ -397,9 +395,8 @@
     <string name="network_and_servers">Netzwerk &amp; Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
     <string name="network_settings_title">Netzwerkeinstellungen</string>
-    <string name="network_socks_toggle">SOCKS-Proxy verwenden (Port 9050)</string>
     <string name="network_enable_socks">SOCKS-Proxy verwenden?</string>
-    <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port 9050? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
+    <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port %d? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
     <string name="network_disable_socks">Direkte Internetverbindung verwenden?</string>
     <string name="network_disable_socks_info">Wenn Sie dies bestätigen, können die Messaging-Server Ihre IP-Adresse und Ihren Provider sehen und mit welchen Servern Sie sich verbinden.</string>
     <string name="update_onion_hosts_settings_question">Einstellung für .onion-Hosts aktualisieren?</string>
@@ -418,14 +415,8 @@
     <string name="create_address">Adresse erstellen</string>
     <string name="delete_address__question">Adresse löschen?</string>
     <string name="all_your_contacts_will_remain_connected">Alle Ihre Kontakte bleiben verbunden.</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Sie können Ihre Adresse als Link oder als QR-Code teilen – Jede Person kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</string>
     <string name="share_link">Link teilen</string>
     <string name="delete_address">Adresse löschen</string>
-    <!-- AcceptRequestsView.kt -->
-    <string name="contact_requests">Kontaktanfragen</string>
-    <string name="accept_requests">Anfragen annehmen</string>
-    <string name="accept_automatically">Automatisch</string>
-    <string name="section_title_welcome_message">Begrüßungsmeldung</string>
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Angezeigter Name:</string>
     <string name="full_name__field">"Vollständiger Name:</string>
@@ -1118,8 +1109,6 @@
     <string name="database_migrations">Migrationen: %s</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
-    <string name="cancel_file__question">Dateitransfer abbrechen\?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Der Dateitransfer wird abgebrochen. Falls er gerade abläuft, wird er angehalten.</string>
     <string name="delete_chat_profile">Chat-Profil löschen</string>
     <string name="delete_profile">Profil löschen</string>
     <string name="unhide_profile">Verbergen des Profils aufheben</string>
@@ -1155,7 +1144,6 @@
     <string name="change_lock_mode">Sperr-Modus ändern</string>
     <string name="passcode_not_changed">Passwort wurde nicht geändert!</string>
     <string name="decryption_error">Entschlüsselungsfehler</string>
-    <string name="decryption_error_permanent">Dauerhafter Entschlüsselungsfehler</string>
     <string name="error_loading_xftp_servers">Fehler beim Laden der XFTP-Server</string>
     <string name="la_lock_mode_passcode">Passworteingabe</string>
     <string name="la_enter_app_passcode">Passwort eingeben</string>
@@ -1187,7 +1175,7 @@
     <string name="alert_text_msg_bad_id">Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).
 \nDies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</string>
     <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> Nachrichten konnten nicht entschlüsselt werden.</string>
-    <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht ist unterschiedlich.</string>
+    <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht unterscheidet sich.</string>
     <string name="you_can_turn_on_lock">Sie können die SimpleX Sperre über die Einstellungen aktivieren.</string>
     <string name="network_socks_proxy_settings">SOCKS-Proxy Einstellungen</string>
     <string name="la_lock_mode_system">System-Authentifizierung</string>

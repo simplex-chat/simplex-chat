@@ -1,21 +1,20 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
-import SectionSpacer
 import SectionView
 import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -28,6 +27,8 @@ import chat.simplex.app.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -61,7 +62,7 @@ fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerPr
         Modifier
           .padding(horizontal = 2.dp)
           .size(30.dp),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
       )
     }
@@ -81,7 +82,6 @@ private fun ProtocolServerLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(bottom = DEFAULT_PADDING)
   ) {
     AppBarTitle(stringResource(if (server.preset) R.string.smp_servers_preset_server else R.string.smp_servers_your_server))
 
@@ -90,6 +90,7 @@ private fun ProtocolServerLayout(
     } else {
       CustomServer(testing, server, serverProtocol, testServer, onUpdate, onDelete)
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -108,12 +109,12 @@ private fun PresetServer(
         Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
         style = TextStyle(
           fontFamily = FontFamily.Monospace, fontSize = 16.sp,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       )
     }
   }
-  SectionSpacer()
+  SectionDividerSpaced(maxTopPadding = true)
   UseServerSection(true, testing, server, testServer, onUpdate, onDelete)
 }
 
@@ -136,28 +137,30 @@ private fun CustomServer(
   }
   SectionView(
     stringResource(R.string.smp_servers_your_server_address).uppercase(),
-    icon = Icons.Outlined.ErrorOutline,
+    icon = painterResource(R.drawable.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
     TextEditor(
-      Modifier.height(144.dp),
-      text = serverAddress,
-      border = false,
-      fontSize = 16.sp,
-      background = if (isInDarkTheme()) GroupDark else MaterialTheme.colors.background
-    ) {
-      testedPreviously[server.server] = server.tested
-      onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
+      serverAddress,
+      Modifier.height(144.dp)
+    )
+    LaunchedEffect(Unit) {
+      snapshotFlow { serverAddress.value }
+        .distinctUntilChanged()
+        .collect {
+          testedPreviously[server.server] = server.tested
+          onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
+        }
     }
   }
-  SectionSpacer()
+  SectionDividerSpaced()
   UseServerSection(valid.value, testing, server, testServer, onUpdate, onDelete)
-  SectionSpacer()
 
   if (valid.value) {
+    SectionDividerSpaced()
     SectionView(stringResource(R.string.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value, Modifier.aspectRatio(1f))
+      QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
     }
   }
 }
@@ -173,17 +176,13 @@ private fun UseServerSection(
 ) {
   SectionView(stringResource(R.string.smp_servers_use_server).uppercase()) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
-      Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else HighOrLowlight)
+      Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server)
     }
-    SectionDivider()
-    SectionItemView {
-      val enabled = rememberUpdatedState(server.enabled)
-      PreferenceToggle(stringResource(R.string.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
-    }
-    SectionDivider()
+    val enabled = rememberUpdatedState(server.enabled)
+    PreferenceToggle(stringResource(R.string.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
     SectionItemView(onDelete, disabled = testing) {
-      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) HighOrLowlight else MaterialTheme.colors.error)
+      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
     }
   }
 }
@@ -191,9 +190,9 @@ private fun UseServerSection(
 @Composable
 fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
   when (server.tested) {
-    true -> Icon(Icons.Outlined.Check, null, modifier, tint = SimplexGreen)
-    false -> Icon(Icons.Outlined.Clear, null, modifier, tint = MaterialTheme.colors.error)
-    else -> Icon(Icons.Outlined.Check, null, modifier, tint = Color.Transparent)
+    true -> Icon(painterResource(R.drawable.ic_check), null, modifier, tint = SimplexGreen)
+    false -> Icon(painterResource(R.drawable.ic_close), null, modifier, tint = MaterialTheme.colors.error)
+    else -> Icon(painterResource(R.drawable.ic_check), null, modifier, tint = Color.Transparent)
   }
 
 suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, ProtocolTestFailure?> =

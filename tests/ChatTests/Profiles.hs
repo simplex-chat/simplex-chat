@@ -19,6 +19,7 @@ chatProfileTests = do
     it "update user profile with image" testUpdateProfileImage
   describe "user contact link" $ do
     describe "create and connect via contact link" testUserContactLink
+    it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
@@ -133,6 +134,83 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   threadDelay 100000
   alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
   alice <##> cath
+
+testProfileLink :: HasCallStack => FilePath -> IO ()
+testProfileLink =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+
+      bob <## "alice set new contact address, use /info alice to view"
+      checkAliceProfileLink bob cLink
+
+      cath ##> ("/c " <> cLink)
+      alice <#? cath
+      alice ##> "/ac cath"
+      alice <## "cath (Catherine): accepting contact request..."
+      concurrently_
+        (cath <## "alice (Alice): contact is connected")
+        (alice <## "cath (Catherine): contact is connected")
+      alice <##> cath
+
+      checkAliceProfileLink cath cLink
+
+      alice ##> "/pa off"
+      alice <## "contact address removed"
+
+      bob <## "alice removed contact address"
+      checkAliceNoProfileLink bob
+
+      cath <## "alice removed contact address"
+      checkAliceNoProfileLink cath
+
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+
+      bob <## "alice set new contact address, use /info alice to view"
+      checkAliceProfileLink bob cLink
+
+      cath <## "alice set new contact address, use /info alice to view"
+      checkAliceProfileLink cath cLink
+
+      alice ##> "/da"
+      alice <## "Your chat address is deleted - accepted contacts will remain connected."
+      alice <## "To create a new chat address use /ad"
+
+      bob <## "alice removed contact address"
+      checkAliceNoProfileLink bob
+
+      cath <## "alice removed contact address"
+      checkAliceNoProfileLink cath
+  where
+    checkAliceProfileLink cc cLink = do
+      cc ##> "/info alice"
+      cc <## "contact ID: 2"
+      cc <##. "receiving messages via"
+      cc <##. "sending messages via"
+      cc <## ("contact address: " <> cLink)
+      cc <## "you've shared main profile with this contact"
+      cc <## "connection not verified, use /code command to see security code"
+    checkAliceNoProfileLink cc = do
+      cc ##> "/info alice"
+      cc <## "contact ID: 2"
+      cc <##. "receiving messages via"
+      cc <##. "sending messages via"
+      cc <## "you've shared main profile with this contact"
+      cc <## "connection not verified, use /code command to see security code"
 
 testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
 testUserContactLinkAutoAccept =

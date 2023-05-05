@@ -5,7 +5,7 @@ module SchemaDump where
 
 import ChatClient (withTmpFiles)
 import Control.DeepSeq
-import Control.Monad (void)
+import Control.Monad (unless, void)
 import Data.List (dropWhileEnd)
 import Data.Maybe (fromJust, isJust)
 import Simplex.Chat.Store (createChatStore)
@@ -57,9 +57,15 @@ testSchemaMigrations = withTmpFiles $ do
       schema' <- getSchema testDB testSchema
       schema' `shouldNotBe` schema
       withConnection st (`Migrations.run` MTRDown [downMigr])
-      schema'' <- getSchema testDB testSchema
-      schema'' `shouldBe` schema
+      unless (name m `elem` skipComparisonForDownMigrations) $ do
+        schema'' <- getSchema testDB testSchema
+        schema'' `shouldBe` schema
       withConnection st (`Migrations.run` MTRUp [m])
+      schema''' <- getSchema testDB testSchema
+      schema''' `shouldBe` schema'
+
+skipComparisonForDownMigrations :: [String]
+skipComparisonForDownMigrations = ["20230504_recreate_msg_delivery_events_cleanup_messages"]
 
 getSchema :: FilePath -> FilePath -> IO String
 getSchema dpPath schemaPath = do

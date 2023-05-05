@@ -19,10 +19,6 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.Reply
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -30,13 +26,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.*
@@ -122,7 +118,7 @@ data class ComposeState(
 
   val attachmentDisabled: Boolean
     get() {
-      if (editing || liveMessage != null) return true
+      if (editing || liveMessage != null || inProgress) return true
       return when (preview) {
         ComposePreview.NoPreview -> false
         is ComposePreview.CLinkPreview -> false
@@ -627,23 +623,27 @@ fun ComposeView(
   fun previewView() {
     when (val preview = composeState.value.preview) {
       ComposePreview.NoPreview -> {}
-      is ComposePreview.CLinkPreview -> ComposeLinkView(preview.linkPreview, ::cancelLinkPreview)
+      is ComposePreview.CLinkPreview -> ComposeLinkView(
+        preview.linkPreview,
+        ::cancelLinkPreview,
+        cancelEnabled = !composeState.value.inProgress
+      )
       is ComposePreview.MediaPreview -> ComposeImageView(
         preview,
         ::cancelImages,
-        cancelEnabled = !composeState.value.editing
+        cancelEnabled = !composeState.value.editing && !composeState.value.inProgress
       )
       is ComposePreview.VoicePreview -> ComposeVoiceView(
         preview.voice,
         preview.durationMs,
         preview.finished,
-        cancelEnabled = !composeState.value.editing,
+        cancelEnabled = !composeState.value.editing && !composeState.value.inProgress,
         ::cancelVoice
       )
       is ComposePreview.FilePreview -> ComposeFileView(
         preview.fileName,
         ::cancelFile,
-        cancelEnabled = !composeState.value.editing
+        cancelEnabled = !composeState.value.editing && !composeState.value.inProgress
       )
     }
   }
@@ -652,12 +652,20 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, Icons.Outlined.Reply) {
+      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_reply)) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, Icons.Filled.Edit) {
+      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_edit_filled)) {
         clearState()
       }
+    }
+  }
+
+  // In case a user sent something, state is in progress, the user rotates a screen to different orientation.
+  // Without clearing the state the user will be unable to send anything until re-enters ChatView
+  LaunchedEffect(Unit) {
+    if (composeState.value.inProgress) {
+      clearState()
     }
   }
 
@@ -690,9 +698,9 @@ fun ComposeView(
     ) {
       IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
-          Icons.Filled.AttachFile,
+          painterResource(R.drawable.ic_attach_file_filled_500),
           contentDescription = stringResource(R.string.attach),
-          tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else HighOrLowlight,
+          tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)
@@ -748,6 +756,8 @@ fun ComposeView(
               resetLinkPreview()
               clearCurrentDraft()
               deleteUnusedFiles()
+            } else if (composeState.value.inProgress) {
+              clearCurrentDraft()
             } else if (!composeState.value.empty) {
               if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
                 composeState.value = cs.copy(preview = cs.preview.copy(finished = true))

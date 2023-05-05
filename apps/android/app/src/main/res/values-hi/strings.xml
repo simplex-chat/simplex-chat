@@ -10,7 +10,6 @@
     <string name="above_then_preposition_continuation">ऊपर,तब:</string>
     <string name="accept_contact_button">स्वीकार करना</string>
     <string name="connect_button">जुडिये</string>
-    <string name="your_contact_address">आपका संपर्क पता</string>
     <string name="smp_servers_add_to_another_device">दूसरे उपकरण में जोड़ें</string>
     <string name="bold">निडर</string>
     <string name="answer_call">कॉल का उत्तर दें</string>
@@ -35,7 +34,6 @@
     <string name="accept_connection_request__question">संबंध अनुरोध स्वीकार करें\?</string>
     <string name="callstatus_accepted">स्वीकृत कॉल</string>
     <string name="accept_contact_incognito_button">गुप्त स्वीकार करें</string>
-    <string name="accept_requests">निवेदन स्वीकार करो</string>
     <string name="smp_servers_preset_add">पूर्वनिर्धारित सर्वर जोड़ें</string>
     <string name="users_add">प्रोफ़ाइल जोड़ें</string>
     <string name="smp_servers_add">सर्वर जोड़े…</string>
@@ -67,7 +65,6 @@
     <string name="chat_preferences_you_allow">आप आज्ञा दें</string>
     <string name="welcome">स्वागत!</string>
     <string name="la_notice_turn_on">चालू करो</string>
-    <string name="section_title_welcome_message">स्वागत संदेश</string>
     <string name="unknown_message_format">अज्ञात संदेश प्रारूप</string>
     <string name="personal_welcome">स्वागत <xliff:g>%1$s</xliff:g>!</string>
     <string name="callstate_starting">शुरुआत</string>
@@ -235,7 +232,6 @@
     <string name="chat_console">चैट कंसोल</string>
     <string name="all_your_contacts_will_remain_connected">आपके सभी संपर्क जुड़े रहेंगे।</string>
     <string name="network_session_mode_user">चैट प्रोफ़ाइल</string>
-    <string name="contact_requests">संपर्क अनुरोध</string>
     <string name="create_profile_button">बनाएं</string>
     <string name="callstatus_error">कॉल त्रुटि</string>
     <string name="callstatus_in_progress">कॉल चल रहा है</string>
@@ -278,7 +274,6 @@
     <string name="settings_section_title_develop">विकास करना</string>
     <string name="user_mute">आवाज़ बंद करना</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">अपने संपर्कों को गायब होने वाले संदेश भेजने की अनुमति दें।</string>
-    <string name="cancel_file__question">फ़ाइल स्थानांतरण रद्द करें\?</string>
     <string name="v4_6_audio_video_calls">ऑडियो और वीडियो कॉल</string>
     <string name="v4_6_reduced_battery_usage_descr">अधिक सुधार जल्द ही आ रहे हैं!</string>
     <string name="icon_descr_video_asked_to_receive">वीडियो प्राप्त करने के लिए कहा</string>

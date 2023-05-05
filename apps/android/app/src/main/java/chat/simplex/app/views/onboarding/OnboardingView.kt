@@ -1,9 +1,7 @@
 package chat.simplex.app.views.onboarding
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -16,7 +14,8 @@ import kotlinx.coroutines.launch
 enum class OnboardingStage {
   Step1_SimpleXInfo,
   Step2_CreateProfile,
-  Step3_SetNotificationsMode,
+  Step3_CreateSimpleXAddress,
+  Step4_SetNotificationsMode,
   OnboardingComplete
 }
 
@@ -31,7 +30,6 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(color = MaterialTheme.colors.background)
         .padding(20.dp)
     ) {
       CreateProfilePanel(chatModel, close)

@@ -245,9 +245,6 @@
 /* No comment provided by engineer. */
 "Accept incognito" = "接受隐身聊天";
 
-/* No comment provided by engineer. */
-"Accept requests" = "接受请求";
-
 /* call status */
 "accepted call" = "已接受通话";
 
@@ -286,9 +283,6 @@
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "所有聊天记录和消息将被删除——这一行为无法撤销！只有您的消息会被删除。";
-
-/* No comment provided by engineer. */
-"All your contacts will remain connected" = "您的所有联系人将保持连接";
 
 /* No comment provided by engineer. */
 "Allow" = "允许";
@@ -397,9 +391,6 @@
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "自动接受图片";
-
-/* No comment provided by engineer. */
-"Automatically" = "自动";
 
 /* No comment provided by engineer. */
 "Back" = "返回";
@@ -702,9 +693,6 @@
 "Contact preferences" = "联系人偏好设置";
 
 /* No comment provided by engineer. */
-"Contact requests" = "联系人请求";
-
-/* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "联系人可以将信息标记为删除；您将可以查看这些信息。";
 
 /* chat item action */
@@ -715,9 +703,6 @@
 
 /* No comment provided by engineer. */
 "Create" = "创建";
-
-/* No comment provided by engineer. */
-"Create address" = "创建地址";
 
 /* server test step */
 "Create file" = "创建文件";
@@ -1405,9 +1390,6 @@
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE 服务器（每行一个）";
-
-/* No comment provided by engineer. */
-"If you can't meet in person, **show QR code in the video call**, or share the link." = "如果您不能亲自见面，**在视频通话中出示二维码**，或分享链接。";
 
 /* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "如果您不能亲自见面，您可以**扫描视频通话中的二维码**，或者您的联系人可以分享邀请链接。";
@@ -2359,9 +2341,6 @@
 "Share" = "分享";
 
 /* No comment provided by engineer. */
-"Share invitation link" = "分享邀请链接";
-
-/* No comment provided by engineer. */
 "Share link" = "分享链接";
 
 /* No comment provided by engineer. */
@@ -2375,9 +2354,6 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "显示预览";
-
-/* No comment provided by engineer. */
-"Show QR code" = "显示二维码";
 
 /* No comment provided by engineer. */
 "Show:" = "显示：";
@@ -2521,7 +2497,7 @@
 "Thank you for installing SimpleX Chat!" = "感谢您安装 SimpleX Chat！";
 
 /* No comment provided by engineer. */
-"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "感谢用户——[通过 Weblate 贡献](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)！";
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "感谢用户——[通过 Weblate 贡献](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)！";
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "感谢用户——通过 Weblate 做出贡献！";
@@ -2917,7 +2893,7 @@
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "您可以共享链接或二维码——任何人都可以加入该群组。如果您稍后将其删除，您不会失去该组的成员。";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "您可以将您的地址作为链接或二维码共享——任何人都可以连接到您。 如果您以后删除它，您不会丢失您的联系人。";
+"You can share your address as a link or QR code - anybody can connect to you." = "您可以将您的地址作为链接或二维码共享——任何人都可以连接到您。";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "您可以通过应用程序设置/数据库或重新启动应用程序开始聊天";
@@ -3010,6 +2986,9 @@
 "You will stop receiving messages from this group. Chat history will be preserved." = "您将停止接收来自该群组的消息。聊天记录将被保留。";
 
 /* No comment provided by engineer. */
+"You won't lose your contacts if you later delete your address." = "如果您以后删除它，您不会丢失您的联系人。";
+
+/* No comment provided by engineer. */
 "you: " = "您： ";
 
 /* No comment provided by engineer. */
@@ -3041,12 +3020,6 @@
 
 /* No comment provided by engineer. */
 "Your chats" = "您的聊天";
-
-/* No comment provided by engineer. */
-"Your contact address" = "您的联系人地址";
-
-/* No comment provided by engineer. */
-"Your contact can scan it from the app." = "您的联系人可以通过应用程序扫描它。";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "您的联系人需要在线才能完成连接。\n您可以取消此连接并删除联系人（然后尝试使用新链接）。";
@@ -3092,9 +3065,6 @@
 
 /* No comment provided by engineer. */
 "Your settings" = "您的设置";
-
-/* No comment provided by engineer. */
-"Your SimpleX contact address" = "您的 SimpleX 联系人地址";
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "您的 SMP 服务器";

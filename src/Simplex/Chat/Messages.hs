@@ -30,7 +30,10 @@ import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
-import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple (ResultError (..), SQLData (..))
+import Database.SQLite.Simple.FromField (Field, FromField (..), returnError)
+import Database.SQLite.Simple.Internal (Field (..))
+import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
@@ -298,6 +301,9 @@ aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
 
 aChatItemId :: AChatItem -> Int64
 aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
+
+aChatItemTs :: AChatItem -> UTCTime
+aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
 
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
@@ -620,7 +626,7 @@ instance StrEncoding ACIStatus where
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-      "snd_error " -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> A.takeByteString
+      "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
       "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
       _ -> fail "bad status"
@@ -743,6 +749,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvGroupFeatureRejected :: GroupFeature -> CIContent 'MDRcv
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
+  CIInvalidJSON :: Text -> CIContent d
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
@@ -787,6 +794,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvChatFeatureRejected _ -> True
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
+    CIInvalidJSON _ -> False
 
 ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
@@ -949,6 +957,7 @@ ciContentToText = \case
   CIRcvGroupFeatureRejected feature -> groupFeatureNameText feature <> ": received, prohibited"
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
+  CIInvalidJSON _ -> "invalid content JSON"
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
@@ -976,11 +985,11 @@ ciModeratedText :: Text
 ciModeratedText = "moderated"
 
 -- platform independent
-instance ToField (CIContent d) where
+instance MsgDirectionI d => ToField (CIContent d) where
   toField = toField . encodeJSON . dbJsonCIContent
 
 -- platform specific
-instance ToJSON (CIContent d) where
+instance MsgDirectionI d => ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
 
@@ -988,12 +997,13 @@ data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIC
 
 deriving instance Show ACIContent
 
+-- platform independent
+dbParseACIContent :: Text -> Either String ACIContent
+dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
+
 -- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
-
--- platform independent
-instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . decodeJSON
 
 -- platform specific
 data JSONCIContent
@@ -1021,6 +1031,7 @@ data JSONCIContent
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | JCISndModerated
   | JCIRcvModerated
+  | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -1030,7 +1041,7 @@ instance ToJSON JSONCIContent where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
-jsonCIContent :: CIContent d -> JSONCIContent
+jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
 jsonCIContent = \case
   CISndMsgContent mc -> JCISndMsgContent mc
   CIRcvMsgContent mc -> JCIRcvMsgContent mc
@@ -1056,6 +1067,7 @@ jsonCIContent = \case
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCISndModerated
+  CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -1083,6 +1095,8 @@ aciContentJSON = \case
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  JCIInvalidJSON dir json -> case fromMsgDirection dir of
+    AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
 -- platform independent
 data DBJSONCIContent
@@ -1110,6 +1124,7 @@ data DBJSONCIContent
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | DBJCISndModerated
   | DBJCIRcvModerated
+  | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -1119,7 +1134,7 @@ instance ToJSON DBJSONCIContent where
   toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "DBJCI"
   toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "DBJCI"
 
-dbJsonCIContent :: CIContent d -> DBJSONCIContent
+dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
 dbJsonCIContent = \case
   CISndMsgContent mc -> DBJCISndMsgContent mc
   CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
@@ -1145,6 +1160,7 @@ dbJsonCIContent = \case
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
+  CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -1172,6 +1188,8 @@ aciContentDBJSON = \case
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
+    AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
 data CICallStatus
   = CISCallPending
@@ -1264,7 +1282,17 @@ instance ToJSON MsgDirection where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "MD"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MD"
 
+instance FromField AMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
+
 instance ToField MsgDirection where toField = toField . msgDirectionInt
+
+fromIntField_ :: (Typeable a) => (Int64 -> Maybe a) -> Field -> Ok a
+fromIntField_ fromInt = \case
+  f@(Field (SQLInteger i) _) ->
+    case fromInt i of
+      Just x -> Ok x
+      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
+  f -> returnError ConversionFailed f "expecting SQLInteger column type"
 
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv

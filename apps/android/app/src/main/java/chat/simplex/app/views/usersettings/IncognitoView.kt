@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -31,6 +32,7 @@ fun IncognitoLayout() {
       Text(generalGetString(R.string.incognito_info_allows))
       Text(generalGetString(R.string.incognito_info_share))
       Text(generalGetString(R.string.incognito_info_find))
+      SectionBottomSpacer()
     }
   }
 }

@@ -99,6 +99,7 @@ struct OnboardingActionButton: View {
     private func actionButton(_ label: LocalizedStringKey, onboarding: OnboardingStage) -> some View {
         Button {
             withAnimation {
+                onboardingStageDefault.set(onboarding)
                 m.onboardingStage = onboarding
             }
         } label: {

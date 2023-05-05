@@ -1,3 +1,7 @@
+---
+title: Accès aux fichiers dans l'application Android
+revision: 07.02.2023
+---
 | 07.02.2023 | FR, [EN](/docs/ANDROID.md), [CZ](/docs/lang/cs/ANDROID.md) |
 
 # Accès aux fichiers dans l'application Android

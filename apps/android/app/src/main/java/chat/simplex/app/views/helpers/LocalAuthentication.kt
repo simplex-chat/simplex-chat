@@ -1,6 +1,7 @@
 package chat.simplex.app.views.helpers
 
 import android.os.Build.VERSION.SDK_INT
+import androidx.activity.compose.BackHandler
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.*
 import androidx.biometric.BiometricPrompt
@@ -53,6 +54,10 @@ fun authenticate(
     LAMode.PASSCODE -> {
       val password = ksAppPassword.get() ?: return completed(LAResult.Unavailable(generalGetString(R.string.la_no_app_password)))
       ModalManager.shared.showCustomModal(animated = false) { close ->
+        BackHandler {
+          close()
+          completed(LAResult.Error(generalGetString(R.string.authentication_cancelled)))
+        }
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
           LocalAuthView(SimplexApp.context.chatModel, LocalAuthRequest(promptTitle, promptSubtitle, password) {
             close()

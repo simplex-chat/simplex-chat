@@ -240,7 +240,6 @@
     <string name="this_QR_code_is_not_a_link">Ce code QR n\'est pas un lien !</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Vous serez connecté·e lorsque votre demande de connexion sera acceptée, veuillez attendre ou vérifier plus tard !</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Vous serez connecté·e lorsque l\'appareil de votre contact sera en ligne, veuillez attendre ou vérifier plus tard !</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Votre contact peut scanner le code QR depuis l\'app.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Votre profil de chat sera envoyé
 \nà votre contact</string>
     <string name="share_invitation_link">Partager le lien d\'invitation</string>
@@ -260,7 +259,6 @@
     <string name="connect_via_link">Se connecter via un lien</string>
     <string name="clear_verification">Retirer la vérification</string>
     <string name="one_time_link">Lien d\'invitation unique</string>
-    <string name="your_contact_address">Votre adresse de contact</string>
     <string name="scan_code">Scanner le code</string>
     <string name="incorrect_code">Code de sécurité incorrect !</string>
     <string name="security_code">Code de sécurité</string>
@@ -326,7 +324,7 @@
     <string name="use_simplex_chat_servers__question">Utiliser les serveurs <xliff:g id="appNameFull">SimpleX Chat</xliff:g> \?</string>
     <string name="smp_servers_delete_server">Supprimer le serveur</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.</string>
-    <string name="network_enable_socks_info">Accéder aux serveurs via un proxy SOCKS sur le port 9050 \? Le proxy doit être démarré avant d\'activer cette option.</string>
+    <string name="network_enable_socks_info">Accéder aux serveurs via un proxy SOCKS sur le port %d \? Le proxy doit être démarré avant d\'activer cette option.</string>
     <string name="network_use_onion_hosts">Utiliser les hôtes .onions</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Les hôtes .onion seront nécessaires pour la connexion.</string>
@@ -352,7 +350,6 @@
     <string name="configure_ICE_servers">Configurer les serveurs ICE</string>
     <string name="network_settings">Paramètres réseau avancés</string>
     <string name="network_settings_title">Paramètres réseau</string>
-    <string name="network_socks_toggle">Utiliser un proxy SOCKS (port 9050)</string>
     <string name="network_enable_socks">Utiliser un proxy SOCKS \?</string>
     <string name="network_disable_socks">Utiliser une connexion Internet directe \?</string>
     <string name="network_disable_socks_info">Si vous confirmez, les serveurs de messagerie seront en mesure de voir votre adresse IP, votre fournisseur ainsi que les serveurs auxquels vous vous connectez.</string>
@@ -361,7 +358,6 @@
     <string name="network_use_onion_hosts_prefer_desc">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
     <string name="appearance_settings">Apparence</string>
     <string name="create_address">Créer une adresse</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Vous pouvez partager votre adresse sous forme de lien ou de code QR - n\'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous la supprimez par la suite.</string>
     <string name="your_current_profile">Votre profil de chat</string>
     <string name="edit_image">Modifier l\'image</string>
     <string name="save_and_notify_contacts">Sauvegarder et notifier les contacts</string>
@@ -433,10 +429,6 @@
     <string name="all_your_contacts_will_remain_connected">Tous vos contacts resteront connectés.</string>
     <string name="share_link">Partager le lien</string>
     <string name="delete_address">Supprimer l\'adresse</string>
-    <string name="contact_requests">Demandes de contact</string>
-    <string name="accept_requests">Accepter les demandes</string>
-    <string name="accept_automatically">Automatiquement</string>
-    <string name="section_title_welcome_message">MESSAGE DE BIENVENUE</string>
     <string name="display_name__field">Nom affiché :</string>
     <string name="full_name__field">Nom complet :</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Votre profil est stocké sur votre appareil et partagé uniquement avec vos contacts. Les serveurs <xliff:g id="appName">SimpleX</xliff:g> ne peuvent pas voir votre profil.</string>
@@ -967,7 +959,7 @@
     <string name="moderated_description">modéré</string>
     <string name="moderated_item_description">modéré par %s</string>
     <string name="delete_member_message__question">Supprimer le message de ce membre \?</string>
-    <string name="moderate_verb">Modéré</string>
+    <string name="moderate_verb">Modérer</string>
     <string name="moderate_message_will_be_deleted_warning">Le message sera supprimé pour tous les membres.</string>
     <string name="moderate_message_will_be_marked_warning">Le message sera marqué comme modéré pour tous les membres.</string>
     <string name="you_are_observer">vous êtes observateur</string>
@@ -1041,8 +1033,6 @@
     <string name="unhide_profile">Dévoiler le profil</string>
     <string name="delete_chat_profile">Supprimer le profil de chat</string>
     <string name="delete_profile">Supprimer le profil</string>
-    <string name="cancel_file__question">Annuler le transfert de fichiers \?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Le transfert de fichiers sera annulé. S\'il est en cours, il sera interrompu.</string>
     <string name="profile_password">Mot de passe de profil</string>
     <string name="videos_limit_title">Trop de vidéos !</string>
     <string name="video_descr">Vidéo</string>

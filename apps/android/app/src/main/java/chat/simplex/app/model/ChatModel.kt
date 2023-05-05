@@ -2,11 +2,10 @@ package chat.simplex.app.model
 
 import android.net.Uri
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
@@ -462,6 +461,8 @@ data class User(
 
   val showNotifications: Boolean = activeUser || showNtfs
 
+  val addressShared: Boolean = profile.contactLink != null
+
   companion object {
     val sampleData = User(
       userId = 1,
@@ -735,6 +736,7 @@ data class Contact(
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
   override val image get() = profile.image
+  val contactLink: String? = profile.contactLink
   override val localAlias get() = profile.localAlias
   val verified get() = activeConn.connectionCode != null
 
@@ -815,6 +817,7 @@ data class Profile(
   override val fullName: String,
   override val image: String? = null,
   override val localAlias : String = "",
+  val contactLink: String? = null,
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String
@@ -822,7 +825,7 @@ data class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, preferences)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, contactLink, preferences)
 
   companion object {
     val sampleData = Profile(
@@ -833,17 +836,18 @@ data class Profile(
 }
 
 @Serializable
-class LocalProfile(
+data class LocalProfile(
   val profileId: Long,
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String,
+  val contactLink: String? = null,
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, preferences)
+  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, contactLink, preferences)
 
   companion object {
     val sampleData = LocalProfile(
@@ -953,6 +957,7 @@ data class GroupMember (
   val displayName: String get() = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
   val fullName: String get() = memberProfile.fullName
   val image: String? get() = memberProfile.image
+  val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
 
   val chatViewName: String
@@ -1517,12 +1522,12 @@ data class CIMeta (
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
 
-  fun statusIcon(primaryColor: Color, metaColor: Color = HighOrLowlight): Pair<ImageVector, Color>? =
+  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<Int, Color>? =
     when (itemStatus) {
-      is CIStatus.SndSent -> Icons.Filled.Check to metaColor
-      is CIStatus.SndErrorAuth -> Icons.Filled.Close to Color.Red
-      is CIStatus.SndError -> Icons.Filled.WarningAmber to WarningYellow
-      is CIStatus.RcvNew -> Icons.Filled.Circle to primaryColor
+      is CIStatus.SndSent -> R.drawable.ic_check_filled to metaColor
+      is CIStatus.SndErrorAuth -> R.drawable.ic_close to Color.Red
+      is CIStatus.SndError -> R.drawable.ic_warning_filled to WarningYellow
+      is CIStatus.RcvNew -> R.drawable.ic_circle_filled to primaryColor
       else -> null
     }
 

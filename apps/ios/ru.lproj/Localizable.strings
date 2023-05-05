@@ -245,9 +245,6 @@
 /* No comment provided by engineer. */
 "Accept incognito" = "Принять инкогнито";
 
-/* No comment provided by engineer. */
-"Accept requests" = "Принимать запросы";
-
 /* call status */
 "accepted call" = "принятый звонок";
 
@@ -286,9 +283,6 @@
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для Вас.";
-
-/* No comment provided by engineer. */
-"All your contacts will remain connected" = "Все контакты, которые соединились через этот адрес, сохранятся.";
 
 /* No comment provided by engineer. */
 "Allow" = "Разрешить";
@@ -397,9 +391,6 @@
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Автоприем изображений";
-
-/* No comment provided by engineer. */
-"Automatically" = "Автоматически";
 
 /* No comment provided by engineer. */
 "Back" = "Назад";
@@ -702,9 +693,6 @@
 "Contact preferences" = "Предпочтения контакта";
 
 /* No comment provided by engineer. */
-"Contact requests" = "Запросы контактов";
-
-/* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Контакты могут помечать сообщения для удаления; Вы сможете просмотреть их.";
 
 /* chat item action */
@@ -715,9 +703,6 @@
 
 /* No comment provided by engineer. */
 "Create" = "Создать";
-
-/* No comment provided by engineer. */
-"Create address" = "Создать адрес";
 
 /* server test step */
 "Create file" = "Создание файла";
@@ -1405,9 +1390,6 @@
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE серверы (один на строке)";
-
-/* No comment provided by engineer. */
-"If you can't meet in person, **show QR code in the video call**, or share the link." = "Если Вы не можете встретиться лично, Вы можете **показать QR код во время видеозвонка**, или поделиться ссылкой.";
 
 /* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Если Вы не можете встретиться лично, Вы можете **сосканировать QR код во время видеозвонка**, или Ваш контакт может отправить Вам ссылку.";
@@ -2359,9 +2341,6 @@
 "Share" = "Поделиться";
 
 /* No comment provided by engineer. */
-"Share invitation link" = "Поделиться ссылкой";
-
-/* No comment provided by engineer. */
 "Share link" = "Поделиться ссылкой";
 
 /* No comment provided by engineer. */
@@ -2375,9 +2354,6 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
-
-/* No comment provided by engineer. */
-"Show QR code" = "Показать QR код";
 
 /* No comment provided by engineer. */
 "Show:" = "Показать:";
@@ -2521,7 +2497,7 @@
 "Thank you for installing SimpleX Chat!" = "Спасибо, что установили SimpleX Chat!";
 
 /* No comment provided by engineer. */
-"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "Благодаря пользователям – [добавьте переводы через Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!";
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Благодаря пользователям – [добавьте переводы через Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Благодаря пользователям – добавьте переводы через Weblate!";
@@ -2917,7 +2893,7 @@
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Вы можете поделиться ссылкой или QR кодом - через них можно присоединиться к группе. Вы сможете удалить ссылку, сохранив членов группы, которые через нее соединились.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
+"You can share your address as a link or QR code - anybody can connect to you." = "Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Вы можете запустить чат через Настройки приложения или перезапустив приложение.";
@@ -3010,6 +2986,9 @@
 "You will stop receiving messages from this group. Chat history will be preserved." = "Вы перестанете получать сообщения от этой группы. История чата будет сохранена.";
 
 /* No comment provided by engineer. */
+"You won't lose your contacts if you later delete your address." = "Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
+
+/* No comment provided by engineer. */
 "you: " = "Вы: ";
 
 /* No comment provided by engineer. */
@@ -3041,12 +3020,6 @@
 
 /* No comment provided by engineer. */
 "Your chats" = "Ваши чаты";
-
-/* No comment provided by engineer. */
-"Your contact address" = "Ваш SimpleX адрес";
-
-/* No comment provided by engineer. */
-"Your contact can scan it from the app." = "Ваш контакт может сосканировать QR код в приложении.";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).";
@@ -3092,9 +3065,6 @@
 
 /* No comment provided by engineer. */
 "Your settings" = "Настройки";
-
-/* No comment provided by engineer. */
-"Your SimpleX contact address" = "Ваш SimpleX адрес";
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Ваши SMP серверы";

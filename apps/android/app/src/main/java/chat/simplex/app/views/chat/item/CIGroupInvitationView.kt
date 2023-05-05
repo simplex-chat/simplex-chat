@@ -1,13 +1,10 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.res.Configuration
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SupervisedUserCircle
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +43,7 @@ fun CIGroupInvitationView(
         .padding(vertical = 4.dp)
         .padding(end = 2.dp)
     ) {
-      ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = Icons.Filled.SupervisedUserCircle, color = iconColor)
+      ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = R.drawable.ic_supervised_user_circle_filled, color = iconColor)
       Spacer(Modifier.padding(horizontal = 3.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 60.dp),
@@ -71,12 +68,14 @@ fun CIGroupInvitationView(
     }
   }
 
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     modifier = if (action) Modifier.clickable(onClick = {
       joinGroup(groupInvitation.groupId)
     }) else Modifier,
     shape = RoundedCornerShape(18.dp),
-    color = if (sent) SentColorLight else ReceivedColorLight,
+    color = if (sent) sentColor else receivedColor,
   ) {
     Box(
       Modifier
@@ -89,7 +88,6 @@ fun CIGroupInvitationView(
         Modifier
           .defaultMinSize(minWidth = 220.dp)
           .padding(bottom = 4.dp),
-        horizontalAlignment = Alignment.Start
       ) {
         groupInfoView()
         Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
@@ -108,7 +106,7 @@ fun CIGroupInvitationView(
       }
       Text(
         ci.timestampText,
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         fontSize = 14.sp,
         modifier = Modifier.padding(start = 3.dp)
       )

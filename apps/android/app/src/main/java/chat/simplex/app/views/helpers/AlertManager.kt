@@ -37,7 +37,6 @@ class AlertManager {
   ) {
     showAlert {
       AlertDialog(
-        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
         onDismissRequest = this::hideAlert,
         title = alertTitle(title),
         text = alertText(text),
@@ -56,7 +55,7 @@ class AlertManager {
       Dialog(onDismissRequest = this::hideAlert) {
         Column(
           Modifier
-            .background(if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background, RoundedCornerShape(corner = CornerSize(25.dp)))
+            .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
             .padding(bottom = DEFAULT_PADDING)
         ) {
           Text(
@@ -67,7 +66,7 @@ class AlertManager {
           )
           CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
             if (text != null) {
-              Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = HighOrLowlight)
+              Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
             }
             buttons()
           }
@@ -106,7 +105,6 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -129,7 +127,7 @@ class AlertManager {
         text = alertText(text),
         buttons = {
           Column(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(top = 16.dp, bottom = 2.dp),
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING_HALF).padding(top = DEFAULT_PADDING, bottom = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             TextButton(onClick = {
@@ -142,7 +140,6 @@ class AlertManager {
             }) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -150,7 +147,7 @@ class AlertManager {
 
   fun showAlertMsg(
     title: String, text: String? = null,
-    confirmText: String = generalGetString(R.string.ok), onConfirm: (() -> Unit)? = null
+    confirmText: String = generalGetString(R.string.ok)
   ) {
     showAlert {
       AlertDialog(
@@ -163,23 +160,19 @@ class AlertManager {
             horizontalArrangement = Arrangement.Center
           ) {
             TextButton(onClick = {
-              onConfirm?.invoke()
               hideAlert()
             }) { Text(confirmText, color = Color.Unspecified) }
           }
         },
-        backgroundColor = if (isInDarkTheme()) Color(0xff222222) else MaterialTheme.colors.background,
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
   }
-
   fun showAlertMsg(
     title: Int,
     text: Int? = null,
     confirmText: Int = R.string.ok,
-    onConfirm: (() -> Unit)? = null
-  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), onConfirm)
+  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText))
 
   @Composable
   fun showInView() {
@@ -212,7 +205,7 @@ private fun alertText(text: String?): (@Composable () -> Unit)? {
         Modifier.fillMaxWidth(),
         textAlign = TextAlign.Center,
         fontSize = 16.sp,
-        color = HighOrLowlight
+        color = MaterialTheme.colors.secondary
       )
     })
   }
