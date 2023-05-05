@@ -110,15 +110,11 @@ struct ContentView: View {
         Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
     }
 
-    @ViewBuilder private func initializationView() -> some View {
-        if showInitializationView {
-            VStack {
-                ProgressView().scaleEffect(2)
-                Text("Preparing database…")
-                    .padding()
-            }
-        } else {
-            EmptyView()
+    private func initializationView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+            Text("Opening database…")
+                .padding()
         }
     }
 
