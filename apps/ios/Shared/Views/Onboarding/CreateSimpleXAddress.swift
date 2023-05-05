@@ -113,6 +113,7 @@ struct CreateSimpleXAddress: View {
         VStack(spacing: 8) {
             Button {
                 withAnimation {
+                    onboardingStageDefault.set(.step4_SetNotificationsMode)
                     m.onboardingStage = .step4_SetNotificationsMode
                 }
             } label: {
@@ -154,6 +155,7 @@ struct CreateSimpleXAddress: View {
                 case let .success(composeResult):
                     switch composeResult {
                     case .sent:
+                        onboardingStageDefault.set(.step4_SetNotificationsMode)
                         m.onboardingStage = .step4_SetNotificationsMode
                     default: ()
                     }
@@ -173,6 +175,7 @@ struct CreateSimpleXAddress: View {
     private func continueButton() -> some View {
         Button {
             withAnimation {
+                onboardingStageDefault.set(.step4_SetNotificationsMode)
                 m.onboardingStage = .step4_SetNotificationsMode
             }
         } label: {
