@@ -26,7 +26,6 @@ class CallManager(val chatModel: ChatModel) {
   }
 
   fun acceptIncomingCall(invitation: RcvCallInvitation) {
-    ModalManager.shared.closeModals()
     val call = chatModel.activeCall.value
     if (call == null) {
       justAcceptIncomingCall(invitation = invitation)
