@@ -441,4 +441,9 @@
     <string name="if_you_cant_meet_in_person">Se não se poderem encontrar pessoalmente, mostre o código QR numa chamada de vídeo ou partilhe a ligação.</string>
     <string name="people_can_connect_only_via_links_you_share">As pessoas podem se conectar a si apenas por meio das ligações que você partilhe.</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Verifique se você usou a ligação correta ou peça ao seu contato para enviar outra.</string>
+    <string name="share_link">Partilhar ligação</string>
+    <string name="send_link_previews">Enviar pré-visualizações de ligações</string>
+    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(ler ou colar da área de transferência)</string>
+    <string name="share_invitation_link">Partilhar ligação de utilização única</string>
+    <string name="read_more_in_github_with_link">Leia mais no nosso repositório <font color="#0088ff">GitHub</font>.</string>
 </resources>
