@@ -109,7 +109,7 @@ struct ContentView: View {
     private func initializationView() -> some View {
         VStack {
             ProgressView().scaleEffect(2)
-            Text("Initialization…")
+            Text("Preparing database…")
                 .padding()
         }
     }
