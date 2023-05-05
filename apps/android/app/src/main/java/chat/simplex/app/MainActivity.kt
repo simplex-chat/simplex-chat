@@ -10,7 +10,6 @@ import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -423,11 +422,8 @@ fun MainPage(
   }
 
   @Composable
-  fun authView() {
-    Surface(
-      Modifier.fillMaxSize(),
-      color = MaterialTheme.colors.background
-    ) {
+  fun AuthView() {
+    Surface(color = MaterialTheme.colors.background) {
       Box(
         Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -518,7 +514,7 @@ fun MainPage(
         }
       }
       if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
-        authView()
+        AuthView()
       } else {
         SplashView()
       }
