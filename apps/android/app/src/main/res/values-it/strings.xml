@@ -600,8 +600,8 @@
     <string name="is_verified">%s è verificato/a</string>
     <string name="smp_servers">Server SMP</string>
     <string name="smp_servers_test_some_failed">Alcuni server hanno fallito il test:</string>
-    <string name="smp_servers_test_server">Testa server</string>
-    <string name="smp_servers_test_servers">Testa i server</string>
+    <string name="smp_servers_test_server">Prova server</string>
+    <string name="smp_servers_test_servers">Prova i server</string>
     <string name="this_string_is_not_a_connection_link">Questa stringa non è un link di connessione!</string>
     <string name="to_verify_compare">Per verificare la crittografia end-to-end con il tuo contatto, confrontate (o scansionate) il codice sui vostri dispositivi.</string>
     <string name="smp_servers_use_server_for_new_conn">Usa per connessioni nuove</string>
@@ -1113,7 +1113,7 @@
     <string name="stop_file__confirm">Ferma</string>
     <string name="stop_rcv_file__title">Fermare la ricezione del file\?</string>
     <string name="no_spaces">Niente spazi!</string>
-    <string name="allow_calls_only_if">Consenti le chiamate solo se il contatto le consente.</string>
+    <string name="allow_calls_only_if">Consenti le chiamate solo se il tuo contatto le consente.</string>
     <string name="calls_prohibited_with_this_contact">Le chiamate audio/video sono vietate.</string>
     <string name="both_you_and_your_contact_can_make_calls">Sia tu che il tuo contatto potete effettuare chiamate.</string>
     <string name="only_you_can_make_calls">Solo tu puoi effettuare chiamate.</string>
@@ -1126,7 +1126,7 @@
     <string name="v5_0_app_passcode">Codice di accesso dell\'app</string>
     <string name="v5_0_large_files_support_descr">Veloce e senza aspettare che il mittente sia in linea!</string>
     <string name="v5_0_polish_interface">Interfaccia polacca</string>
-    <string name="v5_0_app_passcode_descr">Impostala al posto dell\'autenticazione di sistema.</string>
+    <string name="v5_0_app_passcode_descr">Impostalo al posto dell\'autenticazione di sistema.</string>
     <string name="v5_0_polish_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
     <string name="v5_0_large_files_support">Video e file fino a 1 GB</string>
 </resources>

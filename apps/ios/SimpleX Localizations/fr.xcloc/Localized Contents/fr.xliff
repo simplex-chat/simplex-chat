@@ -2567,7 +2567,7 @@ Disponible dans la v5.1</target>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
         <source>Moderate</source>
-        <target>Modéré</target>
+        <target>Modérer</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
