@@ -170,7 +170,7 @@
     <string name="chat_console">聊天控制台</string>
     <string name="chat_database_section">聊天数据库</string>
     <string name="chat_is_stopped_indication">聊天已停止</string>
-    <string name="chat_is_running">聊天进行中</string>
+    <string name="chat_is_running">聊天运行中</string>
     <string name="chat_is_stopped">聊天已停止</string>
     <string name="contact_preferences">联系人偏好设置</string>
     <string name="your_preferences">您的偏好设置</string>
@@ -285,7 +285,7 @@
     <string name="display_name_cannot_contain_whitespace">显示名不能包含空格。</string>
     <string name="decentralized">分散式</string>
     <string name="immune_to_spam_and_abuse">不受垃圾和骚扰消息影响</string>
-    <string name="encrypted_video_call">端到端加密语音通话</string>
+    <string name="encrypted_video_call">端到端加密视频通话</string>
     <string name="ignore">忽视</string>
     <string name="incoming_video_call">视频通话来电</string>
     <string name="no_call_on_lock_screen">禁用</string>
@@ -363,7 +363,7 @@
     <string name="core_version">核心版本: v%s</string>
     <string name="display_name__field">显示名：</string>
     <string name="full_name__field">全名：</string>
-    <string name="display_name">显示名。</string>
+    <string name="display_name">显示名</string>
     <string name="full_name_optional__prompt">全名（可选）</string>
     <string name="callstate_ended">已结束</string>
     <string name="group_member_status_group_deleted">群组已删除</string>

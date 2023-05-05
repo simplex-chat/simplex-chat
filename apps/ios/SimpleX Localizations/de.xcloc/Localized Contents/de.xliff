@@ -3872,9 +3872,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The hash of the previous message is different." xml:space="preserve">
+      <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
         <source>The hash of the previous message is different.</source>
-        <target>Der Hash der vorherigen Nachricht ist unterschiedlich.</target>
+        <target state="translated">Der Hash der vorherigen Nachricht unterscheidet sich.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
