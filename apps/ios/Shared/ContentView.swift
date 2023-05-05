@@ -53,6 +53,9 @@ struct ContentView: View {
         .onAppear {
             if prefPerformLA { requestNtfAuthorization() }
             initAuthenticate()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                showInitializationView = true
+            }
         }
         .onChange(of: doAuthenticate) { _ in
             initAuthenticate()
@@ -72,11 +75,6 @@ struct ContentView: View {
             lockButton()
         } else if chatModel.chatDbStatus == nil {
             initializationView()
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        showInitializationView = true
-                    }
-                }
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
