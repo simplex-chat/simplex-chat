@@ -14,8 +14,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.UserContactLinkRec
 import chat.simplex.app.ui.theme.*
@@ -57,6 +57,7 @@ fun CreateSimpleXAddress(m: ChatModel) {
       }
     },
     nextStep = {
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
       m.onboardingStage.value = OnboardingStage.Step4_SetNotificationsMode
     },
   )
