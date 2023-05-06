@@ -2,6 +2,8 @@
 
 Choosing a secure messenger requires understanding many technical terms, that many users, even quite technical, often misunderstand. This list is aiming to fill this knowledge gap. Please suggest any additions.
 
+## Anonymous credentials
+
 ## Blockchain
 
 ## Break-in recovery
@@ -42,6 +44,8 @@ Key exchange is a process of agreeing cryptographic keys between the sender and 
 
 ## Merkle tree
 
+## Pairwise identifiers
+
 ## Peer-to-peer network
 
 ## Perfect forward secrecy
@@ -50,6 +54,12 @@ Key exchange is a process of agreeing cryptographic keys between the sender and 
 
 The quality of the end-to-end encryption scheme allowing to recover security against a passive attacker who observes encrypted messages after compromising one (or both) of the parties. Also known as recovery from compromise or break-in recovery.
 
+## Post-quantum cryptography
+
+## Privacy
+
 ## Recovery from compromise
 
 [Post-compromise security](#post-compromise-security).
+
+## User identity
