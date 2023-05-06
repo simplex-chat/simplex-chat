@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
         <source>%@ is verified</source>
-        <target state="translated">%@ foi verificado</target>
+        <target state="translated">%@ foi verificado(a)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve" approved="no">
@@ -197,44 +197,54 @@
         <target state="translated">**Crie um link / QR code** para seu contato usar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
+      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve" approved="no">
         <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
+        <target state="translated">**Mais privado**: verifique as novas mensagens a cada 20 minutos. O token do dispositivo é compartilhado com o servidor do SimpleX Chat, mas não quantos contatos ou mensagens você tem.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
+      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
+        <target state="translated">**Mais privado**: não use o servidor de notificações do SimpleX Chat, verifique as mensagens periodicamente em segundo plano (depende da frequência com que você usa o aplicativo).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve">
+      <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve" approved="no">
         <source>**Paste received link** or open it in the browser and tap **Open in mobile app**.</source>
+        <target state="translated">**Cole o link recebido** ou abra-o no navegador e toque em **Abrir no aplicativo**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
+      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
+        <target state="translated">**Observação**: NÃO será possível recuperar ou alterar a frase secreta se você a perder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
+      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
         <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
+        <target state="translated">**Recomendado**: o token do dispositivo e as notificações são enviados para o servidor de notificações do SimpleX Chat, mas não o conteúdo, o tamanho ou o remetente da mensagem.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve">
+      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve" approved="no">
         <source>**Scan QR code**: to connect to your contact in person or via video call.</source>
+        <target state="translated">**Escaneie QR Code**: para se conectar ao seu contato pessoalmente ou por meio de chamada de vídeo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
+      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve" approved="no">
         <source>**Warning**: Instant push notifications require passphrase saved in Keychain.</source>
+        <target state="translated">**Aviso**: As notificações push instantâneas exigem uma senha salva no Keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
+        <target state="translated">Chamada de áudio **criptografada e2e**</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** video call</source>
+        <target state="translated">Chamada de vídeo **criptografada e2e**</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="*bold*" xml:space="preserve">
+      <trans-unit id="*bold*" xml:space="preserve" approved="no">
         <source>\*bold*</source>
+        <target state="translated">\*negrito*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=", " xml:space="preserve" approved="no">
@@ -252,8 +262,9 @@
         <target state="translated">1 dia</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 hour" xml:space="preserve">
+      <trans-unit id="1 hour" xml:space="preserve" approved="no">
         <source>1 hour</source>
+        <target state="translated">1 hora</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve" approved="no">
@@ -266,8 +277,9 @@
         <target state="translated">1 semana</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="2 weeks" xml:space="preserve">
+      <trans-unit id="2 weeks" xml:space="preserve" approved="no">
         <source>2 weeks</source>
+        <target state="translated">2 semanas</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="6" xml:space="preserve" approved="no">
@@ -280,8 +292,9 @@
         <target state="translated">: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A new contact" xml:space="preserve">
+      <trans-unit id="A new contact" xml:space="preserve" approved="no">
         <source>A new contact</source>
+        <target state="translated">Um novo contato</target>
         <note>notification title</note>
       </trans-unit>
       <trans-unit id="A random profile will be sent to the contact that you received this link from" xml:space="preserve" approved="no">
@@ -294,13 +307,16 @@
         <target state="translated">Um perfil aleatório será enviado para o seu contato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
+        <target state="translated">Uma conexão TCP separada será usada **para cada perfil de bate-papo que você tiver no aplicativo**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each contact and group member**.
 **Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
+        <target state="translated">Uma conexão TCP separada será usada **para cada contato e membro do grupo**.
+**Observação**: se você tiver muitas conexões, o consumo de bateria e de tráfego poderá ser substancialmente maior e algumas conexões poderão falhar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve" approved="no">
@@ -308,12 +324,14 @@
         <target state="translated">Sobre o SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX Chat" xml:space="preserve">
+      <trans-unit id="About SimpleX Chat" xml:space="preserve" approved="no">
         <source>About SimpleX Chat</source>
+        <target state="translated">Sobre o SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accent color" xml:space="preserve">
+      <trans-unit id="Accent color" xml:space="preserve" approved="no">
         <source>Accent color</source>
+        <target state="translated">Cor de acento</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve" approved="no">
@@ -322,12 +340,14 @@
         <note>accept contact request via notification
    accept incoming call via notification</note>
       </trans-unit>
-      <trans-unit id="Accept contact" xml:space="preserve">
+      <trans-unit id="Accept contact" xml:space="preserve" approved="no">
         <source>Accept contact</source>
+        <target state="translated">Aceitar contato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept contact request from %@?" xml:space="preserve">
+      <trans-unit id="Accept contact request from %@?" xml:space="preserve" approved="no">
         <source>Accept contact request from %@?</source>
+        <target state="translated">Aceitar solicitação de contato de %@?</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="Accept incognito" xml:space="preserve" approved="no">
@@ -398,8 +418,9 @@
         <target state="translated">Permitir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
+      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve" approved="no">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
+        <target state="translated">Permita o desaparecimento de mensagens somente se o seu contato permitir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve" approved="no">
@@ -412,8 +433,9 @@
         <target state="translated">Permitir o envio de mensagens diretas aos membros.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
+      <trans-unit id="Allow sending disappearing messages." xml:space="preserve" approved="no">
         <source>Allow sending disappearing messages.</source>
+        <target state="translated">Permitir o envio de mensagens que desaparecem.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve" approved="no">
@@ -451,8 +473,9 @@
         <target state="translated">Permitir que seus contatos enviem mensagens de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Already connected?" xml:space="preserve">
+      <trans-unit id="Already connected?" xml:space="preserve" approved="no">
         <source>Already connected?</source>
+        <target state="translated">Já está conectado?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve" approved="no">
@@ -460,12 +483,14 @@
         <target state="translated">Atender ligação</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App build: %@" xml:space="preserve">
+      <trans-unit id="App build: %@" xml:space="preserve" approved="no">
         <source>App build: %@</source>
+        <target state="translated">Compilação do aplicativo: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App icon" xml:space="preserve">
+      <trans-unit id="App icon" xml:space="preserve" approved="no">
         <source>App icon</source>
+        <target state="translated">Ícone do aplicativo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve" approved="no">
@@ -473,8 +498,9 @@
         <target state="translated">Versão do App</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version: v%@" xml:space="preserve">
+      <trans-unit id="App version: v%@" xml:space="preserve" approved="no">
         <source>App version: v%@</source>
+        <target state="translated">Versão: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve" approved="no">
@@ -4868,6 +4894,38 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
       <trans-unit id="Stop sending file?" xml:space="preserve" approved="no">
         <source>Stop sending file?</source>
         <target state="translated">Parar de enviar arquivo?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="1-time link" xml:space="preserve" approved="no">
+        <source>1-time link</source>
+        <target state="translated">Link único</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="About SimpleX address" xml:space="preserve" approved="no">
+        <source>About SimpleX address</source>
+        <target state="translated">Sobre o endereço SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Address" xml:space="preserve" approved="no">
+        <source>Address</source>
+        <target state="translated">Endereço</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
+        <source>All your contacts will remain connected. Profile update will be sent to your contacts.</source>
+        <target state="translated">Todos os seus contatos permanecerão conectados. A atualização do perfil será enviada aos seus contatos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve" approved="no">
+        <source>&lt;p&gt;Hi!&lt;/p&gt;
+&lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
+        <target state="translated">&lt;p&gt;Oi!&lt;/p&gt;
+&lt;p&gt;&lt;a href="%@"&gt;Conecte-se comigo via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
+        <note>email text</note>
+      </trans-unit>
+      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
+        <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
+        <target state="translated">Adicione o endereço ao seu perfil, para que seus contatos possam compartilhá-lo com outras pessoas. A atualização do perfil será enviada aos seus contatos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
