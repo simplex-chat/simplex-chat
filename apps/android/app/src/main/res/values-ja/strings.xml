@@ -11,9 +11,9 @@
     <string name="about_simplex">SimpleXについて</string>
     <string name="a_plus_b">a + b</string>
     <string name="about_simplex_chat"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>について</string>
-    <string name="color_primary">アクセント色</string>
+    <string name="color_primary">アクセントカラー</string>
     <string name="accept_contact_button">承諾</string>
-    <string name="accept_connection_request__question">繋がりを承諾しますか？</string>
+    <string name="accept_connection_request__question">接続リクエストを承認しますか？</string>
     <string name="accept">承諾</string>
     <string name="accept_feature">承諾</string>
     <string name="accept_call_on_lock_screen">承諾</string>
@@ -188,7 +188,7 @@
     <string name="icon_descr_close_button">閉じるボタン</string>
     <string name="clear_verification">検証を消す</string>
     <string name="image_saved">画像をギャラリーに保存しました。</string>
-    <string name="choose_file">ファイルを選ぶ</string>
+    <string name="choose_file">ファイル</string>
     <string name="clear_chat_menu_action">消す</string>
     <string name="image_will_be_received_when_contact_is_online">連絡先がオンラインになったら受信されます。しばらくお待ちください。</string>
     <string name="v4_4_verify_connection_security_desc">連絡先とセキュリティコードを確認</string>
@@ -239,7 +239,7 @@
     <string name="only_your_contact_can_delete">メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。</string>
     <string name="open_chat">チャットを開く</string>
     <string name="only_your_contact_can_send_voice">音声メッセージを送れるのはあなたの連絡相手だけです。</string>
-    <string name="database_encryption_will_be_updated">データベース暗号化の暗号フレーズが更新され、キーストア (暗証キー保管庫)に保存されます。</string>
+    <string name="database_encryption_will_be_updated">データベース暗号化のパスフレーズが更新され、キーストア (暗証キー保管庫)に保存されます。</string>
     <string name="database_error">データベースエラー</string>
     <string name="set_password_to_export_desc">データベースはランダムな暗証フレーズで暗号化済みです。エキスポートする前に更新してください。</string>
     <string name="passphrase_is_different">データベース暗証フレーズはキーストア (暗証キー保管庫) に保存された暗証フレーズと異なります。</string>
@@ -356,7 +356,7 @@
     <string name="settings_section_title_chats">チャット</string>
     <string name="settings_developer_tools">開発ツール</string>
     <string name="settings_experimental_features">β機能</string>
-    <string name="settings_section_title_messages">メッセージ</string>
+    <string name="settings_section_title_messages">メッセージとファイル</string>
     <string name="settings_section_title_calls">通話</string>
     <string name="chat_is_running">チャットは稼働中</string>
     <string name="chat_is_stopped">チャットが停止してます。</string>
@@ -372,12 +372,12 @@
     <string name="encrypt_database">暗号化する</string>
     <string name="remove_passphrase">削除</string>
     <string name="current_passphrase">現在の暗証フレーズ</string>
-    <string name="encrypted_with_random_passphrase">データベースはランダムな暗証フレーズで暗号化済みで、変更可能です。</string>
+    <string name="encrypted_with_random_passphrase">データベースはランダムなパスフレーズで暗号化済みで、変更可能です。</string>
     <string name="change_database_passphrase_question">データベースの暗証フレーズを更新しますか？</string>
     <string name="database_will_be_encrypted">データベースが暗号化されます。</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">データベースが暗号化され、暗証フレーズがキーストア (暗証キー保管庫) にほぞんされます。</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">データベースが暗号化され、パスフレーズがキーストア (暗証キー保管庫) にほぞんされます。</string>
     <string name="cannot_access_keychain">キーストア (暗証キーの保管庫) にアクセスできないため、データベースのパスワードが保存できません。</string>
-    <string name="database_passphrase_will_be_updated">データベース暗号化の暗号フレーズが更新されます。</string>
+    <string name="database_passphrase_will_be_updated">データベース暗号化のパスフレーズが更新されます。</string>
     <string name="database_passphrase_is_required">チャットを開くにはデータベース暗証フレーズが必要です。</string>
     <string name="file_with_path">ファイル： %s</string>
     <string name="archive_created_on_ts">作成日時 \u0020<xliff:g id="archive_ts">%1$s</xliff:g></string>
@@ -464,7 +464,7 @@
     <string name="remove_passphrase_from_keychain">キーストア (暗証キー保管庫) を削除しますか？</string>
     <string name="database_encrypted">データベースは暗号化済み！</string>
     <string name="error_encrypting_database">データベース暗号化ににエラー発生</string>
-    <string name="confirm_new_passphrase">新しい暗証フレーズを確認…</string>
+    <string name="confirm_new_passphrase">新しいパスフレーズを確認…</string>
     <string name="encrypt_database_question">データベースを暗号化しますか？</string>
     <string name="store_passphrase_securely_without_recover">暗証フレーズを失くさないように保管してください。失くすとチャットにアクセスできなくなります。</string>
     <string name="enter_correct_passphrase">正しい暗証フレーズを入力</string>
@@ -716,7 +716,7 @@
     <string name="to_share_with_your_contact">(連絡先に共有)</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(クリップボードから読み込むか、貼り付ける)</string>
     <string name="thank_you_for_installing_simplex"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>をご利用いただきありがとうございます！</string>
-    <string name="use_camera_button">カメラ起動</string>
+    <string name="use_camera_button">カメラ</string>
     <string name="you_accepted_connection">繋がりを承認しました</string>
     <string name="you_invited_your_contact">連絡先に招待を送りました</string>
     <string name="connection_you_accepted_will_be_cancelled">承認ずみの接続がキャンセルされます！</string>
@@ -729,7 +729,7 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">連絡先がオンラインになったら、接続されます。後でチェックするか、しばらくお待ちください。</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">あなたのチャットプロフィールが
 \n連絡相手に送られます。</string>
-    <string name="share_invitation_link">招待リンクを送る</string>
+    <string name="share_invitation_link">ワンタイムリンクを送る</string>
     <string name="your_profile_will_be_sent">あなたのチャットプロフィールが連絡相手に送られます。</string>
     <string name="scan_code">コードを読み込む</string>
     <string name="scan_code_from_contacts_app">連絡相手のアプリからセキュリティコードを読み込む</string>
@@ -949,4 +949,52 @@
     <string name="select_contacts">連絡先を選択</string>
     <string name="skip_inviting_button">今はメンバーを招待しません</string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g>メンバー</string>
+    <string name="xftp_servers">XFTPサーバ</string>
+    <string name="save_welcome_message_question">ウェルカムメッセージを保存しますか？</string>
+    <string name="dont_show_again">次から表示しない</string>
+    <string name="la_change_app_passcode">パスコードを変更</string>
+    <string name="la_current_app_passcode">現在のパスコード</string>
+    <string name="la_lock_mode">SimpleXロックモード</string>
+    <string name="la_lock_mode_system">システム認証</string>
+    <string name="la_lock_mode_passcode">パスコード入力</string>
+    <string name="la_auth_failed">認証失敗</string>
+    <string name="la_enter_app_passcode">パスコードを入力</string>
+    <string name="cant_delete_user_profile">ユーザープロフィールが削除できません。</string>
+    <string name="la_mode_system">システム</string>
+    <string name="change_lock_mode">ロックモードを変更</string>
+    <string name="v4_6_chinese_spanish_interface">中国語とスペイン語UI</string>
+    <string name="learn_more">さらに詳しく</string>
+    <string name="new_passcode">新しいパスコード</string>
+    <string name="lock_mode">ロックモード</string>
+    <string name="submit_passcode">送信</string>
+    <string name="passcode_changed">パスコードが変更されました</string>
+    <string name="passcode_set">パスコードを設定しました！</string>
+    <string name="passcode_not_changed">パスコードが変更されていません</string>
+    <string name="dark_theme">ダークテーマ</string>
+    <string name="gallery_image_button">画像</string>
+    <string name="learn_more_about_address">SimpleXアドレスについて</string>
+    <string name="read_more_in_user_guide_with_link"><font color="#0088ff">ユーザーガイド</font>で詳細を見る</string>
+    <string name="simplex_address">SimpleXアドレス</string>
+    <string name="network_proxy_port">ポート %d</string>
+    <string name="enter_welcome_message_optional">ウェルカムメッセージを入力…（オプション）</string>
+    <string name="save_settings_question">設定を保存しますか？</string>
+    <string name="confirm_passcode">パスコードを確認</string>
+    <string name="la_mode_passcode">パスコード</string>
+    <string name="group_welcome_preview">プレビュー</string>
+    <string name="smp_save_servers_question">サーバを保存しますか？</string>
+    <string name="incompatible_database_version">データベースのバージョンと互換性がない</string>
+    <string name="database_downgrade">データーベースダウングレード</string>
+    <string name="scan_qr_to_connect_to_contact">接続するにはQRコードを読み込むか、アプリ内のリンクを使用する必要があります。</string>
+    <string name="one_time_link_short">使い捨てのリンク</string>
+    <string name="address_section_title">アドレス</string>
+    <string name="color_background">背景色</string>
+    <string name="confirm_password">パスワードを確認</string>
+    <string name="settings_section_title_experimenta">β機能</string>
+    <string name="decryption_error">復号化エラー</string>
+    <string name="button_add_welcome_message">ウェルカムメッセージを追加</string>
+    <string name="la_authenticate">認証</string>
+    <string name="la_minutes">%d 分</string>
+    <string name="database_upgrade">データベースアップグレード</string>
+    <string name="audio_video_calls">音声/ビデオ通話</string>
+    <string name="calls_prohibited_with_this_contact">音声/ビデオ通話は禁止されています。</string>
 </resources>
