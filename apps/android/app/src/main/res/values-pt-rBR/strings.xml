@@ -260,7 +260,7 @@
     <string name="settings_section_title_device">DISPOSITIVO</string>
     <string name="settings_developer_tools">Ferramentas de desenvolvimento</string>
     <string name="group_member_status_introduced">conectando (introduzido)</string>
-    <string name="color_primary">Destaque</string>
+    <string name="color_primary">Acento</string>
     <string name="error_removing_member">Erro ao remover membro</string>
     <string name="error_changing_role">Erro ao alterar função</string>
     <string name="conn_level_desc_direct">direto</string>
@@ -1128,4 +1128,9 @@
     <string name="gallery_image_button">Imagem</string>
     <string name="decryption_error">erro de descriptografia</string>
     <string name="revoke_file__confirm">Revogar</string>
+    <string name="learn_more_about_address">Sobre o endereço SimpleX</string>
+    <string name="color_secondary_variant">Cor terciária</string>
+    <string name="color_primary_variant">Acento adicional</string>
+    <string name="one_time_link_short">Link único</string>
+    <string name="add_address_to_your_profile">Adicione o endereço ao seu perfil, para que seus contatos possam compartilhá-lo com outras pessoas. A atualização do perfil será enviada aos seus contatos.</string>
 </resources>
