@@ -51,7 +51,7 @@
     <string name="icon_descr_audio_off">Audio desactivado</string>
     <string name="icon_descr_audio_on">Audio activado</string>
     <string name="integrity_msg_bad_id">ID de mensaje erróneo</string>
-    <string name="auto_accept_images">Aceptar imágenes automáticamente</string>
+    <string name="auto_accept_images">Auto aceptar imágenes</string>
     <string name="users_delete_all_chats_deleted">Se eliminarán todos los chats y mensajes. ¡No puede deshacerse!</string>
     <string name="accept_feature">Aceptar</string>
     <string name="allow_to_send_disappearing">Permitir enviar mensajes temporales.</string>
@@ -65,7 +65,7 @@
     <string name="allow_to_delete_messages">Permitir la eliminación irreversible de los mensajes enviados.</string>
     <string name="allow_to_send_voice">Permitir enviar mensajes de voz.</string>
     <string name="v4_2_group_links_desc">Los administradores pueden crear enlaces para unirse a grupos.</string>
-    <string name="v4_2_auto_accept_contact_requests">Aceptar solicitud de contacto automáticamente</string>
+    <string name="v4_2_auto_accept_contact_requests">Auto aceptar solicitudes de contacto</string>
     <string name="attach">Adjuntar</string>
     <string name="integrity_msg_bad_hash">hash de mensaje erróneo</string>
     <string name="answer_call">Responder llamada</string>
@@ -751,12 +751,12 @@
     <string name="show_QR_code">Mostrar código QR</string>
     <string name="this_link_is_not_a_valid_connection_link">¡El enlace no es un enlace de conexión válido!</string>
     <string name="this_QR_code_is_not_a_link">¡El código QR no es un enlace!</string>
-    <string name="share_invitation_link">Compartir enlace de invitación</string>
+    <string name="share_invitation_link">Compartir enlace de un uso</string>
     <string name="update_network_session_mode_question">¿Actualizar el modo de aislamiento de transporte\?</string>
     <string name="icon_descr_speaker_on">Altavoz activado</string>
     <string name="stop_chat_to_enable_database_actions">Para habilitar las acciones sobre la base de datos, previamente debes detener Chat</string>
     <string name="connection_you_accepted_will_be_cancelled">¡La conexión que has aceptado se cancelará!</string>
-    <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para obtener más información</string>
+    <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para saber más</string>
     <string name="moderate_message_will_be_marked_warning">El mensaje será marcado como moderado para todos los miembros.</string>
     <string name="next_generation_of_private_messaging">La próxima generación de mensajería privada</string>
     <string name="delete_files_and_media_desc">Esta acción no se puede deshacer. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</string>
@@ -881,7 +881,7 @@
     <string name="webrtc_ice_servers">Servidores WebRTC ICE</string>
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> quiere conectarse contigo mediante</string>
     <string name="failed_to_create_user_duplicate_desc">Tienes un perfil de chat con el mismo nombre mostrado. Debes elegir otro nombre.</string>
-    <string name="you_can_also_connect_by_clicking_the_link">También puedes conectarte haciendo clic en el enlace. Si se abre en el navegador, haz clic en <b>Abrir en aplicación móvil</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link">También puedes conectarte pulsando el enlace. Si se abre en el navegador, pulsa en <b>Abrir en aplicación móvil</b>.</string>
     <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0088ff">ponerte en contacto con los desarrolladores de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para consultas y para recibir actualizaciones</font>.</string>
     <string name="observer_cant_send_message_title">¡No puedes enviar mensajes!</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Puedes usar la sintaxis markdown para dar formato a los mensajes:</string>
@@ -916,7 +916,7 @@
     <string name="verify_security_code">Comprobar código de seguridad</string>
     <string name="you_accepted_connection">Has aceptado la conexión</string>
     <string name="you_invited_your_contact">Has invitado a tu contacto</string>
-    <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo del anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="your_settings">Configuración</string>
     <string name="your_SMP_servers">Tus servidores SMP</string>
     <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
@@ -962,7 +962,7 @@
     <string name="icon_descr_simplex_team">Equipo <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="your_profile_will_be_sent">Tu perfil Chat se enviará a tu contacto</string>
     <string name="your_chat_profiles">Mis perfiles</string>
-    <string name="your_simplex_contact_address">Mi dirección de contacto <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="your_simplex_contact_address">Mi dirección SimpleX</string>
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
     <string name="your_current_profile">Tu perfil actual</string>
@@ -1130,4 +1130,61 @@
     <string name="v5_0_polish_interface_descr">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
     <string name="v5_0_large_files_support">Vídeos y archivos de hasta 1Gb</string>
     <string name="v5_0_large_files_support_descr">¡Rápido y sin necesidad de esperar a que el remitente esté en línea!</string>
+    <string name="auth_open_chat_profiles">Abrir perfiles de chat</string>
+    <string name="learn_more">Más información</string>
+    <string name="if_you_cant_meet_in_person">Si no puedes reunirte en persona, **muestra el código QR por videollamada**, o comparte el enlace.</string>
+    <string name="scan_qr_to_connect_to_contact">Para conectarse, tu contacto puede escanear el código QR o usar el enlace en la aplicación.</string>
+    <string name="create_simplex_address">Crear dirección SimpleX</string>
+    <string name="auto_accept_contact">Auto aceptar</string>
+    <string name="group_welcome_preview">Vista previa</string>
+    <string name="opening_database">Abriendo base de datos…</string>
+    <string name="error_setting_address">Error al introducir la dirección</string>
+    <string name="read_more_in_user_guide_with_link">Más información en la <font color="#0088ff">Guía de usuario</font>.</string>
+    <string name="one_time_link_short">Enlace de un uso</string>
+    <string name="simplex_address">Dirección SimpleX</string>
+    <string name="you_can_accept_or_reject_connection">Cuando alguien solicita conectarse, puedes aceptar o rechazar.</string>
+    <string name="share_address">Compartir dirección</string>
+    <string name="enter_welcome_message">Escribe un mensaje de bienvenida…</string>
+    <string name="theme_simplex">SimpleX</string>
+    <string name="color_primary_variant">Color adicional</string>
+    <string name="color_secondary_variant">Secundario adicional</string>
+    <string name="color_background">Fondo</string>
+    <string name="export_theme">Exportar tema</string>
+    <string name="color_surface">Menús y alertas</string>
+    <string name="add_address_to_your_profile">Añade la dirección a tu perfil para que tus contactos puedan compartirla con otros. La actualización del perfil se enviará a tus contactos.</string>
+    <string name="learn_more_about_address">Acerca de dirección SimpleX</string>
+    <string name="address_section_title">Dirección</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Todos tus contactos permanecerán conectados. La actualización del perfil se enviará a tus contactos.</string>
+    <string name="continue_to_next_step">Continuar</string>
+    <string name="dark_theme">Tema oscuro</string>
+    <string name="customize_theme_title">Personalizar tema</string>
+    <string name="enter_welcome_message_optional">Escribe un mensaje de bienvenida… (opcional)</string>
+    <string name="create_address_and_let_people_connect">Crear una dirección para que la gente se pueda conectar contigo.</string>
+    <string name="dont_create_address">No crear dirección</string>
+    <string name="email_invite_body">¡Hola!
+\nConecta conmigo a través de SimpleX Chat: %s</string>
+    <string name="import_theme">Importar tema</string>
+    <string name="import_theme_error">Error al importar tema</string>
+    <string name="invite_friends">Invitar amigos</string>
+    <string name="email_invite_subject">Hablemos en SimpleX Chat</string>
+    <string name="import_theme_error_desc">Asegúrate de que el archivo tiene la sintaxis YAML correcta. Exporta el tema para tener un ejemplo de la estructura del archivo de tema.</string>
+    <string name="profile_update_will_be_sent_to_contacts">La actualización del perfil se enviará a tus contactos.</string>
+    <string name="color_received_message">Mensaje recibido</string>
+    <string name="save_auto_accept_settings">Guardar configuración de auto aceptar</string>
+    <string name="you_can_share_your_address">Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo.</string>
+    <string name="save_settings_question">¿Guardar configuración\?</string>
+    <string name="color_secondary">Color secundario</string>
+    <string name="color_sent_message">Mensaje enviado</string>
+    <string name="stop_sharing">Dejar de compartir</string>
+    <string name="stop_sharing_address">¿Dejar de compartir la dirección\?</string>
+    <string name="theme_colors_section_title">COLORES DEL TEMA</string>
+    <string name="you_can_create_it_later">Puedes crearlo más tarde</string>
+    <string name="share_address_with_contacts_question">¿Compartir la dirección con los contactos\?</string>
+    <string name="share_with_contacts">Compartir con contactos</string>
+    <string name="color_title">Título</string>
+    <string name="you_can_share_this_address_with_your_contacts">Puedes compartir esta dirección con tus contactos para que puedan conectar con %s.</string>
+    <string name="your_contacts_will_see_it">Tus contactos en SimpleX lo verán.
+\nPuedes cambiarlo en Configuración.</string>
+    <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">No perderás tus contactos si más tarde borras tu dirección.</string>
 </resources>
