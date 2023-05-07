@@ -556,12 +556,10 @@
     <string name="reject">拒否</string>
     <string name="call_connection_peer_to_peer">P2P</string>
     <string name="privacy_and_security">プライバシーとセキュリティ</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">次の場合に起こりうる：
-\n① メッセージが受信せずにサーバに溜まって30日が経つ場合
-\n② 連絡相手からメッセージが送信中に、ご利用の受信サーバが更新・再起動する場合
-\n③ 接続が不安定の場合
-\nサーバの更新情報をご希望でしたら、設定にて開発者とお繋ぎください。
-\nメッセージの喪失を防ぐために、サーバ冗長性を向上してまいります。</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">次の場合に起こる場合があります：
+\n① メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは30日後）が切れた
+\n②あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した
+\n③ 接続に問題があった</string>
     <string name="settings_section_title_device">端末</string>
     <string name="no_received_app_files">送受信済みのファイルがありません</string>
     <string name="delete_messages">メッセージを削除</string>
@@ -908,7 +906,7 @@
     <string name="restore_database_alert_title">データベースを復元しますか？</string>
     <string name="save_and_notify_group_members">保存して、グループのメンバーにに知らせる</string>
     <string name="send_us_an_email">メールを送る</string>
-    <string name="share_image">画像共有…</string>
+    <string name="share_image">メディア共有…</string>
     <string name="simplex_link_mode">SimpleXリンク</string>
     <string name="settings_section_title_support">SIMPLEX CHATを支援</string>
     <string name="smp_servers_test_servers">テストサーバ</string>
@@ -932,7 +930,7 @@
     <string name="description_you_shared_one_time_link">使い捨てリンクを送りました</string>
     <string name="profile_will_be_sent_to_contact_sending_link">リンクを送ってくれた連絡先にあなたのプロフィールを送ります。</string>
     <string name="your_SMP_servers">あなたのSMPサーバ</string>
-    <string name="your_simplex_contact_address">あなたの<xliff:g id="appName">SimpleX</xliff:g>アドレス</string>
+    <string name="your_simplex_contact_address">あなたのSimpleXアドレス</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">連絡先が繋がりリクエストを承認したら、接続されます。後でチェックするか、しばらくお待ちください。</string>
     <string name="switch_receiving_address">受信アドレスを変える</string>
     <string name="incognito_random_profile">あなたのランダム・プロフィール</string>
@@ -997,4 +995,47 @@
     <string name="database_upgrade">データベースアップグレード</string>
     <string name="audio_video_calls">音声/ビデオ通話</string>
     <string name="calls_prohibited_with_this_contact">音声/ビデオ通話は禁止されています。</string>
+    <string name="feature_received_prohibited">received, prohibited</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTPサーバーのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
+    <string name="smp_server_test_delete_file">ファイルの削除</string>
+    <string name="icon_descr_waiting_for_video">ビデオ待機中</string>
+    <string name="waiting_for_video">Waiting for video</string>
+    <string name="group_welcome_title">ウェルカムメッセージ</string>
+    <string name="host_verb">Host</string>
+    <string name="lock_after">自動ロックまでの時間</string>
+    <string name="opening_database">データベースを開いています…</string>
+    <string name="observer_cant_send_message_title">メッセージを送信できませんでした！</string>
+    <string name="gallery_video_button">ビデオ</string>
+    <string name="above_then_preposition_continuation">above, then:</string>
+    <string name="network_socks_proxy_settings">SOCKSプロキシー設定</string>
+    <string name="your_XFTP_servers">あなたのXFTPサーバ</string>
+    <string name="add_address_to_your_profile">プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。</string>
+    <string name="auto_accept_contact">自動承認</string>
+    <string name="enable_lock">ロックモード</string>
+    <string name="enter_welcome_message">ウェルカムメッセージを入力…</string>
+    <string name="only_you_can_make_calls">自分からのみ通話ができます。</string>
+    <string name="video_will_be_received_when_contact_is_online">動画は相手がオンラインになったら受信されます。しばらくお待ちください。</string>
+    <string name="color_primary_variant">追加のアクセント</string>
+    <string name="customize_theme_title">カスタムテーマ</string>
+    <string name="videos_limit_desc">動画を1回で最大10個送信できます。</string>
+    <string name="videos_limit_title">動画数の上限を超えています！</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">画像は相手がアップロードを完了した時点で受信するができます。</string>
+    <string name="video_descr">ビデオ</string>
+    <string name="alert_title_msg_bad_hash">メッセージのハッシュ値問題</string>
+    <string name="you_are_observer">あなたはオブザーバーです</string>
+    <string name="observer_cant_send_message_desc">グループの管理者に連絡してください。</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">動画は相手がアップロードを完了した時点で受信するができます。</string>
+    <string name="disable_onion_hosts_when_not_supported">SOCKSプロキシがサポートしていない場合、<i>.onion hostを使用する</i>、は「いいえ」に設定します。</string>
+    <string name="network_socks_toggle_use_socks_proxy">SOCKSプロキシーを使用</string>
+    <string name="auth_open_chat_profiles">チャットのプロフィールを開く</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">連絡先がアップロードを完了した時点で、ファイルを受信します。</string>
+    <string name="button_welcome_message">ウェルカムメッセージ</string>
+    <string name="prohibit_calls">音声/ビデオ通話を禁止する 。</string>
+    <string name="allow_your_contacts_to_call">連絡先からの通話を許可する。</string>
+    <string name="allow_calls_only_if">連絡先が通話を許可している場合のみ通話を許可する。</string>
+    <string name="available_in_v51">"
+\nv5.1で利用可能予定"</string>
+    <string name="only_your_contact_can_make_calls">連絡先からのみ通話ができます。</string>
+    <string name="both_you_and_your_contact_can_make_calls">あなたからも連絡先からも通話ができます。</string>
+    <string name="language_system">システム</string>
 </resources>
