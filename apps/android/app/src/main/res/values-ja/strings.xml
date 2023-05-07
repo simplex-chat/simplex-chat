@@ -1080,7 +1080,7 @@
     <string name="error_loading_xftp_servers">XFTP サーバーのロード中にエラーが発生しました</string>
     <string name="export_theme">テーマのエクスポート</string>
     <string name="revoke_file__message">ファイルはサーバーから削除されます。</string>
-    <string name="if_you_cant_meet_in_person">直接会えない場合は、ビデオ通話で QR コードを表示するか、リンクを共有してください</string>
+    <string name="if_you_cant_meet_in_person">直接会えない場合は、ビデオ通話で QR コードを表示するか、リンクを共有してください。</string>
     <string name="v4_6_reduced_battery_usage">バッテリー使用量をさらに削減</string>
     <string name="la_no_app_password">アプリのパスコードがありません</string>
     <string name="muted_when_inactive">非アクティブ時はミュート！</string>
