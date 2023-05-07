@@ -1185,4 +1185,5 @@
     <string name="save_settings_question">Salvare le impostazioni\?</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Non perderai i contatti se in seguito elimini il tuo indirizzo.</string>
     <string name="you_can_share_your_address">Puoi condividere il tuo indirizzo come link o codice QR: chiunque può connettersi a te.</string>
+    <string name="opening_database">Apertura del database…</string>
 </resources>
