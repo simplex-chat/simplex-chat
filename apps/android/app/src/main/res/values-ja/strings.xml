@@ -1038,4 +1038,41 @@
     <string name="only_your_contact_can_make_calls">連絡先からのみ通話ができます。</string>
     <string name="both_you_and_your_contact_can_make_calls">あなたからも連絡先からも通話ができます。</string>
     <string name="language_system">システム</string>
+    <string name="error_saving_xftp_servers">SMP サーバーの保存中にエラーが発生しました</string>
+    <string name="smp_server_test_create_file">ファイルを作成</string>
+    <string name="moderate_message_will_be_deleted_warning">メッセージはすべてのメンバーに対して削除されます。</string>
+    <string name="la_could_not_be_verified">確認できませんでした。 もう一度お試しください。</string>
+    <string name="user_mute">ミュート</string>
+    <string name="user_unmute">ミュート解除</string>
+    <string name="v4_6_audio_video_calls">音声通話とビデオ通話</string>
+    <string name="upgrade_and_open_chat">アップグレードしてチャットを開く</string>
+    <string name="delete_member_message__question">メンバーのメッセージを削除しますか？</string>
+    <string name="import_theme">テーマのインポート</string>
+    <string name="port_verb">ポート</string>
+    <string name="theme_colors_section_title">テーマカラー</string>
+    <string name="stop_sharing">共有を停止</string>
+    <string name="invite_friends">友人を招待する</string>
+    <string name="you_can_create_it_later">後からでも作成できます</string>
+    <string name="password_to_show">パスワードを表示する</string>
+    <string name="authentication_cancelled">認証がキャンセルされました</string>
+    <string name="share_address">アドレスを共有する</string>
+    <string name="theme_simplex">SimpleX</string>
+    <string name="color_title">タイトル</string>
+    <string name="v4_6_reduced_battery_usage_descr">まだまだ改善してまいります！</string>
+    <string name="show_developer_options">開発者向けオプションを表示</string>
+    <string name="v4_6_group_welcome_message_descr">新しいメンバーに表示されるメッセージを設定してください!</string>
+    <string name="lock_not_enabled">SimpleXは ロックされていません!</string>
+    <string name="smp_server_test_upload_file">ファイルをアップロードする</string>
+    <string name="smp_server_test_compare_file">ファイルを比較</string>
+    <string name="you_can_turn_on_lock">設定からSimpleXのロックをオンにすることができます。</string>
+    <string name="la_seconds">%d 秒</string>
+    <string name="database_downgrade_warning">警告: 一部のデータが失われる可能性があります!</string>
+    <string name="revoke_file__confirm">取り消す</string>
+    <string name="stop_file__confirm">停止</string>
+    <string name="stop_snd_file__title">ファイルの送信を停止しますか？</string>
+    <string name="alert_text_fragment_please_report_to_developers">開発者に報告してください。</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">このエラーはこの接続では永続的なものです。再接続してください。</string>
+    <string name="v5_0_large_files_support">1GBまでのビデオとファイル</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> メッセージの復号化に失敗しました。</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> メッセージをスキップしました</string>
 </resources>
