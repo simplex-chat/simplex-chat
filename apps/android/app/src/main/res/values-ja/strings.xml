@@ -1038,7 +1038,7 @@
     <string name="only_your_contact_can_make_calls">連絡先からのみ通話ができます。</string>
     <string name="both_you_and_your_contact_can_make_calls">あなたからも連絡先からも通話ができます。</string>
     <string name="language_system">システム</string>
-    <string name="error_saving_xftp_servers">SMP サーバーの保存中にエラーが発生しました</string>
+    <string name="error_saving_xftp_servers">XFTPサーバーの保存中にエラーが発生しました</string>
     <string name="smp_server_test_create_file">ファイルを作成</string>
     <string name="moderate_message_will_be_deleted_warning">メッセージはすべてのメンバーに対して削除されます。</string>
     <string name="la_could_not_be_verified">確認できませんでした。 もう一度お試しください。</string>
