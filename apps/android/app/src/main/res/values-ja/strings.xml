@@ -1012,7 +1012,7 @@
     <string name="add_address_to_your_profile">プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。</string>
     <string name="auto_accept_contact">自動承認</string>
     <string name="enable_lock">ロックモード</string>
-    <string name="enter_welcome_message">ウェルカムメッセージを入力…</string>
+    <string name="enter_welcome_message">ウェルカム メッセージを入力してください…</string>
     <string name="only_you_can_make_calls">自分からのみ通話ができます。</string>
     <string name="video_will_be_received_when_contact_is_online">動画は相手がオンラインになったら受信されます。しばらくお待ちください。</string>
     <string name="color_primary_variant">追加のアクセント</string>
