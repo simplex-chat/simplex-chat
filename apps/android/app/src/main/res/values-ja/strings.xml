@@ -1109,4 +1109,13 @@
     <string name="you_can_accept_or_reject_connection">接続が要求されたら、それを受け入れるか拒否するかを選択できます。</string>
     <string name="your_contacts_will_see_it">SimpleX の連絡先に表示されます。
 \n設定で変更できます。</string>
+    <string name="icon_descr_video_snd_complete">ビデオが送信されました</string>
+    <string name="v4_6_group_moderation_descr">管理者は次のことができます。
+\n- メンバーのメッセージを削除します。
+\n- メンバーを無効にする (メッセージの送信不可)</string>
+    <string name="v5_0_polish_interface">洗練されたインターフェース</string>
+    <string name="downgrade_and_open_chat">ダウングレードしてチャットを開く</string>
+    <string name="la_please_remember_to_store_password">パスワードを覚えるか、安全に保管してください。失われたパスワードを回復する方法はありません。</string>
+    <string name="smp_server_test_download_file">ファイルをダウンロード</string>
+    <string name="no_spaces">空き容量がありません</string>
 </resources>
