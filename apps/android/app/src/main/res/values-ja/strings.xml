@@ -1096,4 +1096,14 @@
     <string name="mtr_error_no_down_migration">データベースのバージョンはアプリよりも新しいですが、ダウングレードはできません: %s</string>
     <string name="initial_member_role">初期の役割</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">古いデータベースのバックアップを使用した場合に発生する可能性があります。</string>
+    <string name="v4_6_chinese_spanish_interface_descr">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
+    <string name="v4_6_audio_video_calls_descr">Bluetooth およびその他の改善をサポートします。</string>
+    <string name="relay_server_if_necessary">中継サーバーは必要な場合にのみ使用されます。 別の当事者があなたの IP アドレスを監視できます。</string>
+    <string name="stop_sharing_address">アドレスの共有を停止しますか？</string>
+    <string name="color_sent_message">送信</string>
+    <string name="color_received_message">受信したメッセージ</string>
+    <string name="alert_text_msg_bad_hash">以前のメッセージとハッシュ値が異なります。</string>
+    <string name="alert_text_msg_bad_id">次のメッセージの ID が正しくありません (前のメッセージより小さいか等しい)。
+\n何らかのバグが原因で、または接続が侵害された場合に発生する可能性があります。</string>
+    <string name="v5_0_polish_interface_descr">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
 </resources>
