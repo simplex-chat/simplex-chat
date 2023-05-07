@@ -1118,4 +1118,19 @@
     <string name="la_please_remember_to_store_password">パスワードを覚えるか、安全に保管してください。失われたパスワードを回復する方法はありません。</string>
     <string name="smp_server_test_download_file">ファイルをダウンロード</string>
     <string name="no_spaces">空き容量がありません</string>
+    <string name="you_can_hide_or_mute_user_profile">ユーザープロフィールを非表示またはミュートすることができます（メニューを長押し）。</string>
+    <string name="v4_6_group_moderation">グループのモデレーション</string>
+    <string name="email_invite_body">こんにちは！
+\nSimpleX Chatの招待が届いています: %s</string>
+    <string name="v4_6_group_welcome_message">グループのウェルカムメッセージ</string>
+    <string name="tap_to_activate_profile">タップしてプロフィールを有効化する。</string>
+    <string name="profile_password">プロフィールのパスワード</string>
+    <string name="v4_6_hidden_chat_profiles_descr">チャットのプロフィールをパスワードで保護します！</string>
+    <string name="group_member_role_observer">オブザーバー</string>
+    <string name="v5_0_large_files_support_descr">送信者がオンラインになるまでの待ち時間がなく、速い！</string>
+    <string name="v5_0_app_passcode">アプリのパスコード</string>
+    <string name="v5_0_app_passcode_descr">システム認証の代わりに設定します。</string>
+    <string name="should_be_at_least_one_visible_profile">少なくとも1つのユーザープロフィールが表示されている必要があります。</string>
+    <string name="should_be_at_least_one_profile">少なくとも1つのユーザープロファイルが必要です。</string>
+    <string name="make_profile_private">プロフィールを非表示にできます！</string>
 </resources>
