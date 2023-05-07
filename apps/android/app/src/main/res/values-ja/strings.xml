@@ -1075,5 +1075,7 @@
     <string name="v5_0_large_files_support">1GBまでのビデオとファイル</string>
     <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> メッセージの復号化に失敗しました。</string>
     <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> メッセージをスキップしました</string>
-    <string name="error_loading_smp_servers">SMPサーバーのロード中にエラーが発生しました</string>
+    <string name="error_loading_smp_servers">SMP サーバーのロード中にエラーが発生しました</string>
+    <string name="error_saving_user_password">ユーザーパスワード保存エラー</string>
+    <string name="error_loading_xftp_servers">XFTP サーバーのロード中にエラーが発生しました</string>
 </resources>
