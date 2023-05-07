@@ -1093,7 +1093,7 @@
     <string name="la_immediately">即座に</string>
     <string name="alert_title_msg_bad_id">メッセージ ID が正しくありません</string>
     <string name="database_migrations">移行: %s</string>
-    <string name="mtr_error_no_down_migration">データベースのバージョンはアプリよりも新しいですが、ダウングレードはできません: %s</string>
+    <string name="mtr_error_no_down_migration">アプリのバージョンよりも新しいデータベースが使用されていますが、データベースのバージョンダウンはできません: %s</string>
     <string name="initial_member_role">初期の役割</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">古いデータベースのバックアップを使用した場合に発生する可能性があります。</string>
     <string name="v4_6_chinese_spanish_interface_descr">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
