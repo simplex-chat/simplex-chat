@@ -8,11 +8,11 @@ import Database.SQLite.Simple.QQ (sql)
 m20230505_chat_item_versions :: Query
 m20230505_chat_item_versions =
   [sql|
-CREATE TABLE chat_item_versions (
+CREATE TABLE chat_item_versions ( -- contains versions only for edited chat items, including current version
   chat_item_version_id INTEGER PRIMARY KEY AUTOINCREMENT,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   msg_content TEXT NOT NULL,
-  edited_at TEXT NOT NULL DEFAULT(datetime('now')),
+  item_version_ts TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );

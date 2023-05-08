@@ -4421,14 +4421,14 @@ getChatItemVersionsCount db itemId = do
   pure $ fromMaybe 0 count
 
 createChatItemVersion :: DB.Connection -> ChatItemId -> UTCTime -> MsgContent -> IO ()
-createChatItemVersion db itemId editedAt msgContent =
+createChatItemVersion db itemId itemVersionTs msgContent =
   DB.execute
     db
     [sql|
-      INSERT INTO chat_item_versions (chat_item_id, msg_content, edited_at)
+      INSERT INTO chat_item_versions (chat_item_id, msg_content, item_version_ts)
       VALUES (?,?,?)
     |]
-    (itemId, toMCText msgContent, editedAt)
+    (itemId, toMCText msgContent, itemVersionTs)
 
 deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
 deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
@@ -4820,7 +4820,7 @@ getChatItemVersions db itemId = do
     <$> DB.query
       db
       [sql|
-        SELECT chat_item_version_id, msg_content, edited_at, created_at
+        SELECT chat_item_version_id, msg_content, item_version_ts, created_at
         FROM chat_item_versions
         WHERE chat_item_id = ?
         ORDER BY chat_item_version_id DESC
@@ -4828,7 +4828,7 @@ getChatItemVersions db itemId = do
       (Only itemId)
   where
     toChatItemVersion :: (Int64, MsgContent, UTCTime, UTCTime) -> ChatItemVersion
-    toChatItemVersion (chatItemVersionId, msgContent, editedAt, createdAt) = ChatItemVersion {chatItemVersionId, msgContent, editedAt, createdAt}
+    toChatItemVersion (chatItemVersionId, msgContent, itemVersionTs, createdAt) = ChatItemVersion {chatItemVersionId, msgContent, itemVersionTs, createdAt}
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db user fileId fileStatus = do

@@ -1466,7 +1466,7 @@ instance ToJSON ChatItemInfo where toEncoding = J.genericToEncoding J.defaultOpt
 data ChatItemVersion = ChatItemVersion
   { chatItemVersionId :: Int64,
     msgContent :: MsgContent,
-    editedAt :: UTCTime,
+    itemVersionTs :: UTCTime,
     createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic)

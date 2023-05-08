@@ -431,7 +431,7 @@ viewChatItemInfo (AChatItem _ msgDir _ _) ChatItemInfo {itemTs, createdAt, itemV
       if null itemVersions
         then []
         else ["message history:"] <> concatMap version itemVersions
-    version ChatItemVersion {msgContent, editedAt} = prependFirst (ts editedAt <> styleTime ": ") $ ttyMsgContent msgContent
+    version ChatItemVersion {msgContent, itemVersionTs} = prependFirst (ts itemVersionTs <> styleTime ": ") $ ttyMsgContent msgContent
 
 localTs :: TimeZone -> UTCTime -> String
 localTs tz ts = do
