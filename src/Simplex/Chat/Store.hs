@@ -4413,6 +4413,13 @@ addInitialAndNewCIVersions db itemId (initialTs, initialMC) (newTs, newMC) = do
     createChatItemVersion db itemId initialTs initialMC
   createChatItemVersion db itemId newTs newMC
 
+getChatItemVersionsCount :: DB.Connection -> ChatItemId -> IO Int
+getChatItemVersionsCount db itemId = do
+  count <-
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT COUNT(1) FROM chat_item_versions WHERE chat_item_id = ?" (Only itemId)
+  pure $ fromMaybe 0 count
+
 createChatItemVersion :: DB.Connection -> ChatItemId -> UTCTime -> MsgContent -> IO ()
 createChatItemVersion db itemId editedAt msgContent =
   DB.execute
@@ -4422,13 +4429,6 @@ createChatItemVersion db itemId editedAt msgContent =
       VALUES (?,?,?)
     |]
     (itemId, toMCText msgContent, editedAt)
-
-getChatItemVersionsCount :: DB.Connection -> ChatItemId -> IO Int
-getChatItemVersionsCount db itemId = do
-  count <-
-    maybeFirstRow fromOnly $
-      DB.query db "SELECT COUNT(1) FROM chat_item_versions WHERE chat_item_id = ?" (Only itemId)
-  pure $ fromMaybe 0 count
 
 deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
 deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
