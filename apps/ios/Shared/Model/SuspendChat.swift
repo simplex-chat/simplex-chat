@@ -81,3 +81,24 @@ func activateChat(appState: AppState = .active) {
         if ChatModel.ok { apiActivateChat() }
     }
 }
+
+func initChatAndMigrate(refreshInvitations: Bool = true) {
+    let m = ChatModel.shared
+    if (!m.chatInitialized) {
+        do {
+            m.v3DBMigration = v3DBMigrationDefault.get()
+            try initializeChat(start: m.v3DBMigration.startChat, refreshInvitations: refreshInvitations)
+        } catch let error {
+            fatalError("Failed to start or load chats: \(responseError(error))")
+        }
+    }
+}
+
+func startChatAndActivate() {
+    if ChatModel.shared.chatRunning == true {
+        ChatReceiver.shared.start()
+    }
+    if .active != appStateGroupDefault.get()  {
+        activateChat()
+    }
+}

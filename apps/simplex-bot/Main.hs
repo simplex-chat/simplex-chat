@@ -14,15 +14,18 @@ main :: IO ()
 main = do
   opts <- welcomeGetOpts
   simplexChatCore terminalChatConfig opts Nothing $
-    chatBotRepl "Hello! I am a simple squaring bot - if you send me a number, I will calculate its square" $ \msg ->
-      case readMaybe msg :: Maybe Integer of
+    chatBotRepl welcomeMessage $ \_contact msg ->
+      pure $ case readMaybe msg :: Maybe Integer of
         Just n -> msg <> " * " <> msg <> " = " <> show (n * n)
         _ -> "\"" <> msg <> "\" is not a number"
+
+welcomeMessage :: String
+welcomeMessage = "Hello! I am a simple squaring bot.\nIf you send me a number, I will calculate its square"
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@ChatOpts {dbFilePrefix} <- getChatOpts appDir "simplex_bot"
+  opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix}} <- getChatOpts appDir "simplex_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
   putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
   pure opts

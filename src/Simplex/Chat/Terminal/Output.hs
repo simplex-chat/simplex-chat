@@ -12,6 +12,7 @@ import Control.Concurrent (ThreadId)
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.List (intercalate)
 import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat (processChatCommand)
 import Simplex.Chat.Controller
@@ -19,6 +20,7 @@ import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.View
 import System.Console.ANSI.Types
+import System.IO (IOMode (..), hPutStrLn, withFile)
 import System.Mem.Weak (Weak)
 import System.Terminal
 import System.Terminal.Internal (LocalTerminal, Terminal, VirtualTerminal)
@@ -37,7 +39,18 @@ data TerminalState = TerminalState
   { inputPrompt :: String,
     inputString :: String,
     inputPosition :: Int,
-    previousInput :: String
+    previousInput :: String,
+    autoComplete :: AutoCompleteState
+  }
+
+data ACShowVariants = SVNone | SVSome | SVAll
+  deriving (Eq, Enum)
+
+data AutoCompleteState = ACState
+  { acVariants :: [String],
+    acInputString :: String,
+    acTabPressed :: Bool,
+    acShowVariants :: ACShowVariants
   }
 
 data LiveMessage = LiveMessage
@@ -81,8 +94,12 @@ mkTermState =
     { inputString = "",
       inputPosition = 0,
       inputPrompt = "> ",
-      previousInput = ""
+      previousInput = "",
+      autoComplete = mkAutoComplete
     }
+
+mkAutoComplete :: AutoCompleteState
+mkAutoComplete = ACState {acVariants = [], acInputString = "", acTabPressed = False, acShowVariants = SVNone}
 
 withTermLock :: MonadTerminal m => ChatTerminal -> m () -> m ()
 withTermLock ChatTerminal {termLock} action = do
@@ -91,17 +108,19 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
+runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = do
   forever $ do
     (_, r) <- atomically $ readTBQueue outputQ
     case r of
       CRNewChatItem _ ci -> markChatItemRead ci
       CRChatItemUpdated _ ci -> markChatItemRead ci
       _ -> pure ()
+    let printResp = case logFilePath of
+          Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
+          _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    printRespToTerminal ct cc liveItems r
+    responseString cc liveItems r >>= printResp
   where
-    markChatItemRead :: AChatItem -> IO ()
     markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
       case (muted chat item, itemStatus) of
         (False, CISRcvNew) -> do
@@ -109,12 +128,16 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
               chatRef = chatInfoToRef chat
           void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
+    logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
 
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
-printRespToTerminal ct cc liveItems r = do
+printRespToTerminal ct cc liveItems r = responseString cc liveItems r >>= printToTerminal ct
+
+responseString :: ChatController -> Bool -> ChatResponse -> IO [StyledString]
+responseString cc liveItems r = do
   user <- readTVarIO $ currentUser cc
   ts <- getCurrentTime
-  printToTerminal ct $ responseToView user (config cc) liveItems ts r
+  pure $ responseToView user (config cc) liveItems ts r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =
@@ -134,11 +157,13 @@ updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessag
   let ih = inputHeight ts
       iStart = height - ih
       prompt = inputPrompt ts
-      Position {row, col} = positionRowColumn width $ length prompt + inputPosition ts
+      acPfx = autoCompletePrefix ts
+      Position {row, col} = positionRowColumn width $ length acPfx + length prompt + inputPosition ts
   if nmr >= iStart
     then atomically $ writeTVar nextMessageRow iStart
     else clearLines nmr iStart
   setCursorPosition $ Position {row = max nmr iStart, col = 0}
+  putStyled $ Styled [SetColor Foreground Dull White] acPfx
   putString $ prompt <> inputString ts <> " "
   eraseInLine EraseForward
   setCursorPosition $ Position {row = iStart + row, col}
@@ -153,7 +178,15 @@ updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessag
         eraseInLine EraseForward
         clearLines (from + 1) till
     inputHeight :: TerminalState -> Int
-    inputHeight ts = length (inputPrompt ts <> inputString ts) `div` width + 1
+    inputHeight ts = length (autoCompletePrefix ts <> inputPrompt ts <> inputString ts) `div` width + 1
+    autoCompletePrefix :: TerminalState -> String
+    autoCompletePrefix TerminalState {autoComplete = ac}
+      | length vars <= 1 || sv == SVNone = ""
+      | sv == SVAll || length vars <= 4 = "(" <> intercalate ", " vars <> ") "
+      | otherwise = "(" <> intercalate ", " (take 3 vars) <> "... +" <> show (length vars - 3) <> ") "
+      where
+        sv = acShowVariants ac
+        vars = acVariants ac
     positionRowColumn :: Int -> Int -> Position
     positionRowColumn wid pos =
       let row = pos `div` wid

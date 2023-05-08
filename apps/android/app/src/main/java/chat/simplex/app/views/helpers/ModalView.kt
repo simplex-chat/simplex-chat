@@ -11,8 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.app.TAG
-import chat.simplex.app.ui.theme.SettingsBackgroundLight
 import chat.simplex.app.ui.theme.isInDarkTheme
+import chat.simplex.app.ui.theme.themedBackground
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
@@ -25,7 +25,7 @@ fun ModalView(
 ) {
   BackHandler(onBack = close)
   Surface(Modifier.fillMaxSize()) {
-    Column(Modifier.background(background)) {
+    Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
       CloseSheetBar(close, endButtons)
       Box(modifier) { content() }
     }
@@ -37,21 +37,22 @@ class ModalManager {
   private val modalCount = mutableStateOf(0)
   private val toRemove = mutableSetOf<Int>()
   private var oldViewChanging = AtomicBoolean(false)
+  private var passcodeView: MutableState<(@Composable (close: () -> Unit) -> Unit)?> = mutableStateOf(null)
 
   fun showModal(settings: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable () -> Unit) {
     showCustomModal { close ->
-      ModalView(close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, endButtons = endButtons, content = content)
+      ModalView(close, endButtons = endButtons, content = content)
     }
   }
 
   fun showModalCloseable(settings: Boolean = false, content: @Composable (close: () -> Unit) -> Unit) {
     showCustomModal { close ->
-      ModalView(close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = { content(close) })
+      ModalView(close, content = { content(close) })
     }
   }
 
   fun showCustomModal(animated: Boolean = true, modal: @Composable (close: () -> Unit) -> Unit) {
-    Log.d(TAG, "ModalManager.showModal")
+    Log.d(TAG, "ModalManager.showCustomModal")
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
     // This is useful when invoking close() and ShowCustomModal one after another without delay. Otherwise, screen will hold prev view
     if (toRemove.isNotEmpty()) {
@@ -59,6 +60,11 @@ class ModalManager {
     }
     modalViews.add(animated to modal)
     modalCount.value = modalViews.size - toRemove.size
+  }
+
+  fun showPasscodeCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
+    Log.d(TAG, "ModalManager.showPasscodeCustomModal")
+    passcodeView.value = modal
   }
 
   fun hasModalsOpen() = modalCount.value > 0
@@ -73,6 +79,7 @@ class ModalManager {
 
   fun closeModals() {
     while (modalCount.value > 0) closeModal()
+    passcodeView.value = null
   }
 
   @OptIn(ExperimentalAnimationApi::class)
@@ -98,6 +105,11 @@ class ModalManager {
         runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
       }
     }
+  }
+
+  @Composable
+  fun showPasscodeInView() {
+    remember { passcodeView }.value?.invoke { passcodeView.value = null }
   }
 
   /**

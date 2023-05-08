@@ -40,7 +40,8 @@ class AudioRecorder {
                 AVEncoderBitRateKey: 12000,
                 AVNumberOfChannelsKey: 1
             ]
-            audioRecorder = try AVAudioRecorder(url: getAppFilePath(fileName), settings: settings)
+            let url = getAppFilePath(fileName)
+            audioRecorder = try AVAudioRecorder(url: url, settings: settings)
             audioRecorder?.record(forDuration: MAX_VOICE_MESSAGE_LENGTH)
 
             await MainActor.run {
@@ -110,7 +111,9 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         try? audioSession.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
         try? audioSession.setActive(true)
 
-        audioPlayer = try? AVAudioPlayer(contentsOf: getAppFilePath(fileName))
+
+        let url = getAppFilePath(fileName)
+        audioPlayer = try? AVAudioPlayer(contentsOf: url)
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
         audioPlayer?.play()

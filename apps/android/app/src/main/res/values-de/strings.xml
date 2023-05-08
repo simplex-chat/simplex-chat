@@ -180,7 +180,7 @@
     <string name="you_have_no_chats">Sie haben keine Chats</string>
     <!-- ShareListView.kt -->
     <string name="share_message">Nachricht teilen…</string>
-    <string name="share_image">Bild teilen…</string>
+    <string name="share_image">Medien teilen…</string>
     <string name="share_file">Datei teilen…</string>
     <!-- ComposeView.kt, helpers -->
     <string name="attach">Anhängen</string>
@@ -254,9 +254,11 @@
     <string name="only_stored_on_members_devices">(Wird nur von Gruppenmitgliedern gespeichert)</string>
     <!-- GetImageView -->
     <string name="toast_permission_denied">Berechtigung verweigert!</string>
-    <string name="use_camera_button">Kamera\nverwenden</string>
+    <string name="use_camera_button">Kamera</string>
     <string name="from_gallery_button">Aus dem\nFotoalbum</string>
-    <string name="choose_file">Datei\nauswählen</string>
+    <string name="choose_file">Datei</string>
+    <string name="gallery_image_button">Bild</string>
+    <string name="gallery_video_button">Video</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> installiert haben!</string>
     <string name="you_can_connect_to_simplex_chat_founder">Sie können sich <font color="#0088ff">mit <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.</string>
@@ -326,7 +328,6 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Sie werden mit der Gruppe verbunden, sobald das Endgerät des Gruppen-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Sie werden verbunden, sobald das Endgerät Ihres Kontakts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Zeigen Sie Ihrem Kontakt den QR-Code aus der App zum Scannen.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs anzeigen</b> oder einen Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ihr Chat-Profil wird
 \nan Ihren Kontakt gesendet</string>
@@ -343,7 +344,6 @@
     <!-- CreateLinkView.kt -->
     <string name="create_one_time_link">Link / QR-Code erstellen</string>
     <string name="one_time_link">Einmaliger Einladungs-Link</string>
-    <string name="your_contact_address">Meine Kontaktadresse</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Meine Einstellungen</string>
     <string name="your_simplex_contact_address">Meine <xliff:g id="appName">SimpleX</xliff:g> Kontaktadresse</string>
@@ -395,9 +395,8 @@
     <string name="network_and_servers">Netzwerk &amp; Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
     <string name="network_settings_title">Netzwerkeinstellungen</string>
-    <string name="network_socks_toggle">SOCKS-Proxy verwenden (Port 9050)</string>
     <string name="network_enable_socks">SOCKS-Proxy verwenden?</string>
-    <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port 9050? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
+    <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port %d? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
     <string name="network_disable_socks">Direkte Internetverbindung verwenden?</string>
     <string name="network_disable_socks_info">Wenn Sie dies bestätigen, können die Messaging-Server Ihre IP-Adresse und Ihren Provider sehen und mit welchen Servern Sie sich verbinden.</string>
     <string name="update_onion_hosts_settings_question">Einstellung für .onion-Hosts aktualisieren?</string>
@@ -416,19 +415,13 @@
     <string name="create_address">Adresse erstellen</string>
     <string name="delete_address__question">Adresse löschen?</string>
     <string name="all_your_contacts_will_remain_connected">Alle Ihre Kontakte bleiben verbunden.</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Sie können Ihre Adresse als Link oder als QR-Code teilen – Jede Person kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</string>
     <string name="share_link">Link teilen</string>
     <string name="delete_address">Adresse löschen</string>
-    <!-- AcceptRequestsView.kt -->
-    <string name="contact_requests">Kontaktanfragen</string>
-    <string name="accept_requests">Anfragen annehmen</string>
-    <string name="accept_automatically">Automatisch</string>
-    <string name="section_title_welcome_message">Begrüßungsmeldung</string>
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Angezeigter Name:</string>
     <string name="full_name__field">"Vollständiger Name:</string>
     <string name="your_current_profile">Mein aktuelles Chat-Profil</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\n\n<xliff:g id="appName">SimpleX</xliff:g>-Server können Ihr Profil nicht sehen.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt. <xliff:g id="appName">SimpleX</xliff:g>-Server können Ihr Profil nicht sehen.</string>
     <string name="edit_image">Bild bearbeiten</string>
     <string name="delete_image">Bild löschen</string>
     <string name="save_preferences_question">Präferenzen speichern?</string>
@@ -513,13 +506,15 @@
     <!-- Call settings -->
     <string name="settings_audio_video_calls">Audio- &amp; Videoanrufe</string>
     <string name="your_calls">Ihre Anrufe</string>
-    <string name="connect_calls_via_relay">Über ein Relais verbinden</string>
+    <string name="always_use_relay">Über ein Relais verbinden</string>
     <string name="call_on_lock_screen">Anrufe auf Sperrbildschirm:</string>
     <string name="accept_call_on_lock_screen">Akzeptieren</string>
     <string name="show_call_on_lock_screen">Anzeigen</string>
     <string name="no_call_on_lock_screen">Deaktivieren</string>
     <string name="your_ice_servers">Ihre ICE-Server</string>
     <string name="webrtc_ice_servers">WebRTC ICE-Server</string>
+    <string name="relay_server_protects_ip">Relais-Server schützen Ihre IP-Adresse, aber sie können die Anrufdauer erfassen.</string>
+    <string name="relay_server_if_necessary">Relais-Server werden nur genutzt, wenn sie benötigt werden. Ihre IP-Adresse kann von Anderen erfasst werden.</string>
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Öffnen Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g>, um den Anruf anzunehmen.</string>
     <string name="allow_accepting_calls_from_lock_screen">Aktivieren Sie Anrufe vom Sperrbildschirm über die Einstellungen.</string>
@@ -553,7 +548,10 @@
     <string name="integrity_msg_bad_id">Falsche Nachrichten-ID</string>
     <string name="integrity_msg_duplicate">Doppelte Nachricht</string>
     <string name="alert_title_skipped_messages">Übersprungene Nachrichten</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Dies kann unter folgenden Umständen passieren:\n1. Die Nachrichten verfallen auf dem Server, wenn sie 30 Tage lang nicht empfangen wurden.\n2. Der Server, den Sie zum Empfangen der Nachrichten von diesem Kontakt verwenden, wurde aktualisiert und neu gestartet.\n3. Die Verbindung ist kompromittiert.\nBitte nehmen Sie über die Einstellungen Verbindung mit den Entwicklern auf, um Updates zu den Servern zu erhalten.\nWir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu verhindern.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Dies kann unter folgenden Umständen passieren:
+\n1. Die Nachrichten verfallen auf dem sendenden Client-System nach 2 Tagen oder auf dem Server nach 30 Tagen.
+\n2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde.
+\n3. Die Verbindung wurde kompromittiert.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
     <string name="your_privacy">Meine Privatsphäre</string>
@@ -574,7 +572,7 @@
     <string name="settings_section_title_socks">SOCKS-PROXY</string>
     <string name="settings_section_title_icon">APP ICON</string>
     <string name="settings_section_title_themes">DESIGN</string>
-    <string name="settings_section_title_messages">MESSAGES</string>
+    <string name="settings_section_title_messages">NACHRICHTEN und DATEIEN</string>
     <string name="settings_section_title_calls">CALLS</string>
     <string name="settings_section_title_incognito">Inkognito Modus</string>
     <!-- DatabaseView.kt -->
@@ -763,7 +761,7 @@
     <string name="select_contacts">Kontakte auswählen</string>
     <string name="icon_descr_contact_checked">Kontakt geprüft</string>
     <string name="clear_contacts_selection_button">Löschen</string>
-    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> Kontakt(e) ausgewählt</string>
+    <string name="num_contacts_selected">%d Kontakt(e) ausgewählt</string>
     <string name="no_contacts_selected">Keine Kontakte ausgewählt</string>
     <string name="invite_prohibited">Kontakt kann nicht eingeladen werden!</string>
     <string name="invite_prohibited_description">Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden.</string>
@@ -998,7 +996,6 @@
     <string name="app_version_code">App Build: %s</string>
     <string name="app_version_title">App Version</string>
     <string name="app_version_name">App Version: v%s</string>
-    <string name="core_build_timestamp">Core übersetzt am: %s</string>
     <string name="core_version">Core Version: v%s</string>
     <string name="users_add">Profil hinzufügen</string>
     <string name="users_delete_all_chats_deleted">Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!</string>
@@ -1021,7 +1018,6 @@
     <string name="users_delete_data_only">Nur lokale Profildaten</string>
     <string name="users_delete_with_connections">Profil und Serververbindungen</string>
     <string name="messages_section_description">Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil</string>
-    <string name="your_chat_profiles_stored_locally">Ihre Chat-Profile werden nur lokal auf Ihrem Endgerät gespeichert</string>
     <string name="failed_to_create_user_duplicate_title">Doppelter Anzeigename!</string>
     <string name="failed_to_create_user_title">Fehler beim Erstellen des Profils!</string>
     <string name="failed_to_active_user_title">Fehler beim Umschalten des Profils!</string>
@@ -1040,4 +1036,177 @@
     <string name="v4_5_italian_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
     <string name="v4_4_french_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
     <string name="v4_5_private_filenames_descr">Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.</string>
+    <string name="moderated_description">Moderiert</string>
+    <string name="moderated_item_description">Von %s moderiert</string>
+    <string name="moderate_verb">Moderieren</string>
+    <string name="moderate_message_will_be_marked_warning">Diese Nachricht wird für alle Mitglieder als moderiert gekennzeichnet.</string>
+    <string name="you_are_observer">Sie sind Beobachter</string>
+    <string name="observer_cant_send_message_title">Sie können keine Nachrichten versenden!</string>
+    <string name="group_member_role_observer">Beobachter</string>
+    <string name="initial_member_role">Anfängliche Rolle</string>
+    <string name="delete_member_message__question">Nachricht des Mitglieds löschen\?</string>
+    <string name="error_updating_link_for_group">Fehler beim Aktualisieren des Gruppen-Links</string>
+    <string name="observer_cant_send_message_desc">Bitte kontaktieren Sie den Gruppen-Administrator.</string>
+    <string name="moderate_message_will_be_deleted_warning">Diese Nachricht wird für alle Gruppenmitglieder gelöscht.</string>
+    <string name="language_system">System</string>
+    <string name="confirm_password">Passwort bestätigen</string>
+    <string name="cant_delete_user_profile">Das Benutzerprofil kann nicht gelöscht werden!</string>
+    <string name="dont_show_again">Nicht nochmals anzeigen</string>
+    <string name="v4_6_chinese_spanish_interface">Chinesische und spanische Bedienoberfläche</string>
+    <string name="v4_6_audio_video_calls">Audio- und Videoanrufe</string>
+    <string name="button_add_welcome_message">Begrüßungsmeldung hinzufügen</string>
+    <string name="error_updating_user_privacy">Fehler beim Aktualisieren der Benutzer-Privatsphäre</string>
+    <string name="smp_save_servers_question">Alle Server speichern\?</string>
+    <string name="hide_profile">Profil verbergen</string>
+    <string name="password_to_show">Passwort anzeigen</string>
+    <string name="save_profile_password">Profil-Passwort speichern</string>
+    <string name="error_saving_user_password">Fehler beim Speichern des Benutzer-Passworts</string>
+    <string name="hidden_profile_password">Verborgenes Profil-Passwort</string>
+    <string name="button_welcome_message">Begrüßungsmeldung</string>
+    <string name="save_welcome_message_question">Begrüßungsmeldung speichern\?</string>
+    <string name="user_unhide">Verbergen aufheben</string>
+    <string name="enter_password_to_show">Für die Anzeige das Passwort im Suchfeld eingeben</string>
+    <string name="make_profile_private">Privates Profil erzeugen!</string>
+    <string name="user_mute">Stummschalten</string>
+    <string name="tap_to_activate_profile">Tippen Sie auf das Profil um es zu aktivieren.</string>
+    <string name="should_be_at_least_one_profile">Es muss mindestens ein Benutzer-Profil vorhanden sein.</string>
+    <string name="should_be_at_least_one_visible_profile">Es muss mindestens ein sichtbares Benutzer-Profil vorhanden sein.</string>
+    <string name="user_unmute">Stummschaltung aufheben</string>
+    <string name="muted_when_inactive">Bei Inaktivität stummgeschaltet!</string>
+    <string name="v4_6_hidden_chat_profiles_descr">Schützen Sie Ihre Chat-Profile mit einem Passwort!</string>
+    <string name="v4_6_audio_video_calls_descr">Bluetooth-Unterstützung und weitere Verbesserungen.</string>
+    <string name="v4_6_group_moderation_descr">Administratoren können nun
+\n- Nachrichten von Gruppenmitgliedern löschen
+\n- Gruppenmitglieder deaktivieren (\"Beobachter\"-Rolle)</string>
+    <string name="v4_6_group_welcome_message">Gruppen-Begrüßungsmeldung</string>
+    <string name="v4_6_reduced_battery_usage">Weiter reduzierter Batterieverbrauch</string>
+    <string name="v4_6_reduced_battery_usage_descr">Weitere Verbesserungen sind bald verfügbar!</string>
+    <string name="v4_6_group_welcome_message_descr">Definieren Sie eine Begrüßungsmeldung, die neuen Mitgliedern angezeigt wird!</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="v4_6_group_moderation">Gruppenmoderation</string>
+    <string name="v4_6_hidden_chat_profiles">Verborgene Chat-Profile</string>
+    <string name="user_hide">Verberge</string>
+    <string name="save_and_update_group_profile">Gruppen-Profil sichern und aktualisieren</string>
+    <string name="you_will_still_receive_calls_and_ntfs">Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.</string>
+    <string name="group_welcome_title">Begrüßungsmeldung</string>
+    <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten - für das Menü gedrückt halten.</string>
+    <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
+    <string name="invalid_migration_confirmation">Migrations-Bestätigung ungültig</string>
+    <string name="upgrade_and_open_chat">Aktualisieren und den Chat öffnen</string>
+    <string name="confirm_database_upgrades">Datenbank-Aktualisierungen bestätigen</string>
+    <string name="show_dev_options">Anzeigen:</string>
+    <string name="show_developer_options">Entwickleroptionen anzeigen</string>
+    <string name="settings_section_title_experimenta">EXPERIMENTELL</string>
+    <string name="database_upgrade">Datenbank-Aktualisierung</string>
+    <string name="mtr_error_different">Unterschiedlicher Migrationsstand in der App/Datenbank: %s / %s</string>
+    <string name="downgrade_and_open_chat">Datenbank herabstufen und den Chat öffnen</string>
+    <string name="incompatible_database_version">Inkompatible Datenbank-Version</string>
+    <string name="database_downgrade_warning">Warnung: Sie könnten einige Daten verlieren!</string>
+    <string name="database_downgrade">Datenbank auf alte Version herabstufen</string>
+    <string name="developer_options">Datenbank-IDs und Transport-Isolationsoption.</string>
+    <string name="mtr_error_no_down_migration">Die Datenbank-Version ist neuer als die App, keine Abwärts-Migration für: %s</string>
+    <string name="hide_dev_options">Verberge:</string>
+    <string name="database_migrations">Migrationen: %s</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
+    <string name="delete_chat_profile">Chat-Profil löschen</string>
+    <string name="delete_profile">Profil löschen</string>
+    <string name="unhide_profile">Verbergen des Profils aufheben</string>
+    <string name="profile_password">Passwort für Profil</string>
+    <string name="unhide_chat_profile">Verbergen des Chat-Profils aufheben</string>
+    <string name="icon_descr_video_asked_to_receive">Aufforderung zum Empfang des Videos</string>
+    <string name="videos_limit_desc">Es können nur 10 Videos zur gleichen Zeit versendet werden</string>
+    <string name="videos_limit_title">Zu viele Videos auf einmal!</string>
+    <string name="video_descr">Video</string>
+    <string name="icon_descr_video_snd_complete">Video gesendet</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Das Video wird empfangen, sobald Ihr Kontakt das Hochladen beendet hat.</string>
+    <string name="icon_descr_waiting_for_video">Auf das Video warten</string>
+    <string name="waiting_for_video">Auf das Video warten</string>
+    <string name="video_will_be_received_when_contact_is_online">Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</string>
+    <string name="your_XFTP_servers">Ihre XFTP-Server</string>
+    <string name="host_verb">Host</string>
+    <string name="error_saving_xftp_servers">Fehler beim Speichern der XFTP-Server</string>
+    <string name="error_loading_smp_servers">Fehler beim Laden der SMP-Server</string>
+    <string name="error_xftp_test_server_auth">Bitte das Passwort überprüfen - für den Upload benötigt der Server eine Berechtigung</string>
+    <string name="smp_server_test_download_file">Datei herunterladen</string>
+    <string name="smp_server_test_compare_file">Datei vergleichen</string>
+    <string name="smp_server_test_delete_file">Datei löschen</string>
+    <string name="lock_mode">Sperr-Modus</string>
+    <string name="authentication_cancelled">Authentifizierung abgebrochen</string>
+    <string name="confirm_passcode">Passwort bestätigen</string>
+    <string name="enable_lock">Sperre aktivieren</string>
+    <string name="incorrect_passcode">Passwort falsch</string>
+    <string name="lock_after">Sperre nach</string>
+    <string name="new_passcode">Neues Passwort</string>
+    <string name="la_mode_passcode">Passwort</string>
+    <string name="passcode_changed">Passwort geändert!</string>
+    <string name="passcode_set">Passwort wurde geändert!</string>
+    <string name="change_lock_mode">Sperr-Modus ändern</string>
+    <string name="passcode_not_changed">Passwort wurde nicht geändert!</string>
+    <string name="decryption_error">Entschlüsselungsfehler</string>
+    <string name="error_loading_xftp_servers">Fehler beim Laden der XFTP-Server</string>
+    <string name="la_lock_mode_passcode">Passworteingabe</string>
+    <string name="la_enter_app_passcode">Passwort eingeben</string>
+    <string name="la_no_app_password">Kein App-Passwort</string>
+    <string name="la_authenticate">Authentifizieren</string>
+    <string name="la_minutes">%d Minuten</string>
+    <string name="la_seconds">%d Sekunden</string>
+    <string name="la_immediately">Sofort</string>
+    <string name="port_verb">Port</string>
+    <string name="network_proxy_port">Port %d</string>
+    <string name="smp_server_test_create_file">Datei erstellen</string>
+    <string name="la_current_app_passcode">Aktuelles Passwort</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Dies kann passieren, falls Sie oder Ihre Verbindung ein altes Datenbank-Backup genutzt haben.</string>
+    <string name="la_please_remember_to_store_password">Es gibt keine Möglichkeit ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!</string>
+    <string name="alert_text_fragment_please_report_to_developers">Bitte melden Sie es den Entwicklern.</string>
+    <string name="la_change_app_passcode">Passwort ändern</string>
+    <string name="alert_title_msg_bad_hash">Ungültiger Nachrichten-Hash</string>
+    <string name="la_auth_failed">Authentifizierung fehlgeschlagen</string>
+    <string name="alert_title_msg_bad_id">Falsche Nachrichten-ID</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die XFTP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</string>
+    <string name="network_socks_toggle_use_socks_proxy">SOCKS-Proxy nutzen</string>
+    <string name="la_lock_mode">SimpleX Sperr-Modus</string>
+    <string name="lock_not_enabled">SimpleX Sperre ist nicht aktiviert!</string>
+    <string name="disable_onion_hosts_when_not_supported">Setzen Sie <i>Verwende .onion-Hosts</i> auf \"Nein\", wenn der SOCKS-Proxy sie nicht unterstützt.</string>
+    <string name="submit_passcode">Übermitteln</string>
+    <string name="la_mode_system">System</string>
+    <string name="la_could_not_be_verified">Sie können nicht überprüft werden - bitte versuchen Sie es nochmal.</string>
+    <string name="xftp_servers">XFTP-Server</string>
+    <string name="alert_text_msg_bad_id">Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).
+\nDies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> Nachrichten konnten nicht entschlüsselt werden.</string>
+    <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht unterscheidet sich.</string>
+    <string name="you_can_turn_on_lock">Sie können die SimpleX Sperre über die Einstellungen aktivieren.</string>
+    <string name="network_socks_proxy_settings">SOCKS-Proxy Einstellungen</string>
+    <string name="la_lock_mode_system">System-Authentifizierung</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</string>
+    <string name="smp_server_test_upload_file">Datei hochladen</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> Nachrichten übersprungen.</string>
+    <string name="allow_calls_only_if">Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</string>
+    <string name="allow_your_contacts_to_call">Erlaubt Ihren Kontakten Sie anzurufen.</string>
+    <string name="audio_video_calls">Audio/Video Anrufe</string>
+    <string name="available_in_v51">"
+\nVerfügbar in v5.1"</string>
+    <string name="both_you_and_your_contact_can_make_calls">Sowohl Sie, als auch Ihr Kontakt können Anrufe tätigen.</string>
+    <string name="only_you_can_make_calls">Nur Sie können Anrufe tätigen.</string>
+    <string name="prohibit_calls">Audio/Video Anrufe nicht erlauben.</string>
+    <string name="stop_rcv_file__title">Den Empfang der Datei beenden\?</string>
+    <string name="stop_snd_file__title">Das Senden der Datei beenden\?</string>
+    <string name="stop_rcv_file__message">Der Empfang der Datei wird beendet.</string>
+    <string name="stop_snd_file__message">Das Senden der Datei wird beendet.</string>
+    <string name="stop_file__action">Datei beenden</string>
+    <string name="revoke_file__message">Die Datei wird von den Servern gelöscht.</string>
+    <string name="no_spaces">Keine Leerzeichen!</string>
+    <string name="revoke_file__confirm">Widerrufen</string>
+    <string name="revoke_file__action">Datei widerrufen</string>
+    <string name="revoke_file__title">Datei widerrufen\?</string>
+    <string name="stop_file__confirm">Beenden</string>
+    <string name="v5_0_large_files_support">Videos und Dateien bis zu 1GB</string>
+    <string name="v5_0_large_files_support_descr">Schnell und ohne warten auf den Absender, bis er online ist!</string>
+    <string name="v5_0_polish_interface">Polnische Bedienoberfläche</string>
+    <string name="v5_0_app_passcode_descr">Anstelle der System-Authentifizierung festlegen.</string>
+    <string name="v5_0_polish_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="only_your_contact_can_make_calls">Nur Ihr Kontakt kann Anrufe tätigen.</string>
+    <string name="v5_0_app_passcode">App Passwort</string>
+    <string name="calls_prohibited_with_this_contact">Audio/Video Anrufe sind nicht erlaubt.</string>
 </resources>

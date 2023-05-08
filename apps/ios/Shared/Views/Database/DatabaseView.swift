@@ -77,7 +77,7 @@ struct DatabaseView: View {
                     }
                 }
                 .frame(height: 36)
-                .disabled(m.chatDbChanged || progressIndicator)
+                .disabled(stopped || progressIndicator)
             } header: {
                 Text("Messages")
             } footer: {
@@ -185,7 +185,7 @@ struct DatabaseView: View {
                     if fileCount == 0 {
                         Text("No received or sent files")
                     } else {
-                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter().string(fromByteCount: Int64(size)))")
+                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
                     }
                 }
             }
@@ -355,7 +355,7 @@ struct DatabaseView: View {
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         try await apiImportArchive(config: config)
-                        _ = removeDatabaseKey()
+                        _ = kcDatabasePassword.remove()
                         await operationEnded(.archiveImported)
                     } catch let error {
                         await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
@@ -375,7 +375,7 @@ struct DatabaseView: View {
         Task {
             do {
                 try await apiDeleteStorage()
-                _ = removeDatabaseKey()
+                _ = kcDatabasePassword.remove()
                 storeDBPassphraseGroupDefault.set(true)
                 await operationEnded(.chatDeleted)
                 appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())

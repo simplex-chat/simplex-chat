@@ -1,4 +1,9 @@
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md) |
+---
+title: Hosting your own SMP Server
+revision: 31.01.2023
+---
+
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
 
 # Hosting your own SMP Server
 
@@ -42,7 +47,7 @@ Manual installation requires some preliminary actions:
 
    ```sh
    # For Ubuntu
-   ufw allow 5233
+   ufw allow 5223
    ```
 
 4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:

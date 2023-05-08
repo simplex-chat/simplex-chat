@@ -2,39 +2,42 @@
     "sections": [
         {
             "id": 1,
-            "title": "Advertising and price discrimination",
+            "title": "privacy-matters-1-title",
             "imgLight": "/img/new/privacy-section-1.svg",
             "imgDark": "/img/new/privacy-section-1.svg",
             "overlayContent": {
-                "overlayId": "why-privacy-matters-1",
-                "title": "Privacy saves you money",
-                "linkText": "Privacy saves you money",
+                "overlayId": "privacy-saves-money",
+                "overlayScrollTo": "why-privacy",
+                "title": "privacy-matters-1-overlay-1-title",
+                "linkText": "privacy-matters-1-overlay-1-linkText",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_1.html"
             }
         },
         {
             "id": 2,
-            "title": "Manipulation of elections",
+            "title": "privacy-matters-2-title",
             "imgLight": "/img/new/privacy-section-2.svg",
             "imgDark": "/img/new/privacy-section-2.svg",
             "overlayContent": {
-                "overlayId": "why-privacy-matters-2",
-                "title": "Privacy gives you power",
-                "linkText": "Privacy gives you power",
+                "overlayId": "privacy-gives-power",
+                "overlayScrollTo": "why-privacy",
+                "title": "privacy-matters-2-overlay-1-title",
+                "linkText": "privacy-matters-2-overlay-1-linkText",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_2.html"
             }
         },
         {
             "id": 3,
-            "title": "Prosecution due to innocent association",
+            "title": "privacy-matters-3-title",
             "imgLight": "/img/new/privacy-section-3.svg",
             "imgDark": "/img/new/privacy-section-3.svg",
             "overlayContent": {
-                "overlayId": "why-privacy-matters-3",
-                "title": "Privacy protects your freedom",
-                "linkText": "Privacy protects your freedom",
+                "overlayId": "privacy-protects-freedom",
+                "overlayScrollTo": "why-privacy",
+                "title": "privacy-matters-3-overlay-1-title",
+                "linkText": "privacy-matters-3-overlay-1-linkText",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_3.html"
             }

@@ -28,10 +28,13 @@ main = do
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@ChatOpts {dbFilePrefix} <- getChatOpts appDir "simplex_bot"
+  opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix}} <- getChatOpts appDir "simplex_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
   putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
   pure opts
+
+welcomeMessage :: String
+welcomeMessage = "Hello! I am a simple squaring bot.\nIf you send me a number, I will calculate its square"
 
 mySquaringBot :: User -> ChatController -> IO ()
 mySquaringBot _user cc = do
@@ -41,14 +44,13 @@ mySquaringBot _user cc = do
     case resp of
       CRContactConnected _ contact _ -> do
         contactConnected contact
-        void . sendMsg contact $ "Hello! I am a simple squaring bot - if you send me a number, I will calculate its square"
-      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
-        let msg = T.unpack $ ciContentToText content
+        sendMessage cc contact welcomeMessage
+      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) -> do
+        let msg = T.unpack $ ciContentToText mc
             number_ = readMaybe msg :: Maybe Integer
-        void . sendMsg contact $ case number_ of
-          Nothing -> "\"" <> msg <> "\" is not a number"
+        sendMessage cc contact $ case number_ of
           Just n -> msg <> " * " <> msg <> " = " <> show (n * n)
+          _ -> "\"" <> msg <> "\" is not a number"
       _ -> pure ()
   where
-    sendMsg Contact {contactId} msg = sendChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"

@@ -108,11 +108,13 @@ struct VoiceMessagePlayer: View {
                 case .sndTransfer: playbackButton()
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
+                case .sndError: playbackButton()
                 case .rcvInvitation: loadingIcon()
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                case .rcvError: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }
             } else {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
@@ -203,7 +205,7 @@ struct VoiceMessagePlayer: View {
 
     private func startPlayback(_ recordingFileName: String) {
         startingPlayback = true
-        chatModel.stopPreviousRecPlay.toggle()
+        chatModel.stopPreviousRecPlay = getAppFilePath(recordingFileName)
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {
@@ -243,7 +245,7 @@ struct CIVoiceView_Previews: PreviewProvider {
             )
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage, revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile, revealed: Binding.constant(false))
         }
         .previewLayout(.fixed(width: 360, height: 360))

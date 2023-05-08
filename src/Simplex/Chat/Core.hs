@@ -9,19 +9,24 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat
 import Simplex.Chat.Controller
-import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Types
+import System.Exit (exitFailure)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {yesToMigrations} opts@ChatOpts {dbFilePrefix, dbKey} sendToast chat
-  | logAgent opts = do
-    setLogLevel LogInfo -- LogError
-    withGlobalLogging logCfg initRun
-  | otherwise = initRun
+simplexChatCore cfg@ChatConfig {confirmMigrations} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} sendToast chat =
+  case logAgent of
+    Just level -> do
+      setLogLevel level
+      withGlobalLogging logCfg initRun
+    _ -> initRun
   where
-    initRun = do
-      db@ChatDatabase {chatStore} <- createChatDatabase dbFilePrefix dbKey yesToMigrations
+    initRun = createChatDatabase dbFilePrefix dbKey confirmMigrations >>= either exit run
+    exit e = do
+      putStrLn $ "Error opening database: " <> show e
+      exitFailure
+    run db@ChatDatabase {chatStore} = do
       u <- getCreateActiveUser chatStore
       cc <- newChatController db (Just u) cfg opts sendToast
       runSimplexChat opts u cc chat
@@ -30,7 +35,7 @@ runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController 
 runSimplexChat ChatOpts {maintenance} u cc chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
-    a1 <- runReaderT (startChatController True True) cc
+    a1 <- runReaderT (startChatController True True True) cc
     a2 <- async $ chat u cc
     waitEither_ a1 a2
 

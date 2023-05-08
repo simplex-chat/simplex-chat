@@ -13,8 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.ChatItem
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 
 @Composable
 fun CIEventView(ci: ChatItem) {
@@ -22,28 +21,25 @@ fun CIEventView(ci: ChatItem) {
   fun chatEventTextView(text: AnnotatedString) {
     Text(text, style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp))
   }
-
-  Surface {
-    Row(
-      Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      val memberDisplayName = ci.memberDisplayName
-      if (memberDisplayName != null) {
-        chatEventTextView(
-          buildAnnotatedString {
-            withStyle(chatEventStyle) { append(memberDisplayName) }
-            append(" ")
-          }.plus(chatEventText(ci))
-        )
-      } else {
-        chatEventTextView(chatEventText(ci))
-      }
+  Row(
+    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    val memberDisplayName = ci.memberDisplayName
+    if (memberDisplayName != null) {
+      chatEventTextView(
+        buildAnnotatedString {
+          withStyle(chatEventStyle) { append(memberDisplayName) }
+          append(" ")
+        }.plus(chatEventText(ci))
+      )
+    } else {
+      chatEventTextView(chatEventText(ci))
     }
   }
 }
 
-val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)
+val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
 fun chatEventText(ci: ChatItem): AnnotatedString =
   buildAnnotatedString {

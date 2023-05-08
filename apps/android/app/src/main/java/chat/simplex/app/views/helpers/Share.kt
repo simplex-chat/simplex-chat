@@ -1,8 +1,10 @@
 package chat.simplex.app.views.helpers
 
+import android.Manifest
 import android.content.*
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
@@ -47,6 +49,17 @@ fun copyText(cxt: Context, text: String) {
   clipboard?.setPrimaryClip(ClipData.newPlainText("text", text))
 }
 
+fun sendEmail(context: Context, subject: String, body: CharSequence) {
+  val emailIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
+  emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject)
+  emailIntent.putExtra(Intent.EXTRA_TEXT, body)
+  try {
+    context.startActivity(emailIntent)
+  } catch (e: ActivityNotFoundException) {
+    Log.e(TAG, "No activity was found for handling email intent")
+  }
+}
+
 @Composable
 fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResultLauncher<String, Uri?> =
   rememberLauncherForActivityResult(
@@ -81,6 +94,7 @@ fun imageMimeType(fileName: String): String {
   }
 }
 
+/** Before calling, make sure the user allows to write to external storage [Manifest.permission.WRITE_EXTERNAL_STORAGE] */
 fun saveImage(cxt: Context, ciFile: CIFile?) {
   val filePath = getLoadedFilePath(cxt, ciFile)
   val fileName = ciFile?.fileName

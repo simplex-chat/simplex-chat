@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.DefaultTheme
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationsMode
@@ -26,22 +27,26 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
-external fun chatMigrateInit(dbPath: String, dbKey: String): Array<Any>
+external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
+external fun chatPasswordHash(pwd: String, salt: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
   lateinit var chatController: ChatController
 
   var isAppOnForeground: Boolean = false
 
-  fun initChatController(useKey: String? = null, startChat: Boolean = true) {
+  val defaultLocale: Locale = Locale.getDefault()
+
+  fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
-    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey)
+    val confirm = confirmMigrations ?: if (appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
+    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey, confirm.value)
     val res: DBMigrationResult = kotlin.runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
@@ -63,8 +68,15 @@ class SimplexApp: Application(), LifecycleEventObserver {
       withApi {
         val user = chatController.apiGetActiveUser()
         if (user == null) {
+          chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
           chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
         } else {
+          val savedOnboardingStage = appPreferences.onboardingStage.get()
+          chatModel.onboardingStage.value = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
+            OnboardingStage.Step3_CreateSimpleXAddress
+          } else {
+            savedOnboardingStage
+          }
           chatController.startChat(user)
           chatController.showBackgroundServiceNoticeIfNeeded()
           if (appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
@@ -91,6 +103,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     initChatController()
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     context.getDir("temp", MODE_PRIVATE).deleteRecursively()
+    runMigrations()
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
@@ -178,6 +191,23 @@ class SimplexApp: Application(), LifecycleEventObserver {
       return@launch
     }
     MessagesFetcherWorker.scheduleWork()
+  }
+
+  private fun runMigrations() {
+    val lastMigration = chatModel.controller.appPrefs.lastMigratedVersionCode
+    if (lastMigration.get() < BuildConfig.VERSION_CODE) {
+      while (true) {
+        if (lastMigration.get() < 117) {
+          if (chatModel.controller.appPrefs.currentTheme.get() == DefaultTheme.DARK.name) {
+            chatModel.controller.appPrefs.currentTheme.set(DefaultTheme.SIMPLEX.name)
+          }
+          lastMigration.set(117)
+        } else {
+          lastMigration.set(BuildConfig.VERSION_CODE)
+          break
+        }
+      }
+    }
   }
 
   companion object {

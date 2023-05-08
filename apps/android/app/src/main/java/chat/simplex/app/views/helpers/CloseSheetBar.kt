@@ -3,15 +3,20 @@ package chat.simplex.app.views.helpers
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.ui.theme.*
 
 @Composable
-fun CloseSheetBar(close: () -> Unit, endButtons: @Composable RowScope.() -> Unit = {}) {
+fun CloseSheetBar(close: (() -> Unit)?, endButtons: @Composable RowScope.() -> Unit = {}) {
   Column(
     Modifier
       .fillMaxWidth()
@@ -22,8 +27,12 @@ fun CloseSheetBar(close: () -> Unit, endButtons: @Composable RowScope.() -> Unit
       Modifier
         .padding(top = 4.dp), // Like in DefaultAppBar
       content = {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-          NavigationButtonBack(close)
+        Row(
+          Modifier.fillMaxWidth().height(TextFieldDefaults.MinHeight),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          NavigationButtonBack(onButtonClicked = close)
           Row {
             endButtons()
           }
@@ -35,17 +44,21 @@ fun CloseSheetBar(close: () -> Unit, endButtons: @Composable RowScope.() -> Unit
 
 @Composable
 fun AppBarTitle(title: String, withPadding: Boolean = true) {
-  val padding = if (withPadding)
-    PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
-  else
-    PaddingValues(bottom = DEFAULT_PADDING)
+  val theme = CurrentColors.collectAsState()
+  val titleColor = CurrentColors.collectAsState().value.appColors.title
+  val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
+    Brush.linearGradient(listOf(titleColor.darker(0.2f), titleColor.lighter(0.35f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
+  else // color is not updated when changing themes if I pass null here
+    Brush.linearGradient(listOf(titleColor, titleColor), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   Text(
     title,
     Modifier
       .fillMaxWidth()
-      .padding(padding),
+      .padding(bottom = DEFAULT_PADDING * 1.5f, start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,),
     overflow = TextOverflow.Ellipsis,
-    style = MaterialTheme.typography.h1
+    style = MaterialTheme.typography.h1.copy(brush = brush),
+    color = MaterialTheme.colors.primaryVariant,
+    textAlign = TextAlign.Center
   )
 }
 

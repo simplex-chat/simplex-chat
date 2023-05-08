@@ -11,23 +11,22 @@
     console.log(connQRCodes);
     if (complete || !connURIel || !mobileConnURIanchor || connQRCodes < 2) return
     complete = true
-    const connURI = document.location.toString().replace(/\/(contact|invitation)\//, "/$1");
-    connURIel.innerText = "/c " + connURI;
+    let connURI = document.location.toString()
     const parsedURI = new URL(connURI)
+    const path = parsedURI.pathname.split("/")
+    const len = path.length
+    const action = path[len - (path[len - 1] == "" ? 2 : 1)]
+    parsedURI.protocol = "https"
+    parsedURI.pathname = "/" + action
+    connURI = parsedURI.toString()
+    console.log("connection URI: ", connURI)
     mobileConnURIanchor.href = "simplex:" + parsedURI.pathname + parsedURI.hash
-    // const els = document.querySelectorAll(".content_copy_with_tooltip");
-    // if (navigator.clipboard) {
-    //   els.forEach(contentCopyWithTooltip)
-    // } else {
-    //   const tooltips = document.querySelectorAll(".content_copy_with_tooltip .tooltip");
-    //   tooltips.forEach(el => el.style.visibility = "hidden")
-    // }
-    
+    connURIel.innerText = "/c " + connURI
     for (const connQRCode of connQRCodes) {
       try {
         await QRCode.toCanvas(connQRCode, connURI, {
           errorCorrectionLevel: "M",
-          color: { dark: "#062D56" }
+          color: {dark: "#062D56"}
         });
         connQRCode.style.width = "320px";
         connQRCode.style.height = "320px";

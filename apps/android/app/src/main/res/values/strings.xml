@@ -11,6 +11,9 @@
   <string name="you_will_join_group">You will join a group this link refers to and connect to its group members.</string>
   <string name="connect_via_link_verb">Connect</string>
 
+  <!-- MainActivity.kt -->
+  <string name="opening_database">Opening database…</string>
+
   <!-- Server info - ChatModel.kt -->
   <string name="server_connected">connected</string>
   <string name="server_error">error</string>
@@ -22,6 +25,7 @@
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
   <string name="marked_deleted_description">marked deleted</string>
+  <string name="moderated_item_description">moderated by %s</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -31,6 +35,7 @@
   <string name="moderated_description">moderated</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
+  <string name="decryption_error">Decryption error</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
   <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
@@ -59,7 +64,11 @@
 
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
+  <string name="error_saving_xftp_servers">Error saving XFTP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="ensure_xftp_server_address_are_correct_format_and_unique">Make sure XFTP server addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="error_loading_smp_servers">Error loading SMP servers</string>
+  <string name="error_loading_xftp_servers">Error loading XFTP servers</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
@@ -95,13 +104,21 @@
   <string name="error_changing_address">Error changing address</string>
   <string name="error_smp_test_failed_at_step">Test failed at step %s.</string>
   <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password</string>
+  <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password</string>
   <string name="error_smp_test_certificate">Possibly, certificate fingerprint in server address is incorrect</string>
+  <string name="error_setting_address">Error setting address</string>
   <string name="smp_server_test_connect">Connect</string>
+  <string name="smp_server_test_disconnect">Disconnect</string>
   <string name="smp_server_test_create_queue">Create queue</string>
   <string name="smp_server_test_secure_queue">Secure queue</string>
   <string name="smp_server_test_delete_queue">Delete queue</string>
-  <string name="smp_server_test_disconnect">Disconnect</string>
+  <string name="smp_server_test_create_file">Create file</string>
+  <string name="smp_server_test_upload_file">Upload file</string>
+  <string name="smp_server_test_download_file">Download file</string>
+  <string name="smp_server_test_compare_file">Compare file</string>
+  <string name="smp_server_test_delete_file">Delete file</string>
   <string name="error_deleting_user">Error deleting user profile</string>
+  <string name="error_updating_user_privacy">Error updating user privacy</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -153,6 +170,20 @@
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
   <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled.</string>
   <string name="la_notice_turn_on">Turn on</string>
+  <string name="la_lock_mode">SimpleX Lock mode</string>
+  <string name="la_lock_mode_system">System authentication</string>
+  <string name="la_lock_mode_passcode">Passcode entry</string>
+  <string name="la_auth_failed">Authentication failed</string>
+  <string name="la_could_not_be_verified">You could not be verified; please try again.</string>
+  <string name="la_no_app_password">No app passcode</string>
+  <string name="la_enter_app_passcode">Enter Passcode</string>
+  <string name="la_current_app_passcode">Current Passcode</string>
+  <string name="la_change_app_passcode">Change passcode</string>
+  <string name="la_authenticate">Authenticate</string>
+  <string name="la_immediately">Immediately</string>
+  <string name="la_seconds">%d seconds</string>
+  <string name="la_minutes">%d minutes</string>
+  <string name="la_please_remember_to_store_password">Please remember or store it securely - there is no way to recover a lost password!</string>
 
   <!-- LocalAuthentication.kt -->
   <string name="auth_simplex_lock_turned_on">SimpleX Lock turned on</string>
@@ -167,6 +198,9 @@
   <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
+  <string name="auth_open_chat_profiles">Open chat profiles</string>
+  <string name="lock_not_enabled">SimpleX Lock not enabled!</string>
+  <string name="you_can_turn_on_lock">You can turn on SimpleX Lock via Settings.</string>
 
   <!-- Chat Alerts - ChatItemView.kt -->
   <string name="message_delivery_error_title">Message delivery error</string>
@@ -182,11 +216,25 @@
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
+  <string name="moderate_verb">Moderate</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="delete_member_message__question">Delete member message?</string>
+  <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
+  <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
+  <string name="stop_file__action">Stop file</string>
+  <string name="stop_snd_file__title">Stop sending file?</string>
+  <string name="stop_snd_file__message">Sending file will be stopped.</string>
+  <string name="stop_rcv_file__title">Stop receiving file?</string>
+  <string name="stop_rcv_file__message">Receiving file will be stopped.</string>
+  <string name="stop_file__confirm">Stop</string>
+  <string name="revoke_file__action">Revoke file</string>
+  <string name="revoke_file__title">Revoke file?</string>
+  <string name="revoke_file__message">File will be deleted from servers.</string>
+  <string name="revoke_file__confirm">Revoke</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
@@ -210,7 +258,7 @@
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
-  <string name="share_image">Share image…</string>
+  <string name="share_image">Share media…</string>
   <string name="share_file">Share file…</string>
 
   <!-- ComposeView.kt, helpers -->
@@ -219,9 +267,14 @@
   <string name="icon_descr_cancel_image_preview">Cancel image preview</string>
   <string name="icon_descr_cancel_file_preview">Cancel file preview</string>
   <string name="images_limit_title">Too many images!</string>
+  <string name="videos_limit_title">Too many videos!</string>
   <string name="images_limit_desc">Only 10 images can be sent at the same time</string>
+  <string name="videos_limit_desc">Only 10 videos can be sent at the same time</string>
   <string name="image_decoding_exception_title">Decoding error</string>
   <string name="image_decoding_exception_desc">The image cannot be decoded. Please, try a different image or contact developers.</string>
+  <string name="you_are_observer">you are observer</string>
+  <string name="observer_cant_send_message_title">You can\'t send messages!</string>
+  <string name="observer_cant_send_message_desc">Please contact group admin.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -229,8 +282,18 @@
   <string name="icon_descr_asked_to_receive">Asked to receive the image</string>
   <string name="icon_descr_image_snd_complete">Image sent</string>
   <string name="waiting_for_image">Waiting for image</string>
+  <string name="image_will_be_received_when_contact_completes_uploading">Image will be received when your contact completes uploading it.</string>
   <string name="image_will_be_received_when_contact_is_online">Image will be received when your contact is online, please wait or check later!</string>
   <string name="image_saved">Image saved to Gallery</string>
+
+  <!-- Videos - chat.simplex.app.views.chat.item.CIVideoView.kt -->
+  <string name="video_descr">Video</string>
+  <string name="icon_descr_waiting_for_video">Waiting for video</string>
+  <string name="icon_descr_video_asked_to_receive">Asked to receive the video</string>
+  <string name="icon_descr_video_snd_complete">Video sent</string>
+  <string name="waiting_for_video">Waiting for video</string>
+  <string name="video_will_be_received_when_contact_completes_uploading">Video will be received when your contact completes uploading it.</string>
+  <string name="video_will_be_received_when_contact_is_online">Video will be received when your contact is online, please wait or check later!</string>
 
   <!-- Files - CIFileView.kt -->
   <string name="icon_descr_file">File</string>
@@ -238,6 +301,7 @@
   <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
   <string name="maximum_supported_file_size">Currently maximum supported file size is <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
   <string name="waiting_for_file">Waiting for file</string>
+  <string name="file_will_be_received_when_contact_completes_uploading">File will be received when your contact completes uploading it.</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
   <string name="file_saved">File saved</string>
   <string name="file_not_found">File not found</string>
@@ -301,9 +365,11 @@
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>
-  <string name="use_camera_button">Use Camera</string>
+  <string name="use_camera_button">Camera</string>
   <string name="from_gallery_button">From Gallery</string>
-  <string name="choose_file">Choose file</string>
+  <string name="choose_file">File</string>
+  <string name="gallery_image_button">Image</string>
+  <string name="gallery_video_button">Video</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
@@ -384,13 +450,24 @@
   <string name="you_will_be_connected_when_group_host_device_is_online">You will be connected to group when the group host\'s device is online, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
-  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Your contact can scan QR code from the app.</string>
   <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">If you can\'t meet in person, <b>show QR code in the video call</b>, or share the link.</string>
   <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
   <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.</string>
-  <string name="share_invitation_link">Share invitation link</string>
+  <string name="share_invitation_link">Share 1-time link</string>
   <string name="paste_connection_link_below_to_connect">Paste the link you received into the box below to connect with your contact.</string>
   <string name="your_profile_will_be_sent">Your chat profile will be sent to your contact</string>
+  <string name="learn_more">Learn more</string>
+  <string name="learn_more_about_address">About SimpleX address</string>
+
+  <!-- Add Contact Learn More - AddContactLearnMore.kt -->
+  <string name="scan_qr_to_connect_to_contact">To connect, your contact can scan QR code or use the link in the app.</string>
+  <string name="if_you_cant_meet_in_person">If you can\'t meet in person, show QR code in a video call, or share the link.</string>
+
+  <!-- User Address Learn More - UserAddressLearnMore.kt -->
+  <string name="you_can_share_your_address">You can share your address as a link or QR code - anybody can connect to you.</string>
+  <string name="you_wont_lose_your_contacts_if_delete_address">You won\'t lose your contacts if you later delete your address.</string>
+  <string name="you_can_accept_or_reject_connection">When people request to connect, you can accept or reject it.</string>
+  <string name="read_more_in_user_guide_with_link">Read more in <font color="#0088ff">User Guide</font>.</string>
 
   <!-- PasteToConnect.kt -->
   <string name="connect_via_link">Connect via link</string>
@@ -402,7 +479,8 @@
   <!-- CreateLinkView.kt -->
   <string name="create_one_time_link">Create one-time invitation link</string>
   <string name="one_time_link">One-time invitation link</string>
-  <string name="your_contact_address">Your contact address</string>
+  <string name="one_time_link_short">1-time link</string>
+  <string name="simplex_address">SimpleX address</string>
 
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>
@@ -419,7 +497,7 @@
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
-  <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="your_simplex_contact_address">Your SimpleX address</string>
   <string name="your_chat_profiles">Your chat profiles</string>
   <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
@@ -451,12 +529,15 @@
   <string name="smp_servers_check_address">Check server address and try again.</string>
   <string name="smp_servers_delete_server">Delete server</string>
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
+  <string name="smp_save_servers_question">Save servers?</string>
+  <string name="xftp_servers">XFTP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
   <string name="rate_the_app">Rate the app</string>
   <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
   <string name="your_SMP_servers">Your SMP servers</string>
+  <string name="your_XFTP_servers">Your XFTP servers</string>
   <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
   <string name="how_to">How to</string>
   <string name="how_to_use_your_servers">How to use your servers</string>
@@ -470,9 +551,13 @@
   <string name="network_and_servers">Network &amp; servers</string>
   <string name="network_settings">Advanced network settings</string>
   <string name="network_settings_title">Network settings</string>
-  <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
+  <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
+  <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
+  <string name="network_proxy_port">port %d</string>
+  <string name="host_verb">Host</string>
+  <string name="port_verb">Port</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
-  <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
+  <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port %d? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
   <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
   <string name="update_onion_hosts_settings_question">Update .onion hosts setting?</string>
@@ -492,33 +577,55 @@
   <string name="network_session_mode_user_description">A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.</string>
   <string name="network_session_mode_entity_description">A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
+  <string name="disable_onion_hosts_when_not_supported">Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.</string>
   <string name="appearance_settings">Appearance</string>
+  <string name="customize_theme_title">Customize theme</string>
+  <string name="theme_colors_section_title">THEME COLORS</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
   <string name="app_version_code">App build: %s</string>
   <string name="core_version">Core version: v%s</string>
-  <string name="core_build_timestamp">Core built at: %s</string>
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+  <string name="show_dev_options">Show:</string>
+  <string name="hide_dev_options">Hide:</string>
+  <string name="show_developer_options">Show developer options</string>
+  <string name="developer_options">Database IDs and Transport isolation option.</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
+  <string name="your_contacts_will_remain_connected">Your contacts will remain connected.</string>
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
-  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you. You won\'t lose your contacts if you later delete it.</string>
+  <string name="all_your_contacts_will_remain_connected_update_sent">All your contacts will remain connected. Profile update will be sent to your contacts.</string>
   <string name="share_link">Share link</string>
+  <string name="add_address_to_your_profile">Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</string>
+  <string name="create_address_and_let_people_connect">Create an address to let people connect with you.</string>
+  <string name="create_simplex_address">Create SimpleX address</string>
+  <string name="share_with_contacts">Share with contacts</string>
+  <string name="share_address_with_contacts_question">Share address with contacts?</string>
+  <string name="profile_update_will_be_sent_to_contacts">Profile update will be sent to your contacts.</string>
+  <string name="stop_sharing_address">Stop sharing address?</string>
+  <string name="stop_sharing">Stop sharing</string>
+  <string name="auto_accept_contact">Auto-accept</string>
+  <string name="enter_welcome_message_optional">Enter welcome message… (optional)</string>
+  <string name="save_settings_question">Save settings?</string>
+  <string name="save_auto_accept_settings">Save auto-accept settings</string>
   <string name="delete_address">Delete address</string>
+  <string name="invite_friends">Invite friends</string>
+  <string name="email_invite_subject">Let\'s talk in SimpleX Chat</string>
+  <string name="email_invite_body">Hi!\nConnect to me via SimpleX Chat: %s</string>
 
-  <!-- AcceptRequestsView.kt -->
-  <string name="contact_requests">Contact requests</string>
-  <string name="accept_requests">Accept requests</string>
-  <string name="accept_automatically">Automatically</string>
-  <string name="section_title_welcome_message">WELCOME MESSAGE</string>
+  <!-- CreateSimpleXAddress.kt -->
+  <string name="continue_to_next_step">Continue</string>
+  <string name="dont_create_address">Don\'t create address</string>
+  <string name="you_can_create_it_later">You can create it later</string>
+  <string name="your_contacts_will_see_it">Your contacts in SimpleX will see it.\nYou can change it in Settings.</string>
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>
   <string name="full_name__field">"Full name:</string>
   <string name="your_current_profile">Your current profile</string>
-  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts.\n\n<xliff:g id="appName">SimpleX</xliff:g> servers cannot see your profile.</string>
+  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. <xliff:g id="appName">SimpleX</xliff:g> servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
   <string name="delete_image">Delete image</string>
   <string name="save_preferences_question">Save preferences?</string>
@@ -527,6 +634,15 @@
   <string name="save_and_notify_group_members">Save and notify group members</string>
   <string name="exit_without_saving">Exit without saving</string>
 
+  <!-- HiddenProfileView.kt -->
+  <string name="hide_profile">Hide profile</string>
+  <string name="password_to_show">Password to show</string>
+  <string name="save_profile_password">Save profile password</string>
+  <string name="hidden_profile_password">Hidden profile password</string>
+  <string name="confirm_password">Confirm password</string>
+  <string name="to_reveal_profile_enter_password">To reveal your hidden profile, enter a full password into a search field in "Your chat profiles" page.</string>
+  <string name="error_saving_user_password">Error saving user password</string>
+
   <!-- Welcome Prompts - WelcomeView.kt -->
   <string name="you_control_your_chat">You control your chat!</string>
   <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">The messaging and application platform protecting your privacy and security.</string>
@@ -534,6 +650,7 @@
   <string name="create_profile">Create profile</string>
   <string name="your_profile_is_stored_on_your_device">Your profile, contacts and delivered messages are stored on your device.</string>
   <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
+  <string name="no_spaces">No spaces!</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Display Name</string>
   <string name="full_name_optional__prompt">Full Name (optional)</string>
@@ -623,13 +740,15 @@
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
   <string name="your_calls">Your calls</string>
-  <string name="connect_calls_via_relay">Connect via relay</string>
+  <string name="always_use_relay">Always use relay</string>
   <string name="call_on_lock_screen">Calls on lock screen:</string>
   <string name="accept_call_on_lock_screen">Accept</string>
   <string name="show_call_on_lock_screen">Show</string>
   <string name="no_call_on_lock_screen">Disable</string>
   <string name="your_ice_servers">Your ICE servers</string>
   <string name="webrtc_ice_servers">WebRTC ICE servers</string>
+  <string name="relay_server_protects_ip">Relay server protects your IP address, but it can observe the duration of the call.</string>
+  <string name="relay_server_if_necessary">Relay server is only used if necessary. Another party can observe your IP address.</string>
 
   <!-- Call Lock Screen -->
   <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
@@ -667,7 +786,16 @@
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
   <string name="alert_title_skipped_messages">Skipped messages</string>
-  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages.</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised.</string>
+  <string name="alert_title_msg_bad_hash">Bad message hash</string>
+  <string name="alert_text_msg_bad_hash">The hash of the previous message is different."</string>
+  <string name="alert_title_msg_bad_id">Bad message ID</string>
+  <string name="alert_text_msg_bad_id">The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised.</string>
+  <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> messages failed to decrypt.</string>
+  <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> messages skipped.</string>
+  <string name="alert_text_fragment_encryption_out_of_sync_old_database">It can happen when you or your connection used the old database backup.</string>
+  <string name="alert_text_fragment_permanent_error_reconnect">This error is permanent for this connection, please re-connect.</string>
+  <string name="alert_text_fragment_please_report_to_developers">Please report it to the developers.</string>
 
   <!-- Privacy settings -->
   <string name="privacy_and_security">Privacy &amp; security</string>
@@ -676,6 +804,20 @@
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="full_backup">App data backup</string>
+  <string name="enable_lock">Enable lock</string>
+  <string name="lock_mode">Lock mode</string>
+  <string name="lock_after">Lock after</string>
+  <string name="submit_passcode">Submit</string>
+  <string name="confirm_passcode">Confirm Passcode</string>
+  <string name="incorrect_passcode">Incorrect passcode</string>
+  <string name="new_passcode">New Passcode</string>
+  <string name="authentication_cancelled">Authentication cancelled</string>
+  <string name="la_mode_system">System</string>
+  <string name="la_mode_passcode">Passcode</string>
+  <string name="passcode_set">Passcode set!</string>
+  <string name="passcode_changed">Passcode changed!</string>
+  <string name="passcode_not_changed">Passcode not changed!</string>
+  <string name="change_lock_mode">Change lock mode</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -688,11 +830,13 @@
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
+  <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
-  <string name="settings_section_title_messages">MESSAGES</string>
+  <string name="settings_section_title_messages">MESSAGES AND FILES</string>
   <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
+  <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
@@ -800,6 +944,17 @@
   <string name="restore_database_alert_confirm">Restore</string>
   <string name="database_restore_error">Restore database error</string>
   <string name="restore_passphrase_not_found_desc">Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please, contact developers.</string>
+  <string name="database_upgrade">Database upgrade</string>
+  <string name="database_downgrade">Database downgrade</string>
+  <string name="incompatible_database_version">Incompatible database version</string>
+  <string name="confirm_database_upgrades">Confirm database upgrades</string>
+  <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
+  <string name="upgrade_and_open_chat">Upgrade and open chat</string>
+  <string name="downgrade_and_open_chat">Downgrade and open chat</string>
+  <string name="mtr_error_no_down_migration">database version is newer than the app, but no down migration for: %s</string>
+  <string name="mtr_error_different">different migration in the app/database: %s / %s</string>
+  <string name="database_migrations">Migrations: %s</string>
+  <string name="database_downgrade_warning">Warning: you may lose some data!</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>
@@ -868,6 +1023,7 @@
   <string name="snd_conn_event_switch_queue_phase_changing">changing address…</string>
 
   <!-- GroupMemberRole -->
+  <string name="group_member_role_observer">observer</string>
   <string name="group_member_role_member">member</string>
   <string name="group_member_role_admin">admin</string>
   <string name="group_member_role_owner">owner</string>
@@ -890,13 +1046,14 @@
   <!-- AddGroupMembersView.kt -->
   <string name="no_contacts_to_add">No contacts to add</string>
   <string name="new_member_role">New member role</string>
+  <string name="initial_member_role">Initial role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
   <string name="skip_inviting_button">Skip inviting members</string>
   <string name="select_contacts">Select contacts</string>
   <string name="icon_descr_contact_checked">Contact checked</string>
   <string name="clear_contacts_selection_button">Clear</string>
-  <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(s) selected</string>
+  <string name="num_contacts_selected">%d contact(s) selected</string>
   <string name="no_contacts_selected">No contacts selected</string>
   <string name="invite_prohibited">Can\'t invite contact!</string>
   <string name="invite_prohibited_description">You\'re trying to invite contact with whom you\'ve shared an incognito profile to the group in which you\'re using your main profile</string>
@@ -911,6 +1068,8 @@
   <string name="delete_group_for_self_cannot_undo_warning">Group will be deleted for you - this cannot be undone!</string>
   <string name="button_leave_group">Leave group</string>
   <string name="button_edit_group_profile">Edit group profile</string>
+  <string name="button_add_welcome_message">Add welcome message</string>
+  <string name="button_welcome_message">Welcome message</string>
   <string name="group_link">Group link</string>
   <string name="create_group_link">Create group link</string>
   <string name="button_create_group_link">Create link</string>
@@ -919,8 +1078,12 @@
   <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group. You won\'t lose members of the group if you later delete it.</string>
   <string name="all_group_members_will_remain_connected">All group members will remain connected.</string>
   <string name="error_creating_link_for_group">Error creating group link</string>
+  <string name="error_updating_link_for_group">Error updating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
+  <string name="address_section_title">Address</string>
+  <string name="share_address">Share address</string>
+  <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
 
   <!-- For Console chat info section -->
   <string name="section_title_for_console">FOR CONSOLE</string>
@@ -946,6 +1109,13 @@
   <string name="info_row_connection">Connection</string>
   <string name="conn_level_desc_direct">direct</string>
   <string name="conn_level_desc_indirect">indirect (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+
+  <!-- GroupWelcomeView.kt -->
+  <string name="group_welcome_title">Welcome message</string>
+  <string name="save_welcome_message_question">Save welcome message?</string>
+  <string name="save_and_update_group_profile">Save and update group profile</string>
+  <string name="group_welcome_preview">Preview</string>
+  <string name="enter_welcome_message">Enter welcome message…</string>
 
   <!-- ConnectionStats -->
   <string name="conn_stats_section_title_servers">SERVERS</string>
@@ -983,13 +1153,31 @@
   <string name="update_network_settings_confirmation">Update</string>
 
   <!-- UserProfilesView.kt -->
-  <string name="your_chat_profiles_stored_locally">Your chat profiles are stored locally, only on your device</string>
   <string name="users_add">Add profile</string>
   <string name="users_delete_question">Delete chat profile?</string>
   <string name="users_delete_all_chats_deleted">All chats and messages will be deleted - this cannot be undone!</string>
   <string name="users_delete_profile_for">Delete chat profile for</string>
   <string name="users_delete_with_connections">Profile and server connections</string>
   <string name="users_delete_data_only">Local profile data only</string>
+  <string name="user_hide">Hide</string>
+  <string name="user_unhide">Unhide</string>
+  <string name="user_mute">Mute</string>
+  <string name="user_unmute">Unmute</string>
+  <string name="enter_password_to_show">Enter password in search</string>
+  <string name="tap_to_activate_profile">Tap to activate profile.</string>
+  <string name="cant_delete_user_profile">Can\'t delete user profile!</string>
+  <string name="should_be_at_least_one_visible_profile">There should be at least one visible user profile.</string>
+  <string name="should_be_at_least_one_profile">There should be at least one user profile.</string>
+  <string name="make_profile_private">Make profile private!</string>
+  <string name="you_can_hide_or_mute_user_profile">You can hide or mute a user profile - hold it for the menu.</string>
+  <string name="dont_show_again">Don\'t show again</string>
+  <string name="muted_when_inactive">Muted when inactive!</string>
+  <string name="you_will_still_receive_calls_and_ntfs">You will still receive calls and notifications from muted profiles when they are active.</string>
+  <string name="delete_profile">Delete profile</string>
+  <string name="delete_chat_profile">Delete chat profile</string>
+  <string name="unhide_profile">Unhide profile</string>
+  <string name="unhide_chat_profile">Unhide chat profile</string>
+  <string name="profile_password">Profile password</string>
 
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>
@@ -1006,12 +1194,29 @@
   <string name="theme_system">System</string>
   <string name="theme_light">Light</string>
   <string name="theme_dark">Dark</string>
+  <string name="theme_simplex">SimpleX</string>
+
+  <!-- Languages -->
+  <string name="language_system">System</string>
 
   <!-- Appearance.kt -->
   <string name="theme">Theme</string>
+  <string name="dark_theme">Dark theme</string>
   <string name="save_color">Save color</string>
+  <string name="import_theme">Import theme</string>
+  <string name="import_theme_error">Import theme error</string>
+  <string name="import_theme_error_desc">Make sure the file has correct YAML syntax. Export theme to have an example of the theme file structure.</string>
+  <string name="export_theme">Export theme</string>
   <string name="reset_color">Reset colors</string>
   <string name="color_primary">Accent</string>
+  <string name="color_primary_variant">Additional accent</string>
+  <string name="color_secondary">Secondary</string>
+  <string name="color_secondary_variant">Additional secondary</string>
+  <string name="color_background">Background</string>
+  <string name="color_surface">Menus &amp; alerts</string>
+  <string name="color_title">Title</string>
+  <string name="color_sent_message">Sent message</string>
+  <string name="color_received_message">Received message</string>
 
   <!-- Preferences.kt -->
   <string name="chat_preferences_you_allow">You allow</string>
@@ -1031,6 +1236,8 @@
   <string name="direct_messages">Direct messages</string>
   <string name="full_deletion">Delete for everyone</string>
   <string name="voice_messages">Voice messages</string>
+  <string name="audio_video_calls">Audio/video calls</string>
+  <string name="available_in_v51">\nAvailable in v5.1</string>
   <string name="feature_enabled">enabled</string>
   <string name="feature_enabled_for_you">enabled for you</string>
   <string name="feature_enabled_for_contact">enabled for contact</string>
@@ -1047,6 +1254,9 @@
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
   <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
+  <string name="allow_your_contacts_to_call">Allow your contacts to call you.</string>
+  <string name="allow_calls_only_if">Allow calls only if your contact allows them.</string>
+  <string name="prohibit_calls">Prohibit audio/video calls.</string>
   <string name="both_you_and_your_contact_can_send_disappearing">Both you and your contact can send disappearing messages.</string>
   <string name="only_you_can_send_disappearing">Only you can send disappearing messages.</string>
   <string name="only_your_contact_can_send_disappearing">Only your contact can send disappearing messages.</string>
@@ -1059,6 +1269,10 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="both_you_and_your_contact_can_make_calls">Both you and your contact can make calls.</string>
+  <string name="only_you_can_make_calls">Only you can make calls.</string>
+  <string name="only_your_contact_can_make_calls">Only your contact can make calls.</string>
+  <string name="calls_prohibited_with_this_contact">Audio/video calls are prohibited.</string>
   <string name="allow_to_send_disappearing">Allow to send disappearing messages.</string>
   <string name="prohibit_sending_disappearing">Prohibit sending disappearing messages.</string>
   <string name="allow_direct_messages">Allow sending direct messages to members.</string>
@@ -1133,4 +1347,22 @@
   <string name="v4_5_reduced_battery_usage_descr">More improvements are coming soon!</string>
   <string name="v4_5_italian_interface">Italian interface</string>
   <string name="v4_5_italian_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v4_6_hidden_chat_profiles">Hidden chat profiles</string>
+  <string name="v4_6_hidden_chat_profiles_descr">Protect your chat profiles with a password!</string>
+  <string name="v4_6_audio_video_calls">Audio and video calls</string>
+  <string name="v4_6_audio_video_calls_descr">Support bluetooth and other improvements.</string>
+  <string name="v4_6_group_moderation">Group moderation</string>
+  <string name="v4_6_group_moderation_descr">Now admins can:\n- delete members\' messages.\n- disable members (\"observer\" role)</string>
+  <string name="v4_6_group_welcome_message">Group welcome message</string>
+  <string name="v4_6_group_welcome_message_descr">Set the message shown to new members!</string>
+  <string name="v4_6_reduced_battery_usage">Further reduced battery usage</string>
+  <string name="v4_6_reduced_battery_usage_descr">More improvements are coming soon!</string>
+  <string name="v4_6_chinese_spanish_interface">Chinese and Spanish interface</string>
+  <string name="v4_6_chinese_spanish_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v5_0_large_files_support">Videos and files up to 1gb</string>
+  <string name="v5_0_large_files_support_descr">Fast and no wait until the sender is online!</string>
+  <string name="v5_0_app_passcode">App passcode</string>
+  <string name="v5_0_app_passcode_descr">Set it instead of system authentication.</string>
+  <string name="v5_0_polish_interface">Polish interface</string>
+  <string name="v5_0_polish_interface_descr">Thanks to the users – contribute via Weblate!</string>
 </resources>

@@ -7,15 +7,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -46,10 +43,10 @@ fun ChatPreviewView(
   @Composable
   fun groupInactiveIcon() {
     Icon(
-      Icons.Filled.Cancel,
+      painterResource(R.drawable.ic_cancel_filled),
       stringResource(R.string.icon_descr_group_inactive),
       Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
-      tint = HighOrLowlight
+      tint = MaterialTheme.colors.secondary
     )
   }
 
@@ -79,15 +76,15 @@ fun ChatPreviewView(
 
   @Composable
   fun VerifiedIcon() {
-    Icon(Icons.Outlined.VerifiedUser, null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
+    Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
   }
 
   fun messageDraft(draft: ComposeState): Pair<AnnotatedString, Map<String, InlineTextContent>> {
-    fun attachment(): Pair<ImageVector, String?>? =
+    fun attachment(): Pair<Int, String?>? =
       when (draft.preview) {
-        is ComposePreview.FilePreview -> Icons.Filled.InsertDriveFile to draft.preview.fileName
-        is ComposePreview.ImagePreview -> Icons.Outlined.Image to null
-        is ComposePreview.VoicePreview -> Icons.Filled.PlayArrow to durationText(draft.preview.durationMs / 1000)
+        is ComposePreview.FilePreview -> R.drawable.ic_draft_filled to draft.preview.fileName
+        is ComposePreview.MediaPreview -> R.drawable.ic_image to null
+        is ComposePreview.VoicePreview -> R.drawable.ic_play_arrow_filled to durationText(draft.preview.durationMs / 1000)
         else -> null
       }
 
@@ -108,12 +105,12 @@ fun ChatPreviewView(
       "editIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(Icons.Outlined.EditNote, null, tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_edit_note), null, tint = MaterialTheme.colors.primary)
       },
       "attachmentIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(attachment?.first ?: Icons.Outlined.EditNote, null, tint = HighOrLowlight)
+        Icon(if (attachment?.first != null) painterResource(attachment.first) else painterResource(R.drawable.ic_edit_note), null, tint = MaterialTheme.colors.secondary)
       }
     )
     return text to inlineContent
@@ -127,12 +124,12 @@ fun ChatPreviewView(
           if (cInfo.contact.verified) {
             VerifiedIcon()
           }
-          chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
+          chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else MaterialTheme.colors.secondary)
         }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
           GroupMemberStatus.MemInvited -> chatPreviewTitleText(if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary)
-          GroupMemberStatus.MemAccepted -> chatPreviewTitleText(HighOrLowlight)
+          GroupMemberStatus.MemAccepted -> chatPreviewTitleText(MaterialTheme.colors.secondary)
           else -> chatPreviewTitleText()
         }
       else -> chatPreviewTitleText()
@@ -173,12 +170,12 @@ fun ChatPreviewView(
       when (cInfo) {
         is ChatInfo.Direct ->
           if (!cInfo.ready) {
-            Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
+            Text(stringResource(R.string.contact_connection_pending), color = MaterialTheme.colors.secondary)
           }
         is ChatInfo.Group ->
           when (cInfo.groupInfo.membership.memberStatus) {
             GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(chatModelIncognito, currentUserProfileDisplayName, cInfo.groupInfo))
-            GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
+            GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = MaterialTheme.colors.secondary)
             else -> {}
           }
         else -> {}
@@ -211,7 +208,7 @@ fun ChatPreviewView(
     ) {
       Text(
         ts,
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(bottom = 5.dp)
       )
@@ -224,10 +221,10 @@ fun ChatPreviewView(
         ) {
           Text(
             if (n > 0) unreadCountStr(n) else "",
-            color = MaterialTheme.colors.onPrimary,
+            color = Color.White,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(if (stopped || showNtfsIcon) HighOrLowlight else MaterialTheme.colors.primary, shape = CircleShape)
+              .background(if (stopped || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
@@ -239,9 +236,9 @@ fun ChatPreviewView(
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            Icons.Filled.NotificationsOff,
+            painterResource(R.drawable.ic_notifications_off_filled),
             contentDescription = generalGetString(R.string.notifications),
-            tint = HighOrLowlight,
+            tint = MaterialTheme.colors.secondary,
             modifier = Modifier
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
@@ -281,9 +278,9 @@ fun ChatStatusImage(s: NetworkStatus?) {
   val descr = s?.statusString
   if (s is NetworkStatus.Error) {
     Icon(
-      Icons.Outlined.ErrorOutline,
+      painterResource(R.drawable.ic_error),
       contentDescription = descr,
-      tint = HighOrLowlight,
+      tint = MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(19.dp)
     )
@@ -292,7 +289,7 @@ fun ChatStatusImage(s: NetworkStatus?) {
       Modifier
         .padding(horizontal = 2.dp)
         .size(15.dp),
-      color = HighOrLowlight,
+      color = MaterialTheme.colors.secondary,
       strokeWidth = 1.5.dp
     )
   }

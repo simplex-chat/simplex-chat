@@ -1,6 +1,7 @@
 CREATE TABLE migrations(
   name TEXT NOT NULL,
   ts TEXT NOT NULL,
+  down TEXT,
   PRIMARY KEY(name)
 );
 CREATE TABLE contact_profiles(
@@ -16,11 +17,8 @@ CREATE TABLE contact_profiles(
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   incognito INTEGER,
   local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
-  preferences TEXT
-);
-CREATE INDEX contact_profiles_index ON contact_profiles(
-  display_name,
-  full_name
+  preferences TEXT,
+  contact_link BLOB
 );
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -30,7 +28,10 @@ CREATE TABLE users(
   active_user INTEGER NOT NULL DEFAULT 0,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  agent_user_id INTEGER CHECK(agent_user_id NOT NULL), -- 1 for active user
+  agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
+  view_pwd_hash BLOB,
+  view_pwd_salt BLOB,
+  show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -141,7 +142,6 @@ CREATE TABLE groups(
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, group_profile_id)
 );
-CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
 CREATE TABLE group_members(
   -- group members, excluding the local user
   group_member_id INTEGER PRIMARY KEY,
@@ -193,7 +193,11 @@ CREATE TABLE files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   cancelled INTEGER,
   ci_file_status TEXT,
-  file_inline TEXT
+  file_inline TEXT,
+  agent_snd_file_id BLOB NULL,
+  private_snd_file_descr TEXT NULL,
+  agent_snd_file_deleted INTEGER DEFAULT 0 CHECK(agent_snd_file_deleted NOT NULL),
+  protocol TEXT NOT NULL DEFAULT 'smp'
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -204,6 +208,8 @@ CREATE TABLE snd_files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   file_inline TEXT,
   last_inline_msg_delivery_id INTEGER,
+  file_descr_id INTEGER NULL
+  REFERENCES xftp_file_descriptions ON DELETE SET NULL,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
 CREATE TABLE rcv_files(
@@ -215,7 +221,12 @@ CREATE TABLE rcv_files(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   rcv_file_inline TEXT,
-  file_inline TEXT
+  file_inline TEXT,
+  file_descr_id INTEGER NULL
+  REFERENCES xftp_file_descriptions ON DELETE SET NULL,
+  agent_rcv_file_id BLOB NULL,
+  agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL),
+  to_receive INTEGER
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
@@ -282,6 +293,7 @@ CREATE TABLE user_contact_links(
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   auto_accept_incognito INTEGER DEFAULT 0 CHECK(auto_accept_incognito NOT NULL),
   group_link_id BLOB,
+  group_link_member_role TEXT NULL,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -330,14 +342,6 @@ CREATE TABLE msg_deliveries(
   agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   UNIQUE(connection_id, agent_msg_id)
 );
-CREATE TABLE msg_delivery_events(
-  msg_delivery_event_id INTEGER PRIMARY KEY,
-  msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery
-  delivery_status TEXT NOT NULL, -- see MsgDeliveryStatus for allowed values
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT CHECK(updated_at NOT NULL),
-  UNIQUE(msg_delivery_id, delivery_status)
-);
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
   group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
@@ -382,13 +386,6 @@ CREATE TABLE chat_item_messages(
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   UNIQUE(chat_item_id, message_id)
 );
-CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
-  via_contact_uri_hash
-);
-CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
-CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
-CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
-CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
 CREATE TABLE calls(
   -- stores call invitations state for communicating state between NSE and app when call notification comes
   call_id INTEGER PRIMARY KEY,
@@ -400,17 +397,6 @@ CREATE TABLE calls(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
-CREATE INDEX idx_chat_items_groups ON chat_items(
-  user_id,
-  group_id,
-  item_ts,
-  chat_item_id
-);
-CREATE INDEX idx_chat_items_contacts ON chat_items(
-  user_id,
-  contact_id,
-  chat_item_id
 );
 CREATE TABLE commands(
   command_id INTEGER PRIMARY KEY AUTOINCREMENT, -- used as ACorrId
@@ -428,6 +414,68 @@ CREATE TABLE settings(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS "protocol_servers"(
+  smp_server_id INTEGER PRIMARY KEY,
+  host TEXT NOT NULL,
+  port TEXT NOT NULL,
+  key_hash BLOB NOT NULL,
+  basic_auth TEXT,
+  preset INTEGER NOT NULL DEFAULT 0,
+  tested INTEGER,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  protocol TEXT NOT NULL DEFAULT 'smp',
+  UNIQUE(user_id, host, port)
+);
+CREATE TABLE xftp_file_descriptions(
+  file_descr_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  file_descr_text TEXT NOT NULL,
+  file_descr_part_no INTEGER NOT NULL DEFAULT(0),
+  file_descr_complete INTEGER NOT NULL DEFAULT(0),
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE extra_xftp_file_descriptions(
+  extra_file_descr_id INTEGER PRIMARY KEY,
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  file_descr_text TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE msg_delivery_events(
+  msg_delivery_event_id INTEGER PRIMARY KEY,
+  msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE,
+  delivery_status TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE INDEX contact_profiles_index ON contact_profiles(
+  display_name,
+  full_name
+);
+CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
+CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
+  via_contact_uri_hash
+);
+CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
+CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
+CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
+CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
+CREATE INDEX idx_chat_items_groups ON chat_items(
+  user_id,
+  group_id,
+  item_ts,
+  chat_item_id
+);
+CREATE INDEX idx_chat_items_contacts ON chat_items(
+  user_id,
+  contact_id,
+  chat_item_id
 );
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
   user_id,
@@ -532,21 +580,18 @@ CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
 CREATE INDEX idx_snd_files_group_member_id ON snd_files(group_member_id);
 CREATE INDEX idx_snd_files_connection_id ON snd_files(connection_id);
 CREATE INDEX idx_snd_files_file_id ON snd_files(file_id);
-CREATE TABLE IF NOT EXISTS "smp_servers"(
-  smp_server_id INTEGER PRIMARY KEY,
-  host TEXT NOT NULL,
-  port TEXT NOT NULL,
-  key_hash BLOB NOT NULL,
-  basic_auth TEXT,
-  preset INTEGER NOT NULL DEFAULT 0,
-  tested INTEGER,
-  enabled INTEGER NOT NULL DEFAULT 1,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  UNIQUE(user_id, host, port)
-);
-CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
+CREATE INDEX idx_smp_servers_user_id ON "protocol_servers"(user_id);
 CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON chat_items(
   item_deleted_by_group_member_id
+);
+CREATE INDEX idx_snd_files_file_descr_id ON snd_files(file_descr_id);
+CREATE INDEX idx_rcv_files_file_descr_id ON rcv_files(file_descr_id);
+CREATE INDEX idx_extra_xftp_file_descriptions_file_id ON extra_xftp_file_descriptions(
+  file_id
+);
+CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON extra_xftp_file_descriptions(
+  user_id
+);
+CREATE INDEX idx_xftp_file_descriptions_user_id ON xftp_file_descriptions(
+  user_id
 );

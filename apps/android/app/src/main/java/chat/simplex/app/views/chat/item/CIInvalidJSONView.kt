@@ -5,12 +5,11 @@ import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -35,7 +34,7 @@ fun InvalidJSONView(json: String) {
     Spacer(Modifier.height(DEFAULT_PADDING))
     SectionView {
       val context = LocalContext.current
-      SettingsActionItem(Icons.Outlined.Share, generalGetString(R.string.share_verb), click = {
+      SettingsActionItem(painterResource(R.drawable.ic_share), generalGetString(R.string.share_verb), click = {
         shareText(context, json)
       })
     }

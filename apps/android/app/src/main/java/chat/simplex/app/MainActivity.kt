@@ -3,47 +3,44 @@ package chat.simplex.app
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Parcelable
+import android.os.*
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.NtfManager
+import chat.simplex.app.MainActivity.Companion.enteredBackground
+import chat.simplex.app.model.*
 import chat.simplex.app.model.NtfManager.Companion.getUserIdFromIntent
-import chat.simplex.app.ui.theme.SimpleButton
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
+import chat.simplex.app.views.chat.group.ProgressIndicator
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
+import chat.simplex.app.views.localauth.SetAppPasscodeView
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
-import kotlinx.coroutines.delay
+import chat.simplex.app.views.usersettings.LAMode
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
   companion object {
@@ -63,11 +60,13 @@ class MainActivity: FragmentActivity() {
     }
   }
   private val vm by viewModels<SimplexViewModel>()
+  private val destroyedAfterBackPress = mutableStateOf(false)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // testJson()
     val m = vm.chatModel
+    applyAppLocale(m.controller.appPrefs.appLanguage)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
@@ -84,18 +83,15 @@ class MainActivity: FragmentActivity() {
     }
     setContent {
       SimpleXTheme {
-        Surface(
-          Modifier
-            .background(MaterialTheme.colors.background)
-            .fillMaxSize()
-        ) {
+        Surface(color = MaterialTheme.colors.background) {
           MainPage(
             m,
             userAuthorized,
             laFailed,
+            destroyedAfterBackPress,
             ::runAuthenticate,
             ::setPerformLA,
-            showLANotice = { m.controller.showLANotice(this) }
+            showLANotice = { showLANotice(m.controller.appPrefs.laNoticeShown, this) }
           )
         }
       }
@@ -110,11 +106,17 @@ class MainActivity: FragmentActivity() {
     processExternalIntent(intent, vm.chatModel)
   }
 
-  override fun onStart() {
-    super.onStart()
+  override fun onResume() {
+    super.onResume()
     val enteredBackgroundVal = enteredBackground.value
-    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30_000) {
-      runAuthenticate()
+    val delay = vm.chatModel.controller.appPrefs.laLockDelay.get()
+    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= delay * 1000) {
+      if (userAuthorized.value != false) {
+        /** [runAuthenticate] will be called in [MainPage] if needed. Making like this prevents double showing of passcode on start */
+        setAuthState()
+      } else if (!vm.chatModel.activeCallViewIsVisible.value) {
+        runAuthenticate()
+      }
     }
   }
 
@@ -130,6 +132,7 @@ class MainActivity: FragmentActivity() {
 
   override fun onStop() {
     super.onStop()
+    VideoPlayer.stopAll()
     enteredBackground.value = elapsedRealtime()
   }
 
@@ -147,6 +150,7 @@ class MainActivity: FragmentActivity() {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       clearAuthState()
       laFailed.value = true
+      destroyedAfterBackPress.value = true
     }
     if (!onBackPressedDispatcher.hasEnabledCallbacks()) {
       // Drop shared content
@@ -154,50 +158,163 @@ class MainActivity: FragmentActivity() {
     }
   }
 
+  private fun setAuthState() {
+    userAuthorized.value = !vm.chatModel.controller.appPrefs.performLA.get()
+  }
+
   private fun runAuthenticate() {
     val m = vm.chatModel
-    if (!m.controller.appPrefs.performLA.get()) {
-      userAuthorized.value = true
-    } else {
-      userAuthorized.value = false
-      ModalManager.shared.closeModals()
-      authenticate(
-        generalGetString(R.string.auth_unlock),
-        generalGetString(R.string.auth_log_in_using_credential),
-        this@MainActivity,
-        completed = { laResult ->
-          when (laResult) {
-            LAResult.Success ->
-              userAuthorized.value = true
-            is LAResult.Error, LAResult.Failed ->
-              laFailed.value = true
-            LAResult.Unavailable -> {
-              userAuthorized.value = true
-              m.performLA.value = false
-              m.controller.appPrefs.performLA.set(false)
-              laUnavailableTurningOffAlert()
+    setAuthState()
+    if (userAuthorized.value == false) {
+      // To make Main thread free in order to allow to Compose to show blank view that hiding content underneath of it faster on slow devices
+      CoroutineScope(Dispatchers.Default).launch {
+        delay(50)
+        withContext(Dispatchers.Main) {
+          authenticate(
+            if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+              generalGetString(R.string.auth_unlock)
+            else
+              generalGetString(R.string.la_enter_app_passcode),
+            if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+              generalGetString(R.string.auth_log_in_using_credential)
+            else
+              generalGetString(R.string.auth_unlock),
+            this@MainActivity,
+            completed = { laResult ->
+              when (laResult) {
+                LAResult.Success ->
+                  userAuthorized.value = true
+                is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
+                is LAResult.Error -> {
+                  laFailed.value = true
+                  if (m.controller.appPrefs.laMode.get() == LAMode.PASSCODE) {
+                    laFailedAlert()
+                  }
+                }
+                is LAResult.Unavailable -> {
+                  userAuthorized.value = true
+                  m.performLA.value = false
+                  m.controller.appPrefs.performLA.set(false)
+                  laUnavailableTurningOffAlert()
+                }
+              }
             }
+          )
+        }
+      }
+    }
+  }
+
+  private fun showLANotice(laNoticeShown: SharedPreference<Boolean>, activity: FragmentActivity) {
+    Log.d(TAG, "showLANotice")
+    if (!laNoticeShown.get()) {
+      laNoticeShown.set(true)
+      AlertManager.shared.showAlertDialog(
+        title = generalGetString(R.string.la_notice_title_simplex_lock),
+        text = generalGetString(R.string.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
+        confirmText = generalGetString(R.string.la_notice_turn_on),
+        onConfirm = {
+          withBGApi { // to remove this call, change ordering of onConfirm call in AlertManager
+            showChooseLAMode(laNoticeShown, activity)
           }
         }
       )
     }
   }
 
-  private fun setPerformLA(on: Boolean) {
-    vm.chatModel.controller.appPrefs.laNoticeShown.set(true)
-    if (on) {
-      enableLA()
-    } else {
-      disableLA()
-    }
+  private fun showChooseLAMode(laNoticeShown: SharedPreference<Boolean>, activity: FragmentActivity) {
+    Log.d(TAG, "showLANotice")
+    laNoticeShown.set(true)
+    AlertManager.shared.showAlertDialogStacked(
+      title = generalGetString(R.string.la_lock_mode),
+      text = null,
+      confirmText = generalGetString(R.string.la_lock_mode_passcode),
+      dismissText = generalGetString(R.string.la_lock_mode_system),
+      onConfirm = {
+        AlertManager.shared.hideAlert()
+        setPasscode()
+      },
+      onDismiss = {
+        AlertManager.shared.hideAlert()
+        initialEnableLA(activity)
+      }
+    )
   }
 
-  private fun enableLA() {
+  private fun initialEnableLA(activity: FragmentActivity) {
     val m = vm.chatModel
+    val appPrefs = m.controller.appPrefs
+    m.controller.appPrefs.laMode.set(LAMode.SYSTEM)
     authenticate(
       generalGetString(R.string.auth_enable_simplex_lock),
       generalGetString(R.string.auth_confirm_credential),
-      this@MainActivity,
+      activity,
+      completed = { laResult ->
+        when (laResult) {
+          LAResult.Success -> {
+            m.performLA.value = true
+            appPrefs.performLA.set(true)
+            laTurnedOnAlert()
+          }
+          is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
+          is LAResult.Error -> {
+            m.performLA.value = false
+            appPrefs.performLA.set(false)
+            laFailedAlert()
+          }
+          is LAResult.Unavailable -> {
+            m.performLA.value = false
+            appPrefs.performLA.set(false)
+            m.showAdvertiseLAUnavailableAlert.value = true
+          }
+        }
+      }
+    )
+  }
+
+  private fun setPasscode() {
+    val chatModel = vm.chatModel
+    val appPrefs = chatModel.controller.appPrefs
+    ModalManager.shared.showCustomModal { close ->
+      Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+        SetAppPasscodeView(
+          submit = {
+            chatModel.performLA.value = true
+            appPrefs.performLA.set(true)
+            appPrefs.laMode.set(LAMode.PASSCODE)
+            laTurnedOnAlert()
+          },
+          cancel = {
+            chatModel.performLA.value = false
+            appPrefs.performLA.set(false)
+            laPasscodeNotSetAlert()
+          },
+          close)
+      }
+    }
+  }
+
+  private fun setPerformLA(on: Boolean, activity: FragmentActivity) {
+    vm.chatModel.controller.appPrefs.laNoticeShown.set(true)
+    if (on) {
+      enableLA(activity)
+    } else {
+      disableLA(activity)
+    }
+  }
+
+  private fun enableLA(activity: FragmentActivity) {
+    val m = vm.chatModel
+    authenticate(
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_enable_simplex_lock)
+      else
+        generalGetString(R.string.new_passcode),
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_confirm_credential)
+      else
+        "",
+      activity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         when (laResult) {
@@ -206,11 +323,13 @@ class MainActivity: FragmentActivity() {
             prefPerformLA.set(true)
             laTurnedOnAlert()
           }
-          is LAResult.Error, LAResult.Failed -> {
+          is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
+          is LAResult.Error -> {
             m.performLA.value = false
             prefPerformLA.set(false)
+            laFailedAlert()
           }
-          LAResult.Unavailable -> {
+          is LAResult.Unavailable -> {
             m.performLA.value = false
             prefPerformLA.set(false)
             laUnavailableInstructionAlert()
@@ -220,24 +339,33 @@ class MainActivity: FragmentActivity() {
     )
   }
 
-  private fun disableLA() {
+  private fun disableLA(activity: FragmentActivity) {
     val m = vm.chatModel
     authenticate(
-      generalGetString(R.string.auth_disable_simplex_lock),
-      generalGetString(R.string.auth_confirm_credential),
-      this@MainActivity,
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_disable_simplex_lock)
+      else
+        generalGetString(R.string.la_enter_app_passcode),
+      if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
+        generalGetString(R.string.auth_confirm_credential)
+      else
+        generalGetString(R.string.auth_disable_simplex_lock),
+      activity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         when (laResult) {
           LAResult.Success -> {
             m.performLA.value = false
             prefPerformLA.set(false)
+            ksAppPassword.remove()
           }
-          is LAResult.Error, LAResult.Failed -> {
+          is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
+          is LAResult.Error -> {
             m.performLA.value = true
             prefPerformLA.set(true)
+            laFailedAlert()
           }
-          LAResult.Unavailable -> {
+          is LAResult.Unavailable -> {
             m.performLA.value = false
             prefPerformLA.set(false)
             laUnavailableTurningOffAlert()
@@ -258,18 +386,11 @@ fun MainPage(
   chatModel: ChatModel,
   userAuthorized: MutableState<Boolean?>,
   laFailed: MutableState<Boolean>,
+  destroyedAfterBackPress: MutableState<Boolean>,
   runAuthenticate: () -> Unit,
-  setPerformLA: (Boolean) -> Unit,
+  setPerformLA: (Boolean, FragmentActivity) -> Unit,
   showLANotice: () -> Unit
 ) {
-  // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
-  var chatsAccessAuthorized by rememberSaveable { mutableStateOf(false) }
-  LaunchedEffect(userAuthorized.value) {
-    if (chatModel.controller.appPrefs.performLA.get()) {
-      delay(500L)
-    }
-    chatsAccessAuthorized = userAuthorized.value == true
-  }
   var showChatDatabaseError by rememberSaveable {
     mutableStateOf(chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null)
   }
@@ -302,43 +423,38 @@ fun MainPage(
   }
 
   @Composable
-  fun authView() {
-    Box(
-      Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center
-    ) {
-      SimpleButton(
-        stringResource(R.string.auth_unlock),
-        icon = Icons.Outlined.Lock,
-        click = {
-          laFailed.value = false
-          runAuthenticate()
-        }
-      )
+  fun AuthView() {
+    Surface(color = MaterialTheme.colors.background) {
+      Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        SimpleButton(
+          stringResource(R.string.auth_unlock),
+          icon = painterResource(R.drawable.ic_lock),
+          click = {
+            laFailed.value = false
+            runAuthenticate()
+          }
+        )
+      }
     }
   }
 
   Box {
     val onboarding = chatModel.onboardingStage.value
     val userCreated = chatModel.userCreated.value
+    var showInitializationView by remember { mutableStateOf(false) }
     when {
+      chatModel.chatDbStatus.value == null && showInitializationView -> InitializationView()
       showChatDatabaseError -> {
         chatModel.chatDbStatus.value?.let {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
       onboarding == null || userCreated == null -> SplashView()
-      !chatsAccessAuthorized -> {
-        if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
-          authView()
-        } else {
-          SplashView()
-        }
-      }
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         Box {
-          if (chatModel.showCallView.value) ActiveCallView(chatModel)
-          else {
             showAdvertiseLAAlert = true
             BoxWithConstraints {
               var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
@@ -384,16 +500,65 @@ fun MainPage(
               }
             }
           }
-        }
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel) {}
-      onboarding == OnboardingStage.Step3_SetNotificationsMode -> SetNotificationsMode(chatModel)
+      onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel)
+      onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     ModalManager.shared.showInView()
+    val unauthorized = remember { derivedStateOf { userAuthorized.value != true } }
+    if (unauthorized.value && !(chatModel.activeCallViewIsVisible.value && chatModel.showCallView.value)) {
+      LaunchedEffect(Unit) {
+        // With these constrains when user presses back button while on ChatList, activity destroys and shows auth request
+        // while the screen moves to a launcher. Detect it and prevent showing the auth
+        if (!(destroyedAfterBackPress.value && chatModel.controller.appPrefs.laMode.get() == LAMode.SYSTEM)) {
+          runAuthenticate()
+        }
+      }
+      if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
+        AuthView()
+      } else {
+        SplashView()
+      }
+    } else if (chatModel.showCallView.value) {
+      ActiveCallView(chatModel)
+    }
+    ModalManager.shared.showPasscodeInView()
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
+
+    LaunchedEffect(Unit) {
+      delay(1000)
+      if (chatModel.chatDbStatus.value == null) {
+        showInitializationView = true
+      }
+    }
+  }
+
+  DisposableEffectOnRotate {
+    // When using lock delay = 0 and screen rotates, the app will be locked which is not useful.
+    // Let's prolong the unlocked period to 3 sec for screen rotation to take place
+    if (chatModel.controller.appPrefs.laLockDelay.get() == 0) {
+      enteredBackground.value = elapsedRealtime() + 3000
+    }
+  }
+}
+
+@Composable
+private fun InitializationView() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      CircularProgressIndicator(
+        Modifier
+          .padding(bottom = DEFAULT_PADDING)
+          .size(30.dp),
+        color = MaterialTheme.colors.secondary,
+        strokeWidth = 2.5.dp
+      )
+      Text(stringResource(R.string.opening_database))
+    }
   }
 }
 
@@ -405,8 +570,9 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processNotificationIntent: OpenChatAction $chatId")
       if (chatId != null) {
         withBGApi {
-          if (userId != null && userId != chatModel.currentUser.value?.userId) {
-            chatModel.controller.changeActiveUser(userId)
+          awaitChatStartedIfNeeded(chatModel)
+          if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+            chatModel.controller.changeActiveUser(userId, null)
           }
           val cInfo = chatModel.getChat(chatId)?.chatInfo
           chatModel.clearOverlays.value = true
@@ -417,8 +583,9 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
     NtfManager.ShowChatsAction -> {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
       withBGApi {
-        if (userId != null && userId != chatModel.currentUser.value?.userId) {
-          chatModel.controller.changeActiveUser(userId)
+        awaitChatStartedIfNeeded(chatModel)
+        if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+          chatModel.controller.changeActiveUser(userId, null)
         }
         chatModel.chatId.value = null
         chatModel.clearOverlays.value = true
@@ -455,14 +622,23 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
       when {
-        "text/plain" == intent.type -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let {
-          chatModel.sharedContent.value = SharedContent.Text(it)
+        intent.type == "text/plain" -> {
+          val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+          if (text != null) {
+            chatModel.sharedContent.value = SharedContent.Text(text)
+          }
         }
-        intent.type?.startsWith("image/") == true -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.Images(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(it))
-        } // All other mime types
-        else -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
+        isMediaIntent(intent) -> {
+          val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+          if (uri != null) {
+            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(uri))
+          } // All other mime types
+        }
+        else -> {
+          val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+          if (uri != null) {
+            chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uri)
+          }
         }
       }
     }
@@ -470,15 +646,22 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
       // Close active chat and show a list of chats
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
+      Log.e(TAG, "ACTION_SEND_MULTIPLE ${intent.type}")
       when {
-        intent.type?.startsWith("image/") == true -> (intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>)?.let {
-          chatModel.sharedContent.value = SharedContent.Images(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
-        } // All other mime types
+        isMediaIntent(intent) -> {
+          val uris = intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>
+          if (uris != null) {
+            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uris)
+          } // All other mime types
+        }
         else -> {}
       }
     }
   }
 }
+
+fun isMediaIntent(intent: Intent): Boolean =
+  intent.type?.startsWith("image/") == true || intent.type?.startsWith("video/") == true
 
 fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
@@ -491,7 +674,7 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
         ConnectionLinkType.INVITATION -> generalGetString(R.string.connect_via_invitation_link)
         ConnectionLinkType.GROUP -> generalGetString(R.string.connect_via_group_link)
       }
-      AlertManager.shared.showAlertMsg(
+      AlertManager.shared.showAlertDialog(
         title = title,
         text = if (linkType == ConnectionLinkType.GROUP)
           generalGetString(R.string.you_will_join_group)
@@ -508,6 +691,20 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
     }
   }
 }
+
+suspend fun awaitChatStartedIfNeeded(chatModel: ChatModel, timeout: Long = 30_000) {
+  // Still decrypting database
+  if (chatModel.chatRunning.value == null) {
+    val step = 50L
+    for (i in 0..(timeout / step)) {
+      if (chatModel.chatRunning.value == true || chatModel.onboardingStage.value == OnboardingStage.Step1_SimpleXInfo) {
+        break
+      }
+      delay(step)
+    }
+  }
+}
+
 //fun testJson() {
 //  val str: String = """
 //  """.trimIndent()

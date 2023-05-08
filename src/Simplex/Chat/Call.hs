@@ -21,7 +21,7 @@ import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
-import Simplex.Chat.Types (Contact, ContactId, decodeJSON, encodeJSON, User)
+import Simplex.Chat.Types (Contact, ContactId, User, decodeJSON, encodeJSON)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)

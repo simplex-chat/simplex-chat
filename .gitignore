@@ -45,10 +45,12 @@ tests/tmp
 tests/tmp*
 logs/
 
-
+*.devcontainer
 # for website
 website/node_modules/
 website/src/blog/
+website/src/docs/
+website/translations.json
 website/src/img/images/
 website/src/images/
 # Generated files
@@ -73,3 +75,4 @@ website/package-lock.json
 # Ignore test files
 website/.cache
 website/test/stubs-layout-cache/_includes/*.js
+apps/android/app/release

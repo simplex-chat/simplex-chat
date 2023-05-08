@@ -26,8 +26,12 @@ import Simplex.Chat.Store
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
+import Simplex.FileTransfer.Description (kb, mb)
+import Simplex.FileTransfer.Server (runXFTPServerBlocking)
+import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
@@ -49,23 +53,32 @@ serverPort = "7001"
 testOpts :: ChatOpts
 testOpts =
   ChatOpts
-    { dbFilePrefix = undefined,
-      dbKey = "",
-      -- dbKey = "this is a pass-phrase to encrypt the database",
-      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
-      networkConfig = defaultNetworkConfig,
-      logLevel = CLLImportant,
-      logConnections = False,
-      logServerHosts = False,
-      logAgent = False,
-      tbqSize = 64,
+    { coreOptions =
+        CoreChatOpts
+          { dbFilePrefix = undefined,
+            dbKey = "",
+            -- dbKey = "this is a pass-phrase to encrypt the database",
+            smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
+            xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
+            networkConfig = defaultNetworkConfig,
+            logLevel = CLLImportant,
+            logConnections = False,
+            logServerHosts = False,
+            logAgent = Nothing,
+            logFile = Nothing,
+            tbqSize = 16
+          },
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       allowInstantFiles = True,
+      muteNotifications = True,
       maintenance = False
     }
+
+getTestOpts :: Bool -> String -> ChatOpts
+getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = (coreOptions testOpts) {dbKey}}
 
 termSettings :: VirtualTerminalSettings
 termSettings =
@@ -85,16 +98,22 @@ data TestCC = TestCC
   }
 
 aCfg :: AgentConfig
-aCfg = agentConfig defaultChatConfig
+aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 
 testAgentCfg :: AgentConfig
-testAgentCfg = aCfg {reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}}
+testAgentCfg =
+  aCfg
+    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
+      xftpNotifyErrsOnRetry = False
+    }
 
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
-      testView = True
+      testView = True,
+      tbqSize = 16,
+      xftpFileConfig = Nothing
     }
 
 testAgentCfgV1 :: AgentConfig
@@ -109,14 +128,14 @@ testCfgV1 :: ChatConfig
 testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat tmp cfg opts@ChatOpts {dbKey} dbPrefix profile = do
-  db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False
+createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC
-startTestChat tmp cfg opts@ChatOpts {dbKey} dbPrefix = do
-  db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False
+startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix = do
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
   Just user <- find activeUser <$> withTransaction chatStore getUsers
   startTestChat_ db cfg opts user
 
@@ -296,6 +315,45 @@ serverCfg =
 
 withSmpServer :: IO () -> IO ()
 withSmpServer = serverBracket (`runSMPServerBlocking` serverCfg)
+
+xftpTestPort :: ServiceName
+xftpTestPort = "7002"
+
+xftpServerFiles :: FilePath
+xftpServerFiles = "tests/tmp/xftp-server-files"
+
+xftpServerConfig :: XFTPServerConfig
+xftpServerConfig =
+  XFTPServerConfig
+    { xftpPort = xftpTestPort,
+      fileIdSize = 16,
+      storeLogFile = Just "tests/tmp/xftp-server-store.log",
+      filesPath = xftpServerFiles,
+      fileSizeQuota = Nothing,
+      allowedChunkSizes = [kb 128, kb 256, mb 1, mb 4],
+      allowNewFiles = True,
+      newFileBasicAuth = Nothing,
+      fileExpiration = Just defaultFileExpiration,
+      caCertificateFile = "tests/fixtures/tls/ca.crt",
+      privateKeyFile = "tests/fixtures/tls/server.key",
+      certificateFile = "tests/fixtures/tls/server.crt",
+      logStatsInterval = Nothing,
+      logStatsStartTime = 0,
+      serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
+      serverStatsBackupFile = Nothing,
+      logTLSErrors = True
+    }
+
+withXFTPServer :: IO () -> IO ()
+withXFTPServer = withXFTPServer' xftpServerConfig
+
+withXFTPServer' :: XFTPServerConfig -> IO () -> IO ()
+withXFTPServer' cfg =
+  serverBracket
+    ( \started -> do
+        createDirectoryIfMissing False xftpServerFiles
+        runXFTPServerBlocking started cfg
+    )
 
 serverBracket :: (TMVar Bool -> IO ()) -> IO () -> IO ()
 serverBracket server f = do

@@ -13,8 +13,10 @@
 
 module Simplex.Chat.Messages where
 
+import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Encoding as JE
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -27,7 +29,11 @@ import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Database.SQLite.Simple.FromField (FromField (..))
+import Data.Word (Word32)
+import Database.SQLite.Simple (ResultError (..), SQLData (..))
+import Database.SQLite.Simple.FromField (Field, FromField (..), returnError)
+import Database.SQLite.Simple.Internal (Field (..))
+import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
@@ -37,7 +43,7 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgErrorType (..), MsgMeta 
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, tshow, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord, Generic)
@@ -177,6 +183,9 @@ instance ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
 
+cchatItemId :: CChatItem c -> ChatItemId
+cchatItemId (CChatItem _ ci) = chatItemId' ci
+
 chatItemId' :: ChatItem c d -> ChatItemId
 chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
 
@@ -293,6 +302,9 @@ aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
 aChatItemId :: AChatItem -> Int64
 aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
 
+aChatItemTs :: AChatItem -> UTCTime
+aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
+
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
   Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}
@@ -408,7 +420,8 @@ data CIFile (d :: MsgDirection) = CIFile
     fileName :: String,
     fileSize :: Integer,
     filePath :: Maybe FilePath, -- local file path
-    fileStatus :: CIFileStatus d
+    fileStatus :: CIFileStatus d,
+    fileProtocol :: FileProtocol
   }
   deriving (Show, Generic)
 
@@ -416,16 +429,38 @@ instance MsgDirectionI d => ToJSON (CIFile d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data FileProtocol = FPSMP | FPXFTP
+  deriving (Eq, Show, Ord)
+
+instance FromField FileProtocol where fromField = fromTextField_ textDecode
+
+instance ToField FileProtocol where toField = toField . textEncode
+
+instance ToJSON FileProtocol where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance TextEncoding FileProtocol where
+  textDecode = \case
+    "smp" -> Just FPSMP
+    "xftp" -> Just FPXFTP
+    _ -> Nothing
+  textEncode = \case
+    FPSMP -> "smp"
+    FPXFTP -> "xftp"
+
 data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
-  CIFSSndTransfer :: CIFileStatus 'MDSnd
+  CIFSSndTransfer :: {sndProgress :: Int64, sndTotal :: Int64} -> CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
   CIFSSndComplete :: CIFileStatus 'MDSnd
+  CIFSSndError :: CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
   CIFSRcvAccepted :: CIFileStatus 'MDRcv
-  CIFSRcvTransfer :: CIFileStatus 'MDRcv
+  CIFSRcvTransfer :: {rcvProgress :: Int64, rcvTotal :: Int64} -> CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
+  CIFSRcvError :: CIFileStatus 'MDRcv
 
 deriving instance Eq (CIFileStatus d)
 
@@ -434,18 +469,20 @@ deriving instance Show (CIFileStatus d)
 ciFileEnded :: CIFileStatus d -> Bool
 ciFileEnded = \case
   CIFSSndStored -> False
-  CIFSSndTransfer -> False
+  CIFSSndTransfer {} -> False
   CIFSSndCancelled -> True
   CIFSSndComplete -> True
+  CIFSSndError -> True
   CIFSRcvInvitation -> False
   CIFSRcvAccepted -> False
-  CIFSRcvTransfer -> False
+  CIFSRcvTransfer {} -> False
   CIFSRcvCancelled -> True
   CIFSRcvComplete -> True
+  CIFSRcvError -> True
 
-instance MsgDirectionI d => ToJSON (CIFileStatus d) where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+instance ToJSON (CIFileStatus d) where
+  toJSON = J.toJSON . jsonCIFileStatus
+  toEncoding = J.toEncoding . jsonCIFileStatus
 
 instance MsgDirectionI d => ToField (CIFileStatus d) where toField = toField . decodeLatin1 . strEncode
 
@@ -458,14 +495,16 @@ deriving instance Show ACIFileStatus
 instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
   strEncode = \case
     CIFSSndStored -> "snd_stored"
-    CIFSSndTransfer -> "snd_transfer"
+    CIFSSndTransfer sent total -> strEncode (Str "snd_transfer", sent, total)
     CIFSSndCancelled -> "snd_cancelled"
     CIFSSndComplete -> "snd_complete"
+    CIFSSndError -> "snd_error"
     CIFSRcvInvitation -> "rcv_invitation"
     CIFSRcvAccepted -> "rcv_accepted"
-    CIFSRcvTransfer -> "rcv_transfer"
+    CIFSRcvTransfer rcvd total -> strEncode (Str "rcv_transfer", rcvd, total)
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
+    CIFSRcvError -> "rcv_error"
   strP = (\(AFS _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIFileStatus where
@@ -473,15 +512,67 @@ instance StrEncoding ACIFileStatus where
   strP =
     A.takeTill (== ' ') >>= \case
       "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
-      "snd_transfer" -> pure $ AFS SMDSnd CIFSSndTransfer
+      "snd_transfer" -> AFS SMDSnd <$> progress CIFSSndTransfer
       "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
       "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
+      "snd_error" -> pure $ AFS SMDSnd CIFSSndError
       "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
       "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
-      "rcv_transfer" -> pure $ AFS SMDRcv CIFSRcvTransfer
+      "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
       "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
+      "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
       _ -> fail "bad file status"
+    where
+      progress :: (Int64 -> Int64 -> a) -> A.Parser a
+      progress f = f <$> num <*> num <|> pure (f 0 1)
+      num = A.space *> A.decimal
+
+data JSONCIFileStatus
+  = JCIFSSndStored
+  | JCIFSSndTransfer {sndProgress :: Int64, sndTotal :: Int64}
+  | JCIFSSndCancelled
+  | JCIFSSndComplete
+  | JCIFSSndError
+  | JCIFSRcvInvitation
+  | JCIFSRcvAccepted
+  | JCIFSRcvTransfer {rcvProgress :: Int64, rcvTotal :: Int64}
+  | JCIFSRcvComplete
+  | JCIFSRcvCancelled
+  | JCIFSRcvError
+  deriving (Generic)
+
+instance ToJSON JSONCIFileStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIFS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIFS"
+
+jsonCIFileStatus :: CIFileStatus d -> JSONCIFileStatus
+jsonCIFileStatus = \case
+  CIFSSndStored -> JCIFSSndStored
+  CIFSSndTransfer sent total -> JCIFSSndTransfer sent total
+  CIFSSndCancelled -> JCIFSSndCancelled
+  CIFSSndComplete -> JCIFSSndComplete
+  CIFSSndError -> JCIFSSndError
+  CIFSRcvInvitation -> JCIFSRcvInvitation
+  CIFSRcvAccepted -> JCIFSRcvAccepted
+  CIFSRcvTransfer rcvd total -> JCIFSRcvTransfer rcvd total
+  CIFSRcvComplete -> JCIFSRcvComplete
+  CIFSRcvCancelled -> JCIFSRcvCancelled
+  CIFSRcvError -> JCIFSRcvError
+
+aciFileStatusJSON :: JSONCIFileStatus -> ACIFileStatus
+aciFileStatusJSON = \case
+  JCIFSSndStored -> AFS SMDSnd CIFSSndStored
+  JCIFSSndTransfer sent total -> AFS SMDSnd $ CIFSSndTransfer sent total
+  JCIFSSndCancelled -> AFS SMDSnd CIFSSndCancelled
+  JCIFSSndComplete -> AFS SMDSnd CIFSSndComplete
+  JCIFSSndError -> AFS SMDSnd CIFSSndError
+  JCIFSRcvInvitation -> AFS SMDRcv CIFSRcvInvitation
+  JCIFSRcvAccepted -> AFS SMDRcv CIFSRcvAccepted
+  JCIFSRcvTransfer rcvd total -> AFS SMDRcv $ CIFSRcvTransfer rcvd total
+  JCIFSRcvComplete -> AFS SMDRcv CIFSRcvComplete
+  JCIFSRcvCancelled -> AFS SMDRcv CIFSRcvCancelled
+  JCIFSRcvError -> AFS SMDRcv CIFSRcvError
 
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo
@@ -535,7 +626,7 @@ instance StrEncoding ACIStatus where
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-      "snd_error " -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> A.takeByteString
+      "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
       "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
       _ -> fail "bad status"
@@ -641,6 +732,7 @@ data CIContent (d :: MsgDirection) where
   CISndCall :: CICallStatus -> Int -> CIContent 'MDSnd
   CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
   CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
+  CIRcvDecryptionError :: MsgDecryptError -> Word32 -> CIContent 'MDRcv
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
@@ -657,11 +749,22 @@ data CIContent (d :: MsgDirection) where
   CIRcvGroupFeatureRejected :: GroupFeature -> CIContent 'MDRcv
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
+  CIInvalidJSON :: Text -> CIContent d
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 
 deriving instance Show (CIContent d)
+
+data MsgDecryptError = MDERatchetHeader | MDETooManySkipped
+  deriving (Eq, Show, Generic)
+
+instance ToJSON MsgDecryptError where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MDE"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MDE"
+
+instance FromJSON MsgDecryptError where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MDE"
 
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
@@ -671,6 +774,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvDeleted _ -> True
     CIRcvCall {} -> True
     CIRcvIntegrityError _ -> True
+    CIRcvDecryptionError {} -> True
     CIRcvGroupInvitation {} -> True
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
@@ -690,6 +794,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvChatFeatureRejected _ -> True
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
+    CIInvalidJSON _ -> False
 
 ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
@@ -835,6 +940,7 @@ ciContentToText = \case
   CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
   CIRcvIntegrityError err -> msgIntegrityError err
+  CIRcvDecryptionError err n -> msgDecryptErrorText err n
   CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
   CIRcvGroupEvent event -> rcvGroupEventToText event
@@ -851,15 +957,24 @@ ciContentToText = \case
   CIRcvGroupFeatureRejected feature -> groupFeatureNameText feature <> ": received, prohibited"
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
+  CIInvalidJSON _ -> "invalid content JSON"
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
-  MsgSkipped fromId toId
-    | fromId == toId -> "1 skipped message"
-    | otherwise -> T.pack (show $ toId - fromId + 1) <> " skipped messages"
-  MsgBadId msgId -> "unexpected message ID " <> T.pack (show msgId)
+  MsgSkipped fromId toId ->
+    "skipped message ID " <> tshow fromId
+      <> if fromId == toId then "" else ".." <> tshow toId
+  MsgBadId msgId -> "unexpected message ID " <> tshow msgId
   MsgBadHash -> "incorrect message hash"
   MsgDuplicate -> "duplicate message ID"
+
+msgDecryptErrorText :: MsgDecryptError -> Word32 -> Text
+msgDecryptErrorText err n =
+  "decryption error, possibly due to the device change (" <> errName <> if n == 1 then ")" else ", " <> tshow n <> " messages)"
+  where
+    errName = case err of
+      MDERatchetHeader -> "header"
+      MDETooManySkipped -> "too many skipped messages"
 
 msgDirToModeratedContent_ :: SMsgDirection d -> CIContent d
 msgDirToModeratedContent_ = \case
@@ -870,11 +985,11 @@ ciModeratedText :: Text
 ciModeratedText = "moderated"
 
 -- platform independent
-instance ToField (CIContent d) where
+instance MsgDirectionI d => ToField (CIContent d) where
   toField = toField . encodeJSON . dbJsonCIContent
 
 -- platform specific
-instance ToJSON (CIContent d) where
+instance MsgDirectionI d => ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
 
@@ -882,12 +997,13 @@ data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIC
 
 deriving instance Show ACIContent
 
+-- platform independent
+dbParseACIContent :: Text -> Either String ACIContent
+dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
+
 -- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
-
--- platform independent
-instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . decodeJSON
 
 -- platform specific
 data JSONCIContent
@@ -898,6 +1014,7 @@ data JSONCIContent
   | JCISndCall {status :: CICallStatus, duration :: Int} -- duration in seconds
   | JCIRcvCall {status :: CICallStatus, duration :: Int}
   | JCIRcvIntegrityError {msgError :: MsgErrorType}
+  | JCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
   | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCIRcvGroupEvent {rcvGroupEvent :: RcvGroupEvent}
@@ -914,6 +1031,7 @@ data JSONCIContent
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | JCISndModerated
   | JCIRcvModerated
+  | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -923,7 +1041,7 @@ instance ToJSON JSONCIContent where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
-jsonCIContent :: CIContent d -> JSONCIContent
+jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
 jsonCIContent = \case
   CISndMsgContent mc -> JCISndMsgContent mc
   CIRcvMsgContent mc -> JCIRcvMsgContent mc
@@ -932,6 +1050,7 @@ jsonCIContent = \case
   CISndCall status duration -> JCISndCall {status, duration}
   CIRcvCall status duration -> JCIRcvCall {status, duration}
   CIRcvIntegrityError err -> JCIRcvIntegrityError err
+  CIRcvDecryptionError err n -> JCIRcvDecryptionError err n
   CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rcvGroupEvent -> JCIRcvGroupEvent {rcvGroupEvent}
@@ -948,6 +1067,7 @@ jsonCIContent = \case
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCISndModerated
+  CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -958,6 +1078,7 @@ aciContentJSON = \case
   JCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   JCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
+  JCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
   JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   JCIRcvGroupEvent {rcvGroupEvent} -> ACIContent SMDRcv $ CIRcvGroupEvent rcvGroupEvent
@@ -974,6 +1095,8 @@ aciContentJSON = \case
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  JCIInvalidJSON dir json -> case fromMsgDirection dir of
+    AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
 -- platform independent
 data DBJSONCIContent
@@ -984,6 +1107,7 @@ data DBJSONCIContent
   | DBJCISndCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
+  | DBJCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
@@ -1000,6 +1124,7 @@ data DBJSONCIContent
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | DBJCISndModerated
   | DBJCIRcvModerated
+  | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -1009,7 +1134,7 @@ instance ToJSON DBJSONCIContent where
   toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "DBJCI"
   toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "DBJCI"
 
-dbJsonCIContent :: CIContent d -> DBJSONCIContent
+dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
 dbJsonCIContent = \case
   CISndMsgContent mc -> DBJCISndMsgContent mc
   CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
@@ -1018,6 +1143,7 @@ dbJsonCIContent = \case
   CISndCall status duration -> DBJCISndCall {status, duration}
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
   CIRcvIntegrityError err -> DBJCIRcvIntegrityError $ DBME err
+  CIRcvDecryptionError err n -> DBJCIRcvDecryptionError err n
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
@@ -1034,6 +1160,7 @@ dbJsonCIContent = \case
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
+  CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -1044,6 +1171,7 @@ aciContentDBJSON = \case
   DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   DBJCIRcvIntegrityError (DBME err) -> ACIContent SMDRcv $ CIRcvIntegrityError err
+  DBJCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
@@ -1060,6 +1188,8 @@ aciContentDBJSON = \case
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
+    AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
 data CICallStatus
   = CISCallPending
@@ -1152,7 +1282,17 @@ instance ToJSON MsgDirection where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "MD"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MD"
 
+instance FromField AMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
+
 instance ToField MsgDirection where toField = toField . msgDirectionInt
+
+fromIntField_ :: (Typeable a) => (Int64 -> Maybe a) -> Field -> Ok a
+fromIntField_ fromInt = \case
+  f@(Field (SQLInteger i) _) ->
+    case fromInt i of
+      Just x -> Ok x
+      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
+  f -> returnError ConversionFailed f "expecting SQLInteger column type"
 
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv

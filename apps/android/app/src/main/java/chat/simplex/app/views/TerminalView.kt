@@ -83,6 +83,8 @@ fun TerminalLayout(
             liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
             needToAllowVoiceToContact = false,
             allowedVoiceByPrefs = false,
+            userIsObserver = false,
+            userCanSend = true,
             allowVoiceToContact = {},
             sendMessage = sendCommand,
             sendLiveMessage = null,
@@ -97,8 +99,8 @@ fun TerminalLayout(
       Surface(
         modifier = Modifier
           .padding(contentPadding)
-          .fillMaxWidth()
-          .background(MaterialTheme.colors.background)
+          .fillMaxWidth(),
+        color = MaterialTheme.colors.background
       ) {
         TerminalLog(terminalItems)
       }

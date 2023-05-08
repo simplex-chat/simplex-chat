@@ -26,7 +26,7 @@ module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.Types as JT
@@ -48,10 +48,11 @@ import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import GHC.Records.Compat
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
+import Simplex.FileTransfer.Description (FileDigest)
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (SMPServerWithAuth)
+import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 
 class IsContact a where
@@ -109,11 +110,38 @@ data User = User
     localDisplayName :: ContactName,
     profile :: LocalProfile,
     fullPreferences :: FullPreferences,
-    activeUser :: Bool
+    activeUser :: Bool,
+    viewPwdHash :: Maybe UserPwdHash,
+    showNtfs :: Bool
   }
   deriving (Show, Generic, FromJSON)
 
-instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON User where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+
+newtype B64UrlByteString = B64UrlByteString ByteString
+  deriving (Eq, Show)
+
+instance FromField B64UrlByteString where fromField f = B64UrlByteString <$> fromField f
+
+instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField m
+
+instance StrEncoding B64UrlByteString where
+  strEncode (B64UrlByteString m) = strEncode m
+  strP = B64UrlByteString <$> strP
+
+instance FromJSON B64UrlByteString where
+  parseJSON = strParseJSON "B64UrlByteString"
+
+instance ToJSON B64UrlByteString where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+data UserPwdHash = UserPwdHash {hash :: B64UrlByteString, salt :: B64UrlByteString}
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON UserPwdHash where toEncoding = J.genericToEncoding J.defaultOptions
 
 data UserInfo = UserInfo
   { user :: User,
@@ -124,8 +152,6 @@ data UserInfo = UserInfo
 instance ToJSON UserInfo where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
-
-type UserId = Int64
 
 type ContactId = Int64
 
@@ -160,9 +186,12 @@ contactConnId = aConnId . contactConn
 contactConnIncognito :: Contact -> Bool
 contactConnIncognito = connIncognito . contactConn
 
+contactDirect :: Contact -> Bool
+contactDirect Contact {activeConn = Connection {connLevel, viaGroupLink}} = connLevel == 0 && not viaGroupLink
+
 directOrUsed :: Contact -> Bool
-directOrUsed Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
-  (connLevel == 0 && not viaGroupLink) || contactUsed
+directOrUsed ct@Contact {contactUsed} =
+  contactDirect ct || contactUsed
 
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
@@ -288,6 +317,13 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
+data ContactOrGroup = CGContact Contact | CGGroup Group
+
+contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
+contactAndGroupIds = \case
+  CGContact Contact {contactId} -> (Just contactId, Nothing)
+  CGGroup (Group GroupInfo {groupId} _) -> (Nothing, Just groupId)
+
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
   { enableNtfs :: Bool
@@ -307,12 +343,14 @@ data ChatFeature
   | CFFullDelete
   | -- | CFReceipts
     CFVoice
+  | CFCalls
   deriving (Show, Generic)
 
 data SChatFeature (f :: ChatFeature) where
   SCFTimedMessages :: SChatFeature 'CFTimedMessages
   SCFFullDelete :: SChatFeature 'CFFullDelete
   SCFVoice :: SChatFeature 'CFVoice
+  SCFCalls :: SChatFeature 'CFCalls
 
 deriving instance Show (SChatFeature f)
 
@@ -325,6 +363,7 @@ chatFeatureNameText = \case
   CFTimedMessages -> "Disappearing messages"
   CFFullDelete -> "Full deletion"
   CFVoice -> "Voice messages"
+  CFCalls -> "Audio/video calls"
 
 chatFeatureNameText' :: SChatFeature f -> Text
 chatFeatureNameText' = chatFeatureNameText . chatFeature
@@ -346,7 +385,8 @@ allChatFeatures =
   [ ACF SCFTimedMessages,
     ACF SCFFullDelete,
     -- CFReceipts,
-    ACF SCFVoice
+    ACF SCFVoice,
+    ACF SCFCalls
   ]
 
 chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
@@ -355,12 +395,14 @@ chatPrefSel = \case
   SCFFullDelete -> fullDelete
   -- CFReceipts -> receipts
   SCFVoice -> voice
+  SCFCalls -> calls
 
 chatFeature :: SChatFeature f -> ChatFeature
 chatFeature = \case
   SCFTimedMessages -> CFTimedMessages
   SCFFullDelete -> CFFullDelete
   SCFVoice -> CFVoice
+  SCFCalls -> CFCalls
 
 class PreferenceI p where
   getPreference :: SChatFeature f -> p -> FeaturePreference f
@@ -377,6 +419,7 @@ instance PreferenceI FullPreferences where
     SCFFullDelete -> fullDelete
     -- CFReceipts -> receipts
     SCFVoice -> voice
+    SCFCalls -> calls
   {-# INLINE getPreference #-}
 
 setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
@@ -396,13 +439,15 @@ setPreference_ f pref_ prefs =
     SCFTimedMessages -> prefs {timedMessages = pref_}
     SCFFullDelete -> prefs {fullDelete = pref_}
     SCFVoice -> prefs {voice = pref_}
+    SCFCalls -> prefs {calls = pref_}
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
   { timedMessages :: Maybe TimedMessagesPreference,
     fullDelete :: Maybe FullDeletePreference,
     -- receipts :: Maybe SimplePreference,
-    voice :: Maybe VoicePreference
+    voice :: Maybe VoicePreference,
+    calls :: Maybe CallsPreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -555,7 +600,8 @@ data FullPreferences = FullPreferences
   { timedMessages :: TimedMessagesPreference,
     fullDelete :: FullDeletePreference,
     -- receipts :: SimplePreference,
-    voice :: VoicePreference
+    voice :: VoicePreference,
+    calls :: CallsPreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -579,7 +625,8 @@ data ContactUserPreferences = ContactUserPreferences
   { timedMessages :: ContactUserPreference TimedMessagesPreference,
     fullDelete :: ContactUserPreference FullDeletePreference,
     -- receipts :: ContactUserPreference,
-    voice :: ContactUserPreference VoicePreference
+    voice :: ContactUserPreference VoicePreference,
+    calls :: ContactUserPreference CallsPreference
   }
   deriving (Eq, Show, Generic)
 
@@ -602,25 +649,27 @@ instance ToJSON p => ToJSON (ContactUserPref p) where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CUP"
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {fullDelete, voice, timedMessages} =
+toChatPrefs FullPreferences {fullDelete, voice, timedMessages, calls} =
   Preferences
     { timedMessages = Just timedMessages,
       fullDelete = Just fullDelete,
       -- receipts = Just receipts,
-      voice = Just voice
+      voice = Just voice,
+      calls = Just calls
     }
 
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = Nothing},
+    { timedMessages = TimedMessagesPreference {allow = FAYes, ttl = Nothing},
       fullDelete = FullDeletePreference {allow = FANo},
       -- receipts = SimplePreference {allow = FANo},
-      voice = VoicePreference {allow = FAYes}
+      voice = VoicePreference {allow = FAYes},
+      calls = CallsPreference {allow = FAYes}
     }
 
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing Nothing
+emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing
 
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
@@ -655,6 +704,11 @@ data VoicePreference = VoicePreference {allow :: FeatureAllowed}
 
 instance ToJSON VoicePreference where toEncoding = J.genericToEncoding J.defaultOptions
 
+data CallsPreference = CallsPreference {allow :: FeatureAllowed}
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON CallsPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
 class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
   type FeaturePreference (f :: ChatFeature) = p | p -> f
   sFeature :: SChatFeature f
@@ -669,6 +723,9 @@ instance HasField "allow" FullDeletePreference FeatureAllowed where
 instance HasField "allow" VoicePreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: VoicePreference))
 
+instance HasField "allow" CallsPreference FeatureAllowed where
+  hasField p = (\allow -> p {allow}, allow (p :: CallsPreference))
+
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
   sFeature = SCFTimedMessages
@@ -682,6 +739,11 @@ instance FeatureI 'CFFullDelete where
 instance FeatureI 'CFVoice where
   type FeaturePreference 'CFVoice = VoicePreference
   sFeature = SCFVoice
+  prefParam _ = Nothing
+
+instance FeatureI 'CFCalls where
+  type FeaturePreference 'CFCalls = CallsPreference
+  sFeature = SCFCalls
   prefParam _ = Nothing
 
 data GroupPreference = GroupPreference
@@ -861,7 +923,8 @@ mergePreferences contactPrefs userPreferences =
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
       -- receipts = pref CFReceipts,
-      voice = pref SCFVoice
+      voice = pref SCFVoice,
+      calls = pref SCFCalls
     }
   where
     pref :: SChatFeature f -> FeaturePreference f
@@ -925,7 +988,7 @@ prefStateText feature allowed param = case allowed of
 
 featureStateText :: ChatFeature -> PrefEnabled -> Maybe Int -> Text
 featureStateText feature enabled param =
-  chatFeatureNameText feature <> ": " <> prefEnabledToText enabled <> case enabled of
+  chatFeatureNameText feature <> ": " <> prefEnabledToText feature enabled param <> case enabled of
     PrefEnabled {forUser = True} -> paramText_ feature param
     _ -> ""
 
@@ -934,12 +997,16 @@ paramText_ feature param = case feature of
   CFTimedMessages -> maybe "" (\p -> " (" <> timedTTLText p <> ")") param
   _ -> ""
 
-prefEnabledToText :: PrefEnabled -> Text
-prefEnabledToText = \case
-  PrefEnabled True True -> "enabled"
+prefEnabledToText :: ChatFeature -> PrefEnabled -> Maybe Int -> Text
+prefEnabledToText f enabled param = case enabled of
+  PrefEnabled True True -> enabledStr
   PrefEnabled False False -> "off"
-  PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
-  PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
+  PrefEnabled {forUser = True, forContact = False} -> enabledStr <> " for you"
+  PrefEnabled {forUser = False, forContact = True} -> enabledStr <> " for contact"
+  where
+    enabledStr = case f of
+      CFTimedMessages -> if isJust param then "enabled" else "allowed"
+      _ -> "enabled"
 
 preferenceText :: forall f. FeatureI f => FeaturePreference f -> Text
 preferenceText p =
@@ -970,7 +1037,8 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
       -- receipts = pref CFReceipts,
-      voice = pref SCFVoice
+      voice = pref SCFVoice,
+      calls = pref SCFCalls
     }
   where
     pref :: FeatureI f => SChatFeature f -> ContactUserPreference (FeaturePreference f)
@@ -997,11 +1065,13 @@ getContactUserPreference = \case
   SCFFullDelete -> fullDelete
   -- CFReceipts -> receipts
   SCFVoice -> voice
+  SCFCalls -> calls
 
 data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
+    contactLink :: Maybe ConnReqContact,
     preferences :: Maybe Preferences
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
@@ -1030,6 +1100,7 @@ data LocalProfile = LocalProfile
     displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
+    contactLink :: Maybe ConnReqContact,
     preferences :: Maybe Preferences,
     localAlias :: LocalAlias
   }
@@ -1043,12 +1114,12 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, image, preferences} localAlias =
-  LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, image, contactLink, preferences} localAlias =
+  LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, image, preferences} =
-  Profile {displayName, fullName, image, preferences}
+fromLocalProfile LocalProfile {displayName, fullName, image, contactLink, preferences} =
+  Profile {displayName, fullName, image, contactLink, preferences}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
@@ -1455,7 +1526,9 @@ data SndFileTransfer = SndFileTransfer
     recipientDisplayName :: ContactName,
     connId :: Int64,
     agentConnId :: AgentConnId,
+    groupMemberId :: Maybe Int64,
     fileStatus :: FileStatus,
+    fileDescrId :: Maybe Int64,
     fileInline :: Maybe InlineFileMode
   }
   deriving (Eq, Show, Generic)
@@ -1470,8 +1543,10 @@ type FileTransferId = Int64
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
+    fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
-    fileInline :: Maybe InlineFileMode
+    fileInline :: Maybe InlineFileMode,
+    fileDescr :: Maybe FileDescr
   }
   deriving (Eq, Show, Generic)
 
@@ -1481,6 +1556,27 @@ instance ToJSON FileInvitation where
 
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data FileDescr = FileDescr {fileDescrText :: Text, fileDescrPartNo :: Int, fileDescrComplete :: Bool}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FileDescr where
+  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions
+
+instance FromJSON FileDescr where
+  parseJSON = J.genericParseJSON J.defaultOptions
+
+xftpFileInvitation :: FilePath -> Integer -> FileDescr -> FileInvitation
+xftpFileInvitation fileName fileSize fileDescr =
+  FileInvitation
+    { fileName,
+      fileSize,
+      fileDigest = Nothing,
+      fileConnReq = Nothing,
+      fileInline = Nothing,
+      fileDescr = Just fileDescr
+    }
 
 data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted
@@ -1509,6 +1605,7 @@ instance ToJSON InlineFileMode where
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
+    xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
     rcvFileInline :: Maybe InlineFileMode,
@@ -1520,6 +1617,25 @@ data RcvFileTransfer = RcvFileTransfer
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
+
+data XFTPRcvFile = XFTPRcvFile
+  { rcvFileDescription :: RcvFileDescr,
+    agentRcvFileId :: Maybe AgentRcvFileId,
+    agentRcvFileDeleted :: Bool
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON XFTPRcvFile where toEncoding = J.genericToEncoding J.defaultOptions
+
+data RcvFileDescr = RcvFileDescr
+  { fileDescrId :: Int64,
+    fileDescrText :: Text,
+    fileDescrPartNo :: Int,
+    fileDescrComplete :: Bool
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON RcvFileDescr where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RcvFileStatus
   = RFSNew
@@ -1533,6 +1649,14 @@ instance ToJSON RcvFileStatus where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RFS"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RFS"
 
+rcvFileComplete :: RcvFileStatus -> Bool
+rcvFileComplete = \case
+  RFSComplete _ -> True
+  _ -> False
+
+rcvFileCompleteOrCancelled :: RcvFileTransfer -> Bool
+rcvFileCompleteOrCancelled RcvFileTransfer {fileStatus, cancelled} = rcvFileComplete fileStatus || cancelled
+
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
     connId :: Maybe Int64,
@@ -1542,14 +1666,22 @@ data RcvFileInfo = RcvFileInfo
 
 instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
-liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
-liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
-  RFSAccepted fi -> acId fi
-  RFSConnected fi -> acId fi
+liveRcvFileTransferInfo :: RcvFileTransfer -> Maybe RcvFileInfo
+liveRcvFileTransferInfo RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted fi -> Just fi
+  RFSConnected fi -> Just fi
   _ -> Nothing
+
+liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
+liveRcvFileTransferConnId ft = acId =<< liveRcvFileTransferInfo ft
   where
     acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
     acId _ = Nothing
+
+liveRcvFileTransferPath :: RcvFileTransfer -> Maybe FilePath
+liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
+  where
+    fp RcvFileInfo {filePath} = filePath
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
@@ -1566,6 +1698,38 @@ instance ToJSON AgentConnId where
 instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
 
 instance ToField AgentConnId where toField (AgentConnId m) = toField m
+
+newtype AgentSndFileId = AgentSndFileId ConnId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentSndFileId where
+  strEncode (AgentSndFileId connId) = strEncode connId
+  strDecode s = AgentSndFileId <$> strDecode s
+  strP = AgentSndFileId <$> strP
+
+instance ToJSON AgentSndFileId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromField f
+
+instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
+
+newtype AgentRcvFileId = AgentRcvFileId ConnId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentRcvFileId where
+  strEncode (AgentRcvFileId connId) = strEncode connId
+  strDecode s = AgentRcvFileId <$> strDecode s
+  strP = AgentRcvFileId <$> strP
+
+instance ToJSON AgentRcvFileId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentRcvFileId where fromField f = AgentRcvFileId <$> fromField f
+
+instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField m
 
 newtype AgentInvId = AgentInvId InvitationId
   deriving (Eq, Show)
@@ -1597,6 +1761,7 @@ instance ToJSON FileTransfer where
 
 data FileTransferMeta = FileTransferMeta
   { fileId :: FileTransferId,
+    xftpSndFile :: Maybe XFTPSndFile,
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,
@@ -1608,10 +1773,20 @@ data FileTransferMeta = FileTransferMeta
 
 instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaultOptions
 
+data XFTPSndFile = XFTPSndFile
+  { agentSndFileId :: AgentSndFileId,
+    privateSndFileDescr :: Maybe Text,
+    agentSndFileDeleted :: Bool
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON XFTPSndFile where toEncoding = J.genericToEncoding J.defaultOptions
+
 fileTransferCancelled :: FileTransfer -> Bool
 fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
 fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
 
+-- For XFTP file transfers FSConnected means "uploaded to XFTP relays"
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ textDecode
@@ -1912,17 +2087,19 @@ instance TextEncoding CommandFunction where
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
-commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
+commandExpectedResponse :: CommandFunction -> APartyCmdTag 'Agent
 commandExpectedResponse = \case
-  CFCreateConnGrpMemInv -> INV_
-  CFCreateConnGrpInv -> INV_
-  CFCreateConnFileInvDirect -> INV_
-  CFCreateConnFileInvGroup -> INV_
-  CFJoinConn -> OK_
-  CFAllowConn -> OK_
-  CFAcceptContact -> OK_
-  CFAckMessage -> OK_
-  CFDeleteConn -> OK_
+  CFCreateConnGrpMemInv -> t INV_
+  CFCreateConnGrpInv -> t INV_
+  CFCreateConnFileInvDirect -> t INV_
+  CFCreateConnFileInvGroup -> t INV_
+  CFJoinConn -> t OK_
+  CFAllowConn -> t OK_
+  CFAcceptContact -> t OK_
+  CFAckMessage -> t OK_
+  CFDeleteConn -> t OK_
+  where
+    t = APCT SAEConn
 
 data CommandData = CommandData
   { cmdId :: CommandId,
@@ -1947,17 +2124,17 @@ encodeJSON = safeDecodeUtf8 . LB.toStrict . J.encode
 decodeJSON :: FromJSON a => Text -> Maybe a
 decodeJSON = J.decode . LB.fromStrict . encodeUtf8
 
-data ServerCfg = ServerCfg
-  { server :: SMPServerWithAuth,
+data ServerCfg p = ServerCfg
+  { server :: ProtoServerWithAuth p,
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool
   }
   deriving (Show, Generic)
 
-instance ToJSON ServerCfg where
+instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
-instance FromJSON ServerCfg where
+instance ProtocolTypeI p => FromJSON (ServerCfg p) where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}

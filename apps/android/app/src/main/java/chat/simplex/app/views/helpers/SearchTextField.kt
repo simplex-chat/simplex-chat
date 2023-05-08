@@ -8,8 +8,6 @@ import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -17,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -29,15 +29,18 @@ import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun SearchTextField(modifier: Modifier, placeholder: String, onValueChange: (String) -> Unit) {
+fun SearchTextField(modifier: Modifier, placeholder: String, alwaysVisible: Boolean, onValueChange: (String) -> Unit) {
   var searchText by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val focusRequester = remember { FocusRequester() }
+  val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
 
-  LaunchedEffect(Unit) {
-    focusRequester.requestFocus()
-    delay(200)
-    keyboard?.show()
+  if (!alwaysVisible) {
+    LaunchedEffect(Unit) {
+      focusRequester.requestFocus()
+      delay(200)
+      keyboard?.show()
+    }
   }
 
   DisposableEffect(Unit) {
@@ -87,8 +90,15 @@ fun SearchTextField(modifier: Modifier, placeholder: String, onValueChange: (Str
           Text(placeholder)
         },
         trailingIcon = if (searchText.text.isNotEmpty()) {{
-          IconButton({ searchText = TextFieldValue(""); onValueChange("") }) {
-            Icon(Icons.Default.Close, stringResource(R.string.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
+          IconButton({
+            if (alwaysVisible) {
+              keyboard?.hide()
+              focusManager.clearFocus()
+            }
+            searchText = TextFieldValue("");
+            onValueChange("")
+          }) {
+            Icon(painterResource(R.drawable.ic_close), stringResource(R.string.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
           }
         }} else null,
         singleLine = true,

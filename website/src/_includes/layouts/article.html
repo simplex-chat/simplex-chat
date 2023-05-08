@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
+        {% endif %}
+    {% endfor %}>
 
   <head>
     <meta charset="UTF-8" />
@@ -20,6 +25,7 @@
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
     <link href="/css/tailwind.css" rel="stylesheet" />
     <link rel="stylesheet" href="/css/blog.css" />
+    <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
     <link href="/css/style.css" rel="stylesheet" />
     <script async defer src="https://buttons.github.io/buttons.js"></script>
   </head>
@@ -36,6 +42,7 @@
     </section>
 
     {% include "footer.html" %}
+    <script src="/js/prism.min.js"></script>
   </body>
 
 </html>

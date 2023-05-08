@@ -17,13 +17,11 @@ import chat.simplex.app.views.helpers.AppBarTitle
 fun VersionInfoView(info: CoreVersionInfo) {
   Column(
     Modifier.padding(horizontal = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start
   ) {
     AppBarTitle(stringResource(R.string.app_version_title), false)
     Text(String.format(stringResource(R.string.app_version_name), BuildConfig.VERSION_NAME))
     Text(String.format(stringResource(R.string.app_version_code), BuildConfig.VERSION_CODE))
     Text(String.format(stringResource(R.string.core_version), info.version))
-    Text(String.format(stringResource(R.string.core_build_timestamp), info.buildTimestamp))
     val simplexmqCommit = if (info.simplexmqCommit.length >= 7) info.simplexmqCommit.substring(startIndex = 0, endIndex = 7) else info.simplexmqCommit
     Text(String.format(stringResource(R.string.core_simplexmq_version), info.simplexmqVersion, simplexmqCommit))
   }

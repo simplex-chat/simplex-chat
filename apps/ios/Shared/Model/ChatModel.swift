@@ -9,7 +9,6 @@
 import Foundation
 import Combine
 import SwiftUI
-import WebKit
 import SimpleXChat
 
 final class ChatModel: ObservableObject {
@@ -22,6 +21,7 @@ final class ChatModel: ObservableObject {
     @Published var chatDbChanged = false
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
+    @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // map of connections network statuses, key is agent connection id
@@ -34,8 +34,6 @@ final class ChatModel: ObservableObject {
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: UserContactLink?
-    @Published var userSMPServers: [ServerCfg]?
-    @Published var presetSMPServers: [String]?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
     @Published var deviceToken: DeviceToken?
@@ -56,18 +54,42 @@ final class ChatModel: ObservableObject {
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
-    @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
+    @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
-    var callWebView: WKWebView?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
-    var filesToDelete: [String] = []
+    var filesToDelete: Set<URL> = []
 
     static let shared = ChatModel()
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
+
+    func getUser(_ userId: Int64) -> User? {
+        currentUser?.userId == userId
+        ? currentUser
+        : users.first { $0.user.userId == userId }?.user
+    }
+
+    func getUserIndex(_ user: User) -> Int? {
+        users.firstIndex { $0.user.userId == user.userId }
+    }
+
+    func updateUser(_ user: User) {
+        if let i = getUserIndex(user) {
+            users[i].user = user
+        }
+        if currentUser?.userId == user.userId {
+            currentUser = user
+        }
+    }
+
+    func removeUser(_ user: User) {
+        if let i = getUserIndex(user), users[i].user.userId != currentUser?.userId {
+            users.remove(at: i)
+        }
+    }
 
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil
@@ -358,7 +380,7 @@ final class ChatModel: ObservableObject {
             markChatItemsRead(cInfo)
         }
     }
-   
+
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
         _updateChat(cInfo.id) { chat in
             chat.chatStats.unreadChat = unreadChat
@@ -543,6 +565,25 @@ final class Chat: ObservableObject, Identifiable {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
         self.chatStats = chatStats
+    }
+
+    var userCanSend: Bool {
+        switch chatInfo {
+        case .direct: return true
+        case let .group(groupInfo):
+            let m = groupInfo.membership
+            return m.memberActive && m.memberRole >= .member
+        default: return false
+        }
+    }
+
+    var userIsObserver: Bool {
+        switch chatInfo {
+        case let .group(groupInfo):
+            let m = groupInfo.membership
+            return m.memberActive && m.memberRole == .observer
+        default: return false
+        }
     }
 
     var id: ChatId { get { chatInfo.id } }

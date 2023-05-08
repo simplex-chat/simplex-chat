@@ -25,13 +25,13 @@
 
 <section id="simplex-explained" class="bg-primary-bg-light dark:bg-primary-bg-dark lg:h-[890px] py-[90px] px-5">
     <div class="container">
-        <p class="text-[35px] leading-[45px] md:leading-[55px] lg:text-[38px] text-center font-bold text-grey-black dark:text-white mb-9">Simplex explained</p>
+        <p class="text-[35px] leading-[45px] md:leading-[55px] lg:text-[38px] text-center font-bold text-grey-black dark:text-white mb-9">{{ "simplex-explained" | i18n({}, lang ) | safe }}</p>
 
         <!-- Tab links -->
         <div class="tabs hidden md:flex gap-2 mb-24">
-            <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">1. What users experience</div>
-            <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">2. How does it work</div>
-            <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">3. What servers see</div>
+            <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">{{ "simplex-explained-tab-1-text" | i18n({}, lang ) | safe }}</div>
+            <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">{{ "simplex-explained-tab-2-text" | i18n({}, lang ) | safe }}</div>
+            <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">{{ "simplex-explained-tab-3-text" | i18n({}, lang ) | safe }}</div>
         </div>
 
         <!-- Tab content -->
@@ -39,40 +39,40 @@
             <div class="swiper-wrapper h-[inherit] mb-20 md:mb-0">
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">1. What users experience</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{{ "simplex-explained-tab-1-text" | i18n({}, lang ) | safe }}</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-1.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            You can create contacts and groups, and have two-way conversations, as in any other messenger.
+                            {{ "simplex-explained-tab-1-p-1" | i18n({}, lang ) | safe }}
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            How can it work with unidirectional queues and without user profile identifiers?
+                            {{ "simplex-explained-tab-1-p-2" | i18n({}, lang ) | safe }}
                         </p>
                     </div>
                 </div>
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">2. How does it work</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{{ "simplex-explained-tab-2-text" | i18n({}, lang ) | safe }}</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-2.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            For each connection you use two separate messaging queues to send and receive messages via different servers.
+                            {{ "simplex-explained-tab-2-p-1" | i18n({}, lang ) | safe }}
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Servers only pass messages one way, without having the full picture of user's conversation or connections.
+                            {{ "simplex-explained-tab-2-p-2" | i18n({}, lang ) | safe }}
                         </p>
                     </div>
                 </div>
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">3. What servers see</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{{ "simplex-explained-tab-3-text" | i18n({}, lang ) | safe }}</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-3.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            The servers have separate anonymous credentials for each queue, and do not know which users they belong to.
+                            {{ "simplex-explained-tab-3-p-1" | i18n({}, lang ) | safe }}
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Users can further improve metadata privacy by using Tor to access servers, preventing corellation by IP address.
+                            {{ "simplex-explained-tab-3-p-2" | i18n({}, lang ) | safe }}
                         </p>
                     </div>
                 </div>

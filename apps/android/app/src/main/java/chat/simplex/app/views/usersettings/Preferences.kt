@@ -1,8 +1,8 @@
 package chat.simplex.app.views.usersettings
 
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
@@ -11,7 +11,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
@@ -40,7 +39,6 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
       if (preferences == currentPreferences) close()
       else  showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
-    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     PreferencesLayout(
       preferences,
@@ -62,60 +60,63 @@ private fun PreferencesLayout(
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.your_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.allow) }
     TimedMessagesFeatureSection(timedMessages) {
       applyPrefs(preferences.copy(timedMessages = TimedMessagesPreference(allow = if (it) FeatureAllowed.YES else FeatureAllowed.NO)))
     }
-    SectionSpacer()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
     FeatureSection(ChatFeature.FullDelete, allowFullDeletion) {
       applyPrefs(preferences.copy(fullDelete = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced(true, maxBottomPadding = false)
+    val allowCalls = remember(preferences) { mutableStateOf(preferences.calls.allow) }
+    FeatureSection(ChatFeature.Calls, allowCalls) {
+      applyPrefs(preferences.copy(calls = SimpleChatPreference(allow = it)))
+    }
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,
       disabled = preferences == currentPreferences
     )
+    SectionBottomSpacer()
   }
 }
 
 @Composable
 private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
   SectionView {
-    SectionItemView {
-      ExposedDropDownSettingRow(
-        feature.text,
-        FeatureAllowed.values().map { it to it.text },
-        allowFeature,
-        icon = feature.icon,
-        onSelected = onSelected
-      )
-    }
+    ExposedDropDownSettingRow(
+      feature.text,
+      FeatureAllowed.values().map { it to it.text },
+      allowFeature,
+      icon = feature.icon,
+      enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
+      onSelected = onSelected,
+    )
   }
-  SectionTextFooter(feature.allowDescription(allowFeature.value))
+  SectionTextFooter(feature.allowDescription(allowFeature.value) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
 }
 
 @Composable
 private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onSelected: (Boolean) -> Unit) {
   SectionView {
-    SectionItemView {
-      PreferenceToggleWithIcon(
-        ChatFeature.TimedMessages.text,
-        ChatFeature.TimedMessages.icon,
-        HighOrLowlight,
-        allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
-        onSelected
-      )
-    }
+    PreferenceToggleWithIcon(
+      ChatFeature.TimedMessages.text,
+      ChatFeature.TimedMessages.icon,
+      MaterialTheme.colors.secondary,
+      allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
+      extraPadding = false,
+      onSelected
+    )
   }
   SectionTextFooter(ChatFeature.TimedMessages.allowDescription(allowFeature.value))
 }
@@ -124,11 +125,10 @@ private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onS
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
-    SectionDivider()
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }

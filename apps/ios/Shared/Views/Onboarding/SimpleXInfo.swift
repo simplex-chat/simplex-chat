@@ -16,64 +16,72 @@ struct SimpleXInfo: View {
 
     var body: some View {
         GeometryReader { g in
-            VStack(alignment: .leading) {
-                Image(colorScheme == .light ? "logo" : "logo-light")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: g.size.width * 0.7)
+            ScrollView {
+                VStack(alignment: .leading) {
+                    Image(colorScheme == .light ? "logo" : "logo-light")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: g.size.width * 0.67)
+                        .padding(.bottom, 8)
+                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
+
+                    VStack(alignment: .leading) {
+                        Text("The next generation of private messaging")
+                            .font(.title2)
+                            .padding(.bottom, 30)
+                            .padding(.horizontal, 40)
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                        infoRow("privacy", "Privacy redefined",
+                                "The 1st platform without any user identifiers – private by design.", width: 48)
+                        infoRow("shield", "Immune to spam and abuse",
+                                "People can connect to you only via the links you share.", width: 46)
+                        infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
+                                "Open-source protocol and code – anybody can run the servers.", width: 44)
+                    }
+
+                    Spacer()
+                    if onboarding {
+                        OnboardingActionButton()
+                        Spacer()
+                    }
+
+                    Button {
+                        showHowItWorks = true
+                    } label: {
+                        Label("How it works", systemImage: "info.circle")
+                            .font(.subheadline)
+                    }
                     .padding(.bottom, 8)
                     .frame(maxWidth: .infinity)
-
-                VStack(alignment: .leading) {
-                    Text("The next generation of private messaging")
-                        .font(.title)
-                        .padding(.bottom, 24)
-                        .frame(maxWidth: .infinity)
-                        .multilineTextAlignment(.center)
-                    infoRow("privacy", "Privacy redefined",
-                            "The 1st platform without any user identifiers – private by design.")
-                    infoRow("shield", "Immune to spam and abuse",
-                            "People can connect to you only via the links you share.")
-                    infoRow("decentralized", "Decentralized",
-                            "Open-source protocol and code – anybody can run the servers.")
                 }
-
-                Spacer()
-                if onboarding {
-                    OnboardingActionButton()
-                    Spacer()
-                }
-
-                Button {
-                    showHowItWorks = true
-                } label: {
-                    Label("How it works", systemImage: "info.circle")
-                        .font(.subheadline)
-                }
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity)
+                .frame(minHeight: g.size.height)
             }
             .sheet(isPresented: $showHowItWorks) {
                 HowItWorks(onboarding: onboarding)
             }
         }
+        .frame(maxHeight: .infinity)
         .padding()
     }
 
-    private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey) -> some View {
+    private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
         HStack(alignment: .top) {
             Image(image)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 36, height: 40)
+                .frame(width: width, height: 54)
+                .frame(width: 54)
                 .padding(.top, 4)
-                .padding(.trailing, 6)
-            VStack(alignment: .leading) {
+                .padding(.leading, 4)
+                .padding(.trailing, 10)
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.headline)
-                Text(text)
+                Text(text).frame(minHeight: 40, alignment: .top)
             }
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, 20)
+        .padding(.trailing, 6)
     }
 }
 
@@ -91,6 +99,7 @@ struct OnboardingActionButton: View {
     private func actionButton(_ label: LocalizedStringKey, onboarding: OnboardingStage) -> some View {
         Button {
             withAnimation {
+                onboardingStageDefault.set(onboarding)
                 m.onboardingStage = onboarding
             }
         } label: {

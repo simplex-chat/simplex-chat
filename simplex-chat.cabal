@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        4.5.2.0
+version:        5.1.0.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -84,7 +84,18 @@ library
       Simplex.Chat.Migrations.M20230118_recreate_smp_servers
       Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
       Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
+      Simplex.Chat.Migrations.M20230303_group_link_role
+      Simplex.Chat.Migrations.M20230317_hidden_profiles
+      Simplex.Chat.Migrations.M20230318_file_description
+      Simplex.Chat.Migrations.M20230321_agent_file_deleted
+      Simplex.Chat.Migrations.M20230328_files_protocol
+      Simplex.Chat.Migrations.M20230402_protocol_servers
+      Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
+      Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
+      Simplex.Chat.Migrations.M20230422_profile_contact_links
+      Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages
       Simplex.Chat.Mobile
+      Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
@@ -111,6 +122,7 @@ library
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -119,6 +131,7 @@ library
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
@@ -126,7 +139,7 @@ library
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
-    , simplexmq >=3.4
+    , simplexmq >=5.0
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
@@ -157,6 +170,7 @@ executable simplex-bot
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -165,6 +179,7 @@ executable simplex-bot
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
@@ -173,7 +188,7 @@ executable simplex-bot
     , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=3.4
+    , simplexmq >=5.0
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
@@ -204,6 +219,7 @@ executable simplex-bot-advanced
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -212,6 +228,7 @@ executable simplex-bot-advanced
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
@@ -220,7 +237,57 @@ executable simplex-bot-advanced
     , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=3.4
+    , simplexmq >=5.0
+    , socks ==0.6.*
+    , sqlcipher-simple ==0.4.*
+    , stm ==2.5.*
+    , template-haskell ==2.16.*
+    , terminal ==0.2.*
+    , text ==1.2.*
+    , time ==1.9.*
+    , unliftio ==0.2.*
+    , unliftio-core ==0.2.*
+    , zip ==1.7.*
+  default-language: Haskell2010
+  if flag(swift)
+    cpp-options: -DswiftJSON
+
+executable simplex-broadcast-bot
+  main-is: Main.hs
+  other-modules:
+      Options
+      Paths_simplex_chat
+  hs-source-dirs:
+      apps/simplex-broadcast-bot
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
+  build-depends:
+      aeson ==2.0.*
+    , ansi-terminal >=0.10 && <0.12
+    , async ==2.2.*
+    , attoparsec ==0.14.*
+    , base >=4.7 && <5
+    , base64-bytestring >=1.0 && <1.3
+    , bytestring ==0.10.*
+    , composition ==1.0.*
+    , constraints >=0.12 && <0.14
+    , containers ==0.6.*
+    , cryptonite >=0.27 && <0.30
+    , direct-sqlcipher ==2.3.*
+    , directory ==1.3.*
+    , email-validate ==2.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , http-types ==0.12.*
+    , memory ==0.15.*
+    , mtl ==2.2.*
+    , network >=3.1.2.7 && <3.2
+    , optparse-applicative >=0.15 && <0.17
+    , process ==1.6.*
+    , random >=1.1 && <1.3
+    , record-hasfield ==1.0.*
+    , simple-logger ==0.1.*
+    , simplex-chat
+    , simplexmq >=5.0
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
@@ -252,6 +319,7 @@ executable simplex-chat
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , direct-sqlcipher ==2.3.*
@@ -260,6 +328,7 @@ executable simplex-chat
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
@@ -268,7 +337,7 @@ executable simplex-chat
     , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=3.4
+    , simplexmq >=5.0
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
@@ -299,6 +368,7 @@ test-suite simplex-chat-test
       MobileTests
       ProtocolTests
       SchemaDump
+      WebRTCTests
       Paths_simplex_chat
   hs-source-dirs:
       tests
@@ -312,6 +382,7 @@ test-suite simplex-chat-test
     , base64-bytestring >=1.0 && <1.3
     , bytestring ==0.10.*
     , composition ==1.0.*
+    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite >=0.27 && <0.30
     , deepseq ==1.4.*
@@ -322,15 +393,17 @@ test-suite simplex-chat-test
     , filepath ==1.4.*
     , hspec ==2.7.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , silently ==1.2.*
     , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=3.4
+    , simplexmq >=5.0
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*

@@ -19,9 +19,12 @@ let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? 
 let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
+let DEFAULT_LA_MODE = "localAuthenticationMode"
+let DEFAULT_LA_LOCK_DELAY = "localAuthenticationLockDelay"
 let DEFAULT_NOTIFICATION_ALERT_SHOWN = "notificationAlertShown"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
+let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
@@ -39,28 +42,37 @@ let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
+let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
+let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
+let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
     DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
+    DEFAULT_LA_MODE: LAMode.system.rawValue,
+    DEFAULT_LA_LOCK_DELAY: 30,
     DEFAULT_NOTIFICATION_ALERT_SHOWN: false,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
+    DEFAULT_CALL_KIT_CALLS_IN_RECENTS: false,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
-    DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: "description",
+    DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: SimpleXLinkMode.description.rawValue,
     DEFAULT_PRIVACY_PROTECT_SCREEN: false,
     DEFAULT_EXPERIMENTAL_CALLS: false,
-    DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
+    DEFAULT_CHAT_V3_DB_MIGRATION: V3DBMigrationState.offer.rawValue,
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_ACCENT_COLOR_RED: 0.000,
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
-    DEFAULT_CONNECT_VIA_LINK_TAB: "scan",
-    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false
+    DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
+    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
+    DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
+    DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
+    DEFAULT_ONBOARDING_STAGE: OnboardingStage.onboardingComplete.rawValue,
 ]
 
 enum SimpleXLinkMode: String, Identifiable {
@@ -93,6 +105,10 @@ let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefa
 
 let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
 
+let privacyLocalAuthModeDefault = EnumDefault<LAMode>(defaults: UserDefaults.standard, forKey: DEFAULT_LA_MODE, withDefault: .system)
+
+let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults.standard, forKey: DEFAULT_ONBOARDING_STAGE, withDefault: .onboardingComplete)
+
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
 }
@@ -102,12 +118,19 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @Binding var showSettings: Bool
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var settingsSheet: SettingsSheet?
 
     var body: some View {
-        let user: User = chatModel.currentUser!
+        ZStack {
+            settingsView()
+            if let la = chatModel.laRequest {
+                LocalAuthView(authRequest: la)
+            }
+        }
+    }
 
+    @ViewBuilder func settingsView() -> some View {
+        let user: User = chatModel.currentUser!
         NavigationView {
             List {
                 Section("You") {
@@ -128,10 +151,11 @@ struct SettingsView: View {
                     incognitoRow()
 
                     NavigationLink {
-                        CreateLinkView(selection: .longTerm, viaNavLink: true)
-                            .navigationBarTitleDisplayMode(.inline)
+                        UserAddressView(shareViaProfile: chatModel.currentUser!.addressShared)
+                            .navigationTitle("SimpleX address")
+                            .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        settingsRow("qrcode") { Text("Your SimpleX contact address") }
+                        settingsRow("qrcode") { Text("Your SimpleX address") }
                     }
 
                     NavigationLink {
@@ -213,14 +237,6 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("info") { Text("About SimpleX Chat") }
                     }
-//                    NavigationLink {
-//                        MarkdownHelp()
-//                            .padding()
-//                            .navigationTitle("How to use markdown")
-//                            .frame(maxHeight: .infinity, alignment: .top)
-//                    } label: {
-//                        settingsRow("textformat") { Text("Markdown in messages") }
-//                    }
                     settingsRow("number") {
                         Button("Send questions and ideas") {
                             showSettings = false
@@ -253,30 +269,12 @@ struct SettingsView: View {
                 }
 
                 Section("Develop") {
-                    settingsRow("chevron.left.forwardslash.chevron.right") {
-                        Toggle("Developer tools", isOn: $developerTools)
+                    NavigationLink {
+                        DeveloperView()
+                            .navigationTitle("Developer tools")
+                    } label: {
+                        settingsRow("chevron.left.forwardslash.chevron.right") { Text("Developer tools") }
                     }
-                    if developerTools {
-                        NavigationLink {
-                            TerminalView()
-                        } label: {
-                            settingsRow("terminal") { Text("Chat console") }
-                        }
-                        ZStack(alignment: .leading) {
-                            Image(colorScheme == .dark ? "github_light" : "github")
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                                .opacity(0.5)
-                            Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
-                                .padding(.leading, indent)
-                        }
-                    }
-//                    NavigationLink {
-//                        ExperimentalFeaturesView()
-//                            .navigationTitle("Experimental features")
-//                    } label: {
-//                        settingsRow("gauge") { Text("Experimental features") }
-//                    }
                     NavigationLink {
                         VersionView()
                             .navigationBarTitle("App version")

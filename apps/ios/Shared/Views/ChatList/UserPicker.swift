@@ -29,7 +29,9 @@ struct UserPicker: View {
             VStack(spacing: 0) {
                 ScrollView {
                     ScrollViewReader { sp in
-                        let users = m.users.sorted { u, _ in u.user.activeUser }
+                        let users = m.users
+                                    .filter({ u in u.user.activeUser || !u.user.hidden })
+                                    .sorted { u, _ in u.user.activeUser }
                         VStack(spacing: 0) {
                             ForEach(users) { u in
                                 userView(u)
@@ -97,14 +99,18 @@ struct UserPicker: View {
                     userPickerVisible.toggle()
                 }
             } else {
-                do {
-                    try changeActiveUser_(user.userId)
-                    userPickerVisible = false
-                } catch {
-                    AlertManager.shared.showAlertMsg(
-                        title: "Error switching profile!",
-                        message: "Error: \(responseError(error))"
-                    )
+                Task {
+                    do {
+                        try await changeActiveUserAsync_(user.userId, viewPwd: nil)
+                        await MainActor.run { userPickerVisible = false }
+                    } catch {
+                        await MainActor.run {
+                            AlertManager.shared.showAlertMsg(
+                                title: "Error switching profile!",
+                                message: "Error: \(responseError(error))"
+                            )
+                        }
+                    }
                 }
             }
         }, label: {
@@ -120,7 +126,9 @@ struct UserPicker: View {
                 if user.activeUser {
                     Image(systemName: "checkmark")
                 } else if u.unreadCount > 0 {
-                    unreadCounter(u.unreadCount)
+                    unreadCounter(u.unreadCount, color: user.showNtfs ? .accentColor : .secondary)
+                } else if !user.showNtfs {
+                    Image(systemName: "speaker.slash")
                 }
             }
             .padding(.trailing)
@@ -146,13 +154,13 @@ struct UserPicker: View {
     }
 }
 
-func unreadCounter(_ unread: Int) -> some View {
+private func unreadCounter(_ unread: Int, color: Color) -> some View {
     unreadCountText(unread)
     .font(.caption)
     .foregroundColor(.white)
     .padding(.horizontal, 4)
     .frame(minWidth: 18, minHeight: 18)
-    .background(Color.accentColor)
+    .background(color)
     .cornerRadius(10)
 }
 

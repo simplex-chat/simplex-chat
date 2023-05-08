@@ -52,9 +52,9 @@ jobs:
           - os: ubuntu-20.04
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-20_04-x86-64
-          - os: ubuntu-18.04
+          - os: ubuntu-22.04
             cache_path: ~/.cabal/store
-            asset_name: simplex-chat-ubuntu-18_04-x86-64
+            asset_name: simplex-chat-ubuntu-22_04-x86-64
           - os: macos-latest
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-x86-64
@@ -91,8 +91,12 @@ jobs:
           echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"         >> cabal.project.local
           echo "    flags: +openssl"                                        >> cabal.project.local
 
+      - name: Install pkg-config for Mac
+        if: matrix.os == 'macos-latest'
+        run: brew install pkg-config
+
       - name: Unix prepare cabal.project.local for Ubuntu
-        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-18.04'
+        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
           echo "ignore-project: False"    >> cabal.project.local
@@ -108,8 +112,8 @@ jobs:
           echo "::set-output name=bin_path::$(cabal list-bin simplex-chat)"
 
       - name: Unix test
-        if: matrix.os != 'windows-latest' && matrix.os != 'ubuntu-20.04'
-        timeout-minutes: 20
+        if: matrix.os != 'windows-latest'
+        timeout-minutes: 30
         shell: bash
         run: cabal test --test-show-details=direct
 

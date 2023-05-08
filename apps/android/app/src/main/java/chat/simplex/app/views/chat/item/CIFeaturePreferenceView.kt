@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
@@ -27,7 +26,7 @@ fun CIFeaturePreferenceView(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
-    Icon(feature.icon, feature.text, Modifier.size(18.dp), tint = HighOrLowlight)
+    Icon(feature.icon, feature.text, Modifier.size(18.dp), tint = MaterialTheme.colors.secondary)
     if (contact != null && allowed != FeatureAllowed.NO && contact.allowsFeature(feature) && !contact.userAllowsFeature(feature)) {
       val acceptStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
       val setParam = feature == ChatFeature.TimedMessages && contact.mergedPreferences.timedMessages.userPreference.pref.ttl == null
@@ -48,7 +47,7 @@ fun CIFeaturePreferenceView(
       )
     } else {
       Text(chatItem.content.text + "  " + chatItem.timestampText,
-        fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)
+        fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary)
     }
   }
 }

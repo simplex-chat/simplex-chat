@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -19,7 +17,9 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -137,7 +137,7 @@ private fun DurationText(text: State<String>, padding: PaddingValues) {
     Modifier
       .padding(padding)
       .widthIn(min = minWidth),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     fontSize = 16.sp,
     maxLines = 1
   )
@@ -156,9 +156,11 @@ private fun PlayPauseButton(
   pause: () -> Unit,
   longClick: () -> Unit
 ) {
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
-    color = if (sent) SentColorLight else ReceivedColorLight,
+    color = if (sent) sentColor else receivedColor,
     shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
   ) {
     Box(
@@ -171,10 +173,10 @@ private fun PlayPauseButton(
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+        if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
         contentDescription = null,
         Modifier.size(36.dp),
-        tint = if (error) WarningOrange else if (!enabled) HighOrLowlight else MaterialTheme.colors.primary
+        tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
   }
@@ -200,7 +202,7 @@ private fun VoiceMsgIndicator(
     if (hasText) {
       IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
-          imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+          if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
           contentDescription = null,
           Modifier.size(36.dp),
           tint = MaterialTheme.colors.primary
@@ -210,9 +212,9 @@ private fun VoiceMsgIndicator(
       PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
     }
   } else {
-    if (file?.fileStatus == CIFileStatus.RcvInvitation
-      || file?.fileStatus == CIFileStatus.RcvTransfer
-      || file?.fileStatus == CIFileStatus.RcvAccepted
+    if (file?.fileStatus is CIFileStatus.RcvInvitation
+      || file?.fileStatus is CIFileStatus.RcvTransfer
+      || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {
       Box(
         Modifier
@@ -228,7 +230,7 @@ private fun VoiceMsgIndicator(
   }
 }
 
-private fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = drawWithCache {
+fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = drawWithCache {
   val brush = Brush.linearGradient(
     0f to Color.Transparent,
     0f to color,

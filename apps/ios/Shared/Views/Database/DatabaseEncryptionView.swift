@@ -40,7 +40,7 @@ struct DatabaseEncryptionView: View {
     @State private var progressIndicator = false
     @State private var useKeychainToggle = storeDBPassphraseGroupDefault.get()
     @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
-    @State private var storedKey = getDatabaseKey() != nil
+    @State private var storedKey = kcDatabasePassword.get() != nil
     @State private var currentKey = ""
     @State private var newKey = ""
     @State private var confirmNewKey = ""
@@ -73,11 +73,11 @@ struct DatabaseEncryptionView: View {
                 }
 
                 if !initialRandomDBPassphrase && m.chatDbEncrypted == true {
-                    DatabaseKeyField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
+                    PassphraseField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
                 }
 
-                DatabaseKeyField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey), showStrength: true)
-                DatabaseKeyField(key: $confirmNewKey, placeholder: "Confirm new passphrase…", valid: confirmNewKey == "" || newKey == confirmNewKey)
+                PassphraseField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey), showStrength: true)
+                PassphraseField(key: $confirmNewKey, placeholder: "Confirm new passphrase…", valid: confirmNewKey == "" || newKey == confirmNewKey)
 
                 settingsRow("lock.rotation") {
                     Button("Update database passphrase") {
@@ -124,7 +124,7 @@ struct DatabaseEncryptionView: View {
             }
         }
         .onAppear {
-            if initialRandomDBPassphrase { currentKey = getDatabaseKey() ?? "" }
+            if initialRandomDBPassphrase { currentKey = kcDatabasePassword.get() ?? "" }
         }
         .disabled(m.chatRunning != false)
         .alert(item: $alert) { item in databaseEncryptionAlert(item) }
@@ -140,7 +140,7 @@ struct DatabaseEncryptionView: View {
                 encryptionStartedDefault.set(false)
                 initialRandomDBPassphraseGroupDefault.set(false)
                 if useKeychain {
-                    if setDatabaseKey(newKey) {
+                    if kcDatabasePassword.set(newKey) {
                         await resetFormAfterEncryption(true)
                         await operationEnded(.databaseEncrypted)
                     } else {
@@ -184,7 +184,7 @@ struct DatabaseEncryptionView: View {
                 title: Text("Remove passphrase from keychain?"),
                 message: Text("Instant push notifications will be hidden!\n") + storeSecurelyDanger(),
                 primaryButton: .destructive(Text("Remove")) {
-                    if removeDatabaseKey() {
+                    if kcDatabasePassword.remove() {
                         logger.debug("passphrase removed from keychain")
                         setUseKeychain(false)
                         storedKey = false
@@ -255,7 +255,7 @@ struct DatabaseEncryptionView: View {
 }
 
 
-struct DatabaseKeyField: View {
+struct PassphraseField: View {
     @Binding var key: String
     var placeholder: LocalizedStringKey
     var valid: Bool

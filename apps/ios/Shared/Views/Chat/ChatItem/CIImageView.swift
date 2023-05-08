@@ -24,7 +24,7 @@ struct CIImageView: View {
             if let uiImage = getLoadedImage(file) {
                 imageView(uiImage)
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenImageView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
+                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
                 }
                 .onTapGesture { showFullScreenImage = true }
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),
@@ -41,10 +41,18 @@ struct CIImageView: View {
                                     // TODO image accepted alert?
                                 }
                             case .rcvAccepted:
-                                AlertManager.shared.showAlertMsg(
-                                    title: "Waiting for image",
-                                    message: "Image will be received when your contact is online, please wait or check later!"
-                                )
+                                switch file.fileProtocol {
+                                case .xftp:
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "Waiting for image",
+                                        message: "Image will be received when your contact completes uploading it."
+                                    )
+                                case .smp:
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "Waiting for image",
+                                        message: "Image will be received when your contact is online, please wait or check later!"
+                                    )
+                                }
                             case .rcvTransfer: () // ?
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
@@ -77,34 +85,39 @@ struct CIImageView: View {
     @ViewBuilder private func loadingIndicator() -> some View {
         if let file = chatItem.file {
             switch file.fileStatus {
-            case .sndTransfer:
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .frame(width: 20, height: 20)
-                    .tint(.white)
-                    .padding(8)
-            case .sndComplete:
-                Image(systemName: "checkmark")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 10, height: 10)
-                    .foregroundColor(.white)
-                    .padding(13)
-            case .rcvAccepted:
-                Image(systemName: "ellipsis")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 14, height: 14)
-                    .foregroundColor(.white)
-                    .padding(11)
-            case .rcvTransfer:
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .frame(width: 20, height: 20)
-                    .tint(.white)
-                    .padding(8)
+            case .sndStored:
+                switch file.fileProtocol {
+                case .xftp: progressView()
+                case .smp: EmptyView()
+                }
+            case .sndTransfer: progressView()
+            case .sndComplete: fileIcon("checkmark", 10, 13)
+            case .sndCancelled: fileIcon("xmark", 10, 13)
+            case .sndError: fileIcon("xmark", 10, 13)
+            case .rcvInvitation: fileIcon("arrow.down", 10, 13)
+            case .rcvAccepted: fileIcon("ellipsis", 14, 11)
+            case .rcvTransfer: progressView()
+            case .rcvCancelled: fileIcon("xmark", 10, 13)
+            case .rcvError: fileIcon("xmark", 10, 13)
             default: EmptyView()
             }
         }
+    }
+
+    private func fileIcon(_ icon: String, _ size: CGFloat, _ padding: CGFloat) -> some View {
+        Image(systemName: icon)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size, height: size)
+            .foregroundColor(.white)
+            .padding(padding)
+    }
+
+    private func progressView() -> some View {
+        ProgressView()
+            .progressViewStyle(.circular)
+            .frame(width: 20, height: 20)
+            .tint(.white)
+            .padding(8)
     }
 }

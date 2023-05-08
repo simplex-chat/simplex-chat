@@ -1,0 +1,40 @@
+{
+    "items": [
+        {
+            "title": "guide-dropdown-1",
+            "url": "/docs/guide/readme.html"
+        },
+        {
+            "title": "guide-dropdown-2",
+            "url": "/docs/guide/send-messages.html"
+        },
+        {
+            "title": "guide-dropdown-3",
+            "url": "/docs/guide/secret-groups.html"
+        },
+        {
+            "title": "guide-dropdown-4",
+            "url": "/docs/guide/chat-profiles.html"
+        },
+        {
+            "title": "guide-dropdown-5",
+            "url": "/docs/guide/managing-data.html"
+        },
+        {
+            "title": "guide-dropdown-6",
+            "url": "/docs/guide/audio-video-calls.html"
+        },
+        {
+            "title": "guide-dropdown-7",
+            "url": "/docs/guide/privacy-security.html"
+        },
+        {
+            "title": "guide-dropdown-8",
+            "url": "/docs/guide/app-settings.html"
+        },
+        {
+            "title": "guide-dropdown-9",
+            "url": "/docs/guide/making-connections.html"
+        }
+    ]
+}

@@ -86,13 +86,13 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe Preferences
-testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, fullDelete = Nothing, timedMessages = Nothing}
+testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
 testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, voice = Just VoiceGroupPreference {enable = FEOn}, fullDelete = Nothing}
 
 testProfile :: Profile
-testProfile = Profile {displayName = "alice", fullName = "Alice", image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), preferences = testChatPreferences}
+testProfile = Profile {displayName = "alice", fullName = "Alice", image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), contactLink = Nothing, preferences = testChatPreferences}
 
 testGroupProfile :: GroupProfile
 testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, image = Nothing, groupPreferences = testGroupPreferences}
@@ -110,7 +110,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing Nothing (Just True)))
   it "x.msg.new simple link" $
     "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
-      #==# XMsgNew (MCSimple (extMsgContent (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA"}) Nothing))
+      #==# XMsgNew (MCSimple (extMsgContent (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}) Nothing))
   it "x.msg.new simple image" $
     "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
       #==# XMsgNew (MCSimple (extMsgContent (MCImage "" $ ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=") Nothing))
@@ -146,10 +146,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       ##==## ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing Nothing (Just True)))
   it "x.msg.new simple text with file" $
     "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XMsgNew (MCSimple (extMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = Nothing, fileInline = Nothing})))
+      #==# XMsgNew (MCSimple (extMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing})))
   it "x.msg.new simple file with file" $
     "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"file\"},\"file\":{\"fileSize\":12345,\"fileName\":\"file.txt\"}}}"
-      #==# XMsgNew (MCSimple (extMsgContent (MCFile "") (Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileConnReq = Nothing, fileInline = Nothing})))
+      #==# XMsgNew (MCSimple (extMsgContent (MCFile "") (Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing})))
   it "x.msg.new quote with file" $
     "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       ##==## ChatMessage
@@ -159,13 +159,13 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
                 quotedMsg
                 ( extMsgContent
                     (MCText "hello to you too")
-                    (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = Nothing, fileInline = Nothing})
+                    (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing})
                 )
             )
         )
   it "x.msg.new forward with file" $
     "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      ##==## ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (extMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = Nothing, fileInline = Nothing})))
+      ##==## ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (extMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing})))
   it "x.msg.update" $
     "{\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") Nothing Nothing
@@ -177,10 +177,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XMsgDeleted
   it "x.file" $
     "{\"event\":\"x.file\",\"params\":{\"file\":{\"fileConnReq\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D1-2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = Just testConnReq, fileInline = Nothing}
+      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Just testConnReq, fileInline = Nothing, fileDescr = Nothing}
   it "x.file without file invitation" $
     "{\"event\":\"x.file\",\"params\":{\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = Nothing, fileInline = Nothing}
+      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}
   it "x.file.acpt" $
     "{\"event\":\"x.file.acpt\",\"params\":{\"fileName\":\"photo.jpg\"}}"
       #==# XFileAcpt "photo.jpg"
@@ -198,7 +198,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XInfo testProfile
   it "x.info with empty full name" $
     "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"preferences\":{\"voice\":{\"allow\":\"yes\"}}}}}"
-      #==# XInfo Profile {displayName = "alice", fullName = "", image = Nothing, preferences = testChatPreferences}
+      #==# XInfo Profile {displayName = "alice", fullName = "", image = Nothing, contactLink = Nothing, preferences = testChatPreferences}
   it "x.contact with xContactId" $
     "{\"event\":\"x.contact\",\"params\":{\"contactReqId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XContact testProfile (Just $ XContactId "\1\2\3\4")

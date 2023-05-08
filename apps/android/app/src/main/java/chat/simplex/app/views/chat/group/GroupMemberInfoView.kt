@@ -1,33 +1,33 @@
 package chat.simplex.app.views.chat.group
 
 import InfoRow
-import SectionDivider
-import SectionItemView
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionSpacer
+import SectionTextFooter
 import SectionView
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.TAG
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.QRCode
 import chat.simplex.app.views.usersettings.SettingsActionItem
 import kotlinx.datetime.Clock
 
@@ -54,20 +54,15 @@ fun GroupMemberInfoView(
       developerTools,
       connectionCode,
       getContactChat = { chatModel.getContactChat(it) },
-      knownDirectChat = {
-        withApi {
-          chatModel.chatItems.clear()
-          chatModel.chatItems.addAll(it.chatItems)
-          chatModel.chatId.value = it.chatInfo.id
-          closeAll()
-        }
-      },
-      newDirectChat = {
+      openDirectChat = {
         withApi {
           val c = chatModel.controller.apiGetChat(ChatType.Direct, it)
           if (c != null) {
-            chatModel.addChat(c)
+            if (chatModel.getContactChat(it) == null) {
+              chatModel.addChat(c)
+            }
             chatModel.chatItems.clear()
+            chatModel.chatItems.addAll(c.chatItems)
             chatModel.chatId.value = c.id
             closeAll()
           }
@@ -125,7 +120,7 @@ fun GroupMemberInfoView(
 }
 
 fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.button_remove_member),
     text = generalGetString(R.string.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(R.string.remove_member_confirmation),
@@ -137,7 +132,8 @@ fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: Cha
         }
         close?.invoke()
       }
-    }
+    },
+    destructive = true,
   )
 }
 
@@ -150,8 +146,7 @@ fun GroupMemberInfoLayout(
   developerTools: Boolean,
   connectionCode: String?,
   getContactChat: (Long) -> Chat?,
-  knownDirectChat: (Chat) -> Unit,
-  newDirectChat: (Long) -> Unit,
+  openDirectChat: (Long) -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
@@ -161,7 +156,6 @@ fun GroupMemberInfoLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -176,57 +170,53 @@ fun GroupMemberInfoLayout(
       if (contactId != null) {
         SectionView {
           val chat = getContactChat(contactId)
-          if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
-            OpenChatButton(onClick = { knownDirectChat(chat) })
-            if (connectionCode != null) {
-              SectionDivider()
-            }
-          } else if (groupInfo.fullGroupPreferences.directMessages.on) {
-            OpenChatButton(onClick = { newDirectChat(contactId) })
-            if (connectionCode != null) {
-              SectionDivider()
-            }
+          if ((chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) || groupInfo.fullGroupPreferences.directMessages.on) {
+            OpenChatButton(onClick = { openDirectChat(contactId) })
           }
           if (connectionCode != null) {
             VerifyCodeButton(member.verified, verifyClicked)
           }
         }
-        SectionSpacer()
+        SectionDividerSpaced()
       }
+    }
+
+    if (member.contactLink != null) {
+      val context = LocalContext.current
+      SectionView(stringResource(R.string.address_section_title).uppercase()) {
+        QRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        ShareAddressButton { shareText(context, member.contactLink) }
+        SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(member.displayName))
+      }
+      SectionDividerSpaced()
     }
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
       InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)
-      SectionDivider()
       val roles = remember { member.canChangeRoleTo(groupInfo) }
       if (roles != null) {
-        SectionItemView {
-          RoleSelectionRow(roles, newRole, onRoleSelected)
-        }
+        RoleSelectionRow(roles, newRole, onRoleSelected)
       } else {
         InfoRow(stringResource(R.string.role_in_group), member.memberRole.text)
       }
       val conn = member.activeConn
       if (conn != null) {
-        SectionDivider()
         val connLevelDesc =
           if (conn.connLevel == 0) stringResource(R.string.conn_level_desc_direct)
           else String.format(generalGetString(R.string.conn_level_desc_indirect), conn.connLevel)
         InfoRow(stringResource(R.string.info_row_connection), connLevelDesc)
       }
     }
-    SectionSpacer()
     if (connStats != null) {
+      SectionDividerSpaced()
       SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
       SwitchAddressButton(switchMemberAddress)
-      SectionDivider()
         val rcvServers = connStats.rcvServers
         val sndServers = connStats.sndServers
         if ((rcvServers != null && rcvServers.isNotEmpty()) || (sndServers != null && sndServers.isNotEmpty())) {
           if (rcvServers != null && rcvServers.isNotEmpty()) {
             SimplexServers(stringResource(R.string.receiving_via), rcvServers)
             if (sndServers != null && sndServers.isNotEmpty()) {
-              SectionDivider()
               SimplexServers(stringResource(R.string.sending_via), sndServers)
             }
           } else if (sndServers != null && sndServers.isNotEmpty()) {
@@ -234,24 +224,23 @@ fun GroupMemberInfoLayout(
           }
         }
       }
-      SectionSpacer()
     }
 
     if (member.canBeRemoved(groupInfo)) {
+      SectionDividerSpaced(maxBottomPadding = false)
       SectionView {
         RemoveMemberButton(removeMember)
       }
-      SectionSpacer()
     }
 
     if (developerTools) {
+      SectionDividerSpaced()
       SectionView(title = stringResource(R.string.section_title_for_console)) {
         InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
-        SectionDivider()
         InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
       }
-      SectionSpacer()
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -264,7 +253,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (member.verified) {
-        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
       }
       Text(
         member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
@@ -287,7 +276,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
 @Composable
 fun RemoveMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     stringResource(R.string.button_remove_member),
     click = onClick,
     textColor = Color.Red,
@@ -298,7 +287,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Message,
+    painterResource(R.drawable.ic_chat),
     stringResource(R.string.button_send_direct_message),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
@@ -364,8 +353,7 @@ fun PreviewGroupMemberInfoLayout() {
       developerTools = false,
       connectionCode = "123",
       getContactChat = { Chat.sampleData },
-      knownDirectChat = {},
-      newDirectChat = {},
+      openDirectChat = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},

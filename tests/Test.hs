@@ -8,6 +8,7 @@ import ProtocolTests
 import SchemaDump
 import Test.Hspec
 import UnliftIO.Temporary (withTempDirectory)
+import WebRTCTests
 
 main :: IO ()
 main = do
@@ -15,6 +16,7 @@ main = do
   withGlobalLogging logCfg . hspec $ do
     describe "SimpleX chat markdown" markdownTests
     describe "SimpleX chat protocol" protocolTests
+    describe "WebRTC encryption" webRTCTests
     describe "Schema dump" schemaDumpTest
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
@@ -23,7 +25,7 @@ main = do
     testBracket test = do
       t <- getSystemTime
       let ts = show (systemSeconds t) <> show (systemNanoseconds t)
-      withSmpServer $ withTmpFiles $ withTempDirectory "tests" ("tmp" <> ts) test
+      withSmpServer $ withTmpFiles $ withTempDirectory "tests/tmp" ts test
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
