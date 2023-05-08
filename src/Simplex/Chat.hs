@@ -460,7 +460,7 @@ processChatCommand = \case
   APIGetChatItemInfo itemId -> withUser $ \user -> do
     (chatItem@(AChatItem _ _ _ ChatItem {meta}), itemVersions) <- withStore $ \db -> do
       ci <- getAChatItem db user itemId
-      versions <- liftIO $ getChatItemVersions db user itemId
+      versions <- liftIO $ getChatItemVersions db itemId
       pure (ci, versions)
     let CIMeta {itemTs, createdAt, updatedAt} = meta
         ciInfo = ChatItemInfo {chatItemId = itemId, itemTs, createdAt, updatedAt, itemVersions}

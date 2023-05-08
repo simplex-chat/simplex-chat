@@ -4814,19 +4814,18 @@ getAChatItem_ db user itemId = \case
     pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
   _ -> throwError $ SEChatItemNotFound itemId
 
-getChatItemVersions :: DB.Connection -> User -> ChatItemId -> IO [ChatItemVersion]
-getChatItemVersions db User {userId} itemId = do
+getChatItemVersions :: DB.Connection -> ChatItemId -> IO [ChatItemVersion]
+getChatItemVersions db itemId = do
   map toChatItemVersion
     <$> DB.query
       db
       [sql|
-        SELECT v.chat_item_version_id, v.msg_content, v.edited_at, v.created_at
+        SELECT chat_item_version_id, msg_content, edited_at, created_at
         FROM chat_item_versions v
-        JOIN chat_items i ON i.chat_item_id = v.chat_item_id
-        WHERE i.user_id = ? AND i.chat_item_id = ?
-        ORDER BY v.chat_item_version_id DESC
+        WHERE chat_item_id = ?
+        ORDER BY chat_item_version_id DESC
       |]
-      (userId, itemId)
+      (Only itemId)
   where
     toChatItemVersion :: (Int64, MsgContent, UTCTime, UTCTime) -> ChatItemVersion
     toChatItemVersion (chatItemVersionId, msgContent, editedAt, createdAt) = ChatItemVersion {chatItemVersionId, msgContent, editedAt, createdAt}
