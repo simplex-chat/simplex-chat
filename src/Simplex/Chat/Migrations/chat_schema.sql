@@ -454,6 +454,14 @@ CREATE TABLE msg_delivery_events(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE chat_item_versions(
+  chat_item_version_id INTEGER PRIMARY KEY,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  msg_content TEXT NOT NULL,
+  edited_at TEXT NOT NULL DEFAULT(datetime('now')),
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -594,4 +602,7 @@ CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON extra_xftp_file_descrip
 );
 CREATE INDEX idx_xftp_file_descriptions_user_id ON xftp_file_descriptions(
   user_id
+);
+CREATE INDEX idx_chat_item_versions_chat_item_id ON chat_item_versions(
+  chat_item_id
 );

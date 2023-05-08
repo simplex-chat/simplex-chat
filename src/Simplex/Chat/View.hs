@@ -26,7 +26,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
+import Data.Time.LocalTime (TimeZone, ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, utcToZonedTime)
 import Data.Word (Word32)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
@@ -57,11 +57,11 @@ import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
 
-serializeChatResponse :: Maybe User -> CurrentTime -> ChatResponse -> String
-serializeChatResponse user_ ts = unlines . map unStyle . responseToView user_ defaultChatConfig False ts
+serializeChatResponse :: Maybe User -> CurrentTime -> TimeZone -> ChatResponse -> String
+serializeChatResponse user_ ts tz = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz
 
-responseToView :: Maybe User -> ChatConfig -> Bool -> CurrentTime -> ChatResponse -> [StyledString]
-responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
+responseToView :: Maybe User -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> ChatResponse -> [StyledString]
+responseToView user_ ChatConfig {logLevel, testView} liveItems ts tz = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -85,6 +85,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
   CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewChatItem chat item False ts
   CRChatItems u chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
+  CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemStatusUpdated u _ -> ttyUser u []
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
@@ -414,6 +415,29 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
     showItem ss = if doShow then ss else []
     plainContent = plain . ciContentToText
     prohibited = styled (colored Red) ("[unexpected chat item created, please report to developers]" :: String)
+
+viewChatItemInfo :: AChatItem -> ChatItemInfo -> TimeZone -> [StyledString]
+viewChatItemInfo (AChatItem _ msgDir _ _) ChatItemInfo {itemTs, createdAt, itemVersions} tz = case msgDir of
+  SMDRcv ->
+    [ "sent at: " <> ts itemTs,
+      "received at: " <> ts createdAt
+    ]
+      <> versions
+  SMDSnd ->
+    ["sent at: " <> ts itemTs] <> versions
+  where
+    ts = styleTime . localTs tz
+    versions =
+      if null itemVersions
+        then []
+        else ["message history:"] <> concatMap version itemVersions
+    version ChatItemVersion {msgContent, editedAt} = prependFirst (ts editedAt <> styleTime ": ") $ ttyMsgContent msgContent
+
+localTs :: TimeZone -> UTCTime -> String
+localTs tz ts = do
+  let localTime = utcToLocalTime tz ts
+      formattedTime = formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" localTime
+  formattedTime
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} liveItems ts = case chat of
@@ -1368,7 +1392,7 @@ viewChatError logLevel = \case
     SEContactRequestNotFoundByName c -> ["no contact request from " <> ttyContact c]
     SEFileIdNotFoundBySharedMsgId _ -> [] -- recipient tried to accept cancelled file
     SEConnectionNotFound agentConnId -> ["event connection not found, agent ID: " <> sShow agentConnId | logLevel <= CLLWarning] -- mutes delete group error
-    SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
+    SEChatItemNotFoundByText text -> ["message not found by text: " <> plain text]
     SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/show link #" <> groupName' g)]
     SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/create link #" <> groupName' g)]
     e -> ["chat db error: " <> sShow e]

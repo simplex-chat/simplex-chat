@@ -94,6 +94,7 @@ library
       Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
       Simplex.Chat.Migrations.M20230422_profile_contact_links
       Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages
+      Simplex.Chat.Migrations.M20230505_chat_item_versions
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
