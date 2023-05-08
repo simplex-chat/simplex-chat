@@ -248,7 +248,6 @@ module Simplex.Chat.Store
     updateDirectChatItem',
     addInitialAndNewCIVersions,
     createChatItemVersion,
-    getChatItemVersionsCount,
     deleteDirectChatItem,
     markDirectChatItemDeleted,
     updateGroupChatItem,
