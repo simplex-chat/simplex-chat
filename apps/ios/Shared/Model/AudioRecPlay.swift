@@ -29,11 +29,11 @@ class AudioRecorder {
     }
 
     func start(fileName: String) async -> StartError? {
-        let audioSession = AVAudioSession.sharedInstance()
+        let av = AVAudioSession.sharedInstance()
         if !(await checkPermission()) { return .permission }
         do {
-            try audioSession.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
-            try audioSession.setActive(true)
+            try av.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
+            try av.setActive(true)
             let settings: [String : Any] = [
                 AVFormatIDKey: kAudioFormatMPEG4AAC,
                 AVSampleRateKey: 12000,
@@ -64,10 +64,10 @@ class AudioRecorder {
     func stop() {
         if let recorder = audioRecorder {
             recorder.stop()
-            let audioSession = AVAudioSession.sharedInstance()
-            try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
-            try? audioSession.setCategory(AVAudioSession.Category.ambient, mode: .default)
-            try? audioSession.setActive(true)
+            let av = AVAudioSession.sharedInstance()
+            try? av.setActive(false, options: .notifyOthersOnDeactivation)
+            try? av.setCategory(AVAudioSession.Category.ambient, mode: .default)
+            try? av.setActive(true)
         }
         audioRecorder = nil
         if let timer = recordingTimer {
@@ -77,14 +77,14 @@ class AudioRecorder {
     }
 
     private func checkPermission() async -> Bool {
-        let audioSession = AVAudioSession.sharedInstance()
-        switch audioSession.recordPermission {
+        let av = AVAudioSession.sharedInstance()
+        switch av.recordPermission {
         case .granted: return true
         case .denied: return false
         case .undetermined:
             return await withCheckedContinuation { cont in
                 DispatchQueue.main.async {
-                    audioSession.requestRecordPermission { allowed in
+                    av.requestRecordPermission { allowed in
                         cont.resume(returning: allowed)
                     }
                 }
@@ -158,10 +158,10 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     }
 
     static func audioSessionActivatePlayAndRecord() {
-        let audioSession = AVAudioSession.sharedInstance()
-        if audioSession.category != .playAndRecord {
-            try? audioSession.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
-            try? audioSession.setActive(true)
+        let av = AVAudioSession.sharedInstance()
+        if av.category != .playAndRecord {
+            try? av.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
+            try? av.setActive(true)
         }
     }
 
@@ -174,11 +174,11 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     }
 
     private static func audioSessionToDefault() {
-        let audioSession = AVAudioSession.sharedInstance()
-        if audioSession.category != .ambient {
-            try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
-            try? audioSession.setCategory(AVAudioSession.Category.ambient, mode: .default)
-            try? audioSession.setActive(true)
+        let av = AVAudioSession.sharedInstance()
+        if av.category != .ambient {
+            try? av.setActive(false, options: .notifyOthersOnDeactivation)
+            try? av.setCategory(AVAudioSession.Category.ambient, mode: .default)
+            try? av.setActive(true)
         }
     }
 }
