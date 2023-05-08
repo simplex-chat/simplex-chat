@@ -455,7 +455,7 @@ CREATE TABLE msg_delivery_events(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE chat_item_versions(
-  chat_item_version_id INTEGER PRIMARY KEY,
+  chat_item_version_id INTEGER PRIMARY KEY AUTOINCREMENT,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   msg_content TEXT NOT NULL,
   edited_at TEXT NOT NULL DEFAULT(datetime('now')),
