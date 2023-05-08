@@ -112,7 +112,7 @@ struct CIVideoView: View {
                             AudioPlayer.audioSessionActivatePlayAndRecord()
                         }
                         .onDisappear {
-                            AudioPlayer.lastPlayed = ProcessInfo.processInfo.systemUptime
+                            AudioPlayer.updateLastPlayed()
                             AudioPlayer.audioSessionToDefaultAfterDelay()
                         }
                 }

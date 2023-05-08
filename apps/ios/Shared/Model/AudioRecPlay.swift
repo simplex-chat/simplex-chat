@@ -132,6 +132,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     }
 
     func play() {
+        AudioPlayer.audioSessionActivatePlayAndRecord()
         audioPlayer?.play()
     }
 
