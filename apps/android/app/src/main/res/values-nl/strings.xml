@@ -840,7 +840,7 @@
     <string name="connected_to_server_to_receive_messages_from_contact">U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Je profiel wordt verzonden naar het contact van wie je deze link hebt ontvangen.</string>
     <string name="you_will_join_group">U wordt lid van de groep waar deze link naar verwijst en maakt verbinding met de groepsleden.</string>
-    <string name="notifications_mode_off">Wordt uitgevoerd wanneer de app is geopend</string>
+    <string name="notifications_mode_off">Uitvoeren bij geopende app</string>
     <string name="settings_notification_preview_mode_title">Toon voorbeeld</string>
     <string name="ntf_channel_calls">SimpleX Chat oproepen</string>
     <string name="notifications_mode_periodic">Start periodiek</string>
