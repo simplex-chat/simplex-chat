@@ -4821,7 +4821,7 @@ getChatItemVersions db itemId = do
       db
       [sql|
         SELECT chat_item_version_id, msg_content, edited_at, created_at
-        FROM chat_item_versions v
+        FROM chat_item_versions
         WHERE chat_item_id = ?
         ORDER BY chat_item_version_id DESC
       |]
