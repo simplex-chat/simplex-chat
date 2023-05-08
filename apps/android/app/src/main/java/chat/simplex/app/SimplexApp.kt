@@ -78,9 +78,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
             savedOnboardingStage
           }
           chatController.startChat(user)
-          chatController.showBackgroundServiceNoticeIfNeeded()
-          if (appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
-            SimplexService.start(applicationContext)
+          // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
+          if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
+            chatController.showBackgroundServiceNoticeIfNeeded()
+            if (appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
+              SimplexService.start(applicationContext)
+          }
         }
       }
     }
