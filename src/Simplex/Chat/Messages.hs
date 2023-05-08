@@ -1451,3 +1451,24 @@ jsonCIDeleted :: CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted -> JCIDDeleted
   CIModerated m -> JCIDModerated m
+
+data ChatItemInfo = ChatItemInfo
+  { chatItemId :: ChatItemId,
+    itemTs :: UTCTime,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    itemVersions :: [ChatItemVersion]
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ChatItemInfo where toEncoding = J.genericToEncoding J.defaultOptions
+
+data ChatItemVersion = ChatItemVersion
+  { chatItemVersionId :: Int64,
+    msgContent :: MsgContent,
+    itemVersionTs :: UTCTime,
+    createdAt :: UTCTime
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ChatItemVersion where toEncoding = J.genericToEncoding J.defaultOptions

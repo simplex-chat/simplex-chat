@@ -213,6 +213,7 @@ data ChatCommand
   | APIGetChats {userId :: UserId, pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
+  | APIGetChatItemInfo ChatItemId
   | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
@@ -341,6 +342,7 @@ data ChatCommand
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
+  | ShowChatItemInfo ChatName Text
   | ShowLiveItems Bool
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
@@ -378,6 +380,7 @@ data ChatResponse
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat}
   | CRChatItems {user :: User, chatItems :: [AChatItem]}
+  | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers}

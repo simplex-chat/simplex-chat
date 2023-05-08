@@ -358,6 +358,9 @@ msgContentText = \case
   MCFile t -> t
   MCUnknown {text} -> text
 
+toMCText :: MsgContent -> MsgContent
+toMCText = MCText . msgContentText
+
 durationText :: Int -> Text
 durationText duration =
   let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"

@@ -32,6 +32,7 @@ chatGroupTests = do
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
+    it "group message edit history" testGroupMessageEditHistory
     it "group message delete" testGroupMessageDelete
     it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
@@ -875,6 +876,76 @@ testGroupMessageUpdate =
       bob #$> ("/_get chat #1 count=3", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hey 👋")), ((0, "greetings!"), Just (0, "greetings 🤝"))])
       cath #$> ("/_get chat #1 count=3", chat', [((0, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (0, "hey 👋")), ((1, "greetings!"), Just (0, "greetings 🤝"))])
 
+testGroupMessageEditHistory :: HasCallStack => FilePath -> IO ()
+testGroupMessageEditHistory =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      alice #> "#team hello!"
+      bob <# "#team alice> hello!"
+      aliceItemId <- lastItemId alice
+      bobItemId <- lastItemId bob
+
+      alice ##> ("/_get item info " <> aliceItemId)
+      alice <##. "sent at: "
+      bob ##> ("/_get item info " <> bobItemId)
+      bob <##. "sent at: "
+      bob <##. "received at: "
+
+      alice ##> ("/_update item #1 " <> aliceItemId <> " text hey 👋")
+      alice <# "#team [edited] hey 👋"
+      bob <# "#team alice> [edited] hey 👋"
+
+      alice ##> ("/_get item info " <> aliceItemId)
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> ("/_get item info " <> bobItemId)
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hey 👋"
+      bob .<## ": hello!"
+
+      alice ##> ("/_update item #1 " <> aliceItemId <> " text hello there")
+      alice <# "#team [edited] hello there"
+      bob <# "#team alice> [edited] hello there"
+
+      alice ##> "/item info #team hello"
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hello there"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> "/item info #team hello"
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hello there"
+      bob .<## ": hey 👋"
+      bob .<## ": hello!"
+
+      bob #$> ("/_delete item #1 " <> bobItemId <> " internal", id, "message deleted")
+
+      alice ##> ("/_update item #1 " <> aliceItemId <> " text hey there")
+      alice <# "#team [edited] hey there"
+      bob <# "#team alice> [edited] hey there"
+
+      alice ##> "/item info #team hey"
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hey there"
+      alice .<## ": hello there"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> "/item info #team hey"
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hey there"
+
 testGroupMessageDelete :: HasCallStack => FilePath -> IO ()
 testGroupMessageDelete =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -981,6 +1052,19 @@ testGroupLiveMessage =
     alice <# "#team [LIVE] hello 2"
     bob <# "#team alice> [LIVE ended] hello 2"
     cath <# "#team alice> [LIVE ended] hello 2"
+    -- live message has edit history
+    alice ##> ("/_get item info " <> msgItemId2)
+    alice <##. "sent at: "
+    alice <## "message history:"
+    alice .<## ": hello 2"
+    alice .<## ":"
+    bobItemId <- lastItemId bob
+    bob ##> ("/_get item info " <> bobItemId)
+    bob <##. "sent at: "
+    bob <##. "received at: "
+    bob <## "message history:"
+    bob .<## ": hello 2"
+    bob .<## ":"
 
 testUpdateGroupProfile :: HasCallStack => FilePath -> IO ()
 testUpdateGroupProfile =
