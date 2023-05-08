@@ -127,12 +127,13 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
       chatModel.controller.startChat(user)
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
       chatModel.onboardingStage.value = OnboardingStage.Step3_CreateSimpleXAddress
-      SimplexApp.context.chatModel.controller.ntfManager.createNtfChannelsMaybeShowAlert()
     } else {
       val users = chatModel.controller.listUsers()
       chatModel.users.clear()
       chatModel.users.addAll(users)
       chatModel.controller.getUserChatData()
+      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
+      chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
       close()
     }
   }
