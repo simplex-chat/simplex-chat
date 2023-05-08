@@ -567,8 +567,9 @@
         <target state="translated">Chamada já encerrada!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Calls" xml:space="preserve">
+      <trans-unit id="Calls" xml:space="preserve" approved="no">
         <source>Calls</source>
+        <target state="translated">Chamadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve" approved="no">
@@ -605,8 +606,9 @@
         <target state="translated">Alterar senha do banco de dados?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change member role?" xml:space="preserve">
+      <trans-unit id="Change member role?" xml:space="preserve" approved="no">
         <source>Change member role?</source>
+        <target state="translated">Mudar a função de membro?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
@@ -632,8 +634,9 @@
         <target state="translated">Console de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database" xml:space="preserve">
+      <trans-unit id="Chat database" xml:space="preserve" approved="no">
         <source>Chat database</source>
+        <target state="translated">Banco de dados de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database deleted" xml:space="preserve" approved="no">
@@ -661,8 +664,9 @@
         <target state="translated">Preferências de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chats" xml:space="preserve">
+      <trans-unit id="Chats" xml:space="preserve" approved="no">
         <source>Chats</source>
+        <target state="translated">Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check server address and try again." xml:space="preserve" approved="no">
@@ -683,12 +687,14 @@
         <target state="translated">Limpar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear conversation" xml:space="preserve">
+      <trans-unit id="Clear conversation" xml:space="preserve" approved="no">
         <source>Clear conversation</source>
+        <target state="translated">Limpar conversa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear conversation?" xml:space="preserve">
+      <trans-unit id="Clear conversation?" xml:space="preserve" approved="no">
         <source>Clear conversation?</source>
+        <target state="translated">Limpar conversa?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear verification" xml:space="preserve" approved="no">
@@ -4926,6 +4932,11 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
         <target state="translated">Adicione o endereço ao seu perfil, para que seus contatos possam compartilhá-lo com outras pessoas. A atualização do perfil será enviada aos seus contatos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Auto-accept" xml:space="preserve" approved="no">
+        <source>Auto-accept</source>
+        <target state="translated">Aceitação automática</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
