@@ -13,6 +13,7 @@ struct IncognitoHelp: View {
         VStack(alignment: .leading) {
             Text("Incognito mode")
                 .font(.largeTitle)
+                .bold()
                 .padding(.vertical)
             ScrollView {
                 VStack(alignment: .leading) {

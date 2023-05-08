@@ -730,8 +730,8 @@ Disponible dans la v5.1</target>
         <target>Changer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change Passcode" xml:space="preserve">
-        <source>Change Passcode</source>
+      <trans-unit id="Change passcode" xml:space="preserve">
+        <source>Change passcode</source>
         <target>Modifier le code d'accès</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

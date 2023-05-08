@@ -120,6 +120,13 @@ instance ToJSON User where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
+data NewUser = NewUser
+  { profile :: Maybe Profile,
+    sameServers :: Bool,
+    pastTimestamp :: Bool
+  }
+  deriving (Show, Generic, FromJSON)
+
 newtype B64UrlByteString = B64UrlByteString ByteString
   deriving (Eq, Show)
 
