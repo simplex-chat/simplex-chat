@@ -76,13 +76,12 @@ struct ChatItemInfoView: View {
             set: { _ in }
         )
         VStack(alignment: .leading, spacing: 4) {
-            messageText(itemVersion.msgContent.text, parseSimpleXMarkdown(itemVersion.msgContent.text), nil)
-                .allowsHitTesting(false)
+            ExpandableText(itemVersion.msgContent.text, lineLimit: 3)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(ciDirFrameColor(chatItemSent: chatItemSent, colorScheme: colorScheme))
                 .cornerRadius(18)
-                .uiKitContextMenu(menu: uiMenu)
+                // .uiKitContextMenu(menu: uiMenu)
             Text(localTimestamp(itemVersion.itemVersionTs) + (current ? " (Current)" : ""))
                 .foregroundStyle(.secondary)
                 .font(.caption)
@@ -125,6 +124,97 @@ struct ChatItemInfoView: View {
             }
         }
         return shareText.trimmingCharacters(in: .newlines)
+    }
+}
+
+struct ExpandableText: View {
+    @State private var expanded: Bool = false
+    @State private var truncated: Bool = false
+    @State private var shrinkText: String
+
+    private var text: String
+    let font: UIFont
+    let lineLimit: Int
+
+    init(_ text: String, lineLimit: Int, font: UIFont = UIFont.preferredFont(forTextStyle: UIFont.TextStyle.body)) {
+        self.text = text
+        _shrinkText = State(wrappedValue: text)
+        self.lineLimit = lineLimit
+        self.font = font
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Group {
+                let t = self.expanded ? text : shrinkText
+                messageText(t, parseSimpleXMarkdown(t), nil)
+                + moreLessText()
+            }
+            .lineLimit(expanded ? nil : lineLimit)
+            .background(
+                Text(text)
+                    .lineLimit(lineLimit)
+                    .background(GeometryReader { visibleTextGeometry in
+                        Color.clear.onAppear() {
+                            let size = CGSize(width: visibleTextGeometry.size.width, height: .greatestFiniteMagnitude)
+                            let attributes:[NSAttributedString.Key:Any] = [NSAttributedString.Key.font: font]
+
+                            var low  = 0
+                            var high = shrinkText.count
+                            var mid = high
+                            while ((high - low) > 1) {
+                                let attributedText = NSAttributedString(string: shrinkText + moreLessStr, attributes: attributes)
+                                let boundingRect = attributedText.boundingRect(with: size, options: NSStringDrawingOptions.usesLineFragmentOrigin, context: nil)
+                                if boundingRect.size.height > visibleTextGeometry.size.height {
+                                    truncated = true
+                                    high = mid
+                                    mid = (high + low) / 2
+                                } else {
+                                    if mid == text.count {
+                                        break
+                                    } else {
+                                        low = mid
+                                        mid = (low + high) / 2
+                                    }
+                                }
+                                shrinkText = String(text.prefix(mid)).trimmingCharacters(in: .whitespaces)
+                            }
+                        }
+                    })
+                    .hidden()
+            )
+            .font(Font(font))
+            if truncated {
+                Button(action: {
+                    expanded.toggle()
+                }, label: {
+                    HStack {
+                        Spacer()
+                        Text("")
+                    }.opacity(0)
+                })
+            }
+        }
+    }
+
+    private var moreLessStr: String {
+        if !truncated {
+            return ""
+        } else {
+            return self.expanded
+            ? "\n" + NSLocalizedString("Read less", comment: "long text button")
+            : "… " + NSLocalizedString("Read more", comment: "long text button")
+        }
+    }
+
+    private func moreLessText() -> Text {
+        if !truncated {
+            return Text("")
+        } else {
+            return self.expanded
+            ? Text("\n") + Text("Read less").foregroundColor(.accentColor)
+            : Text("… ") + Text("Read more").foregroundColor(.accentColor)
+        }
     }
 }
 
