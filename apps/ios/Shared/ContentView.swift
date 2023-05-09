@@ -192,7 +192,7 @@ struct ContentView: View {
     private func justAuthenticate() {
         userAuthorized = false
         let laMode = privacyLocalAuthModeDefault.get()
-        authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason")) { laResult in
+        authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
             logger.debug("authenticate callback: \(String(describing: laResult))")
             switch (laResult) {
             case .success:

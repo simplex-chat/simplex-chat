@@ -42,7 +42,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             changeActiveUser(userId, viewPwd: nil)
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
-            let chatId = content.userInfo["chatId"] as? String {
+           let chatId = content.userInfo["chatId"] as? String {
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
                 Task { await acceptContactRequest(contactRequest) }
             } else {
@@ -107,8 +107,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                     // in another chat
                     return recent ? [.banner, .list] : [.sound, .banner, .list]
                 }
-            // this notification is deliverd from the notifications server
-            // when the app is in foreground it does not need to be shown
+                // this notification is deliverd from the notifications server
+                // when the app is in foreground it does not need to be shown
             case ntfCategoryCheckMessage: return []
             case ntfCategoryCallInvitation: return []
             default: return [.sound, .banner, .list]
@@ -247,8 +247,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         }
     }
 
-    func removeNotifications(_ ids : [String]){
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+    func removeAllNotifications() async {
+        let nc = UNUserNotificationCenter.current()
+        let settings = await nc.notificationSettings()
+        if settings.authorizationStatus == .authorized {
+            nc.removeAllPendingNotificationRequests()
+            nc.removeAllDeliveredNotifications()
+        }
     }
 }

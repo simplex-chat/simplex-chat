@@ -102,9 +102,13 @@ struct SimplexLockView: View {
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @State private var laMode: LAMode = privacyLocalAuthModeDefault.get()
     @AppStorage(DEFAULT_LA_LOCK_DELAY) private var laLockDelay = 30
-    @State var performLA: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var performLA: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var selfDestruct: Bool = UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT)
+    @State private var currentSelfDestruct: Bool = UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT)
+    @AppStorage(DEFAULT_LA_SELF_DESTRUCT_DISPLAY_NAME) private var selfDestructDisplayName = ""
     @State private var performLAToggleReset = false
     @State private var performLAModeReset = false
+    @State private var performLASelfDestructReset = false
     @State private var showPasswordAction: PasswordAction? = nil
     @State private var showChangePassword = false
     @State var laAlert: LASettingViewAlert? = nil
@@ -116,6 +120,8 @@ struct SimplexLockView: View {
         case laUnavailableTurningOffAlert
         case laPasscodeSetAlert
         case laPasscodeChangedAlert
+        case laSeldDestructPasscodeSetAlert
+        case laSeldDestructPasscodeChangedAlert
         case laPasscodeNotChangedAlert
 
         var id: Self { self }
@@ -124,7 +130,10 @@ struct SimplexLockView: View {
     enum PasswordAction: Identifiable {
         case enableAuth
         case toggleMode
-        case changePassword
+        case changePasscode
+        case enableSelfDestruct
+        case changeSelfDestructPasscode
+        case selfDestructInfo
 
         var id: Self { self }
     }
@@ -159,8 +168,30 @@ struct SimplexLockView: View {
                             }
                         }
                         if showChangePassword && laMode == .passcode {
-                            Button("Change Passcode") {
+                            Button("Change passcode") {
                                 changeLAPassword()
+                            }
+                        }
+                    }
+                }
+
+                if performLA && laMode == .passcode {
+                    Section("Self-destruct passcode") {
+                        Toggle(isOn: $selfDestruct) {
+                            HStack(spacing: 6) {
+                                Text("Enable self-destruct")
+                                Image(systemName: "info.circle")
+                                    .foregroundColor(.accentColor)
+                                    .font(.system(size: 14))
+                            }
+                            .onTapGesture {
+                                showPasswordAction = .selfDestructInfo
+                            }
+                        }
+                        if selfDestruct {
+                            TextField("New display name", text: $selfDestructDisplayName)
+                            Button("Change self-destruct passcode") {
+                                changeSelfDestructPassword()
                             }
                         }
                     }
@@ -192,6 +223,13 @@ struct SimplexLockView: View {
                 updateLAMode()
             }
         }
+        .onChange(of: selfDestruct) { _ in
+            if performLASelfDestructReset {
+                performLASelfDestructReset = false
+            } else if prefPerformLA {
+                toggleSelfDestruct()
+            }
+        }
         .alert(item: $laAlert) { alertItem in
             switch alertItem {
             case .laTurnedOnAlert: return laTurnedOnAlert()
@@ -200,6 +238,8 @@ struct SimplexLockView: View {
             case .laUnavailableTurningOffAlert: return laUnavailableTurningOffAlert()
             case .laPasscodeSetAlert: return passcodeAlert("Passcode set!")
             case .laPasscodeChangedAlert: return passcodeAlert("Passcode changed!")
+            case .laSeldDestructPasscodeSetAlert: return selfDestructPasscodeAlert("Self-destruct passcode enabled!")
+            case .laSeldDestructPasscodeChangedAlert: return selfDestructPasscodeAlert("Self-destruct passcode changed!")
             case .laPasscodeNotChangedAlert: return mkAlert(title: "Passcode not changed!")
             }
         }
@@ -223,12 +263,27 @@ struct SimplexLockView: View {
                 } cancel: {
                     revertLAMode()
                 }
-            case .changePassword:
+            case .changePasscode:
                 SetAppPasscodeView {
                     showLAAlert(.laPasscodeChangedAlert)
                 } cancel: {
                     showLAAlert(.laPasscodeNotChangedAlert)
                 }
+            case .enableSelfDestruct:
+                SetAppPasscodeView(passcodeKeychain: kcSelfDestructPassword, title: "Set passcode", reason: NSLocalizedString("Enable self-destruct passcode", comment: "set passcode view")) {
+                    updateSelfDestruct()
+                    showLAAlert(.laSeldDestructPasscodeSetAlert)
+                } cancel: {
+                    revertSelfDestruct()
+                }
+            case .changeSelfDestructPasscode:
+                SetAppPasscodeView(passcodeKeychain: kcSelfDestructPassword, reason: NSLocalizedString("Change self-destruct passcode", comment: "set passcode view")) {
+                    showLAAlert(.laSeldDestructPasscodeChangedAlert)
+                } cancel: {
+                    showLAAlert(.laPasscodeNotChangedAlert)
+                }
+            case .selfDestructInfo:
+                selfDestructInfoView()
             }
         }
         .onAppear {
@@ -237,6 +292,30 @@ struct SimplexLockView: View {
         .onDisappear() {
             m.laRequest = nil
         }
+    }
+
+    private func selfDestructInfoView() -> some View {
+        VStack(alignment: .leading) {
+            Text("Self-desctruct")
+                .font(.largeTitle)
+                .bold()
+                .padding(.vertical)
+            ScrollView {
+                VStack(alignment: .leading) {
+                    Group {
+                        Text("If you enter your self-desctruct passcode while opening the app:")
+                        VStack(spacing: 8) {
+                            textListItem("1.", "All app data is deleted.")
+                            textListItem("2.", "App passcode is replaced with self-desctruct passcode.")
+                            textListItem("3.", "An empty chat profile with the provided name is created, and the app opens as usual.")
+                        }
+                    }
+                    .padding(.bottom)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
     }
 
     private func  showLAAlert(_ a: LASettingViewAlert) {
@@ -276,11 +355,39 @@ struct SimplexLockView: View {
         }
     }
 
+    private func toggleSelfDestruct() {
+        authenticate(reason: NSLocalizedString("Change self-destruct mode", comment: "authentication reason")) { laResult in
+            switch laResult {
+            case .failed:
+                revertSelfDestruct()
+                laAlert = .laFailedAlert
+            case .success:
+                if selfDestruct {
+                    showPasswordAction = .enableSelfDestruct
+                } else {
+                    resetSelfDestruct()
+                }
+            case .unavailable:
+                disableUnavailableLA()
+            }
+        }
+    }
+
     private func changeLAPassword() {
         authenticate(title: "Current Passcode", reason: NSLocalizedString("Change passcode", comment: "authentication reason")) { laResult in
             switch laResult {
             case .failed: laAlert = .laFailedAlert
-            case .success: showPasswordAction = .changePassword
+            case .success: showPasswordAction = .changePasscode
+            case .unavailable: disableUnavailableLA()
+            }
+        }
+    }
+
+    private func changeSelfDestructPassword() {
+        authenticate(reason: NSLocalizedString("Change self-destruct passcode", comment: "authentication reason")) { laResult in
+            switch laResult {
+            case .failed: laAlert = .laFailedAlert
+            case .success: showPasswordAction = .changeSelfDestructPasscode
             case .unavailable: disableUnavailableLA()
             }
         }
@@ -329,6 +436,7 @@ struct SimplexLockView: View {
         _ = kcAppPassword.remove()
         laLockDelay = 30
         showChangePassword = false
+        resetSelfDestruct()
     }
 
     private func resetLAEnabled(_ onOff: Bool) {
@@ -347,8 +455,28 @@ struct SimplexLockView: View {
         privacyLocalAuthModeDefault.set(laMode)
     }
 
+    private func resetSelfDestruct() {
+        _ = kcSelfDestructPassword.remove()
+        selfDestruct = false
+        updateSelfDestruct()
+    }
+
+    private func revertSelfDestruct() {
+        performLASelfDestructReset = true
+        withAnimation { selfDestruct = currentSelfDestruct }
+    }
+
+    private func updateSelfDestruct() {
+        UserDefaults.standard.set(selfDestruct, forKey: DEFAULT_LA_SELF_DESTRUCT)
+        currentSelfDestruct = selfDestruct
+    }
+
     private func passcodeAlert(_ title: LocalizedStringKey) -> Alert {
         mkAlert(title: title, message: "Please remember or store it securely - there is no way to recover a lost passcode!")
+    }
+
+    private func selfDestructPasscodeAlert(_ title: LocalizedStringKey) -> Alert {
+        mkAlert(title: title, message: "If you enter this passcode when opening the app, all app data will be irreversibly removed!")
     }
 }
 

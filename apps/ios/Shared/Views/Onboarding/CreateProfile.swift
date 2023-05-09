@@ -129,6 +129,8 @@ struct CreateProfile: View {
                     m.onboardingStage = .step3_CreateSimpleXAddress
                 }
             } else {
+                onboardingStageDefault.set(.onboardingComplete)
+                m.onboardingStage = .onboardingComplete
                 dismiss()
                 m.users = try listUsers()
                 try getUserChatData()

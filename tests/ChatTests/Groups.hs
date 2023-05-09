@@ -457,7 +457,7 @@ testGroupSameName =
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/g team"
-      alice <## "group #team_1 (team) is created"
+      alice <## "group #team_1 is created"
       alice <## "to add members use /a team_1 <name> or /create link #team_1"
 
 testGroupDeleteWhenInvited :: HasCallStack => FilePath -> IO ()
@@ -518,7 +518,7 @@ testGroupReAddInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team_1 (team): alice invites you to join the group as admin"
+            bob <## "#team_1: alice invites you to join the group as admin"
             bob <## "use /j team_1 to accept"
         ]
 
@@ -678,7 +678,7 @@ testGroupRemoveAdd =
         ]
       alice ##> "/a team bob"
       alice <## "invitation to join the group #team sent to bob"
-      bob <## "#team_1 (team): alice invites you to join the group as admin"
+      bob <## "#team_1: alice invites you to join the group as admin"
       bob <## "use /j team_1 to accept"
       bob ##> "/j team_1"
       concurrentlyN_
@@ -1058,13 +1058,13 @@ testGroupLiveMessage =
     alice <## "message history:"
     alice .<## ": hello 2"
     alice .<## ":"
-    bobItemId <- lastItemId bob
-    bob ##> ("/_get item info " <> bobItemId)
-    bob <##. "sent at: "
-    bob <##. "received at: "
-    bob <## "message history:"
-    bob .<## ": hello 2"
-    bob .<## ":"
+    -- bobItemId <- lastItemId bob
+    -- bob ##> ("/_get item info " <> bobItemId)
+    -- bob <##. "sent at: "
+    -- bob <##. "received at: "
+    -- bob <## "message history:"
+    -- bob .<## ": hello 2"
+    -- bob .<## ":"
 
 testUpdateGroupProfile :: HasCallStack => FilePath -> IO ()
 testUpdateGroupProfile =

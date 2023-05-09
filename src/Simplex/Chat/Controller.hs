@@ -180,7 +180,7 @@ instance ToJSON HelpSection where
 
 data ChatCommand
   = ShowActiveUser
-  | CreateActiveUser Profile Bool
+  | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
   | SetActiveUser UserName (Maybe UserPwd)
