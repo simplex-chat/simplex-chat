@@ -36,6 +36,7 @@ public enum ChatCommand {
     case apiStorageEncryption(config: DBEncryptionConfig)
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
+    case apiGetChatItemInfo(itemId: Int64)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
@@ -141,6 +142,7 @@ public enum ChatCommand {
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
+            case let .apiGetChatItemInfo(itemId): return "/_get item info \(itemId)"
             case let .apiSendMessage(type, id, file, quotedItemId, mc, live):
                 let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
                 return "/_send \(ref(type, id)) live=\(onOff(live)) json \(msg)"
@@ -247,6 +249,7 @@ public enum ChatCommand {
             case .apiStorageEncryption: return "apiStorageEncryption"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
+            case .apiGetChatItemInfo: return "apiGetChatItemInfo"
             case .apiSendMessage: return "apiSendMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
@@ -385,6 +388,7 @@ public enum ChatResponse: Decodable, Error {
     case chatSuspended
     case apiChats(user: User, chats: [ChatData])
     case apiChat(user: User, chat: ChatData)
+    case chatItemInfo(user: User, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case userProtoServers(user: User, servers: UserProtoServers)
     case serverTestResult(user: User, testServer: String, testFailure: ProtocolTestFailure?)
     case chatItemTTL(user: User, chatItemTTL: Int64?)
@@ -501,6 +505,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatSuspended: return "chatSuspended"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
+            case .chatItemInfo: return "chatItemInfo"
             case .userProtoServers: return "userProtoServers"
             case .serverTestResult: return "serverTestResult"
             case .chatItemTTL: return "chatItemTTL"
@@ -616,6 +621,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatSuspended: return noDetails
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
             case let .apiChat(u, chat): return withUser(u, String(describing: chat))
+            case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
             case let .userProtoServers(u, servers): return withUser(u, "servers: \(String(describing: servers))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
             case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
