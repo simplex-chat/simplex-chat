@@ -351,7 +351,20 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
         ) { contentPadding ->
-          BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
+          BoxWithConstraints(Modifier
+            .fillMaxHeight()
+            .padding(if (composeState.value.preview is ComposePreview.VoicePreview) {
+              PaddingValues(
+                contentPadding.calculateStartPadding(LocalLayoutDirection.current),
+                contentPadding.calculateTopPadding(),
+                contentPadding.calculateEndPadding(LocalLayoutDirection.current),
+                contentPadding.calculateBottomPadding() - 22.dp
+              )
+            } else {
+              contentPadding
+            }
+            )
+          ) {
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,

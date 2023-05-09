@@ -64,7 +64,9 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick)
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick) {
+        AudioPlayer.seekTo(it, progress)
+      }
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
       val metaReserve = if (edited)
@@ -90,18 +92,41 @@ private fun VoiceLayout(
   timedMessagesTTL: Int?,
   play: () -> Unit,
   pause: () -> Unit,
-  longClick: () -> Unit
+  longClick: () -> Unit,
+  onProgressChanged: (Int) -> Unit,
+
 ) {
+  val colors = SliderDefaults.colors(
+    inactiveTrackColor = MaterialTheme.colors.primary.mixWith(MaterialTheme.colors.background, 0.24f)
+  )
+
+  @Composable
+  fun RowScope.Slider() {
+    if (audioPlaying.value || progress.value > 0) {
+      Slider(
+        progress.value.toFloat(),
+        onValueChange = { onProgressChanged(it.toInt()) },
+        Modifier.weight(1f).padding(horizontal = DEFAULT_PADDING_HALF / 2),
+        valueRange = 0f..duration.value.toFloat(),
+        colors = colors
+      )
+    }
+  }
   when {
     hasText -> {
       Spacer(Modifier.width(6.dp))
       VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
-      DurationText(text, PaddingValues(start = 12.dp))
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        DurationText(text, PaddingValues(start = 12.dp))
+        // Will crash currently
+        Slider()
+      }
     }
     sent -> {
       Row {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
           Spacer(Modifier.height(56.dp))
+          Slider()
           DurationText(text, PaddingValues(end = 12.dp))
         }
         Column {
@@ -120,8 +145,9 @@ private fun VoiceLayout(
             CIMetaView(ci, timedMessagesTTL)
           }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
           DurationText(text, PaddingValues(start = 12.dp))
+          Slider()
           Spacer(Modifier.height(56.dp))
         }
       }

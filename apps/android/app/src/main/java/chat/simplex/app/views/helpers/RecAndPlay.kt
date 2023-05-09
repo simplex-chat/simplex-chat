@@ -274,6 +274,11 @@ object AudioPlayer {
     audioPlaying.value = false
   }
 
+  fun seekTo(ms: Int, pro: MutableState<Int>) {
+    player.seekTo(ms)
+    pro.value = ms
+  }
+
   fun duration(filePath: String): Int? {
     var res: Int? = null
     kotlin.runCatching {
