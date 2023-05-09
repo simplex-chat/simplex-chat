@@ -27,6 +27,7 @@ module Simplex.Chat.Store
     chatStoreFile,
     agentStoreFile,
     createUserRecord,
+    createUserRecordAt,
     getUsersInfo,
     getUsers,
     setActiveUser,
@@ -490,9 +491,11 @@ insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
 
 createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
-createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, preferences = userPreferences} activeUser =
+createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
+
+createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
+createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
-    currentTs <- getCurrentTime
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute
       db

@@ -21,6 +21,8 @@ let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_LA_MODE = "localAuthenticationMode"
 let DEFAULT_LA_LOCK_DELAY = "localAuthenticationLockDelay"
+let DEFAULT_LA_SELF_DESTRUCT = "localAuthenticationSelfDestruct"
+let DEFAULT_LA_SELF_DESTRUCT_DISPLAY_NAME = "localAuthenticationSelfDestructDisplayName"
 let DEFAULT_NOTIFICATION_ALERT_SHOWN = "notificationAlertShown"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
@@ -53,6 +55,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PERFORM_LA: false,
     DEFAULT_LA_MODE: LAMode.system.rawValue,
     DEFAULT_LA_LOCK_DELAY: 30,
+    DEFAULT_LA_SELF_DESTRUCT: false,
     DEFAULT_NOTIFICATION_ALERT_SHOWN: false,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_CALL_KIT_CALLS_IN_RECENTS: false,
@@ -298,9 +301,8 @@ struct SettingsView: View {
                 .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
                 .foregroundColor(chatModel.incognito ? Color.indigo : .secondary)
             Toggle(isOn: $chatModel.incognito) {
-                HStack {
+                HStack(spacing: 6) {
                     Text("Incognito")
-                    Spacer().frame(width: 4)
                     Image(systemName: "info.circle")
                         .foregroundColor(.accentColor)
                         .font(.system(size: 14))

@@ -83,6 +83,7 @@ import Simplex.Messaging.Util
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
+import System.Random (randomRIO)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
@@ -318,7 +319,8 @@ toView event = do
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser p@Profile {displayName} sameServers -> do
+  CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
+    p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
     (smp, smpServers) <- chooseServers SPSMP
     (xftp, xftpServers) <- chooseServers SPXFTP
@@ -329,7 +331,8 @@ processChatCommand = \case
           when (any (\User {localDisplayName = n} -> n == displayName) users) $
             throwChatError $ CEUserExists displayName
           withAgent (\a -> createUser a smp xftp)
-    user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
+    ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
+    user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
     storeServers user smpServers
     storeServers user xftpServers
     setActive ActiveNone
@@ -351,6 +354,8 @@ processChatCommand = \case
       storeServers user servers =
         unless (null servers) $
           withStore $ \db -> overwriteProtocolServers db user servers
+      coupleDaysAgo t = (`addUTCTime` t) . fromInteger . (+ (2 * day)) <$> randomRIO (0, day)
+      day = 86400
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
   APISetActiveUser userId' viewPwd_ -> withUser $ \user -> do
     user' <- privateGetUser userId'
@@ -4584,12 +4589,8 @@ chatCommandP =
   choice
     [ "/mute " *> ((`ShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`ShowMessages` True) <$> chatNameP),
-      "/create user"
-        *> ( do
-               sameSmp <- (A.space *> "same_smp=" *> onOffP) <|> pure False
-               uProfile <- A.space *> userProfile
-               pure $ CreateActiveUser uProfile sameSmp
-           ),
+      "/_create user " *> (CreateActiveUser <$> jsonP),
+      "/create user " *> (CreateActiveUser <$> newUserP),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
@@ -4784,7 +4785,7 @@ chatCommandP =
       ("/welcome" <|> "/w") $> Welcome,
       "/profile_image " *> (UpdateProfileImage . Just . ImageData <$> imageP),
       "/profile_image" $> UpdateProfileImage Nothing,
-      ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames),
+      ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNames),
       ("/profile" <|> "/p") $> ShowProfile,
       "/set voice #" *> (SetGroupFeature (AGF SGFVoice) <$> displayName <*> (A.space *> strP)),
       "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayName <*> optional (A.space *> strP)),
@@ -4823,23 +4824,19 @@ chatCommandP =
     refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
     onOffP = ("on" $> True) <|> ("off" $> False)
-    userNames = do
-      cName <- displayName
-      fullName <- fullNameP cName
-      pure (cName, fullName)
-    userProfile = do
-      (cName, fullName) <- userNames
-      pure Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
+    profileNames = (,) <$> displayName <*> fullNameP
+    newUserP = do
+      sameServers <- "same_smp=" *> onOffP <* A.space <|> pure False
+      (cName, fullName) <- profileNames
+      let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
+      pure NewUser {profile, sameServers, pastTimestamp = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
-      gName <- displayName
-      fullName <- fullNameP gName
+      (gName, fullName) <- profileNames
       let groupPreferences = Just (emptyGroupPrefs :: GroupPreferences) {directMessages = Just DirectMessagesGroupPreference {enable = FEOn}}
       pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
-    fullNameP name = do
-      n <- (A.space *> A.takeByteString) <|> pure ""
-      pure $ if B.null n then name else safeDecodeUtf8 n
+    fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     msgTextP = jsonP <|> textP

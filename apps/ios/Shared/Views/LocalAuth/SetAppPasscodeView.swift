@@ -10,6 +10,9 @@ import SwiftUI
 import SimpleXChat
 
 struct SetAppPasscodeView: View {
+    var passcodeKeychain: KeyChainItem = kcAppPassword
+    var title: LocalizedStringKey = "New Passcode"
+    var reason: String?
     var submit: () -> Void
     var cancel: () -> Void
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -27,7 +30,7 @@ struct SetAppPasscodeView: View {
                     submitEnabled: { pwd in pwd == enteredPassword }
                 ) {
                     if passcode == enteredPassword {
-                        if kcAppPassword.set(passcode) {
+                        if passcodeKeychain.set(passcode) {
                             enteredPassword = ""
                             passcode = ""
                             dismiss()
@@ -38,7 +41,7 @@ struct SetAppPasscodeView: View {
                     }
                 }
             } else {
-                setPasswordView(title: "New Passcode", submitLabel: "Save") {
+                setPasswordView(title: title, submitLabel: "Save") {
                     enteredPassword = passcode
                     passcode = ""
                     confirming = true
@@ -51,7 +54,7 @@ struct SetAppPasscodeView: View {
     }
 
     private func setPasswordView(title: LocalizedStringKey, submitLabel: LocalizedStringKey, submitEnabled: (((String) -> Bool))? = nil, submit: @escaping () -> Void) -> some View {
-        PasscodeView(passcode: $passcode, title: title, submitLabel: submitLabel, submitEnabled: submitEnabled, submit: submit) {
+        PasscodeView(passcode: $passcode, title: title, reason: reason, submitLabel: submitLabel, submitEnabled: submitEnabled, submit: submit) {
             dismiss()
             cancel()
         }
