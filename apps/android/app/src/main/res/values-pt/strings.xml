@@ -494,4 +494,24 @@
     <string name="delete_contact_question">Eliminar contato\?</string>
     <string name="settings_section_title_device">DISPOSITIVO</string>
     <string name="direct_messages">Mensagens diretas</string>
+    <string name="decentralized">Descentralizado</string>
+    <string name="integrity_msg_duplicate">mensagem duplicada</string>
+    <string name="file_with_path">Ficheiro: %s</string>
+    <string name="group_info_member_you">você: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="ttl_s">%ds</string>
+    <string name="ttl_sec">%d seg</string>
+    <string name="ttl_w">%dw</string>
+    <string name="failed_to_create_user_duplicate_title">Nome para exibição duplicado!</string>
+    <string name="la_seconds">%d segundos</string>
+    <string name="file_saved">Ficheiro guardado</string>
+    <string name="database_upgrade">Atualização da base de dados</string>
+    <string name="ttl_week">%d semana</string>
+    <string name="ttl_weeks">%d semanas</string>
+    <string name="direct_messages_are_prohibited_in_chat">Mensagens diretas entre membros são proibidas neste grupo.</string>
+    <string name="smp_server_test_delete_queue">Eliminar fila</string>
+    <string name="smp_server_test_download_file">Transferir ficheiro</string>
+    <string name="icon_descr_file">Ficheiro</string>
+    <string name="file_not_found">Ficheiro não encontrado</string>
+    <string name="choose_file">Ficheiro</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Você não perderá os seus contatos se eliminar o seu endereço mais tarde.</string>
 </resources>
