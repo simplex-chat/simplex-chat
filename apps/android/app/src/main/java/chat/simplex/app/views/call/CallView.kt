@@ -185,10 +185,12 @@ fun ActiveCallView(chatModel: ChatModel) {
     activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
     // Lock orientation to portrait in order to have good experience with calls
     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    chatModel.activeCallViewIsVisible.value = true
     onDispose {
       activity.volumeControlStream = prevVolumeControlStream
       // Unlock orientation
       activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+      chatModel.activeCallViewIsVisible.value = false
     }
   }
 }

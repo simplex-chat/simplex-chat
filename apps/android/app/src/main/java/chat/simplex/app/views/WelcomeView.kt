@@ -125,13 +125,17 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
+      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
       chatModel.onboardingStage.value = OnboardingStage.Step3_CreateSimpleXAddress
-      SimplexApp.context.chatModel.controller.ntfManager.createNtfChannelsMaybeShowAlert()
     } else {
       val users = chatModel.controller.listUsers()
       chatModel.users.clear()
       chatModel.users.addAll(users)
       chatModel.controller.getUserChatData()
+      // the next two lines are only needed for failure case when because of the database error the app gets stuck on on-boarding screen,
+      // this will get it unstuck.
+      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
+      chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
       close()
     }
   }

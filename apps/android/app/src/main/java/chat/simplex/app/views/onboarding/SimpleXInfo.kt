@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.*
@@ -130,6 +131,9 @@ fun OnboardingActionButton(
   SimpleButtonFrame(click = {
     onclick?.invoke()
     onboardingStage.value = onboarding
+    if (onboarding != null) {
+      SimplexApp.context.chatModel.controller.appPrefs.onboardingStage.set(onboarding)
+    }
   }, modifier) {
     Text(stringResource(labelId), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary, fontSize = 20.sp)
     Icon(

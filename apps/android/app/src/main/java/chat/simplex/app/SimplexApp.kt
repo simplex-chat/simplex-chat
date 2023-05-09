@@ -68,12 +68,22 @@ class SimplexApp: Application(), LifecycleEventObserver {
       withApi {
         val user = chatController.apiGetActiveUser()
         if (user == null) {
+          chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
           chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
         } else {
+          val savedOnboardingStage = appPreferences.onboardingStage.get()
+          chatModel.onboardingStage.value = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
+            OnboardingStage.Step3_CreateSimpleXAddress
+          } else {
+            savedOnboardingStage
+          }
           chatController.startChat(user)
-          chatController.showBackgroundServiceNoticeIfNeeded()
-          if (appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
-            SimplexService.start(applicationContext)
+          // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
+          if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
+            chatController.showBackgroundServiceNoticeIfNeeded()
+            if (appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
+              SimplexService.start(applicationContext)
+          }
         }
       }
     }
