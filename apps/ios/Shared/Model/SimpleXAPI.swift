@@ -295,6 +295,12 @@ func loadChat(chat: Chat, search: String = "") {
     }
 }
 
+func apiGetChatItemInfo(itemId: Int64) async throws -> ChatItemInfo {
+    let r = await chatSendCmd(.apiGetChatItemInfo(itemId: itemId))
+    if case let .chatItemInfo(_, _, chatItemInfo) = r { return chatItemInfo }
+    throw r
+}
+
 func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false) async -> ChatItem? {
     let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live)

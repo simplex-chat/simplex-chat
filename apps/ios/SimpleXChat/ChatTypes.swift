@@ -2857,3 +2857,18 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
         return lhs.comparisonValue < rhs.comparisonValue
     }
 }
+
+public struct ChatItemInfo: Decodable {
+    public var chatItemId: Int64
+    public var itemTs: Date
+    public var createdAt: Date
+    public var updatedAt: Date
+    public var itemVersions: [ChatItemVersion]
+}
+
+public struct ChatItemVersion: Decodable {
+    public var chatItemVersionId: Int64
+    public var msgContent: MsgContent
+    public var itemVersionTs: Date
+    public var createdAt: Date
+}
