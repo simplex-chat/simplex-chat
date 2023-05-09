@@ -674,12 +674,14 @@
         <target state="translated">Verifique o endereço do servidor e tente novamente.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose file" xml:space="preserve">
+      <trans-unit id="Choose file" xml:space="preserve" approved="no">
         <source>Choose file</source>
+        <target state="translated">Escolher arquivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose from library" xml:space="preserve">
+      <trans-unit id="Choose from library" xml:space="preserve" approved="no">
         <source>Choose from library</source>
+        <target state="translated">Escolha a partir da biblioteca</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear" xml:space="preserve" approved="no">
@@ -702,8 +704,9 @@
         <target state="translated">Limpar verificação</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Colors" xml:space="preserve">
+      <trans-unit id="Colors" xml:space="preserve" approved="no">
         <source>Colors</source>
+        <target state="translated">Cores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Compare security codes with your contacts." xml:space="preserve" approved="no">
@@ -751,16 +754,18 @@
         <target state="translated">Conectar via link/QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via one-time link?" xml:space="preserve">
+      <trans-unit id="Connect via one-time link?" xml:space="preserve" approved="no">
         <source>Connect via one-time link?</source>
+        <target state="translated">Conectar via link de uso único?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via relay" xml:space="preserve">
         <source>Connect via relay</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting server…" xml:space="preserve">
+      <trans-unit id="Connecting server…" xml:space="preserve" approved="no">
         <source>Connecting to server…</source>
+        <target state="translated">Conectando ao servidor…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
@@ -782,8 +787,9 @@
         <target state="translated">Erro de conexão (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection request" xml:space="preserve">
+      <trans-unit id="Connection request" xml:space="preserve" approved="no">
         <source>Connection request</source>
+        <target state="translated">Pedido de conexão</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection request sent!" xml:space="preserve" approved="no">
@@ -816,8 +822,9 @@
         <target state="translated">Contato oculto:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Contact is connected" xml:space="preserve">
+      <trans-unit id="Contact is connected" xml:space="preserve" approved="no">
         <source>Contact is connected</source>
+        <target state="translated">O contato está conectado</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Contact is not connected yet!" xml:space="preserve" approved="no">
@@ -4937,6 +4944,16 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
       <trans-unit id="Auto-accept" xml:space="preserve" approved="no">
         <source>Auto-accept</source>
         <target state="translated">Aceitação automática</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Continue" xml:space="preserve" approved="no">
+        <source>Continue</source>
+        <target state="translated">Continuar</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create SimpleX address" xml:space="preserve" approved="no">
+        <source>Create SimpleX address</source>
+        <target state="translated">Criar endereço SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
