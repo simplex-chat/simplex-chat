@@ -64,7 +64,6 @@ fun DatabaseView(
       importArchiveAlert(m, context, uri, appFilesCountAndSize, progressIndicator)
     }
   }
-  val chatDbDeleted = remember { m.chatDbDeleted }
   LaunchedEffect(m.chatRunning) {
     runChat.value = m.chatRunning.value ?: true
   }
@@ -83,7 +82,6 @@ fun DatabaseView(
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
-      chatDbDeleted.value,
       m.controller.appPrefs.privacyFullBackup,
       appFilesCountAndSize,
       chatItemTTL,
@@ -134,7 +132,6 @@ fun DatabaseLayout(
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
-  chatDbDeleted: Boolean,
   privacyFullBackup: SharedPreference<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   chatItemTTL: MutableState<ChatItemTTL>,
@@ -173,7 +170,7 @@ fun DatabaseLayout(
     SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(R.string.run_chat_section)) {
-      RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
+      RunChatSetting(runChat, stopped, startChat, stopChatAlert)
     }
     SectionDividerSpaced()
 
@@ -330,7 +327,6 @@ private fun TtlOptions(current: State<ChatItemTTL>, enabled: State<Boolean>, onS
 fun RunChatSetting(
   runChat: Boolean,
   stopped: Boolean,
-  chatDbDeleted: Boolean,
   startChat: () -> Unit,
   stopChatAlert: () -> Unit
 ) {
@@ -341,7 +337,6 @@ fun RunChatSetting(
     iconColor = if (stopped) Color.Red else MaterialTheme.colors.primary,
   ) {
     DefaultSwitch(
-      enabled = !chatDbDeleted,
       checked = runChat,
       onCheckedChange = { runChatSwitch ->
         if (runChatSwitch) {
@@ -410,7 +405,7 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>, context:
     authenticate(
       generalGetString(R.string.auth_stop_chat),
       generalGetString(R.string.auth_log_in_using_credential),
-      context as FragmentActivity,
+      activity = context as FragmentActivity,
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {
@@ -433,16 +428,26 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>, context:
 private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
   withApi {
     try {
-      m.controller.apiStopChat()
       runChat.value = false
-      m.chatRunning.value = false
-      SimplexService.safeStopService(context)
+      stopChatAsync(m)
+      SimplexService.safeStopService(SimplexApp.context)
       MessagesFetcherWorker.cancelAll()
     } catch (e: Error) {
       runChat.value = true
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_stopping_chat), e.toString())
     }
   }
+}
+
+suspend fun stopChatAsync(m: ChatModel) {
+  m.controller.apiStopChat()
+  m.chatRunning.value = false
+}
+
+suspend fun deleteChatAsync(m: ChatModel) {
+  m.controller.apiDeleteStorage()
+  DatabaseUtils.ksDatabasePassword.remove()
+  m.controller.appPrefs.storeDBPassphrase.set(true)
 }
 
 private fun exportArchive(
@@ -619,10 +624,7 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   progressIndicator.value = true
   withApi {
     try {
-      m.controller.apiDeleteStorage()
-      m.chatDbDeleted.value = true
-      DatabaseUtils.ksDatabasePassword.remove()
-      m.controller.appPrefs.storeDBPassphrase.set(true)
+      deleteChatAsync(m)
       operationEnded(m, progressIndicator) {
         AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_deleted), generalGetString(R.string.restart_the_app_to_create_a_new_chat_profile))
       }
@@ -717,7 +719,6 @@ fun PreviewDatabaseLayout() {
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
-      chatDbDeleted = false,
       privacyFullBackup = SharedPreference({ true }, {}),
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.None) },
