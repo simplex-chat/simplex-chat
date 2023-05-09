@@ -1129,4 +1129,6 @@
     <string name="stop_file__action">Zastavit soubor</string>
     <string name="stop_snd_file__title">Zastavit odesílání souboru\?</string>
     <string name="stop_rcv_file__title">Zastavit příjem souboru\?</string>
+    <string name="learn_more_about_address">O adrese SimpleX</string>
+    <string name="one_time_link_short">Jednorázový odkaz</string>
 </resources>
