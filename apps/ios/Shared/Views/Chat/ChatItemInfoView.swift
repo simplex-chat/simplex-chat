@@ -83,10 +83,15 @@ struct ChatItemInfoView: View {
                 .background(ciDirFrameColor(chatItemSent: chatItemSent, colorScheme: colorScheme))
                 .cornerRadius(18)
                 .uiKitContextMenu(menu: uiMenu)
-            Text(localTimestamp(itemVersion.itemVersionTs) + (current ? " (Current)" : ""))
-                .foregroundStyle(.secondary)
-                .font(.caption)
-                .padding(.horizontal, 12)
+            Text(
+                localTimestamp(itemVersion.itemVersionTs)
+                + (current
+                   ? (" (" + NSLocalizedString("Current", comment: "designation of the current version of the message") + ")")
+                   : "")
+            )
+            .foregroundStyle(.secondary)
+            .font(.caption)
+            .padding(.horizontal, 12)
         }
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
