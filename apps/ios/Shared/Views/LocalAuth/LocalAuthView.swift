@@ -41,6 +41,7 @@ struct LocalAuthView: View {
                 try await deleteChatAsync()
                 _ = kcAppPassword.set(password)
                 _ = kcSelfDestructPassword.remove()
+                await NtfManager.shared.removeAllNotifications()
                 let displayName = UserDefaults.standard.string(forKey: DEFAULT_LA_SELF_DESTRUCT_DISPLAY_NAME)
                 UserDefaults.standard.removeObject(forKey: DEFAULT_LA_SELF_DESTRUCT)
                 UserDefaults.standard.removeObject(forKey: DEFAULT_LA_SELF_DESTRUCT_DISPLAY_NAME)

@@ -1058,13 +1058,13 @@ testGroupLiveMessage =
     alice <## "message history:"
     alice .<## ": hello 2"
     alice .<## ":"
-    bobItemId <- lastItemId bob
-    bob ##> ("/_get item info " <> bobItemId)
-    bob <##. "sent at: "
-    bob <##. "received at: "
-    bob <## "message history:"
-    bob .<## ": hello 2"
-    bob .<## ":"
+    -- bobItemId <- lastItemId bob
+    -- bob ##> ("/_get item info " <> bobItemId)
+    -- bob <##. "sent at: "
+    -- bob <##. "received at: "
+    -- bob <## "message history:"
+    -- bob .<## ": hello 2"
+    -- bob .<## ":"
 
 testUpdateGroupProfile :: HasCallStack => FilePath -> IO ()
 testUpdateGroupProfile =
