@@ -173,6 +173,9 @@ private fun DurationText(text: State<String>, padding: PaddingValues) {
 private fun PlayPauseButton(
   audioPlaying: Boolean,
   sent: Boolean,
+  angle: Float,
+  strokeWidth: Float,
+  strokeColor: Color,
   enabled: Boolean,
   error: Boolean,
   play: () -> Unit,
@@ -182,6 +185,7 @@ private fun PlayPauseButton(
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
+    Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = if (sent) sentColor else receivedColor,
     shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
   ) {
@@ -217,9 +221,12 @@ private fun VoiceMsgIndicator(
   pause: () -> Unit,
   longClick: () -> Unit
 ) {
+  val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
+  val strokeColor = MaterialTheme.colors.primary
   if (file != null && file.loaded && progress != null && duration != null) {
+    val angle = 360f * (progress.value.toDouble() / duration.value).toFloat()
     if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp)) {
+      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
           if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
           contentDescription = null,
@@ -228,7 +235,7 @@ private fun VoiceMsgIndicator(
         )
       }
     } else {
-      PlayPauseButton(audioPlaying, sent, true, error, play, pause, longClick = longClick)
+      PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
     }
   } else {
     if (file?.fileStatus is CIFileStatus.RcvInvitation
@@ -244,7 +251,7 @@ private fun VoiceMsgIndicator(
         ProgressIndicator()
       }
     } else {
-      PlayPauseButton(audioPlaying, sent, false, false, {}, {}, longClick)
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {}, longClick)
     }
   }
 }
