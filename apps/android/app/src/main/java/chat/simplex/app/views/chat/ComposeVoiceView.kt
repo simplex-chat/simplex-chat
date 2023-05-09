@@ -31,13 +31,13 @@ fun ComposeVoiceView(
 ) {
   val progress = rememberSaveable { mutableStateOf(0) }
   val duration = rememberSaveable(recordedDurationMs) { mutableStateOf(recordedDurationMs) }
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   Box {
     Box(
       Modifier
         .fillMaxWidth().padding(top = 22.dp)
     ) {
       val audioPlaying = rememberSaveable { mutableStateOf(false) }
-      val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
       Row(
         Modifier
           .height(60.dp)
@@ -100,7 +100,7 @@ fun ComposeVoiceView(
     }
 
     if (finishedRecording) {
-      FinishedRecordingSlider(progress, duration)
+      FinishedRecordingSlider(sentColor, progress, duration)
     } else {
       RecordingInProgressSlider(recordedDurationMs)
     }
@@ -108,11 +108,11 @@ fun ComposeVoiceView(
 }
 
 @Composable
-fun FinishedRecordingSlider(progress: MutableState<Int>, duration: MutableState<Int>) {
+fun FinishedRecordingSlider(backgroundColor: Color, progress: MutableState<Int>, duration: MutableState<Int>) {
   val dp4 = with(LocalDensity.current) { 4.dp.toPx() }
   val dp10 = with(LocalDensity.current) { 10.dp.toPx() }
   val primary = MaterialTheme.colors.primary
-  val inactiveTrackColor = MaterialTheme.colors.primary.mixWith(MaterialTheme.colors.background, 0.24f)
+  val inactiveTrackColor = MaterialTheme.colors.primary.mixWith(backgroundColor, 0.24f)
   Slider(
     progress.value.toFloat(),
     onValueChange = { AudioPlayer.seekTo(it.toInt(), progress) },
