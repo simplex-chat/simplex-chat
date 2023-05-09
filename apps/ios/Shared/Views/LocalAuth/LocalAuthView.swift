@@ -58,7 +58,7 @@ struct LocalAuthView: View {
                 if let displayName = displayName, displayName != "" {
                     profile = Profile(displayName: displayName, fullName: "")
                 }
-                m.currentUser = try apiCreateActiveUser(profile)
+                m.currentUser = try apiCreateActiveUser(profile, pastTimestamp: true)
                 onboardingStageDefault.set(.onboardingComplete)
                 m.onboardingStage = .onboardingComplete
                 try startChat()
