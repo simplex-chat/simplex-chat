@@ -64,7 +64,7 @@ fun CIVoiceView(
         }
       }
       VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick) {
-        AudioPlayer.seekTo(it, progress)
+        AudioPlayer.seekTo(it, progress, filePath)
       }
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
