@@ -1186,4 +1186,19 @@
     <string name="scan_qr_to_connect_to_contact">Pour se connecter, votre contact peut scanner le code QR ou utiliser le lien dans l\'application.</string>
     <string name="your_contacts_will_see_it">Vos contacts dans SimpleX la verront.
 \nVous pouvez modifier ce choix dans les Paramètres.</string>
+    <string name="app_passcode_replaced_with_self_destruct">Le code d\'accès de l\'application est remplacé par un code d\'autodestruction.</string>
+    <string name="enable_self_destruct">Activer l\'autodestruction</string>
+    <string name="empty_chat_profile_is_created">Un profil de chat vierge portant le nom fourni est créé et l\'application s\'ouvre normalement.</string>
+    <string name="change_self_destruct_passcode">Modifier le code d\'autodestruction</string>
+    <string name="enabled_self_destruct_passcode">Activer le code d\'autodestruction</string>
+    <string name="self_destruct">Autodestruction</string>
+    <string name="change_self_destruct_mode">Modifier le mode d\'autodestruction</string>
+    <string name="self_destruct_new_display_name">Nouveau nom affiché :</string>
+    <string name="self_destruct_passcode">Code d\'autodestruction</string>
+    <string name="self_destruct_passcode_changed">Le code d\'autodestruction a été modifié !</string>
+    <string name="self_destruct_passcode_enabled">Code d\'autodestruction activé !</string>
+    <string name="all_app_data_will_be_cleared">Toutes les données de l\'application sont supprimées.</string>
+    <string name="if_you_enter_self_destruct_code">Si vous entrez votre code d\'autodestruction à l\'ouverture de l\'application :</string>
+    <string name="if_you_enter_passcode_data_removed">Si vous saisissez ce code à l\'ouverture de l\'application, toutes les données de l\'application seront irréversiblement supprimées !</string>
+    <string name="set_passcode">Définir le code d\'accès</string>
 </resources>
