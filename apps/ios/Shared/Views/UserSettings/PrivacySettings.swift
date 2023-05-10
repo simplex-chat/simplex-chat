@@ -338,6 +338,7 @@ struct SimplexLockView: View {
                         switch laResult {
                         case .success:
                             _ = kcAppPassword.remove()
+                            resetSelfDestruct()
                             laAlert = .laTurnedOnAlert
                         case .failed, .unavailable:
                             currentLAMode = .passcode

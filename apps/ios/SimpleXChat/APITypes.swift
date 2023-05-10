@@ -14,7 +14,7 @@ let jsonEncoder = getJSONEncoder()
 
 public enum ChatCommand {
     case showActiveUser
-    case createActiveUser(profile: Profile?)
+    case createActiveUser(profile: Profile?, sameServers: Bool, pastTimestamp: Bool)
     case listUsers
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
     case apiHideUser(userId: Int64, viewPwd: String)
@@ -111,11 +111,9 @@ public enum ChatCommand {
         get {
             switch self {
             case .showActiveUser: return "/u"
-            case let .createActiveUser(profile):
-                if let profile = profile {
-                    return "/create user \(profile.displayName) \(profile.fullName)"
-                }
-                return "/create user"
+            case let .createActiveUser(profile, sameServers, pastTimestamp):
+                let user = NewUser(profile: profile, sameServers: sameServers, pastTimestamp: pastTimestamp)
+                return "/_create user \(encodeJSON(user))"
             case .listUsers: return "/users"
             case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
@@ -733,6 +731,12 @@ public enum ChatResponse: Decodable, Error {
         }
         return s
     }
+}
+
+struct NewUser: Encodable {
+    var profile: Profile?
+    var sameServers: Bool
+    var pastTimestamp: Bool
 }
 
 public enum ChatPagination {
