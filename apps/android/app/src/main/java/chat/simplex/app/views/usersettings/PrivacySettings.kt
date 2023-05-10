@@ -158,6 +158,7 @@ fun SimplexLockView(
                   LAResult.Success -> {
                     currentLAMode.set(toLAMode)
                     ksAppPassword.remove()
+                    resetSelfDestruct()
                     laTurnedOnAlert()
                   }
                   is LAResult.Unavailable, is LAResult.Error -> laFailedAlert()

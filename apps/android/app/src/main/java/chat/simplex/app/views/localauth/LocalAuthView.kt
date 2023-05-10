@@ -71,7 +71,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       if (!displayName.isNullOrEmpty()) {
         profile = Profile(displayName = displayName, fullName = "")
       }
-      val createdUser = m.controller.apiCreateActiveUser(profile)
+      val createdUser = m.controller.apiCreateActiveUser(profile, pastTimestamp = true)
       m.currentUser.value = createdUser
       m.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
       m.onboardingStage.value = OnboardingStage.OnboardingComplete

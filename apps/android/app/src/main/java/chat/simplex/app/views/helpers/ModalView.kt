@@ -78,7 +78,9 @@ class ModalManager {
   }
 
   fun closeModals() {
-    while (modalCount.value > 0) closeModal()
+    modalViews.clear()
+    toRemove.clear()
+    modalCount.value = 0
   }
 
   @OptIn(ExperimentalAnimationApi::class)

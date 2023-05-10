@@ -442,8 +442,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiCreateActiveUser(p: Profile?): User? {
-    val r = sendCmd(CC.CreateActiveUser(p))
+  suspend fun apiCreateActiveUser(p: Profile?, sameServers: Boolean = false, pastTimestamp: Boolean = false): User? {
+    val r = sendCmd(CC.CreateActiveUser(p, sameServers = sameServers, pastTimestamp = pastTimestamp))
     if (r is CR.ActiveUser) return r.user
     else if (
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
@@ -1861,7 +1861,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
-  class CreateActiveUser(val profile: Profile?): CC()
+  class CreateActiveUser(val profile: Profile?, val sameServers: Boolean, val pastTimestamp: Boolean): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
@@ -1946,7 +1946,10 @@ sealed class CC {
   val cmdString: String get() = when (this) {
     is Console -> cmd
     is ShowActiveUser -> "/u"
-    is CreateActiveUser -> if (profile != null) "/create user ${profile.displayName} ${profile.fullName}" else "/create user"
+    is CreateActiveUser -> {
+      val user = NewUser(profile, sameServers = sameServers, pastTimestamp = pastTimestamp)
+      "/_create user ${json.encodeToString(user)}"
+    }
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId${maybePwd(viewPwd)}"
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
@@ -2151,6 +2154,13 @@ sealed class CC {
     fun protoServersStr(servers: List<ServerCfg>) = json.encodeToString(ProtoServersConfig(servers))
   }
 }
+
+@Serializable
+data class NewUser(
+  val profile: Profile?,
+  val sameServers: Boolean,
+  val pastTimestamp: Boolean
+)
 
 sealed class ChatPagination {
   class Last(val count: Int): ChatPagination()
