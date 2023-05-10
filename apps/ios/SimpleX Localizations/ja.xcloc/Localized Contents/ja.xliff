@@ -1103,8 +1103,9 @@
         <target state="translated">待ち行列を削除</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete user profile?" xml:space="preserve">
+      <trans-unit id="Delete user profile?" xml:space="preserve" approved="no">
         <source>Delete user profile?</source>
+        <target state="translated">ユーザープロフィールを削除しますか？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve" approved="no">
@@ -1625,36 +1626,43 @@
         <target state="translated">プライベート</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide" xml:space="preserve">
+      <trans-unit id="Hide" xml:space="preserve" approved="no">
         <source>Hide</source>
+        <target state="translated">プライベートにする</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
+      <trans-unit id="Hide app screen in the recent apps." xml:space="preserve" approved="no">
         <source>Hide app screen in the recent apps.</source>
+        <target state="translated">起動中アプリリストに出ないようにする。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How it works" xml:space="preserve">
+      <trans-unit id="How it works" xml:space="preserve" approved="no">
         <source>How it works</source>
+        <target state="translated">技術の説明</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to" xml:space="preserve">
+      <trans-unit id="How to" xml:space="preserve" approved="no">
         <source>How to</source>
+        <target state="translated">使い方</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to use it" xml:space="preserve">
+      <trans-unit id="How to use it" xml:space="preserve" approved="no">
         <source>How to use it</source>
+        <target state="translated">使い方</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to use your servers" xml:space="preserve">
+      <trans-unit id="How to use your servers" xml:space="preserve" approved="no">
         <source>How to use your servers</source>
+        <target state="translated">自分のサーバの使い方</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="ICE servers (one per line)" xml:space="preserve">
+      <trans-unit id="ICE servers (one per line)" xml:space="preserve" approved="no">
         <source>ICE servers (one per line)</source>
+        <target state="translated">ICEサーバ (1行に1サーバ)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If the video fails to connect, flip the camera to resolve it." xml:space="preserve">
@@ -1665,76 +1673,90 @@
         <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
+      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve" approved="no">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
+        <target state="translated">直接会えない場合は、**ビデオ通話で QR コードを表示する**か、リンクを共有してください。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
         <source>If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app).</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ignore" xml:space="preserve">
+      <trans-unit id="Ignore" xml:space="preserve" approved="no">
         <source>Ignore</source>
+        <target state="translated">無視</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>Image will be received when your contact is online, please wait or check later!</source>
+        <target state="translated">連絡先がオンラインになったら受信されます。しばらくお待ちください!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Immune to spam and abuse" xml:space="preserve">
         <source>Immune to spam and abuse</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import" xml:space="preserve">
+      <trans-unit id="Import" xml:space="preserve" approved="no">
         <source>Import</source>
+        <target state="translated">読み込む</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import chat database?" xml:space="preserve">
+      <trans-unit id="Import chat database?" xml:space="preserve" approved="no">
         <source>Import chat database?</source>
+        <target state="translated">チャットのデータベースを読み込みますか？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import database" xml:space="preserve">
+      <trans-unit id="Import database" xml:space="preserve" approved="no">
         <source>Import database</source>
+        <target state="translated">データベースを読み込む</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Improved privacy and security" xml:space="preserve">
+      <trans-unit id="Improved privacy and security" xml:space="preserve" approved="no">
         <source>Improved privacy and security</source>
+        <target state="translated">プライバシーとセキュリティ強化</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Improved server configuration" xml:space="preserve">
+      <trans-unit id="Improved server configuration" xml:space="preserve" approved="no">
         <source>Improved server configuration</source>
+        <target state="translated">サーバ設定の向上</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito" xml:space="preserve">
+      <trans-unit id="Incognito" xml:space="preserve" approved="no">
         <source>Incognito</source>
+        <target state="translated">シークレットモード</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode" xml:space="preserve">
+      <trans-unit id="Incognito mode" xml:space="preserve" approved="no">
         <source>Incognito mode</source>
+        <target state="translated">シークレットモード</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode is not supported here - your main profile will be sent to group members" xml:space="preserve">
+      <trans-unit id="Incognito mode is not supported here - your main profile will be sent to group members" xml:space="preserve" approved="no">
         <source>Incognito mode is not supported here - your main profile will be sent to group members</source>
+        <target state="translated">ここではシークレットモードが無効です。メインのプロフィールがグループのメンバーに送られます</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." xml:space="preserve">
         <source>Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incoming audio call" xml:space="preserve">
+      <trans-unit id="Incoming audio call" xml:space="preserve" approved="no">
         <source>Incoming audio call</source>
+        <target state="translated">音声通話着信</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Incoming call" xml:space="preserve">
         <source>Incoming call</source>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Incoming video call" xml:space="preserve">
+      <trans-unit id="Incoming video call" xml:space="preserve" approved="no">
         <source>Incoming video call</source>
+        <target state="translated">ビデオ通話着信</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Incorrect security code!" xml:space="preserve">
+      <trans-unit id="Incorrect security code!" xml:space="preserve" approved="no">
         <source>Incorrect security code!</source>
+        <target state="translated">誤ったセキュリティコード！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -3982,7 +4004,7 @@ v5.1 で利用可能</target>
       </trans-unit>
       <trans-unit id="Hidden profile password" xml:space="preserve">
         <source>Hidden profile password</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve" approved="no">
@@ -4083,6 +4105,36 @@ v5.1 で利用可能</target>
       <trans-unit id="Group welcome message" xml:space="preserve" approved="no">
         <source>Group welcome message</source>
         <target state="translated">グループのウェルカムメッセージ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incorrect passcode" xml:space="preserve" approved="no">
+        <source>Incorrect passcode</source>
+        <target state="translated">パスコードが正しくありません</target>
+        <note>PIN entry</note>
+      </trans-unit>
+      <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve" approved="no">
+        <source>If you can't meet in person, show QR code in a video call, or share the link.</source>
+        <target state="translated">直接会えない場合は、ビデオ通話で QR コードを表示するか、リンクを共有してください。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve" approved="no">
+        <source>Image will be received when your contact completes uploading it.</source>
+        <target state="translated">画像は相手がアップロードを完了した時点で受信するができます。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Immediately" xml:space="preserve" approved="no">
+        <source>Immediately</source>
+        <target state="translated">即座に</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incompatible database version" xml:space="preserve" approved="no">
+        <source>Incompatible database version</source>
+        <target state="translated">データベースのバージョンと互換性がない</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Initial role" xml:space="preserve" approved="no">
+        <source>Initial role</source>
+        <target state="translated">初期の役割</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
