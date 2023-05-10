@@ -41,7 +41,6 @@ class ChatModel(val controller: ChatController) {
   val chatDbChanged = mutableStateOf<Boolean>(false)
   val chatDbEncrypted = mutableStateOf<Boolean?>(false)
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
-  val chatDbDeleted = mutableStateOf(false)
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()

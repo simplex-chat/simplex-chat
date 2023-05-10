@@ -78,8 +78,9 @@ class ModalManager {
   }
 
   fun closeModals() {
-    while (modalCount.value > 0) closeModal()
-    passcodeView.value = null
+    modalViews.clear()
+    toRemove.clear()
+    modalCount.value = 0
   }
 
   @OptIn(ExperimentalAnimationApi::class)

@@ -28,16 +28,18 @@ data class LocalAuthRequest (
   val title: String?,
   val reason: String,
   val password: String,
+  val selfDestruct: Boolean,
   val completed: (LAResult) -> Unit
 ) {
   companion object {
-    val sample = LocalAuthRequest(generalGetString(R.string.la_enter_app_passcode), generalGetString(R.string.la_authenticate), "") { }
+    val sample = LocalAuthRequest(generalGetString(R.string.la_enter_app_passcode), generalGetString(R.string.la_authenticate), "", selfDestruct = false) { }
   }
 }
 
 fun authenticate(
   promptTitle: String,
   promptSubtitle: String,
+  selfDestruct: Boolean = false,
   activity: FragmentActivity,
   usingLAMode: LAMode = SimplexApp.context.chatModel.controller.appPrefs.laMode.get(),
   completed: (LAResult) -> Unit
@@ -59,7 +61,7 @@ fun authenticate(
           completed(LAResult.Error(generalGetString(R.string.authentication_cancelled)))
         }
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-          LocalAuthView(SimplexApp.context.chatModel, LocalAuthRequest(promptTitle, promptSubtitle, password) {
+          LocalAuthView(SimplexApp.context.chatModel, LocalAuthRequest(promptTitle, promptSubtitle, password, selfDestruct && SimplexApp.context.chatModel.controller.appPrefs.selfDestruct.get()) {
             close()
             completed(it)
           })

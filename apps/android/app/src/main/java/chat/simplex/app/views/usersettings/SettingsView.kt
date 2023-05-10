@@ -483,7 +483,7 @@ private fun runAuth(title: String, desc: String, context: Context, onFinish: (su
   authenticate(
     title,
     desc,
-    context as FragmentActivity,
+    activity = context as FragmentActivity,
     completed = { laResult ->
       onFinish(laResult == LAResult.Success || laResult is LAResult.Unavailable)
     }
