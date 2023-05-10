@@ -56,14 +56,6 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
         Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
       }
       m.chatDbChanged.value = false
-
-      /** TODO:
-       * [SimplexApp.initChatController] has async code, so let's wait til it finishes
-       */
-      for (i in 0..200) {
-        if (m.currentUser.value == null) break
-        delay(10)
-      }
       if (m.currentUser.value != null) {
         return@withBGApi
       }
