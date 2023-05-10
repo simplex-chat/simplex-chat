@@ -1776,32 +1776,39 @@
         <source>Invalid connection link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid server address!" xml:space="preserve">
+      <trans-unit id="Invalid server address!" xml:space="preserve" approved="no">
         <source>Invalid server address!</source>
+        <target state="translated">無効なサーバアドレス！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invitation expired!" xml:space="preserve">
+      <trans-unit id="Invitation expired!" xml:space="preserve" approved="no">
         <source>Invitation expired!</source>
+        <target state="translated">招待が期限切れました！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite members" xml:space="preserve">
+      <trans-unit id="Invite members" xml:space="preserve" approved="no">
         <source>Invite members</source>
+        <target state="translated">メンバーを招待する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite to group" xml:space="preserve">
+      <trans-unit id="Invite to group" xml:space="preserve" approved="no">
         <source>Invite to group</source>
+        <target state="translated">グループに招待する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion" xml:space="preserve">
+      <trans-unit id="Irreversible message deletion" xml:space="preserve" approved="no">
         <source>Irreversible message deletion</source>
+        <target state="translated">メッセージの完全削除</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Irreversible message deletion is prohibited in this chat." xml:space="preserve" approved="no">
         <source>Irreversible message deletion is prohibited in this chat.</source>
+        <target state="translated">このチャットではメッセージの完全削除が使用禁止です。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
+      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve" approved="no">
         <source>Irreversible message deletion is prohibited in this group.</source>
+        <target state="translated">このグループではメッセージの完全削除が使用禁止です。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
@@ -4288,6 +4295,11 @@ v5.1 で利用可能</target>
       <trans-unit id="Only your contact can make calls." xml:space="preserve" approved="no">
         <source>Only your contact can make calls.</source>
         <target state="translated">連絡先からのみ通話ができます。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invite friends" xml:space="preserve" approved="no">
+        <source>Invite friends</source>
+        <target state="translated">友人を招待する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
