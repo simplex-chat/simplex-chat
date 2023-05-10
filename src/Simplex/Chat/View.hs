@@ -246,6 +246,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts tz = \case
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel e
+  CRTimedAction _ _ -> []
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser} ss

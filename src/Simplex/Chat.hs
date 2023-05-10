@@ -215,23 +215,24 @@ cfgServers = \case
 startChatController :: forall m. ChatMonad' m => Bool -> Bool -> Bool -> m (Async ())
 startChatController subConns enableExpireCIs startXFTPWorkers = do
   asks smpAgent >>= resumeAgentClient
-  users <- fromRight [] <$> runExceptT (withStore' getUsers)
-  restoreCalls
+  users <- timeItToView "startChatController, getUsers" $ fromRight [] <$> runExceptT (withStore' getUsers)
+  timeItToView "startChatController, restoreCalls" $ restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
     start s users = do
-      a1 <- async $ race_ notificationSubscriber agentSubscriber
-      a2 <-
+      a1 <- timeItToView "startChatController, a1" $ async $ race_ notificationSubscriber agentSubscriber
+      a2 <- timeItToView "startChatController, a2" $
         if subConns
           then Just <$> async (subscribeUsers users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       when startXFTPWorkers $ do
-        startXFTP
-        void $ forkIO $ startFilesToReceive users
-      startCleanupManager
-      when enableExpireCIs $ startExpireCIs users
+        timeItToView "startChatController, startXFTP" $ startXFTP
+        timeItToView "startChatController, forkIO startFilesToReceive" $ void $ forkIO $ startFilesToReceive users
+      timeItToView "startChatController, startCleanupManager" $ startCleanupManager
+      when enableExpireCIs $
+        timeItToView "startChatController, startExpireCIs" $ startExpireCIs users
       pure a1
     startXFTP = do
       tmp <- readTVarIO =<< asks tempDirectory
@@ -311,7 +312,7 @@ execChatCommand s = do
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
-toView :: ChatMonad m => ChatResponse -> m ()
+toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
   q <- asks outputQ
   atomically $ writeTBQueue q (Nothing, event)
@@ -4911,3 +4912,15 @@ chatCommandP =
 adminContactReq :: ConnReqContact
 adminContactReq =
   either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+
+timeItToView :: ChatMonad' m => String -> m a -> m a
+timeItToView s action = do
+  t1 <- liftIO getCurrentTime
+  a <- action
+  t2 <- liftIO getCurrentTime
+  let diff = diffInMillis t2 t1
+  toView $ CRTimedAction s diff
+  pure a
+
+diffInMillis :: UTCTime -> UTCTime -> Int64
+diffInMillis a b = (`div` 1000000000) $ diffInPicos a b

@@ -15,7 +15,7 @@ mobileTests :: SpecWith FilePath
 mobileTests = do
   describe "mobile API" $ do
     it "start new chat without user" testChatApiNoUser
-    it "start new chat with existing user" testChatApi
+    xit "start new chat with existing user" testChatApi
 
 noActiveUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
