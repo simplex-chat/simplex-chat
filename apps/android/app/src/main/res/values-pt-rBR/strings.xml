@@ -1185,4 +1185,8 @@
     <string name="your_contacts_will_see_it">Seus contatos no SimpleX o verão.
 \nVocê pode alterá-la nas Configurações.</string>
     <string name="your_contacts_will_remain_connected">Seus contatos continuarão conectados.</string>
+    <string name="all_app_data_will_be_cleared">Todos os dados do aplicativo serão excluídos.</string>
+    <string name="app_passcode_replaced_with_self_destruct">A senha do aplicativo é substituída por uma senha de autodestruição.</string>
+    <string name="self_destruct_new_display_name">Novo nome de exibição:</string>
+    <string name="set_passcode">Definir senha</string>
 </resources>
