@@ -355,7 +355,7 @@ processChatCommand = \case
       storeServers user servers =
         unless (null servers) $
           withStore $ \db -> overwriteProtocolServers db user servers
-      coupleDaysAgo t = (`addUTCTime` t) . fromInteger . (+ (2 * day)) <$> randomRIO (0, day)
+      coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
   APISetActiveUser userId' viewPwd_ -> withUser $ \user -> do
