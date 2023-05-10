@@ -470,4 +470,46 @@
     <string name="v4_6_reduced_battery_usage">הפחתה נוספת בשימוש בסוללה</string>
     <string name="revoke_file__message">הקובץ יימחק מהשרתים.</string>
     <string name="icon_descr_flip_camera">הפוך מצלמה</string>
+    <string name="icon_descr_help">עזרה</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">אם לא ניתן להיפגש פנים אל פנים, <b>הציגו את קוד ה- QR בשיחת וידאו</b>, או שתפו את הקישור.</string>
+    <string name="how_to">איך</string>
+    <string name="how_to_use_your_servers">איך להשתמש בשרתים שלך</string>
+    <string name="enter_one_ICE_server_per_line">שרתי ICE (אחד בכל שורה)</string>
+    <string name="host_verb">לארח</string>
+    <string name="hide_dev_options">מוסתר:</string>
+    <string name="snd_group_event_group_profile_updated">פרופיל הקבוצה עודכן</string>
+    <string name="group_profile_is_stored_on_members_devices">פרופיל הקבוצה מאוחסן במכשירי חברי הקבוצה, לא על השרתים.</string>
+    <string name="all_app_data_will_be_cleared">כל נתוני האפליקציה יימחקו.</string>
+    <string name="empty_chat_profile_is_created">פרופיל צ\'אט ריק עם השם שסופק נוצר, והאפליקציה נפתחת כרגיל.</string>
+    <string name="app_passcode_replaced_with_self_destruct">קוד הגישה לאפליקציה מוחלף עם קוד הגישה להשמדה עצמית.</string>
+    <string name="v4_3_improved_privacy_and_security_desc">ניתן להסתיר את מסך האפליקציה במסך האפליקציות האחרונות.</string>
+    <string name="v4_6_hidden_chat_profiles">פרופילי צ\'אט מוסתרים</string>
+    <string name="v4_6_group_moderation">ניהול קבוצה</string>
+    <string name="v4_6_group_welcome_message">הודעת פתיחה בקבוצה</string>
+    <string name="alert_title_no_group">קבוצה לא נמצאה!</string>
+    <string name="hide_notification">הסתר</string>
+    <string name="notification_preview_mode_hidden">מוסתר</string>
+    <string name="notification_display_mode_hidden_desc">הסתר איש קשר והודעה</string>
+    <string name="hide_verb">הסתר</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">אם לא ניתן להיפגש פנים אל פנים, ניתן <b>לסרוק את קוד ה- QR בשיחת וידאו</b>, או שאיש הקשר שלך ישתף קישור הזמנה.</string>
+    <string name="if_you_cant_meet_in_person">אם לא ניתן להיפגש פנים אל פנים, הציגו את קוד ה- QR בשיחת וידאו, או שתפו את הקישור.</string>
+    <string name="how_to_use_simplex_chat">איך להשתמש בזה</string>
+    <string name="email_invite_body">היי!
+\nאפשר להתחבר אליי דרך SimpleX Chat: %s</string>
+    <string name="hidden_profile_password">סיסמת פרופיל מוסתרת</string>
+    <string name="hide_profile">הסתר פרופיל</string>
+    <string name="how_to_use_markdown">איך להשתמש במרקדאון</string>
+    <string name="how_it_works">איך זה עובד</string>
+    <string name="how_simplex_works">איך <xliff:g id="appName">SimpleX</xliff:g> עובדת</string>
+    <string name="icon_descr_hang_up">נתק</string>
+    <string name="settings_section_title_help">עזרה</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">הקבוצה תימחק עבור כל חברי הקבוצה - לא ניתן לבטל זאת!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">הקבוצה תימחק עבורך - לא ניתן לבטל זאת!</string>
+    <string name="user_hide">הסתר</string>
+    <string name="group_preferences">העדפות קבוצה</string>
+    <string name="group_members_can_delete">חברי הקבוצה יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
+    <string name="group_members_can_send_disappearing">חברי הקבוצה יכולים לשלוח הודעות נעלמות.</string>
+    <string name="group_members_can_send_dms">חברי הקבוצה יכולים לשלוח הודעות ישירות.</string>
+    <string name="group_members_can_send_voice">חברי הקבוצה יכולים לשלוח הודעות קוליות.</string>
+    <string name="enable_self_destruct">אפשר השמדה עצמית</string>
 </resources>
