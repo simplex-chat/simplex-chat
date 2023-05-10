@@ -686,11 +686,22 @@ fun ComposeView(
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
 
   Column {
-    contextItemView()
-    when {
-      composeState.value.editing && composeState.value.preview is ComposePreview.VoicePreview -> {}
-      composeState.value.editing && composeState.value.preview is ComposePreview.FilePreview -> {}
-      else -> previewView()
+    if (composeState.value.preview !is ComposePreview.VoicePreview || composeState.value.editing) {
+      contextItemView()
+      when {
+        composeState.value.editing && composeState.value.preview is ComposePreview.VoicePreview -> {}
+        composeState.value.editing && composeState.value.preview is ComposePreview.FilePreview -> {}
+        else -> previewView()
+      }
+    } else {
+      Box {
+        Box(Modifier.align(Alignment.TopStart).padding(bottom = 69.dp)) {
+          contextItemView()
+        }
+        Box(Modifier.align(Alignment.BottomStart)) {
+          previewView()
+        }
+      }
     }
     Row(
       modifier = Modifier.padding(end = 8.dp),

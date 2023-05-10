@@ -15,14 +15,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
 
@@ -102,14 +102,26 @@ private fun VoiceLayout(
 
   @Composable
   fun RowScope.Slider() {
-    if (audioPlaying.value || progress.value > 0) {
+    var movedManuallyTo by rememberSaveable(file.fileId) { mutableStateOf(-1) }
+    if (audioPlaying.value || progress.value > 0 || movedManuallyTo == progress.value) {
+      val width = with(LocalDensity.current) { LocalView.current.width.toDp() }
       Slider(
         progress.value.toFloat(),
-        onValueChange = { onProgressChanged(it.toInt()) },
-        Modifier.weight(1f).padding(horizontal = DEFAULT_PADDING_HALF / 2),
+        onValueChange = {
+          onProgressChanged(it.toInt())
+          movedManuallyTo = it.toInt()
+        },
+        Modifier.size(width, 48.dp).weight(1f).padding(horizontal = DEFAULT_PADDING_HALF / 2),
         valueRange = 0f..duration.value.toFloat(),
         colors = colors
       )
+      LaunchedEffect(Unit) {
+        snapshotFlow { audioPlaying.value }
+          .distinctUntilChanged()
+          .collect {
+            movedManuallyTo = -1
+          }
+      }
     }
   }
   when {
@@ -118,7 +130,6 @@ private fun VoiceLayout(
       VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
       Row(verticalAlignment = Alignment.CenterVertically) {
         DurationText(text, PaddingValues(start = 12.dp))
-        // Will crash currently
         Slider()
       }
     }
