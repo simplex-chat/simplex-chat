@@ -358,7 +358,7 @@ fun ChatLayout(
                 contentPadding.calculateStartPadding(LocalLayoutDirection.current),
                 contentPadding.calculateTopPadding(),
                 contentPadding.calculateEndPadding(LocalLayoutDirection.current),
-                contentPadding.calculateBottomPadding() - 22.dp
+                contentPadding.calculateBottomPadding() - 8.dp
               )
             } else {
               contentPadding
