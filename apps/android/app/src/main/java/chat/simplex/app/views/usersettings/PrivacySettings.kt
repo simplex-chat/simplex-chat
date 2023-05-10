@@ -20,8 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.DEFAULT_PADDING
-import chat.simplex.app.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
@@ -310,20 +309,22 @@ fun SimplexLockView(
       if (performLA.value && laMode.value == LAMode.PASSCODE) {
         SectionDividerSpaced()
         SectionView(stringResource(R.string.self_destruct_passcode).uppercase()) {
-          Box(Modifier.clickable {
+          val openInfo = {
             ModalManager.shared.showModal {
               SelfDestructInfoView()
             }
-          }) {
-            PreferenceToggleWithIcon(
+          }
+          SettingsActionItemWithContent(null, null, click = openInfo) {
+            SharedPreferenceToggleWithIcon(
               stringResource(R.string.enable_self_destruct),
-              icon = painterResource(R.drawable.ic_info),
-              MaterialTheme.colors.primary,
+              painterResource(R.drawable.ic_info),
+              openInfo,
               remember { selfDestructPref.state }.value
             ) {
               toggleSelfDestruct(selfDestructPref)
             }
           }
+
           if (remember { selfDestructPref.state }.value) {
             Column(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
               Text(
