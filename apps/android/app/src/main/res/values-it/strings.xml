@@ -1186,4 +1186,19 @@
     <string name="you_wont_lose_your_contacts_if_delete_address">Non perderai i contatti se in seguito elimini il tuo indirizzo.</string>
     <string name="you_can_share_your_address">Puoi condividere il tuo indirizzo come link o codice QR: chiunque può connettersi a te.</string>
     <string name="opening_database">Apertura del database…</string>
+    <string name="change_self_destruct_mode">Cambia modalità di autodistruzione</string>
+    <string name="enabled_self_destruct_passcode">Attiva il codice di autodistruzione</string>
+    <string name="self_destruct">Autodistruzione</string>
+    <string name="self_destruct_passcode_changed">Codice di autodistruzione modificato!</string>
+    <string name="self_destruct_passcode_enabled">Codice di autodistruzione attivato!</string>
+    <string name="all_app_data_will_be_cleared">Tutti i dati dell\'app vengono eliminati.</string>
+    <string name="app_passcode_replaced_with_self_destruct">Il codice di accesso dell\'app viene sostituito da un codice di autodistruzione.</string>
+    <string name="enable_self_destruct">Attiva l\'autodistruzione</string>
+    <string name="if_you_enter_self_destruct_code">Se inserisci il tuo codice di autodistruzione mentre apri l\'app:</string>
+    <string name="self_destruct_new_display_name">Nome da mostrare nuovo:</string>
+    <string name="self_destruct_passcode">Codice di autodistruzione</string>
+    <string name="empty_chat_profile_is_created">Viene creato un profilo di chat vuoto con il nome scelto e l\'app si apre come al solito.</string>
+    <string name="if_you_enter_passcode_data_removed">Se inserisci questo codice all\'apertura dell\'app, tutti i dati di essa verranno rimossi in modo irreversibile!</string>
+    <string name="set_passcode">Imposta codice</string>
+    <string name="change_self_destruct_passcode">Cambia codice di autodistruzione</string>
 </resources>
