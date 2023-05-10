@@ -618,12 +618,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
         }
+        val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null
         if (chat.chatInfo is ChatInfo.Group) {
           if (cItem.chatDir is CIDirection.GroupRcv) {
             val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
             val member = cItem.chatDir.groupMember
             val showMember = showMemberImage(member, prevItem)
-            Row(Modifier.padding(start = 8.dp, end = if (cItem.content.msgContent is MsgContent.MCVoice) 12.dp else 66.dp).then(swipeableModifier)) {
+            Row(Modifier.padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp).then(swipeableModifier)) {
               if (showMember) {
                 val contactId = member.memberContactId
                 if (contactId == null) {
@@ -646,7 +647,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           } else {
-            Box(Modifier.padding(start = if (cItem.content.msgContent is MsgContent.MCVoice) 12.dp else 104.dp, end = 12.dp).then(swipeableModifier)) {
+            Box(Modifier.padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp).then(swipeableModifier)) {
               ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           }
@@ -654,8 +655,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
           val sent = cItem.chatDir.sent
           Box(
             Modifier.padding(
-              start = if (sent && cItem.content.msgContent !is MsgContent.MCVoice) 76.dp else 12.dp,
-              end = if (sent || cItem.content.msgContent is MsgContent.MCVoice) 12.dp else 76.dp,
+              start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
+              end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
             ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
