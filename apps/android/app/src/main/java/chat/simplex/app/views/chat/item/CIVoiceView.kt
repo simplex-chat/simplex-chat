@@ -15,14 +15,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
 
@@ -64,7 +64,9 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick)
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick) {
+        AudioPlayer.seekTo(it, progress)
+      }
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
       val metaReserve = if (edited)
@@ -90,18 +92,52 @@ private fun VoiceLayout(
   timedMessagesTTL: Int?,
   play: () -> Unit,
   pause: () -> Unit,
-  longClick: () -> Unit
+  longClick: () -> Unit,
+  onProgressChanged: (Int) -> Unit,
+
 ) {
+  val colors = SliderDefaults.colors(
+    inactiveTrackColor = MaterialTheme.colors.primary.mixWith(MaterialTheme.colors.background, 0.24f)
+  )
+
+  @Composable
+  fun RowScope.Slider() {
+    var movedManuallyTo by rememberSaveable(file.fileId) { mutableStateOf(-1) }
+    if (audioPlaying.value || progress.value > 0 || movedManuallyTo == progress.value) {
+      val width = with(LocalDensity.current) { LocalView.current.width.toDp() }
+      Slider(
+        progress.value.toFloat(),
+        onValueChange = {
+          onProgressChanged(it.toInt())
+          movedManuallyTo = it.toInt()
+        },
+        Modifier.size(width, 48.dp).weight(1f).padding(horizontal = DEFAULT_PADDING_HALF / 2),
+        valueRange = 0f..duration.value.toFloat(),
+        colors = colors
+      )
+      LaunchedEffect(Unit) {
+        snapshotFlow { audioPlaying.value }
+          .distinctUntilChanged()
+          .collect {
+            movedManuallyTo = -1
+          }
+      }
+    }
+  }
   when {
     hasText -> {
       Spacer(Modifier.width(6.dp))
       VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
-      DurationText(text, PaddingValues(start = 12.dp))
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        DurationText(text, PaddingValues(start = 12.dp))
+        Slider()
+      }
     }
     sent -> {
       Row {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
           Spacer(Modifier.height(56.dp))
+          Slider()
           DurationText(text, PaddingValues(end = 12.dp))
         }
         Column {
@@ -120,8 +156,9 @@ private fun VoiceLayout(
             CIMetaView(ci, timedMessagesTTL)
           }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
           DurationText(text, PaddingValues(start = 12.dp))
+          Slider()
           Spacer(Modifier.height(56.dp))
         }
       }
