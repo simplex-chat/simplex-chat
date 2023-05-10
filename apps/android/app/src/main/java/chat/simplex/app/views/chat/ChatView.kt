@@ -353,17 +353,7 @@ fun ChatLayout(
         ) { contentPadding ->
           BoxWithConstraints(Modifier
             .fillMaxHeight()
-            .padding(if (composeState.value.preview is ComposePreview.VoicePreview) {
-              PaddingValues(
-                contentPadding.calculateStartPadding(LocalLayoutDirection.current),
-                contentPadding.calculateTopPadding(),
-                contentPadding.calculateEndPadding(LocalLayoutDirection.current),
-                contentPadding.calculateBottomPadding() - 8.dp
-              )
-            } else {
-              contentPadding
-            }
-            )
+            .padding(contentPadding)
           ) {
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
