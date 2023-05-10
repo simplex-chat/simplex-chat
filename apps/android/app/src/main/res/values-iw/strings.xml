@@ -512,4 +512,6 @@
     <string name="group_members_can_send_dms">חברי הקבוצה יכולים לשלוח הודעות ישירות.</string>
     <string name="group_members_can_send_voice">חברי הקבוצה יכולים לשלוח הודעות קוליות.</string>
     <string name="enable_self_destruct">אפשר השמדה עצמית</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">אם תבחרו לדחות השולח לא יקבל התראה על כך.</string>
+    <string name="network_disable_socks_info">אם תאשרו, שרתי העברת ההודעות יוכלו לראות את ה- IP שלכם, וספק האינטרנט שלכם - את השרתים אליהם אתם מחוברים.</string>
 </resources>
