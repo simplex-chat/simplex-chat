@@ -1893,8 +1893,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
+      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve" approved="no">
         <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
+        <target state="translated">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
@@ -1909,20 +1910,23 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Mark read</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mark verified" xml:space="preserve">
+      <trans-unit id="Mark verified" xml:space="preserve" approved="no">
         <source>Mark verified</source>
+        <target state="translated">検証済みにマーク</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Markdown in messages" xml:space="preserve">
+      <trans-unit id="Markdown in messages" xml:space="preserve" approved="no">
         <source>Markdown in messages</source>
+        <target state="translated">メッセージのマークダウン (書式編集)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Max 30 seconds, received instantly." xml:space="preserve">
         <source>Max 30 seconds, received instantly.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member" xml:space="preserve">
+      <trans-unit id="Member" xml:space="preserve" approved="no">
         <source>Member</source>
+        <target state="translated">メンバー</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
@@ -1933,72 +1937,85 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from group - this cannot be undone!</source>
+        <target state="translated">メンバーをグループから除名する (※元に戻せません※)！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message delivery error" xml:space="preserve">
+      <trans-unit id="Message delivery error" xml:space="preserve" approved="no">
         <source>Message delivery error</source>
+        <target state="translated">メッセージ送信エラー</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message text" xml:space="preserve">
+      <trans-unit id="Message text" xml:space="preserve" approved="no">
         <source>Message text</source>
+        <target state="translated">メッセージ内容</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages" xml:space="preserve">
+      <trans-unit id="Messages" xml:space="preserve" approved="no">
         <source>Messages</source>
+        <target state="translated">メッセージ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive..." xml:space="preserve">
         <source>Migrating database archive...</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration error:" xml:space="preserve">
+      <trans-unit id="Migration error:" xml:space="preserve" approved="no">
         <source>Migration error:</source>
+        <target state="translated">移行エラー：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." xml:space="preserve">
         <source>Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat).</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration is completed" xml:space="preserve">
+      <trans-unit id="Migration is completed" xml:space="preserve" approved="no">
         <source>Migration is completed</source>
+        <target state="translated">移行が完了しました</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Most likely this contact has deleted the connection with you." xml:space="preserve">
         <source>Most likely this contact has deleted the connection with you.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mute" xml:space="preserve">
+      <trans-unit id="Mute" xml:space="preserve" approved="no">
         <source>Mute</source>
+        <target state="translated">ミュート</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Name" xml:space="preserve">
+      <trans-unit id="Name" xml:space="preserve" approved="no">
         <source>Name</source>
+        <target state="translated">名前</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network &amp; servers" xml:space="preserve">
+      <trans-unit id="Network &amp; servers" xml:space="preserve" approved="no">
         <source>Network &amp; servers</source>
+        <target state="translated">ネットワークとサーバ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network settings" xml:space="preserve">
+      <trans-unit id="Network settings" xml:space="preserve" approved="no">
         <source>Network settings</source>
+        <target state="translated">ネットワーク設定</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network status" xml:space="preserve">
+      <trans-unit id="Network status" xml:space="preserve" approved="no">
         <source>Network status</source>
+        <target state="translated">ネットワーク状況</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New contact request" xml:space="preserve">
+      <trans-unit id="New contact request" xml:space="preserve" approved="no">
         <source>New contact request</source>
+        <target state="translated">新しい繋がりのリクエスト</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="New contact:" xml:space="preserve">
         <source>New contact:</source>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New database archive" xml:space="preserve">
+      <trans-unit id="New database archive" xml:space="preserve" approved="no">
         <source>New database archive</source>
+        <target state="translated">新しいデータベースのアーカイブ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
@@ -2009,44 +2026,51 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>New member role</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New message" xml:space="preserve">
+      <trans-unit id="New message" xml:space="preserve" approved="no">
         <source>New message</source>
+        <target state="translated">新しいメッセージ</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="New passphrase…" xml:space="preserve">
         <source>New passphrase…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No" xml:space="preserve">
+      <trans-unit id="No" xml:space="preserve" approved="no">
         <source>No</source>
+        <target state="translated">いいえ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No contacts selected" xml:space="preserve">
+      <trans-unit id="No contacts selected" xml:space="preserve" approved="no">
         <source>No contacts selected</source>
+        <target state="translated">連絡先が選択されてません</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No contacts to add" xml:space="preserve">
+      <trans-unit id="No contacts to add" xml:space="preserve" approved="no">
         <source>No contacts to add</source>
+        <target state="translated">追加できる連絡先がありません</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No device token!" xml:space="preserve">
         <source>No device token!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No group!" xml:space="preserve">
+      <trans-unit id="No group!" xml:space="preserve" approved="no">
         <source>Group not found!</source>
+        <target state="translated">グループが見つかりません！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
         <source>No permission to record voice message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No received or sent files" xml:space="preserve">
+      <trans-unit id="No received or sent files" xml:space="preserve" approved="no">
         <source>No received or sent files</source>
+        <target state="translated">送受信済みのファイルがありません</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Notifications" xml:space="preserve">
+      <trans-unit id="Notifications" xml:space="preserve" approved="no">
         <source>Notifications</source>
+        <target state="translated">通知</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
@@ -2057,20 +2081,24 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Off (Local)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ok" xml:space="preserve">
+      <trans-unit id="Ok" xml:space="preserve" approved="no">
         <source>Ok</source>
+        <target state="translated">OK</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database" xml:space="preserve">
+      <trans-unit id="Old database" xml:space="preserve" approved="no">
         <source>Old database</source>
+        <target state="translated">古いデータベース</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database archive" xml:space="preserve">
+      <trans-unit id="Old database archive" xml:space="preserve" approved="no">
         <source>Old database archive</source>
+        <target state="translated">過去のデータベースアーカイブ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="One-time invitation link" xml:space="preserve">
+      <trans-unit id="One-time invitation link" xml:space="preserve" approved="no">
         <source>One-time invitation link</source>
+        <target state="translated">使い捨ての招待リンク</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
@@ -2081,104 +2109,127 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Onion hosts will be used when available. Requires enabling VPN.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will not be used." xml:space="preserve">
+      <trans-unit id="Onion hosts will not be used." xml:space="preserve" approved="no">
         <source>Onion hosts will not be used.</source>
+        <target state="translated">オニオンのホストが使われません。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
         <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
+      <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
+        <target state="translated">グループ設定を変えられるのはグループのオーナーだけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
+      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve" approved="no">
         <source>Only group owners can enable voice messages.</source>
+        <target state="translated">音声メッセージを利用可能に設定できるのはグループのオーナーだけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
+      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion).</source>
+        <target state="translated">メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Only you can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only you can send disappearing messages.</source>
+        <target state="translated">消えるメッセージを送れるのはあなただけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can send voice messages." xml:space="preserve">
+      <trans-unit id="Only you can send voice messages." xml:space="preserve" approved="no">
         <source>Only you can send voice messages.</source>
+        <target state="translated">音声メッセージを送れるのはあなただけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
+      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
+        <target state="translated">メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only your contact can send disappearing messages.</source>
+        <target state="translated">消えるメッセージを送れるのはあなたの連絡相手だけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
+      <trans-unit id="Only your contact can send voice messages." xml:space="preserve" approved="no">
         <source>Only your contact can send voice messages.</source>
+        <target state="translated">音声メッセージを送れるのはあなたの連絡相手だけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open Settings" xml:space="preserve">
+      <trans-unit id="Open Settings" xml:space="preserve" approved="no">
         <source>Open Settings</source>
+        <target state="translated">設定を開く</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat" xml:space="preserve">
+      <trans-unit id="Open chat" xml:space="preserve" approved="no">
         <source>Open chat</source>
+        <target state="translated">チャットを開く</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat console" xml:space="preserve">
+      <trans-unit id="Open chat console" xml:space="preserve" approved="no">
         <source>Open chat console</source>
+        <target state="translated">チャットのコンソールを開く</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
+      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve" approved="no">
         <source>Open-source protocol and code – anybody can run the servers.</source>
+        <target state="translated">プロトコル技術とコードはオープンソースで、どなたでもご自分のサーバを運用できます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
+      <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve" approved="no">
         <source>Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</source>
+        <target state="translated">ブラウザでリンクを開くと接続のプライバシーとセキュリティが下がる可能性があります。信頼されないSimpleXリンクは読み込まれません。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="PING count" xml:space="preserve">
+      <trans-unit id="PING count" xml:space="preserve" approved="no">
         <source>PING count</source>
+        <target state="translated">PING回数</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste" xml:space="preserve">
+      <trans-unit id="Paste" xml:space="preserve" approved="no">
         <source>Paste</source>
+        <target state="translated">貼り付け</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste image" xml:space="preserve">
+      <trans-unit id="Paste image" xml:space="preserve" approved="no">
         <source>Paste image</source>
+        <target state="translated">画像の貼り付け</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste received link" xml:space="preserve">
+      <trans-unit id="Paste received link" xml:space="preserve" approved="no">
         <source>Paste received link</source>
+        <target state="translated">頂いたリンクを貼り付ける</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
+      <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve" approved="no">
         <source>Paste the link you received into the box below to connect with your contact.</source>
+        <target state="translated">連絡相手から頂いたリンクを以下の入力欄に貼り付けて繋がります。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
+      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve" approved="no">
         <source>People can connect to you only via the links you share.</source>
+        <target state="translated">あなたと繋がることができるのは、あなたからリンクを頂いた方のみです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Periodically" xml:space="preserve">
+      <trans-unit id="Periodically" xml:space="preserve" approved="no">
         <source>Periodically</source>
+        <target state="translated">定期的に</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
+      <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve" approved="no">
         <source>Please ask your contact to enable sending voice messages.</source>
+        <target state="translated">音声メッセージを有効にするように連絡相手に要求してください。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
+      <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve" approved="no">
         <source>Please check that you used the correct link or ask your contact to send you another one.</source>
+        <target state="translated">リンクが正しいかどうかご確認ください。または、連絡相手にもう一度リンクをお求めください。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
@@ -2189,12 +2240,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Please check yours and your contact preferences.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
+      <trans-unit id="Please enter correct current passphrase." xml:space="preserve" approved="no">
         <source>Please enter correct current passphrase.</source>
+        <target state="translated">現在の正しい暗証フレーズを入力してください。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve">
+      <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve" approved="no">
         <source>Please enter the previous password after restoring database backup. This action can not be undone.</source>
+        <target state="translated">データベースのバックアップで復旧する際に前の暗証フレーズを入力してください。行われたら元に戻せません。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
@@ -4135,6 +4188,106 @@ v5.1 で利用可能</target>
       <trans-unit id="Initial role" xml:space="preserve" approved="no">
         <source>Initial role</source>
         <target state="translated">初期の役割</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="More improvements are coming soon!" xml:space="preserve" approved="no">
+        <source>More improvements are coming soon!</source>
+        <target state="translated">まだまだ改善してまいります！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Make profile private!" xml:space="preserve" approved="no">
+        <source>Make profile private!</source>
+        <target state="translated">プロフィールを非表示にできます！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Multiple chat profiles" xml:space="preserve" approved="no">
+        <source>Multiple chat profiles</source>
+        <target state="translated">複数チャットのプロフィール</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No app password" xml:space="preserve" approved="no">
+        <source>No app password</source>
+        <target state="translated">アプリのパスワードはありません</target>
+        <note>Authentication unavailable</note>
+      </trans-unit>
+      <trans-unit id="Passcode" xml:space="preserve" approved="no">
+        <source>Passcode</source>
+        <target state="translated">パスコード</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode changed!" xml:space="preserve" approved="no">
+        <source>Passcode changed!</source>
+        <target state="translated">パスコードが変更されました！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Password to show" xml:space="preserve" approved="no">
+        <source>Password to show</source>
+        <target state="translated">パスワードを表示する</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please contact group admin." xml:space="preserve" approved="no">
+        <source>Please contact group admin.</source>
+        <target state="translated">グループの管理者に連絡してください。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
+        <source>Migrations: %@</source>
+        <target state="translated">移行： %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message draft" xml:space="preserve" approved="no">
+        <source>Message draft</source>
+        <target state="translated">メッセージの下書き</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages &amp; files" xml:space="preserve" approved="no">
+        <source>Messages &amp; files</source>
+        <target state="translated">メッセージ &amp; ファイル</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Muted when inactive!" xml:space="preserve" approved="no">
+        <source>Muted when inactive!</source>
+        <target state="translated">非アクティブ時はミュート！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New Passcode" xml:space="preserve" approved="no">
+        <source>New Passcode</source>
+        <target state="translated">新しいパスコード</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Off" xml:space="preserve" approved="no">
+        <source>Off</source>
+        <target state="translated">オフ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode entry" xml:space="preserve" approved="no">
+        <source>Passcode entry</source>
+        <target state="translated">パスコード入力</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode not changed!" xml:space="preserve" approved="no">
+        <source>Passcode not changed!</source>
+        <target state="translated">パスコードが変更されていません！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Passcode set!" xml:space="preserve" approved="no">
+        <source>Passcode set!</source>
+        <target state="translated">パスコードを設定しました！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open user profiles" xml:space="preserve" approved="no">
+        <source>Open user profiles</source>
+        <target state="translated">ユーザープロフィールを開く</target>
+        <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Only you can make calls." xml:space="preserve" approved="no">
+        <source>Only you can make calls.</source>
+        <target state="translated">自分からのみ通話ができます。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only your contact can make calls." xml:space="preserve" approved="no">
+        <source>Only your contact can make calls.</source>
+        <target state="translated">連絡先からのみ通話ができます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
