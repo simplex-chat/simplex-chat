@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.item
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -37,7 +38,7 @@ fun CIVoiceView(
   longClick: () -> Unit,
 ) {
   Row(
-    Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = 6.dp, end = 6.dp),
+    Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = if (hasText) 6.dp else 0.dp, end = if (hasText) 6.dp else 0.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (file != null) {
@@ -151,7 +152,7 @@ private fun VoiceLayout(
       Row {
         Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
           Spacer(Modifier.height(56.dp))
-          Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING_HALF + 3.dp))
+          Slider(MaterialTheme.colors.background, PaddingValues(end = DEFAULT_PADDING_HALF + 3.dp))
           DurationText(text, PaddingValues(end = 12.dp))
         }
         Column {
@@ -172,7 +173,7 @@ private fun VoiceLayout(
         }
         Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
           DurationText(text, PaddingValues(start = 12.dp))
-          Slider(MaterialTheme.colors.background)
+          Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.dp))
           Spacer(Modifier.height(56.dp))
         }
       }
