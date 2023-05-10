@@ -366,9 +366,14 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
         ModalManager.shared.closeModals()
         return@withApi
       }
-      m.controller.apiStartChat()
-      runChat.value = true
-      m.chatRunning.value = true
+      if (m.currentUser.value == null) {
+        ModalManager.shared.closeModals()
+        return@withApi
+      } else {
+        m.controller.apiStartChat()
+        runChat.value = true
+        m.chatRunning.value = true
+      }
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
