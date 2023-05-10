@@ -100,7 +100,7 @@ fun ComposeVoiceView(
     }
 
     if (finishedRecording) {
-      FinishedRecordingSlider(sentColor, progress, duration)
+      FinishedRecordingSlider(sentColor, progress, duration, filePath)
     } else {
       RecordingInProgressSlider(recordedDurationMs)
     }
@@ -108,17 +108,18 @@ fun ComposeVoiceView(
 }
 
 @Composable
-fun FinishedRecordingSlider(backgroundColor: Color, progress: MutableState<Int>, duration: MutableState<Int>) {
+fun FinishedRecordingSlider(backgroundColor: Color, progress: MutableState<Int>, duration: MutableState<Int>, filePath: String) {
   val dp4 = with(LocalDensity.current) { 4.dp.toPx() }
   val dp10 = with(LocalDensity.current) { 10.dp.toPx() }
   val primary = MaterialTheme.colors.primary
-  val inactiveTrackColor = MaterialTheme.colors.primary.mixWith(backgroundColor, 0.24f)
+  val inactiveTrackColor = MaterialTheme.colors.primary.mixWith(
+    backgroundColor.copy(1f).mixWith(MaterialTheme.colors.background, backgroundColor.alpha),
+    0.24f)
   Slider(
     progress.value.toFloat(),
-    onValueChange = { AudioPlayer.seekTo(it.toInt(), progress) },
+    onValueChange = { AudioPlayer.seekTo(it.toInt(), progress, filePath) },
     Modifier
       .fillMaxWidth()
-      .padding(top = 0.dp)
       .drawBehind {
         drawRect(primary, Offset(0f, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
         drawRect(inactiveTrackColor, Offset(size.width - dp10, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
@@ -148,7 +149,6 @@ fun RecordingInProgressSlider(recordedDurationMs: Int) {
     onValueChange = {},
     Modifier
       .fillMaxWidth()
-      .padding(top = 0.dp)
       .drawBehind {
         drawRect(primary, Offset(0f, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
       },
