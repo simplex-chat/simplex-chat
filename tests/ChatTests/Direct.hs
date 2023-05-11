@@ -34,7 +34,7 @@ chatDirectTests = do
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
-    fit "direct timed message" testDirectTimedMessage
+    it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
   describe "SMP servers" $ do
