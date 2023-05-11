@@ -1133,4 +1133,6 @@
     <string name="should_be_at_least_one_visible_profile">少なくとも1つのユーザープロフィールが表示されている必要があります。</string>
     <string name="should_be_at_least_one_profile">少なくとも1つのユーザープロファイルが必要です。</string>
     <string name="make_profile_private">プロフィールを非表示にできます！</string>
+    <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話している間は監視できます。</string>
+    <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか\?</string>
 </resources>
