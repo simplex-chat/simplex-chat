@@ -471,7 +471,7 @@ processChatCommand = \case
     let CIMeta {itemTs, createdAt, updatedAt} = meta
         ciInfo = ChatItemInfo {chatItemId = itemId, itemTs, createdAt, updatedAt, itemVersions}
     pure $ CRChatItemInfo user chatItem ciInfo
-  APISendMessage (ChatRef cType chatId) live (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
+  APISendMessage (ChatRef cType chatId) live ttl (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgNew_
@@ -480,7 +480,7 @@ processChatCommand = \case
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         else do
           (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
-          timed_ <- sndContactCITimed live ct
+          timed_ <- sndContactCITimed live ttl ct
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_
           (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
           case ft_ of
@@ -540,7 +540,7 @@ processChatCommand = \case
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
         else do
           (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
-          timed_ <- sndGroupCITimed live gInfo
+          timed_ <- sndGroupCITimed live ttl gInfo
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
@@ -1206,7 +1206,7 @@ processChatCommand = \case
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
     let mc = MCText msg
-    processChatCommand . APISendMessage (ChatRef CTDirect contactId) False $ ComposedMessage Nothing (Just quotedItemId) mc
+    processChatCommand . APISendMessage (ChatRef CTDirect contactId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
@@ -1404,7 +1404,7 @@ processChatCommand = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
     let mc = MCText msg
-    processChatCommand . APISendMessage (ChatRef CTGroup groupId) False $ ComposedMessage Nothing (Just quotedItemId) mc
+    processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   LastChats count_ -> withUser' $ \user -> do
     chats <- withStore' $ \db -> getChatPreviews db user False
     pure $ CRChats $ maybe id take count_ chats
@@ -1436,7 +1436,7 @@ processChatCommand = \case
     asks showLiveItems >>= atomically . (`writeTVar` on) >> ok_
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCFile "")
+    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCFile "")
   SendImage chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     filePath <- toFSFilePath f
@@ -1444,7 +1444,7 @@ processChatCommand = \case
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
     -- TODO include file description for preview
-    processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
+    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
@@ -1784,11 +1784,11 @@ processChatCommand = \case
     sendTextMessage chatName msg live = withUser $ \user -> do
       chatRef <- getChatRef user chatName
       let mc = MCText msg
-      processChatCommand . APISendMessage chatRef live $ ComposedMessage Nothing Nothing mc
-    sndContactCITimed :: Bool -> Contact -> m (Maybe CITimed)
-    sndContactCITimed live = mapM (sndCITimed_ live) . contactTimedTTL
-    sndGroupCITimed :: Bool -> GroupInfo -> m (Maybe CITimed)
-    sndGroupCITimed live = mapM (sndCITimed_ live) . groupTimedTTL
+      processChatCommand . APISendMessage chatRef live Nothing $ ComposedMessage Nothing Nothing mc
+    sndContactCITimed :: Bool -> Maybe Int -> Contact -> m (Maybe CITimed)
+    sndContactCITimed live itemTTL ct = mapM (sndCITimed_ live) $ contactTimedTTL ct itemTTL
+    sndGroupCITimed :: Bool -> Maybe Int -> GroupInfo -> m (Maybe CITimed)
+    sndGroupCITimed live itemTTL g = mapM (sndCITimed_ live) $ groupTimedTTL g itemTTL
     sndCITimed_ :: Bool -> Int -> m CITimed
     sndCITimed_ live ttl =
       CITimed ttl
@@ -4639,7 +4639,7 @@ chatCommandP =
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> A.decimal),
-      "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
+      "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),
@@ -4833,6 +4833,8 @@ chatCommandP =
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
+    sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
+    -- sendMessageTTLP = (Just <$ " ttl=" <*> A.decimal) <|> pure Nothing
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayName <*> fullNameP
     newUserP = do

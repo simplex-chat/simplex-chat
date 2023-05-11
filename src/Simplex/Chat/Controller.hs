@@ -214,7 +214,7 @@ data ChatCommand
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatItemId
-  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
+  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId

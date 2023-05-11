@@ -353,26 +353,30 @@ instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 ttl' :: CITimed -> Int
 ttl' CITimed {ttl} = ttl
 
-contactTimedTTL :: Contact -> Maybe Int
-contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
-  | forUser enabled && forContact enabled = ttl
-  | otherwise = Nothing
-  where
-    TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
+contactTimedTTL :: Contact -> Maybe Int -> Maybe Int
+contactTimedTTL
+  Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
+  itemTTL
+    | forUser enabled && forContact enabled = itemTTL <|> ttl
+    | otherwise = Nothing
+    where
+      TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
 
-groupTimedTTL :: GroupInfo -> Maybe Int
-groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
-  | enable == FEOn = Just ttl
-  | otherwise = Nothing
+groupTimedTTL :: GroupInfo -> Maybe Int -> Maybe Int
+groupTimedTTL
+  GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
+  itemTTL
+    | enable == FEOn = itemTTL <|> Just ttl
+    | otherwise = Nothing
 
 rcvContactCITimed :: Contact -> Maybe Int -> Maybe CITimed
-rcvContactCITimed = rcvCITimed_ . contactTimedTTL
+rcvContactCITimed ct itemTTL = rcvCITimed_ $ contactTimedTTL ct itemTTL
 
 rcvGroupCITimed :: GroupInfo -> Maybe Int -> Maybe CITimed
-rcvGroupCITimed = rcvCITimed_ . groupTimedTTL
+rcvGroupCITimed g itemTTL = rcvCITimed_ $ groupTimedTTL g itemTTL
 
-rcvCITimed_ :: Maybe Int -> Maybe Int -> Maybe CITimed
-rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL)
+rcvCITimed_ :: Maybe Int -> Maybe CITimed
+rcvCITimed_ rcvTTL = (`CITimed` Nothing) <$> rcvTTL
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,
