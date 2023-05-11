@@ -39,7 +39,7 @@ struct FramedItemView: View {
                 } else if chatItem.meta.isLive {
                     framedItemHeader(caption: Text("LIVE"))
                 }
-                
+
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
@@ -51,13 +51,13 @@ struct FramedItemView: View {
                             }
                         }
                 }
-                
+
                 ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: framedMsgContentView)
                     .padding(chatItem.content.msgContent != nil ? 0 : 4)
                     .overlay(DetermineWidth())
             }
             .onPreferenceChange(MetaColorPreferenceKey.self) { metaColor = $0 }
-            
+
             if chatItem.content.msgContent != nil {
                 CIMetaView(chatItem: chatItem, metaColor: metaColor)
                     .padding(.horizontal, 12)
@@ -68,7 +68,7 @@ struct FramedItemView: View {
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
-        
+
         switch chatItem.meta.itemStatus {
         case .sndErrorAuth:
             v.onTapGesture { msgDeliveryError("Most likely this contact has deleted the connection with you.") }
@@ -77,7 +77,7 @@ struct FramedItemView: View {
         default: v
         }
     }
-    
+
     @ViewBuilder private func framedMsgContentView() -> some View {
         if chatItem.formattedText == nil && chatItem.file == nil && !chatItem.meta.isLive && isShortEmoji(chatItem.content.text) {
             VStack {

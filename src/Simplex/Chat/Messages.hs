@@ -137,6 +137,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
+    reactions :: [CIReaction],
     file :: Maybe (CIFile d)
   }
   deriving (Show, Generic)
@@ -174,6 +175,11 @@ jsonCIDirection = \case
   CIDirectRcv -> JCIDirectRcv
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
+
+data CIReaction = CIReaction {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
+  deriving (Show, Generic)
+
+instance ToJSON CIReaction where toEncoding = J.genericToEncoding J.defaultOptions
 
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 

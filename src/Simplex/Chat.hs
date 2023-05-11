@@ -728,6 +728,8 @@ processChatCommand = \case
         SndMessage {msgId} <- sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId $ Just memberId
         delGroupChatItem user gInfo ci msgId (Just membership)
       (_, _) -> throwChatError CEInvalidChatItemDelete
+  APIChatItemReaction chatRef chatItemId reaction add -> withUser $ \user -> withChatLock "chatItemReaction" $ do
+    pure $ chatCmdError (Just user) "not supported"
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withStore $ \db -> getUserByContactId db chatId
@@ -1229,6 +1231,10 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     let mc = MCText msg
     processChatCommand $ APIUpdateChatItem chatRef chatItemId live mc
+  ReactToMessage chatName msg reaction add -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
+    chatItemId <- getSentChatItemIdByText user chatRef msg
+    processChatCommand $ APIChatItemReaction chatRef chatItemId reaction add
   APINewGroup userId gProfile -> withUserId userId $ \user -> do
     gVar <- asks idsDrg
     groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile
@@ -4306,7 +4312,7 @@ mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs cur
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
       meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) tz currentTs itemTs currentTs currentTs
-  pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, file}
+  pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 deleteDirectCI :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> Bool -> Bool -> m ChatResponse
 deleteDirectCI user ct ci@(CChatItem msgDir deletedItem@ChatItem {file}) byUser timed = do
@@ -4656,6 +4662,7 @@ chatCommandP =
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),
+      "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> reactionP <* A.space <*> onOffP),
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
       "/_delete " *> (APIDeleteChat <$> chatRefP),
@@ -4774,6 +4781,7 @@ chatCommandP =
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> textP),
       ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> textP),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
+      ("+" $> True <|> "\\+" $> False) >>= \add -> reactionP >>= \reaction -> ReactToMessage <$> chatNameP <* A.space <*> textP <*> pure reaction <*> pure add,
       "/feed " *> (SendMessageBroadcast <$> msgTextP),
       ("/chats" <|> "/cs") *> (LastChats <$> (" all" $> Nothing <|> Just <$> (A.space *> A.decimal <|> pure 20))),
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
@@ -4844,6 +4852,18 @@ chatCommandP =
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
+    reactionP = MREmoji <$> (mrEmojiChar <$?> (toEmoji <$> A.anyChar))
+    toEmoji = \case
+      '1' -> '👍'
+      '+' -> '👍'
+      '-' -> '👎'
+      ')' -> '😀'
+      '!' -> '🎉'
+      '?' -> '😕'
+      '*' -> head "❤️"
+      '^' -> '🚀'
+      '%' -> '👀'
+      c -> c
     refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing

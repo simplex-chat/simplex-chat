@@ -5001,7 +5001,7 @@ toDirectChatItem tz currentTs (((itemId, itemTs, AMsgDirection msgDir, itemConte
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTDirect d
     ciMeta content status =
@@ -5054,7 +5054,7 @@ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, AMsgDirection msgD
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
     ciMeta content status =

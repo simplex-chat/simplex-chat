@@ -230,7 +230,14 @@ struct ChatView: View {
                     : (g.size.width - 32) * 0.84
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
+//                            VStack(alignment: .trailing, spacing: 4) {
                             chatItemView(ci, maxWidth)
+//                                if ci.reactions.count > 0 {
+//                                    chatItemReactions(ci.reactions)
+//                                        .padding(.trailing, 12)
+//                                        .padding(.bottom, 4)
+//                                }
+//                            }
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear {
                                     itemsInView.insert(ci.viewId)
@@ -435,6 +442,7 @@ struct ChatView: View {
     
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var chat: Chat
+        @Environment(\.colorScheme) var colorScheme
         var ci: ChatItem
         var showMember: Bool = false
         var maxWidth: CGFloat
@@ -455,8 +463,14 @@ struct ChatView: View {
                 set: { _ in }
             )
 
-            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
-                .uiKitContextMenu(menu: uiMenu)
+            VStack(alignment: .trailing, spacing: 4) {
+                ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
+                    .uiKitContextMenu(menu: uiMenu)
+                if ci.reactions.count > 0 {
+                    chatItemReactions(ci.reactions)
+                        .padding(.bottom, 4)
+                }
+            }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
@@ -475,7 +489,28 @@ struct ChatView: View {
                     ChatItemInfoView(chatItemSent: ci.chatDir.sent, chatItemInfo: $chatItemInfo)
                 }
         }
-        
+
+        private func chatItemReactions(_ reactions: [CIReaction]) -> some View {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(reactions, id: \.reaction) { r in
+                        HStack(spacing: 4) {
+                            switch r.reaction {
+                            case let .emoji(emoji): Text(emoji).font(.caption)
+                            }
+                            if r.totalReacted > 1 {
+                                Text("\(r.totalReacted)").font(.caption).foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(!r.userReacted ? Color.clear : colorScheme == .dark ? sentColorDark : sentColorLight)
+                        .cornerRadius(16)
+                    }
+                }
+            }
+        }
+
         private func menu(live: Bool) -> [UIAction] {
             var menu: [UIAction] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
@@ -696,7 +731,7 @@ struct ChatView: View {
             chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
         }
     }
-    
+
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
         case .groupSnd: return true

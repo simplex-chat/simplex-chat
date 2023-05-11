@@ -218,6 +218,7 @@ data ChatCommand
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
+  | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, reaction :: MsgReaction, add :: Bool}
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
@@ -319,6 +320,7 @@ data ChatCommand
   | DeleteMemberMessage GroupName ContactName Text
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
+  | ReactToMessage {chatName :: ChatName, reactToMessage :: Text, reaction :: MsgReaction, add :: Bool}
   | APINewGroup UserId GroupProfile
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
