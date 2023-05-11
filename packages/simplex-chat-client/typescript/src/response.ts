@@ -1,14 +1,15 @@
-import {ChatItemId, MsgContent, DeleteMode, Profile, GroupMemberRole} from "./command"
+import {ChatItemId, MsgContent, DeleteMode, Profile, GroupMemberRole, LocalProfile, ServerProtocol, ServerCfg} from "./command"
 
 export type ChatResponse =
   | CRActiveUser
+  | CRUsersList
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
   | CRApiChats
   | CRApiChat
   | CRApiParsedMarkdown
-  | CRUserSMPServers
+  | CRUserProtoServers
   | CRContactInfo
   | CRGroupMemberInfo
   | CRNewChatItem
@@ -40,8 +41,6 @@ export type ChatResponse =
   | CRContactConnecting
   | CRContactConnected
   | CRContactAnotherClient
-  | CRContactDisconnected
-  | CRContactSubscribed
   | CRContactSubError
   | CRContactSubSummary
   | CRContactsDisconnected
@@ -101,13 +100,14 @@ export type ChatResponse =
 
 type ChatResponseTag =
   | "activeUser"
+  | "usersList"
   | "chatStarted"
   | "chatRunning"
   | "chatStopped"
   | "apiChats"
   | "apiChat"
   | "apiParsedMarkdown"
-  | "userSMPServers"
+  | "userProtoServers"
   | "contactInfo"
   | "groupMemberInfo"
   | "newChatItem"
@@ -139,8 +139,6 @@ type ChatResponseTag =
   | "contactConnecting"
   | "contactConnected"
   | "contactAnotherClient"
-  | "contactDisconnected"
-  | "contactSubscribed"
   | "contactSubError"
   | "contactSubSummary"
   | "contactsDisconnected"
@@ -202,6 +200,11 @@ export interface CRActiveUser extends CR {
   user: User
 }
 
+export interface CRUsersList extends CR {
+  type: "usersList"
+  users: UserInfo[]
+}
+
 export interface CRChatStarted extends CR {
   type: "chatStarted"
 }
@@ -216,11 +219,13 @@ export interface CRChatStopped extends CR {
 
 export interface CRApiChats extends CR {
   type: "apiChats"
+  user: User
   chats: Chat[]
 }
 
 export interface CRApiChat extends CR {
   type: "apiChat"
+  user: User
   chat: Chat
 }
 
@@ -229,13 +234,15 @@ export interface CRApiParsedMarkdown extends CR {
   formattedText?: FormattedText[]
 }
 
-export interface CRUserSMPServers extends CR {
-  type: "userSMPServers"
-  smpServers: string[]
+export interface CRUserProtoServers extends CR {
+  type: "userProtoServers"
+  user: User
+  servers: UserProtoServers
 }
 
 export interface CRContactInfo extends CR {
   type: "contactInfo"
+  user: User
   contact: Contact
   connectionStats: ConnectionStats
   customUserProfile?: Profile
@@ -243,6 +250,7 @@ export interface CRContactInfo extends CR {
 
 export interface CRGroupMemberInfo extends CR {
   type: "groupMemberInfo"
+  user: User
   groupInfo: GroupInfo
   member: GroupMember
   connectionStats_?: ConnectionStats
@@ -250,21 +258,25 @@ export interface CRGroupMemberInfo extends CR {
 
 export interface CRNewChatItem extends CR {
   type: "newChatItem"
+  user: User
   chatItem: AChatItem
 }
 
 export interface CRChatItemStatusUpdated extends CR {
   type: "chatItemStatusUpdated"
+  user: User
   chatItem: AChatItem
 }
 
 export interface CRChatItemUpdated extends CR {
   type: "chatItemUpdated"
+  user: User
   chatItem: AChatItem
 }
 
 export interface CRChatItemDeleted extends CR {
   type: "chatItemDeleted"
+  user: User
   deletedChatItem: AChatItem
   toChatItem?: AChatItem
   byUser: boolean
@@ -272,20 +284,24 @@ export interface CRChatItemDeleted extends CR {
 
 export interface CRMsgIntegrityError extends CR {
   type: "msgIntegrityError"
+  user: User
   msgError: MsgErrorType
 }
 
 export interface CRCmdOk extends CR {
   type: "cmdOk"
+  user_?: User
 }
 
 export interface CRUserContactLink extends CR {
   type: "userContactLink"
+  user: User
   contactLink: UserContactLink
 }
 
 export interface CRUserContactLinkUpdated extends CR {
   type: "userContactLinkUpdated"
+  user: User
   connReqContact: string
   autoAccept: boolean
   autoReply?: MsgContent
@@ -293,138 +309,153 @@ export interface CRUserContactLinkUpdated extends CR {
 
 export interface CRContactRequestRejected extends CR {
   type: "contactRequestRejected"
+  user: User
   contactRequest: UserContactRequest
 }
 
 export interface CRUserProfile extends CR {
   type: "userProfile"
+  user: User
   profile: Profile
 }
 
 export interface CRUserProfileNoChange extends CR {
   type: "userProfileNoChange"
+  user: User
 }
 
 export interface CRUserProfileUpdated extends CR {
   type: "userProfileUpdated"
+  user: User
   fromProfile: Profile
   toProfile: Profile
 }
 
 export interface CRContactAliasUpdated extends CR {
   type: "contactAliasUpdated"
+  user: User
   toContact: Contact
 }
 
 export interface CRInvitation extends CR {
   type: "invitation"
+  user: User
   connReqInvitation: string
 }
 
 export interface CRSentConfirmation extends CR {
   type: "sentConfirmation"
+  user: User
 }
 
 export interface CRSentInvitation extends CR {
   type: "sentInvitation"
+  user: User
 }
 
 export interface CRContactUpdated extends CR {
   type: "contactUpdated"
+  user: User
   fromContact: Contact
   toContact: Contact
 }
 
 export interface CRContactsMerged extends CR {
   type: "contactsMerged"
+  user: User
   intoContact: Contact
   mergedContact: Contact
 }
 
 export interface CRContactDeleted extends CR {
   type: "contactDeleted"
+  user: User
   contact: Contact
 }
 
 export interface CRChatCleared extends CR {
   type: "chatCleared"
+  user: User
   chatInfo: ChatInfo
 }
 
 export interface CRUserContactLinkCreated extends CR {
   type: "userContactLinkCreated"
+  user: User
   connReqContact: string
 }
 
 export interface CRUserContactLinkDeleted extends CR {
   type: "userContactLinkDeleted"
+  user: User
 }
 
 export interface CRReceivedContactRequest extends CR {
   type: "receivedContactRequest"
+  user: User
   contactRequest: UserContactRequest
 }
 
 export interface CRAcceptingContactRequest extends CR {
   type: "acceptingContactRequest"
+  user: User
   contact: Contact
 }
 
 export interface CRContactAlreadyExists extends CR {
   type: "contactAlreadyExists"
+  user: User
   contact: Contact
 }
 
 export interface CRContactRequestAlreadyAccepted extends CR {
   type: "contactRequestAlreadyAccepted"
+  user: User
   contact: Contact
 }
 
 export interface CRContactConnecting extends CR {
   type: "contactConnecting"
+  user: User
   contact: Contact
 }
 
 export interface CRContactConnected extends CR {
   type: "contactConnected"
   contact: Contact
+  user: User
   userCustomProfile?: Profile
 }
 
 export interface CRContactAnotherClient extends CR {
   type: "contactAnotherClient"
-  contact: Contact
-}
-
-export interface CRContactDisconnected extends CR {
-  type: "contactDisconnected"
-  contact: Contact
-}
-
-export interface CRContactSubscribed extends CR {
-  type: "contactSubscribed"
+  user: User
   contact: Contact
 }
 
 export interface CRContactSubError extends CR {
   type: "contactSubError"
+  user: User
   contact: Contact
   chatError: ChatError
 }
 
 export interface CRContactSubSummary extends CR {
   type: "contactSubSummary"
+  user: User
   contactSubscriptions: ContactSubStatus[]
 }
 
 export interface CRContactsDisconnected extends CR {
   type: "contactsDisconnected"
+  user: User
   server: string
   contactRefs: ContactRef[]
 }
 
 export interface CRContactsSubscribed extends CR {
   type: "contactsSubscribed"
+  user: User
   server: string
   contactRefs: ContactRef[]
 }
@@ -443,11 +474,13 @@ export interface CRHostDisconnected extends CR {
 
 export interface CRGroupEmpty extends CR {
   type: "groupEmpty"
+  user: User
   groupInfo: GroupInfo
 }
 
 export interface CRMemberSubError extends CR {
   type: "memberSubError"
+  user: User
   groupInfo: GroupInfo
   member: GroupMember
   chatError: ChatError
@@ -455,70 +488,83 @@ export interface CRMemberSubError extends CR {
 
 export interface CRMemberSubSummary extends CR {
   type: "memberSubSummary"
+  user: User
   memberSubscriptions: MemberSubStatus[]
 }
 
 export interface CRGroupSubscribed extends CR {
   type: "groupSubscribed"
+  user: User
   groupInfo: GroupInfo
 }
 
 export interface CRRcvFileAccepted extends CR {
   type: "rcvFileAccepted"
+  user: User
   chatItem: AChatItem
 }
 
 export interface CRRcvFileAcceptedSndCancelled extends CR {
   type: "rcvFileAcceptedSndCancelled"
+  user: User
   rcvFileTransfer: RcvFileTransfer
 }
 
 export interface CRRcvFileStart extends CR {
   type: "rcvFileStart"
+  user: User
   chatItem: AChatItem
 }
 
 export interface CRRcvFileComplete extends CR {
   type: "rcvFileComplete"
+  user: User
   chatItem: AChatItem
 }
 
 export interface CRRcvFileCancelled extends CR {
   type: "rcvFileCancelled"
+  user: User
   rcvFileTransfer: RcvFileTransfer
 }
 
 export interface CRRcvFileSndCancelled extends CR {
   type: "rcvFileSndCancelled"
+  user: User
   rcvFileTransfer: RcvFileTransfer
 }
 
 export interface CRSndFileStart extends CR {
   type: "sndFileStart"
+  user: User
   chatItem: AChatItem
   sndFileTransfer: SndFileTransfer
 }
 
 export interface CRSndFileComplete extends CR {
   type: "sndFileComplete"
+  user: User
   chatItem: AChatItem
   sndFileTransfer: SndFileTransfer
 }
 
 export interface CRSndFileCancelled extends CR {
   type: "sndFileCancelled"
+  user: User
   chatItem: AChatItem
   sndFileTransfer: SndFileTransfer
 }
 
 export interface CRSndFileRcvCancelled extends CR {
   type: "sndFileRcvCancelled"
+  user: User
   chatItem: AChatItem
   sndFileTransfer: SndFileTransfer
 }
 
 export interface CRSndGroupFileCancelled extends CR {
   type: "sndGroupFileCancelled"
+  user: User
   chatItem: AChatItem
   fileTransferMeta: FileTransferMeta
   sndFileTransfers: SndFileTransfer[]
@@ -526,45 +572,53 @@ export interface CRSndGroupFileCancelled extends CR {
 
 export interface CRSndFileSubError extends CR {
   type: "sndFileSubError"
+  user: User
   sndFileTransfer: SndFileTransfer
   chatError: ChatError
 }
 
 export interface CRRcvFileSubError extends CR {
   type: "rcvFileSubError"
+  user: User
   rcvFileTransfer: RcvFileTransfer
   chatError: ChatError
 }
 
 export interface CRPendingSubSummary extends CR {
   type: "pendingSubSummary"
+  user: User
   pendingSubStatus: PendingSubStatus[]
 }
 
 export interface CRGroupCreated extends CR {
   type: "groupCreated"
+  user: User
   groupInfo: GroupInfo
 }
 
 export interface CRGroupMembers extends CR {
   type: "groupMembers"
+  user: User
   group: Group
 }
 
 export interface CRUserAcceptedGroupSent extends CR {
   type: "userAcceptedGroupSent"
+  user: User
   groupInfo: GroupInfo
   hostContact?: Contact // included when joining group via group link
 }
 
 export interface CRUserDeletedMember extends CR {
   type: "userDeletedMember"
+  user: User
   groupInfo: GroupInfo
   member: GroupMember
 }
 
 export interface CRSentGroupInvitation extends CR {
   type: "sentGroupInvitation"
+  user: User
   groupInfo: GroupInfo
   contact: Contact
   member: GroupMember
@@ -572,21 +626,25 @@ export interface CRSentGroupInvitation extends CR {
 
 export interface CRLeftMemberUser extends CR {
   type: "leftMemberUser"
+  user: User
   groupInfo: GroupInfo
 }
 
 export interface CRGroupDeletedUser extends CR {
   type: "groupDeletedUser"
+  user: User
   groupInfo: GroupInfo
 }
 
 export interface CRGroupInvitation extends CR {
   type: "groupInvitation"
+  user: User
   groupInfo: GroupInfo
 }
 
 export interface CRReceivedGroupInvitation extends CR {
   type: "receivedGroupInvitation"
+  user: User
   groupInfo: GroupInfo
   contact: Contact
   memberRole: GroupMemberRole
@@ -594,18 +652,21 @@ export interface CRReceivedGroupInvitation extends CR {
 
 export interface CRUserJoinedGroup extends CR {
   type: "userJoinedGroup"
+  user: User
   groupInfo: GroupInfo
   hostMember: GroupMember
 }
 
 export interface CRJoinedGroupMember extends CR {
   type: "joinedGroupMember"
+  user: User
   groupInfo: GroupInfo
   member: GroupMember
 }
 
 export interface CRJoinedGroupMemberConnecting extends CR {
   type: "joinedGroupMemberConnecting"
+  user: User
   groupInfo: GroupInfo
   hostMember: GroupMember
   member: GroupMember
@@ -613,12 +674,14 @@ export interface CRJoinedGroupMemberConnecting extends CR {
 
 export interface CRConnectedToGroupMember extends CR {
   type: "connectedToGroupMember"
+  user: User
   groupInfo: GroupInfo
   member: GroupMember
 }
 
 export interface CRDeletedMember extends CR {
   type: "deletedMember"
+  user: User
   groupInfo: GroupInfo
   byMember: GroupMember
   deletedMember: GroupMember
@@ -626,29 +689,34 @@ export interface CRDeletedMember extends CR {
 
 export interface CRDeletedMemberUser extends CR {
   type: "deletedMemberUser"
+  user: User
   groupInfo: GroupInfo
   member: GroupMember
 }
 
 export interface CRLeftMember extends CR {
   type: "leftMember"
+  user: User
   groupInfo: GroupInfo
   member: GroupMember
 }
 
 export interface CRGroupRemoved extends CR {
   type: "groupRemoved"
+  user: User
   groupInfo: GroupInfo
 }
 
 export interface CRGroupDeleted extends CR {
   type: "groupDeleted"
+  user: User
   groupInfo: GroupInfo
   member: GroupMember
 }
 
 export interface CRGroupUpdated extends CR {
   type: "groupUpdated"
+  user: User
   fromGroup: GroupInfo
   toGroup: GroupInfo
   member_?: GroupMember
@@ -665,36 +733,51 @@ export interface CRUserContactLinkSubError extends CR {
 
 export interface CRNewContactConnection extends CR {
   type: "newContactConnection"
+  user: User
   connection: PendingContactConnection
 }
 
 export interface CRContactConnectionDeleted extends CR {
   type: "contactConnectionDeleted"
+  user: User
   connection: PendingContactConnection
 }
 
 export interface CRMessageError extends CR {
   type: "messageError"
+  user: User
   severity: string
   errorMessage: string
 }
 
 export interface CRChatCmdError extends CR {
   type: "chatCmdError"
+  user_?: User
   chatError: ChatError
 }
 
 export interface CRChatError extends CR {
   type: "chatError"
+  user_?: User
   chatError: ChatError
 }
 
 export interface User {
   userId: number
+  agentUserId: string
   userContactId: number
   localDisplayName: string
-  profile: Profile
+  profile: LocalProfile
+  // fullPreferences :: FullPreferences
   activeUser: boolean
+  viewPwdHash: string
+  showNtfs: boolean
+}
+
+export interface UserProtoServers {
+  serverProtocol: ServerProtocol
+  protoServers: ServerCfg[]
+  presetServers: string
 }
 
 export interface Chat {
@@ -728,6 +811,16 @@ interface CInfoGroup extends IChatInfo {
 interface CInfoContactRequest extends IChatInfo {
   type: ChatInfoType.ContactRequest
   contactRequest: UserContactRequest
+}
+
+export interface UserPwdHash {
+  hash: string
+  salt: string
+}
+
+interface UserInfo {
+  user: User
+  unreadCount: number
 }
 
 export interface Contact {
