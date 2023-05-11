@@ -230,14 +230,7 @@ struct ChatView: View {
                     : (g.size.width - 32) * 0.84
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
-//                            VStack(alignment: .trailing, spacing: 4) {
                             chatItemView(ci, maxWidth)
-//                                if ci.reactions.count > 0 {
-//                                    chatItemReactions(ci.reactions)
-//                                        .padding(.trailing, 12)
-//                                        .padding(.bottom, 4)
-//                                }
-//                            }
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear {
                                     itemsInView.insert(ci.viewId)

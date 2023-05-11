@@ -1762,17 +1762,17 @@ public struct ChatItem: Identifiable, Decodable {
         self.content = content
         self.formattedText = formattedText
         self.quotedItem = quotedItem
-        self.reactions = [
+        self.reactions = [] // [
 //            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: false, totalReacted: 1),
-            CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
-            CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
-            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
-            CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
-            CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
-            CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
-            CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
-            CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
-        ]
+//            CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
+//            CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
+//            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
+//        ]
         self.file = file
     }
 
@@ -1781,17 +1781,17 @@ public struct ChatItem: Identifiable, Decodable {
     public var content: CIContent
     public var formattedText: [FormattedText]?
     public var quotedItem: CIQuote?
-    public var reactions: [CIReaction] = [
+    public var reactions: [CIReaction] = [] // [
 //        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: false, totalReacted: 1),
-        CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
-        CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
-        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
-        CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
-        CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
-        CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
-        CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
-        CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
-    ]
+//        CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
+//        CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
+//        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
+//    ]
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
