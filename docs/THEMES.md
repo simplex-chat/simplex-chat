@@ -22,4 +22,4 @@ You can contribute your themes to the repository by creating a pull request.
 
 Download [SimpleX theme](./themes/example.theme)
 
-<img src="./themes/example-chats.png" width="160"> &nbsp;&nbsp; <img src="./themes/example-conversation.png" width="160"> &nbsp;&nbsp; <img src="./themes/example-settings.png" width="160"> &nbsp;&nbsp;
+<img src="./themes/example-chats.png" width="240"> &nbsp;&nbsp; <img src="./themes/example-conversation.png" width="240"> &nbsp;&nbsp; <img src="./themes/example-settings.png" width="240"> &nbsp;&nbsp;
