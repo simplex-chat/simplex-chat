@@ -58,7 +58,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       m.chatDbChanged.value = false
 
       /** TODO:
-       * [SimplexApp.initChatController] has async code, so let's wait til it finishes`)
+       * [SimplexApp.initChatController] has async code, so let's wait til it finishes
        */
       for (i in 0..200) {
         if (m.currentUser.value == null) break
@@ -78,9 +78,9 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       if (createdUser != null) {
         m.controller.startChat(createdUser)
       }
-      completed(LAResult.Success)
       ModalManager.shared.closeModals()
       AlertManager.shared.hideAlert()
+      completed(LAResult.Success)
     } catch (e: Exception) {
       completed(LAResult.Error(generalGetString(R.string.incorrect_passcode)))
     }
