@@ -40,10 +40,9 @@ async function run() {
           const {chatInfo} = resp.chatItem
           if (chatInfo.type !== ChatInfoType.Direct) continue
           const msg = ciContentText(resp.chatItem.chatItem.content)
-          let reply
           if (msg) {
             const n = +msg
-            reply = typeof n === "number" ? `${n} * ${n} = ${n * n}` : `${n} is not a number`
+            const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
             await chat.apiSendTextMessage(ChatType.Direct, chatInfo.contact.contactId, reply)
           }
         }
