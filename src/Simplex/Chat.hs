@@ -222,10 +222,11 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
   where
     start s users = do
       a1 <- timeItToView "startChatController, a1" $ async $ race_ notificationSubscriber agentSubscriber
-      a2 <- timeItToView "startChatController, a2" $
-        if subConns
-          then Just <$> async (subscribeUsers users)
-          else pure Nothing
+      a2 <-
+        timeItToView "startChatController, a2" $
+          if subConns
+            then Just <$> async (subscribeUsers users)
+            else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       when startXFTPWorkers $ do
         timeItToView "startChatController, startXFTP" $ startXFTP
@@ -652,7 +653,7 @@ processChatCommand = \case
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent oldMC, Just itemSharedMId) ->
-              if mc /= oldMC
+              if mc /= oldMC || fromMaybe False itemLive
                 then do
                   (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                   ci' <- withStore' $ \db -> do
@@ -673,7 +674,7 @@ processChatCommand = \case
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent oldMC, Just itemSharedMId) ->
-              if mc /= oldMC
+              if mc /= oldMC || fromMaybe False itemLive
                 then do
                   SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                   ci' <- withStore' $ \db -> do
@@ -3331,8 +3332,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         updateRcvChatItem = do
           cci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case cci of
-            CChatItem SMDRcv ci@ChatItem {content = CIRcvMsgContent oldMC} ->
-              if mc /= oldMC
+            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC} ->
+              if mc /= oldMC || fromMaybe False itemLive
                 then do
                   ci' <- withStore' $ \db -> do
                     addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
@@ -3403,8 +3404,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         updateRcvChatItem = do
           cci <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
           case cci of
-            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', content = CIRcvMsgContent oldMC} ->
-              if sameMemberId memberId m' && mc /= oldMC
+            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC} ->
+              if sameMemberId memberId m' && (mc /= oldMC || fromMaybe False itemLive)
                 then do
                   ci' <- withStore' $ \db -> do
                     addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
