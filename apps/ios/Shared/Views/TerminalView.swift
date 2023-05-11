@@ -72,7 +72,7 @@ struct TerminalView: View {
 
                 SendMessageView(
                     composeState: $composeState,
-                    sendMessage: sendMessage,
+                    sendMessage: { _ in consoleSendMessage() },
                     showVoiceMessageButton: false,
                     onMediaAdded: { _ in },
                     keyboardVisible: $keyboardVisible
@@ -108,7 +108,7 @@ struct TerminalView: View {
         .onDisappear { terminalItem = nil }
     }
     
-    func sendMessage() {
+    func consoleSendMessage() {
         let cmd = ChatCommand.string(composeState.message)
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
             let resp = ChatResponse.chatCmdError(user_: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))

@@ -82,7 +82,7 @@ struct GroupPreferencesView: View {
                     infoRow(Text(feature.text), enableFeature.wrappedValue.text)
                 }
                 if timedOn {
-                    infoRow("Delete after", TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
+                    infoRow("Delete after", timeText(preferences.timedMessages.ttl))
                 }
             }
         } footer: {

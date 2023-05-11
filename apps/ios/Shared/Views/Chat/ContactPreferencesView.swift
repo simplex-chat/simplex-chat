@@ -91,7 +91,7 @@ struct ContactPreferencesView: View {
             if featuresAllowed.timedMessagesAllowed {
                 timedMessagesTTLPicker($featuresAllowed.timedMessagesTTL)
             } else if pref.contactPreference.allow == .yes || pref.contactPreference.allow == .always {
-                infoRow("Delete after", TimedMessagesPreference.ttlText(pref.contactPreference.ttl))
+                infoRow("Delete after", timeText(pref.contactPreference.ttl))
             }
         }
         header: { featureHeader(.timedMessages, enabled) }
@@ -135,7 +135,7 @@ func timedMessagesTTLPicker(_ selection: Binding<Int?>) -> some View {
         let ttlValues = TimedMessagesPreference.ttlValues
         let values = ttlValues + (ttlValues.contains(selectedTTL) ? [] : [selectedTTL])
         ForEach(values, id: \.self) { ttl in
-            Text(TimedMessagesPreference.ttlText(ttl))
+            Text(timeText(ttl))
         }
     }
     .frame(height: 36)

@@ -277,8 +277,8 @@ struct ComposeView: View {
                 ZStack(alignment: .leading) {
                     SendMessageView(
                         composeState: $composeState,
-                        sendMessage: {
-                            sendMessage()
+                        sendMessage: { ttl in
+                            sendMessage(ttl: ttl)
                             resetLinkPreview()
                         },
                         sendLiveMessage: sendLiveMessage,
@@ -296,6 +296,9 @@ struct ComposeView: View {
                         },
                         finishVoiceMessageRecording: finishVoiceMessageRecording,
                         allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                        // TODO in 5.2 - allow if ttl is not configured
+                        // timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
+                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages) && chat.chatInfo.timedMessagesTTL != nil,
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                         keyboardVisible: $keyboardVisible
                     )
@@ -425,7 +428,7 @@ struct ComposeView: View {
                 && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
-                sendMessage()
+                sendMessage(ttl: nil)
                 resetLinkPreview()
             } else if (composeState.inProgress) {
                 clearCurrentDraft()
@@ -470,7 +473,7 @@ struct ComposeView: View {
         let lm = composeState.liveMessage
         if (composeState.sendEnabled || composeState.quoting)
             && (lm == nil || lm?.sentMsg == nil),
-           let ci = await sendMessageAsync(typedMsg, live: true) {
+           let ci = await sendMessageAsync(typedMsg, live: true, ttl: nil) {
             await MainActor.run {
                 composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: typedMsg))
             }
@@ -486,7 +489,7 @@ struct ComposeView: View {
         let typedMsg = composeState.message
         if let liveMessage = composeState.liveMessage {
             if let sentMsg = liveMessageToSend(liveMessage, typedMsg),
-               let ci = await sendMessageAsync(sentMsg, live: true) {
+               let ci = await sendMessageAsync(sentMsg, live: true, ttl: nil) {
                 await MainActor.run {
                     composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
                 }
@@ -578,15 +581,15 @@ struct ComposeView: View {
         }
     }
 
-    private func sendMessage() {
+    private func sendMessage(ttl: Int?) {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            _ = await sendMessageAsync(nil, live: false)
+            _ = await sendMessageAsync(nil, live: false, ttl: ttl)
         }
     }
 
-    private func sendMessageAsync(_ text: String?, live: Bool) async -> ChatItem? {
+    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
@@ -606,36 +609,36 @@ struct ComposeView: View {
 
             switch (composeState.preview) {
             case .noPreview:
-                sent = await send(.text(msgText), quoted: quoted, live: live)
+                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live)
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
             case let .mediaPreviews(mediaPreviews: media):
                 let last = media.count - 1
                 if last >= 0 {
                     for i in 0..<last {
                         if case (_, .video(_, _, _)) = media[i] {
-                            sent = await sendVideo(media[i])
+                            sent = await sendVideo(media[i], ttl: ttl)
                         } else {
-                            sent = await sendImage(media[i])
+                            sent = await sendImage(media[i], ttl: ttl)
                         }
                         _ = try? await Task.sleep(nanoseconds: 100_000000)
                     }
                     if case (_, .video(_, _, _)) = media[last] {
-                        sent = await sendVideo(media[last], text: msgText, quoted: quoted, live: live)
+                        sent = await sendVideo(media[last], text: msgText, quoted: quoted, live: live, ttl: ttl)
                     } else {
-                        sent = await sendImage(media[last], text: msgText, quoted: quoted, live: live)
+                        sent = await sendImage(media[last], text: msgText, quoted: quoted, live: live, ttl: ttl)
                     }
                 }
                 if sent == nil {
-                    sent = await send(.text(msgText), quoted: quoted, live: live)
+                    sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
                 }
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 chatModel.filesToDelete.remove(getAppFilePath(recordingFileName))
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName, ttl: ttl)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
-                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live)
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
                 }
             }
         }
@@ -691,30 +694,31 @@ struct ComposeView: View {
             }
         }
 
-        func sendImage(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false) async -> ChatItem? {
+        func sendImage(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             let (image, data) = imageData
             if let data = data, let savedFile = saveAnyImage(data) {
-                return await send(.image(text: text, image: image), quoted: quoted, file: savedFile, live: live)
+                return await send(.image(text: text, image: image), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
         }
 
-        func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false) async -> ChatItem? {
+        func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             let (image, data) = imageData
             if case let .video(_, url, duration) = data, let savedFile = saveFileFromURLWithoutLoad(url) {
-                return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live)
+                return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false) async -> ChatItem? {
+        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             if let chatItem = await apiSendMessage(
                 type: chat.chatInfo.chatType,
                 id: chat.chatInfo.apiId,
                 file: file,
                 quotedItemId: quoted,
                 msg: mc,
-                live: live
+                live: live,
+                ttl: ttl
             ) {
                 await MainActor.run {
                     chatModel.removeLiveDummy(animated: false)

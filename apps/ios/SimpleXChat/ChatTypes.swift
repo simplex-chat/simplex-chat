@@ -282,58 +282,58 @@ public struct TimedMessagesPreference: Preference {
     public static var ttlValues: [Int?] {
         [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
     }
+}
 
-    public static func ttlText(_ ttl: Int?) -> String {
-        guard let ttl = ttl else { return "off" }
-        if ttl == 0 { return "0 sec" }
-        let (m_, s) = divMod(ttl, by: 60)
-        let (h_, m) = divMod(m_, by: 60)
-        let (d_, h) = divMod(h_, by: 24)
-        let (mm, d) = divMod(d_, by: 30)
-        return maybe(mm,
-                     mm == 1
-                     ? NSLocalizedString("1 month", comment: "message ttl")
-                     : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "message ttl"), mm)
-                    )
-            + maybe(d,
-                    d == 1
-                    ? NSLocalizedString("1 day", comment: "message ttl")
-                    : d == 7
-                    ? NSLocalizedString("1 week", comment: "message ttl")
-                    : d == 14
-                    ? NSLocalizedString("2 weeks", comment: "message ttl")
-                    : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "message ttl"), d)
-                    )
-            + maybe(h,
-                    h == 1
-                    ? NSLocalizedString("1 hour", comment: "message ttl")
-                    : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "message ttl"), h)
-                    )
-            + maybe(m, String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "message ttl"), m))
-            + maybe(s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "message ttl"), s))
-    }
+public func timeText(_ ttl: Int?) -> String {
+    guard let ttl = ttl else { return "off" }
+    if ttl == 0 { return "0 sec" }
+    let (m_, s) = divMod(ttl, by: 60)
+    let (h_, m) = divMod(m_, by: 60)
+    let (d_, h) = divMod(h_, by: 24)
+    let (mm, d) = divMod(d_, by: 30)
+    return maybe(mm,
+                 mm == 1
+                 ? NSLocalizedString("1 month", comment: "time interval")
+                 : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "time interval"), mm)
+                )
+        + maybe(d,
+                d == 1
+                ? NSLocalizedString("1 day", comment: "time interval")
+                : d == 7
+                ? NSLocalizedString("1 week", comment: "time interval")
+                : d == 14
+                ? NSLocalizedString("2 weeks", comment: "time interval")
+                : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "time interval"), d)
+                )
+        + maybe(h,
+                h == 1
+                ? NSLocalizedString("1 hour", comment: "time interval")
+                : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "time interval"), h)
+                )
+        + maybe(m, String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "time interval"), m))
+        + maybe(s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "time interval"), s))
+}
 
-    public static func shortTtlText(_ ttl: Int?) -> LocalizedStringKey {
-        guard let ttl = ttl else { return "off" }
-        let m = ttl / 60
-        if m == 0 { return "\(ttl)s" }
-        let h = m / 60
-        if h == 0 { return "\(m)m" }
-        let d = h / 24
-        if d == 0 { return "\(h)h" }
-        let mm = d / 30
-        if mm > 0 { return "\(mm)mth" }
-        let w = d / 7
-        return w == 0 || d % 7 != 0 ? "\(d)d" : "\(w)w"
-    }
+public func shortTimeText(_ ttl: Int?) -> LocalizedStringKey {
+    guard let ttl = ttl else { return "off" }
+    let m = ttl / 60
+    if m == 0 { return "\(ttl)s" }
+    let h = m / 60
+    if h == 0 { return "\(m)m" }
+    let d = h / 24
+    if d == 0 { return "\(h)h" }
+    let mm = d / 30
+    if mm > 0 { return "\(mm)mth" }
+    let w = d / 7
+    return w == 0 || d % 7 != 0 ? "\(d)d" : "\(w)w"
+}
 
-    static func divMod(_ n: Int, by d: Int) -> (Int, Int) {
-        (n / d, n % d)
-    }
+public func divMod(_ n: Int, by d: Int) -> (Int, Int) {
+    (n / d, n % d)
+}
 
-    static func maybe(_ n: Int, _ s: String) -> String {
-        n == 0 ? "" : s
-    }
+private func maybe(_ n: Int, _ s: String) -> String {
+    n == 0 ? "" : s
 }
 
 public struct ContactUserPreferences: Decodable {
@@ -2215,13 +2215,13 @@ public enum CIContent: Decodable, ItemContent {
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
         feature.hasParam
-        ? "\(feature.text): \(TimedMessagesPreference.ttlText(param))"
+        ? "\(feature.text): \(timeText(param))"
         : "\(feature.text): \(enabled)"
     }
 
     public static func preferenceText(_ feature: Feature, _ allowed: FeatureAllowed, _ param: Int?) -> String {
         allowed != .no && feature.hasParam && param != nil
-        ? String.localizedStringWithFormat(NSLocalizedString("offered %@: %@", comment: "feature offered item"), feature.text, TimedMessagesPreference.ttlText(param))
+        ? String.localizedStringWithFormat(NSLocalizedString("offered %@: %@", comment: "feature offered item"), feature.text, timeText(param))
         : allowed != .no
         ? String.localizedStringWithFormat(NSLocalizedString("offered %@", comment: "feature offered item"), feature.text)
         : String.localizedStringWithFormat(NSLocalizedString("cancelled %@", comment: "feature offered item"), feature.text)
