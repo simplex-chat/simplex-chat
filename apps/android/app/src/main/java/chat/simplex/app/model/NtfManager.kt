@@ -231,6 +231,10 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     manager.cancel(CallNotificationId)
   }
 
+  fun cancelAllNotifications() {
+    manager.cancelAll()
+  }
+
   fun hasNotificationsForChat(chatId: String): Boolean = manager.activeNotifications.any { it.id == chatId.hashCode() }
 
   private fun hideSecrets(cItem: ChatItem) : String {

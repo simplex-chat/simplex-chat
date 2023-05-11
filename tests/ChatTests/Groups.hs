@@ -820,6 +820,9 @@ testGroupMessageUpdate =
         (cath <# "#team alice> hello!")
 
       msgItemId1 <- lastItemId alice
+      alice ##> ("/_update item #1 " <> msgItemId1 <> " text hello!")
+      alice <## "message didn't change"
+
       alice ##> ("/_update item #1 " <> msgItemId1 <> " text hey 👋")
       alice <# "#team [edited] hey 👋"
       concurrently_
@@ -1044,6 +1047,7 @@ testGroupLiveMessage =
     bob <# "#team alice> [LIVE ended] hello there"
     cath <# "#team alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
+    threadDelay 1000000
     alice `send` "/live #team"
     msgItemId2 <- lastItemId alice
     bob <#. "#team alice> [LIVE started]"
@@ -1058,13 +1062,13 @@ testGroupLiveMessage =
     alice <## "message history:"
     alice .<## ": hello 2"
     alice .<## ":"
-    -- bobItemId <- lastItemId bob
-    -- bob ##> ("/_get item info " <> bobItemId)
-    -- bob <##. "sent at: "
-    -- bob <##. "received at: "
-    -- bob <## "message history:"
-    -- bob .<## ": hello 2"
-    -- bob .<## ":"
+    bobItemId <- lastItemId bob
+    bob ##> ("/_get item info " <> bobItemId)
+    bob <##. "sent at: "
+    bob <##. "received at: "
+    bob <## "message history:"
+    bob .<## ": hello 2"
+    bob .<## ":"
 
 testUpdateGroupProfile :: HasCallStack => FilePath -> IO ()
 testUpdateGroupProfile =

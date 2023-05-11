@@ -214,7 +214,7 @@ data ChatCommand
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatItemId
-  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
+  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
@@ -397,6 +397,7 @@ data ChatResponse
   | CRNewChatItem {user :: User, chatItem :: AChatItem}
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
+  | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent User MsgContent Int ZonedTime
@@ -519,6 +520,7 @@ data ChatResponse
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
+  | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show, Generic)
 
 logResponseToFile :: ChatResponse -> Bool

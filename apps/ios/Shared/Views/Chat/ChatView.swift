@@ -445,6 +445,8 @@ struct ChatView: View {
         @Binding var showDeleteMessage: Bool
         
         @State private var revealed = false
+        @State private var showChatItemInfoSheet: Bool = false
+        @State private var chatItemInfo: ChatItemInfo?
         
         var body: some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
@@ -467,6 +469,11 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+                .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
+                    chatItemInfo = nil
+                }) {
+                    ChatItemInfoView(chatItemSent: ci.chatDir.sent, chatItemInfo: $chatItemInfo)
+                }
         }
         
         private func menu(live: Bool) -> [UIAction] {
@@ -491,6 +498,7 @@ struct ChatView: View {
                 if ci.meta.editable && !mc.isVoice && !live {
                     menu.append(editAction())
                 }
+                menu.append(viewInfoUIAction())
                 if revealed {
                     menu.append(hideUIAction())
                 }
@@ -585,6 +593,25 @@ struct ChatView: View {
             ) { _ in
                 withAnimation {
                     composeState = ComposeState(editingItem: ci)
+                }
+            }
+        }
+
+        private func viewInfoUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("View details", comment: "chat item action"),
+                image: UIImage(systemName: "info")
+            ) { _ in
+                Task {
+                    do {
+                        let ciInfo = try await apiGetChatItemInfo(itemId: ci.id)
+                        await MainActor.run {
+                            chatItemInfo = ciInfo
+                        }
+                    } catch let error {
+                        logger.error("apiGetChatItemInfo error: \(responseError(error))")
+                    }
+                    await MainActor.run { showChatItemInfoSheet = true }
                 }
             }
         }

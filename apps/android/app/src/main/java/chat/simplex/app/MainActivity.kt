@@ -35,6 +35,7 @@ import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
+import chat.simplex.app.views.helpers.DatabaseUtils.ksSelfDestructPassword
 import chat.simplex.app.views.localauth.SetAppPasscodeView
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
@@ -179,6 +180,7 @@ class MainActivity: FragmentActivity() {
               generalGetString(R.string.auth_log_in_using_credential)
             else
               generalGetString(R.string.auth_unlock),
+            selfDestruct = true,
             this@MainActivity,
             completed = { laResult ->
               when (laResult) {
@@ -248,7 +250,7 @@ class MainActivity: FragmentActivity() {
     authenticate(
       generalGetString(R.string.auth_enable_simplex_lock),
       generalGetString(R.string.auth_confirm_credential),
-      activity,
+      activity = activity,
       completed = { laResult ->
         when (laResult) {
           LAResult.Success -> {
@@ -289,7 +291,8 @@ class MainActivity: FragmentActivity() {
             appPrefs.performLA.set(false)
             laPasscodeNotSetAlert()
           },
-          close)
+          close = close
+        )
       }
     }
   }
@@ -314,7 +317,7 @@ class MainActivity: FragmentActivity() {
         generalGetString(R.string.auth_confirm_credential)
       else
         "",
-      activity,
+      activity = activity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         when (laResult) {
@@ -350,14 +353,17 @@ class MainActivity: FragmentActivity() {
         generalGetString(R.string.auth_confirm_credential)
       else
         generalGetString(R.string.auth_disable_simplex_lock),
-      activity,
+      activity = activity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
+        val selfDestructPref = m.controller.appPrefs.selfDestruct
         when (laResult) {
           LAResult.Success -> {
             m.performLA.value = false
             prefPerformLA.set(false)
             ksAppPassword.remove()
+            selfDestructPref.set(false)
+            ksSelfDestructPassword.remove()
           }
           is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
           is LAResult.Error -> {

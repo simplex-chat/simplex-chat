@@ -120,8 +120,8 @@ struct SimplexLockView: View {
         case laUnavailableTurningOffAlert
         case laPasscodeSetAlert
         case laPasscodeChangedAlert
-        case laSeldDestructPasscodeSetAlert
-        case laSeldDestructPasscodeChangedAlert
+        case laSelfDestructPasscodeSetAlert
+        case laSelfDestructPasscodeChangedAlert
         case laPasscodeNotChangedAlert
 
         var id: Self { self }
@@ -238,8 +238,8 @@ struct SimplexLockView: View {
             case .laUnavailableTurningOffAlert: return laUnavailableTurningOffAlert()
             case .laPasscodeSetAlert: return passcodeAlert("Passcode set!")
             case .laPasscodeChangedAlert: return passcodeAlert("Passcode changed!")
-            case .laSeldDestructPasscodeSetAlert: return selfDestructPasscodeAlert("Self-destruct passcode enabled!")
-            case .laSeldDestructPasscodeChangedAlert: return selfDestructPasscodeAlert("Self-destruct passcode changed!")
+            case .laSelfDestructPasscodeSetAlert: return selfDestructPasscodeAlert("Self-destruct passcode enabled!")
+            case .laSelfDestructPasscodeChangedAlert: return selfDestructPasscodeAlert("Self-destruct passcode changed!")
             case .laPasscodeNotChangedAlert: return mkAlert(title: "Passcode not changed!")
             }
         }
@@ -272,13 +272,13 @@ struct SimplexLockView: View {
             case .enableSelfDestruct:
                 SetAppPasscodeView(passcodeKeychain: kcSelfDestructPassword, title: "Set passcode", reason: NSLocalizedString("Enable self-destruct passcode", comment: "set passcode view")) {
                     updateSelfDestruct()
-                    showLAAlert(.laSeldDestructPasscodeSetAlert)
+                    showLAAlert(.laSelfDestructPasscodeSetAlert)
                 } cancel: {
                     revertSelfDestruct()
                 }
             case .changeSelfDestructPasscode:
                 SetAppPasscodeView(passcodeKeychain: kcSelfDestructPassword, reason: NSLocalizedString("Change self-destruct passcode", comment: "set passcode view")) {
-                    showLAAlert(.laSeldDestructPasscodeChangedAlert)
+                    showLAAlert(.laSelfDestructPasscodeChangedAlert)
                 } cancel: {
                     showLAAlert(.laPasscodeNotChangedAlert)
                 }
@@ -296,17 +296,17 @@ struct SimplexLockView: View {
 
     private func selfDestructInfoView() -> some View {
         VStack(alignment: .leading) {
-            Text("Self-desctruct")
+            Text("Self-destruct")
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)
             ScrollView {
                 VStack(alignment: .leading) {
                     Group {
-                        Text("If you enter your self-desctruct passcode while opening the app:")
+                        Text("If you enter your self-destruct passcode while opening the app:")
                         VStack(spacing: 8) {
                             textListItem("1.", "All app data is deleted.")
-                            textListItem("2.", "App passcode is replaced with self-desctruct passcode.")
+                            textListItem("2.", "App passcode is replaced with self-destruct passcode.")
                             textListItem("3.", "An empty chat profile with the provided name is created, and the app opens as usual.")
                         }
                     }
@@ -338,6 +338,7 @@ struct SimplexLockView: View {
                         switch laResult {
                         case .success:
                             _ = kcAppPassword.remove()
+                            resetSelfDestruct()
                             laAlert = .laTurnedOnAlert
                         case .failed, .unavailable:
                             currentLAMode = .passcode

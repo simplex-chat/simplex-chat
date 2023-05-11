@@ -23,9 +23,11 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
+import androidx.core.graphics.ColorUtils
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
 import chat.simplex.app.R
@@ -586,6 +589,9 @@ fun Color.darker(factor: Float = 0.1f): Color =
 
 fun Color.lighter(factor: Float = 0.1f): Color =
   Color(min(red * (1 + factor), 1f), min(green * (1 + factor), 1f), min(blue * (1 + factor), 1f), alpha)
+
+fun Color.mixWith(color: Color, alpha: Float): Color =
+  Color(ColorUtils.blendARGB(color.toArgb(), toArgb(), alpha))
 
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 

@@ -6,6 +6,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -25,97 +29,133 @@ fun ComposeVoiceView(
   cancelEnabled: Boolean,
   cancelVoice: () -> Unit
 ) {
-  BoxWithConstraints(Modifier
-    .fillMaxWidth()
-  ) {
-    val audioPlaying = rememberSaveable { mutableStateOf(false) }
-    val progress = rememberSaveable { mutableStateOf(0) }
-    val duration = rememberSaveable(recordedDurationMs) { mutableStateOf(recordedDurationMs) }
-    val progressBarWidth = remember { Animatable(0f) }
-    LaunchedEffect(recordedDurationMs, finishedRecording) {
-      snapshotFlow { progress.value }
-        .distinctUntilChanged()
-        .collect {
-          val startTime = when {
-            finishedRecording -> progress.value
-            else -> recordedDurationMs
-          }
-          val endTime = when {
-            finishedRecording -> duration.value
-            audioPlaying.value -> recordedDurationMs
-            else -> MAX_VOICE_MILLIS_FOR_SENDING
-          }
-          val to = ((startTime.toDouble() / endTime) * maxWidth.value).dp
-          progressBarWidth.animateTo(to.value, audioProgressBarAnimationSpec())
-        }
-    }
-    Spacer(
+  val progress = rememberSaveable { mutableStateOf(0) }
+  val duration = rememberSaveable(recordedDurationMs) { mutableStateOf(recordedDurationMs) }
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  Box {
+    Box(
       Modifier
-        .requiredWidth(progressBarWidth.value.dp)
-        .padding(top = 58.dp)
-        .height(3.dp)
-        .background(MaterialTheme.colors.primary)
-    )
-    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-    Row(
-      Modifier
-        .height(60.dp)
-        .fillMaxWidth()
-        .padding(top = 8.dp)
-        .background(sentColor),
-      verticalAlignment = Alignment.CenterVertically
+        .fillMaxWidth().padding(top = 22.dp)
     ) {
-      IconButton(
-        onClick = {
-          if (!audioPlaying.value) {
-            AudioPlayer.play(filePath, audioPlaying, progress, duration, false)
-          } else {
-            AudioPlayer.pause(audioPlaying, progress)
-          }
-        },
-        enabled = finishedRecording) {
-        Icon(
-          if (audioPlaying.value) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
-          stringResource(R.string.icon_descr_file),
-          Modifier
-            .padding(start = 4.dp, end = 2.dp)
-            .size(36.dp),
-          tint = if (finishedRecording) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-        )
-      }
-      val numberInText = remember(recordedDurationMs, progress.value) {
-        derivedStateOf {
-          when {
-            finishedRecording && progress.value == 0 && !audioPlaying.value -> duration.value / 1000
-            finishedRecording -> progress.value / 1000
-            else -> recordedDurationMs / 1000
-          }
-        }
-      }
-      Text(
-        durationText(numberInText.value),
-        fontSize = 18.sp,
-        color = MaterialTheme.colors.secondary,
-      )
-      Spacer(Modifier.weight(1f))
-      if (cancelEnabled) {
+      val audioPlaying = rememberSaveable { mutableStateOf(false) }
+      Row(
+        Modifier
+          .height(60.dp)
+          .fillMaxWidth()
+          .background(sentColor)
+          .padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
         IconButton(
           onClick = {
-            AudioPlayer.stop(filePath)
-            cancelVoice()
+            if (!audioPlaying.value) {
+              AudioPlayer.play(filePath, audioPlaying, progress, duration, false)
+            } else {
+              AudioPlayer.pause(audioPlaying, progress)
+            }
           },
-          modifier = Modifier.padding(0.dp)
+          enabled = finishedRecording
         ) {
           Icon(
-            painterResource(R.drawable.ic_close),
-            contentDescription = stringResource(R.string.icon_descr_cancel_file_preview),
-            tint = MaterialTheme.colors.primary,
-            modifier = Modifier.padding(10.dp)
+            if (audioPlaying.value) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
+            stringResource(R.string.icon_descr_file),
+            Modifier
+              .padding(start = 4.dp, end = 2.dp)
+              .size(36.dp),
+            tint = if (finishedRecording) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
           )
+        }
+        val numberInText = remember(recordedDurationMs, progress.value) {
+          derivedStateOf {
+            when {
+              finishedRecording && progress.value == 0 && !audioPlaying.value -> duration.value / 1000
+              finishedRecording -> progress.value / 1000
+              else -> recordedDurationMs / 1000
+            }
+          }
+        }
+        Text(
+          durationText(numberInText.value),
+          fontSize = 18.sp,
+          color = MaterialTheme.colors.secondary,
+        )
+        Spacer(Modifier.weight(1f))
+        if (cancelEnabled) {
+          IconButton(
+            onClick = {
+              AudioPlayer.stop(filePath)
+              cancelVoice()
+            },
+            modifier = Modifier.padding(0.dp)
+          ) {
+            Icon(
+              painterResource(R.drawable.ic_close),
+              contentDescription = stringResource(R.string.icon_descr_cancel_file_preview),
+              tint = MaterialTheme.colors.primary,
+              modifier = Modifier.padding(10.dp)
+            )
+          }
         }
       }
     }
+
+    if (finishedRecording) {
+      FinishedRecordingSlider(sentColor, progress, duration, filePath)
+    } else {
+      RecordingInProgressSlider(recordedDurationMs)
+    }
   }
+}
+
+@Composable
+fun FinishedRecordingSlider(backgroundColor: Color, progress: MutableState<Int>, duration: MutableState<Int>, filePath: String) {
+  val dp4 = with(LocalDensity.current) { 4.dp.toPx() }
+  val dp10 = with(LocalDensity.current) { 10.dp.toPx() }
+  val primary = MaterialTheme.colors.primary
+  val inactiveTrackColor = MaterialTheme.colors.primary.mixWith(
+    backgroundColor.copy(1f).mixWith(MaterialTheme.colors.background, backgroundColor.alpha),
+    0.24f)
+  Slider(
+    progress.value.toFloat(),
+    onValueChange = { AudioPlayer.seekTo(it.toInt(), progress, filePath) },
+    Modifier
+      .fillMaxWidth()
+      .drawBehind {
+        drawRect(primary, Offset(0f, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
+        drawRect(inactiveTrackColor, Offset(size.width - dp10, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
+      },
+    colors = SliderDefaults.colors(inactiveTrackColor = inactiveTrackColor),
+    valueRange = 0f..duration.value.toFloat()
+  )
+}
+
+@Composable
+fun RecordingInProgressSlider(recordedDurationMs: Int) {
+  val thumbPosition = remember { Animatable(0f) }
+  val recDuration = rememberUpdatedState(recordedDurationMs)
+  LaunchedEffect(Unit) {
+    snapshotFlow { recDuration.value }
+      .distinctUntilChanged()
+      .collect {
+        thumbPosition.animateTo(it.toFloat(), audioProgressBarAnimationSpec())
+      }
+  }
+  val dp4 = with(LocalDensity.current) { 4.dp.toPx() }
+  val dp10 = with(LocalDensity.current) { 10.dp.toPx() }
+  val primary = MaterialTheme.colors.primary
+  val inactiveTrackColor = Color.Transparent
+  Slider(
+    thumbPosition.value,
+    onValueChange = {},
+    Modifier
+      .fillMaxWidth()
+      .drawBehind {
+        drawRect(primary, Offset(0f, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
+      },
+    colors = SliderDefaults.colors(disabledInactiveTrackColor = inactiveTrackColor, disabledActiveTrackColor = primary, thumbColor = Color.Transparent, disabledThumbColor = Color.Transparent),
+    enabled = false,
+    valueRange = 0f..MAX_VOICE_MILLIS_FOR_SENDING.toFloat()
+  )
 }
 
 @Preview

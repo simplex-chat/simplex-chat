@@ -808,7 +808,7 @@
   <string name="lock_mode">Lock mode</string>
   <string name="lock_after">Lock after</string>
   <string name="submit_passcode">Submit</string>
-  <string name="confirm_passcode">Confirm Passcode</string>
+  <string name="confirm_passcode">Confirm passcode</string>
   <string name="incorrect_passcode">Incorrect passcode</string>
   <string name="new_passcode">New Passcode</string>
   <string name="authentication_cancelled">Authentication cancelled</string>
@@ -818,6 +818,21 @@
   <string name="passcode_changed">Passcode changed!</string>
   <string name="passcode_not_changed">Passcode not changed!</string>
   <string name="change_lock_mode">Change lock mode</string>
+  <string name="self_destruct">Self-destruct</string>
+  <string name="enabled_self_destruct_passcode">Enable self-destruct passcode</string>
+  <string name="change_self_destruct_mode">Change self-destruct mode</string>
+  <string name="change_self_destruct_passcode">Change self-destruct passcode</string>
+  <string name="self_destruct_passcode_enabled">Self-destruct passcode enabled!</string>
+  <string name="self_destruct_passcode_changed">Self-destruct passcode changed!</string>
+  <string name="self_destruct_passcode">Self-destruct passcode</string>
+  <string name="enable_self_destruct">Enable self-destruct</string>
+  <string name="self_destruct_new_display_name">New display name:</string>
+  <string name="if_you_enter_self_destruct_code">If you enter your self-destruct passcode while opening the app:</string>
+  <string name="all_app_data_will_be_cleared">All app data is deleted.</string>
+  <string name="app_passcode_replaced_with_self_destruct">App passcode is replaced with self-destruct passcode.</string>
+  <string name="empty_chat_profile_is_created">An empty chat profile with the provided name is created, and the app opens as usual.</string>
+  <string name="if_you_enter_passcode_data_removed">If you enter this passcode when opening the app, all app data will be irreversibly removed!</string>
+  <string name="set_passcode">Set passcode</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>

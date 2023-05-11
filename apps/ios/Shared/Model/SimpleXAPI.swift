@@ -125,8 +125,8 @@ func apiGetActiveUser() throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p))
+func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp))
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -293,6 +293,12 @@ func loadChat(chat: Chat, search: String = "") {
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
     }
+}
+
+func apiGetChatItemInfo(itemId: Int64) async throws -> ChatItemInfo {
+    let r = await chatSendCmd(.apiGetChatItemInfo(itemId: itemId))
+    if case let .chatItemInfo(_, _, chatItemInfo) = r { return chatItemInfo }
+    throw r
 }
 
 func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false) async -> ChatItem? {

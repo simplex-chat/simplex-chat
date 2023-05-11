@@ -127,6 +127,30 @@ fun SharedPreferenceToggleWithIcon(
 }
 
 @Composable
+fun SharedPreferenceToggleWithIcon(
+  text: String,
+  icon: Painter,
+  onClickInfo: () -> Unit,
+  checked: Boolean,
+  onCheckedChange: (Boolean) -> Unit,
+) {
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Text(text, Modifier.padding(end = 4.dp))
+    Icon(
+      icon,
+      null,
+      Modifier.clickable(onClick = onClickInfo),
+      tint = MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    DefaultSwitch(
+      checked = checked,
+      onCheckedChange = onCheckedChange,
+    )
+  }
+}
+
+@Composable
 fun <T>SharedPreferenceRadioButton(text: String, prefState: MutableState<T>, preference: SharedPreference<T>, value: T) {
   Row(verticalAlignment = Alignment.CenterVertically) {
     Text(text)
