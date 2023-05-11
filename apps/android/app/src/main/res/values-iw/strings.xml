@@ -514,4 +514,11 @@
     <string name="enable_self_destruct">אפשר השמדה עצמית</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">אם תבחרו לדחות השולח לא יקבל התראה על כך.</string>
     <string name="network_disable_socks_info">אם תאשרו, שרתי העברת ההודעות יוכלו לראות את ה- IP שלכם, וספק האינטרנט שלכם - את השרתים אליהם אתם מחוברים.</string>
+    <string name="image_descr">תמונה</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">אם קיבלתם קישור הזמנה ל- <xliff:g id="appName">SimpleX Chat</xliff:g>, תוכלו לפתוח אותו בדפדפן.</string>
+    <string name="if_you_enter_self_destruct_code">אם תזינו את קוד הגישה להשמדה עצמית בעת פתיחת האפליקציה:</string>
+    <string name="if_you_enter_passcode_data_removed">אם תזינו קוד גישה זה בעת פתיחת האפליקציה, כל נתוני האפליקציה יימחקו באופן בלתי הפיך!</string>
+    <string name="image_saved">תמונה נשמרה בגלריה</string>
+    <string name="gallery_image_button">תמונה</string>
+    <string name="ignore">התעלם</string>
 </resources>
