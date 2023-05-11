@@ -4834,7 +4834,6 @@ chatCommandP =
     refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
-    -- sendMessageTTLP = (Just <$ " ttl=" <*> A.decimal) <|> pure Nothing
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayName <*> fullNameP
     newUserP = do
