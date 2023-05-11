@@ -229,6 +229,9 @@ testDirectMessageUpdate =
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
 
+      alice ##> ("/_update item @2 " <> itemId 1 <> " text hello 🙂")
+      alice <## "message didn't change"
+
       alice ##> ("/_update item @2 " <> itemId 1 <> " text hey 👋")
       alice <# "@bob [edited] hey 👋"
       bob <# "alice> [edited] hey 👋"

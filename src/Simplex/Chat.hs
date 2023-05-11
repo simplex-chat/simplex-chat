@@ -664,8 +664,8 @@ processChatCommand = \case
                     updateDirectChatItem' db user contactId ci (CISndMsgContent mc) live $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
                   setActive $ ActiveC c
-                  pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci') True
-                else pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci) False
+                  pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci')
+                else pure $ CRChatItemNotChanged user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> do
@@ -687,8 +687,8 @@ processChatCommand = \case
                     updateGroupChatItem db user groupId ci (CISndMsgContent mc) live $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                   setActive $ ActiveG gName
-                  pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci') True
-                else pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci) False
+                  pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
+                else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -1949,7 +1949,7 @@ updateCallItemStatus user ct Call {chatItemId} receivedStatus msgId_ = do
 updateDirectChatItemView :: ChatMonad m => User -> Contact -> ChatItemId -> ACIContent -> Bool -> Maybe MessageId -> m ()
 updateDirectChatItemView user ct@Contact {contactId} chatItemId (ACIContent msgDir ciContent) live msgId_ = do
   ci' <- withStore $ \db -> updateDirectChatItem db user contactId chatItemId ciContent live msgId_
-  toView $ CRChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci') True
+  toView $ CRChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci')
 
 callStatusItemContent :: ChatMonad m => User -> Contact -> ChatItemId -> WebRTCCallStatus -> m (Maybe ACIContent)
 callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
@@ -2750,7 +2750,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing)
                   . (mdeUpdatedCI e <=< headMaybe)
             case ci_ of
-              Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci) True
+              Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
               _ -> createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n) Nothing
           where
             headMaybe = \case
@@ -2924,7 +2924,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False Nothing)
                 . mdeUpdatedCI e
           case ci_ of
-            Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci) True
+            Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
             _ -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError mde n) Nothing
       -- TODO add debugging output
       _ -> pure ()
@@ -3327,7 +3327,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             ci' <- withStore' $ \db -> do
               createChatItemVersion db (chatItemId' ci) brokerTs mc
               updateDirectChatItem' db user contactId ci content live Nothing
-            toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci') True
+            toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
             setActive $ ActiveC c
           _ -> throwError e
       where
@@ -3345,9 +3345,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     when changed $
                       addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                     updateDirectChatItem' db user contactId ci content live $ Just msgId
-                  toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci') True
+                  toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
-                else toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci) False
+                else toView $ CRChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
             _ -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
@@ -3401,7 +3401,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             ci' <- withStore' $ \db -> do
               createChatItemVersion db (chatItemId' ci) brokerTs mc
               updateGroupChatItem db user groupId ci content live Nothing
-            toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci') True
+            toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
             setActive $ ActiveG g
           _ -> throwError e
       where
@@ -3421,10 +3421,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                         when changed $
                           addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                         updateGroupChatItem db user groupId ci content live $ Just msgId
-                      toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci') True
+                      toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
                       setActive $ ActiveG g
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
-                    else toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci) False
+                    else toView $ CRChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
                 else messageError "x.msg.update: group member attempted to update a message of another member"
             _ -> messageError "x.msg.update: group member attempted invalid message update"
 

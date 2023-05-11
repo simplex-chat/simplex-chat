@@ -88,7 +88,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts tz = \case
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemStatusUpdated u _ -> ttyUser u []
-  CRChatItemUpdated u (AChatItem _ _ chat item) itemChanged -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item itemChanged liveItems ts
+  CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
+  CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts testView
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc n t -> ttyUser u $ viewSentBroadcast mc n ts t
@@ -440,12 +441,11 @@ localTs tz ts = do
       formattedTime = formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" localTime
   formattedTime
 
-viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> Bool -> CurrentTime -> [StyledString]
-viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} itemChanged liveItems ts = case chat of
+viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
+viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} liveItems ts = case chat of
   DirectChat c -> case chatDir of
     CIDirectRcv -> case content of
       CIRcvMsgContent mc
-        | not itemChanged -> []
         | itemLive == Just True && not liveItems -> []
         | otherwise -> viewReceivedUpdatedMessage from quote mc ts meta
       _ -> []
@@ -461,7 +461,6 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
   GroupChat g -> case chatDir of
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc
-        | not itemChanged -> []
         | itemLive == Just True && not liveItems -> []
         | otherwise -> viewReceivedUpdatedMessage from quote mc ts meta
       _ -> []
@@ -479,6 +478,11 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
 hideLive :: CIMeta с d -> [StyledString] -> [StyledString]
 hideLive CIMeta {itemLive = Just True} _ = []
 hideLive _ s = s
+
+viewItemNotChanged :: AChatItem -> [StyledString]
+viewItemNotChanged (AChatItem _ msgDir _ _) = case msgDir of
+  SMDSnd -> ["message didn't change"]
+  SMDRcv -> []
 
 viewItemDelete :: ChatInfo c -> ChatItem c d -> Maybe AChatItem -> Bool -> Bool -> CurrentTime -> Bool -> [StyledString]
 viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} toItem byUser timed ts testView

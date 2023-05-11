@@ -396,7 +396,8 @@ data ChatResponse
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
   | CRNewChatItem {user :: User, chatItem :: AChatItem}
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
-  | CRChatItemUpdated {user :: User, chatItem :: AChatItem, itemChanged :: Bool}
+  | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
+  | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent User MsgContent Int ZonedTime

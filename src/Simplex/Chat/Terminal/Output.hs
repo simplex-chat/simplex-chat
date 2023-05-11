@@ -114,7 +114,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
     (_, r) <- atomically $ readTBQueue outputQ
     case r of
       CRNewChatItem _ ci -> markChatItemRead ci
-      CRChatItemUpdated _ ci _ -> markChatItemRead ci
+      CRChatItemUpdated _ ci -> markChatItemRead ci
       _ -> pure ()
     let printResp = case logFilePath of
           Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
