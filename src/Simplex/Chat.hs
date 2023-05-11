@@ -654,7 +654,8 @@ processChatCommand = \case
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent oldMC, Just itemSharedMId) -> do
               let changed = mc /= oldMC
-              if changed || fromMaybe False itemLive
+                  updated = changed || fromMaybe False itemLive
+              ci' <- if updated
                 then do
                   (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                   ci' <- withStore' $ \db -> do
@@ -664,8 +665,9 @@ processChatCommand = \case
                     updateDirectChatItem' db user contactId ci (CISndMsgContent mc) live $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
                   setActive $ ActiveC c
-                  pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci') True
-                else pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci) False
+                  pure ci'
+                else pure ci
+              pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci') updated
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> do
