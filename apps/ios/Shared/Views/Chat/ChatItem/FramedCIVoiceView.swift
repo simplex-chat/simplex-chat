@@ -17,6 +17,8 @@ struct FramedCIVoiceView: View {
     let duration: Int
     @State var playbackState: VoiceMessagePlaybackState = .noPlayback
     @State var playbackTime: TimeInterval?
+    @State var audioPlayer: AudioPlayer? = nil
+    @State private var movedManuallyTo: TimeInterval = TimeInterval(-1)
 
     var body: some View {
         HStack {
@@ -25,6 +27,7 @@ struct FramedCIVoiceView: View {
                 recordingFile: recordingFile,
                 recordingTime: TimeInterval(duration),
                 showBackground: false,
+                audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
                 playbackTime: $playbackTime
             )
@@ -35,11 +38,22 @@ struct FramedCIVoiceView: View {
             )
             .foregroundColor(.secondary)
             .frame(width: 50, alignment: .leading)
+            if .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime {
+                ComposeVoiceView.SliderBar(
+                    length: TimeInterval(duration),
+                    progress: $playbackTime,
+                    seek: {
+                        audioPlayer?.seek($0)
+                        playbackTime = $0
+                        movedManuallyTo = $0
+                    })
+            }
         }
         .padding(.top, 6)
         .padding(.leading, 6)
         .padding(.trailing, 12)
         .padding(.bottom, chatItem.content.text.isEmpty ? 10 : 0)
+        .onChange(of: playbackState) { _ in movedManuallyTo = -1 }
     }
 }
 

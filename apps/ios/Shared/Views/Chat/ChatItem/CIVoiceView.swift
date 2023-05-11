@@ -15,12 +15,24 @@ struct CIVoiceView: View {
     let duration: Int
     @State var playbackState: VoiceMessagePlaybackState = .noPlayback
     @State var playbackTime: TimeInterval?
+    @State private var audioPlayer: AudioPlayer?
+    @State private var movedManuallyTo: TimeInterval = TimeInterval(-1)
 
     var body: some View {
         Group {
             if chatItem.chatDir.sent {
                 VStack (alignment: .trailing, spacing: 6) {
                     HStack {
+                        if .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime {
+                            ComposeVoiceView.SliderBar(
+                                length: TimeInterval(duration),
+                                progress: $playbackTime,
+                                seek: {
+                                    audioPlayer?.seek($0)
+                                    playbackTime = $0
+                                    movedManuallyTo = $0
+                                })
+                        }
                         playerTime()
                         player()
                     }
@@ -32,14 +44,32 @@ struct CIVoiceView: View {
                     HStack {
                         player()
                         playerTime()
+                        if .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime {
+                            ComposeVoiceView.SliderBar(
+                                length: TimeInterval(duration),
+                                progress: $playbackTime,
+                                seek: {
+                                    debugPrint("LALAL SEEK \(TimeInterval(duration)) \(playbackTime)")
+                                    audioPlayer?.seek($0)
+                                    playbackTime = $0
+                                    movedManuallyTo = $0
+                                })
+                        }
+                    }
+                    .onAppear {
+                        // TODO: LALAL just for testing
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            playbackTime = -1
+                        }
                     }
                     .frame(alignment: .leading)
                     metaView().padding(.leading, -6)
                 }
             }
         }
-        .padding([.top, .horizontal], 4)
+        .padding(.top, 4)
         .padding(.bottom, 8)
+        .onChange(of: playbackState) { _ in movedManuallyTo = -1 }
     }
 
     private func player() -> some View {
@@ -48,6 +78,7 @@ struct CIVoiceView: View {
             recordingFile: recordingFile,
             recordingTime: TimeInterval(duration),
             showBackground: true,
+            audioPlayer: $audioPlayer,
             playbackState: $playbackState,
             playbackTime: $playbackTime
         )
@@ -95,7 +126,7 @@ struct VoiceMessagePlayer: View {
     var recordingTime: TimeInterval
     var showBackground: Bool
 
-    @State private var audioPlayer: AudioPlayer?
+    @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
     @State private var startingPlayback: Bool = false
@@ -213,8 +244,7 @@ struct VoiceMessagePlayer: View {
                 playbackTime = TimeInterval(0)
             }
         )
-        audioPlayer?.start(fileName: recordingFileName)
-        playbackTime = TimeInterval(0)
+        audioPlayer?.start(fileName: recordingFileName, at: playbackTime)
         playbackState = .playing
     }
 }

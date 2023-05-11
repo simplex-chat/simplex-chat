@@ -219,17 +219,29 @@ struct ChatView: View {
         .padding(.vertical, 8)
     }
     
+    private func voiceWithTransparentBack(_ ci: ChatItem) -> Bool {
+        if case .voice = ci.content.msgContent, ci.content.text.count == 0 && ci.quotedItem == nil {
+            return true
+        }
+        return false
+    }
+
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
-                    let maxWidth =
-                    cInfo.chatType == .group
-                    ? (g.size.width - 28) * 0.84 - 42
-                    : (g.size.width - 32) * 0.84
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
+                            let transparentVoice = voiceWithTransparentBack(ci)
+                            let maxWidth =
+                            cInfo.chatType == .group
+                            ? transparentVoice
+                            ? (g.size.width - 28) - 42
+                            : (g.size.width - 28) * 0.84 - 42
+                            : transparentVoice
+                            ? (g.size.width - 32)
+                            : (g.size.width - 32) * 0.84
                             chatItemView(ci, maxWidth)
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear {
