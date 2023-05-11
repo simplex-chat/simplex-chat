@@ -344,7 +344,7 @@ instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOpt
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
-    deleteAt :: Maybe UTCTime
+    deleteAt :: Maybe UTCTime -- this is initially Nothing for received items, the timer starts when they are read
   }
   deriving (Show, Generic)
 
@@ -353,16 +353,16 @@ instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 ttl' :: CITimed -> Int
 ttl' CITimed {ttl} = ttl
 
-contactTimedTTL :: Contact -> Maybe Int
+contactTimedTTL :: Contact -> Maybe (Maybe Int)
 contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
-  | forUser enabled && forContact enabled = ttl
+  | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
     TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
 
-groupTimedTTL :: GroupInfo -> Maybe Int
+groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
-  | enable == FEOn = Just ttl
+  | enable == FEOn = Just $ Just ttl
   | otherwise = Nothing
 
 rcvContactCITimed :: Contact -> Maybe Int -> Maybe CITimed
@@ -371,7 +371,7 @@ rcvContactCITimed = rcvCITimed_ . contactTimedTTL
 rcvGroupCITimed :: GroupInfo -> Maybe Int -> Maybe CITimed
 rcvGroupCITimed = rcvCITimed_ . groupTimedTTL
 
-rcvCITimed_ :: Maybe Int -> Maybe Int -> Maybe CITimed
+rcvCITimed_ :: Maybe (Maybe Int) -> Maybe Int -> Maybe CITimed
 rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL)
 
 data CIQuote (c :: ChatType) = CIQuote

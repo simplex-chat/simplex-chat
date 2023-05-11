@@ -89,6 +89,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts tz = \case
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemStatusUpdated u _ -> ttyUser u []
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
+  CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts testView
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc n t -> ttyUser u $ viewSentBroadcast mc n ts t
@@ -477,6 +478,11 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
 hideLive :: CIMeta с d -> [StyledString] -> [StyledString]
 hideLive CIMeta {itemLive = Just True} _ = []
 hideLive _ s = s
+
+viewItemNotChanged :: AChatItem -> [StyledString]
+viewItemNotChanged (AChatItem _ msgDir _ _) = case msgDir of
+  SMDSnd -> ["message didn't change"]
+  SMDRcv -> []
 
 viewItemDelete :: ChatInfo c -> ChatItem c d -> Maybe AChatItem -> Bool -> Bool -> CurrentTime -> Bool -> [StyledString]
 viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} toItem byUser timed ts testView

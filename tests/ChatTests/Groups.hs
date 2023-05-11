@@ -820,6 +820,9 @@ testGroupMessageUpdate =
         (cath <# "#team alice> hello!")
 
       msgItemId1 <- lastItemId alice
+      alice ##> ("/_update item #1 " <> msgItemId1 <> " text hello!")
+      alice <## "message didn't change"
+
       alice ##> ("/_update item #1 " <> msgItemId1 <> " text hey 👋")
       alice <# "#team [edited] hey 👋"
       concurrently_

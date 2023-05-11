@@ -34,6 +34,7 @@ chatDirectTests = do
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
+    it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
   describe "SMP servers" $ do
@@ -227,6 +228,9 @@ testDirectMessageUpdate =
 
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
+
+      alice ##> ("/_update item @2 " <> itemId 1 <> " text hello 🙂")
+      alice <## "message didn't change"
 
       alice ##> ("/_update item @2 " <> itemId 1 <> " text hey 👋")
       alice <# "@bob [edited] hey 👋"
@@ -439,6 +443,32 @@ testDirectLiveMessage =
     bob <## "message history:"
     bob .<## ": hello 2"
     bob .<## ":"
+
+testDirectTimedMessage :: HasCallStack => FilePath -> IO ()
+testDirectTimedMessage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_send @2 ttl=1 text hello!"
+      alice <# "@bob hello!"
+      bob <# "alice> hello!"
+      alice <## "timed message deleted: hello!"
+      bob <## "timed message deleted: hello!"
+
+      alice ##> "/_send @2 live=off ttl=1 text hey"
+      alice <# "@bob hey"
+      bob <# "alice> hey"
+      alice <## "timed message deleted: hey"
+      bob <## "timed message deleted: hey"
+
+      alice ##> "/_send @2 ttl=default text hello"
+      alice <# "@bob hello"
+      bob <# "alice> hello"
+
+      alice ##> "/_send @2 live=off text hi"
+      alice <# "@bob hi"
+      bob <# "alice> hi"
 
 testRepeatAuthErrorsDisableContact :: HasCallStack => FilePath -> IO ()
 testRepeatAuthErrorsDisableContact =

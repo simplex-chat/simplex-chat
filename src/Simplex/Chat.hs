@@ -222,10 +222,11 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
   where
     start s users = do
       a1 <- timeItToView "startChatController, a1" $ async $ race_ notificationSubscriber agentSubscriber
-      a2 <- timeItToView "startChatController, a2" $
-        if subConns
-          then Just <$> async (subscribeUsers users)
-          else pure Nothing
+      a2 <-
+        timeItToView "startChatController, a2" $
+          if subConns
+            then Just <$> async (subscribeUsers users)
+            else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       when startXFTPWorkers $ do
         timeItToView "startChatController, startXFTP" $ startXFTP
@@ -471,7 +472,7 @@ processChatCommand = \case
     let CIMeta {itemTs, createdAt, updatedAt} = meta
         ciInfo = ChatItemInfo {chatItemId = itemId, itemTs, createdAt, updatedAt, itemVersions}
     pure $ CRChatItemInfo user chatItem ciInfo
-  APISendMessage (ChatRef cType chatId) live (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
+  APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgNew_
@@ -480,7 +481,7 @@ processChatCommand = \case
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         else do
           (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
-          timed_ <- sndContactCITimed live ct
+          timed_ <- sndContactCITimed live ct itemTTL
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_
           (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
           case ft_ of
@@ -540,7 +541,7 @@ processChatCommand = \case
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
         else do
           (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
-          timed_ <- sndGroupCITimed live gInfo
+          timed_ <- sndGroupCITimed live gInfo itemTTL
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
@@ -651,18 +652,20 @@ processChatCommand = \case
       case cci of
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
-            (CISndMsgContent oldMC, Just itemSharedMId) ->
-              if mc /= oldMC
+            (CISndMsgContent oldMC, Just itemSharedMId) -> do
+              let changed = mc /= oldMC
+              if changed || fromMaybe False itemLive
                 then do
                   (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                   ci' <- withStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
-                    addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                    when changed $
+                      addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                     updateDirectChatItem' db user contactId ci (CISndMsgContent mc) live $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
                   setActive $ ActiveC c
                   pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci')
-                else throwChatError CEInvalidChatItemUpdate
+                else pure $ CRChatItemNotChanged user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> do
@@ -672,18 +675,20 @@ processChatCommand = \case
       case cci of
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
-            (CISndMsgContent oldMC, Just itemSharedMId) ->
-              if mc /= oldMC
+            (CISndMsgContent oldMC, Just itemSharedMId) -> do
+              let changed = mc /= oldMC
+              if changed || fromMaybe False itemLive
                 then do
                   SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                   ci' <- withStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
-                    addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                    when changed $
+                      addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                     updateGroupChatItem db user groupId ci (CISndMsgContent mc) live $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                   setActive $ ActiveG gName
                   pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
-                else throwChatError CEInvalidChatItemUpdate
+                else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -1206,7 +1211,7 @@ processChatCommand = \case
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
     let mc = MCText msg
-    processChatCommand . APISendMessage (ChatRef CTDirect contactId) False $ ComposedMessage Nothing (Just quotedItemId) mc
+    processChatCommand . APISendMessage (ChatRef CTDirect contactId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
@@ -1404,7 +1409,7 @@ processChatCommand = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
     let mc = MCText msg
-    processChatCommand . APISendMessage (ChatRef CTGroup groupId) False $ ComposedMessage Nothing (Just quotedItemId) mc
+    processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   LastChats count_ -> withUser' $ \user -> do
     chats <- withStore' $ \db -> getChatPreviews db user False
     pure $ CRChats $ maybe id take count_ chats
@@ -1436,7 +1441,7 @@ processChatCommand = \case
     asks showLiveItems >>= atomically . (`writeTVar` on) >> ok_
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCFile "")
+    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCFile "")
   SendImage chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     filePath <- toFSFilePath f
@@ -1444,7 +1449,7 @@ processChatCommand = \case
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
     -- TODO include file description for preview
-    processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
+    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
@@ -1784,17 +1789,18 @@ processChatCommand = \case
     sendTextMessage chatName msg live = withUser $ \user -> do
       chatRef <- getChatRef user chatName
       let mc = MCText msg
-      processChatCommand . APISendMessage chatRef live $ ComposedMessage Nothing Nothing mc
-    sndContactCITimed :: Bool -> Contact -> m (Maybe CITimed)
-    sndContactCITimed live = mapM (sndCITimed_ live) . contactTimedTTL
-    sndGroupCITimed :: Bool -> GroupInfo -> m (Maybe CITimed)
-    sndGroupCITimed live = mapM (sndCITimed_ live) . groupTimedTTL
-    sndCITimed_ :: Bool -> Int -> m CITimed
-    sndCITimed_ live ttl =
-      CITimed ttl
-        <$> if live
-          then pure Nothing
-          else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
+      processChatCommand . APISendMessage chatRef live Nothing $ ComposedMessage Nothing Nothing mc
+    sndContactCITimed :: Bool -> Contact -> Maybe Int -> m (Maybe CITimed)
+    sndContactCITimed live = sndCITimed_ live . contactTimedTTL
+    sndGroupCITimed :: Bool -> GroupInfo -> Maybe Int -> m (Maybe CITimed)
+    sndGroupCITimed live = sndCITimed_ live . groupTimedTTL
+    sndCITimed_ :: Bool -> Maybe (Maybe Int) -> Maybe Int -> m (Maybe CITimed)
+    sndCITimed_ live chatTTL itemTTL =
+      forM (chatTTL >>= (itemTTL <|>)) $ \ttl ->
+        CITimed ttl
+          <$> if live
+                then pure Nothing
+                else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
     drgRandomBytes :: Int -> m ByteString
     drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
     privateGetUser :: UserId -> m User
@@ -3331,15 +3337,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         updateRcvChatItem = do
           cci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case cci of
-            CChatItem SMDRcv ci@ChatItem {content = CIRcvMsgContent oldMC} ->
-              if mc /= oldMC
+            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC} -> do
+              let changed = mc /= oldMC
+              if changed || fromMaybe False itemLive
                 then do
                   ci' <- withStore' $ \db -> do
-                    addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
+                    when changed $
+                      addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                     updateDirectChatItem' db user contactId ci content live $ Just msgId
                   toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
-                else messageError "x.msg.update: contact attempted invalid message update"
+                else toView $ CRChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
             _ -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
@@ -3403,16 +3411,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         updateRcvChatItem = do
           cci <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
           case cci of
-            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', content = CIRcvMsgContent oldMC} ->
-              if sameMemberId memberId m' && mc /= oldMC
+            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC} ->
+              if sameMemberId memberId m'
                 then do
-                  ci' <- withStore' $ \db -> do
-                    addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
-                    updateGroupChatItem db user groupId ci content live $ Just msgId
-                  toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
-                  setActive $ ActiveG g
-                  startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
-                else messageError "x.msg.update: group member attempted invalid message update"
+                  let changed = mc /= oldMC
+                  if changed || fromMaybe False itemLive
+                    then do
+                      ci' <- withStore' $ \db -> do
+                        when changed $
+                          addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
+                        updateGroupChatItem db user groupId ci content live $ Just msgId
+                      toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
+                      setActive $ ActiveG g
+                      startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
+                    else toView $ CRChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
+                else messageError "x.msg.update: group member attempted to update a message of another member"
             _ -> messageError "x.msg.update: group member attempted invalid message update"
 
     groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe MemberId -> RcvMessage -> m ()
@@ -4639,7 +4652,7 @@ chatCommandP =
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> A.decimal),
-      "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
+      "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),
@@ -4833,6 +4846,7 @@ chatCommandP =
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
+    sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayName <*> fullNameP
     newUserP = do
