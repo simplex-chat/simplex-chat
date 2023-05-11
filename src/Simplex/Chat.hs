@@ -481,7 +481,7 @@ processChatCommand = \case
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         else do
           (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
-          timed_ <- sndContactCITimed live itemTTL ct
+          timed_ <- sndContactCITimed live ct itemTTL
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_
           (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
           case ft_ of
@@ -541,7 +541,7 @@ processChatCommand = \case
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
         else do
           (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
-          timed_ <- sndGroupCITimed live itemTTL gInfo
+          timed_ <- sndGroupCITimed live gInfo itemTTL
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
@@ -1790,16 +1790,17 @@ processChatCommand = \case
       chatRef <- getChatRef user chatName
       let mc = MCText msg
       processChatCommand . APISendMessage chatRef live Nothing $ ComposedMessage Nothing Nothing mc
-    sndContactCITimed :: Bool -> Maybe Int -> Contact -> m (Maybe CITimed)
-    sndContactCITimed live itemTTL ct = mapM (sndCITimed_ live) $ contactTimedTTL ct itemTTL
-    sndGroupCITimed :: Bool -> Maybe Int -> GroupInfo -> m (Maybe CITimed)
-    sndGroupCITimed live itemTTL g = mapM (sndCITimed_ live) $ groupTimedTTL g itemTTL
-    sndCITimed_ :: Bool -> Int -> m CITimed
-    sndCITimed_ live ttl =
-      CITimed ttl
-        <$> if live
-          then pure Nothing
-          else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
+    sndContactCITimed :: Bool -> Contact -> Maybe Int -> m (Maybe CITimed)
+    sndContactCITimed live = sndCITimed_ live . contactTimedTTL
+    sndGroupCITimed :: Bool -> GroupInfo -> Maybe Int -> m (Maybe CITimed)
+    sndGroupCITimed live = sndCITimed_ live . groupTimedTTL
+    sndCITimed_ :: Bool -> Maybe (Maybe Int) -> Maybe Int -> m (Maybe CITimed)
+    sndCITimed_ live chatTTL itemTTL =
+      forM (chatTTL >>= (itemTTL <|>)) $ \ttl ->
+        CITimed ttl
+          <$> if live
+                then pure Nothing
+                else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
     drgRandomBytes :: Int -> m ByteString
     drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
     privateGetUser :: UserId -> m User
