@@ -1185,4 +1185,19 @@
     <string name="you_can_share_your_address">U kunt uw adres delen als een link of QR-code - iedereen kan verbinding met u maken.</string>
     <string name="your_contacts_will_see_it">Uw contacten in SimpleX zullen het zien.
 \nU kunt dit wijzigen in Instellingen.</string>
+    <string name="all_app_data_will_be_cleared">Alle app-gegevens worden verwijderd.</string>
+    <string name="empty_chat_profile_is_created">Er wordt een leeg chatprofiel met de opgegeven naam gemaakt en de app wordt zoals gewoonlijk geopend.</string>
+    <string name="enabled_self_destruct_passcode">Zelfvernietigings wachtwoord inschakelen</string>
+    <string name="self_destruct">Zelfvernietiging</string>
+    <string name="change_self_destruct_mode">Zelfvernietigings modus wijzigen</string>
+    <string name="change_self_destruct_passcode">Zelfvernietigings code wijzigen</string>
+    <string name="enable_self_destruct">Zelfvernietiging inschakelen</string>
+    <string name="self_destruct_new_display_name">Nieuwe weergavenaam:</string>
+    <string name="self_destruct_passcode">Zelfvernietigingscode</string>
+    <string name="self_destruct_passcode_changed">Zelfvernietigingscode gewijzigd!</string>
+    <string name="self_destruct_passcode_enabled">Zelfvernietigings wachtwoord ingeschakeld!</string>
+    <string name="app_passcode_replaced_with_self_destruct">De app-toegangscode wordt vervangen door een zelfvernietigings wachtwoord.</string>
+    <string name="if_you_enter_self_destruct_code">Als u uw zelfvernietigings wachtwoord invoert tijdens het openen van de app:</string>
+    <string name="if_you_enter_passcode_data_removed">Als u deze toegangscode invoert bij het openen van de app, worden alle app-gegevens onomkeerbaar verwijderd!</string>
+    <string name="set_passcode">Toegangscode instellen</string>
 </resources>
