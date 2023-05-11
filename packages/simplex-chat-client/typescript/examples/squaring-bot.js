@@ -17,7 +17,7 @@ async function run() {
   const address = (await chat.apiGetUserAddress()) || (await chat.apiCreateUserAddress())
   console.log(`Bot address: ${address}`)
   // enables automatic acceptance of contact connections
-  await chat.addressAutoAccept(true)
+  await chat.enableAddressAutoAccept()
   await processMessages(chat)
 
   async function processMessages(chat) {
@@ -44,10 +44,8 @@ async function run() {
           if (msg) {
             const n = +msg
             reply = typeof n === "number" ? `${n} * ${n} = ${n * n}` : `${n} is not a number`
-          } else {
-            reply = "no message text"
+            await chat.apiSendTextMessage(ChatType.Direct, chatInfo.contact.contactId, reply)
           }
-          await chat.apiSendTextMessage(ChatType.Direct, chatInfo.contact.contactId, reply)
         }
       }
     }

@@ -840,5 +840,5 @@ function onOff<T>(value: T | undefined): string {
 function autoAcceptStr(autoAccept: AutoAccept | undefined): string {
   if (!autoAccept) return "off"
   const msg = autoAccept.autoReply
-  return "on" + (autoAccept.acceptIncognito ? " incognito=on" : "") + (msg ? " json " + JSON.stringify(autoAccept.autoReply) : "")
+  return "on" + (autoAccept.acceptIncognito ? " incognito=on" : "") + (msg ? " json " + JSON.stringify(msg) : "")
 }

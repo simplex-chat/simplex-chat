@@ -129,7 +129,7 @@ export class ChatClient {
     return this.okChatCommand({type: "setIncognito", incognito})
   }
 
-  async enableAddressAutoAccept(acceptIncognito: boolean, autoReply?: CC.MsgContent): Promise<void> {
+  async enableAddressAutoAccept(acceptIncognito = false, autoReply?: CC.MsgContent): Promise<void> {
     const r = await this.sendChatCommand({type: "addressAutoAccept", autoAccept: {acceptIncognito, autoReply}})
     if (r.type !== "userContactLinkUpdated") {
       throw new ChatCommandError("error changing user contact address mode", r)
