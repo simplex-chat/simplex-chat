@@ -16,6 +16,16 @@ struct ChatItemView: View {
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
     @Binding var revealed: Bool
+    @Binding var allowMenu: Bool
+    init(chatInfo: ChatInfo, chatItem: ChatItem, showMember: Bool = false, maxWidth: CGFloat = .infinity, scrollProxy: ScrollViewProxy? = nil, revealed: Binding<Bool>, allowMenu: Binding<Bool> = .constant(false)) {
+        self.chatInfo = chatInfo
+        self.chatItem = chatItem
+        self.showMember = showMember
+        self.maxWidth = maxWidth
+        _scrollProxy = .init(initialValue: scrollProxy)
+        _revealed = revealed
+        _allowMenu = allowMenu
+    }
 
     var body: some View {
         let ci = chatItem
@@ -25,7 +35,7 @@ struct ChatItemView: View {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
-                CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration)
+                CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
                 ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
@@ -37,7 +47,7 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
+        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, allowMenu: $allowMenu)
     }
 }
 

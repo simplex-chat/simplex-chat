@@ -15,23 +15,18 @@ struct CIVoiceView: View {
     let duration: Int
     @State var playbackState: VoiceMessagePlaybackState = .noPlayback
     @State var playbackTime: TimeInterval?
-    @State private var audioPlayer: AudioPlayer?
+    @Binding var allowMenu: Bool
+    @State private var seek: (TimeInterval) -> Void = { _ in }
     @State private var movedManuallyTo: TimeInterval = TimeInterval(-1)
+    @State private var requestedStartOfPlayback: Bool = false
 
     var body: some View {
         Group {
             if chatItem.chatDir.sent {
                 VStack (alignment: .trailing, spacing: 6) {
                     HStack {
-                        if .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime {
-                            ComposeVoiceView.SliderBar(
-                                length: TimeInterval(duration),
-                                progress: $playbackTime,
-                                seek: {
-                                    audioPlayer?.seek($0)
-                                    playbackTime = $0
-                                    movedManuallyTo = $0
-                                })
+                        if .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime || !allowMenu {
+                            playbackSlider()
                         }
                         playerTime()
                         player()
@@ -44,22 +39,8 @@ struct CIVoiceView: View {
                     HStack {
                         player()
                         playerTime()
-                        if .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime {
-                            ComposeVoiceView.SliderBar(
-                                length: TimeInterval(duration),
-                                progress: $playbackTime,
-                                seek: {
-                                    debugPrint("LALAL SEEK \(TimeInterval(duration)) \(playbackTime)")
-                                    audioPlayer?.seek($0)
-                                    playbackTime = $0
-                                    movedManuallyTo = $0
-                                })
-                        }
-                    }
-                    .onAppear {
-                        // TODO: LALAL just for testing
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            playbackTime = -1
+                        if .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime || !allowMenu {
+                            playbackSlider()
                         }
                     }
                     .frame(alignment: .leading)
@@ -69,7 +50,6 @@ struct CIVoiceView: View {
         }
         .padding(.top, 4)
         .padding(.bottom, 8)
-        .onChange(of: playbackState) { _ in movedManuallyTo = -1 }
     }
 
     private func player() -> some View {
@@ -78,9 +58,10 @@ struct CIVoiceView: View {
             recordingFile: recordingFile,
             recordingTime: TimeInterval(duration),
             showBackground: true,
-            audioPlayer: $audioPlayer,
+            seek: $seek,
             playbackState: $playbackState,
-            playbackTime: $playbackTime
+            playbackTime: $playbackTime,
+            requestedStartOfPlayback: $requestedStartOfPlayback
         )
     }
 
@@ -91,6 +72,30 @@ struct CIVoiceView: View {
             playbackTime: $playbackTime
         )
         .foregroundColor(.secondary)
+    }
+    
+    private func playbackSlider() -> some View {
+            ComposeVoiceView.SliderBar(
+                length: TimeInterval(duration),
+                progress: $playbackTime,
+                seek: {
+                    seek($0)
+                    playbackTime = $0
+                    movedManuallyTo = $0
+                })
+            .onAppear {
+                if !allowMenu {
+                    requestedStartOfPlayback.toggle()
+                } else {
+                    allowMenu = false
+                }
+            }
+            .onChange(of: .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime) { show in
+                if !show {
+                    allowMenu = true
+                }
+            }
+            .onChange(of: playbackState) { _ in movedManuallyTo = -1 }
     }
 
     private func metaView() -> some View {
@@ -126,9 +131,11 @@ struct VoiceMessagePlayer: View {
     var recordingTime: TimeInterval
     var showBackground: Bool
 
-    @Binding var audioPlayer: AudioPlayer?
+    @Binding var seek: (TimeInterval) -> Void
+    @State private var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
+    @Binding var requestedStartOfPlayback: Bool
     @State private var startingPlayback: Bool = false
 
     var body: some View {
@@ -151,6 +158,9 @@ struct VoiceMessagePlayer: View {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
             }
         }
+        .onAppear {
+            seek = { to in audioPlayer?.seek(to) }
+        }
         .onDisappear {
             audioPlayer?.stop()
         }
@@ -161,6 +171,11 @@ struct VoiceMessagePlayer: View {
                 playbackTime = TimeInterval(0)
             } else {
                 startingPlayback = false
+            }
+        }
+        .onChange(of: requestedStartOfPlayback) { _ in
+            if let recordingFileName = getLoadedFileName(recordingFile) {
+                startPlayback(recordingFileName)
             }
         }
     }
@@ -271,7 +286,8 @@ struct CIVoiceView_Previews: PreviewProvider {
                 recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
                 duration: 30,
                 playbackState: .playing,
-                playbackTime: TimeInterval(20)
+                playbackTime: TimeInterval(20),
+                allowMenu: Binding.constant(false)
             )
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage, revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false))
