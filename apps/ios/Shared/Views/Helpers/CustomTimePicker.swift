@@ -150,7 +150,6 @@ struct DropdownCustomTimePicker: View {
     var customPickerTimeUnitsLimits = CustomTimePicker.TimeUnitLimits.defaultUnitsLimits
     @State private var showCustomTimePicker = false
     @State private var selectedCustomTime: Int? = nil
-    @State private var dontCascadeSelectionUpdate = false
 
     enum DropdownSelection: Hashable {
         case dropdownValue(value: Int?)
@@ -174,22 +173,13 @@ struct DropdownCustomTimePicker: View {
             dropdownSelection = .dropdownValue(value: selection)
         }
         .onChange(of: selection) { v in
-            if dontCascadeSelectionUpdate {
-                dontCascadeSelectionUpdate = false
-            } else {
-                dontCascadeSelectionUpdate = true
-                dropdownSelection = .dropdownValue(value: v)
-            }
+            logger.debug("*** .onChange(of: selection)")
+            dropdownSelection = .dropdownValue(value: v)
         }
         .onChange(of: dropdownSelection) { v in
+            logger.debug("*** .onChange(of: dropdownSelection)")
             switch v {
-            case let .dropdownValue(value):
-                if dontCascadeSelectionUpdate {
-                    dontCascadeSelectionUpdate = false
-                } else {
-                    dontCascadeSelectionUpdate = true
-                    selection = value
-                }
+            case let .dropdownValue(value): selection = value
             case .custom: showCustomTimePicker = true
             }
         }
