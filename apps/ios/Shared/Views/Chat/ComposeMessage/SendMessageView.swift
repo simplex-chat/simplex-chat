@@ -33,9 +33,9 @@ struct SendMessageView: View {
     @State private var teUiFont: UIFont = UIFont.preferredFont(forTextStyle: .body)
     @State private var sendButtonSize: CGFloat = 29
     @State private var sendButtonOpacity: CGFloat = 1
-    @State private var showDeleteAfterDialogue = false
+    @State private var showCustomDisappearingMessageDialogue = false
     @State private var showCustomTimePicker = false
-    @State private var selectedDeleteAfterTime: Int? = 30
+    @State private var selectedDisappearingMessageTime: Int? = 300
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
     @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
@@ -174,15 +174,31 @@ struct SendMessageView: View {
             sendButtonContextMenuItems()
         }
         .padding([.bottom, .trailing], 4)
-        .confirmationDialog("Send and delete after", isPresented: $showDeleteAfterDialogue) {
-            Button("5 seconds") { sendMessage(5) }
+        .confirmationDialog("Send disappearing message", isPresented: $showCustomDisappearingMessageDialogue, titleVisibility: .visible) {
             Button("30 seconds") { sendMessage(30) }
+            Button("1 minute") { sendMessage(60) }
             Button("5 minutes") { sendMessage(300) }
             Button("Custom time") { showCustomTimePicker = true }
         }
-        .sheet(isPresented: $showCustomTimePicker, onDismiss: { selectedDeleteAfterTime = 30 }) {
-            CustomTimePicker(selection: $selectedDeleteAfterTime)
+        .sheet(isPresented: $showCustomTimePicker, onDismiss: { selectedDisappearingMessageTime = 300 }) {
+            if #available(iOS 16.0, *) {
+                disappearingMessageCustomTimePicker()
+                    .presentationDetents([.fraction(0.6)])
+            } else {
+                disappearingMessageCustomTimePicker()
+            }
         }
+    }
+
+    private func disappearingMessageCustomTimePicker() -> some View {
+        CustomTimePickerView(
+            confirmButtonText: "Send",
+            confirmButtonAction: {
+                sendMessage(selectedDisappearingMessageTime)
+            },
+            description: "Message will disappear after selected time, once it has been seen.",
+            selection: $selectedDisappearingMessageTime
+        )
     }
 
     @ViewBuilder private func sendButtonContextMenuItems() -> some View {
@@ -199,9 +215,9 @@ struct SendMessageView: View {
             }
             if timedMessageAllowed {
                 Button {
-                    showDeleteAfterDialogue = true
+                    showCustomDisappearingMessageDialogue = true
                 } label: {
-                    Label("Send and delete after", systemImage: "stopwatch")
+                    Label("Custom disappearing message", systemImage: "stopwatch")
                 }
             }
         }
