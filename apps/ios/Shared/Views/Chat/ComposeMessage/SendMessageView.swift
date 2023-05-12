@@ -192,15 +192,15 @@ struct SendMessageView: View {
 
     private func disappearingMessageCustomTimePicker() -> some View {
         CustomTimePickerView(
+            selection: $selectedDisappearingMessageTime,
             confirmButtonText: "Send",
             confirmButtonAction: {
-                if let ttl = selectedDisappearingMessageTime {
-                    sendMessage(ttl)
-                    customDisappearingMessageTimeDefault.set(ttl)
+                if let time = selectedDisappearingMessageTime {
+                    sendMessage(time)
+                    customDisappearingMessageTimeDefault.set(time)
                 }
             },
-            description: "Message will disappear after selected time, once it has been seen.",
-            selection: $selectedDisappearingMessageTime
+            description: "Message will disappear after selected time, once it has been seen."
         )
     }
 

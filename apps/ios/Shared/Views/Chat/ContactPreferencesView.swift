@@ -89,7 +89,15 @@ struct ContactPreferencesView: View {
                 }
             infoRow("Contact allows", pref.contactPreference.allow.text)
             if featuresAllowed.timedMessagesAllowed {
-                timedMessagesTTLPicker($featuresAllowed.timedMessagesTTL)
+                DropdownCustomTimePicker(
+                    selection: $featuresAllowed.timedMessagesTTL,
+                    dropdownSelection: DropdownCustomTimePicker.DropdownSelection.dropdownValue(value: featuresAllowed.timedMessagesTTL),
+                    label: "Delete after",
+                    dropdownValues: TimedMessagesPreference.ttlValues,
+                    customPickerConfirmButtonText: "Select",
+                    customPickerDescription: "When enabled, sent and received messages will disappear after selected time, once they have been seen."
+                )
+                .frame(height: 36)
             } else if pref.contactPreference.allow == .yes || pref.contactPreference.allow == .always {
                 infoRow("Delete after", timeText(pref.contactPreference.ttl))
             }
@@ -127,18 +135,6 @@ struct ContactPreferencesView: View {
             }
         }
     }
-}
-
-func timedMessagesTTLPicker(_ selection: Binding<Int?>) -> some View {
-    Picker("Delete after", selection: selection) {
-        let selectedTTL = selection.wrappedValue
-        let ttlValues = TimedMessagesPreference.ttlValues
-        let values = ttlValues + (ttlValues.contains(selectedTTL) ? [] : [selectedTTL])
-        ForEach(values, id: \.self) { ttl in
-            Text(timeText(ttl))
-        }
-    }
-    .frame(height: 36)
 }
 
 struct ContactPreferencesView_Previews: PreviewProvider {

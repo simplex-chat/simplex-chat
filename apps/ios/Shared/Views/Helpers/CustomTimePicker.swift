@@ -12,82 +12,32 @@ import SimpleXChat
 struct CustomTimePicker: View {
     @Binding var selection: Int?
     @State var timeUnitsLimits = TimeUnitLimits.defaultUnitsLimits
-    @State private var selectedUnit: TimeUnit = .second
+    @State private var selectedUnit: CustomTimeUnit = .second
     @State private var selectedDuration: Int = 1
 
-    enum TimeUnit {
-        case second
-        case minute
-        case hour
-        case day
-        case week
-        case month
+    struct TimeUnitLimits {
+        var timeUnit: CustomTimeUnit
+        var minValue: Int = 1
+        var maxValue: Int
 
-        public var toSeconds: Int {
-            switch self {
-            case .second: return 1
-            case .minute: return 60
-            case .hour: return 3600
-            case .day: return 86400
-            case .week: return 7 * 86400
-            case .month: return 30 * 86400
-            }
-        }
-
-        public var text: String {
-            switch self {
-            case .second: return NSLocalizedString("seconds", comment: "time unit")
-            case .minute: return NSLocalizedString("minutes", comment: "time unit")
-            case .hour: return NSLocalizedString("hours", comment: "time unit")
-            case .day: return NSLocalizedString("days", comment: "time unit")
-            case .week: return NSLocalizedString("weeks", comment: "time unit")
-            case .month: return NSLocalizedString("months", comment: "time unit")
-            }
-        }
-
-        public var defaultLimits: TimeUnitLimits {
-            switch self {
+        public static func defaultUnitLimits(_ unit: CustomTimeUnit) -> TimeUnitLimits {
+            switch unit {
             case .second: return TimeUnitLimits.init(timeUnit: .second, maxValue: 120)
             case .minute: return TimeUnitLimits.init(timeUnit: .minute, maxValue: 120)
             case .hour: return TimeUnitLimits.init(timeUnit: .hour, maxValue: 72)
             case .day: return TimeUnitLimits.init(timeUnit: .day, maxValue: 30)
-            case .week: return TimeUnitLimits.init(timeUnit: .week, maxValue: 14)
-            case .month: return TimeUnitLimits.init(timeUnit: .month, maxValue: 12)
+            case .week: return TimeUnitLimits.init(timeUnit: .week, maxValue: 10)
+            case .month: return TimeUnitLimits.init(timeUnit: .month, maxValue: 3)
             }
         }
-
-        public static func toSelectedTimeUnit(seconds: Int) -> (TimeUnit, Int) {
-            let tryIntervals = [
-                TimeUnit.month,
-                TimeUnit.week,
-                TimeUnit.day,
-                TimeUnit.hour,
-                TimeUnit.minute
-            ]
-            var selectedInterval: (TimeUnit, Int)? = nil
-            for interval in tryIntervals {
-                let (v, r) = divMod(seconds, by: interval.toSeconds)
-                if r == 0 {
-                    selectedInterval = (interval, v)
-                    break
-                }
-            }
-            return selectedInterval ?? (TimeUnit.second, seconds)
-        }
-    }
-
-    struct TimeUnitLimits {
-        var timeUnit: TimeUnit
-        var minValue: Int = 1
-        var maxValue: Int
 
         public static var defaultUnitsLimits: [TimeUnitLimits] {[
-            TimeUnit.second.defaultLimits,
-            TimeUnit.minute.defaultLimits,
-            TimeUnit.hour.defaultLimits,
-            TimeUnit.day.defaultLimits,
-            TimeUnit.week.defaultLimits,
-            TimeUnit.month.defaultLimits,
+            defaultUnitLimits(.second),
+            defaultUnitLimits(.minute),
+            defaultUnitLimits(.hour),
+            defaultUnitLimits(.day),
+            defaultUnitLimits(.week),
+            defaultUnitLimits(.month),
         ]}
     }
 
@@ -100,7 +50,7 @@ struct CustomTimePicker: View {
                     }
                 }
                 Picker("Duration", selection: $selectedDuration) {
-                    let selectedUnitLimits = timeUnitsLimits.first(where: { $0.timeUnit == selectedUnit }) ?? selectedUnit.defaultLimits
+                    let selectedUnitLimits = timeUnitsLimits.first(where: { $0.timeUnit == selectedUnit }) ?? TimeUnitLimits.defaultUnitLimits(selectedUnit)
                     let selectedUnitValues = Array(selectedUnitLimits.minValue...selectedUnitLimits.maxValue)
                     let values = selectedUnitValues + (selectedUnitValues.contains(selectedDuration) ? [] : [selectedDuration])
                     ForEach(values, id: \.self) { value in
@@ -116,7 +66,7 @@ struct CustomTimePicker: View {
         .onAppear {
             if let selection = selection,
                selection > 0 {
-                (selectedUnit, selectedDuration) = TimeUnit.toSelectedTimeUnit(seconds: selection)
+                (selectedUnit, selectedDuration) = CustomTimeUnit.toTimeUnit(seconds: selection)
             }
         }
         .onChange(of: selectedUnit) { unit in
@@ -141,11 +91,11 @@ extension UIPickerView {
 
 struct CustomTimePickerView: View {
     @Environment(\.dismiss) var dismiss
+    @Binding var selection: Int?
     var confirmButtonText: LocalizedStringKey
     var confirmButtonAction: () -> Void
     var description: LocalizedStringKey? = nil
-    @Binding var selection: Int?
-    @State var timeUnitsLimits = CustomTimePicker.TimeUnitLimits.defaultUnitsLimits
+    var timeUnitsLimits = CustomTimePicker.TimeUnitLimits.defaultUnitsLimits
 
     var body: some View {
         NavigationView {
@@ -175,6 +125,8 @@ struct CustomTimePickerView: View {
                 Group {
                     if let description = description {
                         Text(description)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
                             .listRowBackground(Color.clear)
                     }
                     Section {
@@ -183,7 +135,92 @@ struct CustomTimePickerView: View {
                 }
                 .listRowInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
             }
+            .listStyle(.insetGrouped)
         }
+    }
+}
+
+struct DropdownCustomTimePicker: View {
+    @Binding var selection: Int?
+    @State var dropdownSelection: DropdownSelection
+    var label: LocalizedStringKey
+    var dropdownValues: [Int?]
+    var customPickerConfirmButtonText: LocalizedStringKey
+    var customPickerDescription: LocalizedStringKey? = nil
+    var customPickerTimeUnitsLimits = CustomTimePicker.TimeUnitLimits.defaultUnitsLimits
+    @State private var showCustomTimePicker = false
+    @State private var selectedCustomTime: Int? = nil
+    @State private var dontCascadeSelectionUpdate = false
+
+    enum DropdownSelection: Hashable {
+        case dropdownValue(value: Int?)
+        case custom
+    }
+
+    var body: some View {
+        Picker(label, selection: $dropdownSelection) {
+            let values: [DropdownSelection] =
+            dropdownValues.map { .dropdownValue(value: $0) }
+            + (dropdownValues.contains(selection) ? [] : [.dropdownValue(value: selection)])
+            + [.custom]
+            ForEach(values, id: \.self) { v in
+                switch v {
+                case let .dropdownValue(value): Text(timeText(value))
+                case .custom: Text(NSLocalizedString("custom", comment: "dropdown time picker choice"))
+                }
+            }
+        }
+        .onAppear {
+            dropdownSelection = .dropdownValue(value: selection)
+        }
+        .onChange(of: selection) { v in
+            if dontCascadeSelectionUpdate {
+                dontCascadeSelectionUpdate = false
+            } else {
+                dontCascadeSelectionUpdate = true
+                dropdownSelection = .dropdownValue(value: v)
+            }
+        }
+        .onChange(of: dropdownSelection) { v in
+            switch v {
+            case let .dropdownValue(value):
+                if dontCascadeSelectionUpdate {
+                    dontCascadeSelectionUpdate = false
+                } else {
+                    dontCascadeSelectionUpdate = true
+                    selection = value
+                }
+            case .custom: showCustomTimePicker = true
+            }
+        }
+        .sheet(
+            isPresented: $showCustomTimePicker,
+            onDismiss: {
+                dropdownSelection = .dropdownValue(value: selection)
+                selectedCustomTime = nil
+            }
+        ) {
+            if #available(iOS 16.0, *) {
+                customTimePicker()
+                    .presentationDetents([.fraction(0.6)])
+            } else {
+                customTimePicker()
+            }
+        }
+    }
+
+    private func customTimePicker() -> some View {
+        CustomTimePickerView(
+            selection: $selectedCustomTime,
+            confirmButtonText: customPickerConfirmButtonText,
+            confirmButtonAction: {
+                if let time = selectedCustomTime {
+                    selection = time
+                }
+            },
+            description: customPickerDescription,
+            timeUnitsLimits: customPickerTimeUnitsLimits
+        )
     }
 }
 

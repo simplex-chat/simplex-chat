@@ -75,7 +75,15 @@ struct GroupPreferencesView: View {
                     Toggle(feature.text, isOn: enable)
                 }
                 if timedOn {
-                    timedMessagesTTLPicker($preferences.timedMessages.ttl)
+                    DropdownCustomTimePicker(
+                        selection: $preferences.timedMessages.ttl,
+                        dropdownSelection: DropdownCustomTimePicker.DropdownSelection.dropdownValue(value: preferences.timedMessages.ttl),
+                        label: "Delete after",
+                        dropdownValues: TimedMessagesPreference.ttlValues,
+                        customPickerConfirmButtonText: "Select",
+                        customPickerDescription: "When enabled, sent and received messages will disappear after selected time, once they have been seen."
+                    )
+                    .frame(height: 36)
                 }
             } else {
                 settingsRow(icon, color: color) {

@@ -280,60 +280,107 @@ public struct TimedMessagesPreference: Preference {
     }
 
     public static var ttlValues: [Int?] {
-        [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
+        [3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
     }
 }
 
-public func timeText(_ ttl: Int?) -> String {
-    guard let ttl = ttl else { return "off" }
-    if ttl == 0 { return "0 sec" }
-    let (m_, s) = divMod(ttl, by: 60)
-    let (h_, m) = divMod(m_, by: 60)
-    let (d_, h) = divMod(h_, by: 24)
-    let (mm, d) = divMod(d_, by: 30)
-    return maybe(mm,
-                 mm == 1
-                 ? NSLocalizedString("1 month", comment: "time interval")
-                 : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "time interval"), mm)
-                )
-        + maybe(d,
-                d == 1
-                ? NSLocalizedString("1 day", comment: "time interval")
-                : d == 7
-                ? NSLocalizedString("1 week", comment: "time interval")
-                : d == 14
-                ? NSLocalizedString("2 weeks", comment: "time interval")
-                : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "time interval"), d)
-                )
-        + maybe(h,
-                h == 1
-                ? NSLocalizedString("1 hour", comment: "time interval")
-                : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "time interval"), h)
-                )
-        + maybe(m, String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "time interval"), m))
-        + maybe(s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "time interval"), s))
+public enum CustomTimeUnit {
+    case second
+    case minute
+    case hour
+    case day
+    case week
+    case month
+
+    public var toSeconds: Int {
+        switch self {
+        case .second: return 1
+        case .minute: return 60
+        case .hour: return 3600
+        case .day: return 86400
+        case .week: return 7 * 86400
+        case .month: return 30 * 86400
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case .second: return NSLocalizedString("seconds", comment: "time unit")
+        case .minute: return NSLocalizedString("minutes", comment: "time unit")
+        case .hour: return NSLocalizedString("hours", comment: "time unit")
+        case .day: return NSLocalizedString("days", comment: "time unit")
+        case .week: return NSLocalizedString("weeks", comment: "time unit")
+        case .month: return NSLocalizedString("months", comment: "time unit")
+        }
+    }
+
+    public static func toTimeUnit(seconds: Int) -> (CustomTimeUnit, Int) {
+        let tryUnits = [month, week, day, hour, minute]
+        var selectedUnit: (CustomTimeUnit, Int)? = nil
+        for unit in tryUnits {
+            let (v, r) = divMod(seconds, by: unit.toSeconds)
+            if r == 0 {
+                selectedUnit = (unit, v)
+                break
+            }
+        }
+        return selectedUnit ?? (CustomTimeUnit.second, seconds)
+    }
+
+    private static func divMod(_ n: Int, by d: Int) -> (Int, Int) {
+        (n / d, n % d)
+    }
+
+    public static func toText(seconds: Int) -> String {
+        let (unit, value) = toTimeUnit(seconds: seconds)
+        switch unit {
+        case .second:
+            return String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "time interval"), value)
+        case .minute:
+            return String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "time interval"), value)
+        case .hour:
+            return value == 1
+            ? NSLocalizedString("1 hour", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "time interval"), value)
+        case .day:
+            return value == 1
+            ? NSLocalizedString("1 day", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "time interval"), value)
+        case .week:
+            return value == 1
+            ? NSLocalizedString("1 week", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d weeks", comment: "time interval"), value)
+        case .month:
+            return value == 1
+            ? NSLocalizedString("1 month", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "time interval"), value)
+        }
+    }
+
+    public static func toShortText(seconds: Int) -> LocalizedStringKey {
+        let (unit, value) = toTimeUnit(seconds: seconds)
+        switch unit {
+        case .second: return "\(value)s"
+        case .minute: return "\(value)m"
+        case .hour: return "\(value)h"
+        case .day: return "\(value)d"
+        case .week: return "\(value)w"
+        case .month: return "\(value)mth"
+        }
+    }
 }
 
-public func shortTimeText(_ ttl: Int?) -> LocalizedStringKey {
-    guard let ttl = ttl else { return "off" }
-    let m = ttl / 60
-    if m == 0 { return "\(ttl)s" }
-    let h = m / 60
-    if h == 0 { return "\(m)m" }
-    let d = h / 24
-    if d == 0 { return "\(h)h" }
-    let mm = d / 30
-    if mm > 0 { return "\(mm)mth" }
-    let w = d / 7
-    return w == 0 || d % 7 != 0 ? "\(d)d" : "\(w)w"
+
+public func timeText(_ seconds: Int?) -> String {
+    guard let seconds = seconds else { return "off" }
+    if seconds == 0 { return "0 sec" }
+    return CustomTimeUnit.toText(seconds: seconds)
 }
 
-public func divMod(_ n: Int, by d: Int) -> (Int, Int) {
-    (n / d, n % d)
-}
-
-private func maybe(_ n: Int, _ s: String) -> String {
-    n == 0 ? "" : s
+public func shortTimeText(_ seconds: Int?) -> LocalizedStringKey {
+    guard let seconds = seconds else { return "off" }
+    if seconds == 0 { return "0s" }
+    return CustomTimeUnit.toShortText(seconds: seconds)
 }
 
 public struct ContactUserPreferences: Decodable {
