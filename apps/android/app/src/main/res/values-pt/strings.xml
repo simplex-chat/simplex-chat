@@ -560,4 +560,9 @@
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> mensagem(s) ignoradas</string>
     <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> mensagens ignoradas.</string>
     <string name="import_database">Importar base de dados</string>
+    <string name="your_settings">As suas configurações</string>
+    <string name="settings_section_title_settings">CONFIGURAÇÕES</string>
+    <string name="share_verb">Partilhar</string>
+    <string name="share_address">Partilhar endereço</string>
+    <string name="icon_descr_settings">Configurações</string>
 </resources>
