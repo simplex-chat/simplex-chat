@@ -20,7 +20,7 @@ struct FramedCIVoiceView: View {
     @State private var seek: (TimeInterval) -> Void = { _ in }
     @State private var movedManuallyTo: TimeInterval = TimeInterval(-1)
     @Binding var allowMenu: Bool
-    @State private var requestedStartOfPlayback: Bool = false
+    @State private var requestedStartOfPlayback: Bool = false // used as a toggle, value doesn't matter
     
     var body: some View {
         HStack {

@@ -18,7 +18,7 @@ struct CIVoiceView: View {
     @Binding var allowMenu: Bool
     @State private var seek: (TimeInterval) -> Void = { _ in }
     @State private var movedManuallyTo: TimeInterval = TimeInterval(-1)
-    @State private var requestedStartOfPlayback: Bool = false
+    @State private var requestedStartOfPlayback: Bool = false // used as a toggle, value doesn't matter
 
     var body: some View {
         Group {
@@ -136,7 +136,6 @@ struct VoiceMessagePlayer: View {
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
     @Binding var requestedStartOfPlayback: Bool
-    @State private var startingPlayback: Bool = false
 
     var body: some View {
         ZStack {
@@ -165,12 +164,10 @@ struct VoiceMessagePlayer: View {
             audioPlayer?.stop()
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
-            if !startingPlayback {
+            if let recordingFileName = getLoadedFileName(recordingFile), chatModel.stopPreviousRecPlay != getAppFilePath(recordingFileName) {
                 audioPlayer?.stop()
                 playbackState = .noPlayback
                 playbackTime = TimeInterval(0)
-            } else {
-                startingPlayback = false
             }
         }
         .onChange(of: requestedStartOfPlayback) { _ in
@@ -250,7 +247,6 @@ struct VoiceMessagePlayer: View {
     }
 
     private func startPlayback(_ recordingFileName: String) {
-        startingPlayback = true
         chatModel.stopPreviousRecPlay = getAppFilePath(recordingFileName)
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
