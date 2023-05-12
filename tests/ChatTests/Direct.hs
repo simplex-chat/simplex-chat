@@ -421,13 +421,13 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/5] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/6] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/6]"
+    bob <# "alice> [LIVE started] use /show [on/off/7]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
@@ -1691,14 +1691,15 @@ testUserPrivacy =
       alice <##? chatHistory
       alice ##> "/_get items count=10"
       alice <##? chatHistory
-      alice ##> "/_get items before=9 count=10"
+      alice ##> "/_get items before=11 count=10"
       alice
         <##? [ "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
+               "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items after=8 count=10"
+      alice ##> "/_get items after=10 count=10"
       alice
         <##? [ "@bob hello",
                "bob> hey",
@@ -1756,6 +1757,7 @@ testUserPrivacy =
     chatHistory =
       [ "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
+        "bob> Message reactions: enabled",
         "bob> Voice messages: enabled",
         "bob> Audio/video calls: enabled",
         "@bob hello",

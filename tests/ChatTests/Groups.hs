@@ -1289,6 +1289,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Disappearing messages: off"
       alice <## "Direct messages: on"
       alice <## "Full deletion: off"
+      alice <## "Message reactions: on"
       alice <## "Voice messages: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
