@@ -228,6 +228,10 @@ module Simplex.Chat.Store
     getAllChatItems,
     getAChatItem,
     getChatItemVersions,
+    getDirectReactions,
+    setDirectReaction,
+    getGroupReactions,
+    setGroupReaction,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
@@ -384,6 +388,7 @@ import Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
 import Simplex.Chat.Migrations.M20230422_profile_contact_links
 import Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages
 import Simplex.Chat.Migrations.M20230505_chat_item_versions
+import Simplex.Chat.Migrations.M20230511_reactions
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -461,7 +466,8 @@ schemaMigrations =
     ("20230420_rcv_files_to_receive", m20230420_rcv_files_to_receive, Just down_m20230420_rcv_files_to_receive),
     ("20230422_profile_contact_links", m20230422_profile_contact_links, Just down_m20230422_profile_contact_links),
     ("20230504_recreate_msg_delivery_events_cleanup_messages", m20230504_recreate_msg_delivery_events_cleanup_messages, Just down_m20230504_recreate_msg_delivery_events_cleanup_messages),
-    ("20230505_chat_item_versions", m20230505_chat_item_versions, Just down_m20230505_chat_item_versions)
+    ("20230505_chat_item_versions", m20230505_chat_item_versions, Just down_m20230505_chat_item_versions),
+    ("20230511_reactions", m20230511_reactions, Just down_m20230511_reactions)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -4832,6 +4838,18 @@ getChatItemVersions db itemId = do
   where
     toChatItemVersion :: (Int64, MsgContent, UTCTime, UTCTime) -> ChatItemVersion
     toChatItemVersion (chatItemVersionId, msgContent, itemVersionTs, createdAt) = ChatItemVersion {chatItemVersionId, msgContent, itemVersionTs, createdAt}
+
+getDirectReactions :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> Bool -> ExceptT StoreError IO [MsgReaction]
+getDirectReactions _db _user _ct _ci _sent = undefined
+
+setDirectReaction :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> Bool -> MsgReaction -> Bool -> MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
+setDirectReaction _db _user _ct _ci _sent _reaction _add _msgId = undefined
+
+getGroupReactions :: DB.Connection -> User -> GroupInfo -> GroupMember -> ChatItem 'CTGroup d -> Bool -> ExceptT StoreError IO [MsgReaction]
+getGroupReactions _db _user _gInfo _m _ci _sent = undefined
+
+setGroupReaction :: DB.Connection -> User -> GroupInfo -> GroupMember -> ChatItem 'CTGroup d -> Bool -> MsgReaction -> Bool -> MessageId ->ExceptT StoreError IO (ChatItem 'CTGroup d)
+setGroupReaction _db _user _gInfo _m _ci _sent _reaction _add _msgId = undefined
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db user fileId fileStatus = do

@@ -463,6 +463,17 @@ CREATE TABLE chat_item_versions(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE chat_item_reactions(
+  chat_item_reaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL, -- NULL for sent even if group_id is not
+  created_by_msg_id INTEGER UNIQUE REFERENCES messages(message_id) ON DELETE SET NULL,
+  reaction_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
+  reaction_ts TEXT NOT NULL, -- broker_ts of creating message for received, created_at for sent
+  reaction_text TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -605,5 +616,8 @@ CREATE INDEX idx_xftp_file_descriptions_user_id ON xftp_file_descriptions(
   user_id
 );
 CREATE INDEX idx_chat_item_versions_chat_item_id ON chat_item_versions(
+  chat_item_id
+);
+CREATE INDEX idx_chat_item_reactions_chat_item_id ON chat_item_reactions(
   chat_item_id
 );

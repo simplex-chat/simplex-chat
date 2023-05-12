@@ -728,8 +728,36 @@ processChatCommand = \case
         SndMessage {msgId} <- sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId $ Just memberId
         delGroupChatItem user gInfo ci msgId (Just membership)
       (_, _) -> throwChatError CEInvalidChatItemDelete
-  APIChatItemReaction chatRef chatItemId reaction add -> withUser $ \user -> withChatLock "chatItemReaction" $ do
-    pure $ chatCmdError (Just user) "not supported"
+  APIChatItemReaction (ChatRef cType chatId) itemId reaction add -> withUser $ \user -> withChatLock "chatItemReaction" $ case cType of
+    CTDirect ->
+      withStore (\db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
+        (ct, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+          unless (featureAllowed SCFReactions forUser ct) $
+            throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
+          -- TODO limit the number of different reactions by user
+          reactions <- withStore $ \db -> getDirectReactions db user ct ci True
+          when ((reaction `elem` reactions) == add) $
+            throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
+          (SndMessage {msgId}, _) <- sendDirectContactMessage ct $ XMsgReact itemSharedMId Nothing reaction add
+          ci' <- withStore $ \db -> setDirectReaction db user ct ci True reaction add msgId
+          pure $ CRChatItemReaction user (AChatItem SCTDirect msgDir (DirectChat ct) ci') reaction add True Nothing
+        _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
+    CTGroup ->
+      withStore (\db -> (,) <$> getGroup db user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
+        (Group gInfo@GroupInfo {membership} ms, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+          unless (groupFeatureAllowed SGFVoice gInfo) $
+            throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
+          reactions <- withStore $ \db -> getGroupReactions db user gInfo membership ci True
+          -- TODO limit the number of different reactions by user
+          when ((reaction `elem` reactions) == add) $
+            throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
+          let GroupMember {memberId} = membership
+          SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgReact itemSharedMId (Just memberId) reaction add)
+          ci' <- withStore $ \db -> setGroupReaction db user gInfo membership ci True reaction add msgId
+          pure $ CRChatItemReaction user (AChatItem SCTGroup msgDir (GroupChat gInfo) ci') reaction add True (Just membership)
+        _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withStore $ \db -> getUserByContactId db chatId
@@ -1233,7 +1261,7 @@ processChatCommand = \case
     processChatCommand $ APIUpdateChatItem chatRef chatItemId live mc
   ReactToMessage chatName msg reaction add -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    chatItemId <- getSentChatItemIdByText user chatRef msg
+    chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand $ APIChatItemReaction chatRef chatItemId reaction add
   APINewGroup userId gProfile -> withUserId userId $ \user -> do
     gVar <- asks idsDrg

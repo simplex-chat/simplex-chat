@@ -484,22 +484,20 @@ struct ChatView: View {
         }
 
         private func chatItemReactions(_ reactions: [CIReaction]) -> some View {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 4) {
-                    ForEach(reactions, id: \.reaction) { r in
-                        HStack(spacing: 4) {
-                            switch r.reaction {
-                            case let .emoji(emoji): Text(emoji).font(.caption)
-                            }
-                            if r.totalReacted > 1 {
-                                Text("\(r.totalReacted)").font(.caption).foregroundColor(.secondary)
-                            }
+            HStack(spacing: 4) {
+                ForEach(reactions, id: \.reaction) { r in
+                    HStack(spacing: 4) {
+                        switch r.reaction {
+                        case let .emoji(emoji): Text(emoji).font(.caption)
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(!r.userReacted ? Color.clear : colorScheme == .dark ? sentColorDark : sentColorLight)
-                        .cornerRadius(16)
+                        if r.totalReacted > 1 {
+                            Text("\(r.totalReacted)").font(.caption).foregroundColor(.secondary)
+                        }
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(!r.userReacted ? Color.clear : colorScheme == .dark ? sentColorDark : sentColorLight)
+                    .cornerRadius(16)
                 }
             }
         }

@@ -91,6 +91,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts tz = \case
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts testView
+  CRChatItemReaction _u (AChatItem _ _ _chat _item) _reaction _added _byUser _byMember -> []
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc n t -> ttyUser u $ viewSentBroadcast mc n ts t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
