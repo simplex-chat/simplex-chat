@@ -133,6 +133,12 @@ struct CustomTimePicker: View {
     }
 }
 
+extension UIPickerView {
+    open override var intrinsicContentSize: CGSize {
+        return CGSize(width: UIView.noIntrinsicMetric, height: super.intrinsicContentSize.height)
+    }
+}
+
 struct CustomTimePickerView: View {
     @Environment(\.dismiss) var dismiss
     var confirmButtonText: LocalizedStringKey
@@ -152,6 +158,11 @@ struct CustomTimePickerView: View {
                         } label: {
                             Text(confirmButtonText)
                                 .fontWeight(.medium)
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            dismiss()
                         }
                     }
                 }

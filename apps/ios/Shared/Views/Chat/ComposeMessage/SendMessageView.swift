@@ -35,7 +35,7 @@ struct SendMessageView: View {
     @State private var sendButtonOpacity: CGFloat = 1
     @State private var showCustomDisappearingMessageDialogue = false
     @State private var showCustomTimePicker = false
-    @State private var selectedDisappearingMessageTime: Int? = 300
+    @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
     @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
@@ -180,7 +180,7 @@ struct SendMessageView: View {
             Button("5 minutes") { sendMessage(300) }
             Button("Custom time") { showCustomTimePicker = true }
         }
-        .sheet(isPresented: $showCustomTimePicker, onDismiss: { selectedDisappearingMessageTime = 300 }) {
+        .sheet(isPresented: $showCustomTimePicker, onDismiss: { selectedDisappearingMessageTime = customDisappearingMessageTimeDefault.get() }) {
             if #available(iOS 16.0, *) {
                 disappearingMessageCustomTimePicker()
                     .presentationDetents([.fraction(0.6)])
@@ -194,7 +194,10 @@ struct SendMessageView: View {
         CustomTimePickerView(
             confirmButtonText: "Send",
             confirmButtonAction: {
-                sendMessage(selectedDisappearingMessageTime)
+                if let ttl = selectedDisappearingMessageTime {
+                    sendMessage(ttl)
+                    customDisappearingMessageTimeDefault.set(ttl)
+                }
             },
             description: "Message will disappear after selected time, once it has been seen.",
             selection: $selectedDisappearingMessageTime
@@ -215,6 +218,7 @@ struct SendMessageView: View {
             }
             if timedMessageAllowed {
                 Button {
+                    hideKeyboard()
                     showCustomDisappearingMessageDialogue = true
                 } label: {
                     Label("Custom disappearing message", systemImage: "stopwatch")
