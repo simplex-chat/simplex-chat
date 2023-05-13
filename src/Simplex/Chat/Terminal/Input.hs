@@ -322,7 +322,7 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
         go _ _ = ""
     charsWithContact cs
       | live = cs
-      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" =
+      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" && cs /= "+" =
         contactPrefix <> cs
       | (s == ">" || s == "\\" || s == "!") && cs == " " =
         cs <> contactPrefix

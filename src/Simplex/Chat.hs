@@ -114,6 +114,7 @@ defaultChatConfig =
       inlineFiles = defaultInlineFilesConfig,
       xftpFileConfig = Just defaultXFTPFileConfig,
       tempDir = Nothing,
+      showReactions = False,
       logLevel = CLLImportant,
       subscriptionEvents = False,
       hostEvents = False,
@@ -148,9 +149,9 @@ createChatDatabase filePrefix key confirmMigrations = runExceptT $ do
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, allowInstantFiles} sendToast = do
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, showReactions, allowInstantFiles} sendToast = do
   let inlineFiles' = if allowInstantFiles then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
-      config = cfg {logLevel, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
+      config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
@@ -731,37 +732,44 @@ processChatCommand = \case
   APIChatItemReaction (ChatRef cType chatId) itemId reaction add -> withUser $ \user -> withChatLock "chatItemReaction" $ case cType of
     CTDirect ->
       withStore (\db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
-        (ct, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+        (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
           unless (featureAllowed SCFReactions forUser ct) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           -- TODO limit the number of different reactions by user
-          reactions <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
-          when ((reaction `elem` reactions) == add) $
+          rs <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
+          when ((reaction `elem` rs) == add) $
             throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct $ XMsgReact itemSharedMId Nothing reaction add
           createdAt <- liftIO getCurrentTime
-          withStore' $ \db -> setDirectReaction db ct itemSharedMId True reaction add msgId createdAt
-          let ci' = updateCIReactions ci False reaction add
-          pure $ CRChatItemReaction user (AChatItem SCTDirect msgDir (DirectChat ct) ci') reaction add True Nothing
+          reactions <- withStore' $ \db -> do
+            setDirectReaction db ct itemSharedMId True reaction add msgId createdAt
+            liftIO $ getDirectCIReactions db ct itemSharedMId
+          let ci' = CChatItem md ci {reactions}
+              r = ACIReaction SCTDirect SMDSnd (DirectChat ct) $ CIReaction CIDirectSnd ci' createdAt reaction
+          liftIO $ print ci'
+          pure $ CRChatItemReaction user r add
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTGroup ->
       withStore (\db -> (,) <$> getGroup db user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
-        (Group gInfo@GroupInfo {membership} ms, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}, chatDir}) -> do
-          unless (groupFeatureAllowed SGFReactions gInfo) $
+        (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}, chatDir}) -> do
+          unless (groupFeatureAllowed SGFReactions g) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           let GroupMember {memberId} = membership
               itemMemberId = case chatDir of
                 CIGroupSnd -> memberId
                 CIGroupRcv GroupMember {memberId = mId} -> mId
-          reactions <- withStore' $ \db -> getGroupReactions db gInfo membership itemSharedMId itemMemberId True
+          rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
           -- TODO limit the number of different reactions by user
-          when ((reaction `elem` reactions) == add) $
+          when ((reaction `elem` rs) == add) $
             throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
-          SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
+          SndMessage {msgId} <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
           createdAt <- liftIO getCurrentTime
-          withStore' $ \db -> setGroupReaction db gInfo membership itemSharedMId itemMemberId True reaction add msgId createdAt
-          let ci' = updateCIReactions ci False reaction add
-          pure $ CRChatItemReaction user (AChatItem SCTGroup msgDir (GroupChat gInfo) ci') reaction add True (Just membership)
+          reactions <- withStore' $ \db -> do
+            setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
+            liftIO $ getGroupCIReactions db g itemMemberId itemSharedMId
+          let ci' = CChatItem md ci {reactions}
+              r = ACIReaction SCTGroup SMDSnd (GroupChat g) $ CIReaction CIGroupSnd ci' createdAt reaction
+          pure $ CRChatItemReaction user r add
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
@@ -3414,23 +3422,29 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           updateChatItemReaction `catchCINotFound` \_ -> pure ()
       where
         updateChatItemReaction = do
-          CChatItem md ci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user (contactId' ct) sharedMsgId
-          let ci' = updateCIReactions ci False reaction add
-          toView $ CRChatItemReaction user (AChatItem SCTDirect md (DirectChat ct) ci') reaction add False Nothing
+          ci' <- withStore $ \db -> do
+            CChatItem md ci <- getDirectChatItemBySharedMsgId db user (contactId' ct) sharedMsgId
+            reactions <- liftIO $ getDirectCIReactions db ct sharedMsgId
+            pure $ CChatItem md ci {reactions}
+          let r = ACIReaction SCTDirect SMDRcv (DirectChat ct) $ CIReaction CIDirectRcv ci' brokerTs reaction
+          toView $ CRChatItemReaction user r add
 
     groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> m ()
     groupMsgReaction g@GroupInfo {groupId} m sharedMsgId itemMemberId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
       when (groupFeatureAllowed SGFReactions g) $ do
-        reactions <- withStore' $ \db -> getGroupReactions db g m sharedMsgId itemMemberId False
+        reactions <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
         -- TODO limit the number of different reactions by user
         when ((reaction `elem` reactions) /= add) $ do
-          withStore' $ \db -> setGroupReaction db g m sharedMsgId itemMemberId False reaction add msgId brokerTs
+          withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
           updateChatItemReaction `catchCINotFound` \_ -> pure ()
       where
         updateChatItemReaction = do
-          CChatItem md ci <- withStore $ \db -> getGroupMemberCIBySharedMsgId db user groupId itemMemberId sharedMsgId
-          let ci' = updateCIReactions ci False reaction add
-          toView $ CRChatItemReaction user (AChatItem SCTGroup md (GroupChat g) ci') reaction add False (Just m)
+          ci' <- withStore $ \db -> do
+            CChatItem md ci <- getGroupMemberCIBySharedMsgId db user groupId itemMemberId sharedMsgId
+            reactions <- liftIO $ getGroupCIReactions db g itemMemberId sharedMsgId
+            pure $ CChatItem md ci {reactions}
+          let r = ACIReaction SCTGroup SMDRcv (GroupChat g) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
+          toView $ CRChatItemReaction user r add
 
     catchCINotFound :: m a -> (SharedMsgId -> m a) -> m a
     catchCINotFound f handle =
@@ -4087,12 +4101,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 updateCIReactions :: ChatItem c d -> Bool -> MsgReaction -> Bool -> ChatItem c d
 updateCIReactions ci@ChatItem {reactions} sent reaction' add = ci {reactions = reactions'}
   where
-    reactions' = filter (\CIReaction {totalReacted} -> totalReacted > 0) $ map ciReaction reactions
-    ciReaction r@CIReaction {reaction, userReacted, totalReacted}
+    reactions' = addReaction $ filter (\CIReactionCount {totalReacted} -> totalReacted > 0) $ map ciReaction reactions
+    addReaction rs =
+      if add && isNothing (find (\CIReactionCount {reaction} -> reaction == reaction') rs)
+        then rs ++ [CIReactionCount reaction' sent 1]
+        else rs
+    ciReaction r@CIReactionCount {reaction, userReacted, totalReacted}
       | reaction == reaction' = 
         let userReacted' = if sent then add else userReacted
             totalReacted' = totalReacted + if add then 1 else -1
-         in CIReaction reaction userReacted' totalReacted'
+         in CIReactionCount reaction userReacted' totalReacted'
       | otherwise = r
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
@@ -4855,7 +4873,7 @@ chatCommandP =
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> textP),
       ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> textP),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
-      ("+" $> True <|> "\\+" $> False) >>= \add -> reactionP >>= \reaction -> ReactToMessage <$> chatNameP <* A.space <*> textP <*> pure reaction <*> pure add,
+      ("+" $> True <|> "\\+" $> False) >>= \add -> reactionP <* A.space >>= \reaction -> ReactToMessage <$> chatNameP' <* A.space <*> textP <*> pure reaction <*> pure add,
       "/feed " *> (SendMessageBroadcast <$> msgTextP),
       ("/chats" <|> "/cs") *> (LastChats <$> (" all" $> Nothing <|> Just <$> (A.space *> A.decimal <|> pure 20))),
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),

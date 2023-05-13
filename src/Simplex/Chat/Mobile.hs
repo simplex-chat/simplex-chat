@@ -128,6 +128,7 @@ mobileChatOpts dbFilePrefix dbKey =
       chatCmdDelay = 3,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      showReactions = False,
       allowInstantFiles = True,
       muteNotifications = True,
       maintenance = True

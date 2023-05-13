@@ -104,6 +104,7 @@ data ChatConfig = ChatConfig
     inlineFiles :: InlineFilesConfig,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
+    showReactions :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -400,7 +401,7 @@ data ChatResponse
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
-  | CRChatItemReaction {user :: User, chatItem :: AChatItem, reaction :: MsgReaction, added :: Bool, byUser :: Bool, byMember_ :: Maybe GroupMember}
+  | CRChatItemReaction {user :: User, reaction :: ACIReaction, added :: Bool}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent User MsgContent Int ZonedTime

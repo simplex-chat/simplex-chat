@@ -85,6 +85,8 @@ chatDirectTests = do
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
     xit "show message decryption error and update count" testMsgDecryptError
+  describe "message reactions" $ do
+    it "set message reactions" testSetMessageReactions
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -1940,3 +1942,14 @@ testMsgDecryptError tmp =
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
       copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+
+testSetMessageReactions :: HasCallStack => FilePath -> IO ()
+testSetMessageReactions =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob ##> "+1 @alice hi"
+      alice <# "@bob >> hi"
+      alice <## "      + 👍: 👍 1"

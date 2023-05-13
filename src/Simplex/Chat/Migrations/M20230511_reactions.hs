@@ -10,8 +10,8 @@ m20230511_reactions =
   [sql|
 CREATE TABLE chat_item_reactions (
   chat_item_reaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  shared_msg_id INTEGER NOT NULL,
   item_member_id BLOB, -- member that created item, NULL for items in direct chats
+  shared_msg_id INTEGER NOT NULL,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL, -- member that sent reaction, NULL for items in direct chats
@@ -22,7 +22,7 @@ CREATE TABLE chat_item_reactions (
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   UNIQUE(contact_id, shared_msg_id, reaction_sent, reaction),
-  UNIQUE(group_id, group_member_id, shared_msg_id, item_member_id, reaction_sent, reaction)
+  UNIQUE(group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction)
 );
 
 CREATE INDEX idx_chat_item_reactions_shared_msg_id ON chat_item_reactions(shared_msg_id);

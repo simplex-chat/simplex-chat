@@ -137,7 +137,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
-    reactions :: [CIReaction],
+    reactions :: [CIReactionCount],
     file :: Maybe (CIFile d)
   }
   deriving (Show, Generic)
@@ -176,10 +176,10 @@ jsonCIDirection = \case
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
 
-data CIReaction = CIReaction {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
+data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show, Generic)
 
-instance ToJSON CIReaction where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON CIReactionCount where toEncoding = J.genericToEncoding J.defaultOptions
 
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
@@ -393,6 +393,33 @@ data CIQuote (c :: ChatType) = CIQuote
 instance ToJSON (CIQuote c) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data CIReaction (c :: ChatType) (d :: MsgDirection) = CIReaction
+  { chatDir :: CIDirection c d,
+    chatItem :: CChatItem c,
+    sentAt :: UTCTime,
+    reaction :: MsgReaction
+  }
+  deriving (Show, Generic)
+
+instance ToJSON (CIReaction c d) where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data ACIReaction = forall c d. ACIReaction (SChatType c) (SMsgDirection d) (ChatInfo c) (CIReaction c d)
+
+deriving instance Show ACIReaction
+
+instance ToJSON ACIReaction where
+  toJSON (ACIReaction _ _ chat reaction) = J.toJSON $ JSONCIReaction chat reaction
+  toEncoding (ACIReaction _ _ chat reaction) = J.toEncoding $ JSONCIReaction chat reaction
+
+data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
+  deriving (Generic)
+
+instance ToJSON (JSONCIReaction c d) where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect

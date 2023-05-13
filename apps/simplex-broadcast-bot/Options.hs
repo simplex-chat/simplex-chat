@@ -104,6 +104,7 @@ mkChatOpts BroadcastBotOpts {coreOptions} =
       chatCmdDelay = 3,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      showReactions = False,
       allowInstantFiles = True,
       muteNotifications = True,
       maintenance = False
