@@ -230,10 +230,8 @@ module Simplex.Chat.Store
     getChatItemVersions,
     getDirectReactions,
     setDirectReaction,
-    createDirectReaction,
     getGroupReactions,
     setGroupReaction,
-    createGroupReaction,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
@@ -4872,23 +4870,69 @@ getChatReactions_ q db chatId c@Chat {chatItems} = do
     toCIReaction :: (MsgReaction, Bool, Int) -> CIReaction
     toCIReaction (reaction, userReacted, totalReacted) = CIReaction {reaction, userReacted, totalReacted}
 
-getDirectReactions :: DB.Connection -> User -> Contact -> SharedMsgId -> Bool -> ExceptT StoreError IO [MsgReaction]
-getDirectReactions _db _user _ct _itemSharedMId _sent = undefined
+getDirectReactions :: DB.Connection -> Contact -> SharedMsgId -> Bool -> IO [MsgReaction]
+getDirectReactions db ct itemSharedMId sent =
+  map fromOnly <$>
+    DB.query
+      db
+      [sql|
+        SELECT reaction
+        FROM chat_item_reactions
+        WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ?
+      |]
+      (contactId' ct, itemSharedMId, sent)
 
-setDirectReaction :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> Bool -> MsgReaction -> Bool -> MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-setDirectReaction _db _user _ct _ci _sent _reaction _add _msgId = undefined
+setDirectReaction :: DB.Connection -> Contact -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
+setDirectReaction db ct itemSharedMId sent reaction add msgId reactionTs
+  | add =
+    DB.execute
+      db
+      [sql|
+        INSERT INTO chat_item_reactions
+          (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+          VALUES (?,?,?,?,?,?)
+      |]
+      (contactId' ct, itemSharedMId, sent, reaction, msgId, reactionTs)
+  | otherwise =
+    DB.execute
+      db
+      [sql|
+        DELETE FROM chat_item_reactions
+        WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
+      |]
+      (contactId' ct, itemSharedMId, sent, reaction)
 
-createDirectReaction :: DB.Connection -> User -> Contact -> SharedMsgId -> MsgReaction -> Bool -> MessageId -> ExceptT StoreError IO ()
-createDirectReaction _db _user _ct _itemSharedMId _reaction _add _msgId = undefined
+getGroupReactions :: DB.Connection -> GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> Bool -> IO [MsgReaction]
+getGroupReactions db GroupInfo {groupId} m itemSharedMId itemMemberId sent =
+  map fromOnly <$>
+    DB.query
+      db
+      [sql|
+        SELECT reaction
+        FROM chat_item_reactions
+        WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ?
+      |]
+      (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent)
 
-getGroupReactions :: DB.Connection -> User -> GroupInfo -> SharedMsgId -> MemberId -> Bool -> ExceptT StoreError IO [MsgReaction]
-getGroupReactions _db _user _g _itemSharedMId _memberId _sent = undefined
-
-setGroupReaction :: DB.Connection -> User -> GroupInfo -> GroupMember -> ChatItem 'CTGroup d -> Bool -> MsgReaction -> Bool -> MessageId ->ExceptT StoreError IO (ChatItem 'CTGroup d)
-setGroupReaction _db _user _g _m _ci _sent _reaction _add _msgId = undefined
-
-createGroupReaction :: DB.Connection -> User -> GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> MsgReaction -> Bool -> MessageId -> ExceptT StoreError IO ()
-createGroupReaction _db _user _g _m _itemSharedMId _memberId _reaction _add _msgId = undefined
+setGroupReaction :: DB.Connection -> GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
+setGroupReaction db GroupInfo {groupId} m itemSharedMId itemMemberId sent reaction add msgId reactionTs
+  | add =
+    DB.execute
+      db
+      [sql|
+        INSERT INTO chat_item_reactions
+          (group_id, group_member_id, shared_msg_id, item_member_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+          VALUES (?,?,?,?,?,?,?,?)
+      |]
+      (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction, msgId, reactionTs)
+  | otherwise =
+    DB.execute
+      db
+      [sql|
+        DELETE FROM chat_item_reactions
+        WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
+      |]
+      (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db user fileId fileStatus = do

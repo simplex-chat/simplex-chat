@@ -735,25 +735,32 @@ processChatCommand = \case
           unless (featureAllowed SCFReactions forUser ct) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           -- TODO limit the number of different reactions by user
-          reactions <- withStore $ \db -> getDirectReactions db user ct itemSharedMId True
+          reactions <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
           when ((reaction `elem` reactions) == add) $
             throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct $ XMsgReact itemSharedMId Nothing reaction add
-          ci' <- withStore $ \db -> setDirectReaction db user ct ci True reaction add msgId
+          createdAt <- liftIO getCurrentTime
+          withStore' $ \db -> setDirectReaction db ct itemSharedMId True reaction add msgId createdAt
+          let ci' = updateCIReactions ci False reaction add
           pure $ CRChatItemReaction user (AChatItem SCTDirect msgDir (DirectChat ct) ci') reaction add True Nothing
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTGroup ->
       withStore (\db -> (,) <$> getGroup db user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
-        (Group gInfo@GroupInfo {membership} ms, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+        (Group gInfo@GroupInfo {membership} ms, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}, chatDir}) -> do
           unless (groupFeatureAllowed SGFReactions gInfo) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           let GroupMember {memberId} = membership
-          reactions <- withStore $ \db -> getGroupReactions db user gInfo itemSharedMId memberId True
+              itemMemberId = case chatDir of
+                CIGroupSnd -> memberId
+                CIGroupRcv GroupMember {memberId = mId} -> mId
+          reactions <- withStore' $ \db -> getGroupReactions db gInfo membership itemSharedMId itemMemberId True
           -- TODO limit the number of different reactions by user
           when ((reaction `elem` reactions) == add) $
             throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
-          SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgReact itemSharedMId (Just memberId) reaction add)
-          ci' <- withStore $ \db -> setGroupReaction db user gInfo membership ci True reaction add msgId
+          SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
+          createdAt <- liftIO getCurrentTime
+          withStore' $ \db -> setGroupReaction db gInfo membership itemSharedMId itemMemberId True reaction add msgId createdAt
+          let ci' = updateCIReactions ci False reaction add
           pure $ CRChatItemReaction user (AChatItem SCTGroup msgDir (GroupChat gInfo) ci') reaction add True (Just membership)
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -3352,20 +3359,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      updateRcvChatItem `catchError` \e ->
-        case e of
-          (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
-            -- This patches initial sharedMsgId into chat item when locally deleted chat item
-            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
-            -- Chat item and update message which created it will have different sharedMsgId in this case...
-            let timed_ = rcvContactCITimed ct ttl
-            ci <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) msgMeta content Nothing timed_ live
-            ci' <- withStore' $ \db -> do
-              createChatItemVersion db (chatItemId' ci) brokerTs mc
-              updateDirectChatItem' db user contactId ci content live Nothing
-            toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
-            setActive $ ActiveC c
-          _ -> throwError e
+      updateRcvChatItem `catchCINotFound` \_ -> do
+        -- This patches initial sharedMsgId into chat item when locally deleted chat item
+        -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+        -- Chat item and update message which created it will have different sharedMsgId in this case...
+        let timed_ = rcvContactCITimed ct ttl
+        ci <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) msgMeta content Nothing timed_ live
+        ci' <- withStore' $ \db -> do
+          createChatItemVersion db (chatItemId' ci) brokerTs mc
+          updateDirectChatItem' db user contactId ci content live Nothing
+        toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
+        setActive $ ActiveC c
       where
         MsgMeta {broker = (_, brokerTs)} = msgMeta
         content = CIRcvMsgContent mc
@@ -3389,10 +3393,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
     messageDelete ct@Contact {contactId} sharedMsgId RcvMessage {msgId} msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      deleteRcvChatItem `catchError` \e ->
-        case e of
-          (ChatErrorStore (SEChatItemSharedMsgIdNotFound sMsgId)) -> toView $ CRChatItemDeletedNotFound user ct sMsgId
-          _ -> throwError e
+      deleteRcvChatItem `catchCINotFound` (toView . CRChatItemDeletedNotFound user ct)
       where
         deleteRcvChatItem = do
           ci@(CChatItem msgDir _) <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
@@ -3404,38 +3405,38 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
 
     directMsgReaction :: Contact -> SharedMsgId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> m ()
-    directMsgReaction ct sharedMsgId reaction add RcvMessage {msgId} msgMeta = do
-      -- TODO save correct reaction time
+    directMsgReaction ct sharedMsgId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
       when (featureAllowed SCFReactions forUser ct) $ do
         -- TODO limit the number of different reactions by user
-        reactions <- withStore $ \db -> getDirectReactions db user ct sharedMsgId False
+        reactions <- withStore' $ \db -> getDirectReactions db ct sharedMsgId False
         when ((reaction `elem` reactions) /= add) $ do
-          updateChatItemReaction `catchError` \case
-            (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
-              withStore $ \db -> createDirectReaction db user ct sharedMsgId reaction add msgId
-            e -> throwError e
+          withStore' $ \db -> setDirectReaction db ct sharedMsgId False reaction add msgId brokerTs
+          updateChatItemReaction `catchCINotFound` \_ -> pure ()
       where
         updateChatItemReaction = do
           CChatItem md ci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user (contactId' ct) sharedMsgId
-          ci' <- withStore $ \db -> setDirectReaction db user ct ci False reaction add msgId
+          let ci' = updateCIReactions ci False reaction add
           toView $ CRChatItemReaction user (AChatItem SCTDirect md (DirectChat ct) ci') reaction add False Nothing
 
     groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> m ()
-    groupMsgReaction g@GroupInfo {groupId} m sharedMsgId memberId reaction add RcvMessage {msgId} msgMeta = do
-      -- TODO save correct reaction time
+    groupMsgReaction g@GroupInfo {groupId} m sharedMsgId itemMemberId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
       when (groupFeatureAllowed SGFReactions g) $ do
-        reactions <- withStore $ \db -> getGroupReactions db user g sharedMsgId memberId False
+        reactions <- withStore' $ \db -> getGroupReactions db g m sharedMsgId itemMemberId False
         -- TODO limit the number of different reactions by user
-        when ((reaction `elem` reactions) /= add) $
-          updateChatItemReaction `catchError` \case
-            (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) ->
-              withStore $ \db -> createGroupReaction db user g m sharedMsgId memberId reaction add msgId
-            e -> throwError e
+        when ((reaction `elem` reactions) /= add) $ do
+          withStore' $ \db -> setGroupReaction db g m sharedMsgId itemMemberId False reaction add msgId brokerTs
+          updateChatItemReaction `catchCINotFound` \_ -> pure ()
       where
         updateChatItemReaction = do
-          CChatItem md ci <- withStore $ \db -> getGroupMemberCIBySharedMsgId db user groupId memberId sharedMsgId
-          ci' <- withStore $ \db -> setGroupReaction db user g m ci False reaction add msgId
+          CChatItem md ci <- withStore $ \db -> getGroupMemberCIBySharedMsgId db user groupId itemMemberId sharedMsgId
+          let ci' = updateCIReactions ci False reaction add
           toView $ CRChatItemReaction user (AChatItem SCTGroup md (GroupChat g) ci') reaction add False (Just m)
+
+    catchCINotFound :: m a -> (SharedMsgId -> m a) -> m a
+    catchCINotFound f handle =
+      f `catchError` \case
+        ChatErrorStore (SEChatItemSharedMsgIdNotFound sharedMsgId) -> handle sharedMsgId
+        e -> throwError e
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
@@ -3461,20 +3462,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     groupMessageUpdate gInfo@GroupInfo {groupId, localDisplayName = g} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl_ live_ =
-      updateRcvChatItem `catchError` \e ->
-        case e of
-          (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
-            -- This patches initial sharedMsgId into chat item when locally deleted chat item
-            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
-            -- Chat item and update message which created it will have different sharedMsgId in this case...
-            let timed_ = rcvGroupCITimed gInfo ttl_
-            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) msgMeta content Nothing timed_ live
-            ci' <- withStore' $ \db -> do
-              createChatItemVersion db (chatItemId' ci) brokerTs mc
-              updateGroupChatItem db user groupId ci content live Nothing
-            toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
-            setActive $ ActiveG g
-          _ -> throwError e
+      updateRcvChatItem `catchCINotFound` \_ -> do
+        -- This patches initial sharedMsgId into chat item when locally deleted chat item
+        -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+        -- Chat item and update message which created it will have different sharedMsgId in this case...
+        let timed_ = rcvGroupCITimed gInfo ttl_
+        ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) msgMeta content Nothing timed_ live
+        ci' <- withStore' $ \db -> do
+          createChatItemVersion db (chatItemId' ci) brokerTs mc
+          updateGroupChatItem db user groupId ci content live Nothing
+        toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
+        setActive $ ActiveG g
       where
         MsgMeta {broker = (_, brokerTs)} = msgMeta
         content = CIRcvMsgContent mc
@@ -4085,6 +4083,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ci <- saveRcvChatItem user cd msg msgMeta (CIRcvGroupEvent $ RGEGroupUpdated p')
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
+
+updateCIReactions :: ChatItem c d -> Bool -> MsgReaction -> Bool -> ChatItem c d
+updateCIReactions ci@ChatItem {reactions} sent reaction' add = ci {reactions = reactions'}
+  where
+    reactions' = filter (\CIReaction {totalReacted} -> totalReacted > 0) $ map ciReaction reactions
+    ciReaction r@CIReaction {reaction, userReacted, totalReacted}
+      | reaction == reaction' = 
+        let userReacted' = if sent then add else userReacted
+            totalReacted' = totalReacted + if add then 1 else -1
+         in CIReaction reaction userReacted' totalReacted'
+      | otherwise = r
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =
