@@ -235,6 +235,12 @@ instance ToJSON MsgReaction where
 instance FromJSON MsgReaction where
   parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "MR"
 
+instance ToField MsgReaction where
+  toField = toField . encodeJSON
+
+instance FromField MsgReaction where
+  fromField = fromTextField_ decodeJSON
+
 newtype MREmojiChar = MREmojiChar Char
   deriving (Eq, Show)
 

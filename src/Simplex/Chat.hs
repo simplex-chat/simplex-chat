@@ -735,7 +735,7 @@ processChatCommand = \case
           unless (featureAllowed SCFReactions forUser ct) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           -- TODO limit the number of different reactions by user
-          reactions <- withStore $ \db -> getDirectReactions db user ct ci True
+          reactions <- withStore $ \db -> getDirectReactions db user ct itemSharedMId True
           when ((reaction `elem` reactions) == add) $
             throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct $ XMsgReact itemSharedMId Nothing reaction add
@@ -745,13 +745,13 @@ processChatCommand = \case
     CTGroup ->
       withStore (\db -> (,) <$> getGroup db user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
         (Group gInfo@GroupInfo {membership} ms, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
-          unless (groupFeatureAllowed SGFVoice gInfo) $
+          unless (groupFeatureAllowed SGFReactions gInfo) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
-          reactions <- withStore $ \db -> getGroupReactions db user gInfo membership ci True
+          let GroupMember {memberId} = membership
+          reactions <- withStore $ \db -> getGroupReactions db user gInfo itemSharedMId memberId True
           -- TODO limit the number of different reactions by user
           when ((reaction `elem` reactions) == add) $
             throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
-          let GroupMember {memberId} = membership
           SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgReact itemSharedMId (Just memberId) reaction add)
           ci' <- withStore $ \db -> setGroupReaction db user gInfo membership ci True reaction add msgId
           pure $ CRChatItemReaction user (AChatItem SCTGroup msgDir (GroupChat gInfo) ci') reaction add True (Just membership)
@@ -2684,6 +2684,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XMsgFileCancel sharedMsgId -> cancelMessageFile ct sharedMsgId msgMeta
               XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct sharedMsgId mContent msg msgMeta ttl live
               XMsgDel sharedMsgId _ -> messageDelete ct sharedMsgId msg msgMeta
+              XMsgReact sharedMsgId _ reaction add -> directMsgReaction ct sharedMsgId reaction add msg msgMeta
               -- TODO discontinue XFile
               XFile fInv -> processFileInvitation' ct fInv msg msgMeta
               XFileCancel sharedMsgId -> xFileCancel ct sharedMsgId msgMeta
@@ -2914,6 +2915,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XMsgFileCancel sharedMsgId -> cancelGroupMessageFile gInfo m sharedMsgId msgMeta
             XMsgUpdate sharedMsgId mContent ttl live -> canSend $ groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta ttl live
             XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo m sharedMsgId memberId msg
+            XMsgReact sharedMsgId (Just memberId) reaction add -> groupMsgReaction gInfo m sharedMsgId memberId reaction add msg msgMeta
             -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo m sharedMsgId msgMeta
@@ -3401,8 +3403,43 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 else markDirectCIDeleted user ct ci msgId False >>= toView
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
 
+    directMsgReaction :: Contact -> SharedMsgId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> m ()
+    directMsgReaction ct sharedMsgId reaction add RcvMessage {msgId} msgMeta = do
+      -- TODO save correct reaction time
+      when (featureAllowed SCFReactions forUser ct) $ do
+        -- TODO limit the number of different reactions by user
+        reactions <- withStore $ \db -> getDirectReactions db user ct sharedMsgId False
+        when ((reaction `elem` reactions) /= add) $ do
+          updateChatItemReaction `catchError` \case
+            (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
+              withStore $ \db -> createDirectReaction db user ct sharedMsgId reaction add msgId
+            e -> throwError e
+      where
+        updateChatItemReaction = do
+          CChatItem md ci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user (contactId' ct) sharedMsgId
+          ci' <- withStore $ \db -> setDirectReaction db user ct ci False reaction add msgId
+          toView $ CRChatItemReaction user (AChatItem SCTDirect md (DirectChat ct) ci') reaction add False Nothing
+
+    groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> m ()
+    groupMsgReaction g@GroupInfo {groupId} m sharedMsgId memberId reaction add RcvMessage {msgId} msgMeta = do
+      -- TODO save correct reaction time
+      when (groupFeatureAllowed SGFReactions g) $ do
+        reactions <- withStore $ \db -> getGroupReactions db user g sharedMsgId memberId False
+        -- TODO limit the number of different reactions by user
+        when ((reaction `elem` reactions) /= add) $
+          updateChatItemReaction `catchError` \case
+            (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) ->
+              withStore $ \db -> createGroupReaction db user g m sharedMsgId memberId reaction add msgId
+            e -> throwError e
+      where
+        updateChatItemReaction = do
+          CChatItem md ci <- withStore $ \db -> getGroupMemberCIBySharedMsgId db user groupId memberId sharedMsgId
+          ci' <- withStore $ \db -> setGroupReaction db user g m ci False reaction add msgId
+          toView $ CRChatItemReaction user (AChatItem SCTGroup md (GroupChat g) ci') reaction add False (Just m)
+
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
+      -- TODO integrity message check
       let (ExtMsgContent content fInv_ _ _) = mcExtMsgContent mc
       if isVoice content && not (groupFeatureAllowed SGFVoice gInfo)
         then void $ newChatItem (CIRcvGroupFeatureRejected GFVoice) Nothing Nothing False

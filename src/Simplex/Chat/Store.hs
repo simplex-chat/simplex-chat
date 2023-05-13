@@ -230,8 +230,10 @@ module Simplex.Chat.Store
     getChatItemVersions,
     getDirectReactions,
     setDirectReaction,
+    createDirectReaction,
     getGroupReactions,
     setGroupReaction,
+    createGroupReaction,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
@@ -3999,7 +4001,7 @@ toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUser
 getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChat db user contactId pagination search_ = do
   let search = fromMaybe "" search_
-  case pagination of
+  liftIO . getDirectChatReactions_ db contactId =<<  case pagination of
     CPLast count -> getDirectChatLast_ db user contactId count search
     CPAfter afterId count -> getDirectChatAfter_ db user contactId afterId count search
     CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count search
@@ -4139,7 +4141,7 @@ getContact db user@User {userId} contactId =
 getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChat db user groupId pagination search_ = do
   let search = fromMaybe "" search_
-  case pagination of
+  liftIO . getGroupChatReactions_ db groupId =<< case pagination of
     CPLast count -> getGroupChatLast_ db user groupId count search
     CPAfter afterId count -> getGroupChatAfter_ db user groupId afterId count search
     CPBefore beforeId count -> getGroupChatBefore_ db user groupId beforeId count search
@@ -4839,17 +4841,54 @@ getChatItemVersions db itemId = do
     toChatItemVersion :: (Int64, MsgContent, UTCTime, UTCTime) -> ChatItemVersion
     toChatItemVersion (chatItemVersionId, msgContent, itemVersionTs, createdAt) = ChatItemVersion {chatItemVersionId, msgContent, itemVersionTs, createdAt}
 
-getDirectReactions :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> Bool -> ExceptT StoreError IO [MsgReaction]
-getDirectReactions _db _user _ct _ci _sent = undefined
+getDirectChatReactions_ :: DB.Connection -> ContactId -> Chat c -> IO (Chat c)
+getDirectChatReactions_ =
+  getChatReactions_
+    [sql|
+      SELECT reaction, MAX(reaction_sent), COUNT(chat_item_reaction_id)
+      FROM chat_item_reactions
+      WHERE contact_id = ? AND shared_msg_id = ?
+      GROUP BY reaction
+    |]
+
+getGroupChatReactions_ :: DB.Connection -> GroupId -> Chat c -> IO (Chat c)
+getGroupChatReactions_ =
+  getChatReactions_
+    [sql|
+      SELECT reaction, MAX(reaction_sent), COUNT(chat_item_reaction_id)
+      FROM chat_item_reactions
+      WHERE group_id = ? AND shared_msg_id = ?
+      GROUP BY reaction
+    |]
+      
+getChatReactions_ :: Query -> DB.Connection -> Int64 -> Chat c -> IO (Chat c)
+getChatReactions_ q db chatId c@Chat {chatItems} = do
+  chatItems' <- forM chatItems $ \(CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) -> do
+    reactions <- maybe (pure []) getCIReactions itemSharedMsgId
+    pure $ CChatItem md ci {reactions}
+  pure c {chatItems = chatItems'}
+  where
+    getCIReactions itemSharedMsgId = map toCIReaction <$> DB.query db q (chatId, itemSharedMsgId)
+    toCIReaction :: (MsgReaction, Bool, Int) -> CIReaction
+    toCIReaction (reaction, userReacted, totalReacted) = CIReaction {reaction, userReacted, totalReacted}
+
+getDirectReactions :: DB.Connection -> User -> Contact -> SharedMsgId -> Bool -> ExceptT StoreError IO [MsgReaction]
+getDirectReactions _db _user _ct _itemSharedMId _sent = undefined
 
 setDirectReaction :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> Bool -> MsgReaction -> Bool -> MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
 setDirectReaction _db _user _ct _ci _sent _reaction _add _msgId = undefined
 
-getGroupReactions :: DB.Connection -> User -> GroupInfo -> GroupMember -> ChatItem 'CTGroup d -> Bool -> ExceptT StoreError IO [MsgReaction]
-getGroupReactions _db _user _gInfo _m _ci _sent = undefined
+createDirectReaction :: DB.Connection -> User -> Contact -> SharedMsgId -> MsgReaction -> Bool -> MessageId -> ExceptT StoreError IO ()
+createDirectReaction _db _user _ct _itemSharedMId _reaction _add _msgId = undefined
+
+getGroupReactions :: DB.Connection -> User -> GroupInfo -> SharedMsgId -> MemberId -> Bool -> ExceptT StoreError IO [MsgReaction]
+getGroupReactions _db _user _g _itemSharedMId _memberId _sent = undefined
 
 setGroupReaction :: DB.Connection -> User -> GroupInfo -> GroupMember -> ChatItem 'CTGroup d -> Bool -> MsgReaction -> Bool -> MessageId ->ExceptT StoreError IO (ChatItem 'CTGroup d)
-setGroupReaction _db _user _gInfo _m _ci _sent _reaction _add _msgId = undefined
+setGroupReaction _db _user _g _m _ci _sent _reaction _add _msgId = undefined
+
+createGroupReaction :: DB.Connection -> User -> GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> MsgReaction -> Bool -> MessageId -> ExceptT StoreError IO ()
+createGroupReaction _db _user _g _m _itemSharedMId _memberId _reaction _add _msgId = undefined
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db user fileId fileStatus = do
