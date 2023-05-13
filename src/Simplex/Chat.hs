@@ -746,7 +746,6 @@ processChatCommand = \case
             liftIO $ getDirectCIReactions db ct itemSharedMId
           let ci' = CChatItem md ci {reactions}
               r = ACIReaction SCTDirect SMDSnd (DirectChat ct) $ CIReaction CIDirectSnd ci' createdAt reaction
-          liftIO $ print ci'
           pure $ CRChatItemReaction user r add
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTGroup ->
