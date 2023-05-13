@@ -139,7 +139,6 @@ private fun FeatureSection(
       ContactFeatureAllowed.values(userDefault).map { it to it.text },
       allowFeature,
       icon = null,
-      enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
       onSelected = onSelected
     )
     InfoRow(
@@ -147,7 +146,7 @@ private fun FeatureSection(
       pref.contactPreference.allow.text
     )
   }
-  SectionTextFooter(feature.enabledDescription(enabled) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
+  SectionTextFooter(feature.enabledDescription(enabled))
 }
 
 @Composable
