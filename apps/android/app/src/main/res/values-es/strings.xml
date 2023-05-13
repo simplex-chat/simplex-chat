@@ -1187,4 +1187,6 @@
 \nPuedes cambiarlo en Configuración.</string>
     <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">No perderás tus contactos si más tarde borras tu dirección.</string>
+    <string name="all_app_data_will_be_cleared">Todos los datos de la aplicación se han eliminado.</string>
+    <string name="empty_chat_profile_is_created">Se creará un perfil de chat vacío con el nombre proporcionado, y la aplicación se abrirá como de costumbre.</string>
 </resources>
