@@ -15,12 +15,14 @@ struct FramedCIVoiceView: View {
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
-    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
-    @State var playbackTime: TimeInterval?
-    @State private var seek: (TimeInterval) -> Void = { _ in }
-    @State private var movedManuallyTo: TimeInterval = TimeInterval(-1)
+    
     @Binding var allowMenu: Bool
-    @State private var requestedStartOfPlayback: Bool = false // used as a toggle, value doesn't matter
+    
+    @Binding var audioPlayer: AudioPlayer?
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+    
+    @State private var seek: (TimeInterval) -> Void = { _ in }
     
     var body: some View {
         HStack {
@@ -30,9 +32,10 @@ struct FramedCIVoiceView: View {
                 recordingTime: TimeInterval(duration),
                 showBackground: false,
                 seek: $seek,
+                audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
                 playbackTime: $playbackTime,
-                requestedStartOfPlayback: $requestedStartOfPlayback
+                allowMenu: $allowMenu
             )
             VoiceMessagePlayerTime(
                 recordingTime: TimeInterval(duration),
@@ -41,7 +44,7 @@ struct FramedCIVoiceView: View {
             )
             .foregroundColor(.secondary)
             .frame(width: 50, alignment: .leading)
-            if .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime || !allowMenu {
+            if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
                 playbackSlider()
             }
         }
@@ -56,23 +59,15 @@ struct FramedCIVoiceView: View {
             length: TimeInterval(duration),
             progress: $playbackTime,
             seek: {
-                seek($0)
-                playbackTime = $0
-                movedManuallyTo = $0
+                let time = max(0.0001, $0)
+                seek(time)
+                playbackTime = time
             })
-        .onAppear {
-            if !allowMenu {
-                requestedStartOfPlayback.toggle()
-            } else {
-                allowMenu = false
-            }
-        }
-        .onChange(of: .playing == playbackState || (playbackTime ?? 0) > 0 || movedManuallyTo == playbackTime) { show in
+        .onChange(of: .playing == playbackState || (playbackTime ?? 0) > 0) { show in
             if !show {
                 allowMenu = true
             }
         }
-        .onChange(of: playbackState) { _ in movedManuallyTo = -1 }
     }
 }
 

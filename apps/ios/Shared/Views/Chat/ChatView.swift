@@ -462,6 +462,10 @@ struct ChatView: View {
         
         @State private var allowMenu: Bool = true
         
+        @State private var audioPlayer: AudioPlayer?
+        @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
+        @State private var playbackTime: TimeInterval?
+
         var body: some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             let uiMenu: Binding<UIMenu> = Binding(
@@ -469,7 +473,7 @@ struct ChatView: View {
                 set: { _ in }
             )
             
-            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu)
+            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                 .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
@@ -483,6 +487,14 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+                .onDisappear {
+                    if ci.content.msgContent?.isVoice == true {
+                        allowMenu = true
+                        audioPlayer?.stop()
+                        playbackState = .noPlayback
+                        playbackTime = TimeInterval(0)
+                    }
+                }
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {
