@@ -104,13 +104,13 @@
     <string name="network_settings">Configurações avançadas de rede</string>
     <string name="about_simplex_chat">Sobre o <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="above_then_preposition_continuation">acima, então:</string>
-    <string name="users_delete_all_chats_deleted">Todas as conversas e mensagens serão apagadas - esta ação não pode ser desfeita!</string>
+    <string name="users_delete_all_chats_deleted">Todas as conversas e mensagens serão apagadas - esta ação não pode ser revertida!</string>
     <string name="all_group_members_will_remain_connected">Todos os membros do grupo permanecerão conectados.</string>
-    <string name="clear_chat_warning">Todas as mensagens serão apagadas - esta ação não pode ser desfeita! As mensagens serão apagadas APENAS para si.</string>
+    <string name="clear_chat_warning">Todas as mensagens serão apagadas - esta ação não pode ser revertida! As mensagens serão apagadas APENAS para si.</string>
     <string name="allow_verb">Permitir</string>
     <string name="allow_disappearing_messages_only_if">Permitir mensagens que desaparecem apenas se o seu contato permitir.</string>
     <string name="notification_preview_mode_message">Mensagem de texto</string>
-    <string name="delete_message_cannot_be_undone_warning">A mensagem será apagada - esta ação não pode ser desfeita!</string>
+    <string name="delete_message_cannot_be_undone_warning">A mensagem será apagada - esta ação não pode ser revertida!</string>
     <string name="database_migrations">Migrações: %s</string>
     <string name="icon_descr_call_missed">Chamada perdida</string>
     <string name="la_minutes">%d minutos</string>
@@ -316,7 +316,7 @@
     <string name="confirm_passcode">Confirme o código de acesso</string>
     <string name="incorrect_passcode">Código de acesso incorreto</string>
     <string name="new_passcode">Novo código de acesso</string>
-    <string name="restore_database_alert_desc">Introduza a senha anterior depois de restaurar o backup da base de dados. Esta ação não pode ser desfeita.</string>
+    <string name="restore_database_alert_desc">Introduza a senha anterior depois de restaurar o backup da base de dados. Esta ação não pode ser revertida.</string>
     <string name="confirm_database_upgrades">Confirmar atualizações da base de dados</string>
     <string name="enter_password_to_show">Insira senha para pesquisa</string>
     <string name="profile_password">Senha do perfil</string>
@@ -413,7 +413,7 @@
     <string name="description_via_contact_address_link_incognito">anónimo via ligação de endereço de contato</string>
     <string name="simplex_link_mode_browser_warning">Abrir a ligação no navegador pode reduzir a privacidade e a segurança da ligação. As ligações Simplex não confiáveis serão vermelhas.</string>
     <string name="auth_confirm_credential">Confirmar credenciais</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contato e todas as mensagens serão eliminadas - isto não pode ser revertido!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contato e todas as mensagens serão eliminadas - esta acção não pode ser revertida!</string>
     <string name="image_descr_link_preview">ligação de visualização de imagem</string>
     <string name="invalid_contact_link">Ligação inválida!</string>
     <string name="read_more_in_user_guide_with_link">Leia mais em <font color="#0088ff">Guia de Utilizador</font>.</string>
@@ -565,4 +565,16 @@
     <string name="share_verb">Partilhar</string>
     <string name="share_address">Partilhar endereço</string>
     <string name="icon_descr_settings">Configurações</string>
+    <string name="mark_code_verified">Marcar como verificado</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">O grupo será eliminado para todos os membros - esta ação não pode ser revertida!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">O grupo será eliminado para si - esta ação não pode ser revertida!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">O membro será removido do grupo - esta ação não pode ser revertida!</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Esta ação não pode ser revertida - o seu perfil, contatos, mensagens e ficheiros serão irreversivelmente perdidos.</string>
+    <string name="enable_automatic_deletion_message">Esta ação não pode ser revertida - as mensagens enviadas e recebidas antes da seleção serão eliminadas. Pode demorar vários minutos.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">A sua base de dados atual de conversas será ELIMINADA e SUBSTITUÍDA pela importada.
+\nEsta ação não pode ser revertida - o seu perfil, contatos, mensagens e ficheiros serão irreversivelmente perdidos.</string>
+    <string name="mark_unread">Marcar como não lido</string>
+    <string name="group_member_role_member">membro</string>
+    <string name="member_info_section_title_member">MEMBRO</string>
+    <string name="v4_3_voice_messages_desc">Máximo de 40 segundos, recebido instantaneamente.</string>
 </resources>
