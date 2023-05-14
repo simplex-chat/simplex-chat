@@ -66,7 +66,7 @@ struct ComposeVoiceView: View {
                 }
             }
             .padding(.trailing, 12)
-            .padding(.top, 10)
+            .padding(.top, 4)
 
             ProgressBar(length: MAX_VOICE_MESSAGE_LENGTH, progress: $recordingTime)
         }
@@ -106,7 +106,7 @@ struct ComposeVoiceView: View {
                 }
             }
             .padding(.trailing, 12)
-            .padding(.top, 10)
+            .padding(.top, 4)
 
             if let recordingLength = recordingTime {
                 GeometryReader { _ in
