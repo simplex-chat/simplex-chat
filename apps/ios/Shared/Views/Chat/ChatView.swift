@@ -234,14 +234,13 @@ struct ChatView: View {
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
                             let transparentVoice = voiceWithTransparentBack(ci)
-                            let maxWidth =
-                            cInfo.chatType == .group
-                            ? transparentVoice
-                            ? (g.size.width - 28) - 42
-                            : (g.size.width - 28) * 0.84 - 42
-                            : transparentVoice
-                            ? (g.size.width - 32)
-                            : (g.size.width - 32) * 0.84
+                            let maxWidth = cInfo.chatType == .group
+                                            ? transparentVoice
+                                                ? (g.size.width - 28) - 42
+                                                : (g.size.width - 28) * 0.84 - 42
+                                            : transparentVoice
+                                                ? (g.size.width - 32)
+                                                : (g.size.width - 32) * 0.84
                             chatItemView(ci, maxWidth)
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear {
