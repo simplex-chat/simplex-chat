@@ -136,6 +136,9 @@ _defaultNtfServers = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.s
 maxImageSize :: Integer
 maxImageSize = 236700
 
+maxMsgReactions :: Int
+maxMsgReactions = 3
+
 fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
 
@@ -735,10 +738,8 @@ processChatCommand = \case
         (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
           unless (featureAllowed SCFReactions forUser ct) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
-          -- TODO limit the number of different reactions by user
           rs <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
-          when ((reaction `elem` rs) == add) $
-            throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
+          checkReactionAllowed rs
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct $ XMsgReact itemSharedMId Nothing reaction add
           createdAt <- liftIO getCurrentTime
           reactions <- withStore' $ \db -> do
@@ -758,9 +759,7 @@ processChatCommand = \case
                 CIGroupSnd -> memberId
                 CIGroupRcv GroupMember {memberId = mId} -> mId
           rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
-          -- TODO limit the number of different reactions by user
-          when ((reaction `elem` rs) == add) $
-            throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
+          checkReactionAllowed rs
           SndMessage {msgId} <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
           createdAt <- liftIO getCurrentTime
           reactions <- withStore' $ \db -> do
@@ -772,6 +771,12 @@ processChatCommand = \case
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    where
+      checkReactionAllowed rs = do
+        when ((reaction `elem` rs) == add) $
+          throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
+        when (add && length rs >= maxMsgReactions) $
+          throwChatError $ CECommandError "too many reactions"
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withStore $ \db -> getUserByContactId db chatId
@@ -3415,9 +3420,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     directMsgReaction :: Contact -> SharedMsgId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> m ()
     directMsgReaction ct sharedMsgId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
       when (featureAllowed SCFReactions forUser ct) $ do
-        -- TODO limit the number of different reactions by user
-        reactions <- withStore' $ \db -> getDirectReactions db ct sharedMsgId False
-        when ((reaction `elem` reactions) /= add) $ do
+        rs <- withStore' $ \db -> getDirectReactions db ct sharedMsgId False
+        when (reactionAllowed add reaction rs) $ do
           withStore' $ \db -> setDirectReaction db ct sharedMsgId False reaction add msgId brokerTs
           updateChatItemReaction `catchCINotFound` \_ -> pure ()
       where
@@ -3432,9 +3436,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> m ()
     groupMsgReaction g@GroupInfo {groupId} m sharedMsgId itemMemberId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
       when (groupFeatureAllowed SGFReactions g) $ do
-        reactions <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
-        -- TODO limit the number of different reactions by user
-        when ((reaction `elem` reactions) /= add) $ do
+        rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
+        when (reactionAllowed add reaction rs) $ do
           withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
           updateChatItemReaction `catchCINotFound` \_ -> pure ()
       where
@@ -3445,6 +3448,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             pure $ CChatItem md ci {reactions}
           let r = ACIReaction SCTGroup SMDRcv (GroupChat g) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
           toView $ CRChatItemReaction user r add
+
+    reactionAllowed :: Bool -> MsgReaction -> [MsgReaction] -> Bool
+    reactionAllowed add reaction rs = (reaction `elem` rs) /= add && not (add && length rs >= maxMsgReactions)
 
     catchCINotFound :: m a -> (SharedMsgId -> m a) -> m a
     catchCINotFound f handle =
