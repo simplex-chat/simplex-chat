@@ -600,4 +600,6 @@
     <string name="settings_section_title_support">SUPORTE SIMPLEX CHAT</string>
     <string name="settings_experimental_features">Funcionalidades experimentais</string>
     <string name="settings_section_title_themes">TEMAS</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="dark_theme">Tema escuro</string>
 </resources>
