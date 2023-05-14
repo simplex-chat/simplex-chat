@@ -528,12 +528,13 @@ viewItemReaction chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {cha
       where
         from = ttyFromGroup g m
         reactionMsg mc = quoteText mc . ttyQuotedMember . Just $ sentByMember' g itemDir
-    (_, CIDirectSnd) -> ["reaction sent"]
-    (_, CIGroupSnd) -> ["reaction sent"]
+    (_, CIDirectSnd) -> [sentText]
+    (_, CIGroupSnd) -> [sentText]
   where
     view from msg = viewReceivedReaction from msg reactionText ts $ utcToZonedTime tz sentAt
-    reactionText = plain [if added then '+' else '-', ' ', emoji]
+    reactionText = plain $ (if added then "+ " else "- ") <> [emoji]
     MREmoji (MREmojiChar emoji) = reaction
+    sentText = plain $ (if added then "added " else "removed ") <> [emoji]
 
 viewItemReactions :: ChatItem c d -> [StyledString]
 viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | not (null reactions)]
