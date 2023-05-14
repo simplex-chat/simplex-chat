@@ -64,6 +64,10 @@ class AudioRecorder {
     func stop() {
         if let recorder = audioRecorder {
             recorder.stop()
+            let av = AVAudioSession.sharedInstance()
+            try? av.setActive(false, options: .notifyOthersOnDeactivation)
+            try? av.setCategory(AVAudioSession.Category.ambient, mode: .default)
+            try? av.setActive(true)
         }
         audioRecorder = nil
         if let timer = recordingTimer {
@@ -96,6 +100,8 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
 
     var audioPlayer: AVAudioPlayer?
     var playbackTimer: Timer?
+    static let dropAudioSessionAfter = 3.0
+    static var lastPlayed: TimeInterval = ProcessInfo.processInfo.systemUptime
 
     init(onTimer: @escaping ((TimeInterval) -> Void), onFinishPlayback: @escaping (() -> Void)) {
         self.onTimer = onTimer
@@ -103,6 +109,8 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     }
 
     func start(fileName: String) {
+        AudioPlayer.audioSessionActivatePlayAndRecord()
+
         let url = getAppFilePath(fileName)
         audioPlayer = try? AVAudioPlayer(contentsOf: url)
         audioPlayer?.delegate = self
@@ -111,6 +119,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
 
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             if self.audioPlayer?.isPlaying ?? false {
+                AudioPlayer.updateLastPlayed()
                 guard let time = self.audioPlayer?.currentTime else { return }
                 self.onTimer?(time)
             }
@@ -119,9 +128,11 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
 
     func pause() {
         audioPlayer?.pause()
+        AudioPlayer.audioSessionToDefaultAfterDelay()
     }
 
     func play() {
+        AudioPlayer.audioSessionActivatePlayAndRecord()
         audioPlayer?.play()
     }
 
@@ -134,10 +145,40 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
             timer.invalidate()
         }
         playbackTimer = nil
+        AudioPlayer.audioSessionToDefaultAfterDelay()
     }
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         stop()
         self.onFinishPlayback?()
+    }
+
+    static func updateLastPlayed() {
+        AudioPlayer.lastPlayed = ProcessInfo.processInfo.systemUptime
+    }
+
+    static func audioSessionActivatePlayAndRecord() {
+        let av = AVAudioSession.sharedInstance()
+        if av.category != .playAndRecord {
+            try? av.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
+            try? av.setActive(true)
+        }
+    }
+
+    static func audioSessionToDefaultAfterDelay() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + AudioPlayer.dropAudioSessionAfter) {
+            if ProcessInfo.processInfo.systemUptime - AudioPlayer.dropAudioSessionAfter + 1 > AudioPlayer.lastPlayed {
+                self.audioSessionToDefault()
+            }
+        }
+    }
+
+    private static func audioSessionToDefault() {
+        let av = AVAudioSession.sharedInstance()
+        if av.category != .ambient {
+            try? av.setActive(false, options: .notifyOthersOnDeactivation)
+            try? av.setCategory(AVAudioSession.Category.ambient, mode: .default)
+            try? av.setActive(true)
+        }
     }
 }

@@ -101,16 +101,26 @@ struct CIVideoView: View {
                 .onChange(of: ChatModel.shared.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
+                        AudioPlayer.audioSessionToDefaultAfterDelay()
                         videoPlaying = false
                     }
                 }
                 .fullScreenCover(isPresented: $showFullScreenPlayer) {
                     fullScreenPlayer(url)
+                        .onAppear {
+                            AudioPlayer.lastPlayed = ProcessInfo.processInfo.systemUptime + AudioPlayer.dropAudioSessionAfter + 1
+                            AudioPlayer.audioSessionActivatePlayAndRecord()
+                        }
+                        .onDisappear {
+                            AudioPlayer.updateLastPlayed()
+                            AudioPlayer.audioSessionToDefaultAfterDelay()
+                        }
                 }
                 .onTapGesture {
                     switch player.timeControlStatus {
                     case .playing:
                         player.pause()
+                        AudioPlayer.audioSessionToDefaultAfterDelay()
                         videoPlaying = false
                     case .paused:
                         showFullScreenPlayer = true
@@ -121,6 +131,7 @@ struct CIVideoView: View {
                     Button {
                         ChatModel.shared.stopPreviousRecPlay = url
                         player.play()
+                        AudioPlayer.audioSessionActivatePlayAndRecord()
                     } label: {
                         playPauseIcon("play.fill")
                     }
@@ -134,6 +145,7 @@ struct CIVideoView: View {
         .onDisappear {
             removeObserver()
             player.pause()
+            AudioPlayer.audioSessionToDefaultAfterDelay()
             videoPlaying = false
         }
     }
@@ -312,6 +324,7 @@ struct CIVideoView: View {
                     duration = Int(dur)
                 }
                 progress = Int(CMTimeGetSeconds(player.currentTime()))
+                AudioPlayer.updateLastPlayed()
                 // `if` prevents showing Play button while the playback seeks to start and then plays
                 if player.currentTime() != player.currentItem?.duration && player.currentTime() != .zero {
                     videoPlaying = player.timeControlStatus == .playing || player.timeControlStatus == .waitingToPlayAtSpecifiedRate
