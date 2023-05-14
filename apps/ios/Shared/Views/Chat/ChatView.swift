@@ -219,11 +219,8 @@ struct ChatView: View {
         .padding(.vertical, 8)
     }
     
-    private func voiceWithTransparentBack(_ ci: ChatItem) -> Bool {
-        if case .voice = ci.content.msgContent, ci.content.text.count == 0 && ci.quotedItem == nil {
-            return true
-        }
-        return false
+    private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
+        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil
     }
 
     private func chatItemsList() -> some View {
@@ -233,12 +230,12 @@ struct ChatView: View {
                 ScrollView {
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
-                            let transparentVoice = voiceWithTransparentBack(ci)
+                            let voiceNoFrame = voiceWithoutFrame(ci)
                             let maxWidth = cInfo.chatType == .group
-                                            ? transparentVoice
+                                            ? voiceNoFrame
                                                 ? (g.size.width - 28) - 42
                                                 : (g.size.width - 28) * 0.84 - 42
-                                            : transparentVoice
+                                            : voiceNoFrame
                                                 ? (g.size.width - 32)
                                                 : (g.size.width - 32) * 0.84
                             chatItemView(ci, maxWidth)
