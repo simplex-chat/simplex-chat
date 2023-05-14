@@ -23,9 +23,11 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
@@ -33,10 +35,13 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
+import androidx.core.graphics.ColorUtils
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.ThemeOverrides
+import com.charleskorn.kaml.decodeFromStream
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -388,6 +393,22 @@ fun getDrawableFromUri(uri: Uri, withAlertOnException: Boolean = true): Drawable
   }
 }
 
+fun getThemeFromUri(uri: Uri, withAlertOnException: Boolean = true): ThemeOverrides? {
+  SimplexApp.context.contentResolver.openInputStream(uri).use {
+    runCatching {
+      return yaml.decodeFromStream<ThemeOverrides>(it!!)
+    }.onFailure {
+      if (withAlertOnException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.import_theme_error),
+          text = generalGetString(R.string.import_theme_error_desc),
+        )
+      }
+    }
+  }
+  return null
+}
+
 fun saveImage(context: Context, uri: Uri): String? {
   val bitmap = getBitmapFromUri(uri) ?: return null
   return saveImage(context, bitmap)
@@ -557,7 +578,7 @@ fun getBitmapFromVideo(uri: Uri, timestamp: Long? = null, random: Boolean = true
   val image = when {
     timestamp != null -> mmr.getFrameAtTime(timestamp * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
     random -> mmr.frameAtTime
-    else -> mmr.getFrameAtIndex(0)
+    else -> mmr.getFrameAtTime(0)
   }
   mmr.release()
   return VideoPlayer.PreviewAndDuration(image, durationMs, timestamp ?: 0)
@@ -565,6 +586,12 @@ fun getBitmapFromVideo(uri: Uri, timestamp: Long? = null, random: Boolean = true
 
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
+
+fun Color.lighter(factor: Float = 0.1f): Color =
+  Color(min(red * (1 + factor), 1f), min(green * (1 + factor), 1f), min(blue * (1 + factor), 1f), alpha)
+
+fun Color.mixWith(color: Color, alpha: Float): Color =
+  Color(ColorUtils.blendARGB(color.toArgb(), toArgb(), alpha))
 
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 
@@ -637,6 +664,22 @@ fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}
       whenDispose()
       if (orientation == activity.resources.configuration.orientation) {
         whenGone()
+      }
+    }
+  }
+}
+
+@Composable
+fun DisposableEffectOnRotate(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenRotate: () -> Unit) {
+  val context = LocalContext.current
+  DisposableEffect(Unit) {
+    always()
+    val activity = context as? Activity ?: return@DisposableEffect onDispose {}
+    val orientation = activity.resources.configuration.orientation
+    onDispose {
+      whenDispose()
+      if (orientation != activity.resources.configuration.orientation) {
+        whenRotate()
       }
     }
   }

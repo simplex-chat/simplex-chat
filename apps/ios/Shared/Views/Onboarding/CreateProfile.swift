@@ -34,7 +34,9 @@ struct CreateProfile: View {
         VStack(alignment: .leading) {
             Text("Create your profile")
                 .font(.largeTitle)
+                .bold()
                 .padding(.bottom, 4)
+                .frame(maxWidth: .infinity)
             Text("Your profile, contacts and delivered messages are stored on your device.")
                 .padding(.bottom, 4)
             Text("The profile is only shared with your contacts.")
@@ -122,8 +124,13 @@ struct CreateProfile: View {
             m.currentUser = try apiCreateActiveUser(profile)
             if m.users.isEmpty {
                 try startChat()
-                withAnimation { m.onboardingStage = .step3_SetNotificationsMode }
+                withAnimation {
+                    onboardingStageDefault.set(.step3_CreateSimpleXAddress)
+                    m.onboardingStage = .step3_CreateSimpleXAddress
+                }
             } else {
+                onboardingStageDefault.set(.onboardingComplete)
+                m.onboardingStage = .onboardingComplete
                 dismiss()
                 m.users = try listUsers()
                 try getUserChatData()

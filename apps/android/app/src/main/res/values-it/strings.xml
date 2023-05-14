@@ -152,7 +152,7 @@
     <string name="tap_to_start_new_chat">Tocca per iniziare una conversazione</string>
     <string name="chat_with_developers">Scrivi agli sviluppatori</string>
     <string name="you_have_no_chats">Non hai chat</string>
-    <string name="share_image">Condividi immagine…</string>
+    <string name="share_image">Condividi multimediale…</string>
     <string name="share_file">Condividi file…</string>
     <string name="icon_descr_context">Icona contestuale</string>
     <string name="icon_descr_cancel_file_preview">Annulla anteprima file</string>
@@ -239,8 +239,7 @@
     <string name="allow_disappearing_messages_only_if">Consenti i messaggi a tempo solo se il tuo contatto li consente.</string>
     <string name="allow_to_delete_messages">Permetti di eliminare irreversibilmente i messaggi inviati.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permetti ai tuoi contatti di inviare messaggi a tempo.</string>
-    <string name="accept_requests">Accetta le richieste</string>
-    <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta 9050\? Il proxy deve essere avviato prima di attivare questa opzione.</string>
+    <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta %d\? Il proxy deve essere avviato prima di attivare questa opzione.</string>
     <string name="v4_3_improved_server_configuration_desc">Aggiungi server scansionando codici QR.</string>
     <string name="all_group_members_will_remain_connected">Tutti i membri del gruppo resteranno connessi.</string>
     <string name="allow_irreversible_message_deletion_only_if">Consenti l\'eliminazione irreversibile dei messaggi solo se il contatto la consente a te.</string>
@@ -284,7 +283,6 @@
     <string name="snd_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="chat_is_stopped">Chat fermata</string>
     <string name="group_member_status_introduced">connessione (presentato)</string>
-    <string name="contact_requests">Richieste del contatto</string>
     <string name="connection_request_sent">Richiesta di connessione inviata!</string>
     <string name="delete_link_question">Eliminare il link\?</string>
     <string name="delete_link">Elimina link</string>
@@ -298,7 +296,7 @@
     <string name="display_name">Nome da mostrare</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Aggiungi un contatto</b>: per creare il tuo codice QR una tantum per il tuo contatto.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scansiona codice QR</b>: per connetterti al contatto che ti mostra il codice QR.</string>
-    <string name="choose_file">Scegli file</string>
+    <string name="choose_file">File</string>
     <string name="clear_chat_button">Svuota chat</string>
     <string name="clear_chat_question">Svuotare la chat\?</string>
     <string name="clear_verb">Svuota</string>
@@ -308,6 +306,8 @@
     <string name="create_group">Crea gruppo segreto</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scansiona dall\'app il codice QR mostrato, tramite <b>Scansiona codice QR</b>.</string>
     <string name="from_gallery_button">Dalla Galleria</string>
+    <string name="gallery_image_button">Immagine</string>
+    <string name="gallery_video_button">Video</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Se scegli di rifiutare, il mittente NON verrà avvisato.</string>
     <string name="clear_chat_menu_action">Svuota</string>
     <string name="icon_descr_close_button">Pulsante di chiusura</string>
@@ -337,7 +337,6 @@
     <string name="how_to">Come si fa</string>
     <string name="how_to_use_your_servers">Come usare i tuoi server</string>
     <string name="enter_one_ICE_server_per_line">Server ICE (uno per riga)</string>
-    <string name="accept_automatically">Automaticamente</string>
     <string name="bold">grassetto</string>
     <string name="callstatus_ended">chiamata terminata <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="callstatus_error">errore di chiamata</string>
@@ -545,7 +544,7 @@
     <string name="to_connect_via_link_title">Per connettersi via link</string>
     <string name="to_share_with_your_contact">(da condividere con il tuo contatto)</string>
     <string name="to_start_a_new_chat_help_header">Per iniziare una nuova chat</string>
-    <string name="use_camera_button">Usa la fotocamera</string>
+    <string name="use_camera_button">Fotocamera</string>
     <string name="you_can_connect_to_simplex_chat_founder">Puoi <font color="#0088ff">connetterti con gli sviluppatori di <xliff:g id="appNameFull">SimpleX Chat</xliff:g> per porre domande e ricevere aggiornamenti</font>.</string>
     <string name="invalid_contact_link">Link non valido!</string>
     <string name="invalid_QR_code">Codice QR non valido</string>
@@ -573,7 +572,6 @@
     <string name="you_invited_your_contact">Hai invitato il contatto</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Il tuo profilo di chat verrà inviato
 \nal tuo contatto</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Il tuo contatto può scansionare il codice QR dall\'app.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Il tuo contatto deve essere in linea per completare la connessione.
 \nPuoi annullare questa connessione e rimuovere il contatto (e riprovare più tardi con un link nuovo).</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Verrai connesso/a quando la tua richiesta di connessione verrà accettata, attendi o controlla più tardi!</string>
@@ -602,15 +600,14 @@
     <string name="is_verified">%s è verificato/a</string>
     <string name="smp_servers">Server SMP</string>
     <string name="smp_servers_test_some_failed">Alcuni server hanno fallito il test:</string>
-    <string name="smp_servers_test_server">Testa server</string>
-    <string name="smp_servers_test_servers">Testa i server</string>
+    <string name="smp_servers_test_server">Prova server</string>
+    <string name="smp_servers_test_servers">Prova i server</string>
     <string name="this_string_is_not_a_connection_link">Questa stringa non è un link di connessione!</string>
     <string name="to_verify_compare">Per verificare la crittografia end-to-end con il tuo contatto, confrontate (o scansionate) il codice sui vostri dispositivi.</string>
     <string name="smp_servers_use_server_for_new_conn">Usa per connessioni nuove</string>
     <string name="smp_servers_use_server">Usa il server</string>
     <string name="you_can_also_connect_by_clicking_the_link">Puoi anche connetterti cliccando il link. Se si apre nel browser, clicca il pulsante <b>Apri nell\'app mobile</b>.</string>
     <string name="your_profile_will_be_sent">Il tuo profilo di chat verrà inviato al tuo contatto</string>
-    <string name="your_contact_address">Il tuo indirizzo di contatto</string>
     <string name="smp_servers_your_server">Il tuo server</string>
     <string name="smp_servers_your_server_address">L\'indirizzo del tuo server</string>
     <string name="your_simplex_contact_address">Il tuo indirizzo di contatto di <xliff:g id="appName">SimpleX</xliff:g></string>
@@ -636,11 +633,9 @@
     <string name="network_disable_socks">Usare una connessione internet diretta\?</string>
     <string name="network_use_onion_hosts">Usa gli host .onion</string>
     <string name="network_enable_socks">Usare il proxy SOCKS\?</string>
-    <string name="network_socks_toggle">Usa il proxy SOCKS (porta 9050)</string>
     <string name="use_simplex_chat_servers__question">Usare i server di <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\?</string>
     <string name="using_simplex_chat_servers">Stai usando i server di <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
     <string name="network_use_onion_hosts_prefer">Quando disponibili</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Puoi condividere il tuo indirizzo come link o come codice QR: chiunque potrà connettersi a te. Non perderai i tuoi contatti se in seguito lo elimini.</string>
     <string name="your_ICE_servers">I tuoi server ICE</string>
     <string name="your_SMP_servers">I tuoi server SMP</string>
     <string name="italic">corsivo</string>
@@ -660,14 +655,11 @@
     <string name="callstate_waiting_for_answer">in attesa di risposta…</string>
     <string name="callstate_waiting_for_confirmation">in attesa di conferma…</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Non memorizziamo nessuno dei tuoi contatti o messaggi (una volta recapitati) sui server.</string>
-    <string name="section_title_welcome_message">MESSAGGIO DI BENVENUTO</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Puoi usare il markdown per formattare i messaggi:</string>
     <string name="you_control_your_chat">Sei tu a controllare la tua chat!</string>
     <string name="your_current_profile">Il tuo profilo attuale</string>
     <string name="your_profile_is_stored_on_your_device">Il tuo profilo, i contatti e i messaggi recapitati sono memorizzati sul tuo dispositivo.</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti.
-\n
-\nI server di <xliff:g id="appName">SimpleX</xliff:g> non possono vedere il tuo profilo.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti. I server di <xliff:g id="appName">SimpleX</xliff:g> non possono vedere il tuo profilo.</string>
     <string name="ignore">Ignora</string>
     <string name="immune_to_spam_and_abuse">Immune a spam e abusi</string>
     <string name="incoming_audio_call">Chiamata in arrivo</string>
@@ -696,11 +688,9 @@
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> vuole connettersi con te via</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">Puoi controllare attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti – i server che usi per inviare loro i messaggi.</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Può accadere quando:
-\n1. I messaggi scadono sul server se non sono stati ricevuti per 30 giorni,
-\n2. Il server usato per ricevere i messaggi da questo contatto è stato aggiornato e riavviato.
-\n3. La connessione è compromessa.
-\nConnettiti agli sviluppatori tramite Impostazioni per ricevere aggiornamenti riguardo i server.
-\nAggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</string>
+\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.
+\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.
+\n3. La connessione è stata compromessa.</string>
     <string name="icon_descr_call_rejected">Chiamata rifiutata</string>
     <string name="icon_descr_call_missed">Chiamata persa</string>
     <string name="status_no_e2e_encryption">nessuna crittografia e2e</string>
@@ -728,7 +718,7 @@
     <string name="import_database_question">Importare il database della chat\?</string>
     <string name="import_database">Importa database</string>
     <string name="settings_section_title_incognito">Modalità incognito</string>
-    <string name="settings_section_title_messages">MESSAGGI</string>
+    <string name="settings_section_title_messages">MESSAGGI E FILE</string>
     <string name="new_database_archive">Nuovo archivio database</string>
     <string name="old_database_archive">Vecchio archivio del database</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Riavvia l\'app per creare un profilo di chat nuovo.</string>
@@ -927,7 +917,6 @@
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="app_version_code">Build dell\'app: %s</string>
     <string name="app_version_name">Versione app: v%s</string>
-    <string name="core_build_timestamp">Core compilato il: %s</string>
     <string name="smp_servers_per_user">I server per le nuove connessioni del profilo di chat attuale</string>
     <string name="users_add">Aggiungi profilo</string>
     <string name="users_delete_question">Eliminare il profilo di chat\?</string>
@@ -1022,7 +1011,6 @@
     <string name="user_hide">Nascondi</string>
     <string name="v4_6_group_welcome_message_descr">Imposta il messaggio mostrato ai nuovi membri!</string>
     <string name="user_unmute">Riattiva audio</string>
-    <string name="settings_send_files_via_xftp">Invia file via XFTP</string>
     <string name="database_downgrade">Downgrade del database</string>
     <string name="database_upgrade">Aggiornamento del database</string>
     <string name="incompatible_database_version">Versione del database incompatibile</string>
@@ -1031,7 +1019,6 @@
     <string name="hide_dev_options">Nascondi:</string>
     <string name="show_dev_options">Mostra:</string>
     <string name="show_developer_options">Mostra opzioni sviluppatore</string>
-    <string name="xftp_requires_v461">v4.6.1+ necessaria per ricevere via XFTP.</string>
     <string name="downgrade_and_open_chat">Esegui downgrade e apri chat</string>
     <string name="database_migrations">Migrazioni: %s</string>
     <string name="database_downgrade_warning">Attenzione: potresti perdere alcuni dati!</string>
@@ -1042,11 +1029,104 @@
     <string name="image_will_be_received_when_contact_completes_uploading">L\'immagine verrà ricevuta quando il tuo contatto completerà l\'invio.</string>
     <string name="mtr_error_no_down_migration">la versione del database è più recente di quella dell\'app, ma nessuna migrazione downgrade per: %s</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Il file verrà ricevuto quando il tuo contatto completerà l\'invio.</string>
-    <string name="cancel_file__question">Annullare il trasferimento di file\?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Il trasferimento di file verrà annullato. Se è in corso, verrà interrotto.</string>
     <string name="unhide_chat_profile">Svela il profilo chat</string>
     <string name="unhide_profile">Svela profilo</string>
     <string name="delete_chat_profile">Elimina il profilo di chat</string>
     <string name="delete_profile">Elimina profilo</string>
     <string name="profile_password">Password del profilo</string>
+    <string name="videos_limit_desc">È possibile inviare solo 10 video contemporaneamente</string>
+    <string name="videos_limit_title">Troppi video!</string>
+    <string name="icon_descr_video_asked_to_receive">Richiesta di ricevere il video</string>
+    <string name="video_descr">Video</string>
+    <string name="icon_descr_video_snd_complete">Video inviato</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Il video verrà ricevuto quando il tuo contatto completerà l\'invio.</string>
+    <string name="video_will_be_received_when_contact_is_online">Il video verrà ricevuto quando il tuo contatto sarà in linea, attendi o controlla più tardi!</string>
+    <string name="icon_descr_waiting_for_video">In attesa del video</string>
+    <string name="waiting_for_video">In attesa del video</string>
+    <string name="error_loading_xftp_servers">Errore nel caricamento dei server XFTP</string>
+    <string name="error_saving_xftp_servers">Errore nel salvataggio dei server XFTP</string>
+    <string name="error_xftp_test_server_auth">Il server richiede l\'autorizzazione per l\'invio, controlla la password</string>
+    <string name="smp_server_test_compare_file">Confronta file</string>
+    <string name="smp_server_test_create_file">Crea file</string>
+    <string name="smp_server_test_download_file">Scarica file</string>
+    <string name="smp_server_test_upload_file">Invia file</string>
+    <string name="xftp_servers">Server XFTP</string>
+    <string name="your_XFTP_servers">I tuoi server XFTP</string>
+    <string name="network_socks_proxy_settings">Impostazioni proxy SOCKS</string>
+    <string name="network_socks_toggle_use_socks_proxy">Usa proxy SOCKS</string>
+    <string name="host_verb">Host</string>
+    <string name="port_verb">Porta</string>
+    <string name="network_proxy_port">porta %d</string>
+    <string name="disable_onion_hosts_when_not_supported">Imposta <i>Usa gli host .onion</i> su No se il proxy SOCKS non li supporta.</string>
+    <string name="smp_server_test_delete_file">Elimina file</string>
+    <string name="error_loading_smp_servers">Errore nel caricamento dei server SMP</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Assicurati che gli indirizzi del server XFTP siano nel formato corretto, uno per riga e non doppi.</string>
+    <string name="la_auth_failed">Autenticazione fallita</string>
+    <string name="la_lock_mode_passcode">Inserimento del codice di accesso</string>
+    <string name="la_lock_mode">Modalità di SimpleX Lock</string>
+    <string name="la_lock_mode_system">Autenticazione di sistema</string>
+    <string name="la_authenticate">Autentica</string>
+    <string name="la_change_app_passcode">Cambia codice di accesso</string>
+    <string name="la_current_app_passcode">Codice di accesso attuale</string>
+    <string name="la_minutes">%d minuti</string>
+    <string name="la_seconds">%d secondi</string>
+    <string name="la_enter_app_passcode">Inserisci il codice di accesso</string>
+    <string name="la_immediately">Immediatamente</string>
+    <string name="la_no_app_password">Nessun codice di accesso dell\'app</string>
+    <string name="la_please_remember_to_store_password">Ricordala o conservala in modo sicuro: non c\'è modo di recuperare una password persa!</string>
+    <string name="lock_not_enabled">SimpleX Lock non attivato!</string>
+    <string name="you_can_turn_on_lock">Puoi attivare SimpleX Lock tramite le impostazioni.</string>
+    <string name="la_could_not_be_verified">Non è stato possibile verificarti, riprova.</string>
+    <string name="confirm_passcode">Conferma il codice di accesso</string>
+    <string name="la_mode_passcode">Codice di accesso</string>
+    <string name="passcode_changed">Codice di accesso cambiato!</string>
+    <string name="passcode_not_changed">Codice di accesso non cambiato!</string>
+    <string name="passcode_set">Codice di accesso impostato!</string>
+    <string name="submit_passcode">Invia</string>
+    <string name="la_mode_system">Sistema</string>
+    <string name="change_lock_mode">Cambia modalità di blocco</string>
+    <string name="authentication_cancelled">Autenticazione annullata</string>
+    <string name="lock_after">Blocca dopo</string>
+    <string name="enable_lock">Attiva blocco</string>
+    <string name="incorrect_passcode">Codice di accesso errato</string>
+    <string name="new_passcode">Nuovo codice di accesso</string>
+    <string name="lock_mode">Modalità di blocco</string>
+    <string name="decryption_error">Errore di decifrazione</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> messaggi saltati.</string>
+    <string name="alert_title_msg_bad_id">ID del messaggio errato</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Può accadere quando tu o il tuo contatto avete usato il backup del database vecchio.</string>
+    <string name="alert_text_msg_bad_id">L\'ID del messaggio successivo non è corretto (inferiore o uguale al precedente).
+\nPuò accadere a causa di qualche bug o quando la connessione è compromessa.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">L\'errore è permanente per questa connessione, riconnettiti.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> messaggi non decifrati.</string>
+    <string name="alert_title_msg_bad_hash">Hash del messaggio errato</string>
+    <string name="alert_text_msg_bad_hash">L\'hash del messaggio precedente è diverso.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Si prega di segnalarlo agli sviluppatori.</string>
+    <string name="stop_snd_file__message">L\'invio del file verrà interrotto.</string>
+    <string name="stop_file__action">Ferma file</string>
+    <string name="stop_snd_file__title">Fermare l\'invio del file\?</string>
+    <string name="revoke_file__message">Il file verrà eliminato dai server.</string>
+    <string name="stop_rcv_file__message">La ricezione del file verrà interrotta.</string>
+    <string name="revoke_file__confirm">Revoca</string>
+    <string name="revoke_file__action">Revoca file</string>
+    <string name="revoke_file__title">Revocare il file\?</string>
+    <string name="stop_file__confirm">Ferma</string>
+    <string name="stop_rcv_file__title">Fermare la ricezione del file\?</string>
+    <string name="no_spaces">Niente spazi!</string>
+    <string name="allow_calls_only_if">Consenti le chiamate solo se il tuo contatto le consente.</string>
+    <string name="calls_prohibited_with_this_contact">Le chiamate audio/video sono vietate.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Sia tu che il tuo contatto potete effettuare chiamate.</string>
+    <string name="only_you_can_make_calls">Solo tu puoi effettuare chiamate.</string>
+    <string name="only_your_contact_can_make_calls">Solo il tuo contatto può effettuare chiamate.</string>
+    <string name="prohibit_calls">Proibisci le chiamate audio/video.</string>
+    <string name="audio_video_calls">Chiamate audio/video</string>
+    <string name="available_in_v51">"
+\nDisponibile nella v5.1"</string>
+    <string name="allow_your_contacts_to_call">Consenti ai tuoi contatti di chiamarti.</string>
+    <string name="v5_0_app_passcode">Codice di accesso dell\'app</string>
+    <string name="v5_0_large_files_support_descr">Veloce e senza aspettare che il mittente sia in linea!</string>
+    <string name="v5_0_polish_interface">Interfaccia polacca</string>
+    <string name="v5_0_app_passcode_descr">Impostalo al posto dell\'autenticazione di sistema.</string>
+    <string name="v5_0_polish_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
+    <string name="v5_0_large_files_support">Video e file fino a 1 GB</string>
 </resources>

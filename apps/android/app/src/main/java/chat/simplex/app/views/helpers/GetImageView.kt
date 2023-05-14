@@ -17,15 +17,13 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Collections
-import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -174,7 +172,18 @@ fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLaunche
 
 @Composable
 fun rememberGetMultipleContentsLauncher(cb: (List<Uri>) -> Unit): ManagedActivityResultLauncher<String, List<Uri>> =
-  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetMultipleContents(), cb)
+  rememberLauncherForActivityResult(contract = GetMultipleContentsAndMimeTypes(), cb)
+
+class GetMultipleContentsAndMimeTypes: ActivityResultContracts.GetMultipleContents() {
+  override fun createIntent(context: Context, input: String): Intent {
+    val mimeTypes = input.split(";")
+    return super.createIntent(context, mimeTypes[0]).apply {
+      if (mimeTypes.isNotEmpty()) {
+        putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
+      }
+    }
+  }
+}
 
 fun ManagedActivityResultLauncher<Void?, Uri?>.launchWithFallback() {
   try {
@@ -237,7 +246,7 @@ fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
+      ActionButton(null, stringResource(R.string.use_camera_button), icon = painterResource(R.drawable.ic_photo_camera)) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launchWithFallback()
@@ -248,7 +257,7 @@ fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
+      ActionButton(null, stringResource(R.string.from_gallery_button), icon = painterResource(R.drawable.ic_image)) {
         try {
           galleryLauncher.launch(0)
         } catch (e: ActivityNotFoundException) {

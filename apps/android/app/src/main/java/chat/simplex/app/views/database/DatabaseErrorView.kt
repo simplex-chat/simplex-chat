@@ -1,5 +1,6 @@
 package chat.simplex.app.views.database
 
+import SectionBottomSpacer
 import SectionSpacer
 import SectionView
 import android.content.Context
@@ -38,7 +39,7 @@ fun DatabaseErrorView(
 ) {
   val progressIndicator = remember { mutableStateOf(false) }
   val dbKey = remember { mutableStateOf("") }
-  var storedDBKey by remember { mutableStateOf(DatabaseUtils.getDatabaseKey()) }
+  var storedDBKey by remember { mutableStateOf(DatabaseUtils.ksDatabasePassword.get()) }
   var useKeychain by remember { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
   val context = LocalContext.current
   val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences, context)) }
@@ -49,7 +50,7 @@ fun DatabaseErrorView(
   }
 
   fun saveAndRunChatOnClick() {
-    DatabaseUtils.setDatabaseKey(dbKey.value)
+    DatabaseUtils.ksDatabasePassword.set(dbKey.value)
     storedDBKey = dbKey.value
     appPreferences.storeDBPassphrase.set(true)
     useKeychain = true
@@ -61,7 +62,7 @@ fun DatabaseErrorView(
   fun DatabaseErrorDetails(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) {
     Text(
       generalGetString(title),
-      Modifier.padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+      Modifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
       style = MaterialTheme.typography.h1
     )
     SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), content)
@@ -79,7 +80,6 @@ fun DatabaseErrorView(
 
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.Center,
   ) {
     val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
@@ -158,7 +158,7 @@ fun DatabaseErrorView(
     if (restoreDbFromBackup.value) {
       SectionSpacer()
       Text(generalGetString(R.string.database_backup_can_be_restored))
-      Spacer(Modifier.size(16.dp))
+      Spacer(Modifier.size(DEFAULT_PADDING))
       RestoreDbButton {
         AlertManager.shared.showAlertDialog(
           title = generalGetString(R.string.restore_database_alert_title),
@@ -169,6 +169,7 @@ fun DatabaseErrorView(
         )
       }
     }
+    SectionBottomSpacer()
   }
   if (progressIndicator.value) {
     Box(
@@ -179,7 +180,7 @@ fun DatabaseErrorView(
         Modifier
           .padding(horizontal = 2.dp)
           .size(30.dp),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
       )
     }

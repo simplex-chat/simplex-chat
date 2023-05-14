@@ -25,6 +25,7 @@ struct ContactPreferencesView: View {
                 timedMessagesFeatureSection()
                 featureSection(.fullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, $featuresAllowed.fullDelete)
                 featureSection(.voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, $featuresAllowed.voice)
+                featureSection(.calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, $featuresAllowed.calls)
 
                 Section {
                     Button("Reset") { featuresAllowed = currentFeaturesAllowed }

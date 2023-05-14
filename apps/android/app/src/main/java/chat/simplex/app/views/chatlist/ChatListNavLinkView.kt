@@ -4,14 +4,12 @@ import android.content.res.Configuration
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -183,7 +181,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
 fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.mark_read),
-    Icons.Outlined.Check,
+    painterResource(R.drawable.ic_check),
     onClick = {
       markChatRead(chat, chatModel)
       chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
@@ -194,33 +192,21 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
 
 @Composable
 fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  DropdownMenuItem({
-    markChatUnread(chat, chatModel)
-    showMenu.value = false
-  }) {
-    Row {
-      Text(
-        stringResource(R.string.mark_unread),
-        modifier = Modifier
-          .fillMaxWidth()
-          .weight(1F)
-          .padding(end = 15.dp),
-        color = MaterialTheme.colors.onBackground
-      )
-      Icon(
-        Icons.Outlined.MarkChatUnread,
-        stringResource(R.string.mark_unread),
-        tint = MaterialTheme.colors.onBackground
-      )
+  ItemAction(
+    stringResource(R.string.mark_unread),
+    painterResource(R.drawable.ic_mark_chat_unread),
+    onClick = {
+      markChatUnread(chat, chatModel)
+      showMenu.value = false
     }
-  }
+  )
 }
 
 @Composable
 fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled: Boolean, showMenu: MutableState<Boolean>) {
   ItemAction(
     if (ntfsEnabled) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
-    if (ntfsEnabled) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
+    if (ntfsEnabled) painterResource(R.drawable.ic_notifications_off) else painterResource(R.drawable.ic_notifications),
     onClick = {
       changeNtfsStatePerChat(!ntfsEnabled, mutableStateOf(ntfsEnabled), chat, chatModel)
       showMenu.value = false
@@ -232,7 +218,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.clear_chat_menu_action),
-    Icons.Outlined.Restore,
+    painterResource(R.drawable.ic_settings_backup_restore),
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
@@ -245,7 +231,7 @@ fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boo
 fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.delete_contact_menu_action),
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     onClick = {
       deleteContactDialog(chat.chatInfo, chatModel)
       showMenu.value = false
@@ -258,7 +244,7 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
 fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.delete_group_menu_action),
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     onClick = {
       deleteGroupDialog(chat.chatInfo, groupInfo, chatModel)
       showMenu.value = false
@@ -272,7 +258,7 @@ fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, show
   val joinGroup: () -> Unit = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
   ItemAction(
     if (chat.chatInfo.incognito) stringResource(R.string.join_group_incognito_button) else stringResource(R.string.join_group_button),
-    if (chat.chatInfo.incognito) Icons.Filled.TheaterComedy else Icons.Outlined.Login,
+    if (chat.chatInfo.incognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_login),
     color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       joinGroup()
@@ -285,7 +271,7 @@ fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, show
 fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.leave_group_button),
-    Icons.Outlined.Logout,
+    painterResource(R.drawable.ic_logout),
     onClick = {
       leaveGroupDialog(groupInfo, chatModel)
       showMenu.value = false
@@ -298,7 +284,7 @@ fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: Mutab
 fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     if (chatModel.incognito.value) stringResource(R.string.accept_contact_incognito_button) else stringResource(R.string.accept_contact_button),
-    if (chatModel.incognito.value) Icons.Filled.TheaterComedy else Icons.Outlined.Check,
+    if (chatModel.incognito.value) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_check),
     color = if (chatModel.incognito.value) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       acceptContactRequest(chatInfo.apiId, chatInfo, true, chatModel)
@@ -307,7 +293,7 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
   )
   ItemAction(
     stringResource(R.string.reject_contact_button),
-    Icons.Outlined.Close,
+    painterResource(R.drawable.ic_close),
     onClick = {
       rejectContactRequest(chatInfo, chatModel)
       showMenu.value = false
@@ -320,7 +306,7 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
 fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.set_contact_name),
-    Icons.Outlined.Edit,
+    painterResource(R.drawable.ic_edit),
     onClick = {
       ModalManager.shared.showModalCloseable(true) { close ->
         ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
@@ -330,7 +316,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
   )
   ItemAction(
     stringResource(R.string.delete_verb),
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     onClick = {
       deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
       showMenu.value = false
@@ -342,7 +328,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
 @Composable
 private fun InvalidDataView() {
   Row {
-    ProfileImage(72.dp, null, Icons.Filled.AccountCircle, HighOrLowlight)
+    ProfileImage(72.dp, null, R.drawable.ic_account_circle_filled, MaterialTheme.colors.secondary)
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
@@ -447,7 +433,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
         Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.Center,
       ) {
         TextButton(onClick = {
           AlertManager.shared.hideAlert()
@@ -480,7 +466,8 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
           onSuccess()
         }
       }
-    }
+    },
+    destructive = true,
   )
 }
 
@@ -498,6 +485,7 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
         }
       }
     },
+    destructive = true,
     dismissText = generalGetString(R.string.cancel_verb),
   )
 }
@@ -589,15 +577,7 @@ fun ChatListNavLinkLayout(
       chatLinkPreview()
     }
     if (dropdownMenuItems != null) {
-      Box(Modifier.padding(horizontal = 16.dp)) {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
-          dropdownMenuItems()
-        }
-      }
+      DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)
     }
   }
   Divider(Modifier.padding(horizontal = 8.dp))

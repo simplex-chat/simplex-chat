@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat
 
-import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
@@ -13,9 +12,6 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -24,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
@@ -134,7 +131,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       linkMode = chatModel.simplexLinkMode.value,
-      allowVideoAttachment = chatModel.controller.appPrefs.xftpSendEnabled.get(),
       chatModelIncognito = chatModel.incognito.value,
       back = {
         hideKeyboard(view)
@@ -308,7 +304,6 @@ fun ChatLayout(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  allowVideoAttachment: Boolean,
   chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
@@ -331,7 +326,6 @@ fun ChatLayout(
   Box(
     Modifier
       .fillMaxWidth()
-      .background(MaterialTheme.colors.background)
   ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       ModalBottomSheetLayout(
@@ -340,7 +334,6 @@ fun ChatLayout(
         sheetContent = {
           ChooseAttachmentView(
             attachmentOption,
-            allowVideoAttachment,
             hide = { scope.launch { attachmentBottomSheetState.hide() } }
           )
         },
@@ -358,7 +351,10 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
         ) { contentPadding ->
-          BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
+          BoxWithConstraints(Modifier
+            .fillMaxHeight()
+            .padding(contentPadding)
+          ) {
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
@@ -382,7 +378,7 @@ fun ChatInfoToolbar(
   onSearchValueChanged: (String) -> Unit,
 ) {
   val scope = rememberCoroutineScope()
-  var showMenu by rememberSaveable { mutableStateOf(false) }
+  val showMenu = rememberSaveable { mutableStateOf(false) }
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
     if (!showSearch) {
@@ -396,34 +392,34 @@ fun ChatInfoToolbar(
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {
-    ItemAction(stringResource(android.R.string.search_go).capitalize(Locale.current), Icons.Outlined.Search, onClick = {
-      showMenu = false
+    ItemAction(stringResource(android.R.string.search_go).capitalize(Locale.current), painterResource(R.drawable.ic_search), onClick = {
+      showMenu.value = false
       showSearch = true
     })
   }
 
-  if (chat.chatInfo is ChatInfo.Direct) {
+  if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
     barButtons.add {
       IconButton({
-        showMenu = false
+        showMenu.value = false
         startCall(CallMediaType.Audio)
       }) {
-        Icon(Icons.Outlined.Phone, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_call_500), stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
     }
     menuItems.add {
-      ItemAction(stringResource(R.string.icon_descr_video_call).capitalize(Locale.current), Icons.Outlined.Videocam, onClick = {
-        showMenu = false
+      ItemAction(stringResource(R.string.icon_descr_video_call).capitalize(Locale.current), painterResource(R.drawable.ic_videocam), onClick = {
+        showMenu.value = false
         startCall(CallMediaType.Video)
       })
     }
   } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers && !chat.chatInfo.incognito) {
     barButtons.add {
       IconButton({
-        showMenu = false
+        showMenu.value = false
         addMembers(chat.chatInfo.groupInfo)
       }) {
-        Icon(Icons.Outlined.PersonAdd, stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_person_add_500), stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -431,9 +427,9 @@ fun ChatInfoToolbar(
   menuItems.add {
     ItemAction(
       if (ntfsEnabled.value) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
-      if (ntfsEnabled.value) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
+      if (ntfsEnabled.value) painterResource(R.drawable.ic_notifications_off) else painterResource(R.drawable.ic_notifications),
       onClick = {
-        showMenu = false
+        showMenu.value = false
         // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
         scope.launch {
           delay(200)
@@ -444,8 +440,8 @@ fun ChatInfoToolbar(
   }
 
   barButtons.add {
-    IconButton({ showMenu = true }) {
-      Icon(Icons.Default.MoreVert, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+    IconButton({ showMenu.value = true }) {
+      Icon(MoreVertFilled, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
     }
   }
 
@@ -461,18 +457,14 @@ fun ChatInfoToolbar(
   Divider(Modifier.padding(top = AppBarHeight))
 
   Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight)) {
-    DropdownMenu(
-      expanded = showMenu,
-      onDismissRequest = { showMenu = false },
-      Modifier.widthIn(min = 220.dp)
-    ) {
+    DefaultDropdownMenu(showMenu) {
       menuItems.forEach { it() }
     }
   }
 }
 
 @Composable
-fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondary) {
+fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   Row(
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
@@ -506,7 +498,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 
 @Composable
 private fun ContactVerifiedShield() {
-  Icon(Icons.Outlined.VerifiedUser, null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
+  Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
 }
 
 data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
@@ -626,12 +618,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
         }
+        val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null
         if (chat.chatInfo is ChatInfo.Group) {
           if (cItem.chatDir is CIDirection.GroupRcv) {
             val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
             val member = cItem.chatDir.groupMember
             val showMember = showMemberImage(member, prevItem)
-            Row(Modifier.padding(start = 8.dp, end = 66.dp).then(swipeableModifier)) {
+            Row(Modifier.padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp).then(swipeableModifier)) {
               if (showMember) {
                 val contactId = member.memberContactId
                 if (contactId == null) {
@@ -654,7 +647,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           } else {
-            Box(Modifier.padding(start = 104.dp, end = 12.dp).then(swipeableModifier)) {
+            Box(Modifier.padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp).then(swipeableModifier)) {
               ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           }
@@ -662,8 +655,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
           val sent = cItem.chatDir.sent
           Box(
             Modifier.padding(
-              start = if (sent) 76.dp else 12.dp,
-              end = if (sent) 12.dp else 76.dp,
+              start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
+              end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
             ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
@@ -792,36 +785,27 @@ fun BoxWithConstraintsScope.FloatingButtons(
   }
   val showButtonWithCounter = topUnreadCount > 0
   val height = with(LocalDensity.current) { maxHeight.toPx() }
-  var showDropDown by remember { mutableStateOf(false) }
+  val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
-    Modifier.padding(end = 16.dp, top = 24.dp).align(Alignment.TopEnd),
+    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp).align(Alignment.TopEnd),
     topUnreadCount,
     showButtonWithCounter,
     onClick = { scope.launch { listState.animateScrollBy(height) } },
-    onLongClick = { showDropDown = true }
+    onLongClick = { showDropDown.value = true }
   )
 
-  DropdownMenu(
-    expanded = showDropDown,
-    onDismissRequest = { showDropDown = false },
-    Modifier.width(220.dp),
-    offset = DpOffset(maxWidth - 16.dp, 24.dp + fabSize)
-  ) {
-    DropdownMenuItem(
+  DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
+    ItemAction(
+      generalGetString(R.string.mark_read),
+      painterResource(R.drawable.ic_check),
       onClick = {
         markRead(
           CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
           bottomUnreadCount
         )
-        showDropDown = false
-      }
-    ) {
-      Text(
-        generalGetString(R.string.mark_read),
-        maxLines = 1,
-      )
-    }
+        showDropDown.value = false
+      })
   }
 }
 
@@ -874,6 +858,7 @@ private fun TopEndFloatingButton(
     FloatingActionButton(
       {}, // no action here
       modifier.size(48.dp),
+      backgroundColor = MaterialTheme.colors.secondaryVariant,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
       interactionSource = interactionSource,
     ) {
@@ -900,7 +885,8 @@ private fun bottomEndFloatingButton(
       FloatingActionButton(
         onClick = onClickCounter,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.size(48.dp)
+        modifier = Modifier.size(48.dp),
+        backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         Text(
           unreadCountStr(unreadCount),
@@ -915,10 +901,11 @@ private fun bottomEndFloatingButton(
       FloatingActionButton(
         onClick = onClickArrowDown,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.size(48.dp)
+        modifier = Modifier.size(48.dp),
+        backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         Icon(
-          imageVector = Icons.Default.KeyboardArrowDown,
+          painter = painterResource(R.drawable.ic_keyboard_arrow_down),
           contentDescription = null,
           tint = MaterialTheme.colors.primary
         )
@@ -1083,7 +1070,6 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      allowVideoAttachment = true,
       chatModelIncognito = false,
       back = {},
       info = {},
@@ -1144,7 +1130,6 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      allowVideoAttachment = true,
       chatModelIncognito = false,
       back = {},
       info = {},

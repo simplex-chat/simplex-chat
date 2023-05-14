@@ -9,12 +9,11 @@
     <string name="network_settings">Pokročilá nastavení sítě</string>
     <string name="accept">Přijmout</string>
     <string name="smp_servers_add">Přidat server…</string>
-    <string name="network_enable_socks_info">Přistupovat k serverům přes SOCKS proxy na portu 9050\? Před povolením této možnosti musí být spuštěna proxy.</string>
+    <string name="network_enable_socks_info">Přistupovat k serverům přes SOCKS proxy na portu %d\? Před povolením této možnosti musí být spuštěna proxy.</string>
     <string name="accept_feature">Přijmout</string>
-    <string name="allow_your_contacts_to_send_disappearing_messages">Umožněte svým kontaktům odesílat mizící zprávy.</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Povolte svým kontaktům odesílat mizící zprávy.</string>
     <string name="about_simplex_chat">O <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="smp_servers_add_to_another_device">Přidat do jiného zařízení</string>
-    <string name="accept_requests">Přijímat žádosti</string>
     <string name="allow_verb">Povolit</string>
     <string name="allow_voice_messages_question">Povolit hlasové zprávy\?</string>
     <string name="about_simplex">O SimpleX</string>
@@ -186,9 +185,11 @@
     <string name="to_share_with_your_contact">(sdílet s kontaktem)</string>
     <string name="only_stored_on_members_devices">(uloženo pouze členy skupiny)</string>
     <string name="toast_permission_denied">Oprávnění zamítnuto!</string>
-    <string name="use_camera_button">Použít fotoaparát</string>
+    <string name="use_camera_button">Fotoaparát</string>
     <string name="from_gallery_button">Z Galerie</string>
-    <string name="choose_file">Vybrat soubor</string>
+    <string name="choose_file">Soubor</string>
+    <string name="gallery_image_button">Obrázek</string>
+    <string name="gallery_video_button">Video</string>
     <string name="to_start_a_new_chat_help_header">Pro zahájení nové konverzace</string>
     <string name="chat_help_tap_button">Klepněte na tlačítko</string>
     <string name="above_then_preposition_continuation">potom:</string>
@@ -239,8 +240,6 @@
     <string name="network_session_mode_entity">Připojení</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="create_address">Vytvořit adresu</string>
-    <string name="accept_automatically">Automaticky</string>
-    <string name="section_title_welcome_message">UVÍTACÍ ZPRÁVA</string>
     <string name="save_and_notify_group_members">Uložit a upozornit členy skupiny</string>
     <string name="exit_without_saving">Ukončit bez uložení</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Platforma pro zasílání zpráv a aplikace chránící vaše soukromí a bezpečnost.</string>
@@ -277,7 +276,7 @@
     <string name="settings_section_title_socks">SOCKS PROXY</string>
     <string name="settings_section_title_icon">IKONA APLIKACE</string>
     <string name="settings_section_title_themes">TÉMATA</string>
-    <string name="settings_section_title_messages">ZPRÁVY</string>
+    <string name="settings_section_title_messages">ZPRÁVY A SOUBORY</string>
     <string name="settings_section_title_calls">VOLÁNÍ</string>
     <string name="export_database">Export databáze</string>
     <string name="import_database">Import databáze</string>
@@ -376,7 +375,6 @@
     <string name="delete_pending_connection__question">Smazat čekající připojení\?</string>
     <string name="icon_descr_settings">Nastavení</string>
     <string name="image_descr_qr_code">QR kód</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Váš kontakt může z aplikace naskenovat QR kód.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Pokud se nemůžete setkat osobně, ukažte ve <b>videohovoru QR kód</b> nebo sdílejte odkaz.</string>
     <string name="scan_code">Skenovat kód</string>
     <string name="incorrect_code">Nesprávný bezpečnostní kód!</string>
@@ -394,7 +392,6 @@
     <string name="network_use_onion_hosts_required_desc">Pro připojení budou vyžadováni Onion hostitelé.</string>
     <string name="update_network_session_mode_question">Aktualizovat režim dopravní izolace\?</string>
     <string name="app_version_code">Sestavení aplikace: %s</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit. O své kontakty nepřijdete, pokud ji později smažete.</string>
     <string name="share_link">Sdílet odkaz</string>
     <string name="delete_address">Smazat adresu</string>
     <string name="full_name__field">Celé jméno:</string>
@@ -571,7 +568,7 @@
     <string name="you_have_no_chats">Nemáte žádné konverzace</string>
     <string name="icon_descr_cancel_image_preview">Zrušit náhled obrázku</string>
     <string name="share_message">Sdílet zprávu…</string>
-    <string name="share_image">Sdílet obrázek…</string>
+    <string name="share_image">Sdílet média…</string>
     <string name="icon_descr_cancel_file_preview">Zrušit náhled souboru</string>
     <string name="images_limit_title">Příliš mnoho obrázků!</string>
     <string name="waiting_for_file">Čekání na soubor</string>
@@ -638,7 +635,6 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Ujistěte se, že adresy serverů WebRTC ICE jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.</string>
     <string name="save_servers_button">Uložit</string>
     <string name="network_and_servers">Síť a servery</string>
-    <string name="network_socks_toggle">Použít proxy server SOCKS (port 9050)</string>
     <string name="update_onion_hosts_settings_question">Aktualizovat nastavení hostitelů .onion\?</string>
     <string name="network_use_onion_hosts">Použít hostitele .onion</string>
     <string name="network_use_onion_hosts_prefer">Když bude dostupný</string>
@@ -655,14 +651,10 @@
     <string name="app_version_title">Verze aplikace</string>
     <string name="app_version_name">Verze aplikace: v%s</string>
     <string name="core_version">Verze jádra: v%s</string>
-    <string name="core_build_timestamp">Jádro sestaveno: %s</string>
     <string name="delete_address__question">Smazat adresu\?</string>
     <string name="all_your_contacts_will_remain_connected">Všechny vaše kontakty zůstanou připojeny.</string>
-    <string name="contact_requests">Žádosti o kontakt</string>
     <string name="display_name__field">Zobrazované jméno:</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Váš profil je uložen v zařízení a je sdílen pouze s vašimi kontakty.
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> servery váš profil vidět nemohou.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Váš profil je uložen v zařízení a je sdílen pouze s vašimi kontakty. <xliff:g id="appName">SimpleX</xliff:g> servery váš profil vidět nemohou.</string>
     <string name="save_preferences_question">Uložit předvolby\?</string>
     <string name="save_and_notify_contact">Uložit a upozornit kontakt</string>
     <string name="save_and_notify_contacts">Uložit a upozornit kontakty</string>
@@ -726,11 +718,9 @@
     <string name="answer_call">Přijmout hovor</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> přeskočená zpráva (zprávy)</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Může se to stát, když:
-\n1. Zprávy na serveru vyprší, pokud nebyly přijaty po dobu 30 dnů,
-\n2. Server, který používáte pro příjem zpráv od tohoto kontaktu, byl aktualizován a restartován.
-\n3. Spojení je narušeno.
-\nPřipojte se k vývojářům prostřednictvím Nastavení, abyste mohli dostávat aktualizace o serverech.
-\nBudeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</string>
+\n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 30 dnech.
+\n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.
+\n3. Spojení je kompromitováno.</string>
     <string name="settings_section_title_you">VY</string>
     <string name="settings_section_title_support">PODPOŘIT SIMPLEX CHAT</string>
     <string name="settings_section_title_develop">VÝVOJ</string>
@@ -908,7 +898,7 @@
     <string name="theme">Téma</string>
     <string name="chat_preferences_contact_allows">Kontakt povolil</string>
     <string name="chat_preferences_on">zapnuto</string>
-    <string name="chat_preferences_off">vypnuto</string>
+    <string name="chat_preferences_off">vypnout</string>
     <string name="chat_preferences">Chat předvolby</string>
     <string name="contact_preferences">Předvolby kontaktu</string>
     <string name="group_preferences">Předvolby skupiny</string>
@@ -960,7 +950,6 @@
     <string name="v4_5_italian_interface">Italské rozhraní</string>
     <string name="v4_5_italian_interface_descr">Díky uživatelům - překládejte prostřednictvím Weblate!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Budete připojeni, jakmile bude zařízení vašeho kontaktu online, vyčkejte prosím nebo se podívejte později!</string>
-    <string name="your_contact_address">Vaše adresa</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Váš chat profil bude odeslán
 \nvašemu kontaktu</string>
     <string name="your_chats">Vaše konverzace</string>
@@ -1022,7 +1011,6 @@
     <string name="you_will_still_receive_calls_and_ntfs">Stále budete přijímat volání a upozornění od umlčených profilů pokud budou aktivní.</string>
     <string name="you_can_hide_or_mute_user_profile">Můžete skrýt nebo ztlumit uživatelský profil - Podržte pro menu.</string>
     <string name="user_unhide">Odkrýt</string>
-    <string name="settings_send_files_via_xftp">Poslat videa a soubory přes XFTP</string>
     <string name="database_upgrade">Aktualizace databáze</string>
     <string name="database_downgrade_warning">Upozornění: můžete ztratit nějaká data!</string>
     <string name="confirm_database_upgrades">Potvrdit aktualizaci databáze</string>
@@ -1037,18 +1025,15 @@
     <string name="hide_dev_options">Skrýt:</string>
     <string name="show_developer_options">Zobrazit možnosti vývojáře</string>
     <string name="settings_section_title_experimenta">POKUSNÝ</string>
-    <string name="xftp_requires_v461">Pro příjem přes XFTP je vyžadována verze 4.6.1+.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Obrázek bude přijat, až kontakt dokončí jeho nahrání.</string>
     <string name="show_dev_options">Zobrazit:</string>
     <string name="developer_options">ID databáze a možnost Izolace přenosu.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Soubor bude přijat, jakmile váš kontakt dokončí nahrávání.</string>
-    <string name="file_transfer_will_be_cancelled_warning">Přenos souboru bude zrušen. Pokud probíhá, bude zastaven.</string>
     <string name="delete_chat_profile">Smazat chat profil</string>
     <string name="delete_profile">Smazat profil</string>
     <string name="profile_password">Heslo profilu</string>
     <string name="unhide_chat_profile">Odkrýt chat profil</string>
     <string name="unhide_profile">Odkrýt profil</string>
-    <string name="cancel_file__question">Zrušit přenos souboru\?</string>
     <string name="icon_descr_video_asked_to_receive">Žádost o přijetí videa</string>
     <string name="videos_limit_desc">Současně lze odeslat pouze 10 videí</string>
     <string name="videos_limit_title">Příliš mnoho videí!</string>
@@ -1056,6 +1041,92 @@
     <string name="icon_descr_waiting_for_video">Čekám na video</string>
     <string name="icon_descr_video_snd_complete">Video odesláno</string>
     <string name="video_will_be_received_when_contact_completes_uploading">Video bude přijato, až kontakt dokončí jeho nahrávání.</string>
-    <string name="video_will_be_received_when_contact_is_online">Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!</string>
+    <string name="video_will_be_received_when_contact_is_online">Video obdržíte, až bude váš kontakt online, vyčkejte prosím nebo zkontrolujte později!</string>
     <string name="waiting_for_video">Čekám na video</string>
+    <string name="error_loading_smp_servers">Chyba načítání serverů SMP</string>
+    <string name="error_loading_xftp_servers">Chyba načítání serverů XFTP</string>
+    <string name="error_saving_xftp_servers">Chyba ukládání XFTP serverů</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Ujistěte se, že adresy XFTP serverů jsou ve správném formátu s oddělenými řádky a nejsou duplicitní.</string>
+    <string name="error_xftp_test_server_auth">Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo</string>
+    <string name="smp_server_test_compare_file">Porovnat soubor</string>
+    <string name="smp_server_test_create_file">Vytvořit soubor</string>
+    <string name="smp_server_test_delete_file">Smazat soubor</string>
+    <string name="smp_server_test_download_file">Stáhnout soubor</string>
+    <string name="smp_server_test_upload_file">Nahrát soubor</string>
+    <string name="xftp_servers">XFTP servery</string>
+    <string name="network_socks_toggle_use_socks_proxy">Použít SOCKS proxy</string>
+    <string name="host_verb">Host</string>
+    <string name="network_proxy_port">port %d</string>
+    <string name="network_socks_proxy_settings">Nastavení SOCKS proxy</string>
+    <string name="la_lock_mode_passcode">Zadat heslo</string>
+    <string name="la_lock_mode">SimpleX zámek</string>
+    <string name="la_lock_mode_system">Ověření systému</string>
+    <string name="la_authenticate">Ověřit</string>
+    <string name="la_auth_failed">Ověření selhalo</string>
+    <string name="la_change_app_passcode">Změnit heslo</string>
+    <string name="la_current_app_passcode">Aktuální heslo</string>
+    <string name="la_enter_app_passcode">Zadat heslo</string>
+    <string name="la_no_app_password">Bez hesla aplikace</string>
+    <string name="la_could_not_be_verified">Nemohli jste být ověřeni; Zkuste to prosím znovu.</string>
+    <string name="la_minutes">%d minut</string>
+    <string name="la_seconds">%d vteřin</string>
+    <string name="la_immediately">Ihned</string>
+    <string name="la_please_remember_to_store_password">Zapamatujte si jej nebo bezpečně uložte - neexistuje způsob, jak obnovit ztracené heslo!</string>
+    <string name="lock_not_enabled">Zámek SimpleX není povolen!</string>
+    <string name="you_can_turn_on_lock">Zámek SimpleX můžete zapnout v Nastavení.</string>
+    <string name="port_verb">Port</string>
+    <string name="disable_onion_hosts_when_not_supported">Nastavte <i>Použít .onion hostitele</i> na Ne, pokud je SOCKS proxy nepodporuje.</string>
+    <string name="your_XFTP_servers">Vaše XFTP servery</string>
+    <string name="enable_lock">Povolit zámek</string>
+    <string name="lock_after">Zamknout po</string>
+    <string name="lock_mode">Režim zámku</string>
+    <string name="authentication_cancelled">Ověření zrušeno</string>
+    <string name="confirm_passcode">Potvrdit heslo</string>
+    <string name="incorrect_passcode">Nesprávné heslo</string>
+    <string name="new_passcode">Nové heslo</string>
+    <string name="submit_passcode">Odeslat</string>
+    <string name="la_mode_system">Systém</string>
+    <string name="change_lock_mode">Změnit zamykání</string>
+    <string name="la_mode_passcode">Heslo</string>
+    <string name="passcode_changed">Heslo změněno!</string>
+    <string name="passcode_not_changed">Heslo nezměněno!</string>
+    <string name="passcode_set">Heslo nastaveno!</string>
+    <string name="decryption_error">Chyba dešifrování</string>
+    <string name="alert_title_msg_bad_hash">Špatný hash zprávy</string>
+    <string name="alert_title_msg_bad_id">Špatné ID zprávy</string>
+    <string name="alert_text_msg_bad_hash">Hash předchozí zprávy se liší.</string>
+    <string name="alert_text_msg_bad_id">ID další zprávy je nesprávné (menší nebo rovno předchozí).
+\nMůže se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitováno.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> zprávy se nepodařilo dešifrovat.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> zprývy přeskočeny.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Nahlaste to prosím vývojářům.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Tato chyba je pro toto připojení trvalá, připojte se znovu.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.</string>
+    <string name="no_spaces">Žádné mezery!</string>
+    <string name="revoke_file__message">Soubor bude smazán ze serverů.</string>
+    <string name="stop_rcv_file__message">Příjem souboru bude zastaven.</string>
+    <string name="allow_calls_only_if">Povolte hovory, pouze pokud je váš kontakt povolí.</string>
+    <string name="allow_your_contacts_to_call">Povolte svým kontaktům vám volat.</string>
+    <string name="audio_video_calls">Audio/video hovory</string>
+    <string name="available_in_v51">"
+\nDostupné ve verzi 5.1"</string>
+    <string name="both_you_and_your_contact_can_make_calls">Volat můžete vy i váš kontakt.</string>
+    <string name="only_you_can_make_calls">Volat můžete pouze vy.</string>
+    <string name="prohibit_calls">Zákaz audio/video hovorů.</string>
+    <string name="calls_prohibited_with_this_contact">Audio/video hovory jsou zakázány.</string>
+    <string name="only_your_contact_can_make_calls">Volat může pouze váš kontakt.</string>
+    <string name="v5_0_app_passcode">Heslo aplikace</string>
+    <string name="v5_0_large_files_support_descr">Rychle a bez čekání, než bude odesílatel online!</string>
+    <string name="v5_0_polish_interface">Polské rozhraní</string>
+    <string name="v5_0_app_passcode_descr">Nastavte jej namísto ověřování systému.</string>
+    <string name="v5_0_large_files_support">Videa a soubory až do velikosti 1 gb</string>
+    <string name="v5_0_polish_interface_descr">Díky uživatelům - překládejte prostřednictvím Weblate!</string>
+    <string name="revoke_file__title">Odvolat soubor\?</string>
+    <string name="revoke_file__confirm">Odvolat</string>
+    <string name="revoke_file__action">Odvolat soubor</string>
+    <string name="stop_snd_file__message">Odesílání souboru bude zastaveno.</string>
+    <string name="stop_file__confirm">Zastavit</string>
+    <string name="stop_file__action">Zastavit soubor</string>
+    <string name="stop_snd_file__title">Zastavit odesílání souboru\?</string>
+    <string name="stop_rcv_file__title">Zastavit příjem souboru\?</string>
 </resources>

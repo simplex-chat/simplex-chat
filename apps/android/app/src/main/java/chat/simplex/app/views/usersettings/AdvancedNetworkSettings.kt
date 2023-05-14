@@ -1,21 +1,20 @@
 package chat.simplex.app.views.usersettings
 
+import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDivider
 import SectionItemView
-import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -102,15 +101,6 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     saveCfg(newCfg)
   }
 
-  fun updateSettingsDialog(action: () -> Unit) {
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(R.string.update_network_settings_question),
-      text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
-      confirmText = generalGetString(R.string.update_network_settings_confirmation),
-      onConfirm = action
-    )
-  }
-
   AdvancedNetworkSettingsLayout(
     networkTCPConnectTimeout,
     networkTCPTimeout,
@@ -121,10 +111,10 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPKeepIntvl,
     networkTCPKeepCnt,
     resetDisabled = if (currentCfg.value.useSocksProxy) currentCfg.value == NetCfg.proxyDefaults else currentCfg.value == NetCfg.defaults,
-    reset = { updateSettingsDialog(::reset) },
+    reset = { showUpdateNetworkSettingsDialog(::reset) },
     footerDisabled = buildCfg() == currentCfg.value,
     revert = { updateView(currentCfg.value) },
-    save = { updateSettingsDialog { saveCfg(buildCfg()) } }
+    save = { showUpdateNetworkSettingsDialog { saveCfg(buildCfg()) } }
   )
 }
 
@@ -149,76 +139,65 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.network_settings_title))
     SectionView {
       SectionItemView {
         ResetToDefaultsButton(reset, disabled = resetDisabled)
       }
-      SectionDivider()
       SectionItemView {
         TimeoutSettingRow(
           stringResource(R.string.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
           listOf(2_500000, 5_000000, 7_500000, 10_000000, 15_000000, 20_000000), secondsLabel
         )
       }
-      SectionDivider()
       SectionItemView {
         TimeoutSettingRow(
           stringResource(R.string.network_option_protocol_timeout), networkTCPTimeout,
           listOf(1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000), secondsLabel
         )
       }
-      SectionDivider()
       SectionItemView {
         TimeoutSettingRow(
           stringResource(R.string.network_option_ping_interval), networkSMPPingInterval,
           listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
         )
       }
-      SectionDivider()
       SectionItemView {
         IntSettingRow(
           stringResource(R.string.network_option_ping_count), networkSMPPingCount,
           listOf(1, 2, 3, 5, 8), ""
         )
       }
-      SectionDivider()
       SectionItemView {
         EnableKeepAliveSwitch(networkEnableKeepAlive)
       }
-      SectionDivider()
       if (networkEnableKeepAlive.value) {
         SectionItemView {
           IntSettingRow("TCP_KEEPIDLE", networkTCPKeepIdle, listOf(15, 30, 60, 120, 180), secondsLabel)
         }
-        SectionDivider()
         SectionItemView {
           IntSettingRow("TCP_KEEPINTVL", networkTCPKeepIntvl, listOf(5, 10, 15, 30, 60), secondsLabel)
         }
-        SectionDivider()
         SectionItemView {
           IntSettingRow("TCP_KEEPCNT", networkTCPKeepCnt, listOf(1, 2, 4, 6, 8), "")
         }
       } else {
         SectionItemView {
-          Text("TCP_KEEPIDLE", color = HighOrLowlight)
+          Text("TCP_KEEPIDLE", color = MaterialTheme.colors.secondary)
         }
-        SectionDivider()
         SectionItemView {
-          Text("TCP_KEEPINTVL", color = HighOrLowlight)
+          Text("TCP_KEEPINTVL", color = MaterialTheme.colors.secondary)
         }
-        SectionDivider()
         SectionItemView {
-          Text("TCP_KEEPCNT", color = HighOrLowlight)
+          Text("TCP_KEEPCNT", color = MaterialTheme.colors.secondary)
         }
       }
     }
     SectionCustomFooter {
       SettingsSectionFooter(revert, save, footerDisabled)
     }
-    SectionSpacer()
+    SectionBottomSpacer()
   }
 }
 
@@ -229,7 +208,7 @@ fun ResetToDefaultsButton(reset: () -> Unit, disabled: Boolean) {
     modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    val color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+    val color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
     Text(stringResource(R.string.network_options_reset_to_defaults), color = color)
   }
 }
@@ -244,13 +223,9 @@ fun EnableKeepAliveSwitch(
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Text(stringResource(R.string.network_option_enable_tcp_keep_alive))
-    Switch(
+    DefaultSwitch(
       checked = networkEnableKeepAlive.value,
       onCheckedChange = { networkEnableKeepAlive.value = it },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
     )
   }
 }
@@ -262,14 +237,14 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    var expanded by remember { mutableStateOf(false) }
+    val expanded = rememberSaveable { mutableStateOf(false) }
 
     Text(title)
 
     ExposedDropdownMenuBox(
-      expanded = expanded,
+      expanded = expanded.value,
       onExpandedChange = {
-        expanded = !expanded
+        expanded.value = !expanded.value
       }
     ) {
       Row(
@@ -281,28 +256,26 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
           "${selection.value} $label",
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
           generalGetString(R.string.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
-          tint = HighOrLowlight
+          tint = MaterialTheme.colors.secondary
         )
       }
-      ExposedDropdownMenu(
+      DefaultExposedDropdownMenu(
         expanded = expanded,
-        onDismissRequest = {
-          expanded = false
-        }
       ) {
         values.forEach { selectionOption ->
           DropdownMenuItem(
             onClick = {
               selection.value = selectionOption
-              expanded = false
-            }
+              expanded.value = false
+            },
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
               "$selectionOption $label",
@@ -323,14 +296,14 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    var expanded by remember { mutableStateOf(false) }
+    val expanded = remember { mutableStateOf(false) }
 
     Text(title)
 
     ExposedDropdownMenuBox(
-      expanded = expanded,
+      expanded = expanded.value,
       onExpandedChange = {
-        expanded = !expanded
+        expanded.value = !expanded.value
       }
     ) {
       val df = DecimalFormat("#.#")
@@ -344,28 +317,26 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
           "${df.format(selection.value / 1_000_000.toDouble())} $label",
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
           generalGetString(R.string.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
-          tint = HighOrLowlight
+          tint = MaterialTheme.colors.secondary
         )
       }
-      ExposedDropdownMenu(
-        expanded = expanded,
-        onDismissRequest = {
-          expanded = false
-        }
+      DefaultExposedDropdownMenu(
+        expanded = expanded
       ) {
         values.forEach { selectionOption ->
           DropdownMenuItem(
             onClick = {
               selection.value = selectionOption
-              expanded = false
-            }
+              expanded.value = false
+            },
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
               "${df.format(selectionOption / 1_000_000.toDouble())} $label",
@@ -386,13 +357,13 @@ fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolea
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(Icons.Outlined.Replay, stringResource(R.string.network_options_revert), revert, disabled)
-    FooterButton(Icons.Outlined.Check, stringResource(R.string.network_options_save), save, disabled)
+    FooterButton(painterResource(R.drawable.ic_replay), stringResource(R.string.network_options_revert), revert, disabled)
+    FooterButton(painterResource(R.drawable.ic_check), stringResource(R.string.network_options_save), save, disabled)
   }
 }
 
 @Composable
-fun FooterButton(icon: ImageVector, title: String, action: () -> Unit, disabled: Boolean) {
+fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boolean) {
   Surface(
     shape = RoundedCornerShape(20.dp),
     color = Color.Black.copy(alpha = 0f)
@@ -405,14 +376,23 @@ fun FooterButton(icon: ImageVector, title: String, action: () -> Unit, disabled:
       Icon(
         icon,
         title,
-        tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+        tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
       Text(
         title,
-        color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+        color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
   }
+}
+
+fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.update_network_settings_question),
+    text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+    confirmText = generalGetString(R.string.update_network_settings_confirmation),
+    onConfirm = action
+  )
 }
 
 @Preview(showBackground = true)

@@ -14,7 +14,7 @@
     <string name="color_primary">色调</string>
     <string name="callstatus_accepted">已接受通话</string>
     <string name="accept">接受</string>
-    <string name="network_enable_socks_info">通过 SOCKS 代理访问服务器在端口9050？允许该选项前必须开始代理。</string>
+    <string name="network_enable_socks_info">通过 SOCKS 代理访问服务器在端口%d？允许该选项前必须开始代理。</string>
     <string name="smp_servers_add">添加服务器……</string>
     <string name="smp_servers_add_to_another_device">添加另一设备</string>
     <string name="group_member_role_admin">管理员</string>
@@ -23,7 +23,6 @@
     <string name="accept_connection_request__question">接受连接请求？</string>
     <string name="accept_contact_incognito_button">接受隐身聊天</string>
     <string name="v4_2_group_links_desc">管理员可以创建链接以加入群组。</string>
-    <string name="accept_requests">接受请求</string>
     <string name="smp_servers_preset_add">添加预设服务器</string>
     <string name="connect_via_link">通过链接连接</string>
     <string name="display_name_connection_established">已建立连接</string>
@@ -37,7 +36,7 @@
     <string name="delete_files_and_media_all">删除所有文件</string>
     <string name="messages_section_title">消息</string>
     <string name="delete_messages_after">在此后删除消息</string>
-    <string name="settings_section_title_messages">消息</string>
+    <string name="settings_section_title_messages">消息和文件</string>
     <string name="users_add">添加个人资料</string>
     <string name="users_delete_all_chats_deleted">所有聊天记录和消息将被删除——这一行为无法撤销！</string>
     <string name="clear_chat_warning">所有聊天记录和消息将被删除——这一行为无法撤销！只有您的消息会被删除。</string>
@@ -112,7 +111,6 @@
     <string name="integrity_msg_bad_hash">错误消息散列</string>
     <string name="integrity_msg_bad_id">错误消息 ID</string>
     <string name="settings_audio_video_calls">语音和视频通话</string>
-    <string name="accept_automatically">自动</string>
     <string name="turning_off_service_and_periodic">激活电池优化，关闭了后台服务和新消息的定期请求。您可以通过设置重新启用它们。</string>
     <string name="notifications_mode_service_desc">后台服务一直在运行——一旦有消息，就会显示通知。</string>
     <string name="icon_descr_audio_off">关闭音频</string>
@@ -172,7 +170,7 @@
     <string name="chat_console">聊天控制台</string>
     <string name="chat_database_section">聊天数据库</string>
     <string name="chat_is_stopped_indication">聊天已停止</string>
-    <string name="chat_is_running">聊天进行中</string>
+    <string name="chat_is_running">聊天运行中</string>
     <string name="chat_is_stopped">聊天已停止</string>
     <string name="contact_preferences">联系人偏好设置</string>
     <string name="your_preferences">您的偏好设置</string>
@@ -238,7 +236,7 @@
     <string name="callstate_connected">已连接</string>
     <string name="connect_button">连接</string>
     <string name="connect_via_link_verb">连接</string>
-    <string name="choose_file">选择文件</string>
+    <string name="choose_file">文件</string>
     <string name="network_session_mode_user">聊天资料</string>
     <string name="v4_5_transport_isolation_descr">按聊天资料（默认）或按连接（BETA）。</string>
     <string name="smp_servers_check_address">检查服务器地址并再试一次。</string>
@@ -287,7 +285,7 @@
     <string name="display_name_cannot_contain_whitespace">显示名不能包含空格。</string>
     <string name="decentralized">分散式</string>
     <string name="immune_to_spam_and_abuse">不受垃圾和骚扰消息影响</string>
-    <string name="encrypted_video_call">端到端加密语音通话</string>
+    <string name="encrypted_video_call">端到端加密视频通话</string>
     <string name="ignore">忽视</string>
     <string name="incoming_video_call">视频通话来电</string>
     <string name="no_call_on_lock_screen">禁用</string>
@@ -308,7 +306,7 @@
     <string name="files_and_media_section">文件和媒体</string>
     <string name="current_passphrase">现有密码……</string>
     <string name="encrypt_database">加密</string>
-    <string name="encrypted_database">加密的数据库</string>
+    <string name="encrypted_database">加密数据库</string>
     <string name="enter_correct_passphrase">输入正确密码。</string>
     <string name="icon_descr_group_inactive">不活跃群组</string>
     <string name="group_member_status_creator">创建者</string>
@@ -328,7 +326,6 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">联系人和所有的消息都将被删除——这是不可逆回的！</string>
     <string name="notification_preview_mode_contact">联系人姓名</string>
     <string name="group_member_status_intro_invitation">连接（介绍邀请）</string>
-    <string name="contact_requests">联系人请求</string>
     <string name="callstate_connecting">连接中……</string>
     <string name="contacts_can_mark_messages_for_deletion">联系人可以将信息标记为删除；您将可以查看这些信息。</string>
     <string name="contribute">贡献</string>
@@ -363,11 +360,10 @@
     <string name="encrypted_audio_call">端到端加密语音通话</string>
     <string name="enter_one_ICE_server_per_line">ICE 服务器（每行一个）</string>
     <string name="create_address">创建地址</string>
-    <string name="core_build_timestamp">核心构建于：%s</string>
     <string name="core_version">核心版本: v%s</string>
     <string name="display_name__field">显示名：</string>
     <string name="full_name__field">全名：</string>
-    <string name="display_name">显示名。</string>
+    <string name="display_name">显示名</string>
     <string name="full_name_optional__prompt">全名（可选）</string>
     <string name="callstate_ended">已结束</string>
     <string name="group_member_status_group_deleted">群组已删除</string>
@@ -430,12 +426,14 @@
     <string name="network_disable_socks_info">如果您确认，消息服务器将能够看到您的 IP 地址和您的提供商——以及您正在连接的服务器。</string>
     <string name="image_descr">图片</string>
     <string name="icon_descr_image_snd_complete">图片已发送</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">设备认证被禁用。关闭 SimpleX 锁定。</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">没有启用设备认证。一旦启用设备认证，您可以通过设置打开 SimpleX 锁定。</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">设备验证被禁用。关闭 SimpleX 锁定。</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">没有启用设备验证。一旦启用设备验证，您可以通过设置打开 SimpleX 锁定。</string>
     <string name="auth_disable_simplex_lock">禁用 SimpleX 锁定</string>
     <string name="maximum_supported_file_size">目前支持的最大文件尺寸是 <xliff:g id="maxFileSize">%1$s</xliff:g>。</string>
     <string name="file_will_be_received_when_contact_is_online">文件将在您的联系人在线时收到，请稍等或稍后再查看！</string>
     <string name="from_gallery_button">从图库</string>
+    <string name="gallery_image_button">照片</string>
+    <string name="gallery_video_button">视频</string>
     <string name="exit_without_saving">退出而不保存</string>
     <string name="icon_descr_flip_camera">翻转相机</string>
     <string name="enable_automatic_deletion_question">启用自动删除消息？</string>
@@ -452,12 +450,10 @@
     <string name="image_descr_link_preview">链接预览图片</string>
     <string name="invalid_QR_code">无效的二维码</string>
     <string name="onboarding_notifications_mode_subtitle">以后可以通过设置进行更改。</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">它可以在以下情况下发生：
-\n1. 如果消息在30天内没有被收到，就会在服务器上过期。
-\n2. 您用于接收来自此联系人的消息的服务器已更新并重新启动。
-\n3. 连接受损。
-\n请通过设置与开发者联系，以接收有关服务器的更新。
-\n我们将添加服务器冗余以防止丢失消息。</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">它可能在以下情况发生：
+\n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。
+\n2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。
+\n3.连接被破坏。</string>
     <string name="leave_group_question">离开群组？</string>
     <string name="rcv_group_event_invited_via_your_group_link">通过您的群组链接邀请</string>
     <string name="info_row_local_name">本地名称</string>
@@ -502,7 +498,7 @@
 \n在启用此功能之前，系统将提示您完成身份验证。</string>
     <string name="your_chats">您的聊天</string>
     <string name="share_file">分享文件……</string>
-    <string name="share_image">分享图片……</string>
+    <string name="share_image">分享媒体……</string>
     <string name="share_message">分享消息……</string>
     <string name="text_field_set_contact_placeholder">设置联系人姓名……</string>
     <string name="callstate_received_answer">已收到回复……</string>
@@ -517,7 +513,6 @@
     <string name="you_must_use_the_most_recent_version_of_database">您只能在一台设备上使用最新版本的聊天数据库，否则您可能会停止接收来自某些联系人的消息。</string>
     <string name="new_passphrase">新密码……</string>
     <string name="member_role_will_be_changed_with_notification">该角色将更改为“%s”。群组中每个人都会收到通知。</string>
-    <string name="your_contact_address">您的联系人地址</string>
     <string name="chat_lock">SimpleX 锁定</string>
     <string name="periodic_notifications">定期通知</string>
     <string name="notifications_mode_periodic">定期启动</string>
@@ -622,9 +617,7 @@
     <string name="icon_descr_profile_image_placeholder">资料图片占位符</string>
     <string name="smp_servers_per_user">您当前聊天资料的新连接服务器</string>
     <string name="your_current_profile">您当前的资料</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">您的资料存储在您的设备上并且仅与您的联系人共享。
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> 服务器无法看见您的资料。</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">您的资料存储在您的设备上并且仅与您的联系人共享。<xliff:g id="appName">SimpleX</xliff:g> 服务器无法看见您的资料。</string>
     <string name="your_profile_is_stored_on_your_device">您的资料、联系人和发送的消息存储在您的设备上。</string>
     <string name="profile_is_only_shared_with_your_contacts">该资料仅与您的联系人共享。</string>
     <string name="chat_preferences_on">开启</string>
@@ -858,7 +851,7 @@
     <string name="toast_permission_denied">权限被拒绝！</string>
     <string name="chat_help_tap_button">点击按钮</string>
     <string name="thank_you_for_installing_simplex">感谢您安装 <xliff:g id="appNameFull">SimpleX Chat</xliff:g>！</string>
-    <string name="use_camera_button">使用相机</string>
+    <string name="use_camera_button">相机</string>
     <string name="smp_servers_preset_address">预设服务器地址</string>
     <string name="smp_servers_scan_qr">扫描服务器二维码</string>
     <string name="smp_servers_test_failed">服务器测试失败！</string>
@@ -879,7 +872,6 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">当您的联系人设备在线时，您将可以连接，请稍等或稍后查看！</string>
     <string name="rate_the_app">评价此应用程序</string>
     <string name="network_enable_socks">使用 SOCKS 代理？</string>
-    <string name="network_socks_toggle">使用 SOCKS 代理（端口 9050）</string>
     <string name="total_files_count_and_size">%d 个文件，总大小为 %s</string>
     <string name="you_joined_this_group">您已加入此群组</string>
     <string name="you_are_invited_to_group">您被邀请加入群组</string>
@@ -894,9 +886,7 @@
     <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> 团队</string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> 成员</string>
     <string name="chat_preferences_yes">是</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">您可以将您的地址作为链接或二维码共享——任何人都可以连接到您。 如果您以后删除它，您不会丢失您的联系人。</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">您可以控制通过哪些服务器<b>接收</b>消息，您的联系人 - 您用来向他们发送消息的服务器。</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">您的联系人可以从应用程序中扫描二维码。</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">您将在组主设备上线时连接到该群组，请稍等或稍后再检查！</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。</string>
     <string name="archive_created_on_ts">创建于 <xliff:g id="archive_ts">%1$s</xliff:g></string>
@@ -945,7 +935,6 @@
     <string name="network_use_onion_hosts">使用 .onion 主机</string>
     <string name="your_ICE_servers">您的 ICE 服务器</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-    <string name="section_title_welcome_message">欢迎消息</string>
     <string name="you_control_your_chat">您的聊天由您掌控！</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">您可以使用 markdown 来编排消息格式：</string>
     <string name="ttl_h">%dh</string>
@@ -1022,7 +1011,6 @@
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
     <string name="group_welcome_title">欢迎信息</string>
-    <string name="settings_send_files_via_xftp">通过 XFTP 发送视频和文件</string>
     <string name="confirm_database_upgrades">确认数据库升级</string>
     <string name="settings_section_title_experimenta">实验性</string>
     <string name="database_upgrade">数据库升级</string>
@@ -1037,7 +1025,6 @@
     <string name="database_migrations">迁移：%s</string>
     <string name="image_will_be_received_when_contact_completes_uploading">图片将在您的联系人完成上传后收到。</string>
     <string name="show_developer_options">显示开发者选项</string>
-    <string name="xftp_requires_v461">通过 XFTP 接收需要 v4.6.1 以上版本。</string>
     <string name="upgrade_and_open_chat">升级并打开聊天</string>
     <string name="database_downgrade_warning">警告：您可能会丢失部分数据！</string>
     <string name="invalid_migration_confirmation">迁移确认无效</string>
@@ -1045,10 +1032,8 @@
     <string name="delete_profile">删除个人资料</string>
     <string name="profile_password">个人资料密码</string>
     <string name="unhide_chat_profile">取消隐藏聊天资料</string>
-    <string name="cancel_file__question">取消文件传输？</string>
     <string name="delete_chat_profile">删除聊天资料</string>
     <string name="unhide_profile">取消隐藏个人资料</string>
-    <string name="file_transfer_will_be_cancelled_warning">文件传输将被取消。文件传输将被终止如果它正在进行中。</string>
     <string name="videos_limit_desc">同一时间只能发送10个视频</string>
     <string name="videos_limit_title">过多视频！</string>
     <string name="video_descr">视频</string>
@@ -1058,4 +1043,90 @@
     <string name="icon_descr_video_snd_complete">视频已发送</string>
     <string name="icon_descr_video_asked_to_receive">要求接收视频</string>
     <string name="video_will_be_received_when_contact_completes_uploading">视频将在您的联系人完成上传后收到。</string>
+    <string name="error_xftp_test_server_auth">服务器需要授权来上传，检查密码</string>
+    <string name="smp_server_test_upload_file">上传文件</string>
+    <string name="xftp_servers">XFTP 服务器</string>
+    <string name="your_XFTP_servers">您的 XFTP 服务器</string>
+    <string name="disable_onion_hosts_when_not_supported">如果 SOCKS 代理不支持它们，请将 <i>Use .onion hosts</i> 设置为否。</string>
+    <string name="network_socks_toggle_use_socks_proxy">使用 SOCKS 代理</string>
+    <string name="port_verb">端口</string>
+    <string name="smp_server_test_delete_file">删除文件</string>
+    <string name="smp_server_test_compare_file">对比文件</string>
+    <string name="host_verb">主机</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">确保 XFTP 服务器地址格式正确、行分隔且不重复。</string>
+    <string name="smp_server_test_create_file">创建文件</string>
+    <string name="smp_server_test_download_file">下载文件</string>
+    <string name="error_loading_smp_servers">加载 SMP 服务器时出错</string>
+    <string name="error_loading_xftp_servers">加载 XFTP 服务器时出错</string>
+    <string name="error_saving_xftp_servers">保存 SMP 服务器时出错</string>
+    <string name="network_proxy_port">端口 %d</string>
+    <string name="network_socks_proxy_settings">SOCKS 代理设置</string>
+    <string name="la_lock_mode">SimpleX 锁定模式</string>
+    <string name="la_lock_mode_system">系统验证</string>
+    <string name="la_minutes">%d 分钟</string>
+    <string name="la_seconds">%d 秒</string>
+    <string name="la_enter_app_passcode">输入密码</string>
+    <string name="la_no_app_password">没有应用程序密码</string>
+    <string name="la_lock_mode_passcode">密码输入</string>
+    <string name="la_please_remember_to_store_password">请牢记或妥善保管——丢失的密码将无法恢复！</string>
+    <string name="you_can_turn_on_lock">您可以通过设置开启 SimpleX 锁定。</string>
+    <string name="la_authenticate">身份验证</string>
+    <string name="la_auth_failed">身份验证失败</string>
+    <string name="la_change_app_passcode">更改密码</string>
+    <string name="submit_passcode">提交</string>
+    <string name="confirm_passcode">确认密码</string>
+    <string name="enable_lock">启用锁定</string>
+    <string name="incorrect_passcode">密码错误</string>
+    <string name="lock_after">在此后锁定</string>
+    <string name="lock_mode">锁定模式</string>
+    <string name="new_passcode">新密码</string>
+    <string name="change_lock_mode">更改锁定模式</string>
+    <string name="la_mode_passcode">密码</string>
+    <string name="passcode_changed">密码已更改！</string>
+    <string name="passcode_not_changed">密码未更改！</string>
+    <string name="passcode_set">密码已设置！</string>
+    <string name="la_mode_system">系统</string>
+    <string name="lock_not_enabled">未启用 SimpleX 锁定！</string>
+    <string name="la_could_not_be_verified">您的身份无法验证，请再试一次。</string>
+    <string name="authentication_cancelled">身份验证已取消</string>
+    <string name="la_current_app_passcode">当前密码</string>
+    <string name="la_immediately">立即</string>
+    <string name="alert_title_msg_bad_hash">错误消息散列</string>
+    <string name="alert_title_msg_bad_id">错误消息 ID</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> 消息解密失败。</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> 已跳过消息。</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">此错误对于此连接是永久性的，请重新连接。</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">当您或您的连接使用旧数据库备份时，可能会发生这种情况。</string>
+    <string name="decryption_error">解密错误</string>
+    <string name="alert_text_fragment_please_report_to_developers">请向开发者报告。</string>
+    <string name="alert_text_msg_bad_hash">上一条消息的散列不同。</string>
+    <string name="alert_text_msg_bad_id">下一条消息的 ID 不正确（小于或等于上一条）。
+\n它可能是由于某些错误或连接被破坏才发生。</string>
+    <string name="no_spaces">没有空格！</string>
+    <string name="stop_file__action">停止文件</string>
+    <string name="stop_snd_file__title">停止发送文件？</string>
+    <string name="stop_snd_file__message">即将停止发送文件。</string>
+    <string name="stop_rcv_file__title">停止接收文件？</string>
+    <string name="stop_rcv_file__message">即将停止接收文件。</string>
+    <string name="stop_file__confirm">Stop</string>
+    <string name="revoke_file__action">撤销文件</string>
+    <string name="revoke_file__title">撤销文件？</string>
+    <string name="revoke_file__message">文件将从服务器中删除。</string>
+    <string name="revoke_file__confirm">撤销</string>
+    <string name="audio_video_calls">音频/视频通话</string>
+    <string name="available_in_v51">"
+\n在 v5.1 中可用"</string>
+    <string name="v5_0_app_passcode">应用程序密码</string>
+    <string name="v5_0_polish_interface">波兰语界面</string>
+    <string name="v5_0_polish_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
+    <string name="v5_0_app_passcode_descr">设置它以代替系统身份验证。</string>
+    <string name="v5_0_large_files_support">最大 1gb 的视频和文件</string>
+    <string name="v5_0_large_files_support_descr">快速且无需等待发件人在线！</string>
+    <string name="prohibit_calls">禁止音频/视频通话。</string>
+    <string name="both_you_and_your_contact_can_make_calls">您和您的联系人都可以拨打电话。</string>
+    <string name="only_you_can_make_calls">只有您可以拨打电话。</string>
+    <string name="only_your_contact_can_make_calls">只有您的联系人可以拨打电话。</string>
+    <string name="allow_your_contacts_to_call">允许您的联系人给您打电话。</string>
+    <string name="allow_calls_only_if">仅当您的联系人允许时才允许呼叫。</string>
+    <string name="calls_prohibited_with_this_contact">禁止音频/视频通话。</string>
 </resources>

@@ -6,24 +6,22 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ComposeContextItem
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
@@ -105,13 +103,9 @@ fun ChatItemView(
 
       @Composable
       fun MsgContentItemDropdownMenu() {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           if (cItem.meta.itemDeleted == null && !live) {
-            ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
+            ItemAction(stringResource(R.string.reply_verb), painterResource(R.drawable.ic_reply), onClick = {
               if (composeState.value.editing) {
                 composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
               } else {
@@ -120,7 +114,7 @@ fun ChatItemView(
               showMenu.value = false
             })
           }
-          ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
+          ItemAction(stringResource(R.string.share_verb), painterResource(R.drawable.ic_share), onClick = {
             val filePath = getLoadedFilePath(SimplexApp.context, cItem.file)
             when {
               filePath != null -> shareFile(context, cItem.text, filePath)
@@ -128,7 +122,7 @@ fun ChatItemView(
             }
             showMenu.value = false
           })
-          ItemAction(stringResource(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
+          ItemAction(stringResource(R.string.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
             copyText(context, cItem.content.text)
             showMenu.value = false
           })
@@ -136,7 +130,7 @@ fun ChatItemView(
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
               val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
-              ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
+              ItemAction(stringResource(R.string.save_verb), painterResource(R.drawable.ic_download), onClick = {
                 when (cItem.content.msgContent) {
                   is MsgContent.MCImage -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.hasPermission) {
@@ -153,7 +147,7 @@ fun ChatItemView(
             }
           }
           if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
-            ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
+            ItemAction(stringResource(R.string.edit_verb), painterResource(R.drawable.ic_edit_filled), onClick = {
               composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
               showMenu.value = false
             })
@@ -161,15 +155,15 @@ fun ChatItemView(
           if (cItem.meta.itemDeleted != null && revealed.value) {
             ItemAction(
               stringResource(R.string.hide_verb),
-              Icons.Outlined.VisibilityOff,
+              painterResource(R.drawable.ic_visibility_off),
               onClick = {
                 revealed.value = false
                 showMenu.value = false
               }
             )
           }
-          if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancellable) {
-            CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile)
+          if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
+            CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
           }
           if (!(live && cItem.meta.isLive)) {
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
@@ -183,15 +177,11 @@ fun ChatItemView(
 
       @Composable
       fun MarkedDeletedItemDropdownMenu() {
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           if (!cItem.isDeletedContent) {
             ItemAction(
               stringResource(R.string.reveal_verb),
-              Icons.Outlined.Visibility,
+              painterResource(R.drawable.ic_visibility),
               onClick = {
                 revealed.value = true
                 showMenu.value = false
@@ -227,11 +217,7 @@ fun ChatItemView(
 
       @Composable fun DeletedItem() {
         DeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
-        DropdownMenu(
-          expanded = showMenu.value,
-          onDismissRequest = { showMenu.value = false },
-          Modifier.width(220.dp)
-        ) {
+        DefaultDropdownMenu(showMenu) {
           DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
@@ -247,7 +233,8 @@ fun ChatItemView(
         is CIContent.RcvDeleted -> DeletedItem()
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
-        is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
+        is CIContent.RcvIntegrityError -> IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL, showMember = showMember)
+        is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cItem, cInfo.timedMessagesTTL, showMember = showMember)
         is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.RcvGroupEventContent -> CIEventView(cItem)
@@ -260,7 +247,7 @@ fun ChatItemView(
           val ct = if (cInfo is ChatInfo.Direct) cInfo.contact else null
           CIFeaturePreferenceView(cItem, ct, c.feature, c.allowed, acceptFeature)
         }
-        is CIContent.SndChatPreference -> CIChatFeatureView(cItem, c.feature, HighOrLowlight, icon = c.feature.icon,)
+        is CIContent.SndChatPreference -> CIChatFeatureView(cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon,)
         is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
@@ -277,14 +264,15 @@ fun ChatItemView(
 fun CancelFileItemAction(
   fileId: Long,
   showMenu: MutableState<Boolean>,
-  cancelFile: (Long) -> Unit
+  cancelFile: (Long) -> Unit,
+  cancelAction: CancelAction
 ) {
   ItemAction(
-    stringResource(R.string.cancel_verb),
-    Icons.Outlined.Close,
+    stringResource(cancelAction.uiActionId),
+    painterResource(R.drawable.ic_close),
     onClick = {
       showMenu.value = false
-      cancelFileAlertDialog(fileId, cancelFile = cancelFile)
+      cancelFileAlertDialog(fileId, cancelFile = cancelFile, cancelAction = cancelAction)
     },
     color = Color.Red
   )
@@ -299,7 +287,7 @@ fun DeleteItemAction(
 ) {
   ItemAction(
     stringResource(R.string.delete_verb),
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     onClick = {
       showMenu.value = false
       deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
@@ -317,7 +305,7 @@ fun ModerateItemAction(
 ) {
   ItemAction(
     stringResource(R.string.moderate_verb),
-    Icons.Outlined.Flag,
+    painterResource(R.drawable.ic_flag),
     onClick = {
       showMenu.value = false
       moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
@@ -327,27 +315,50 @@ fun ModerateItemAction(
 }
 
 @Composable
-fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
-  DropdownMenuItem(onClick) {
-    Row {
+fun ItemAction(text: String, icon: Painter, onClick: () -> Unit, color: Color = Color.Unspecified) {
+  val finalColor = if (color == Color.Unspecified) {
+    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+  } else color
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
         modifier = Modifier
           .fillMaxWidth()
           .weight(1F)
           .padding(end = 15.dp),
-        color = color
+        color = finalColor
       )
-      Icon(icon, text, tint = color)
+      Icon(icon, text, tint = finalColor)
     }
   }
 }
 
-fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit) {
+@Composable
+fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
+  val finalColor = if (color == Color.Unspecified) {
+    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+  } else color
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Text(
+        text,
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1F)
+          .padding(end = 15.dp),
+        color = finalColor
+      )
+      Icon(icon, text, tint = finalColor)
+    }
+  }
+}
+
+fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction: CancelAction) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.cancel_file__question),
-    text = generalGetString(R.string.file_transfer_will_be_cancelled_warning),
-    confirmText = generalGetString(R.string.confirm_verb),
+    title = generalGetString(cancelAction.alert.titleId),
+    text = generalGetString(cancelAction.alert.messageId),
+    confirmText = generalGetString(cancelAction.alert.confirmId),
     destructive = true,
     onConfirm = {
       cancelFile(fileId)
@@ -364,18 +375,18 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
         Modifier
           .fillMaxWidth()
           .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.Center,
       ) {
         TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
-        }) { Text(stringResource(R.string.for_me_only)) }
+        }) { Text(stringResource(R.string.for_me_only), color = MaterialTheme.colors.error) }
         if (chatItem.meta.editable) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(R.string.for_everybody)) }
+          }) { Text(stringResource(R.string.for_everybody), color = MaterialTheme.colors.error) }
         }
       }
     }

@@ -1,3 +1,7 @@
+---
+title: Application de terminal
+revision: 31.01.2023
+---
 | 31.01.2023 | FR, [EN](/docs/CLI.md), [CZ](/docs/lang/cs/CLI.md) |
 
 # Application de terminal (console) SimpleX Chat pour Linux/MacOS/Windows

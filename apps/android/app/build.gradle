@@ -11,8 +11,10 @@ android {
         applicationId "chat.simplex.app"
         minSdk 26
         targetSdk 32
-        versionCode 111
-        versionName "4.6.1-beta.2"
+        // !!!
+        // skip version code after release to F-Droid, as it uses two version codes
+        versionCode 119
+        versionName "5.1-beta.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -77,7 +79,18 @@ android {
     def isBundle = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("bundle") }) != null
 //    if (isRelease) {
         // Comma separated list of languages that will be included in the apk
-    android.defaultConfig.resConfigs("en", "cs", "de", "es", "fr", "it", "nl", "ru", "zh-rCN")
+    android.defaultConfig.resConfigs(
+        "en",
+        "cs",
+        "de",
+        "es",
+        "fr",
+        "it",
+        "nl",
+        "pl",
+        "ru",
+        "zh-rCN"
+    )
 //    }
     if (isBundle) {
         defaultConfig.ndk.abiFilters 'arm64-v8a', 'armeabi-v7a'
@@ -108,7 +121,8 @@ dependencies {
     implementation 'androidx.fragment:fragment:1.4.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-datetime:0.3.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
-    implementation "androidx.compose.material:material-icons-extended:$compose_version"
+    implementation 'com.charleskorn.kaml:kaml:0.43.0'
+    //implementation "androidx.compose.material:material-icons-extended:$compose_version"
     implementation "androidx.compose.ui:ui-util:$compose_version"
     implementation "androidx.navigation:navigation-compose:2.4.1"
     implementation "com.google.accompanist:accompanist-insets:0.23.0"

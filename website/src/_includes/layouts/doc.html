@@ -1,0 +1,123 @@
+{% set lang = page.url | getlang %}
+<!DOCTYPE html>
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
+        {% endif %}
+    {% endfor %}>
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ title }}</title>
+        <meta name="Content-Type" content="text/html;charset=utf-8"/>
+
+        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+        <link href="/css/tailwind.css" rel="stylesheet"/>
+        <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
+        <link href="/css/style.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="/css/doc.css"/>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+    </head>
+
+    <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+        <section class="w-full bg-transparent fixed top-0 z-50">
+            {% include "navbar.html" %}
+        </section>
+
+        <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
+            <div>
+                <main>
+                    <aside class="sidebar px-4 lg:px-7">
+                        <div class="h-[66px] lg:h-0">
+                            <a href="/{{ '' if lang == 'en' else lang }}" class="h-full flex dark:hidden lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo"/></a>
+                            <a href="/{{ '' if lang == 'en' else lang }}" class="h-full hidden dark:flex dark:lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo"/></a>
+                        </div>
+                        <ul class="!my-4">
+                            {% for doc in collections.docs %}
+                                {% set hasMenu = false %}
+                                {% for checkDoc in collections.docs %}
+                                    {% if checkDoc.lang == lang and checkDoc.menu == doc.menu %}
+                                        {% set hasMenu = true %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if hasMenu %}
+                                    {% if doc.lang == page.url | getlang %}
+                                        <p class="">{{ doc.menu | capitalize }}</p>
+                                        <ul>
+                                            {% for submenu in doc.data %}
+                                                <li>
+                                                    <a class="{{ "active" if page.url == submenu.url | url else '' }}" href="{{ submenu.url | url }}">{{ submenu.title }}</a>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="">{{ doc.menu | capitalize }}</p>
+                                    <ul>
+                                        {% for submenu in doc.data %}
+                                            <li>
+                                                <a class="{{ "active" if page.url == submenu.url | url else '' }}" href="{{ submenu.url | url }}">{{ submenu.title }}</a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            {% endfor %}
+                    </ul>
+                </aside>
+                <article class="content px-4 lg:px-7">
+
+                    {% if version == 'old' %}
+                        <div class="px-4 lg:px-7 !py-2">
+                            <div class="bg-yellow-200 px-4 lg:px-7 py-6 rounded-md">
+                                {{ "newer-version-of-eng-msg" | i18n({}, lang ) | safe }} <a class="!no-underline !text-primary-pressed-light" href="{% completeRoute {url:page.url,lang:'en'} %}">{{ "click-to-see" | i18n({}, lang ) | safe }}</a>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="sticky top-[66px] bg-white dark:bg-[#17203D] z-[49] !py-2 lg:hidden">
+                        <div class="relative flex items-center justify-between">
+                            <button class="menu flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="menu-icon h-4 w-4 fill-[rgb(60,60,60)] dark:fill-white">
+                                    <path d="M17,11H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h14c0.6,0,1,0.4,1,1S17.6,11,17,11z"></path>
+                                    <path d="M21,7H3C2.4,7,2,6.6,2,6s0.4-1,1-1h18c0.6,0,1,0.4,1,1S21.6,7,21,7z"></path>
+                                    <path d="M21,15H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h18c0.6,0,1,0.4,1,1S21.6,15,21,15z"></path>
+                                    <path d="M17,19H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h14c0.6,0,1,0.4,1,1S17.6,19,17,19z"></path>
+                                </svg>
+                                <span class="!text-[rgb(60,60,60)] dark:!text-white">{{ "menu" | i18n({}, lang ) | safe }}</span>
+                            </button>
+
+                            <div class="nav-link">
+                                <a href="javascript:void(0);" class="flex items-center gap-2 !no-underline !text-[rgb(60,60,60)] dark:!text-white">
+                                    <span class="">{{ "on-this-page" | i18n({}, lang ) | safe }}</span>
+                                    <span href="" id="btn-mobile" class="flex items-center justify-center h-auto w-auto mt-1">
+                                        <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                        </svg>
+                                    </span>
+                                </a>
+
+                                <ul class="flex flex-col items-start gap-2 absolute bg-white dark:bg-black top-full left-0 right-0 mt-[10px] w-full h-auto rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu hash-list">
+                                    <li class="mb-5">
+                                        <a href="#" id="back-to-top">{{ "back-to-top" | i18n({}, lang ) | safe }}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div>{{ content | safe }}</div>
+                </article>
+            </main>
+        </div>
+    </section>
+
+    {% include "footer.html" %}
+
+    <script src="/js/docs.js"></script>
+    <script src="/js/prism.min.js"></script>
+</body>
+
+</html>

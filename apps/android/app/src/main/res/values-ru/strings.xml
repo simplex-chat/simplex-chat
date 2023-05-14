@@ -258,7 +258,9 @@
     <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="from_gallery_button">Галерея</string>
-    <string name="choose_file">Файлы</string>
+    <string name="gallery_image_button">Фото</string>
+    <string name="gallery_video_button">Видео</string>
+    <string name="choose_file">Файл</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
     <string name="you_can_connect_to_simplex_chat_founder">Вы можете <font color="#0088ff">соединиться с разработчиками</font>, чтобы задать любые вопросы или получать уведомления о новых версиях.</string>
@@ -328,7 +330,6 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено, когда Ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда Ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Ваш контакт может сосканировать QR код в приложении.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если Вы не можете встретиться лично, Вы можете <b>показать QR код во время видеозвонка</b> или поделиться ссылкой.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен
 \nВашему контакту</string>
@@ -342,7 +343,6 @@
     <!-- CreateLinkView.kt -->
     <string name="create_one_time_link">Создать одноразовую ссылку</string>
     <string name="one_time_link">Одноразовая ссылка</string>
-    <string name="your_contact_address">Ваш SimpleX адрес</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
@@ -394,9 +394,8 @@
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
     <string name="network_settings_title">Настройки сети</string>
-    <string name="network_socks_toggle">Использовать SOCKS прокси (порт 9050)</string>
     <string name="network_enable_socks">Использовать SOCKS прокси?</string>
-    <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт 9050? Прокси должен быть запущен до включения этой опции.</string>
+    <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
     <string name="network_disable_socks_info">Если Вы подтвердите, серверы смогут видеть Ваш IP адрес, а провайдер - с какими серверами Вы соединяетесь.</string>
     <string name="update_onion_hosts_settings_question">Обновить настройки .onion хостов?</string>
@@ -415,21 +414,13 @@
     <string name="create_address">Создать адрес</string>
     <string name="delete_address__question">Удалить адрес?</string>
     <string name="all_your_contacts_will_remain_connected">Все контакты, которые соединились через этот адрес, сохранятся.</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
     <string name="share_link">Поделиться\nссылкой</string>
-    <string name="delete_address">Удалить\nадрес</string>
-    <!-- AcceptRequestsView.kt -->
-    <string name="contact_requests">Запросы контактов</string>
-    <string name="accept_requests">Принимать запросы</string>
-    <string name="accept_automatically">Автоматически</string>
-    <string name="section_title_welcome_message">ПРИВЕТСТВЕННОЕ СООБЩЕНИЕ</string>
+    <string name="delete_address">Удалить адрес</string>
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">"Полное имя:</string>
     <string name="your_current_profile">Ваш активный профиль</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам.
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к Вашему профилю.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. <xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к Вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
     <string name="save_preferences_question">Сохранить предпочтения?</string>
@@ -561,12 +552,10 @@
     <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
     <string name="integrity_msg_duplicate">повторное сообщение</string>
     <string name="alert_title_skipped_messages">Пропущенные сообщения</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Это может случится, когда:
-\n1. Сервер удалил сообщения, если они не были доставлены в течение 30 дней.
-\n2. Сервер, через который Вы получаете сообщения от контакта, был обновлён и перезапущен.
-\n3. Соединение компроментировано.
-\nПожалуйста, соединитесь с девелоперами через Настройки, чтобы получать уведомления о серверах.
-\nМы планируем добавить избыточную доставку сообщений, чтобы не терять сообщения.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Это может произойти, когда:
+\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.
+\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.
+\n3. Соединение компроментировано.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
@@ -587,7 +576,7 @@
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
     <string name="settings_section_title_icon">ИКОНКА</string>
     <string name="settings_section_title_themes">ТЕМЫ</string>
-    <string name="settings_section_title_messages">СООБЩЕНИЯ</string>
+    <string name="settings_section_title_messages">СООБЩЕНИЯ И ФАЙЛЫ</string>
     <string name="settings_section_title_calls">ЗВОНКИ</string>
     <string name="settings_section_title_incognito">Режим Инкогнито</string>
     <!-- DatabaseView.kt -->
@@ -1025,7 +1014,6 @@
     <string name="network_session_mode_entity_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>.
 \n<b>Обратите внимание</b>: если у Вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.</string>
     <string name="network_session_mode_user_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого профиля чата, который Вы имеете в приложении</b>.</string>
-    <string name="core_build_timestamp">Ядро скомпилировано: %s</string>
     <string name="core_version">Версия ядра: v%s</string>
     <string name="users_delete_question">Удалить профиль чата\?</string>
     <string name="users_delete_profile_for">Удалить профиль чата для</string>
@@ -1105,7 +1093,6 @@
     <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
     <string name="you_will_still_receive_calls_and_ntfs">Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
     <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть профиль или выключить уведомления - подержите, чтобы увидеть меню.</string>
-    <string name="settings_send_files_via_xftp">Отправлять видео и файлы через XFTP</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Изображение будет принято когда Ваш контакт его загрузит.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Файл будет принят когда Ваш контакт загрузит его.</string>
     <string name="database_upgrade">Обновление базы данных</string>
@@ -1120,14 +1107,11 @@
     <string name="mtr_error_different">разная миграция в приложении/базе данных: %s / %s</string>
     <string name="downgrade_and_open_chat">Откатить версию и открыть чат</string>
     <string name="database_downgrade_warning">Предупреждение: Вы можете потерять какие то данные!</string>
-    <string name="cancel_file__question">Прекратить передачу файла\?</string>
-    <string name="file_transfer_will_be_cancelled_warning">Передача файла будет прекращена. Если она в процессе, она будет остановлена.</string>
     <string name="developer_options">ID базы данных и опция Отдельные транспортные сессии.</string>
     <string name="show_developer_options">Показать опции для девелоперов</string>
     <string name="delete_chat_profile">Удалить профиль чата</string>
     <string name="delete_profile">Удалить профиль</string>
     <string name="profile_password">Пароль профиля</string>
-    <string name="xftp_requires_v461">v4.6.1+ необходима для приема файлов через XFTP.</string>
     <string name="videos_limit_title">Слишком много видео!</string>
     <string name="icon_descr_video_asked_to_receive">Запросил прием видео</string>
     <string name="video_descr">Видео</string>
@@ -1141,4 +1125,90 @@
     <string name="unhide_profile">Раскрыть профиль</string>
     <string name="video_will_be_received_when_contact_is_online">Видео будет получено, когда Ваш контакт будет онлайн, пожалуйста, подождите или проверьте позже!</string>
     <string name="unhide_chat_profile">Раскрыть профиль чата</string>
+    <string name="error_loading_smp_servers">Ошибка при загрузке SMP серверов</string>
+    <string name="error_loading_xftp_servers">Ошибка при загрузке XFTP серверов</string>
+    <string name="error_saving_xftp_servers">Ошибка при сохранении XFTP серверов</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Проверьте, что адреса XFTP северов в правильном формате и не дублируются.</string>
+    <string name="error_xftp_test_server_auth">Сервер требует авторизации для загрузки, проверьте пароль.</string>
+    <string name="smp_server_test_compare_file">Сравнение файла</string>
+    <string name="smp_server_test_delete_file">Удалить файл</string>
+    <string name="smp_server_test_download_file">Загрузка файла</string>
+    <string name="smp_server_test_upload_file">Загрузка файла</string>
+    <string name="xftp_servers">XFTP серверы</string>
+    <string name="your_XFTP_servers">Ваши XFTP серверы</string>
+    <string name="disable_onion_hosts_when_not_supported">Установите <i>Использовать .onion хосты</i> в Нет если SOCKS прокси их не поддерживает.</string>
+    <string name="la_auth_failed">Ошибка аутентификации</string>
+    <string name="la_no_app_password">Нет кода доступа</string>
+    <string name="la_lock_mode_passcode">Ввод кода доступа</string>
+    <string name="la_lock_mode">Режим Блокировки SimpleX</string>
+    <string name="la_lock_mode_system">Системная аутентификация</string>
+    <string name="la_could_not_be_verified">Ошибка аутентификации; попробуйте еще раз.</string>
+    <string name="la_immediately">Сразу</string>
+    <string name="la_authenticate">Аутентифицировать</string>
+    <string name="la_change_app_passcode">Изменить код доступа</string>
+    <string name="la_current_app_passcode">Текущий Код</string>
+    <string name="la_enter_app_passcode">Введите Код</string>
+    <string name="network_socks_proxy_settings">Настройки SOCKS прокси</string>
+    <string name="network_socks_toggle_use_socks_proxy">Использовать SOCKS прокси</string>
+    <string name="host_verb">Хост</string>
+    <string name="port_verb">Порт</string>
+    <string name="network_proxy_port">порт %d</string>
+    <string name="enable_lock">Включить блокировку</string>
+    <string name="authentication_cancelled">Аутентификация отменена</string>
+    <string name="la_mode_system">Системная</string>
+    <string name="la_seconds">%d секунд</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> сообщений не удалось расшифровать.</string>
+    <string name="decryption_error">Ошибка расшифровки</string>
+    <string name="lock_not_enabled">Блокировка SimpleX не включена!</string>
+    <string name="alert_title_msg_bad_hash">Ошибка хэш сообщения</string>
+    <string name="alert_text_msg_bad_hash">Хэш предыдущего сообщения отличается.</string>
+    <string name="confirm_passcode">Подтвердить Код</string>
+    <string name="incorrect_passcode">Неправильный код</string>
+    <string name="lock_after">Заблокировать через</string>
+    <string name="lock_mode">Режим блокировки</string>
+    <string name="new_passcode">Новый Код</string>
+    <string name="submit_passcode">Продолжить</string>
+    <string name="la_mode_passcode">Код доступа</string>
+    <string name="passcode_changed">Код доступа изменён!</string>
+    <string name="passcode_not_changed">Код доступа не изменён!</string>
+    <string name="passcode_set">Код доступа установлен!</string>
+    <string name="change_lock_mode">Изменить режим блокировки</string>
+    <string name="stop_rcv_file__message">Приём файла будет прекращён.</string>
+    <string name="revoke_file__confirm">Отозвать</string>
+    <string name="revoke_file__title">Отозвать файл\?</string>
+    <string name="stop_snd_file__message">Отправка файла будет остановлена.</string>
+    <string name="stop_file__confirm">Остановить</string>
+    <string name="stop_file__action">Остановить файл</string>
+    <string name="stop_snd_file__title">Остановить отправку файла\?</string>
+    <string name="alert_title_msg_bad_id">Ошибка ID сообщения</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Это может произойти, когда Вы или Ваш контакт используете старую копию базы данных.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Пожалуйста, сообщите об этой ошибке девелоперам.</string>
+    <string name="alert_text_msg_bad_id">Неправильный ID предыдущего сообщения (меньше или равен предыдущему).
+\nЭто может произойти из-за ошибки программы, или когда соединение компроментировано.</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Эта ошибка постоянная для этого соединения, пожалуйста, соединитесь снова.</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> сообщений пропущено.</string>
+    <string name="allow_calls_only_if">Разрешить звонки, только если их разрешает Ваш контакт.</string>
+    <string name="allow_your_contacts_to_call">Разрешить Вашим контактам звонить Вам.</string>
+    <string name="audio_video_calls">Аудио/видео звонки</string>
+    <string name="calls_prohibited_with_this_contact">Аудио/видео звонки запрещены.</string>
+    <string name="available_in_v51">"
+\nДоступно в v5.1"</string>
+    <string name="both_you_and_your_contact_can_make_calls">Вы и Ваш контакт можете совершать звонки.</string>
+    <string name="only_you_can_make_calls">Только Вы можете совершать звонки.</string>
+    <string name="only_your_contact_can_make_calls">Только Ваш контакт может совершать звонки.</string>
+    <string name="prohibit_calls">Запретить аудио/видео звонки.</string>
+    <string name="no_spaces">Без пробелов!</string>
+    <string name="v5_0_large_files_support_descr">Быстрые и не нужно ждать, когда отправитель онлайн!</string>
+    <string name="v5_0_polish_interface">Польский интерфейс</string>
+    <string name="v5_0_app_passcode_descr">Установите код вместо системной аутентификации.</string>
+    <string name="v5_0_polish_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="v5_0_large_files_support">Видео и файлы до 1гб</string>
+    <string name="v5_0_app_passcode">Код доступа в приложение</string>
+    <string name="revoke_file__message">Файл будет удалён с серверов.</string>
+    <string name="smp_server_test_create_file">Создание файла</string>
+    <string name="la_minutes">%d минут(ы)</string>
+    <string name="la_please_remember_to_store_password">Пожалуйста, запомните или сохраните его - восстановить потерянный код доступа невозможно!</string>
+    <string name="revoke_file__action">Отозвать файл</string>
+    <string name="stop_rcv_file__title">Остановить приём файла\?</string>
+    <string name="you_can_turn_on_lock">Вы можете включить Блокировку SimpleX через Настройки.</string>
 </resources>

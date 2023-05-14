@@ -73,6 +73,7 @@ testOpts =
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       allowInstantFiles = True,
+      muteNotifications = True,
       maintenance = False
     }
 
@@ -111,7 +112,8 @@ testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
       testView = True,
-      tbqSize = 16
+      tbqSize = 16,
+      xftpFileConfig = Nothing
     }
 
 testAgentCfgV1 :: AgentConfig
@@ -343,11 +345,14 @@ xftpServerConfig =
     }
 
 withXFTPServer :: IO () -> IO ()
-withXFTPServer =
+withXFTPServer = withXFTPServer' xftpServerConfig
+
+withXFTPServer' :: XFTPServerConfig -> IO () -> IO ()
+withXFTPServer' cfg =
   serverBracket
     ( \started -> do
         createDirectoryIfMissing False xftpServerFiles
-        runXFTPServerBlocking started xftpServerConfig
+        runXFTPServerBlocking started cfg
     )
 
 serverBracket :: (TMVar Bool -> IO ()) -> IO () -> IO ()

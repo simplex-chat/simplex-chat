@@ -1,3 +1,7 @@
+---
+title: Použití vlastních serverů WebRTC ICE v SimpleX Chat
+revision: 31.01.2023
+---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/WEBRTC.md), [FR](/docs/lang/fr/WEBRTC.md) |
 
 # Použití vlastních serverů WebRTC ICE v SimpleX Chat
@@ -124,7 +128,7 @@ To je vše - nyní můžete uskutečňovat audio a video hovory prostřednictví
 
   2. Do části **Sestavit seznam serverů ICE** přidejte:
 
-     <img src="./stun_1.png">.
+     <img src="/docs/stun_1.png">.
 
      - `STUN: stun:<vaše_ip_nebo_doména>:<port>` a stiskněte `Add STUN`.
      - `TURN: turn:<vaše_ip_nebo_doména>:<port>`, `Username: <vaše_přihlašovací jméno>`, `Credential: <vaš_pas>` a stiskněte `Add TURN`
@@ -133,10 +137,10 @@ To je vše - nyní můžete uskutečňovat audio a video hovory prostřednictví
 
   3. Měli byste vidět své servery v sekci **ICE server list**. Pokud je vše správně nastaveno, stiskněte `Start test`:
 
-     <img src="./stun_2.png">
+     <img src="/docs/stun_2.png">
 
   4. V části **Výsledky** byste měli vidět něco takového:
 
-     <img src="./stun_3.png">
+     <img src="/docs/stun_3.png">
 
      Pokud výsledky zobrazují kandidáty `srflx` a `relay`, je vše nastaveno správně!

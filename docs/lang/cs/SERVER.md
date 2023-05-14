@@ -1,3 +1,7 @@
+---
+title: Hostování vlastního serveru SMP
+revision: 31.01.2023
+---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md) |
 
 # Hostování vlastního serveru SMP
@@ -327,4 +331,4 @@ Adresu svého serveru můžete také sdílet se svými přáteli tak, že je nec
 
 _Upozornění_: pro podporu hesla je třeba mít SMP server verze 4.0. Pokud již máte nasazený server, můžete heslo přidat přidáním do souboru INI serveru.
 
-<img src="./server_config_1.png" width="288"> &nbsp;&nbsp; <img src="./server_config_2.png" width="288"> &nbsp;&nbsp; <img src="./server_config_3.png" width="288">
+<img src="/docs/server_config_1.png" width="288"> &nbsp;&nbsp; <img src="/docs/server_config_2.png" width="288"> &nbsp;&nbsp; <img src="/docs/server_config_3.png" width="288">

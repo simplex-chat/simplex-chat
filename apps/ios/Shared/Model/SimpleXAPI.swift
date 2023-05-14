@@ -125,8 +125,8 @@ func apiGetActiveUser() throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p))
+func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp))
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -187,7 +187,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true))
+    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true, xftp: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -295,6 +295,12 @@ func loadChat(chat: Chat, search: String = "") {
     }
 }
 
+func apiGetChatItemInfo(itemId: Int64) async throws -> ChatItemInfo {
+    let r = await chatSendCmd(.apiGetChatItemInfo(itemId: itemId))
+    if case let .chatItemInfo(_, _, chatItemInfo) = r { return chatItemInfo }
+    throw r
+}
+
 func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false) async -> ChatItem? {
     let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live)
@@ -391,36 +397,22 @@ func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserProtocolServers(_ p: ServerProtocol) throws -> ([ServerCfg], [String]) {
-    if case .smp = p {
-        return try getUserSMPServers()
-    }
-    throw RuntimeError("not supported")
-}
-
-private func getUserSMPServers() throws -> ([ServerCfg], [String]) {
-    let userId = try currentUserId("getUserSMPServers")
-    let r = chatSendCmdSync(.apiGetUserSMPServers(userId: userId))
-    if case let .userSMPServers(_, smpServers, presetServers) = r { return (smpServers, presetServers) }
+func getUserProtoServers(_ serverProtocol: ServerProtocol) throws -> UserProtoServers {
+    let userId = try currentUserId("getUserProtoServers")
+    let r = chatSendCmdSync(.apiGetUserProtoServers(userId: userId, serverProtocol: serverProtocol))
+    if case let .userProtoServers(_, servers) = r { return servers }
     throw r
 }
 
-func setUserProtocolServers(_ p: ServerProtocol, servers: [ServerCfg]) async throws {
-    if case .smp = p {
-        return try await setUserSMPServers(smpServers: servers)
-    }
-    throw RuntimeError("not supported")
+func setUserProtoServers(_ serverProtocol: ServerProtocol, servers: [ServerCfg]) async throws {
+    let userId = try currentUserId("setUserProtoServers")
+    try await sendCommandOkResp(.apiSetUserProtoServers(userId: userId, serverProtocol: serverProtocol, servers: servers))
 }
 
-private func setUserSMPServers(smpServers: [ServerCfg]) async throws {
-    let userId = try currentUserId("setUserSMPServers")
-    try await sendCommandOkResp(.apiSetUserSMPServers(userId: userId, smpServers: smpServers))
-}
-
-func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
-    let userId = try currentUserId("testSMPServer")
-    let r = await chatSendCmd(.apiTestSMPServer(userId: userId, smpServer: smpServer))
-    if case let .smpTestResult(_, testFailure) = r {
+func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFailure> {
+    let userId = try currentUserId("testProtoServer")
+    let r = await chatSendCmd(.apiTestProtoServer(userId: userId, server: server))
+    if case let .serverTestResult(_, _, testFailure) = r {
         if let t = testFailure {
             return .failure(t)
         }
@@ -632,6 +624,16 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     }
 }
 
+func apiSetProfileAddress(on: Bool) async throws -> User? {
+    let userId = try currentUserId("apiSetProfileAddress")
+    let r = await chatSendCmd(.apiSetProfileAddress(userId: userId, on: on))
+    switch r {
+    case .userProfileNoChange: return nil
+    case let .userProfileUpdated(user, _, _): return user
+    default: throw r
+    }
+}
+
 func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
     let r = await chatSendCmd(.apiSetContactPrefs(contactId: contactId, preferences: preferences))
     if case let .contactPrefsUpdated(_, _, toContact) = r { return toContact }
@@ -657,10 +659,10 @@ func apiCreateUserAddress() async throws -> String {
     throw r
 }
 
-func apiDeleteUserAddress() async throws {
+func apiDeleteUserAddress() async throws -> User? {
     let userId = try currentUserId("apiDeleteUserAddress")
     let r = await chatSendCmd(.apiDeleteMyAddress(userId: userId))
-    if case .userContactLinkDeleted = r { return }
+    if case let .userContactLinkDeleted(user) = r { return user }
     throw r
 }
 
@@ -759,6 +761,7 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil) async -> AChatItem? {
 func cancelFile(user: User, fileId: Int64) async {
     if let chatItem = await apiCancelFile(fileId: fileId) {
         DispatchQueue.main.async { chatItemSimpleUpdate(user, chatItem) }
+        cleanupFile(chatItem)
     }
 }
 
@@ -956,12 +959,6 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     return []
 }
 
-func apiListMembersSync(_ groupId: Int64) -> [GroupMember] {
-    let r = chatSendCmdSync(.apiListMembers(groupId: groupId))
-    if case let .groupMembers(_, group) = r { return group.members }
-    return []
-}
-
 func filterMembersToAdd(_ ms: [GroupMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
     return ChatModel.shared.chats
@@ -1034,6 +1031,7 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
+        onboardingStageDefault.set(.step1_SimpleXInfo)
         m.onboardingStage = .step1_SimpleXInfo
     } else if start {
         try startChat(refreshInvitations: refreshInvitations)
@@ -1059,9 +1057,10 @@ func startChat(refreshInvitations: Bool = true) throws {
             registerToken(token: token)
         }
         withAnimation {
-            m.onboardingStage = m.onboardingStage == .step2_CreateProfile && m.users.count == 1
-                                ? .step3_SetNotificationsMode
-                                : .onboardingComplete
+            let savedOnboardingStage = onboardingStageDefault.get()
+            m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
+                                ? .step3_CreateSimpleXAddress
+                                : savedOnboardingStage
         }
     }
     ChatReceiver.shared.start()
@@ -1337,37 +1336,36 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if active(user) {
                 m.updateGroup(groupInfo)
             }
+        case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
+            chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileStart(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileSndCancelled(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
+            cleanupFile(aChatItem)
         case let .rcvFileProgressXFTP(user, aChatItem, _, _):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .rcvFileError(user, aChatItem):
+            chatItemSimpleUpdate(user, aChatItem)
+            cleanupFile(aChatItem)
         case let .sndFileStart(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileComplete(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
-            let cItem = aChatItem.chatItem
-            let mc = cItem.content.msgContent
-            if aChatItem.chatInfo.chatType == .direct,
-               case .file = mc,
-               let fileName = cItem.file?.filePath {
-                removeFile(fileName)
-            }
+            cleanupDirectFile(aChatItem)
         case let .sndFileRcvCancelled(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
+            cleanupDirectFile(aChatItem)
         case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
             chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileCompleteXFTP(user, aChatItem, _):
             chatItemSimpleUpdate(user, aChatItem)
-            let cItem = aChatItem.chatItem
-            let mc = cItem.content.msgContent
-            if case .file = mc,
-               let fileName = cItem.file?.filePath {
-                removeFile(fileName)
-            }
+            cleanupFile(aChatItem)
+        case let .sndFileError(user, aChatItem):
+            chatItemSimpleUpdate(user, aChatItem)
+            cleanupFile(aChatItem)
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)

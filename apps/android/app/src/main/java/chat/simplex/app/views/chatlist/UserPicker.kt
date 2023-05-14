@@ -1,23 +1,21 @@
 package chat.simplex.app.views.chatlist
 
-import SectionItemViewSpaceBetween
+import SectionItemView
 import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
@@ -105,15 +103,16 @@ fun UserPicker(
   ) {
     Column(
       Modifier
-        .widthIn(min = 220.dp)
+        .widthIn(min = 260.dp)
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
-        .shadow(8.dp, MaterialTheme.shapes.medium, clip = false)
-        .background(if (isInDarkTheme()) MaterialTheme.colors.background.darker(-0.7f) else MaterialTheme.colors.background, MaterialTheme.shapes.medium)
+        .shadow(8.dp, RoundedCornerShape(corner = CornerSize(25.dp)), clip = true)
+        .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
+        .clip(RoundedCornerShape(corner = CornerSize(25.dp)))
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         users.forEach { u ->
-          UserProfilePickerItem(u.user, u.unreadCount, openSettings = {
+          UserProfilePickerItem(u.user, u.unreadCount, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = {
             settingsClicked()
             userPickerState.value = AnimatedViewState.GONE
           }) {
@@ -151,7 +150,7 @@ fun UserPicker(
 }
 
 @Composable
-fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
+fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
@@ -162,33 +161,31 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!u.activeUser) LocalIndication.current else null
       )
-      .padding(PaddingValues(start = 8.dp, end = DEFAULT_PADDING)),
+      .padding(padding),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
     UserProfileRow(u)
     if (u.activeUser) {
-        Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        Icon(painterResource(R.drawable.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
-        Icon(Icons.Outlined.Lock, null, Modifier.size(20.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     } else if (unreadCount > 0) {
-      Row {
+      Box(
+        contentAlignment = Alignment.Center
+      ) {
         Text(
           unreadCountStr(unreadCount),
           color = Color.White,
           fontSize = 11.sp,
           modifier = Modifier
-            .background(if (u.showNtfs) MaterialTheme.colors.primary else HighOrLowlight, shape = CircleShape)
-            .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
-            .padding(horizontal = 3.dp)
-            .padding(vertical = 1.dp),
-          textAlign = TextAlign.Center,
-          maxLines = 1
+            .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
+            .padding(2.dp)
+            .badgeLayout()
         )
-        Spacer(Modifier.width(2.dp))
       }
     } else if (!u.showNtfs) {
-      Icon(Icons.Outlined.NotificationsOff, null, Modifier.size(20.dp), tint = HighOrLowlight)
+      Icon(painterResource(R.drawable.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     }  else {
       Box(Modifier.size(20.dp))
     }
@@ -210,7 +207,8 @@ fun UserProfileRow(u: User) {
     Text(
       u.displayName,
       modifier = Modifier
-        .padding(start = 8.dp, end = 8.dp),
+        .padding(start = 10.dp, end = 8.dp),
+      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
   }
@@ -218,24 +216,26 @@ fun UserProfileRow(u: User) {
 
 @Composable
 private fun SettingsPickerItem(onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, minHeight = 68.dp) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(R.string.settings_section_title_settings).lowercase().capitalize(Locale.current)
+    Icon(painterResource(R.drawable.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
       text,
-      color = MaterialTheme.colors.onBackground,
+      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
     )
-    Icon(Icons.Outlined.Settings, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
   }
 }
 
 @Composable
 private fun CancelPickerItem(onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, minHeight = 68.dp) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(R.string.cancel_verb)
+    Icon(painterResource(R.drawable.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
       text,
-      color = MaterialTheme.colors.onBackground,
+      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
     )
-    Icon(Icons.Outlined.Close, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
   }
 }

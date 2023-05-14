@@ -9,11 +9,11 @@ const jsonFileNames = files.filter(file => file.endsWith('.json'));
 supportedLangs = jsonFileNames.map(file => file.replace('.json', ''))
 
 // keys of the english language are used as the base keys
-const enStrings = require("./langs/en.json")
+const enStrings = require(path.resolve(__dirname, "langs/en.json"))
 
 const languages = {}
 for (const lang of supportedLangs) {
-    languages[lang] = require(`./langs/${lang}.json`)
+    languages[lang] = require(path.resolve(__dirname, `langs/${lang}.json`))
 }
 
 // this program generates a combined translations.json file
@@ -27,9 +27,7 @@ for (const key in enStrings) {
     translations[key] = langStrings
 }
 
-saveFile("translations.json", translations)
-// the list in the supported_languages.json file is used as the reference list for displaying available languages on the frontend
-saveFile("src/_data/supported_languages.json", {"langs": supportedLangs})
+saveFile(path.resolve(__dirname, "translations.json"), translations)
 
 function saveFile(relPath, data) {
     filePath = path.resolve(__dirname, relPath)

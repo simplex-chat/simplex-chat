@@ -129,6 +129,7 @@ mobileChatOpts dbFilePrefix dbKey =
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       allowInstantFiles = True,
+      muteNotifications = True,
       maintenance = True
     }
 
@@ -198,7 +199,7 @@ chatParseServer = LB.unpack . J.encode . toServerAddress . strDecode . B.pack
     toServerAddress = \case
       Right (AProtoServerWithAuth protocol (ProtoServerWithAuth ProtocolServer {host, port, keyHash = C.KeyHash kh} auth)) ->
         let basicAuth = maybe "" (\(BasicAuth a) -> enc a) auth
-         in ParsedServerAddress (Just ServerAddress {protocol = AProtocolType protocol, hostnames = L.map enc host, port, keyHash = enc kh, basicAuth}) ""
+         in ParsedServerAddress (Just ServerAddress {serverProtocol = AProtocolType protocol, hostnames = L.map enc host, port, keyHash = enc kh, basicAuth}) ""
       Left e -> ParsedServerAddress Nothing e
     enc :: StrEncoding a => a -> String
     enc = B.unpack . strEncode

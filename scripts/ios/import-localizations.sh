@@ -2,7 +2,7 @@
 
 set -e
 
-langs=( cs de es fr it nl ru zh-Hans )
+langs=( en cs de es fr it nl pl ru zh-Hans )
 
 for lang in "${langs[@]}"; do
   echo "***"
@@ -14,5 +14,5 @@ for lang in "${langs[@]}"; do
             -localizationPath ./apps/ios/SimpleX\ Localizations/$lang.xcloc \
             -disableAutomaticPackageResolution \
             -skipPackageUpdates
-  sleep 2
+  sleep 10
 done

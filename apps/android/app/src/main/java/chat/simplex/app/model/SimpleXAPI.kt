@@ -9,30 +9,30 @@ import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import chat.simplex.app.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
-import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ConnectViaLinkTab
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.*
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.*
 import java.util.Date
 
@@ -60,6 +60,7 @@ enum class SimplexLinkMode {
 
 class AppPreferences(val context: Context) {
   private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+  private val sharedPreferencesThemes: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_THEMES_ID, Context.MODE_PRIVATE)
 
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
@@ -84,6 +85,8 @@ class AppPreferences(val context: Context) {
     set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) }
   )
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
+  val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.SYSTEM) { LAMode.values().firstOrNull { it.name == this } }
+  val laLockDelay = mkIntPreference(SHARED_PREFS_LA_LOCK_DELAY, 30)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
   val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
@@ -108,6 +111,7 @@ class AppPreferences(val context: Context) {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
+  val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
   private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
   val networkSessionMode: SharedPreference<TransportSessionMode> = SharedPreference(
     get = fun(): TransportSessionMode {
@@ -137,19 +141,30 @@ class AppPreferences(val context: Context) {
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
 
+  val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
   val storeDBPassphrase = mkBoolPreference(SHARED_PREFS_STORE_DB_PASSPHRASE, true)
   val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
   val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
   val initializationVectorDBPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE, null)
+  val encryptedAppPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_APP_PASSPHRASE, null)
+  val initializationVectorAppPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_APP_PASSPHRASE, null)
+  val encryptedSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE, null)
+  val initializationVectorSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE, null)
   val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null, true)
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
+  val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
+  val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
-  val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
+  val themeOverrides = mkMapPreference(SHARED_PREFS_THEMES, mapOf(), encode = {
+    json.encodeToString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+  }, decode = {
+    json.decodeFromString(MapSerializer(String.serializer(), ThemeOverrides.serializer()), it)
+  }, sharedPreferencesThemes)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
-
-  val xftpSendEnabled = mkBoolPreference(SHARED_PREFS_XFTP_SEND_ENABLED, false)
+  val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -183,6 +198,12 @@ class AppPreferences(val context: Context) {
       set = fun(value) = sharedPreferences.edit().putString(prefName, value).apply()
     )
 
+  private fun <T> mkEnumPreference(prefName: String, default: T, construct: String.() -> T?): SharedPreference<T> =
+    SharedPreference(
+      get = fun() = sharedPreferences.getString(prefName, default.toString())?.construct() ?: default,
+      set = fun(value) = sharedPreferences.edit().putString(prefName, value.toString()).apply()
+    )
+
   /**
   * Provide `[commit] = true` to save preferences right now, not after some unknown period of time.
   * So in case of a crash this value will be saved 100%
@@ -198,8 +219,15 @@ class AppPreferences(val context: Context) {
       }
     )
 
+  private fun <K, V> mkMapPreference(prefName: String, default: Map<K, V>, encode: (Map<K, V>) -> String, decode: (String) -> Map<K, V>, prefs: SharedPreferences = sharedPreferences): SharedPreference<Map<K,V>> =
+    SharedPreference(
+      get = fun() = decode(prefs.getString(prefName, encode(default))!!),
+      set = fun(value) = prefs.edit().putString(prefName, encode(value)).apply()
+    )
+
   companion object {
     internal const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    internal const val SHARED_PREFS_THEMES_ID = "chat.simplex.app.THEMES"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
@@ -209,6 +237,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
     private const val SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN = "CallsOnLockScreen"
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
+    private const val SHARED_PREFS_LA_MODE = "LocalAuthenticationMode"
+    private const val SHARED_PREFS_LA_LOCK_DELAY = "LocalAuthenticationLockDelay"
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
     private const val SHARED_PREFS_PRIVACY_PROTECT_SCREEN = "PrivacyProtectScreen"
@@ -221,9 +251,11 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
+    private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
+    private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
     private const val SHARED_PREFS_NETWORK_SESSION_MODE = "NetworkSessionMode"
     private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
@@ -244,12 +276,19 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE = "InitialRandomDBPassphrase"
     private const val SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE = "EncryptedDBPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE = "InitializationVectorDBPassphrase"
+    private const val SHARED_PREFS_ENCRYPTED_APP_PASSPHRASE = "EncryptedAppPassphrase"
+    private const val SHARED_PREFS_INITIALIZATION_VECTOR_APP_PASSPHRASE = "InitializationVectorAppPassphrase"
+    private const val SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE = "EncryptedSelfDestructPassphrase"
+    private const val SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE = "InitializationVectorSelfDestructPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
+    private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
+    private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
-    private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
+    private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
+    private const val SHARED_PREFS_THEMES = "Themes"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
-    private const val SHARED_PREFS_XFTP_SEND_ENABLED = "XFTPSendEnabled"
+    private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
   }
 }
 
@@ -297,7 +336,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.userCreated.value = true
         apiSetIncognito(chatModel.incognito.value)
         getUserChatData()
-        chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
         chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
         startReceiver()
@@ -337,9 +375,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun getUserChatData() {
     chatModel.userAddress.value = apiGetUserAddress()
-    val smpServers = getUserSMPServers()
-    chatModel.userSMPServers.value = smpServers?.first
-    chatModel.presetSMPServers.value = smpServers?.second
     chatModel.chatItemTTL.value = getChatItemTTL()
     val chats = apiGetChats()
     chatModel.updateChats(chats)
@@ -407,8 +442,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiCreateActiveUser(p: Profile): User? {
-    val r = sendCmd(CC.CreateActiveUser(p))
+  suspend fun apiCreateActiveUser(p: Profile?, sameServers: Boolean = false, pastTimestamp: Boolean = false): User? {
+    val r = sendCmd(CC.CreateActiveUser(p, sameServers = sameServers, pastTimestamp = pastTimestamp))
     if (r is CR.ActiveUser) return r.user
     else if (
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
@@ -579,38 +614,44 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  private suspend fun getUserSMPServers(): Pair<List<ServerCfg>, List<String>>? {
-    val userId = kotlin.runCatching { currentUserId("getUserSMPServers") }.getOrElse { return null }
-    val r = sendCmd(CC.APIGetUserSMPServers(userId))
-    if (r is CR.UserSMPServers) return r.smpServers to r.presetSMPServers
-    Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
-    return null
+  suspend fun getUserProtoServers(serverProtocol: ServerProtocol): UserProtocolServers? {
+    val userId = kotlin.runCatching { currentUserId("getUserProtoServers") }.getOrElse { return null }
+    val r = sendCmd(CC.APIGetUserProtoServers(userId, serverProtocol))
+    return if (r is CR.UserProtoServers) r.servers
+    else {
+      Log.e(TAG, "getUserProtoServers bad response: ${r.responseType} ${r.details}")
+      AlertManager.shared.showAlertMsg(
+        generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.error_loading_smp_servers else R.string.error_loading_xftp_servers),
+        "${r.responseType}: ${r.details}"
+      )
+      null
+    }
   }
 
-  suspend fun setUserSMPServers(smpServers: List<ServerCfg>): Boolean {
-    val userId = kotlin.runCatching { currentUserId("setUserSMPServers") }.getOrElse { return false }
-    val r = sendCmd(CC.APISetUserSMPServers(userId, smpServers))
+  suspend fun setUserProtoServers(serverProtocol: ServerProtocol, servers: List<ServerCfg>): Boolean {
+    val userId = kotlin.runCatching { currentUserId("setUserProtoServers") }.getOrElse { return false }
+    val r = sendCmd(CC.APISetUserProtoServers(userId, serverProtocol, servers))
     return when (r) {
       is CR.CmdOk -> true
       else -> {
-        Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
+        Log.e(TAG, "setUserProtoServers bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.error_saving_smp_servers),
-          generalGetString(R.string.ensure_smp_server_address_are_correct_format_and_unique)
+          generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.error_saving_smp_servers else R.string.error_saving_xftp_servers),
+          generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.ensure_smp_server_address_are_correct_format_and_unique else R.string.ensure_xftp_server_address_are_correct_format_and_unique)
         )
         false
       }
     }
   }
 
-  suspend fun testSMPServer(smpServer: String): SMPTestFailure? {
-    val userId = currentUserId("testSMPServer")
-    val r = sendCmd(CC.APITestSMPServer(userId, smpServer))
+  suspend fun testProtoServer(server: String): ProtocolTestFailure? {
+    val userId = currentUserId("testProtoServer")
+    val r = sendCmd(CC.APITestProtoServer(userId, server))
     return when (r) {
-      is CR.SmpTestResult -> r.smpTestFailure
+      is CR.ServerTestResult -> r.testFailure
       else -> {
-        Log.e(TAG, "testSMPServer bad response: ${r.responseType} ${r.details}")
-        throw Exception("testSMPServer bad response: ${r.responseType} ${r.details}")
+        Log.e(TAG, "testProtoServer bad response: ${r.responseType} ${r.details}")
+        throw Exception("testProtoServer bad response: ${r.responseType} ${r.details}")
       }
     }
   }
@@ -823,6 +864,15 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiSetProfileAddress(on: Boolean): User? {
+    val userId = try { currentUserId("apiSetProfileAddress") } catch (e: Exception) { return null }
+    return when (val r = sendCmd(CC.ApiSetProfileAddress(userId, on))) {
+      is CR.UserProfileNoChange -> null
+      is CR.UserProfileUpdated -> r.user
+      else -> throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+    }
+  }
+
   suspend fun apiSetContactPrefs(contactId: Long, prefs: ChatPreferences): Contact? {
     val r = sendCmd(CC.ApiSetContactPrefs(contactId, prefs))
     if (r is CR.ContactPrefsUpdated) return r.toContact
@@ -858,12 +908,12 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun apiDeleteUserAddress(): Boolean {
-    val userId = kotlin.runCatching { currentUserId("apiDeleteUserAddress") }.getOrElse { return false }
+  suspend fun apiDeleteUserAddress(): User? {
+    val userId = try { currentUserId("apiDeleteUserAddress") } catch (e: Exception) { return null }
     val r = sendCmd(CC.ApiDeleteMyAddress(userId))
-    if (r is CR.UserContactLinkDeleted) return true
+    if (r is CR.UserContactLinkDeleted) return r.user
     Log.e(TAG, "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
-    return false
+    return null
   }
 
   private suspend fun apiGetUserAddress(): UserContactLinkRec? {
@@ -1002,6 +1052,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     val chatItem = apiCancelFile(fileId)
     if (chatItem != null) {
       chatItemSimpleUpdate(user, chatItem)
+      cleanupFile(chatItem)
     }
   }
 
@@ -1417,40 +1468,35 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.RcvFileComplete ->
         chatItemSimpleUpdate(r.user, r.chatItem)
-      is CR.RcvFileSndCancelled ->
+      is CR.RcvFileSndCancelled -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
+        cleanupFile(r.chatItem)
+      }
       is CR.RcvFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
+      is CR.RcvFileError -> {
+        chatItemSimpleUpdate(r.user, r.chatItem)
+        cleanupFile(r.chatItem)
+      }
       is CR.SndFileStart ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileComplete -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
-        val cItem = r.chatItem.chatItem
-        val mc = cItem.content.msgContent
-        val fileName = cItem.file?.fileName
-        if (
-          r.chatItem.chatInfo.chatType == ChatType.Direct
-          && mc is MsgContent.MCFile
-          && fileName != null
-        ) {
-          removeFile(appContext, fileName)
-        }
+        cleanupDirectFile(r.chatItem)
       }
-      is CR.SndFileRcvCancelled ->
+      is CR.SndFileRcvCancelled -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
+        cleanupDirectFile(r.chatItem)
+      }
       is CR.SndFileProgressXFTP ->
         chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileCompleteXFTP -> {
         chatItemSimpleUpdate(r.user, r.chatItem)
-        val cItem = r.chatItem.chatItem
-        val mc = cItem.content.msgContent
-        val fileName = cItem.file?.fileName
-        if (
-          mc is MsgContent.MCFile
-          && fileName != null
-        ) {
-          removeFile(appContext, fileName)
-        }
+        cleanupFile(r.chatItem)
+      }
+      is CR.SndFileError -> {
+        chatItemSimpleUpdate(r.user, r.chatItem)
+        cleanupFile(r.chatItem)
       }
       is CR.CallInvitation -> {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation)
@@ -1499,6 +1545,24 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
+    }
+  }
+
+  private fun cleanupDirectFile(aChatItem: AChatItem) {
+    if (aChatItem.chatInfo.chatType == ChatType.Direct) {
+      cleanupFile(aChatItem)
+    }
+  }
+
+  private fun cleanupFile(aChatItem: AChatItem) {
+    val cItem = aChatItem.chatItem
+    val mc = cItem.content.msgContent
+    val fileName = cItem.file?.fileName
+    if (
+      mc is MsgContent.MCFile
+      && fileName != null
+    ) {
+      removeFile(appContext, fileName)
     }
   }
 
@@ -1604,7 +1668,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -1641,7 +1705,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -1672,7 +1736,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       title = {
         Row {
           Icon(
-            Icons.Outlined.Bolt,
+            painterResource(R.drawable.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
@@ -1696,43 +1760,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     )
   }
 
-  fun showLANotice(activity: FragmentActivity) {
-    Log.d(TAG, "showLANotice")
-    if (!appPrefs.laNoticeShown.get()) {
-      appPrefs.laNoticeShown.set(true)
-      AlertManager.shared.showAlertDialog(
-        title = generalGetString(R.string.la_notice_title_simplex_lock),
-        text = generalGetString(R.string.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
-        confirmText = generalGetString(R.string.la_notice_turn_on),
-        onConfirm = {
-          authenticate(
-            generalGetString(R.string.auth_enable_simplex_lock),
-            generalGetString(R.string.auth_confirm_credential),
-            activity,
-            completed = { laResult ->
-              when (laResult) {
-                LAResult.Success -> {
-                  chatModel.performLA.value = true
-                  appPrefs.performLA.set(true)
-                  laTurnedOnAlert()
-                }
-                is LAResult.Error, LAResult.Failed -> {
-                  chatModel.performLA.value = false
-                  appPrefs.performLA.set(false)
-                }
-                LAResult.Unavailable -> {
-                  chatModel.performLA.value = false
-                  appPrefs.performLA.set(false)
-                  chatModel.showAdvertiseLAUnavailableAlert.value = true
-                }
-              }
-            }
-          )
-        }
-      )
-    }
-  }
-
   fun isIgnoringBatteryOptimizations(context: Context): Boolean {
     val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
@@ -1749,14 +1776,22 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  fun getXFTPCfg(): XFTPFileConfig? {
-    val prefXFTPSendEnabled = appPrefs.xftpSendEnabled.get()
-    return if (prefXFTPSendEnabled) XFTPFileConfig(minFileSize = 0) else null
+  fun getXFTPCfg(): XFTPFileConfig {
+    return XFTPFileConfig(minFileSize = 0)
   }
 
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
-    val socksProxy = if (useSocksProxy) ":9050" else null
+    val proxyHostPort  = appPrefs.networkProxyHostPort.get()
+    val socksProxy = if (useSocksProxy) {
+      if (proxyHostPort?.startsWith("localhost:") == true) {
+        proxyHostPort.removePrefix("localhost")
+      } else {
+        proxyHostPort ?: ":9050"
+      }
+    } else {
+      null
+    }
     val hostMode = HostMode.valueOf(appPrefs.networkHostMode.get()!!)
     val requiredHostMode = appPrefs.networkRequiredHostMode.get()
     val sessionMode = appPrefs.networkSessionMode.get()
@@ -1786,6 +1821,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     )
   }
 
+  /**
+   * [AppPreferences.networkProxyHostPort] is not changed here, use appPrefs to set it
+   * */
   fun setNetCfg(cfg: NetCfg) {
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
     appPrefs.networkHostMode.set(cfg.hostMode.name)
@@ -1823,7 +1861,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
-  class CreateActiveUser(val profile: Profile): CC()
+  class CreateActiveUser(val profile: Profile?, val sameServers: Boolean, val pastTimestamp: Boolean): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
@@ -1859,9 +1897,9 @@ sealed class CC {
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
-  class APIGetUserSMPServers(val userId: Long): CC()
-  class APISetUserSMPServers(val userId: Long, val smpServers: List<ServerCfg>): CC()
-  class APITestSMPServer(val userId: Long, val smpServer: String): CC()
+  class APIGetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol): CC()
+  class APISetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol, val servers: List<ServerCfg>): CC()
+  class APITestProtoServer(val userId: Long, val server: String): CC()
   class APISetChatItemTTL(val userId: Long, val seconds: Long?): CC()
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
@@ -1888,6 +1926,7 @@ sealed class CC {
   class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
+  class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
   class ApiAddressAutoAccept(val userId: Long, val autoAccept: AutoAccept?): CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
   class ApiRejectCall(val contact: Contact): CC()
@@ -1907,7 +1946,10 @@ sealed class CC {
   val cmdString: String get() = when (this) {
     is Console -> cmd
     is ShowActiveUser -> "/u"
-    is CreateActiveUser -> "/create user ${profile.displayName} ${profile.fullName}"
+    is CreateActiveUser -> {
+      val user = NewUser(profile, sameServers = sameServers, pastTimestamp = pastTimestamp)
+      "/_create user ${json.encodeToString(user)}"
+    }
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId${maybePwd(viewPwd)}"
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
@@ -1915,7 +1957,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
+    is StartChat -> "/_start subscribe=on expire=${onOff(expire)} xftp=on"
     is ApiStopChat -> "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
@@ -1943,9 +1985,9 @@ sealed class CC {
     is APIGroupLinkMemberRole -> "/_set link role #$groupId ${memberRole.name.lowercase()}"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
-    is APIGetUserSMPServers -> "/_smp $userId"
-    is APISetUserSMPServers -> "/_smp $userId ${smpServersStr(smpServers)}"
-    is APITestSMPServer -> "/_smp test $userId $smpServer"
+    is APIGetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()}"
+    is APISetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()} ${protoServersStr(servers)}"
+    is APITestProtoServer -> "/_server test $userId $server"
     is APISetChatItemTTL -> "/_ttl $userId ${chatItemTTLStr(seconds)}"
     is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
@@ -1972,6 +2014,7 @@ sealed class CC {
     is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
+    is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
     is ApiAddressAutoAccept -> "/_auto_accept $userId ${AutoAccept.cmdString(autoAccept)}"
     is ApiAcceptContact -> "/_accept $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
@@ -2028,9 +2071,9 @@ sealed class CC {
     is APIGroupLinkMemberRole -> "apiGroupLinkMemberRole"
     is APIDeleteGroupLink -> "apiDeleteGroupLink"
     is APIGetGroupLink -> "apiGetGroupLink"
-    is APIGetUserSMPServers -> "apiGetUserSMPServers"
-    is APISetUserSMPServers -> "apiSetUserSMPServers"
-    is APITestSMPServer -> "testSMPServer"
+    is APIGetUserProtoServers -> "apiGetUserProtoServers"
+    is APISetUserProtoServers -> "apiSetUserProtoServers"
+    is APITestProtoServer -> "testProtoServer"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"
@@ -2057,6 +2100,7 @@ sealed class CC {
     is ApiCreateMyAddress -> "apiCreateMyAddress"
     is ApiDeleteMyAddress -> "apiDeleteMyAddress"
     is ApiShowMyAddress -> "apiShowMyAddress"
+    is ApiSetProfileAddress -> "apiSetProfileAddress"
     is ApiAddressAutoAccept -> "apiAddressAutoAccept"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
@@ -2107,9 +2151,16 @@ sealed class CC {
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
-    fun smpServersStr(smpServers: List<ServerCfg>) = if (smpServers.isEmpty()) "default" else json.encodeToString(SMPServersConfig(smpServers))
+    fun protoServersStr(servers: List<ServerCfg>) = json.encodeToString(ProtoServersConfig(servers))
   }
 }
+
+@Serializable
+data class NewUser(
+  val profile: Profile?,
+  val sameServers: Boolean,
+  val pastTimestamp: Boolean
+)
 
 sealed class ChatPagination {
   class Last(val count: Int): ChatPagination()
@@ -2142,8 +2193,21 @@ class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = 
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
 @Serializable
-data class SMPServersConfig(
-  val smpServers: List<ServerCfg>
+enum class ServerProtocol {
+  @SerialName("smp") SMP,
+  @SerialName("xftp") XFTP;
+}
+
+@Serializable
+data class ProtoServersConfig(
+  val servers: List<ServerCfg>
+)
+
+@Serializable
+data class UserProtocolServers(
+  val serverProtocol: ServerProtocol,
+  val protoServers: List<ServerCfg>,
+  val presetServers: List<String>,
 )
 
 @Serializable
@@ -2197,29 +2261,39 @@ data class ServerCfg(
 }
 
 @Serializable
-enum class SMPTestStep {
+enum class ProtocolTestStep {
   @SerialName("connect") Connect,
+  @SerialName("disconnect") Disconnect,
   @SerialName("createQueue") CreateQueue,
   @SerialName("secureQueue") SecureQueue,
   @SerialName("deleteQueue") DeleteQueue,
-  @SerialName("disconnect") Disconnect;
+  @SerialName("createFile") CreateFile,
+  @SerialName("uploadFile") UploadFile,
+  @SerialName("downloadFile") DownloadFile,
+  @SerialName("compareFile") CompareFile,
+  @SerialName("deleteFile") DeleteFile;
 
   val text: String get() = when (this) {
     Connect -> generalGetString(R.string.smp_server_test_connect)
+    Disconnect -> generalGetString(R.string.smp_server_test_disconnect)
     CreateQueue -> generalGetString(R.string.smp_server_test_create_queue)
     SecureQueue -> generalGetString(R.string.smp_server_test_secure_queue)
     DeleteQueue -> generalGetString(R.string.smp_server_test_delete_queue)
-    Disconnect -> generalGetString(R.string.smp_server_test_disconnect)
+    CreateFile -> generalGetString(R.string.smp_server_test_create_file)
+    UploadFile -> generalGetString(R.string.smp_server_test_upload_file)
+    DownloadFile -> generalGetString(R.string.smp_server_test_download_file)
+    CompareFile -> generalGetString(R.string.smp_server_test_compare_file)
+    DeleteFile -> generalGetString(R.string.smp_server_test_delete_file)
   }
 }
 
 @Serializable
-data class SMPTestFailure(
-  val testStep: SMPTestStep,
+data class ProtocolTestFailure(
+  val testStep: ProtocolTestStep,
   val testError: AgentErrorType
 ) {
   override fun equals(other: Any?): Boolean {
-    if (other !is SMPTestFailure) return false
+    if (other !is ProtocolTestFailure) return false
     return other.testStep == this.testStep
   }
 
@@ -2232,6 +2306,8 @@ data class SMPTestFailure(
     return when  {
       testError is AgentErrorType.SMP && testError.smpErr is SMPErrorType.AUTH ->
         err + " " + generalGetString(R.string.error_smp_test_server_auth)
+      testError is AgentErrorType.XFTP && testError.xftpErr is XFTPErrorType.AUTH ->
+        err + " " + generalGetString(R.string.error_xftp_test_server_auth)
       testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK ->
         err + " " + generalGetString(R.string.error_smp_test_certificate)
       else -> err
@@ -2241,6 +2317,7 @@ data class SMPTestFailure(
 
 @Serializable
 data class ServerAddress(
+  val serverProtocol: ServerProtocol,
   val hostnames: List<String>,
   val port: String,
   val keyHash: String,
@@ -2248,19 +2325,21 @@ data class ServerAddress(
 ) {
   val uri: String
     get() =
-      "smp://${keyHash}${if (basicAuth.isEmpty()) "" else ":$basicAuth"}@${hostnames.joinToString(",")}"
+      "${serverProtocol}://${keyHash}${if (basicAuth.isEmpty()) "" else ":$basicAuth"}@${hostnames.joinToString(",")}"
 
   val valid: Boolean
     get() = hostnames.isNotEmpty() && hostnames.toSet().size == hostnames.size
 
   companion object {
-    val empty = ServerAddress(
+    fun empty(serverProtocol: ServerProtocol) = ServerAddress(
+      serverProtocol = serverProtocol,
       hostnames = emptyList(),
       port = "",
       keyHash = "",
       basicAuth = ""
     )
     val sampleData = ServerAddress(
+      serverProtocol = ServerProtocol.SMP,
       hostnames = listOf("smp.simplex.im", "1234.onion"),
       port = "",
       keyHash = "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=",
@@ -2297,6 +2376,15 @@ data class NetCfg(
 ) {
   val useSocksProxy: Boolean get() = socksProxy != null
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null
+
+  fun withHostPort(hostPort: String?, default: String? = ":9050"): NetCfg {
+    val socksProxy = if (hostPort?.startsWith("localhost:") == true) {
+      hostPort.removePrefix("localhost")
+    } else {
+      hostPort ?: default
+    }
+    return copy(socksProxy = socksProxy)
+  }
 
   companion object {
     val defaults: NetCfg =
@@ -2386,14 +2474,16 @@ data class FullChatPreferences(
   val timedMessages: TimedMessagesPreference,
   val fullDelete: SimpleChatPreference,
   val voice: SimpleChatPreference,
+  val calls: SimpleChatPreference,
 ) {
-  fun toPreferences(): ChatPreferences = ChatPreferences(timedMessages = timedMessages, fullDelete = fullDelete, voice = voice)
+  fun toPreferences(): ChatPreferences = ChatPreferences(timedMessages = timedMessages, fullDelete = fullDelete, voice = voice, calls = calls)
 
   companion object {
     val sampleData = FullChatPreferences(
       timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
       fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
-      voice = SimpleChatPreference(allow = FeatureAllowed.YES)
+      voice = SimpleChatPreference(allow = FeatureAllowed.YES),
+      calls = SimpleChatPreference(allow = FeatureAllowed.YES),
     )
   }
 }
@@ -2403,19 +2493,22 @@ data class ChatPreferences(
   val timedMessages: TimedMessagesPreference?,
   val fullDelete: SimpleChatPreference?,
   val voice: SimpleChatPreference?,
+  val calls: SimpleChatPreference?,
 ) {
   fun setAllowed(feature: ChatFeature, allowed: FeatureAllowed = FeatureAllowed.YES, param: Int? = null): ChatPreferences =
     when (feature) {
       ChatFeature.TimedMessages -> this.copy(timedMessages = TimedMessagesPreference(allow = allowed, ttl = param ?: this.timedMessages?.ttl))
       ChatFeature.FullDelete -> this.copy(fullDelete = SimpleChatPreference(allow = allowed))
       ChatFeature.Voice -> this.copy(voice = SimpleChatPreference(allow = allowed))
+      ChatFeature.Calls -> this.copy(calls = SimpleChatPreference(allow = allowed))
     }
 
   companion object {
     val sampleData = ChatPreferences(
       timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
       fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
-      voice = SimpleChatPreference(allow = FeatureAllowed.YES)
+      voice = SimpleChatPreference(allow = FeatureAllowed.YES),
+      calls = SimpleChatPreference(allow = FeatureAllowed.YES),
     )
   }
 }
@@ -2436,7 +2529,7 @@ data class TimedMessagesPreference(
 ): ChatPreference {
   companion object {
     val ttlValues: List<Int?>
-      get() = listOf(30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400)
+      get() = listOf(30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, null)
 
     fun ttlText(ttl: Int?): String {
       ttl ?: return generalGetString(R.string.feature_off)
@@ -2487,11 +2580,13 @@ data class ContactUserPreferences(
   val timedMessages: ContactUserPreferenceTimed,
   val fullDelete: ContactUserPreference,
   val voice: ContactUserPreference,
+  val calls: ContactUserPreference,
 ) {
   fun toPreferences(): ChatPreferences = ChatPreferences(
     timedMessages = timedMessages.userPreference.pref,
     fullDelete = fullDelete.userPreference.pref,
-    voice = voice.userPreference.pref
+    voice = voice.userPreference.pref,
+    calls = calls.userPreference.pref
   )
 
   companion object {
@@ -2510,7 +2605,12 @@ data class ContactUserPreferences(
         enabled = FeatureEnabled(forUser = true, forContact = true),
         userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
         contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
-      )
+      ),
+      calls = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = true, forContact = true),
+        userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
+        contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
+      ),
     )
   }
 }
@@ -2543,7 +2643,7 @@ data class FeatureEnabled(
     }
 
   val iconColor: Color
-    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else HighOrLowlight
+    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else CurrentColors.value.colors.secondary
 
   companion object {
     fun enabled(asymmetric: Boolean, user: ChatPreference, contact: ChatPreference): FeatureEnabled =
@@ -2569,12 +2669,6 @@ sealed class ContactUserPref {
   @Serializable @SerialName("user") data class User(val preference: SimpleChatPreference): ContactUserPref() {
     override val pref get() = preference
   }
-
-  val contactOverride: SimpleChatPreference?
-    get() = when(this) {
-      is Contact -> pref
-      is User -> null
-    }
 }
 
 @Serializable
@@ -2589,18 +2683,13 @@ sealed class ContactUserPrefTimed {
   @Serializable @SerialName("user") data class User(val preference: TimedMessagesPreference): ContactUserPrefTimed() {
     override val pref get() = preference
   }
-
-  val contactOverride: TimedMessagesPreference?
-    get() = when(this) {
-      is Contact -> pref
-      is User -> null
-    }
 }
 
 interface Feature {
 //  val icon: ImageVector
   val text: String
-  val iconFilled: ImageVector
+  @Composable
+  fun iconFilled(): Painter
   val hasParam: Boolean
 }
 
@@ -2608,7 +2697,8 @@ interface Feature {
 enum class ChatFeature: Feature {
   @SerialName("timedMessages") TimedMessages,
   @SerialName("fullDelete") FullDelete,
-  @SerialName("voice") Voice;
+  @SerialName("voice") Voice,
+  @SerialName("calls") Calls;
 
   val asymmetric: Boolean get() = when (this) {
     TimedMessages -> false
@@ -2625,21 +2715,24 @@ enum class ChatFeature: Feature {
       TimedMessages -> generalGetString(R.string.timed_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
+      Calls -> generalGetString(R.string.audio_video_calls)
     }
 
-  val icon: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Outlined.Timer
-      FullDelete -> Icons.Outlined.DeleteForever
-      Voice -> Icons.Outlined.KeyboardVoice
+  val icon: Painter
+    @Composable get() = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice)
+      Calls -> painterResource(R.drawable.ic_call)
     }
 
-  override val iconFilled: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Filled.Timer
-      FullDelete -> Icons.Filled.DeleteForever
-      Voice -> Icons.Filled.KeyboardVoice
-    }
+  @Composable
+  override fun iconFilled(): Painter = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer_filled)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
+      Calls -> painterResource(R.drawable.ic_call_filled)
+  }
 
   fun allowDescription(allowed: FeatureAllowed): String =
     when (this) {
@@ -2657,6 +2750,11 @@ enum class ChatFeature: Feature {
         FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_voice_messages)
         FeatureAllowed.YES -> generalGetString(R.string.allow_voice_messages_only_if)
         FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_voice_messages)
+      }
+      Calls -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_call)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_calls_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.prohibit_calls)
       }
     }
 
@@ -2680,7 +2778,13 @@ enum class ChatFeature: Feature {
         enabled.forContact -> generalGetString(R.string.only_your_contact_can_send_voice)
         else -> generalGetString(R.string.voice_prohibited_in_this_chat)
       }
-  }
+      Calls -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_make_calls)
+        enabled.forUser -> generalGetString(R.string.only_you_can_make_calls)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_make_calls)
+        else -> generalGetString(R.string.calls_prohibited_with_this_contact)
+      }
+    }
 }
 
 @Serializable
@@ -2703,21 +2807,21 @@ enum class GroupFeature: Feature {
       Voice -> generalGetString(R.string.voice_messages)
     }
 
-  val icon: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Outlined.Timer
-      DirectMessages -> Icons.Outlined.SwapHorizontalCircle
-      FullDelete -> Icons.Outlined.DeleteForever
-      Voice -> Icons.Outlined.KeyboardVoice
+  val icon: Painter
+    @Composable get() = when(this) {
+      TimedMessages -> painterResource(R.drawable.ic_timer)
+      DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle)
+      FullDelete -> painterResource(R.drawable.ic_delete_forever)
+      Voice -> painterResource(R.drawable.ic_keyboard_voice)
     }
 
-  override val iconFilled: ImageVector
-    get() = when(this) {
-      TimedMessages -> Icons.Filled.Timer
-      DirectMessages -> Icons.Filled.SwapHorizontalCircle
-      FullDelete -> Icons.Filled.DeleteForever
-      Voice -> Icons.Filled.KeyboardVoice
-    }
+  @Composable
+  override fun iconFilled(): Painter = when(this) {
+    TimedMessages -> painterResource(R.drawable.ic_timer_filled)
+    DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle_filled)
+    FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
+    Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
+  }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
     if (canEdit) {
@@ -2793,26 +2897,29 @@ data class ContactFeaturesAllowed(
   val timedMessagesAllowed: Boolean,
   val timedMessagesTTL: Int?,
   val fullDelete: ContactFeatureAllowed,
-  val voice: ContactFeatureAllowed
+  val voice: ContactFeatureAllowed,
+  val calls: ContactFeatureAllowed,
 ) {
   companion object {
     val sampleData = ContactFeaturesAllowed(
       timedMessagesAllowed = false,
       timedMessagesTTL = null,
       fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
-      voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES)
+      voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
+      calls = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
     )
   }
 }
 
 fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed {
   val pref = contactUserPreferences.timedMessages.userPreference
-  val allow = pref.contactOverride?.allow
+  val allow = pref.pref.allow
   return ContactFeaturesAllowed(
     timedMessagesAllowed = allow == FeatureAllowed.YES || allow == FeatureAllowed.ALWAYS,
     timedMessagesTTL = pref.pref.ttl,
     fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
-    voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
+    voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
+    calls = contactUserPrefToFeatureAllowed(contactUserPreferences.calls),
   )
 }
 
@@ -2830,7 +2937,8 @@ fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed
   ChatPreferences(
     timedMessages = TimedMessagesPreference(if (contactFeaturesAllowed.timedMessagesAllowed) FeatureAllowed.YES else FeatureAllowed.NO, contactFeaturesAllowed.timedMessagesTTL),
     fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
-    voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
+    voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
+    calls = contactFeatureAllowedToPref(contactFeaturesAllowed.calls),
   )
 
 fun contactFeatureAllowedToPref(contactFeatureAllowed: ContactFeatureAllowed): SimpleChatPreference? =
@@ -2919,7 +3027,7 @@ enum class GroupFeatureEnabled {
     }
 
   val iconColor: Color
-    get() = if (this == ON) SimplexGreen else HighOrLowlight
+    get() = if (this == ON) SimplexGreen else CurrentColors.value.colors.secondary
 
 }
 
@@ -2929,6 +3037,11 @@ val json = Json {
   encodeDefaults = true
   explicitNulls = false
 }
+
+val yaml = Yaml(configuration = YamlConfiguration(
+  strictMode = false,
+  encodeDefaults = false,
+))
 
 @Serializable
 class APIResponse(val resp: CR, val corr: String? = null) {
@@ -2987,9 +3100,15 @@ private fun parseChatData(chat: JsonElement): Chat {
     ?: ChatInfo.InvalidJSON(json.encodeToString(chat.jsonObject["chatInfo"]))
   val chatStats = decodeObject(Chat.ChatStats.serializer(), chat.jsonObject["chatStats"])!!
   val chatItems: List<ChatItem> = chat.jsonObject["chatItems"]!!.jsonArray.map {
-    decodeObject(ChatItem.serializer(), it) ?: ChatItem.invalidJSON(json.encodeToString(it))
+    decodeObject(ChatItem.serializer(), it) ?: parseChatItem(it)
   }
- return Chat(chatInfo, chatItems, chatStats)
+  return Chat(chatInfo, chatItems, chatStats)
+}
+
+private fun parseChatItem(j: JsonElement): ChatItem {
+  val chatDir: CIDirection? = decodeObject(CIDirection.serializer(), j.jsonObject["chatDir"])
+  val meta: CIMeta? = decodeObject(CIMeta.serializer(), j.jsonObject["meta"])
+  return ChatItem.invalidJSON(chatDir, meta, json.encodeToString(j))
 }
 
 private fun <T> decodeObject(deserializer: DeserializationStrategy<T>, obj: JsonElement?): T? =
@@ -3005,8 +3124,8 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: User, val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val user: User, val chat: Chat): CR()
-  @Serializable @SerialName("userSMPServers") class UserSMPServers(val user: User, val smpServers: List<ServerCfg>, val presetSMPServers: List<String>): CR()
-  @Serializable @SerialName("smpTestResult") class SmpTestResult(val user: User, val smpTestFailure: SMPTestFailure? = null): CR()
+  @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: User, val servers: UserProtocolServers): CR()
+  @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: User, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: User, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: User, val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
@@ -3083,6 +3202,7 @@ sealed class CR {
   @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: User, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileSndCancelled") class RcvFileSndCancelled(val user: User, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileProgressXFTP") class RcvFileProgressXFTP(val user: User, val chatItem: AChatItem, val receivedSize: Long, val totalSize: Long): CR()
+  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: User, val chatItem: AChatItem): CR()
   // sending file events
   @Serializable @SerialName("sndFileStart") class SndFileStart(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
@@ -3090,6 +3210,8 @@ sealed class CR {
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
   @Serializable @SerialName("sndFileCompleteXFTP") class SndFileCompleteXFTP(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR()
+  @Serializable @SerialName("sndFileError") class SndFileError(val user: User, val chatItem: AChatItem): CR()
+  // call events
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val user: User, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val user: User, val contact: Contact, val answer: WebRTCSession): CR()
@@ -3113,8 +3235,8 @@ sealed class CR {
     is ChatStopped -> "chatStopped"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
-    is UserSMPServers -> "userSMPServers"
-    is SmpTestResult -> "smpTestResult"
+    is UserProtoServers -> "userProtoServers"
+    is ServerTestResult -> "serverTestResult"
     is ChatItemTTL -> "chatItemTTL"
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
@@ -3189,12 +3311,14 @@ sealed class CR {
     is RcvFileCancelled -> "rcvFileCancelled"
     is RcvFileSndCancelled -> "rcvFileSndCancelled"
     is RcvFileProgressXFTP -> "rcvFileProgressXFTP"
+    is RcvFileError -> "rcvFileError"
     is SndFileCancelled -> "sndFileCancelled"
     is SndFileComplete -> "sndFileComplete"
     is SndFileRcvCancelled -> "sndFileRcvCancelled"
     is SndFileStart -> "sndFileStart"
     is SndFileProgressXFTP -> "sndFileProgressXFTP"
     is SndFileCompleteXFTP -> "sndFileCompleteXFTP"
+    is SndFileError -> "sndFileError"
     is CallInvitation -> "callInvitation"
     is CallOffer -> "callOffer"
     is CallAnswer -> "callAnswer"
@@ -3219,8 +3343,8 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, json.encodeToString(chat))
-    is UserSMPServers -> withUser(user, "$smpServers: ${json.encodeToString(smpServers)}\n$presetSMPServers: ${json.encodeToString(presetSMPServers)}")
-    is SmpTestResult -> withUser(user, json.encodeToString(smpTestFailure))
+    is UserProtoServers -> withUser(user, "servers: ${json.encodeToString(servers)}")
+    is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
@@ -3296,12 +3420,14 @@ sealed class CR {
     is RcvFileCancelled -> withUser(user, json.encodeToString(chatItem))
     is RcvFileSndCancelled -> withUser(user, json.encodeToString(chatItem))
     is RcvFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nreceivedSize: $receivedSize\ntotalSize: $totalSize")
+    is RcvFileError -> withUser(user, json.encodeToString(chatItem))
     is SndFileCancelled -> json.encodeToString(chatItem)
     is SndFileComplete -> withUser(user, json.encodeToString(chatItem))
     is SndFileRcvCancelled -> withUser(user, json.encodeToString(chatItem))
     is SndFileStart -> withUser(user, json.encodeToString(chatItem))
     is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nsentSize: $sentSize\ntotalSize: $totalSize")
     is SndFileCompleteXFTP -> withUser(user, json.encodeToString(chatItem))
+    is SndFileError -> withUser(user, json.encodeToString(chatItem))
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
@@ -3374,7 +3500,6 @@ class AutoAccept(val acceptIncognito: Boolean, val autoReply: MsgContent?) {
 @Serializable
 data class CoreVersionInfo(
   val version: String,
-  val buildTimestamp: String,
   val simplexmqVersion: String,
   val simplexmqCommit: String
 )
@@ -3453,6 +3578,7 @@ sealed class AgentErrorType {
     is CMD -> "CMD ${cmdErr.string}"
     is CONN -> "CONN ${connErr.string}"
     is SMP -> "SMP ${smpErr.string}"
+    is XFTP -> "XFTP ${xftpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
@@ -3460,6 +3586,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
+  @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
@@ -3527,7 +3654,7 @@ sealed class SMPErrorType {
   }
   @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
   @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
-  @Serializable @SerialName("CMD") class CMD(val cmdErr: SMPCommandError): SMPErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): SMPErrorType()
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
   @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
@@ -3536,7 +3663,7 @@ sealed class SMPErrorType {
 }
 
 @Serializable
-sealed class SMPCommandError {
+sealed class ProtocolCommandError {
   val string: String get() = when (this) {
     is UNKNOWN -> "UNKNOWN"
     is SYNTAX -> "SYNTAX"
@@ -3544,11 +3671,11 @@ sealed class SMPCommandError {
     is HAS_AUTH -> "HAS_AUTH"
     is NO_QUEUE -> "NO_QUEUE"
   }
-  @Serializable @SerialName("UNKNOWN") class UNKNOWN: SMPCommandError()
-  @Serializable @SerialName("SYNTAX") class SYNTAX: SMPCommandError()
-  @Serializable @SerialName("NO_AUTH") class NO_AUTH: SMPCommandError()
-  @Serializable @SerialName("HAS_AUTH") class HAS_AUTH: SMPCommandError()
-  @Serializable @SerialName("NO_QUEUE") class NO_QUEUE: SMPCommandError()
+  @Serializable @SerialName("UNKNOWN") class UNKNOWN: ProtocolCommandError()
+  @Serializable @SerialName("SYNTAX") class SYNTAX: ProtocolCommandError()
+  @Serializable @SerialName("NO_AUTH") class NO_AUTH: ProtocolCommandError()
+  @Serializable @SerialName("HAS_AUTH") class HAS_AUTH: ProtocolCommandError()
+  @Serializable @SerialName("NO_QUEUE") class NO_QUEUE: ProtocolCommandError()
 }
 
 @Serializable
@@ -3589,4 +3716,34 @@ sealed class SMPAgentError {
   @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED: SMPAgentError()
   @Serializable @SerialName("A_VERSION") class A_VERSION: SMPAgentError()
   @Serializable @SerialName("A_ENCRYPTION") class A_ENCRYPTION: SMPAgentError()
+}
+
+@Serializable
+sealed class XFTPErrorType {
+  val string: String get() = when (this) {
+    is BLOCK -> "BLOCK"
+    is SESSION -> "SESSION"
+    is CMD -> "CMD ${cmdErr.string}"
+    is AUTH -> "AUTH"
+    is SIZE -> "SIZE"
+    is QUOTA -> "QUOTA"
+    is DIGEST -> "DIGEST"
+    is CRYPTO -> "CRYPTO"
+    is NO_FILE -> "NO_FILE"
+    is HAS_FILE -> "HAS_FILE"
+    is FILE_IO -> "FILE_IO"
+    is INTERNAL -> "INTERNAL"
+  }
+  @Serializable @SerialName("BLOCK") object BLOCK: XFTPErrorType()
+  @Serializable @SerialName("SESSION") object SESSION: XFTPErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): XFTPErrorType()
+  @Serializable @SerialName("AUTH") object AUTH: XFTPErrorType()
+  @Serializable @SerialName("SIZE") object SIZE: XFTPErrorType()
+  @Serializable @SerialName("QUOTA") object QUOTA: XFTPErrorType()
+  @Serializable @SerialName("DIGEST") object DIGEST: XFTPErrorType()
+  @Serializable @SerialName("CRYPTO") object CRYPTO: XFTPErrorType()
+  @Serializable @SerialName("NO_FILE") object NO_FILE: XFTPErrorType()
+  @Serializable @SerialName("HAS_FILE") object HAS_FILE: XFTPErrorType()
+  @Serializable @SerialName("FILE_IO") object FILE_IO: XFTPErrorType()
+  @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
 }

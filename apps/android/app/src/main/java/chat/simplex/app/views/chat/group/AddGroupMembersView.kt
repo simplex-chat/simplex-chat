@@ -1,7 +1,8 @@
 package chat.simplex.app.views.chat.group
 
+import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDivider
+import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -9,15 +10,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.TheaterComedy
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,6 +26,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.InfoAboutIncognito
 import chat.simplex.app.views.usersettings.SettingsActionItem
 
 @Composable
@@ -37,6 +36,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
   var allowModifyMembers by remember { mutableStateOf(true) }
   BackHandler(onBack = close)
   AddGroupMembersLayout(
+    chatModel.incognito.value,
     groupInfo = groupInfo,
     creatingGroup = creatingGroup,
     contactsToAdd = getContactsToAdd(chatModel),
@@ -85,6 +85,7 @@ fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
 
 @Composable
 fun AddGroupMembersLayout(
+  chatModelIncognito: Boolean,
   groupInfo: GroupInfo,
   creatingGroup: Boolean,
   contactsToAdd: List<Contact>,
@@ -102,9 +103,16 @@ fun AddGroupMembersLayout(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.button_add_members))
+    InfoAboutIncognito(
+      chatModelIncognito,
+      false,
+      generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
+      generalGetString(R.string.group_main_profile_sent),
+      true
+    )
+    Spacer(Modifier.size(DEFAULT_PADDING))
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
@@ -125,7 +133,7 @@ fun AddGroupMembersLayout(
         Text(
           stringResource(R.string.no_contacts_to_add),
           Modifier.padding(),
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       }
     } else {
@@ -134,12 +142,8 @@ fun AddGroupMembersLayout(
           SectionItemView(openPreferences) {
             Text(stringResource(R.string.set_group_preferences))
           }
-          SectionDivider()
         }
-        SectionItemView {
-          RoleSelectionRow(groupInfo, selectedRole, allowModifyMembers)
-        }
-        SectionDivider()
+        RoleSelectionRow(groupInfo, selectedRole, allowModifyMembers)
         if (creatingGroup && selectedContacts.isEmpty()) {
           SkipInvitingButton(close)
         } else {
@@ -149,13 +153,13 @@ fun AddGroupMembersLayout(
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
-      SectionSpacer()
+      SectionDividerSpaced(maxTopPadding = true)
 
       SectionView(stringResource(R.string.select_contacts)) {
         ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, allowModifyMembers, addContact, removeContact)
       }
-      SectionSpacer()
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -172,16 +176,15 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
       values,
       selectedRole,
       icon = null,
-      enabled = rememberUpdatedState(enabled),
-      onSelected = { selectedRole.value = it }
-    )
+      enabled = rememberUpdatedState(enabled)
+    ) { selectedRole.value = it }
   }
 }
 
 @Composable
 fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
   SettingsActionItem(
-    Icons.Outlined.Check,
+    painterResource(R.drawable.ic_check),
     stringResource(R.string.invite_to_group_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
@@ -193,7 +196,7 @@ fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
 @Composable
 fun SkipInvitingButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Check,
+    painterResource(R.drawable.ic_check),
     stringResource(R.string.skip_inviting_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
@@ -211,7 +214,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
     if (selectedContactsCount >= 1) {
       Text(
         String.format(generalGetString(R.string.num_contacts_selected), selectedContactsCount),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         fontSize = 12.sp
       )
       Box(
@@ -219,14 +222,14 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
       ) {
         Text(
           stringResource(R.string.clear_contacts_selection_button),
-          color = if (enabled) MaterialTheme.colors.primary else HighOrLowlight,
+          color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           fontSize = 12.sp
         )
       }
     } else {
       Text(
         stringResource(R.string.no_contacts_selected),
-        color = HighOrLowlight,
+        color = MaterialTheme.colors.secondary,
         fontSize = 12.sp
       )
     }
@@ -249,9 +252,6 @@ fun ContactList(
         checked = selectedContacts.contains(contact.apiId),
         enabled = enabled,
       )
-      if (index < contacts.lastIndex) {
-        SectionDivider()
-      }
     }
   }
 }
@@ -266,17 +266,17 @@ fun ContactCheckRow(
   enabled: Boolean,
 ) {
   val prohibitedToInviteIncognito = !groupInfo.membership.memberIncognito && contact.contactConnIncognito
-  val icon: ImageVector
+  val icon: Painter
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
-    icon = Icons.Filled.TheaterComedy
-    iconColor = HighOrLowlight
+    icon = painterResource(R.drawable.ic_theater_comedy_filled)
+    iconColor = MaterialTheme.colors.secondary
   } else if (checked) {
-    icon = Icons.Filled.CheckCircle
-    iconColor = if (enabled) MaterialTheme.colors.primary else HighOrLowlight
+    icon = painterResource(R.drawable.ic_check_circle_filled)
+    iconColor = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
   } else {
-    icon = Icons.Outlined.Circle
-    iconColor = HighOrLowlight
+    icon = painterResource(R.drawable.ic_circle)
+    iconColor = MaterialTheme.colors.secondary
   }
   SectionItemView(
     click = if (enabled) {
@@ -294,7 +294,7 @@ fun ContactCheckRow(
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     Text(
       contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
-      color = if (prohibitedToInviteIncognito) HighOrLowlight else Color.Unspecified
+      color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))
     Icon(
@@ -318,6 +318,7 @@ fun showProhibitedToInviteIncognitoAlertDialog() {
 fun PreviewAddGroupMembersLayout() {
   SimpleXTheme {
     AddGroupMembersLayout(
+      chatModelIncognito = false,
       groupInfo = GroupInfo.sampleData,
       creatingGroup = false,
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),

@@ -17,14 +17,39 @@
                         <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[0].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left xl:rtl:text-right text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">{{ "hero-overlay-2-textlink" | i18n({}, lang ) | safe }}</a>
                         {{ overlay(hero_overlays.sections[0], lang) }}
                     </article>
+
                     <article class="w-full xl:max-w-[600px]">
-                        <p class="text-black dark:text-white hidden md:block text-center xl:text-left xl:rtl:text-right text-[16px] leading-[26px] mb-[11px] md:mt-6">{{ "get-simplex" | i18n({}, lang ) | safe }}</p>
-                        <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
-                            <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
-                            <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
-                            <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
-                            <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
-                            <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
+                        <div id="simplex-reviews" class="flex items-center justify-center xl:justify-start flex-wrap gap-4 my-10">
+                            <a class="block rounded overflow-hidden" title="security assessment" href="https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html" target="_blank">
+                                <img class="h-[40px] w-auto block dark:hidden" src="/img/trail-of-bits-light.png" alt="Trail of Bits">
+                                <img class="h-[40px] w-auto hidden dark:block" src="/img/trail-of-bits-dark.png" alt="Trail of Bits">
+                            </a>
+                            <a class="block rounded overflow-hidden" title="messenger recommendations" href="https://www.privacyguides.org/en/real-time-communication/#simplex-chat" target="_blank">
+                                <img class="h-[40px] w-auto block dark:hidden" src="/img/privacy-guides-light.png" alt="Privacy Guides">
+                                <img class="h-[40px] w-auto hidden dark:block" src="/img/privacy-guides-dark.png" alt="Privacy Guides">
+                            </a>
+                            <a class="block rounded overflow-hidden" title="publication" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank">
+                                <img class="h-[40px] w-auto block dark:hidden" src="/img/heise-light.png" alt="Heise Online">
+                                <img class="h-[40px] w-auto hidden dark:block" src="/img/heise-dark.png" alt="Heise Online">
+                            </a>
+                            <a class="block rounded overflow-hidden" title="review" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank">
+                                <img class="h-[40px] w-auto block dark:hidden" src="/img/kuketz-blog-light.png" alt="Mike Kuketz blog">
+                                <img class="h-[40px] w-auto hidden dark:block" src="/img/kuketz-blog-dark.png" alt="Mike Kuketz blog">
+                            </a>
+                            <a class="block rounded overflow-hidden" title="podcast interview" href="https://optoutpod.com/episodes/s3e02-simplexchat/" target="_blank">
+                                <img class="h-[40px] w-auto" src="/img/optout.jpg" alt="Opt Out Podcast">
+                            </a>
+                        </div>
+    
+                        <div>
+                            <p class="text-black dark:text-white hidden md:block text-center xl:text-left xl:rtl:text-right text-[16px] leading-[26px] mb-[11px] md:mt-6">{{ "get-simplex" | i18n({}, lang ) | safe }}</p>
+                            <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
+                                <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+                                <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+                                <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
+                                <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
+                                <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
+                            </div>
                         </div>
                     </article>
                 </div>

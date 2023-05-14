@@ -120,6 +120,13 @@ instance ToJSON User where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
+data NewUser = NewUser
+  { profile :: Maybe Profile,
+    sameServers :: Bool,
+    pastTimestamp :: Bool
+  }
+  deriving (Show, Generic, FromJSON)
+
 newtype B64UrlByteString = B64UrlByteString ByteString
   deriving (Eq, Show)
 
@@ -343,12 +350,14 @@ data ChatFeature
   | CFFullDelete
   | -- | CFReceipts
     CFVoice
+  | CFCalls
   deriving (Show, Generic)
 
 data SChatFeature (f :: ChatFeature) where
   SCFTimedMessages :: SChatFeature 'CFTimedMessages
   SCFFullDelete :: SChatFeature 'CFFullDelete
   SCFVoice :: SChatFeature 'CFVoice
+  SCFCalls :: SChatFeature 'CFCalls
 
 deriving instance Show (SChatFeature f)
 
@@ -361,6 +370,7 @@ chatFeatureNameText = \case
   CFTimedMessages -> "Disappearing messages"
   CFFullDelete -> "Full deletion"
   CFVoice -> "Voice messages"
+  CFCalls -> "Audio/video calls"
 
 chatFeatureNameText' :: SChatFeature f -> Text
 chatFeatureNameText' = chatFeatureNameText . chatFeature
@@ -382,7 +392,8 @@ allChatFeatures =
   [ ACF SCFTimedMessages,
     ACF SCFFullDelete,
     -- CFReceipts,
-    ACF SCFVoice
+    ACF SCFVoice,
+    ACF SCFCalls
   ]
 
 chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
@@ -391,12 +402,14 @@ chatPrefSel = \case
   SCFFullDelete -> fullDelete
   -- CFReceipts -> receipts
   SCFVoice -> voice
+  SCFCalls -> calls
 
 chatFeature :: SChatFeature f -> ChatFeature
 chatFeature = \case
   SCFTimedMessages -> CFTimedMessages
   SCFFullDelete -> CFFullDelete
   SCFVoice -> CFVoice
+  SCFCalls -> CFCalls
 
 class PreferenceI p where
   getPreference :: SChatFeature f -> p -> FeaturePreference f
@@ -413,6 +426,7 @@ instance PreferenceI FullPreferences where
     SCFFullDelete -> fullDelete
     -- CFReceipts -> receipts
     SCFVoice -> voice
+    SCFCalls -> calls
   {-# INLINE getPreference #-}
 
 setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
@@ -432,13 +446,15 @@ setPreference_ f pref_ prefs =
     SCFTimedMessages -> prefs {timedMessages = pref_}
     SCFFullDelete -> prefs {fullDelete = pref_}
     SCFVoice -> prefs {voice = pref_}
+    SCFCalls -> prefs {calls = pref_}
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
   { timedMessages :: Maybe TimedMessagesPreference,
     fullDelete :: Maybe FullDeletePreference,
     -- receipts :: Maybe SimplePreference,
-    voice :: Maybe VoicePreference
+    voice :: Maybe VoicePreference,
+    calls :: Maybe CallsPreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -591,7 +607,8 @@ data FullPreferences = FullPreferences
   { timedMessages :: TimedMessagesPreference,
     fullDelete :: FullDeletePreference,
     -- receipts :: SimplePreference,
-    voice :: VoicePreference
+    voice :: VoicePreference,
+    calls :: CallsPreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -615,7 +632,8 @@ data ContactUserPreferences = ContactUserPreferences
   { timedMessages :: ContactUserPreference TimedMessagesPreference,
     fullDelete :: ContactUserPreference FullDeletePreference,
     -- receipts :: ContactUserPreference,
-    voice :: ContactUserPreference VoicePreference
+    voice :: ContactUserPreference VoicePreference,
+    calls :: ContactUserPreference CallsPreference
   }
   deriving (Eq, Show, Generic)
 
@@ -638,25 +656,27 @@ instance ToJSON p => ToJSON (ContactUserPref p) where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CUP"
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {fullDelete, voice, timedMessages} =
+toChatPrefs FullPreferences {fullDelete, voice, timedMessages, calls} =
   Preferences
     { timedMessages = Just timedMessages,
       fullDelete = Just fullDelete,
       -- receipts = Just receipts,
-      voice = Just voice
+      voice = Just voice,
+      calls = Just calls
     }
 
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = Nothing},
+    { timedMessages = TimedMessagesPreference {allow = FAYes, ttl = Nothing},
       fullDelete = FullDeletePreference {allow = FANo},
       -- receipts = SimplePreference {allow = FANo},
-      voice = VoicePreference {allow = FAYes}
+      voice = VoicePreference {allow = FAYes},
+      calls = CallsPreference {allow = FAYes}
     }
 
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing Nothing
+emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing
 
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
@@ -691,6 +711,11 @@ data VoicePreference = VoicePreference {allow :: FeatureAllowed}
 
 instance ToJSON VoicePreference where toEncoding = J.genericToEncoding J.defaultOptions
 
+data CallsPreference = CallsPreference {allow :: FeatureAllowed}
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON CallsPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
 class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
   type FeaturePreference (f :: ChatFeature) = p | p -> f
   sFeature :: SChatFeature f
@@ -705,6 +730,9 @@ instance HasField "allow" FullDeletePreference FeatureAllowed where
 instance HasField "allow" VoicePreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: VoicePreference))
 
+instance HasField "allow" CallsPreference FeatureAllowed where
+  hasField p = (\allow -> p {allow}, allow (p :: CallsPreference))
+
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
   sFeature = SCFTimedMessages
@@ -718,6 +746,11 @@ instance FeatureI 'CFFullDelete where
 instance FeatureI 'CFVoice where
   type FeaturePreference 'CFVoice = VoicePreference
   sFeature = SCFVoice
+  prefParam _ = Nothing
+
+instance FeatureI 'CFCalls where
+  type FeaturePreference 'CFCalls = CallsPreference
+  sFeature = SCFCalls
   prefParam _ = Nothing
 
 data GroupPreference = GroupPreference
@@ -897,7 +930,8 @@ mergePreferences contactPrefs userPreferences =
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
       -- receipts = pref CFReceipts,
-      voice = pref SCFVoice
+      voice = pref SCFVoice,
+      calls = pref SCFCalls
     }
   where
     pref :: SChatFeature f -> FeaturePreference f
@@ -961,7 +995,7 @@ prefStateText feature allowed param = case allowed of
 
 featureStateText :: ChatFeature -> PrefEnabled -> Maybe Int -> Text
 featureStateText feature enabled param =
-  chatFeatureNameText feature <> ": " <> prefEnabledToText enabled <> case enabled of
+  chatFeatureNameText feature <> ": " <> prefEnabledToText feature enabled param <> case enabled of
     PrefEnabled {forUser = True} -> paramText_ feature param
     _ -> ""
 
@@ -970,12 +1004,16 @@ paramText_ feature param = case feature of
   CFTimedMessages -> maybe "" (\p -> " (" <> timedTTLText p <> ")") param
   _ -> ""
 
-prefEnabledToText :: PrefEnabled -> Text
-prefEnabledToText = \case
-  PrefEnabled True True -> "enabled"
+prefEnabledToText :: ChatFeature -> PrefEnabled -> Maybe Int -> Text
+prefEnabledToText f enabled param = case enabled of
+  PrefEnabled True True -> enabledStr
   PrefEnabled False False -> "off"
-  PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
-  PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
+  PrefEnabled {forUser = True, forContact = False} -> enabledStr <> " for you"
+  PrefEnabled {forUser = False, forContact = True} -> enabledStr <> " for contact"
+  where
+    enabledStr = case f of
+      CFTimedMessages -> if isJust param then "enabled" else "allowed"
+      _ -> "enabled"
 
 preferenceText :: forall f. FeatureI f => FeaturePreference f -> Text
 preferenceText p =
@@ -1006,7 +1044,8 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
       -- receipts = pref CFReceipts,
-      voice = pref SCFVoice
+      voice = pref SCFVoice,
+      calls = pref SCFCalls
     }
   where
     pref :: FeatureI f => SChatFeature f -> ContactUserPreference (FeaturePreference f)
@@ -1033,11 +1072,13 @@ getContactUserPreference = \case
   SCFFullDelete -> fullDelete
   -- CFReceipts -> receipts
   SCFVoice -> voice
+  SCFCalls -> calls
 
 data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
+    contactLink :: Maybe ConnReqContact,
     preferences :: Maybe Preferences
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
@@ -1066,6 +1107,7 @@ data LocalProfile = LocalProfile
     displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
+    contactLink :: Maybe ConnReqContact,
     preferences :: Maybe Preferences,
     localAlias :: LocalAlias
   }
@@ -1079,12 +1121,12 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, image, preferences} localAlias =
-  LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, image, contactLink, preferences} localAlias =
+  LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, image, preferences} =
-  Profile {displayName, fullName, image, preferences}
+fromLocalProfile LocalProfile {displayName, fullName, image, contactLink, preferences} =
+  Profile {displayName, fullName, image, contactLink, preferences}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
@@ -1619,6 +1661,9 @@ rcvFileComplete = \case
   RFSComplete _ -> True
   _ -> False
 
+rcvFileCompleteOrCancelled :: RcvFileTransfer -> Bool
+rcvFileCompleteOrCancelled RcvFileTransfer {fileStatus, cancelled} = rcvFileComplete fileStatus || cancelled
+
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
     connId :: Maybe Int64,
@@ -1737,8 +1782,8 @@ instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaul
 
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
-    privateSndFileDescr :: Maybe Text
-    -- TODO agentSndFileDeleted :: Bool
+    privateSndFileDescr :: Maybe Text,
+    agentSndFileDeleted :: Bool
   }
   deriving (Eq, Show, Generic)
 

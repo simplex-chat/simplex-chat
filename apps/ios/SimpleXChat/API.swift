@@ -30,7 +30,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
             logger.debug("chatMigrateInit generating a random DB key")
             dbKey = randomDatabasePassword()
             initialRandomDBPassphraseGroupDefault.set(true)
-        } else if let key = getDatabaseKey() {
+        } else if let key = kcDatabasePassword.get() {
             dbKey = key
         }
     }
@@ -44,7 +44,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     let cjson = chat_migrate_init(&cPath, &cKey, &cConfirm, &chatController)!
     let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
-    let keychainErr = dbRes == .ok && useKeychain && encrypted && !setDatabaseKey(dbKey)
+    let keychainErr = dbRes == .ok && useKeychain && encrypted && !kcDatabasePassword.set(dbKey)
     let result = (encrypted, keychainErr ? .errorKeychain : dbRes)
     migrationResult = result
     return result
@@ -174,13 +174,24 @@ func parseChatData(_ jChat: Any) throws -> ChatData {
         if let ci: ChatItem = try? decodeObject(jCI) {
             return ci
         }
-        return ChatItem.invalidJSON(prettyJSON(jCI) ?? "")
+        return ChatItem.invalidJSON(
+            chatDir: decodeProperty(jCI, "chatDir"),
+            meta: decodeProperty(jCI, "meta"),
+            json: prettyJSON(jCI) ?? ""
+        )
     }
     return ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
 }
 
 func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
     try jsonDecoder.decode(T.self, from: JSONSerialization.data(withJSONObject: obj))
+}
+
+func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
+    if let jProp = (obj as? NSDictionary)?[prop] {
+        return try? decodeObject(jProp)
+    }
+    return nil
 }
 
 func prettyJSON(_ obj: Any) -> String? {

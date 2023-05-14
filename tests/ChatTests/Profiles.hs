@@ -19,6 +19,7 @@ chatProfileTests = do
     it "update user profile with image" testUpdateProfileImage
   describe "user contact link" $ do
     describe "create and connect via contact link" testUserContactLink
+    it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
@@ -119,7 +120,7 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
     (bob <## "alice (Alice): contact is connected")
     (alice <## "bob (Bob): contact is connected")
   threadDelay 100000
-  alice @@@ [("@bob", "Voice messages: enabled")]
+  alice @@@ [("@bob", lastChatFeature)]
   alice <##> bob
 
   cath ##> ("/c " <> cLink)
@@ -131,8 +132,85 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
     (cath <## "alice (Alice): contact is connected")
     (alice <## "cath (Catherine): contact is connected")
   threadDelay 100000
-  alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
+  alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
   alice <##> cath
+
+testProfileLink :: HasCallStack => FilePath -> IO ()
+testProfileLink =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+
+      bob <## "alice set new contact address, use /info alice to view"
+      checkAliceProfileLink bob cLink
+
+      cath ##> ("/c " <> cLink)
+      alice <#? cath
+      alice ##> "/ac cath"
+      alice <## "cath (Catherine): accepting contact request..."
+      concurrently_
+        (cath <## "alice (Alice): contact is connected")
+        (alice <## "cath (Catherine): contact is connected")
+      alice <##> cath
+
+      checkAliceProfileLink cath cLink
+
+      alice ##> "/pa off"
+      alice <## "contact address removed"
+
+      bob <## "alice removed contact address"
+      checkAliceNoProfileLink bob
+
+      cath <## "alice removed contact address"
+      checkAliceNoProfileLink cath
+
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+
+      bob <## "alice set new contact address, use /info alice to view"
+      checkAliceProfileLink bob cLink
+
+      cath <## "alice set new contact address, use /info alice to view"
+      checkAliceProfileLink cath cLink
+
+      alice ##> "/da"
+      alice <## "Your chat address is deleted - accepted contacts will remain connected."
+      alice <## "To create a new chat address use /ad"
+
+      bob <## "alice removed contact address"
+      checkAliceNoProfileLink bob
+
+      cath <## "alice removed contact address"
+      checkAliceNoProfileLink cath
+  where
+    checkAliceProfileLink cc cLink = do
+      cc ##> "/info alice"
+      cc <## "contact ID: 2"
+      cc <##. "receiving messages via"
+      cc <##. "sending messages via"
+      cc <## ("contact address: " <> cLink)
+      cc <## "you've shared main profile with this contact"
+      cc <## "connection not verified, use /code command to see security code"
+    checkAliceNoProfileLink cc = do
+      cc ##> "/info alice"
+      cc <## "contact ID: 2"
+      cc <##. "receiving messages via"
+      cc <##. "sending messages via"
+      cc <## "you've shared main profile with this contact"
+      cc <## "connection not verified, use /code command to see security code"
 
 testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
 testUserContactLinkAutoAccept =
@@ -150,7 +228,7 @@ testUserContactLinkAutoAccept =
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice @@@ [("@bob", lastChatFeature)]
       alice <##> bob
 
       alice ##> "/auto_accept on"
@@ -163,7 +241,7 @@ testUserContactLinkAutoAccept =
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
+      alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
 
       alice ##> "/auto_accept off"
@@ -178,7 +256,7 @@ testUserContactLinkAutoAccept =
         (dan <## "alice (Alice): contact is connected")
         (alice <## "dan (Daniel): contact is connected")
       threadDelay 100000
-      alice @@@ [("@dan", "Voice messages: enabled"), ("@cath", "hey"), ("@bob", "hey")]
+      alice @@@ [("@dan", lastChatFeature), ("@cath", "hey"), ("@bob", "hey")]
       alice <##> dan
 
 testDeduplicateContactRequests :: HasCallStack => FilePath -> IO ()
@@ -207,8 +285,8 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
-    alice @@@ [("@bob", "Voice messages: enabled")]
-    bob @@@ [("@alice", "Voice messages: enabled"), (":2", ""), (":1", "")]
+    alice @@@ [("@bob", lastChatFeature)]
+    bob @@@ [("@alice", lastChatFeature), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
     bob <## "connection :1 deleted"
     bob ##> "/_delete :2"
@@ -234,7 +312,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
     threadDelay 100000
-    alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
+    alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
     alice <##> cath
 
 testDeduplicateContactRequestsProfileChange :: HasCallStack => FilePath -> IO ()
@@ -278,8 +356,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
-    alice @@@ [("@robert", "Voice messages: enabled")]
-    bob @@@ [("@alice", "Voice messages: enabled"), (":3", ""), (":2", ""), (":1", "")]
+    alice @@@ [("@robert", lastChatFeature)]
+    bob @@@ [("@alice", lastChatFeature), (":3", ""), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
     bob <## "connection :1 deleted"
     bob ##> "/_delete :2"
@@ -307,7 +385,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
     threadDelay 100000
-    alice @@@ [("@cath", "Voice messages: enabled"), ("@robert", "hey")]
+    alice @@@ [("@cath", lastChatFeature), ("@robert", "hey")]
     alice <##> cath
 
 testRejectContactAndDeleteUserContact :: HasCallStack => FilePath -> IO ()
@@ -954,7 +1032,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
     threadDelay 100000
-    alice @@@ [("@bob", "Voice messages: enabled")]
+    alice @@@ [("@bob", lastChatFeature)]
     alice ##> "/contacts"
     alice <## "bob (Bob) (alias: friend)"
 
@@ -976,7 +1054,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    let startFeatures = [(0, "Disappearing messages: off"), (0, "Full deletion: off"), (0, "Voice messages: off")]
+    let startFeatures = [(0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
     let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
@@ -1069,7 +1147,7 @@ testUpdateGroupPrefs =
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected")])
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
-      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on")])
@@ -1078,7 +1156,7 @@ testUpdateGroupPrefs =
       bob <## "Full deletion: on"
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on")])
-      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}, \"directMessages\": {\"enable\": \"on\"}}}"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion: off"
       alice <## "Voice messages: off"
@@ -1089,7 +1167,7 @@ testUpdateGroupPrefs =
       bob <## "Voice messages: off"
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
-      -- alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
+      -- alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       alice ##> "/set voice #team on"
       alice <## "updated group preferences:"
       alice <## "Voice messages: on"
@@ -1100,7 +1178,7 @@ testUpdateGroupPrefs =
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on")])
       threadDelay 500000
-      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       -- no update
       threadDelay 500000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
@@ -1221,25 +1299,22 @@ testEnableTimedMessagesContact =
       connectUsers alice bob
       alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
       alice <## "you updated preferences for bob:"
-      alice <## "Disappearing messages: off (you allow: yes (1 sec), contact allows: no)"
+      alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes)"
       bob <## "alice updated preferences for you:"
-      bob <## "Disappearing messages: off (you allow: no, contact allows: yes (1 sec))"
-      bob ##> "/set disappear @alice yes"
-      bob <## "you updated preferences for alice:"
       bob <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
-      alice <## "bob updated preferences for you:"
-      alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
+      bob ##> "/set disappear @alice yes"
+      bob <## "your preferences for alice did not change"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       alice <## "timed message deleted: hey"
       bob <## "timed message deleted: hi"
       bob <## "timed message deleted: hey"
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       -- turn off, messages are not disappearing
       bob ##> "/set disappear @alice no"
       bob <## "you updated preferences for alice:"
@@ -1248,8 +1323,8 @@ testEnableTimedMessagesContact =
       alice <## "Disappearing messages: off (you allow: yes (1 sec), contact allows: no)"
       alice <##> bob
       threadDelay 1500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
       -- test api
       bob ##> "/set disappear @alice yes 30s"
       bob <## "you updated preferences for alice:"
@@ -1268,7 +1343,7 @@ testEnableTimedMessagesGroup =
     \alice bob -> do
       createGroup2 "team" alice bob
       threadDelay 1000000
-      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"timedMessages\": {\"enable\": \"on\", \"ttl\": 1}, \"directMessages\": {\"enable\": \"on\"}}}"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"timedMessages\": {\"enable\": \"on\", \"ttl\": 1}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Disappearing messages: on (1 sec)"
       bob <## "alice updated group #team:"
@@ -1317,8 +1392,7 @@ testTimedMessagesEnabledGlobally =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/set disappear yes"
-      alice <## "updated preferences:"
-      alice <## "Disappearing messages allowed: yes"
+      alice <## "user profile did not change"
       connectUsers alice bob
       bob ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
       bob <## "you updated preferences for alice:"

@@ -77,7 +77,7 @@ struct DatabaseView: View {
                     }
                 }
                 .frame(height: 36)
-                .disabled(m.chatDbChanged || progressIndicator)
+                .disabled(stopped || progressIndicator)
             } header: {
                 Text("Messages")
             } footer: {
@@ -317,10 +317,7 @@ struct DatabaseView: View {
     private func stopChat() {
         Task {
             do {
-                try await apiStopChat()
-                ChatReceiver.shared.stop()
-                await MainActor.run { m.chatRunning = false }
-                appStateGroupDefault.set(.stopped)
+                try await stopChatAsync()
             } catch let error {
                 await MainActor.run {
                     runChat = true
@@ -355,7 +352,7 @@ struct DatabaseView: View {
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         try await apiImportArchive(config: config)
-                        _ = removeDatabaseKey()
+                        _ = kcDatabasePassword.remove()
                         await operationEnded(.archiveImported)
                     } catch let error {
                         await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
@@ -374,9 +371,7 @@ struct DatabaseView: View {
         progressIndicator = true
         Task {
             do {
-                try await apiDeleteStorage()
-                _ = removeDatabaseKey()
-                storeDBPassphraseGroupDefault.set(true)
+                try await deleteChatAsync()
                 await operationEnded(.chatDeleted)
                 appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
             } catch let error {
@@ -466,6 +461,19 @@ struct DatabaseView: View {
         deleteAppFiles()
         appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
     }
+}
+
+func stopChatAsync() async throws {
+    try await apiStopChat()
+    ChatReceiver.shared.stop()
+    await MainActor.run { ChatModel.shared.chatRunning = false }
+    appStateGroupDefault.set(.stopped)
+}
+
+func deleteChatAsync() async throws {
+    try await apiDeleteStorage()
+    _ = kcDatabasePassword.remove()
+    storeDBPassphraseGroupDefault.set(true)
 }
 
 struct DatabaseView_Previews: PreviewProvider {

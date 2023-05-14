@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"\nAvailable in v5.1" = "\nДоступно в v5.1";
+
+/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -103,6 +106,9 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ подтверждён";
 
+/* No comment provided by engineer. */
+"%@ servers" = "%@ серверы";
+
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
 
@@ -140,7 +146,13 @@
 "%lld members" = "Членов группы: %lld";
 
 /* No comment provided by engineer. */
+"%lld minutes" = "%lld минуты";
+
+/* No comment provided by engineer. */
 "%lld second(s)" = "%lld секунд";
+
+/* No comment provided by engineer. */
+"%lld seconds" = "%lld секунд";
 
 /* No comment provided by engineer. */
 "%lldd" = "%lldд";
@@ -162,6 +174,12 @@
 
 /* No comment provided by engineer. */
 "%lldw" = "%lldнед";
+
+/* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u сообщений не могут быть расшифрованы.";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "%u сообщений пропущено.";
 
 /* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
@@ -227,9 +245,6 @@
 /* No comment provided by engineer. */
 "Accept incognito" = "Принять инкогнито";
 
-/* No comment provided by engineer. */
-"Accept requests" = "Принимать запросы";
-
 /* call status */
 "accepted call" = "принятый звонок";
 
@@ -270,10 +285,10 @@
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для Вас.";
 
 /* No comment provided by engineer. */
-"All your contacts will remain connected" = "Все контакты, которые соединились через этот адрес, сохранятся.";
+"Allow" = "Разрешить";
 
 /* No comment provided by engineer. */
-"Allow" = "Разрешить";
+"Allow calls only if your contact allows them." = "Разрешить звонки, только если их разрешает Ваш контакт.";
 
 /* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Разрешить исчезающие сообщения, только если Ваш контакт разрешает их Вам.";
@@ -298,6 +313,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "Разрешить голосовые сообщения?";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "Разрешить Вашим контактам звонить Вам.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "Разрешить Вашим контактам необратимо удалять отправленные сообщения.";
@@ -327,6 +345,9 @@
 "App icon" = "Иконка";
 
 /* No comment provided by engineer. */
+"App passcode" = "Код доступа в приложение";
+
+/* No comment provided by engineer. */
 "App version" = "Версия приложения";
 
 /* No comment provided by engineer. */
@@ -347,6 +368,15 @@
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "аудиозвонок (не e2e зашифрованный)";
 
+/* chat feature */
+"Audio/video calls" = "Аудио/видео звонки";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "Аудио/видео звонки запрещены.";
+
+/* PIN entry */
+"Authentication cancelled" = "Аутентификация отменена";
+
 /* No comment provided by engineer. */
 "Authentication failed" = "Ошибка аутентификации";
 
@@ -363,22 +393,28 @@
 "Auto-accept images" = "Автоприем изображений";
 
 /* No comment provided by engineer. */
-"Automatically" = "Автоматически";
-
-/* No comment provided by engineer. */
 "Back" = "Назад";
 
 /* integrity error chat item */
 "bad message hash" = "ошибка хэш сообщения";
 
+/* No comment provided by engineer. */
+"Bad message hash" = "Ошибка хэш сообщения";
+
 /* integrity error chat item */
 "bad message ID" = "ошибка ID сообщения";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "Ошибка ID сообщения";
 
 /* No comment provided by engineer. */
 "bold" = "жирный";
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "Вы и Ваш контакт можете необратимо удалять отправленные сообщения.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "Вы и Ваш контакт можете совершать звонки.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Вы и Ваш контакт можете отправлять исчезающие сообщения.";
@@ -413,11 +449,8 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Нельзя пригласить контакты!";
 
-/* chat item action */
-"Cancel" = "Отменить";
-
 /* No comment provided by engineer. */
-"Cancel file transfer?" = "Прекратить передачу файла?";
+"Cancel" = "Отменить";
 
 /* feature offered item */
 "cancelled %@" = "отменил(a) %@";
@@ -434,8 +467,17 @@
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Поменять пароль базы данных?";
 
+/* authentication reason */
+"Change lock mode" = "Изменить режим блокировки";
+
 /* No comment provided by engineer. */
 "Change member role?" = "Поменять роль члена группы?";
+
+/* authentication reason */
+"Change passcode" = "Изменить код доступа";
+
+/* No comment provided by engineer. */
+"Change passcode" = "Изменить код доступа";
 
 /* No comment provided by engineer. */
 "Change receiving address" = "Поменять адрес получения";
@@ -518,6 +560,9 @@
 /* No comment provided by engineer. */
 "Colors" = "Цвета";
 
+/* server test step */
+"Compare file" = "Сравнение файла";
+
 /* No comment provided by engineer. */
 "Compare security codes with your contacts." = "Сравните код безопасности с Вашими контактами.";
 
@@ -535,6 +580,9 @@
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Подтвердите новый пароль…";
+
+/* No comment provided by engineer. */
+"Confirm Passcode" = "Подтвердить Код";
 
 /* No comment provided by engineer. */
 "Confirm password" = "Подтвердить пароль";
@@ -645,16 +693,10 @@
 "Contact preferences" = "Предпочтения контакта";
 
 /* No comment provided by engineer. */
-"Contact requests" = "Запросы контактов";
-
-/* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Контакты могут помечать сообщения для удаления; Вы сможете просмотреть их.";
 
 /* chat item action */
 "Copy" = "Скопировать";
-
-/* No comment provided by engineer. */
-"Core built at: %@" = "Ядро скомпилировано: %@";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Версия ядра: v%@";
@@ -662,8 +704,8 @@
 /* No comment provided by engineer. */
 "Create" = "Создать";
 
-/* No comment provided by engineer. */
-"Create address" = "Создать адрес";
+/* server test step */
+"Create file" = "Создание файла";
 
 /* No comment provided by engineer. */
 "Create group link" = "Создать ссылку группы";
@@ -688,6 +730,9 @@
 
 /* No comment provided by engineer. */
 "creator" = "создатель";
+
+/* No comment provided by engineer. */
+"Current Passcode" = "Текущий Код";
 
 /* No comment provided by engineer. */
 "Current passphrase…" = "Текущий пароль…";
@@ -755,6 +800,9 @@
 /* No comment provided by engineer. */
 "Decentralized" = "Децентрализованный";
 
+/* No comment provided by engineer. */
+"Decryption error" = "Ошибка расшифровки";
+
 /* pref value */
 "default (%@)" = "по умолчанию (%@)";
 
@@ -799,6 +847,9 @@
 
 /* No comment provided by engineer. */
 "Delete database" = "Удалить данные чата";
+
+/* server test step */
+"Delete file" = "Удалить файл";
 
 /* No comment provided by engineer. */
 "Delete files and media?" = "Удалить файлы и медиа?";
@@ -932,6 +983,9 @@
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Откатить версию и открыть чат";
 
+/* server test step */
+"Download file" = "Загрузка файла";
+
 /* No comment provided by engineer. */
 "Duplicate display name!" = "Имя профиля уже используется!";
 
@@ -955,6 +1009,9 @@
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "Включить мгновенные уведомления?";
+
+/* No comment provided by engineer. */
+"Enable lock" = "Включить блокировку";
 
 /* No comment provided by engineer. */
 "Enable notifications" = "Включить уведомления";
@@ -1012,6 +1069,9 @@
 
 /* No comment provided by engineer. */
 "Enter correct passphrase." = "Введите правильный пароль.";
+
+/* No comment provided by engineer. */
+"Enter Passcode" = "Введите Код";
 
 /* No comment provided by engineer. */
 "Enter passphrase…" = "Введите пароль…";
@@ -1098,10 +1158,16 @@
 "Error joining group" = "Ошибка при вступлении в группу";
 
 /* No comment provided by engineer. */
+"Error loading %@ servers" = "Ошибка загрузки %@ серверов";
+
+/* No comment provided by engineer. */
 "Error receiving file" = "Ошибка при получении файла";
 
 /* No comment provided by engineer. */
 "Error removing member" = "Ошибка при удалении члена группы";
+
+/* No comment provided by engineer. */
+"Error saving %@ servers" = "Ошибка при сохранении %@ серверов";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "Ошибка при сохранении профиля группы";
@@ -1110,10 +1176,10 @@
 "Error saving ICE servers" = "Ошибка при сохранении ICE серверов";
 
 /* No comment provided by engineer. */
-"Error saving passphrase to keychain" = "Ошибка сохранения пароля в Keychain";
+"Error saving passcode" = "Ошибка сохранения кода";
 
 /* No comment provided by engineer. */
-"Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
+"Error saving passphrase to keychain" = "Ошибка сохранения пароля в Keychain";
 
 /* No comment provided by engineer. */
 "Error saving user password" = "Ошибка при сохранении пароля пользователя";
@@ -1158,9 +1224,6 @@
 "Exit without saving" = "Выйти без сохранения";
 
 /* No comment provided by engineer. */
-"Experimental" = "Экспериментальные";
-
-/* No comment provided by engineer. */
 "Export database" = "Экспорт архива чата";
 
 /* No comment provided by engineer. */
@@ -1176,7 +1239,10 @@
 "Failed to remove passphrase" = "Ошибка удаления пароля";
 
 /* No comment provided by engineer. */
-"File transfer will be cancelled. If it's in progress it will be stoppped." = "Передача файла будет прекращена. Если она в процессе, она будет остановлена.";
+"Fast and no wait until the sender is online!" = "Быстрые и не нужно ждать, когда отправитель онлайн!";
+
+/* No comment provided by engineer. */
+"File will be deleted from servers." = "Файл будет удалён с серверов.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Файл будет принят когда Ваш контакт загрузит его.";
@@ -1326,9 +1392,6 @@
 "ICE servers (one per line)" = "ICE серверы (один на строке)";
 
 /* No comment provided by engineer. */
-"If you can't meet in person, **show QR code in the video call**, or share the link." = "Если Вы не можете встретиться лично, Вы можете **показать QR код во время видеозвонка**, или поделиться ссылкой.";
-
-/* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Если Вы не можете встретиться лично, Вы можете **сосканировать QR код во время видеозвонка**, или Ваш контакт может отправить Вам ссылку.";
 
 /* No comment provided by engineer. */
@@ -1342,6 +1405,9 @@
 
 /* No comment provided by engineer. */
 "Image will be received when your contact is online, please wait or check later!" = "Изображение будет принято, когда Ваш контакт будет в сети, подождите или проверьте позже!";
+
+/* No comment provided by engineer. */
+"Immediately" = "Сразу";
 
 /* No comment provided by engineer. */
 "Immune to spam and abuse" = "Защищен от спама";
@@ -1393,6 +1459,9 @@
 
 /* No comment provided by engineer. */
 "Incompatible database version" = "Несовместимая версия базы данных";
+
+/* PIN entry */
+"Incorrect passcode" = "Неправильный код";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "Неправильный код безопасности!";
@@ -1473,7 +1542,10 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Это может случится, когда:\n1. Сервер удалил сообщения, если они не были доставлены в течение 30 дней.\n2. Сервер, через который Вы получаете сообщения от контакта, был обновлён и перезапущен.\n3. Соединение компроментировано.\nПожалуйста, соединитесь с девелоперами через Настройки, чтобы получать уведомления о серверах.\nМы планируем добавить избыточную доставку сообщений, чтобы не терять сообщения.";
+"It can happen when you or your connection used the old database backup." = "Это может произойти, когда Вы или Ваш контакт используете старую копию базы данных.";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Это может произойти, когда:\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.\n3. Соединение компроментировано.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Возможно, Вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).";
@@ -1501,6 +1573,9 @@
 
 /* No comment provided by engineer. */
 "Keychain error" = "Ошибка Keychain";
+
+/* No comment provided by engineer. */
+"KeyChain error" = "Ошибка KeyChain";
 
 /* No comment provided by engineer. */
 "Large file!" = "Большой файл!";
@@ -1539,13 +1614,19 @@
 "Local profile data only" = "Только локальные данные профиля";
 
 /* No comment provided by engineer. */
+"Lock after" = "Заблокировать через";
+
+/* No comment provided by engineer. */
+"Lock mode" = "Режим блокировки";
+
+/* No comment provided by engineer. */
 "Make a private connection" = "Добавьте контакт";
 
 /* No comment provided by engineer. */
 "Make profile private!" = "Сделайте профиль скрытым!";
 
 /* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется (%@).";
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Пожалуйста, проверьте, что адреса %@ серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
@@ -1603,6 +1684,9 @@
 
 /* No comment provided by engineer. */
 "Messages" = "Сообщения";
+
+/* No comment provided by engineer. */
+"Messages & files" = "Сообщения";
 
 /* No comment provided by engineer. */
 "Migrating database archive..." = "Данные чата перемещаются...";
@@ -1683,6 +1767,9 @@
 "New message" = "Новое сообщение";
 
 /* No comment provided by engineer. */
+"New Passcode" = "Новый Код";
+
+/* No comment provided by engineer. */
 "New passphrase…" = "Новый пароль…";
 
 /* pref value */
@@ -1690,6 +1777,9 @@
 
 /* No comment provided by engineer. */
 "No" = "Нет";
+
+/* Authentication unavailable */
+"No app password" = "Нет кода доступа";
 
 /* No comment provided by engineer. */
 "No contacts selected" = "Контакты не выбраны";
@@ -1727,6 +1817,9 @@
 /* enabled status
    group pref value */
 "off" = "нет";
+
+/* No comment provided by engineer. */
+"Off" = "Выключено";
 
 /* No comment provided by engineer. */
 "Off (Local)" = "Выключить (Локальные)";
@@ -1774,6 +1867,9 @@
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Только Вы можете необратимо удалять сообщения (Ваш контакт может помечать их на удаление).";
 
 /* No comment provided by engineer. */
+"Only you can make calls." = "Только Вы можете совершать звонки.";
+
+/* No comment provided by engineer. */
 "Only you can send disappearing messages." = "Только Вы можете отправлять исчезающие сообщения.";
 
 /* No comment provided by engineer. */
@@ -1781,6 +1877,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Только Ваш контакт может необратимо удалять сообщения (Вы можете помечать их на удаление).";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "Только Ваш контакт может совершать звонки.";
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Только Ваш контакт может отправлять исчезающие сообщения.";
@@ -1813,6 +1912,21 @@
 "owner" = "владелец";
 
 /* No comment provided by engineer. */
+"Passcode" = "Код доступа";
+
+/* No comment provided by engineer. */
+"Passcode changed!" = "Код доступа изменён!";
+
+/* No comment provided by engineer. */
+"Passcode entry" = "Ввод кода доступа";
+
+/* No comment provided by engineer. */
+"Passcode not changed!" = "Код доступа не изменён!";
+
+/* No comment provided by engineer. */
+"Passcode set!" = "Код доступа установлен!";
+
+/* No comment provided by engineer. */
 "Password to show" = "Пароль чтобы раскрыть";
 
 /* No comment provided by engineer. */
@@ -1835,6 +1949,9 @@
 
 /* No comment provided by engineer. */
 "Periodically" = "Периодически";
+
+/* message decrypt error item */
+"Permanent decryption error" = "Ошибка расшифровки";
 
 /* No comment provided by engineer. */
 "PING count" = "Количество PING";
@@ -1864,6 +1981,12 @@
 "Please enter the previous password after restoring database backup. This action can not be undone." = "Введите предыдущий пароль после восстановления резервной копии. Это действие нельзя отменить.";
 
 /* No comment provided by engineer. */
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Пожалуйста, запомните или сохраните его - восстановить потерянный пароль невозможно!";
+
+/* No comment provided by engineer. */
+"Please report it to the developers." = "Пожалуйста, сообщите об этой ошибке девелоперам.";
+
+/* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Пожалуйста, перезапустите приложение и переместите данные чата, чтобы включить доставку уведомлений.";
 
 /* No comment provided by engineer. */
@@ -1871,6 +1994,9 @@
 
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Пожалуйста, надежно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.";
+
+/* No comment provided by engineer. */
+"Polish interface" = "Польский интерфейс";
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "Возможно, хэш сертификата в адресе сервера неверный";
@@ -1901,6 +2027,9 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "Пароль профиля";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "Запретить аудио/видео звонки.";
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Запретить необратимое удаление сообщений.";
@@ -1946,6 +2075,9 @@
 
 /* notification */
 "Received file event" = "Загрузка файла";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "Приём файла будет прекращён.";
 
 /* No comment provided by engineer. */
 "Receiving via" = "Получение через";
@@ -2033,6 +2165,15 @@
 
 /* No comment provided by engineer. */
 "Revert" = "Отменить изменения";
+
+/* No comment provided by engineer. */
+"Revoke" = "Отозвать";
+
+/* cancel file action */
+"Revoke file" = "Отозвать файл";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "Отозвать файл?";
 
 /* No comment provided by engineer. */
 "Role" = "Роль";
@@ -2125,9 +2266,6 @@
 "Send direct message" = "Отправить сообщение";
 
 /* No comment provided by engineer. */
-"Send videos and files via XFTP" = "Отправлять видео и файлы через XFTP";
-
-/* No comment provided by engineer. */
 "Send link previews" = "Отправлять картинки ссылок";
 
 /* No comment provided by engineer. */
@@ -2152,6 +2290,9 @@
 "Sender may have deleted the connection request." = "Отправитель мог удалить запрос на соединение.";
 
 /* No comment provided by engineer. */
+"Sending file will be stopped." = "Отправка файла будет остановлена.";
+
+/* No comment provided by engineer. */
 "Sending via" = "Отправка через";
 
 /* notification */
@@ -2162,6 +2303,9 @@
 
 /* server test error */
 "Server requires authorization to create queues, check password" = "Сервер требует авторизации для создания очередей, проверьте пароль";
+
+/* server test error */
+"Server requires authorization to upload, check password" = "Сервер требует авторизации для загрузки, проверьте пароль";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Ошибка теста сервера!";
@@ -2179,6 +2323,9 @@
 "Set group preferences" = "Предпочтения группы";
 
 /* No comment provided by engineer. */
+"Set it instead of system authentication." = "Установите код вместо системной аутентификации.";
+
+/* No comment provided by engineer. */
 "Set passphrase to export" = "Установите пароль";
 
 /* No comment provided by engineer. */
@@ -2194,9 +2341,6 @@
 "Share" = "Поделиться";
 
 /* No comment provided by engineer. */
-"Share invitation link" = "Поделиться ссылкой";
-
-/* No comment provided by engineer. */
 "Share link" = "Поделиться ссылкой";
 
 /* No comment provided by engineer. */
@@ -2210,9 +2354,6 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
-
-/* No comment provided by engineer. */
-"Show QR code" = "Показать QR код";
 
 /* No comment provided by engineer. */
 "Show:" = "Показать:";
@@ -2234,6 +2375,12 @@
 
 /* No comment provided by engineer. */
 "SimpleX Lock" = "Блокировка SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX Lock mode" = "Режим Блокировки SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX Lock not enabled!" = "Блокировка SimpleX не включена!";
 
 /* No comment provided by engineer. */
 "SimpleX Lock turned on" = "Блокировка SimpleX включена";
@@ -2277,6 +2424,15 @@
 /* No comment provided by engineer. */
 "Stop chat?" = "Остановить чат?";
 
+/* cancel file action */
+"Stop file" = "Остановить файл";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "Остановить приём файла?";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "Остановить отправку файла?";
+
 /* authentication reason */
 "Stop SimpleX" = "Остановить SimpleX";
 
@@ -2284,10 +2440,16 @@
 "strike" = "зачеркнуть";
 
 /* No comment provided by engineer. */
+"Submit" = "Продолжить";
+
+/* No comment provided by engineer. */
 "Support SimpleX Chat" = "Поддержать SimpleX Chat";
 
 /* No comment provided by engineer. */
 "System" = "Системная";
+
+/* No comment provided by engineer. */
+"System authentication" = "Системная аутентификация";
 
 /* No comment provided by engineer. */
 "Take picture" = "Сделать фото";
@@ -2335,7 +2497,7 @@
 "Thank you for installing SimpleX Chat!" = "Спасибо, что установили SimpleX Chat!";
 
 /* No comment provided by engineer. */
-"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "Благодаря пользователям – [добавьте переводы через Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!";
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Благодаря пользователям – [добавьте переводы через Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Благодаря пользователям – добавьте переводы через Weblate!";
@@ -2360,6 +2522,12 @@
 
 /* No comment provided by engineer. */
 "The group is fully decentralized – it is visible only to the members." = "Группа полностью децентрализована — она видна только членам.";
+
+/* No comment provided by engineer. */
+"The hash of the previous message is different." = "Хэш предыдущего сообщения отличается.";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "Неправильный ID предыдущего сообщения (меньше или равен предыдущему).\nЭто может произойти из-за ошибки программы, или когда соединение компроментировано.";
 
 /* No comment provided by engineer. */
 "The message will be deleted for all members." = "Сообщение будет удалено для всех членов группы.";
@@ -2402,6 +2570,9 @@
 
 /* notification title */
 "this contact" = "этот контакт";
+
+/* No comment provided by engineer. */
+"This error is permanent for this connection, please re-connect." = "Эта ошибка постоянная для этого соединения, пожалуйста, соединитесь снова.";
 
 /* No comment provided by engineer. */
 "This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса Вы увидите сообщение — убедитесь, что Вы все еще можете получать сообщения от этого контакта (или члена группы).";
@@ -2496,8 +2667,11 @@
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать еще одну ссылку и проверьте Ваше соединение с сетью.";
 
-/* authentication reason */
+/* No comment provided by engineer. */
 "Unlock" = "Разблокировать";
+
+/* authentication reason */
+"Unlock app" = "Разблокировать";
 
 /* No comment provided by engineer. */
 "Unmute" = "Уведомлять";
@@ -2532,6 +2706,9 @@
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Обновить и открыть чат";
 
+/* server test step */
+"Upload file" = "Загрузка файла";
+
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Использовать .onion хосты";
 
@@ -2563,9 +2740,6 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
-"v4.6.1+ is required to receive via XFTP." = "v4.6.1+ необходима для приема файлов через XFTP.";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "Проверить безопасность соединения";
 
 /* No comment provided by engineer. */
@@ -2591,6 +2765,15 @@
 
 /* No comment provided by engineer. */
 "video call (not e2e encrypted)" = "видеозвонок (не e2e зашифрованный)";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact completes uploading it." = "Видео будет получено когда Ваш контакт загрузит его.";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact is online, please wait or check later!" = "Видео будет получено, когда Ваш контакт будет онлайн, пожалуйста, подождите или проверьте позже!";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "Видео и файлы до 1гб";
 
 /* No comment provided by engineer. */
 "View security code" = "Показать код безопасности";
@@ -2621,6 +2804,9 @@
 
 /* No comment provided by engineer. */
 "Waiting for image" = "Ожидается прием изображения";
+
+/* No comment provided by engineer. */
+"Waiting for video" = "Ожидание видео";
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "хочет соединиться с Вами!";
@@ -2654,6 +2840,9 @@
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Неправильный пароль!";
+
+/* No comment provided by engineer. */
+"XFTP servers" = "XFTP серверы";
 
 /* pref value */
 "yes" = "да";
@@ -2704,10 +2893,13 @@
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Вы можете поделиться ссылкой или QR кодом - через них можно присоединиться к группе. Вы сможете удалить ссылку, сохранив членов группы, которые через нее соединились.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
+"You can share your address as a link or QR code - anybody can connect to you." = "Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Вы можете запустить чат через Настройки приложения или перезапустив приложение.";
+
+/* No comment provided by engineer. */
+"You can turn on SimpleX Lock via Settings." = "Вы можете включить Блокировку SimpleX через Настройки.";
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Вы можете форматировать сообщения:";
@@ -2794,6 +2986,9 @@
 "You will stop receiving messages from this group. Chat history will be preserved." = "Вы перестанете получать сообщения от этой группы. История чата будет сохранена.";
 
 /* No comment provided by engineer. */
+"You won't lose your contacts if you later delete your address." = "Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
+
+/* No comment provided by engineer. */
 "you: " = "Вы: ";
 
 /* No comment provided by engineer. */
@@ -2801,6 +2996,9 @@
 
 /* No comment provided by engineer. */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Вы используете инкогнито профиль для этой группы - чтобы предотвратить раскрытие Вашего основного профиля, приглашать контакты не разрешено";
+
+/* No comment provided by engineer. */
+"Your %@ servers" = "Ваши %@ серверы";
 
 /* No comment provided by engineer. */
 "Your calls" = "Ваши звонки";
@@ -2822,12 +3020,6 @@
 
 /* No comment provided by engineer. */
 "Your chats" = "Ваши чаты";
-
-/* No comment provided by engineer. */
-"Your contact address" = "Ваш SimpleX адрес";
-
-/* No comment provided by engineer. */
-"Your contact can scan it from the app." = "Ваш контакт может сосканировать QR код в приложении.";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).";
@@ -2875,8 +3067,8 @@
 "Your settings" = "Настройки";
 
 /* No comment provided by engineer. */
-"Your SimpleX contact address" = "Ваш SimpleX адрес";
+"Your SMP servers" = "Ваши SMP серверы";
 
 /* No comment provided by engineer. */
-"Your SMP servers" = "Ваши SMP серверы";
+"Your XFTP servers" = "Ваши XFTP серверы";
 

@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.*
 import androidx.core.text.BidiFormatter
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.CurrentColors
 import chat.simplex.app.views.helpers.detectGesture
 import kotlinx.coroutines.*
 
@@ -57,7 +57,7 @@ private val typingIndicators: List<AnnotatedString> = listOf(
 
 
 private fun typingIndicator(recent: Boolean, @IntRange (from = 0, to = 4) typingIdx: Int): AnnotatedString = buildAnnotatedString {
-  pushStyle(SpanStyle(color = HighOrLowlight, fontFamily = FontFamily.Monospace, letterSpacing = (-1).sp))
+  pushStyle(SpanStyle(color = CurrentColors.value.colors.secondary, fontFamily = FontFamily.Monospace, letterSpacing = (-1).sp))
   append(if (recent) typingIndicators[typingIdx] else noTyping)
 }
 
@@ -228,7 +228,7 @@ fun ClickableText(
         }
       }
     }, shouldConsumeEvent = { pos ->
-      var consume = false
+        var consume = false
         layoutResult.value?.let { layoutResult ->
           consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
         }

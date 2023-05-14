@@ -1,3 +1,7 @@
+---
+title: Přispívání překladů do SimpleX Chat
+revision: 07.02.2023
+---
 | Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/TRANSLATIONS.md) |
 
 # Přispívání překladů do SimpleX Chat
@@ -22,7 +26,7 @@ Tento dokument vznikl proto, abychom tento proces urychlili, a podělili se s v�
 
 2. Některé řetězce není třeba překládat, ale přesto je třeba je překopírovat - v uživatelském rozhraní Weblate je k tomu tlačítko:
 
-<img src="./images/weblate_1.png" alt="weblate: zkopírovat zdroj do překladu" width="100%">
+<img src="/docs/images/weblate_1.png" alt="weblate: zkopírovat zdroj do překladu" width="100%">
 
 3. Weblate má také automatické návrhy, které mohou proces urychlit. Někdy je lze použít tak, jak jsou, jindy je třeba je upravit - kliknutím je použijete v překladu.
 
@@ -30,7 +34,7 @@ Tento dokument vznikl proto, abychom tento proces urychlili, a podělili se s v�
 
 5. Při překladu [aplikace pro iOS](https://hosted.weblate.org/projects/simplex-chat/ios/) je velká část řetězců naprosto stejná - lze je jedním kliknutím překopírovat do sekce glosář. Vizuální nápovědou, že to lze provést, je to, že celý zdrojový řetězec je zvýrazněn žlutě. Mnoho dalších řetězců je velmi podobných, liší se pouze syntaxí interpolace nebo způsobem použití tučného písma - vyžadují minimální úpravy. Existují některé řetězce, které jsou jedinečné pro platformu iOS - ty je třeba přeložit zvlášť.
 
-<img src="./images/weblate_2.png" alt="weblate: automatické návrhy" width="100%">
+<img src="/docs/images/weblate_2.png" alt="weblate: automatické návrhy" width="100%">
 
 ## Po dokončení překladu
 

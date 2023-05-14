@@ -200,6 +200,21 @@ public func removeFile(_ fileName: String) {
     }
 }
 
+public func cleanupDirectFile(_ aChatItem: AChatItem) {
+    if aChatItem.chatInfo.chatType == .direct {
+        cleanupFile(aChatItem)
+    }
+}
+
+public func cleanupFile(_ aChatItem: AChatItem) {
+    let cItem = aChatItem.chatItem
+    let mc = cItem.content.msgContent
+    if case .file = mc,
+       let fileName = cItem.file?.filePath {
+        removeFile(fileName)
+    }
+}
+
 public func getMaxFileSize(_ fileProtocol: FileProtocol) -> Int64 {
     switch fileProtocol {
     case .xftp: return MAX_FILE_SIZE_XFTP

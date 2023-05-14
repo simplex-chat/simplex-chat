@@ -140,12 +140,16 @@ struct ChatView: View {
                 switch cInfo {
                 case let .direct(contact):
                     HStack {
-                        callButton(contact, .audio, imageName: "phone")
+                        if contact.allowsFeature(.calls) {
+                            callButton(contact, .audio, imageName: "phone")
+                        }
                         Menu {
-                            Button {
-                                CallController.shared.startCall(contact, .video)
-                            } label: {
-                                Label("Video call", systemImage: "video")
+                            if contact.allowsFeature(.calls) {
+                                Button {
+                                    CallController.shared.startCall(contact, .video)
+                                } label: {
+                                    Label("Video call", systemImage: "video")
+                                }
                             }
                             searchButton()
                             toggleNtfsButton(chat)
@@ -215,17 +219,25 @@ struct ChatView: View {
         .padding(.vertical, 8)
     }
     
+    private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
+        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil
+    }
+
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
-                    let maxWidth =
-                    cInfo.chatType == .group
-                    ? (g.size.width - 28) * 0.84 - 42
-                    : (g.size.width - 32) * 0.84
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
+                            let voiceNoFrame = voiceWithoutFrame(ci)
+                            let maxWidth = cInfo.chatType == .group
+                                            ? voiceNoFrame
+                                                ? (g.size.width - 28) - 42
+                                                : (g.size.width - 28) * 0.84 - 42
+                                            : voiceNoFrame
+                                                ? (g.size.width - 32)
+                                                : (g.size.width - 32) * 0.84
                             chatItemView(ci, maxWidth)
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear {
@@ -441,16 +453,24 @@ struct ChatView: View {
         @Binding var showDeleteMessage: Bool
         
         @State private var revealed = false
+        @State private var showChatItemInfoSheet: Bool = false
+        @State private var chatItemInfo: ChatItemInfo?
         
+        @State private var allowMenu: Bool = true
+        
+        @State private var audioPlayer: AudioPlayer?
+        @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
+        @State private var playbackTime: TimeInterval?
+
         var body: some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             let uiMenu: Binding<UIMenu> = Binding(
                 get: { UIMenu(title: "", children: menu(live: composeState.liveMessage != nil)) },
                 set: { _ in }
             )
-
-            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
-                .uiKitContextMenu(menu: uiMenu)
+            
+            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+                .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
@@ -463,6 +483,19 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+                .onDisappear {
+                    if ci.content.msgContent?.isVoice == true {
+                        allowMenu = true
+                        audioPlayer?.stop()
+                        playbackState = .noPlayback
+                        playbackTime = TimeInterval(0)
+                    }
+                }
+                .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
+                    chatItemInfo = nil
+                }) {
+                    ChatItemInfoView(chatItemSent: ci.chatDir.sent, chatItemInfo: $chatItemInfo)
+                }
         }
         
         private func menu(live: Bool) -> [UIAction] {
@@ -487,13 +520,14 @@ struct ChatView: View {
                 if ci.meta.editable && !mc.isVoice && !live {
                     menu.append(editAction())
                 }
+                menu.append(viewInfoUIAction())
                 if revealed {
                     menu.append(hideUIAction())
                 }
                 if ci.meta.itemDeleted == nil,
                    let file = ci.file,
-                   file.cancellable {
-                    menu.append(cancelFileUIAction(file.fileId))
+                   let cancelAction = file.cancelAction  {
+                    menu.append(cancelFileUIAction(file.fileId, cancelAction))
                 }
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
@@ -585,16 +619,35 @@ struct ChatView: View {
             }
         }
 
-        private func cancelFileUIAction(_ fileId: Int64) -> UIAction {
+        private func viewInfoUIAction() -> UIAction {
             UIAction(
-                title: NSLocalizedString("Cancel", comment: "chat item action"),
+                title: NSLocalizedString("View details", comment: "chat item action"),
+                image: UIImage(systemName: "info")
+            ) { _ in
+                Task {
+                    do {
+                        let ciInfo = try await apiGetChatItemInfo(itemId: ci.id)
+                        await MainActor.run {
+                            chatItemInfo = ciInfo
+                        }
+                    } catch let error {
+                        logger.error("apiGetChatItemInfo error: \(responseError(error))")
+                    }
+                    await MainActor.run { showChatItemInfoSheet = true }
+                }
+            }
+        }
+
+        private func cancelFileUIAction(_ fileId: Int64, _ cancelAction: CancelAction) -> UIAction {
+            return UIAction(
+                title: cancelAction.uiAction,
                 image: UIImage(systemName: "xmark"),
                 attributes: [.destructive]
             ) { _ in
                 AlertManager.shared.showAlert(Alert(
-                    title: Text("Cancel file transfer?"),
-                    message: Text("File transfer will be cancelled. If it's in progress it will be stoppped."),
-                    primaryButton: .destructive(Text("Confirm")) {
+                    title: Text(cancelAction.alert.title),
+                    message: Text(cancelAction.alert.message),
+                    primaryButton: .destructive(Text(cancelAction.alert.confirm)) {
                         Task {
                             if let user = ChatModel.shared.currentUser {
                                 await cancelFile(user: user, fileId: fileId)

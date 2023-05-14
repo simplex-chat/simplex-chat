@@ -33,8 +33,7 @@ import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
 import Data.Time (ZonedTime)
-import Data.Time.Clock (UTCTime, getCurrentTime)
-import Data.Time.Format (defaultTimeLocale, formatTime, iso8601DateFormat)
+import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Language.Haskell.TH (Exp, Q, runIO)
@@ -73,14 +72,9 @@ versionString version = "SimpleX Chat v" <> version
 updateStr :: String
 updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
-buildTimestampQ :: Q Exp
-buildTimestampQ = do
-  s <- formatTime defaultTimeLocale (iso8601DateFormat $ Just "%H:%M:%S") <$> runIO getCurrentTime
-  [|fromString s|]
-
 simplexmqCommitQ :: Q Exp
 simplexmqCommitQ = do
-  s <- either error B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
+  s <- either (const "") B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
   [|fromString s|]
   where
     commitHashP :: A.Parser ByteString
@@ -92,11 +86,10 @@ simplexmqCommitQ = do
         *> "tag: "
         *> A.takeWhile (A.notInClass " \r\n")
 
-coreVersionInfo :: String -> String -> CoreVersionInfo
-coreVersionInfo buildTimestamp simplexmqCommit =
+coreVersionInfo :: String -> CoreVersionInfo
+coreVersionInfo simplexmqCommit =
   CoreVersionInfo
     { version = versionNumber,
-      buildTimestamp,
       simplexmqVersion = simplexMQVersion,
       simplexmqCommit
     }
@@ -187,7 +180,7 @@ instance ToJSON HelpSection where
 
 data ChatCommand
   = ShowActiveUser
-  | CreateActiveUser Profile Bool
+  | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
   | SetActiveUser UserName (Maybe UserPwd)
@@ -201,7 +194,7 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
+  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
   | APIStopChat
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}
@@ -219,8 +212,9 @@ data ChatCommand
   | ExecAgentStoreSQL Text
   | APIGetChats {userId :: UserId, pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
-  | APIGetChatItems Int
-  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
+  | APIGetChatItems ChatPagination (Maybe String)
+  | APIGetChatItemInfo ChatItemId
+  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
@@ -311,6 +305,8 @@ data ChatCommand
   | DeleteMyAddress
   | APIShowMyAddress UserId
   | ShowMyAddress
+  | APISetProfileAddress UserId Bool
+  | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)
   | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact ContactName
@@ -346,6 +342,7 @@ data ChatCommand
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
+  | ShowChatItemInfo ChatName Text
   | ShowLiveItems Bool
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
@@ -353,6 +350,7 @@ data ChatCommand
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
   | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
+  | SetFileToReceive FileTransferId
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)
@@ -382,6 +380,7 @@ data ChatResponse
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat}
   | CRChatItems {user :: User, chatItems :: [AChatItem]}
+  | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers}
@@ -398,6 +397,7 @@ data ChatResponse
   | CRNewChatItem {user :: User, chatItem :: AChatItem}
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
+  | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent User MsgContent Int ZonedTime
@@ -417,6 +417,7 @@ data ChatResponse
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
+  | CRFileTransferStatusXFTP User AChatItem
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
   | CRUserPrivacy {user :: User, updatedUser :: User}
@@ -445,6 +446,7 @@ data ChatResponse
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
   | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileError {user :: User, chatItem :: AChatItem}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
@@ -453,6 +455,7 @@ data ChatResponse
   | CRSndFileProgressXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
   | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileError {user :: User, chatItem :: AChatItem}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
@@ -517,6 +520,7 @@ data ChatResponse
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
+  | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show, Generic)
 
 logResponseToFile :: ChatResponse -> Bool
@@ -697,7 +701,7 @@ data ParsedServerAddress = ParsedServerAddress
 instance ToJSON ParsedServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ServerAddress = ServerAddress
-  { protocol :: AProtocolType,
+  { serverProtocol :: AProtocolType,
     hostnames :: NonEmpty String,
     port :: String,
     keyHash :: String,
@@ -724,7 +728,6 @@ data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
 
 data CoreVersionInfo = CoreVersionInfo
   { version :: String,
-    buildTimestamp :: String,
     simplexmqVersion :: String,
     simplexmqCommit :: String
   }
@@ -787,6 +790,7 @@ data ChatErrorType
   | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
   | CEGroupInternal {message :: String}
   | CEFileNotFound {message :: String}
+  | CEFileSize {filePath :: FilePath}
   | CEFileAlreadyReceiving {message :: String}
   | CEFileCancelled {message :: String}
   | CEFileCancel {fileId :: FileTransferId, message :: String}
@@ -801,6 +805,7 @@ data ChatErrorType
   | CEFileNotReceived {fileId :: FileTransferId}
   | CEXFTPRcvFile {fileId :: FileTransferId, agentRcvFileId :: AgentRcvFileId, agentError :: AgentErrorType}
   | CEXFTPSndFile {fileId :: FileTransferId, agentSndFileId :: AgentSndFileId, agentError :: AgentErrorType}
+  | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidChatItemUpdate

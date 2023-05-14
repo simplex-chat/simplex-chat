@@ -16,7 +16,7 @@ struct ProtocolServerView: View {
     @State var serverToEdit: ServerCfg
     @State private var showTestFailure = false
     @State private var testing = false
-    @State private var testFailure: SMPTestFailure?
+    @State private var testFailure: ProtocolTestFailure?
 
     var proto: String { serverProtocol.rawValue.uppercased() }
 
@@ -60,7 +60,8 @@ struct ProtocolServerView: View {
 
     private func customServer() -> some View {
         VStack {
-            let valid = parseServerAddress(serverToEdit.server)?.valid == true
+            let serverAddress = parseServerAddress(serverToEdit.server)
+            let valid = serverAddress?.valid == true && serverAddress?.serverProtocol == serverProtocol
             List {
                 Section {
                     TextEditor(text: $serverToEdit.server)
@@ -147,18 +148,17 @@ struct BackButton: ViewModifier {
     }
 }
 
-func testServerConnection(server: Binding<ServerCfg>) async -> SMPTestFailure? {
+func testServerConnection(server: Binding<ServerCfg>) async -> ProtocolTestFailure? {
     do {
-        let r = try await testSMPServer(smpServer: server.wrappedValue.server)
-
-            switch r {
-            case .success:
-                await MainActor.run { server.wrappedValue.tested = true }
-                return nil
-            case let .failure(f):
-                await MainActor.run { server.wrappedValue.tested = false }
-                return f
-            }
+        let r = try await testProtoServer(server: server.wrappedValue.server)
+        switch r {
+        case .success:
+            await MainActor.run { server.wrappedValue.tested = true }
+            return nil
+        case let .failure(f):
+            await MainActor.run { server.wrappedValue.tested = false }
+            return f
+        }
     } catch let error {
         logger.error("testServerConnection \(responseError(error))")
         await MainActor.run {

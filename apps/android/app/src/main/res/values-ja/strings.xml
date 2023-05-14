@@ -22,7 +22,7 @@
     <string name="smp_servers_add_to_another_device">別の端末に追加</string>
     <string name="users_add">プロフィールを追加</string>
     <string name="smp_servers_add">サーバを追加…</string>
-    <string name="network_enable_socks_info">SOCKSプロキシ(ポート9050)経由で接続しますか？(※設定する前にプロキシ起動が必要※)</string>
+    <string name="network_enable_socks_info">SOCKSプロキシ(ポート%d)経由で接続しますか？(※設定する前にプロキシ起動が必要※)</string>
     <string name="users_delete_all_chats_deleted">全チャットとメッセージが削除されます(※元に戻せません※)！</string>
     <string name="allow_your_contacts_to_send_voice_messages">送信相手からの音声メッセージを許可する。</string>
     <string name="both_you_and_your_contact_can_send_voice">あなたと連絡相手が音声メッセージを送信できます。</string>
@@ -31,8 +31,6 @@
     <string name="attach">添付する</string>
     <string name="app_version_code">アプリ・ビルド番号： %s</string>
     <string name="all_your_contacts_will_remain_connected">あなたの連絡先が繋がったまま継続します。</string>
-    <string name="accept_requests">リクエストを承諾</string>
-    <string name="accept_automatically">自動的に</string>
     <string name="icon_descr_audio_on">音声オン</string>
     <string name="integrity_msg_bad_hash">メッセージのハッシュ値問題</string>
     <string name="integrity_msg_bad_id">メッセージIDの問題</string>
@@ -227,7 +225,6 @@
     <string name="contact_preferences">連絡先の設定</string>
     <string name="status_contact_has_no_e2e_encryption">連絡先はエンドツーエンド暗号化がありません。</string>
     <string name="alert_title_contact_connection_pending">連絡先がまだ繋がってません！</string>
-    <string name="contact_requests">連絡先のリクエスト</string>
     <string name="icon_descr_context">追加情報アイコン</string>
     <string name="network_use_onion_hosts_prefer_desc">オニオンのホストが利用可能時に使われます。</string>
     <string name="network_use_onion_hosts_no_desc">オニオンのホストが使われません。</string>
@@ -540,7 +537,6 @@
     <string name="markdown_help">マークダウン (書式編集) ガイド</string>
     <string name="smp_servers_enter_manually">サーバを手動で入力</string>
     <string name="network_use_onion_hosts_required_desc">接続にオニオンのホストが必要となります。</string>
-    <string name="core_build_timestamp">コアのビルド@: %s</string>
     <string name="create_address">アドレスを作成</string>
     <string name="delete_address__question">アドレスを削除しますか？</string>
     <string name="display_name__field">表示の名前：</string>
@@ -730,7 +726,6 @@
     <string name="this_link_is_not_a_valid_connection_link">このリンクは有効な接続リンクではありません！</string>
     <string name="this_QR_code_is_not_a_link">このQRコードはリンクではありません！</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">グループのホスト端末がオンラインになったら、接続されます。後でチェックするか、しばらくお待ちください。</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">連絡相手がアプリからQRコードを読み込めます。</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">連絡先がオンラインになったら、接続されます。後でチェックするか、しばらくお待ちください。</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">あなたのチャットプロフィールが
 \n連絡相手に送られます。</string>
@@ -740,7 +735,6 @@
     <string name="scan_code_from_contacts_app">連絡相手のアプリからセキュリティコードを読み込む</string>
     <string name="chat_lock">SimpleXロック</string>
     <string name="is_not_verified">%s は未認証</string>
-    <string name="your_contact_address">あなたのチャットアドレス</string>
     <string name="your_settings">あなたの設定</string>
     <string name="smp_servers_test_server">テストサーバ</string>
     <string name="smp_servers_save">サーバを保存</string>
@@ -754,7 +748,6 @@
     <string name="your_ICE_servers">あなたのICEサーバ</string>
     <string name="network_disable_socks">直接にインタネットに繋がりますか？</string>
     <string name="network_enable_socks">SOCKSプロキシを使いますか？</string>
-    <string name="network_socks_toggle">SOCKSプロキシ (ポート9050) を使う</string>
     <string name="update_onion_hosts_settings_question">.onionのホスト設定を更新しますか？</string>
     <string name="network_use_onion_hosts">.onionホストを使う</string>
     <string name="network_use_onion_hosts_prefer">利用可能時に</string>
@@ -843,9 +836,7 @@
     <string name="this_string_is_not_a_connection_link">このストリングは接続リンクではありません！</string>
     <string name="chat_with_the_founder">質問やアイデアを送る</string>
     <string name="star_on_github">GithubでStar</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。
-\n
-\n<xliff:g id="appName">SimpleX</xliff:g>のサーバには開示されません。</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。 <xliff:g id="appName">SimpleX</xliff:g>のサーバには開示されません。</string>
     <string name="your_calls">あなたの通話</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g>飛ばしたメッセージ</string>
     <string name="send_link_previews">リンクのプレビューを送信</string>
@@ -893,8 +884,6 @@
     <string name="using_simplex_chat_servers"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>を使っています。</string>
     <string name="share_link">リンクを送る</string>
     <string name="core_simplexmq_version">simplexmq: バージョン%s (%2s)</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">あなたと繋がるリンク、またはQRコードを共有できます。誰でも接続できます。後で削除しても、連絡先がそのままのこります。</string>
-    <string name="section_title_welcome_message">歓迎メッセージ</string>
     <string name="callstate_waiting_for_answer">応答待ち…</string>
     <string name="callstate_waiting_for_confirmation">確認待ち…</string>
     <string name="first_platform_without_user_ids">世界初のユーザーIDのないプラットフォーム｜設計も元からプライベート</string>

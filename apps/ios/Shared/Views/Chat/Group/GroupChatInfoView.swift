@@ -45,6 +45,8 @@ struct GroupChatInfoView: View {
                 Section {
                     if groupInfo.canEdit {
                         editGroupButton()
+                    }
+                    if groupInfo.groupProfile.description != nil || groupInfo.canEdit {
                         addOrEditWelcomeMessage()
                     }
                     groupPreferencesButton($groupInfo)
@@ -142,7 +144,12 @@ struct GroupChatInfoView: View {
         NavigationLink {
             AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 .onAppear {
-                    ChatModel.shared.groupMembers = apiListMembersSync(groupInfo.groupId)
+                    Task {
+                        let groupMembers = await apiListMembers(groupInfo.groupId)
+                        await MainActor.run {
+                            ChatModel.shared.groupMembers = groupMembers
+                        }
+                    }
                 }
         } label: {
             Label("Invite members", systemImage: "plus")

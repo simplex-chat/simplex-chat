@@ -1,3 +1,8 @@
+---
+title: Accessing messages in the database
+revision: 31.01.2023
+---
+
 | Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SQL.md), [CZ](/docs/lang/cs/SQL.md) |
 
 # Accessing messages in the database

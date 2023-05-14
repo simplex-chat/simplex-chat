@@ -16,6 +16,22 @@ struct ChatItemView: View {
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
     @Binding var revealed: Bool
+    @Binding var allowMenu: Bool
+    @Binding var audioPlayer: AudioPlayer?
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+    init(chatInfo: ChatInfo, chatItem: ChatItem, showMember: Bool = false, maxWidth: CGFloat = .infinity, scrollProxy: ScrollViewProxy? = nil, revealed: Binding<Bool>, allowMenu: Binding<Bool> = .constant(false), audioPlayer: Binding<AudioPlayer?> = .constant(nil), playbackState: Binding<VoiceMessagePlaybackState> = .constant(.noPlayback), playbackTime: Binding<TimeInterval?> = .constant(nil)) {
+        self.chatInfo = chatInfo
+        self.chatItem = chatItem
+        self.showMember = showMember
+        self.maxWidth = maxWidth
+        _scrollProxy = .init(initialValue: scrollProxy)
+        _revealed = revealed
+        _allowMenu = allowMenu
+        _audioPlayer = audioPlayer
+        _playbackState = playbackState
+        _playbackTime = playbackTime
+    }
 
     var body: some View {
         let ci = chatItem
@@ -25,7 +41,7 @@ struct ChatItemView: View {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
-                CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration)
+                CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
                 ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
@@ -37,7 +53,7 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
+        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
     }
 }
 
@@ -55,7 +71,8 @@ struct ChatItemContentView<Content: View>: View {
         case .rcvDeleted: deletedItemView()
         case let .sndCall(status, duration): callItemView(status, duration)
         case let .rcvCall(status, duration): callItemView(status, duration)
-        case .rcvIntegrityError: IntegrityErrorItemView(chatItem: chatItem, showMember: showMember)
+        case let .rcvIntegrityError(msgError): IntegrityErrorItemView(msgError: msgError, chatItem: chatItem, showMember: showMember)
+        case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem, showMember: showMember)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case .rcvGroupEvent: eventItemView()
@@ -127,6 +144,17 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     chatDir: .directRcv,
                     meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted),
                     content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
+                    quotedItem: nil,
+                    file: nil
+                ),
+                revealed: Binding.constant(true)
+            )
+            ChatItemView(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItem: ChatItem(
+                    chatDir: .directRcv,
+                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead),
+                    content: .rcvDecryptionError(msgDecryptError: .ratchetHeader, msgCount: 2),
                     quotedItem: nil,
                     file: nil
                 ),

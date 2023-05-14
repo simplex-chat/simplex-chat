@@ -2,26 +2,27 @@ package chat.simplex.app.views.chat
 
 import InfoRow
 import InfoRowEllipsis
-import SectionDivider
+import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
+import SectionItemViewWithIcon
 import SectionSpacer
+import SectionTextFooter
 import SectionView
+import TextIconSpaced
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ClipboardManager
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -35,6 +36,7 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.QRCode
 import chat.simplex.app.views.usersettings.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -112,7 +114,7 @@ fun ChatInfoView(
 }
 
 fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_contact_question),
     text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
     confirmText = generalGetString(R.string.delete_verb),
@@ -126,12 +128,13 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
           close?.invoke()
         }
       }
-    }
+    },
+    destructive = true,
   )
 }
 
 fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.clear_chat_question),
     text = generalGetString(R.string.clear_chat_warning),
     confirmText = generalGetString(R.string.clear_verb),
@@ -144,7 +147,8 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
           close?.invoke()
         }
       }
-    }
+    },
+    destructive = true,
   )
 }
 
@@ -168,8 +172,7 @@ fun ChatInfoLayout(
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start
+      .verticalScroll(rememberScrollState())
   ) {
     Row(
       Modifier.fillMaxWidth(),
@@ -179,28 +182,34 @@ fun ChatInfoLayout(
     }
 
     LocalAliasEditor(localAlias, updateValue = onLocalAliasChanged)
-
+    SectionSpacer()
     if (customUserProfile != null) {
-      SectionSpacer()
       SectionView(generalGetString(R.string.incognito).uppercase()) {
         InfoRow(generalGetString(R.string.incognito_random_profile), customUserProfile.chatViewName)
       }
+      SectionDividerSpaced()
     }
 
-    SectionSpacer()
     SectionView {
       if (connectionCode != null) {
         VerifyCodeButton(contact.verified, verifyClicked)
-        SectionDivider()
       }
       ContactPreferencesButton(openPreferences)
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
+    if (contact.contactLink != null) {
+      val context = LocalContext.current
+      SectionView(stringResource(R.string.address_section_title).uppercase()) {
+        QRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        ShareAddressButton { shareText(context, contact.contactLink) }
+        SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(contact.displayName))
+      }
+      SectionDividerSpaced()
+    }
 
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
       SwitchAddressButton(switchContactAddress)
-      SectionDivider()
       if (connStats != null) {
         SectionItemView({
           AlertManager.shared.showAlertMsg(
@@ -211,32 +220,28 @@ fun ChatInfoLayout(
         }
         val rcvServers = connStats.rcvServers
         if (rcvServers != null && rcvServers.isNotEmpty()) {
-          SectionDivider()
           SimplexServers(stringResource(R.string.receiving_via), rcvServers)
         }
         val sndServers = connStats.sndServers
         if (sndServers != null && sndServers.isNotEmpty()) {
-          SectionDivider()
           SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     SectionView {
       ClearChatButton(clearChat)
-      SectionDivider()
       DeleteContactButton(deleteContact)
     }
-    SectionSpacer()
 
     if (developerTools) {
+      SectionDividerSpaced()
       SectionView(title = stringResource(R.string.section_title_for_console)) {
         InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
-        SectionDivider()
         InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
       }
-      SectionSpacer()
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -249,7 +254,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
       if (contact.verified) {
-        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
       }
       Text(
         contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
@@ -290,13 +295,13 @@ fun LocalAliasEditor(
         Text(
           generalGetString(R.string.text_field_set_contact_placeholder),
           textAlign = if (center) TextAlign.Center else TextAlign.Start,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
       },
       leadingIcon = if (leadingIcon) {
-        { Icon(Icons.Default.Edit, null, Modifier.padding(start = 7.dp)) }
+        { Icon(painterResource(R.drawable.ic_edit_filled), null, Modifier.padding(start = 7.dp)) }
       } else null,
-      color = HighOrLowlight,
+      color = MaterialTheme.colors.secondary,
       focus = focus,
       textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })
@@ -331,7 +336,7 @@ private fun NetworkStatusRow(networkStatus: NetworkStatus) {
     ) {
       Text(stringResource(R.string.network_status))
       Icon(
-        Icons.Outlined.Info,
+        painterResource(R.drawable.ic_info),
         stringResource(R.string.network_status),
         tint = MaterialTheme.colors.primary
       )
@@ -343,7 +348,7 @@ private fun NetworkStatusRow(networkStatus: NetworkStatus) {
     ) {
       Text(
         networkStatus.statusString,
-        color = HighOrLowlight
+        color = MaterialTheme.colors.secondary
       )
       ServerImage(networkStatus)
     }
@@ -355,12 +360,12 @@ private fun ServerImage(networkStatus: NetworkStatus) {
   Box(Modifier.size(18.dp)) {
     when (networkStatus) {
       is NetworkStatus.Connected ->
-        Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
+        Icon(painterResource(R.drawable.ic_circle_filled), stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
       is NetworkStatus.Disconnected ->
-        Icon(Icons.Filled.Pending, stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_pending_filled), stringResource(R.string.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
       is NetworkStatus.Error ->
-        Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
-      else -> Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+        Icon(painterResource(R.drawable.ic_error_filled), stringResource(R.string.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
+      else -> Icon(painterResource(R.drawable.ic_circle), stringResource(R.string.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -385,17 +390,17 @@ fun SwitchAddressButton(onClick: () -> Unit) {
 @Composable
 fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
   SettingsActionItem(
-    if (contactVerified) Icons.Outlined.VerifiedUser else Icons.Outlined.Shield,
+    if (contactVerified) painterResource(R.drawable.ic_verified_user) else painterResource(R.drawable.ic_shield),
     stringResource(if (contactVerified) R.string.view_security_code else R.string.verify_security_code),
     click = onClick,
-    iconColor = HighOrLowlight,
+    iconColor = MaterialTheme.colors.secondary,
   )
 }
 
 @Composable
 private fun ContactPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.ToggleOn,
+    painterResource(R.drawable.ic_toggle_on),
     stringResource(R.string.contact_preferences),
     click = onClick
   )
@@ -404,7 +409,7 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
 @Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Restore,
+    painterResource(R.drawable.ic_settings_backup_restore),
     stringResource(R.string.clear_chat_button),
     click = onClick,
     textColor = WarningOrange,
@@ -415,11 +420,22 @@ fun ClearChatButton(onClick: () -> Unit) {
 @Composable
 private fun DeleteContactButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.Delete,
+    painterResource(R.drawable.ic_delete),
     stringResource(R.string.button_delete_contact),
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+  )
+}
+
+@Composable
+fun ShareAddressButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(R.drawable.ic_share_filled),
+    stringResource(R.string.share_address),
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
   )
 }
 
@@ -430,13 +446,14 @@ private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: C
 }
 
 private fun showSwitchContactAddressAlert(m: ChatModel, contactId: Long) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.switch_receiving_address_question),
     text = generalGetString(R.string.switch_receiving_address_desc),
     confirmText = generalGetString(R.string.switch_verb),
     onConfirm = {
       switchContactAddress(m, contactId)
-    }
+    },
+    destructive = true,
   )
 }
 

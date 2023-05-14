@@ -1,9 +1,18 @@
 export type ChatCommand =
   | ShowActiveUser
   | CreateActiveUser
+  | ListUsers
+  | APISetActiveUser
+  | APIHideUser
+  | APIUnhideUser
+  | APIMuteUser
+  | APIUnmuteUser
+  | APIDeleteUser
   | StartChat
   | APIStopChat
+  | SetTempFolder
   | SetFilesFolder
+  | APISetXFTPConfig
   | SetIncognito
   | APIExportArchive
   | APIImportArchive
@@ -13,6 +22,7 @@ export type ChatCommand =
   | APISendMessage
   | APIUpdateChatItem
   | APIDeleteChatItem
+  | APIDeleteMemberChatItem
   | APIChatRead
   | APIDeleteChat
   | APIClearChat
@@ -28,17 +38,31 @@ export type ChatCommand =
   | APILeaveGroup
   | APIListMembers
   | APIUpdateGroupProfile
-  | GetUserSMPServers
-  | SetUserSMPServers
+  | APICreateGroupLink
+  | APIGroupLinkMemberRole
+  | APIDeleteGroupLink
+  | APIGetGroupLink
+  | APIGetUserProtoServers
+  | APISetUserProtoServers
   | APIContactInfo
   | APIGroupMemberInfo
+  | APIGetContactCode
+  | APIGetGroupMemberCode
+  | APIVerifyContact
+  | APIVerifyGroupMember
   | AddContact
   | Connect
   | ConnectSimplex
   | CreateMyAddress
   | DeleteMyAddress
   | ShowMyAddress
+  | SetProfileAddress
   | AddressAutoAccept
+  | APICreateMyAddress
+  | APIDeleteMyAddress
+  | APIShowMyAddress
+  | APISetProfileAddress
+  | APIAddressAutoAccept
   | ReceiveFile
   | CancelFile
   | FileStatus
@@ -64,6 +88,8 @@ export type ChatCommand =
 // APIMemberRole -- not implemented
 // ListContacts
 // ListGroups
+// APISetChatItemTTL
+// APIGetChatItemTTL
 // APISetNetworkConfig
 // APIGetNetworkConfig
 // APISetChatSettings
@@ -74,9 +100,19 @@ export type ChatCommand =
 type ChatCommandTag =
   | "showActiveUser"
   | "createActiveUser"
+  | "listUsers"
+  | "apiSetActiveUser"
+  | "setActiveUser"
+  | "apiHideUser"
+  | "apiUnhideUser"
+  | "apiMuteUser"
+  | "apiUnmuteUser"
+  | "apiDeleteUser"
   | "startChat"
   | "apiStopChat"
+  | "setTempFolder"
   | "setFilesFolder"
+  | "apiSetXFTPConfig"
   | "setIncognito"
   | "apiExportArchive"
   | "apiImportArchive"
@@ -86,6 +122,7 @@ type ChatCommandTag =
   | "apiSendMessage"
   | "apiUpdateChatItem"
   | "apiDeleteChatItem"
+  | "apiDeleteMemberChatItem"
   | "apiChatRead"
   | "apiDeleteChat"
   | "apiClearChat"
@@ -101,17 +138,31 @@ type ChatCommandTag =
   | "apiLeaveGroup"
   | "apiListMembers"
   | "apiUpdateGroupProfile"
-  | "getUserSMPServers"
-  | "setUserSMPServers"
+  | "apiCreateGroupLink"
+  | "apiGroupLinkMemberRole"
+  | "apiDeleteGroupLink"
+  | "apiGetGroupLink"
+  | "apiGetUserProtoServers"
+  | "apiSetUserProtoServers"
   | "apiContactInfo"
   | "apiGroupMemberInfo"
+  | "apiGetContactCode"
+  | "apiGetGroupMemberCode"
+  | "apiVerifyContact"
+  | "apiVerifyGroupMember"
   | "addContact"
   | "connect"
   | "connectSimplex"
   | "createMyAddress"
   | "deleteMyAddress"
   | "showMyAddress"
+  | "setProfileAddress"
   | "addressAutoAccept"
+  | "apiCreateMyAddress"
+  | "apiDeleteMyAddress"
+  | "apiShowMyAddress"
+  | "apiSetProfileAddress"
+  | "apiAddressAutoAccept"
   | "receiveFile"
   | "cancelFile"
   | "fileStatus"
@@ -126,22 +177,78 @@ export interface ShowActiveUser extends IChatCommand {
 
 export interface CreateActiveUser extends IChatCommand {
   type: "createActiveUser"
-  profile: Profile
+  profile?: Profile
+  sameServers: boolean
+  pastTimestamp: boolean
+}
+
+export interface ListUsers extends IChatCommand {
+  type: "listUsers"
+}
+
+export interface APISetActiveUser extends IChatCommand {
+  type: "apiSetActiveUser"
+  userId: number
+  viewPwd?: string
+}
+
+export interface APIHideUser extends IChatCommand {
+  type: "apiHideUser"
+  userId: number
+  viewPwd: string
+}
+
+export interface APIUnhideUser extends IChatCommand {
+  type: "apiUnhideUser"
+  userId: number
+  viewPwd: string
+}
+
+export interface APIMuteUser extends IChatCommand {
+  type: "apiMuteUser"
+  userId: number
+}
+
+export interface APIUnmuteUser extends IChatCommand {
+  type: "apiUnmuteUser"
+  userId: number
+}
+
+export interface APIDeleteUser extends IChatCommand {
+  type: "apiDeleteUser"
+  userId: number
+  delSMPQueues: boolean
+  viewPwd?: string
 }
 
 export interface StartChat extends IChatCommand {
   type: "startChat"
   subscribeConnections?: boolean
-  expireChatItems?: boolean
+  enableExpireChatItems?: boolean
+  startXFTPWorkers?: boolean
 }
 
 export interface APIStopChat extends IChatCommand {
   type: "apiStopChat"
 }
 
+export interface SetTempFolder extends IChatCommand {
+  type: "setTempFolder"
+  tempFolder: string
+}
+
 export interface SetFilesFolder extends IChatCommand {
   type: "setFilesFolder"
   filePath: string
+}
+
+export interface APISetXFTPConfig extends IChatCommand {
+  type: "apiSetXFTPConfig"
+  config?: XFTPFileConfig
+}
+
+export interface XFTPFileConfig {
+  minFileSize: number
 }
 
 export interface SetIncognito extends IChatCommand {
@@ -165,6 +272,7 @@ export interface APIDeleteStorage extends IChatCommand {
 
 export interface APIGetChats extends IChatCommand {
   type: "apiGetChats"
+  userId: number
   pendingConnections?: boolean
 }
 
@@ -205,6 +313,13 @@ export interface APIDeleteChatItem extends IChatCommand {
   deleteMode: DeleteMode
 }
 
+export interface APIDeleteMemberChatItem extends IChatCommand {
+  type: "apiDeleteMemberChatItem"
+  groupId: number
+  groupMemberId: number
+  itemId: number
+}
+
 export interface APIChatRead extends IChatCommand {
   type: "apiChatRead"
   chatType: ChatType
@@ -241,6 +356,7 @@ export interface APIRejectContact extends IChatCommand {
 
 export interface APIUpdateProfile extends IChatCommand {
   type: "apiUpdateProfile"
+  userId: number
   profile: Profile
 }
 
@@ -294,13 +410,51 @@ export interface APIUpdateGroupProfile extends IChatCommand {
   groupProfile: GroupProfile
 }
 
-export interface GetUserSMPServers extends IChatCommand {
-  type: "getUserSMPServers"
+export interface APICreateGroupLink extends IChatCommand {
+  type: "apiCreateGroupLink"
+  groupId: number
+  memberRole: GroupMemberRole
 }
 
-export interface SetUserSMPServers extends IChatCommand {
-  type: "setUserSMPServers"
-  servers: [string]
+export interface APIGroupLinkMemberRole extends IChatCommand {
+  type: "apiGroupLinkMemberRole"
+  groupId: number
+  memberRole: GroupMemberRole
+}
+
+export interface APIDeleteGroupLink extends IChatCommand {
+  type: "apiDeleteGroupLink"
+  groupId: number
+}
+
+export interface APIGetGroupLink extends IChatCommand {
+  type: "apiGetGroupLink"
+  groupId: number
+}
+
+export interface APIGetUserProtoServers extends IChatCommand {
+  type: "apiGetUserProtoServers"
+  userId: number
+  serverProtocol: ServerProtocol
+}
+
+export interface APISetUserProtoServers extends IChatCommand {
+  type: "apiSetUserProtoServers"
+  userId: number
+  serverProtocol: ServerProtocol
+  servers: ServerCfg[]
+}
+
+export interface ServerCfg {
+  server: string
+  preset: boolean
+  tested?: boolean
+  enabled: boolean
+}
+
+export enum ServerProtocol {
+  SMP = "smp",
+  XFTP = "xftp",
 }
 
 export interface APIContactInfo extends IChatCommand {
@@ -312,6 +466,30 @@ export interface APIGroupMemberInfo extends IChatCommand {
   type: "apiGroupMemberInfo"
   groupId: number
   memberId: number
+}
+
+export interface APIGetContactCode extends IChatCommand {
+  type: "apiGetContactCode"
+  contactId: number
+}
+
+export interface APIGetGroupMemberCode extends IChatCommand {
+  type: "apiGetGroupMemberCode"
+  groupId: number
+  groupMemberId: number
+}
+
+export interface APIVerifyContact extends IChatCommand {
+  type: "apiVerifyContact"
+  contactId: number
+  connectionCode: string
+}
+
+export interface APIVerifyGroupMember extends IChatCommand {
+  type: "apiVerifyGroupMember"
+  groupId: number
+  groupMemberId: number
+  connectionCode: string
 }
 
 export interface AddContact extends IChatCommand {
@@ -339,9 +517,45 @@ export interface ShowMyAddress extends IChatCommand {
   type: "showMyAddress"
 }
 
+export interface SetProfileAddress extends IChatCommand {
+  type: "setProfileAddress"
+  includeInProfile: boolean
+}
+
 export interface AddressAutoAccept extends IChatCommand {
   type: "addressAutoAccept"
-  autoAccept: boolean
+  autoAccept?: AutoAccept
+}
+
+export interface APICreateMyAddress extends IChatCommand {
+  type: "apiCreateMyAddress"
+  userId: number
+}
+
+export interface APIDeleteMyAddress extends IChatCommand {
+  type: "apiDeleteMyAddress"
+  userId: number
+}
+
+export interface APIShowMyAddress extends IChatCommand {
+  type: "apiShowMyAddress"
+  userId: number
+}
+
+export interface APISetProfileAddress extends IChatCommand {
+  type: "apiSetProfileAddress"
+  userId: number
+  includeInProfile: boolean
+}
+
+export interface APIAddressAutoAccept extends IChatCommand {
+  type: "apiAddressAutoAccept"
+  userId: number
+  autoAccept?: AutoAccept
+}
+
+export interface AutoAccept {
+  acceptIncognito: boolean
   autoReply?: MsgContent
 }
 
@@ -361,10 +575,28 @@ export interface FileStatus extends IChatCommand {
   fileId: number
 }
 
+interface NewUser {
+  profile?: Profile
+  sameServers: boolean
+  pastTimestamp: boolean
+}
+
 export interface Profile {
   displayName: string
   fullName: string // can be empty string
   image?: string
+  contactLink?: string
+  // preferences?: Preferences
+}
+
+export interface LocalProfile {
+  profileId: number
+  displayName: string
+  fullName: string
+  image?: string
+  contactLink?: string
+  // preferences?: Preferences
+  localAlias: string
 }
 
 export enum ChatType {
@@ -449,16 +681,36 @@ export function cmdString(cmd: ChatCommand): string {
   switch (cmd.type) {
     case "showActiveUser":
       return "/u"
-    case "createActiveUser":
-      return `/create user ${JSON.stringify(cmd.profile)}`
+    case "createActiveUser": {
+      const user: NewUser = {profile: cmd.profile, sameServers: cmd.sameServers, pastTimestamp: cmd.pastTimestamp}
+      return `/_create user ${JSON.stringify(user)}`
+    }
+    case "listUsers":
+      return `/users`
+    case "apiSetActiveUser":
+      return `/_user ${cmd.userId}${maybeJSON(cmd.viewPwd)}`
+    case "apiHideUser":
+      return `/_hide user ${cmd.userId} ${JSON.stringify(cmd.viewPwd)}`
+    case "apiUnhideUser":
+      return `/_unhide user ${cmd.userId} ${JSON.stringify(cmd.viewPwd)}`
+    case "apiMuteUser":
+      return `/_mute user ${cmd.userId}`
+    case "apiUnmuteUser":
+      return `/_unmute user ${cmd.userId}`
+    case "apiDeleteUser":
+      return `/_delete user ${cmd.userId} del_smp=${onOff(cmd.delSMPQueues)}${maybeJSON(cmd.viewPwd)}`
     case "startChat":
-      return `/_start subscribe=${cmd.subscribeConnections ? "on" : "off"} expire=${cmd.expireChatItems ? "on" : "off"}`
+      return `/_start subscribe=${cmd.subscribeConnections ? "on" : "off"} expire=${cmd.enableExpireChatItems ? "on" : "off"}`
     case "apiStopChat":
       return "/_stop"
+    case "setTempFolder":
+      return `/_temp_folder ${cmd.tempFolder}`
     case "setFilesFolder":
       return `/_files_folder ${cmd.filePath}`
+    case "apiSetXFTPConfig":
+      return `/_xftp ${onOff(cmd.config)}${maybeJSON(cmd.config)}`
     case "setIncognito":
-      return `/incognito ${cmd.incognito ? "on" : "off"}`
+      return `/incognito ${onOff(cmd.incognito)}`
     case "apiExportArchive":
       return `/_db export ${JSON.stringify(cmd.config)}`
     case "apiImportArchive":
@@ -466,7 +718,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "apiDeleteStorage":
       return "/_db delete"
     case "apiGetChats":
-      return `/_get chats pcc=${cmd.pendingConnections ? "on" : "off"}`
+      return `/_get chats pcc=${onOff(cmd.pendingConnections)}`
     case "apiGetChat":
       return `/_get chat ${cmd.chatType}${cmd.chatId}${paginationStr(cmd.pagination)}`
     case "apiSendMessage":
@@ -475,6 +727,8 @@ export function cmdString(cmd: ChatCommand): string {
       return `/_update item ${cmd.chatType}${cmd.chatId} ${cmd.chatItemId} json ${JSON.stringify(cmd.msgContent)}`
     case "apiDeleteChatItem":
       return `/_delete item ${cmd.chatType}${cmd.chatId} ${cmd.chatItemId} ${cmd.deleteMode}`
+    case "apiDeleteMemberChatItem":
+      return `/_delete member item #${cmd.groupId} ${cmd.groupMemberId} ${cmd.itemId}`
     case "apiChatRead": {
       const itemRange = cmd.itemRange ? ` from=${cmd.itemRange.fromItem} to=${cmd.itemRange.toItem}` : ""
       return `/_read chat ${cmd.chatType}${cmd.chatId}${itemRange}`
@@ -488,7 +742,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "apiRejectContact":
       return `/_reject ${cmd.contactReqId}`
     case "apiUpdateProfile":
-      return `/_profile ${JSON.stringify(cmd.profile)}`
+      return `/_profile ${cmd.userId} ${JSON.stringify(cmd.profile)}`
     case "apiSetContactAlias":
       return `/_set alias @${cmd.contactId} ${cmd.localAlias.trim()}`
     case "apiParseMarkdown":
@@ -507,14 +761,30 @@ export function cmdString(cmd: ChatCommand): string {
       return `/_members #${cmd.groupId}`
     case "apiUpdateGroupProfile":
       return `/_group_profile #${cmd.groupId} ${JSON.stringify(cmd.groupProfile)}`
-    case "getUserSMPServers":
-      return "/smp_servers"
-    case "setUserSMPServers":
-      return `/smp_servers ${cmd.servers.join(",") || "default"}`
+    case "apiCreateGroupLink":
+      return `/_create link #${cmd.groupId} ${cmd.memberRole}`
+    case "apiGroupLinkMemberRole":
+      return `/_set link role #${cmd.groupId} ${cmd.memberRole}`
+    case "apiDeleteGroupLink":
+      return `/_delete link #${cmd.groupId}`
+    case "apiGetGroupLink":
+      return `/_get link #${cmd.groupId}`
+    case "apiGetUserProtoServers":
+      return `/_servers ${cmd.userId} ${cmd.serverProtocol}`
+    case "apiSetUserProtoServers":
+      return `/_servers ${cmd.userId} ${cmd.serverProtocol} ${JSON.stringify({servers: cmd.servers})}`
     case "apiContactInfo":
       return `/_info @${cmd.contactId}`
     case "apiGroupMemberInfo":
       return `/_info #${cmd.groupId} ${cmd.memberId}`
+    case "apiGetContactCode":
+      return `/_get code @${cmd.contactId}`
+    case "apiGetGroupMemberCode":
+      return `/_get code #${cmd.groupId} ${cmd.groupMemberId}`
+    case "apiVerifyContact":
+      return `/_verify code @${cmd.contactId}${maybe(cmd.connectionCode)}`
+    case "apiVerifyGroupMember":
+      return `/_verify code #${cmd.groupId} ${cmd.groupMemberId}${maybe(cmd.connectionCode)}`
     case "addContact":
       return "/connect"
     case "connect":
@@ -527,8 +797,20 @@ export function cmdString(cmd: ChatCommand): string {
       return "/delete_address"
     case "showMyAddress":
       return "/show_address"
+    case "setProfileAddress":
+      return `/profile_address ${onOff(cmd.includeInProfile)}`
     case "addressAutoAccept":
-      return `/auto_accept ${cmd.autoAccept ? "on" : "off"}${cmd.autoReply ? " " + JSON.stringify(cmd.autoReply) : ""}`
+      return `/auto_accept ${autoAcceptStr(cmd.autoAccept)}`
+    case "apiCreateMyAddress":
+      return `/_address ${cmd.userId}`
+    case "apiDeleteMyAddress":
+      return `/_delete_address ${cmd.userId}`
+    case "apiShowMyAddress":
+      return `/_show_address ${cmd.userId}`
+    case "apiSetProfileAddress":
+      return `/_profile_address ${cmd.userId} ${onOff(cmd.includeInProfile)}`
+    case "apiAddressAutoAccept":
+      return `/_auto_accept ${cmd.userId} ${autoAcceptStr(cmd.autoAccept)}`
     case "receiveFile":
       return `/freceive ${cmd.fileId}${cmd.filePath ? " " + cmd.filePath : ""}`
     case "cancelFile":
@@ -541,4 +823,22 @@ export function cmdString(cmd: ChatCommand): string {
 function paginationStr(cp: ChatPagination): string {
   const base = "after" in cp ? ` after=${cp.after}` : "before" in cp ? ` before=${cp.before}` : ""
   return base + ` count=${cp.count}`
+}
+
+function maybe<T>(value: T | undefined): string {
+  return value ? ` ${value}` : ""
+}
+
+function maybeJSON<T>(value: T | undefined): string {
+  return value ? ` json ${JSON.stringify(value)}` : ""
+}
+
+function onOff<T>(value: T | undefined): string {
+  return value ? "on" : "off"
+}
+
+function autoAcceptStr(autoAccept: AutoAccept | undefined): string {
+  if (!autoAccept) return "off"
+  const msg = autoAccept.autoReply
+  return "on" + (autoAccept.acceptIncognito ? " incognito=on" : "") + (msg ? " json " + JSON.stringify(msg) : "")
 }

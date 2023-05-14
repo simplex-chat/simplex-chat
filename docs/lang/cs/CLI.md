@@ -1,3 +1,7 @@
+---
+title: SimpleX Chat terminálová
+revision: 31.01.2023
+---
 | Aktualizováno 31.01.2023 | Jazyky: CZ, [EN](/docs/CLI.md), [FR](/docs/lang/fr/CLI.md) |
 
 # SimpleX Chat terminálová (konzolová) aplikace pro Linux/MacOS/Windows
@@ -174,7 +178,7 @@ Po spuštění chatu budete vyzváni k zadání svého "zobrazovacího jména" a
 Následující schéma ukazuje, jak se připojit ke kontaktu a poslat mu zprávu:
 
 <div align="center">
-  <img align="center" src="../images/how-to-use-simplex.svg">
+  <img align="center" src="/images/how-to-use-simplex.svg">
 </div>
 
 Po nastavení místního profilu zadejte `/c` (pro `/connect`) pro vytvoření nového spojení a vygenerování pozvánky. Tuto pozvánku odešlete svému kontaktu prostřednictvím jakéhokoli jiného kanálu.
@@ -193,7 +197,7 @@ Seznam dostupných příkazů zobrazíte pomocí `/help` v chatu.
 
 Skupinu vytvoříte příkazem `/g <group>` a kontakty do ní přidáte příkazem `/a <group> <name>`. Do skupiny pak můžete posílat zprávy zadáním `#<skupina> <zpráva>`. Pro další příkazy použijte `/help groups`.
 
-![simplex-chat](../images/groups.gif)
+![simplex-chat](/images/groups.gif)
 
 > **Upozornění**: skupiny nejsou uloženy na žádném serveru, jsou vedeny jako seznam členů v databázi aplikace, kterým budou zprávy zasílány.
 
@@ -201,7 +205,7 @@ Skupinu vytvoříte příkazem `/g <group>` a kontakty do ní přidáte příkaz
 
 Soubor můžete odeslat kontaktu pomocí `/f @<contact> <soubor_cesta>` - příjemce jej bude muset před odesláním přijmout. Pro další příkazy použijte `/help files`.
 
-![simplex-chat](../images/files.gif)
+![simplex-chat](/images/files.gif)
 
 Soubory můžete posílat skupině pomocí `/f #<skupina> <soubor_cesta>`.
 
@@ -215,7 +219,7 @@ Uživatelská adresa je "dlouhodobá" v tom smyslu, že se jedná o odkaz pro v�
 
 Pro ostatní příkazy použijte `/help address`.
 
-![simplex-chat](../images/user-addresses.gif)
+![simplex-chat](/images/user-addresses.gif)
 
 ### Přístup k historii chatu
 

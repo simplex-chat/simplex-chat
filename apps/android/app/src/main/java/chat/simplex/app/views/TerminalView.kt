@@ -99,8 +99,8 @@ fun TerminalLayout(
       Surface(
         modifier = Modifier
           .padding(contentPadding)
-          .fillMaxWidth()
-          .background(MaterialTheme.colors.background)
+          .fillMaxWidth(),
+        color = MaterialTheme.colors.background
       ) {
         TerminalLog(terminalItems)
       }

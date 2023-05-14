@@ -8,6 +8,7 @@
 
 import SwiftUI
 import LocalAuthentication
+import SimpleXChat
 
 enum LAResult {
     case success
@@ -25,7 +26,38 @@ func authorize(_ text: String, _ authorized: Binding<Bool>) {
     }
 }
 
-func authenticate(reason: String, completed: @escaping (LAResult) -> Void) {
+struct LocalAuthRequest {
+    var title: LocalizedStringKey? // if title is null, reason is shown
+    var reason: String
+    var password: String
+    var selfDestruct: Bool
+    var completed: (LAResult) -> Void
+
+    static var sample = LocalAuthRequest(title: "Enter Passcode", reason: "Authenticate", password: "", selfDestruct: false, completed: { _ in })
+}
+
+func authenticate(title: LocalizedStringKey? = nil, reason: String, selfDestruct: Bool = false, completed: @escaping (LAResult) -> Void) {
+    logger.debug("authenticate")
+    switch privacyLocalAuthModeDefault.get() {
+    case .system: systemAuthenticate(reason, completed)
+    case .passcode:
+        if let password = kcAppPassword.get() {
+            DispatchQueue.main.async {
+                ChatModel.shared.laRequest = LocalAuthRequest(
+                    title: title,
+                    reason: reason,
+                    password: password,
+                    selfDestruct: selfDestruct && UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT),
+                    completed: completed
+                )
+            }
+        } else {
+            completed(.unavailable(authError: NSLocalizedString("No app password", comment: "Authentication unavailable")))
+        }
+    }
+}
+
+func systemAuthenticate(_ reason: String, _ completed: @escaping (LAResult) -> Void) {
     let laContext = LAContext()
     var authAvailabilityError: NSError?
     if laContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authAvailabilityError) {
@@ -52,6 +84,13 @@ func laTurnedOnAlert() -> Alert {
     )
 }
 
+func laPasscodeNotSetAlert() -> Alert {
+    mkAlert(
+        title: "SimpleX Lock not enabled!",
+        message: "You can turn on SimpleX Lock via Settings."
+    )
+}
+
 func laFailedAlert() -> Alert {
     mkAlert(
         title: "Authentication failed",
@@ -72,3 +111,4 @@ func laUnavailableTurningOffAlert() -> Alert {
         message: "Device authentication is disabled. Turning off SimpleX Lock."
     )
 }
+
