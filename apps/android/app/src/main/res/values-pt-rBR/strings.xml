@@ -1189,4 +1189,5 @@
     <string name="app_passcode_replaced_with_self_destruct">A senha do aplicativo é substituída por uma senha de autodestruição.</string>
     <string name="self_destruct_new_display_name">Novo nome de exibição:</string>
     <string name="set_passcode">Definir senha</string>
+    <string name="enable_self_destruct">Ativar autodestruição</string>
 </resources>
