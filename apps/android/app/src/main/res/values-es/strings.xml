@@ -31,7 +31,7 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Añadir nuevo contacto</b>: para crear tu código QR de un solo uso para tu contacto.</string>
     <string name="accept_connection_request__question">¿Aceptar solicitud de conexión\?</string>
     <string name="accept_contact_incognito_button">Aceptar incógnito</string>
-    <string name="clear_chat_warning">Se eliminarán todos los mensajes SOLO para tí. ¡No puede deshacerse!</string>
+    <string name="clear_chat_warning">Se eliminarán todos los mensajes SOLO para tí. ¡No se puede deshacer!</string>
     <string name="smp_servers_add">Añadir servidor…</string>
     <string name="network_enable_socks_info">¿Acceder a los servidores a través del proxy SOCKS en el puerto %d\? El proxy debe iniciarse antes de activar esta opción.</string>
     <string name="all_your_contacts_will_remain_connected">Todos tus contactos permanecerán conectados.</string>
@@ -52,7 +52,7 @@
     <string name="icon_descr_audio_on">Audio activado</string>
     <string name="integrity_msg_bad_id">ID de mensaje erróneo</string>
     <string name="auto_accept_images">Auto aceptar imágenes</string>
-    <string name="users_delete_all_chats_deleted">Se eliminarán todos los chats y mensajes. ¡No puede deshacerse!</string>
+    <string name="users_delete_all_chats_deleted">Se eliminarán todos los chats y mensajes. ¡No se puede deshacer!</string>
     <string name="accept_feature">Aceptar</string>
     <string name="allow_to_send_disappearing">Se permiten mensajes temporales.</string>
     <string name="keychain_is_storing_securely">Android Keystore se utiliza para almacenar de forma segura la contraseña - permite que el servicio de notificación funcione.</string>
@@ -143,7 +143,7 @@
     <string name="group_member_status_announced">conectando (anunciado)</string>
     <string name="connection_local_display_name">conexión&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"connection ID\" example=\"1\"&gt;</string>
     <string name="connect_via_link_or_qr">Conectar mediante enlace / Código QR</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No puede deshacerse!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No se puede deshacer!</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
     <string name="status_contact_has_e2e_encryption">el contacto dispone de cifrado de extremo a extremo</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
@@ -324,7 +324,7 @@
     <string name="icon_descr_flip_camera">Voltear la cámara</string>
     <string name="group_invitation_expired">Invitación de grupo caducada</string>
     <string name="alert_message_group_invitation_expired">La invitación al grupo ya no es válida, ha sido eliminada por el remitente.</string>
-    <string name="delete_group_for_self_cannot_undo_warning">El grupo se eliminará para tí. ¡No puede deshacerse!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">El grupo se eliminará para tí. ¡No se puede deshacer!</string>
     <string name="how_to_use_markdown">Cómo usar la sintaxis markdown</string>
     <string name="description_via_one_time_link_incognito">Incógnito mediante enlace de un uso</string>
     <string name="simplex_link_contact">Dirección de contacto SimpleX</string>
@@ -424,7 +424,7 @@
     <string name="v4_3_improved_privacy_and_security_desc">Ocultar pantalla de aplicaciones en aplicaciones recientes.</string>
     <string name="encrypt_database">Cifrar</string>
     <string name="icon_descr_expand_role">Ampliar la selección de roles</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">El grupo se eliminará para todos los miembros. ¡No puede deshacerse!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">El grupo se eliminará para todos los miembros. ¡No se puede deshacer!</string>
     <string name="network_option_enable_tcp_keep_alive">Activar TCP keep-alive</string>
     <string name="feature_enabled_for_you">activado para tí</string>
     <string name="server_error">error</string>
@@ -442,7 +442,7 @@
     <string name="paste_connection_link_below_to_connect">Pega el enlace que has recibido en el recuadro para conectar con tu contacto.</string>
     <string name="share_link">Compartir enlace</string>
     <string name="how_it_works">Cómo funciona</string>
-    <string name="delete_message_cannot_be_undone_warning">El mensaje se eliminará. ¡No puede deshacerse!</string>
+    <string name="delete_message_cannot_be_undone_warning">El mensaje se eliminará. ¡No se puede deshacer!</string>
     <string name="incognito_info_protects">La función del modo incógnito es proteger la identidad del perfil principal: por cada contacto nuevo se genera un perfil aleatorio.</string>
     <string name="turn_off_battery_optimization">Para poder usarse <b>deshabilita la optimización de batería</b> para <xliff:g id="appName">SimpleX</xliff:g> en el siguiente cuadro de diálogo. De lo contrario las notificaciones estarán desactivadas.</string>
     <string name="install_simplex_chat_for_terminal">Instalar terminal para <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
@@ -554,7 +554,7 @@
     <string name="icon_descr_add_members">Invitar miembros</string>
     <string name="group_member_role_observer">observador</string>
     <string name="group_member_role_member">miembro</string>
-    <string name="group_member_status_removed">eliminado</string>
+    <string name="group_member_status_removed">expulsado</string>
     <string name="group_member_status_invited">ha invitado a</string>
     <string name="no_contacts_to_add">Sin contactos que añadir</string>
     <string name="new_member_role">Nuevo rol de miembro</string>
@@ -581,7 +581,7 @@
     <string name="leave_group_button">Salir</string>
     <string name="leave_group_question">¿Salir del grupo\?</string>
     <string name="group_member_role_owner">propietario</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">El miembro será eliminado del grupo. ¡No puede deshacerse!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">El miembro será expulsado del grupo. ¡No se puede deshacer!</string>
     <string name="only_group_owners_can_enable_voice">Sólo los propietarios pueden activar los mensajes de voz.</string>
     <string name="group_unsupported_incognito_main_profile_sent">El modo incógnito no se admite aquí, tu perfil principal aparecerá en miembros del grupo</string>
     <string name="icon_descr_more_button">Más</string>
@@ -627,7 +627,7 @@
     <string name="protect_app_screen">Proteger la pantalla de la aplicación</string>
     <string name="read_more_in_github_with_link">Más información en nuestro <font color="#0088ff">repositorio GitHub</font> .</string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
-    <string name="rcv_group_event_member_deleted">eliminado <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">ha expulsado a <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="send_link_previews">Enviar previsualizacion de enlaces</string>
     <string name="send_live_message_desc">Envía un mensaje en vivo: se actualizará para el(los) destinatario(s) a medida que se escribe</string>
     <string name="icon_descr_sent_msg_status_send_failed">error de envío</string>
@@ -677,7 +677,7 @@
     <string name="store_passphrase_securely_without_recover">Guarda la contraseña de forma segura, NO podrás acceder al chat si la pierdes.</string>
     <string name="save_archive">Guardar archivo</string>
     <string name="restore_database_alert_desc">Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</string>
-    <string name="rcv_group_event_user_deleted">te ha eliminado</string>
+    <string name="rcv_group_event_user_deleted">te ha expulsado</string>
     <string name="receiving_via">Recibes vía</string>
     <string name="network_option_protocol_timeout">Tiempo de espera del protocolo</string>
     <string name="network_option_seconds_label">seg</string>
@@ -703,8 +703,8 @@
     <string name="restore_database">Restaurar copia de seguridad de la base de datos</string>
     <string name="save_passphrase_and_open_chat">Guardar contraseña y abrir el chat</string>
     <string name="restore_passphrase_not_found_desc">La contraseña no se ha encontrado en Keystore, introdúzcala manualmente. Esto puede haber ocurrido si has restaurado los datos de la aplicación con una herramienta de copia de seguridad. Si no es así, por favor ponte en contacto con los desarrolladores.</string>
-    <string name="remove_member_confirmation">Eliminar</string>
-    <string name="button_remove_member">Eliminar miembro</string>
+    <string name="remove_member_confirmation">Expulsar</string>
+    <string name="button_remove_member">Expulsar miembro</string>
     <string name="button_send_direct_message">Enviar mensaje directo</string>
     <string name="reset_verb">Restablecer</string>
     <string name="paste_button">Pegar</string>
@@ -906,7 +906,7 @@
     <string name="network_use_onion_hosts_prefer">Si disponible</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">No almacenamos ninguno de tus contactos o mensajes (una vez entregados) en los servidores.</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Has sido invitado al grupo. Únete para conectarte con los miembros del grupo.</string>
-    <string name="snd_group_event_member_deleted">has eliminado a <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_member_deleted">has expulsado a <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="group_info_member_you">Tú: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puedes compartir un enlace o un código QR: cualquiera podrá unirse al grupo. Si lo eliminas más tarde los miembros del grupo no se perderán.</string>
     <string name="incognito_info_share">Cuando compartes un perfil incógnito con alguien, este perfil también se usará para los grupos a los que te inviten.</string>
