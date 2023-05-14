@@ -11,11 +11,12 @@ import UIKit
 import SwiftUI
 
 extension View {
-    func uiKitContextMenu(menu: Binding<UIMenu>) -> some View {
-        self.overlay(Color(uiColor: .systemBackground))
-        .overlay(
-            InteractionView(content: self, menu: menu)
-        )
+    func uiKitContextMenu(menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
+            self.overlay {
+                if allowMenu.wrappedValue {
+                    self.overlay(Color(uiColor: .systemBackground)).overlay(InteractionView(content: self, menu: menu))
+                }
+            }
     }
 }
 
