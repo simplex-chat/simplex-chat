@@ -200,7 +200,7 @@ struct SendMessageView: View {
                     customDisappearingMessageTimeDefault.set(time)
                 }
             },
-            description: "Message will disappear after selected time, once it has been seen."
+            description: "Once seen, disappear after:"
         )
     }
 
@@ -222,7 +222,7 @@ struct SendMessageView: View {
                     hideKeyboard()
                     showCustomDisappearingMessageDialogue = true
                 } label: {
-                    Label("Custom disappearing message", systemImage: "stopwatch")
+                    Label("Disappearing message", systemImage: "stopwatch")
                 }
             }
         }

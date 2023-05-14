@@ -101,6 +101,11 @@ struct CustomTimePickerView: View {
         NavigationView {
             customTimePickerView()
                 .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
                             confirmButtonAction()
@@ -108,11 +113,6 @@ struct CustomTimePickerView: View {
                         } label: {
                             Text(confirmButtonText)
                                 .fontWeight(.medium)
-                        }
-                    }
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Cancel") {
-                            dismiss()
                         }
                     }
                 }
@@ -123,13 +123,7 @@ struct CustomTimePickerView: View {
         VStack(alignment: .leading) {
             List {
                 Group {
-                    if let description = description {
-                        Text(description)
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .listRowBackground(Color.clear)
-                    }
-                    Section {
+                    Section(description ?? "") {
                         CustomTimePicker(selection: $selection)
                     }
                 }
