@@ -4097,21 +4097,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
-updateCIReactions :: ChatItem c d -> Bool -> MsgReaction -> Bool -> ChatItem c d
-updateCIReactions ci@ChatItem {reactions} sent reaction' add = ci {reactions = reactions'}
-  where
-    reactions' = addReaction $ filter (\CIReactionCount {totalReacted} -> totalReacted > 0) $ map ciReaction reactions
-    addReaction rs =
-      if add && isNothing (find (\CIReactionCount {reaction} -> reaction == reaction') rs)
-        then rs ++ [CIReactionCount reaction' sent 1]
-        else rs
-    ciReaction r@CIReactionCount {reaction, userReacted, totalReacted}
-      | reaction == reaction' = 
-        let userReacted' = if sent then add else userReacted
-            totalReacted' = totalReacted + if add then 1 else -1
-         in CIReactionCount reaction userReacted' totalReacted'
-      | otherwise = r
-
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =
   liftEither . first (ChatError . CEInvalidFileDescription) . (strDecode . encodeUtf8)
@@ -4872,7 +4857,7 @@ chatCommandP =
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> textP),
       ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> textP),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
-      ("+" $> True <|> "\\+" $> False) >>= \add -> reactionP <* A.space >>= \reaction -> ReactToMessage <$> chatNameP' <* A.space <*> textP <*> pure reaction <*> pure add,
+      (("+" $> True) <|> ("-" $> False)) >>= \add -> reactionP <* A.space >>= \reaction -> ReactToMessage <$> chatNameP' <* A.space <*> textP <*> pure reaction <*> pure add,
       "/feed " *> (SendMessageBroadcast <$> msgTextP),
       ("/chats" <|> "/cs") *> (LastChats <$> (" all" $> Nothing <|> Just <$> (A.space *> A.decimal <|> pure 20))),
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),

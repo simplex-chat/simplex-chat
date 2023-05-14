@@ -4002,7 +4002,7 @@ getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe Strin
 getDirectChat db user contactId pagination search_ = do
   let search = fromMaybe "" search_
   ct <- getContact db user contactId
-  liftIO . getDirectChatReactions_ db ct =<<  case pagination of
+  liftIO . getDirectChatReactions_ db ct =<< case pagination of
     CPLast count -> getDirectChatLast_ db user ct count search
     CPAfter afterId count -> getDirectChatAfter_ db user ct afterId count search
     CPBefore beforeId count -> getDirectChatBefore_ db user ct beforeId count search
@@ -4290,7 +4290,7 @@ getAllChatItems db user@User {userId} pagination search_ = do
       CPLast count -> liftIO $ getAllChatItemsLast_ count
       CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem db user afterId
       CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem db user beforeId
-  mapM (uncurry $ getAChatItem_ db user) itemRefs
+  mapM (uncurry (getAChatItem_ db user) >=> liftIO . getACIReactions db) itemRefs
   where
     search = fromMaybe "" search_
     getAllChatItemsLast_ count =
@@ -4880,6 +4880,21 @@ getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
         GROUP BY reaction
       |]
       (groupId, itemMemberId, itemSharedMsgId)
+
+getACIReactions :: DB.Connection -> AChatItem -> IO AChatItem
+getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
+  Just itemSharedMId -> case chat of
+    DirectChat ct -> do
+      reactions <- getDirectCIReactions db ct itemSharedMId
+      pure $ AChatItem SCTDirect md chat ci {reactions}
+    GroupChat g@GroupInfo {membership = GroupMember {memberId}} -> do
+      let itemMemberId = case chatDir of
+            CIGroupSnd -> memberId
+            CIGroupRcv GroupMember {memberId = mId} -> mId
+      reactions <- getGroupCIReactions db g itemMemberId itemSharedMId
+      pure $ AChatItem SCTGroup md chat ci {reactions}
+    _ -> pure aci
+  _ -> pure aci
 
 toCIReaction :: (MsgReaction, Bool, Int) -> CIReactionCount
 toCIReaction (reaction, userReacted, totalReacted) = CIReactionCount {reaction, userReacted, totalReacted}

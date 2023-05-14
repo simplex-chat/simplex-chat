@@ -83,8 +83,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewChatItem chat item False ts
-  CRChatItems u chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
+  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewChatItem chat item False ts <> viewItemReactions item
+  CRChatItems u chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemStatusUpdated u _ -> ttyUser u []
@@ -144,7 +144,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
   CRRcvFileDescrReady _ _ -> []
   CRRcvFileDescrNotReady _ _ -> []
-  CRRcvFileProgressXFTP _ _ _ _ -> []
+  CRRcvFileProgressXFTP {} -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
@@ -512,7 +512,7 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} toItem by
     prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
 viewItemReaction :: forall c d. ChatInfo c -> CIReaction c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
-viewItemReaction chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content, reactions}, sentAt, reaction} added ts tz =
+viewItemReaction chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content}, sentAt, reaction} added ts tz =
   case (chat, chatDir) of
     (DirectChat c, CIDirectRcv) -> case content of
       CIRcvMsgContent mc -> view from $ reactionMsg mc
@@ -532,14 +532,15 @@ viewItemReaction chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {cha
     (_, CIGroupSnd) -> ["reaction sent"]
   where
     view from msg = viewReceivedReaction from msg reactionText ts $ utcToZonedTime tz sentAt
+    reactionText = plain [if added then '+' else '-', ' ', emoji]
     MREmoji (MREmojiChar emoji) = reaction
-    reactionText = plain ((if added then '+' else '-') : ' ' : emoji : ": ") <> viewReactions reactions
 
-viewReactions :: [CIReactionCount] -> StyledString
-viewReactions = plain . unwords . map viewReaction
+viewItemReactions :: ChatItem c d -> [StyledString]
+viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | not (null reactions)]
   where
-    viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), totalReacted} =
-      emoji : ' ' : show totalReacted
+    viewReactions = mconcat . intersperse " " . map viewReaction
+    viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
+      plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
 directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
