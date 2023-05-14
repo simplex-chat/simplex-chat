@@ -768,8 +768,9 @@
         <target state="translated">Conectando ao servidor…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
+      <trans-unit id="Connecting server… (error: %@)" xml:space="preserve" approved="no">
         <source>Connecting to server… (error: %@)</source>
+        <target state="translated">Conectando ao servidor… (erro: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection" xml:space="preserve" approved="no">
@@ -1100,8 +1101,9 @@
         <target state="translated">Excluir grupo?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete invitation" xml:space="preserve">
+      <trans-unit id="Delete invitation" xml:space="preserve" approved="no">
         <source>Delete invitation</source>
+        <target state="translated">Excluir convite</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete link" xml:space="preserve" approved="no">
