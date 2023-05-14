@@ -1851,6 +1851,18 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public func autoReceiveFile() -> CIFile? {
+        if let file = file,
+           let mc = content.msgContent,
+           privacyAcceptImagesGroupDefault.get(),
+           (mc.isImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
+            || (mc.isVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
+            || (mc.isVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus != .rcvAccepted) {
+            return file
+        }
+        return nil
+    }
+
     public var showMutableNotification: Bool {
         switch content {
         case .rcvCall: return false
@@ -2383,7 +2395,7 @@ public enum FileProtocol: String, Decodable {
     case xftp = "xftp"
 }
 
-public enum CIFileStatus: Decodable {
+public enum CIFileStatus: Decodable, Equatable {
     case sndStored
     case sndTransfer(sndProgress: Int64, sndTotal: Int64)
     case sndComplete

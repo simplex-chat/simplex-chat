@@ -236,16 +236,16 @@ private fun spannableStringToAnnotatedString(
 }
 
 // maximum image file size to be auto-accepted
-const val MAX_IMAGE_SIZE: Long = 236700
+const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
-const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE
+const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
+const val MAX_VIDEO_SIZE_AUTO_RCV: Long = 1_047_552 // 1023KB
 
-const val MAX_VOICE_SIZE_FOR_SENDING: Long = 1321116
-const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 43_000
+const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 300_000
 
 const val MAX_FILE_SIZE_SMP: Long = 8000000
 
-const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824
+const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()

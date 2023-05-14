@@ -48,7 +48,7 @@ class RecorderNative(): Recorder {
     rec.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
     rec.setAudioChannels(1)
     rec.setAudioSamplingRate(16000)
-    rec.setAudioEncodingBitRate(16000)
+    rec.setAudioEncodingBitRate(32000)
     rec.setMaxDuration(MAX_VOICE_MILLIS_FOR_SENDING)
     val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
     val fileToSave = File.createTempFile(generateNewFileName(SimplexApp.context, "voice", "${extension}_"), ".tmp", tmpDir)
