@@ -309,7 +309,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
     unmuted' chat chatDir s
       | muted chat chatDir = []
       | otherwise = s
-      
+
 chatItemDeletedText :: ChatItem c d -> Maybe GroupMember -> Maybe Text
 chatItemDeletedText ci membership_ = deletedStateToText <$> chatItemDeletedState ci
   where
