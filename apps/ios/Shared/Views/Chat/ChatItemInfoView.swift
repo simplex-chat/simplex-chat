@@ -82,7 +82,7 @@ struct ChatItemInfoView: View {
                 .padding(.vertical, 6)
                 .background(ciDirFrameColor(chatItemSent: chatItemSent, colorScheme: colorScheme))
                 .cornerRadius(18)
-                .uiKitContextMenu(menu: uiMenu)
+                .uiKitContextMenu(menu: uiMenu, allowMenu: Binding.constant(true))
             Text(
                 localTimestamp(itemVersion.itemVersionTs)
                 + (current

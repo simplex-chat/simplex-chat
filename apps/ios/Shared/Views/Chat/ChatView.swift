@@ -219,17 +219,25 @@ struct ChatView: View {
         .padding(.vertical, 8)
     }
     
+    private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
+        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil
+    }
+
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
-                    let maxWidth =
-                    cInfo.chatType == .group
-                    ? (g.size.width - 28) * 0.84 - 42
-                    : (g.size.width - 32) * 0.84
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
+                            let voiceNoFrame = voiceWithoutFrame(ci)
+                            let maxWidth = cInfo.chatType == .group
+                                            ? voiceNoFrame
+                                                ? (g.size.width - 28) - 42
+                                                : (g.size.width - 28) * 0.84 - 42
+                                            : voiceNoFrame
+                                                ? (g.size.width - 32)
+                                                : (g.size.width - 32) * 0.84
                             chatItemView(ci, maxWidth)
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear {
@@ -448,15 +456,21 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         
+        @State private var allowMenu: Bool = true
+        
+        @State private var audioPlayer: AudioPlayer?
+        @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
+        @State private var playbackTime: TimeInterval?
+
         var body: some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             let uiMenu: Binding<UIMenu> = Binding(
                 get: { UIMenu(title: "", children: menu(live: composeState.liveMessage != nil)) },
                 set: { _ in }
             )
-
-            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
-                .uiKitContextMenu(menu: uiMenu)
+            
+            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+                .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
@@ -469,6 +483,14 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+                .onDisappear {
+                    if ci.content.msgContent?.isVoice == true {
+                        allowMenu = true
+                        audioPlayer?.stop()
+                        playbackState = .noPlayback
+                        playbackTime = TimeInterval(0)
+                    }
+                }
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {
