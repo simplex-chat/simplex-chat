@@ -36,8 +36,9 @@ class AudioRecorder {
             try av.setActive(true)
             let settings: [String : Any] = [
                 AVFormatIDKey: kAudioFormatMPEG4AAC,
-                AVSampleRateKey: 12000,
-                AVEncoderBitRateKey: 12000,
+                AVSampleRateKey: 16000,
+                AVEncoderBitRateKey: 32000,
+                AVEncoderBitRateStrategyKey: AVAudioBitRateStrategy_VariableConstrained,
                 AVNumberOfChannelsKey: 1
             ]
             let url = getAppFilePath(fileName)

@@ -138,7 +138,7 @@ struct VoiceMessagePlayer: View {
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
                 case .sndError: playbackButton()
-                case .rcvInvitation: loadingIcon()
+                case .rcvInvitation: downloadButton(recordingFile)
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
                 case .rcvComplete: playbackButton()
@@ -211,6 +211,18 @@ struct VoiceMessagePlayer: View {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
                     .frame(width: 53, height: 53) // this + ProgressCircle lineWidth = background circle diameter
             }
+        }
+    }
+
+    private func downloadButton(_ recordingFile: CIFile) -> some View {
+        Button {
+            Task {
+                if let user = ChatModel.shared.currentUser {
+                    await receiveFile(user: user, fileId: recordingFile.fileId)
+                }
+            }
+        } label: {
+            playPauseIcon("play.fill")
         }
     }
 
