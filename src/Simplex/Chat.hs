@@ -3419,7 +3419,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     directMsgReaction :: Contact -> SharedMsgId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> m ()
     directMsgReaction ct sharedMsgId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
-      when (featureAllowed SCFReactions forUser ct) $ do
+      when (featureAllowed SCFReactions forContact ct) $ do
         rs <- withStore' $ \db -> getDirectReactions db ct sharedMsgId False
         when (reactionAllowed add reaction rs) $ do
           withStore' $ \db -> setDirectReaction db ct sharedMsgId False reaction add msgId brokerTs
