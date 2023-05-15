@@ -576,4 +576,14 @@
     <string name="button_add_members">הזמן חברי קבוצה</string>
     <string name="message_deletion_prohibited">מחיקה בלתי הפיכה של הודעות אסורה בצ׳אט זה.</string>
     <string name="message_deletion_prohibited_in_chat">מחיקה בלתי הפיכה של הודעות אסורה בקבוצה זו.</string>
+    <string name="group_preview_join_as">להצטרף בתור %s</string>
+    <string name="incognito_info_allows">זה מאפשר חיבורים אנונימיים רבים ללא שום נתונים משותפים ביניהם בפרופיל צ׳אט יחיד.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">זה יכול לקרות כאשר:
+\n1. פג תוקפן של ההודעות בלקוח השולח לאחר 2 ימים או בשרת לאחר 30 ימים.
+\n2. פיענוח הצפנת הודעה נכשל, מכיוון שאתם או איש הקשר שלכם השתמשתם בגיבוי ישן של מסד הנתונים.
+\n3. החיבור נפגע.</string>
+    <string name="onboarding_notifications_mode_subtitle">ניתן לשנות זאת מאוחר יותר באמצעות ההגדרות.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">זה יכול לקרות כאשר אתם או איש הקשר שלכם השתמשתם בגיבוי ישן של מסד הנתונים.</string>
+    <string name="join_group_question">להצטרף לקבוצה\?</string>
+    <string name="join_group_button">הצטרף</string>
 </resources>
