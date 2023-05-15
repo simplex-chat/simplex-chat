@@ -25,6 +25,7 @@ struct GroupMemberInfoView: View {
         case removeMemberAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
+        case connRequestSentAlert(type: ConnReqType)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
         var id: String {
@@ -32,6 +33,7 @@ struct GroupMemberInfoView: View {
             case .removeMemberAlert: return "removeMemberAlert"
             case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
+            case .connRequestSentAlert: return "connRequestSentAlert"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -45,6 +47,15 @@ struct GroupMemberInfoView: View {
         }
     }
 
+    private func knownDirectChat(_ contactId: Int64) -> Chat? {
+        if let chat = chatModel.getContactChat(contactId),
+           chat.chatInfo.contact?.directOrUsed ?? false {
+            return chat
+        } else {
+            return nil
+        }
+    }
+
     private func groupMemberInfoView() -> some View {
         VStack {
             List {
@@ -54,8 +65,7 @@ struct GroupMemberInfoView: View {
                 if member.memberActive {
                     Section {
                         if let contactId = member.memberContactId {
-                            if let chat = chatModel.getContactChat(contactId),
-                               chat.chatInfo.contact?.directOrUsed ?? false {
+                            if let chat = knownDirectChat(contactId) {
                                 knownDirectChatButton(chat)
                             } else if groupInfo.fullGroupPreferences.directMessages.on {
                                 newDirectChatButton(contactId)
@@ -72,6 +82,13 @@ struct GroupMemberInfoView: View {
                             showShareSheet(items: [contactLink])
                         } label: {
                             Label("Share address", systemImage: "square.and.arrow.up")
+                        }
+                        if let contactId = member.memberContactId {
+                            if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on {
+                                connectViaAddressButton(contactLink)
+                            }
+                        } else {
+                            connectViaAddressButton(contactLink)
                         }
                     } header: {
                         Text("Address")
@@ -150,7 +167,24 @@ struct GroupMemberInfoView: View {
             case let .removeMemberAlert(mem): return removeMemberAlert(mem)
             case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
             case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
+            case let .connRequestSentAlert(type): return connReqSentAlert(type)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
+            }
+        }
+    }
+
+    func connectViaAddressButton(_ contactLink: String) -> some View {
+        Button {
+            connectViaAddress(contactLink)
+        } label: {
+            Label("Connect", systemImage: "link")
+        }
+    }
+
+    func connectViaAddress(_ contactLink: String) {
+        Task {
+            if let connReqType = await apiConnect(connReq: contactLink) {
+                alert = .connRequestSentAlert(type: connReqType)
             }
         }
     }

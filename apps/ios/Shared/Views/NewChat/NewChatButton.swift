@@ -68,7 +68,7 @@ func connectViaLink(_ connectionLink: String, _ dismiss: DismissAction? = nil) {
         if let connReqType = await apiConnect(connReq: connectionLink) {
             DispatchQueue.main.async {
                 dismiss?()
-                connectionReqSentAlert(connReqType)
+                AlertManager.shared.showAlert(connReqSentAlert(connReqType))
             }
         } else {
             DispatchQueue.main.async {
@@ -111,12 +111,12 @@ func groupLinkAlert(_ connectionLink: String) -> Alert {
     )
 }
 
-func connectionReqSentAlert(_ type: ConnReqType) {
-    AlertManager.shared.showAlertMsg(
-        title: "Connection request sent!",
+func connReqSentAlert(_ type: ConnReqType) -> Alert {
+    return Alert(
+        title: Text("Connection request sent!"),
         message: type == .contact
-            ? "You will be connected when your connection request is accepted, please wait or check later!"
-            : "You will be connected when your contact's device is online, please wait or check later!"
+            ? Text("You will be connected when your connection request is accepted, please wait or check later!")
+            : Text("You will be connected when your contact's device is online, please wait or check later!")
     )
 }
 
