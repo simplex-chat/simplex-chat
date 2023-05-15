@@ -799,6 +799,13 @@ instance ToJSON MsgDecryptError where
 instance FromJSON MsgDecryptError where
   parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MDE"
 
+ciReactionAllowed :: ChatItem c d -> Bool
+ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
+ciReactionAllowed ChatItem {content} = case content of
+  CISndMsgContent _ -> True
+  CIRcvMsgContent _ -> True
+  _ -> False
+
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
   SMDSnd -> True
