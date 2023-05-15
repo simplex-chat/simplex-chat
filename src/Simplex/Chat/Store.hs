@@ -4896,19 +4896,17 @@ getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemShar
   _ -> pure aci
 
 deleteDirectCIReactions_ :: DB.Connection -> ContactId -> ChatItem 'CTDirect d -> IO ()
-deleteDirectCIReactions_ db contactId ChatItem {meta = CIMeta {itemSharedMsgId}} = case itemSharedMsgId of
-  Just itemSharedMId -> 
+deleteDirectCIReactions_ db contactId ChatItem {meta = CIMeta {itemSharedMsgId}} =
+  forM_ itemSharedMsgId $ \itemSharedMId -> 
     DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ? AND shared_msg_id = ?" (contactId, itemSharedMId)
-  _ -> pure ()
 
 deleteGroupCIReactions_ :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
-deleteGroupCIReactions_ db g@GroupInfo {groupId} ci@ChatItem {meta = CIMeta {itemSharedMsgId}} = case itemSharedMsgId of
-  Just itemSharedMId -> do
+deleteGroupCIReactions_ db g@GroupInfo {groupId} ci@ChatItem {meta = CIMeta {itemSharedMsgId}} =
+  forM_ itemSharedMsgId $ \itemSharedMId -> do
     let GroupMember {memberId} = chatItemMember g ci
     DB.execute db
       "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
       (groupId, itemSharedMId, memberId)
-  _ -> pure ()
 
 toCIReaction :: (MsgReaction, Bool, Int) -> CIReactionCount
 toCIReaction (reaction, userReacted, totalReacted) = CIReactionCount {reaction, userReacted, totalReacted}
