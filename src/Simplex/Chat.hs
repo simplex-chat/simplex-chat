@@ -473,8 +473,16 @@ processChatCommand = \case
       ci <- getAChatItem db user itemId
       versions <- liftIO $ getChatItemVersions db itemId
       pure (ci, versions)
-    let CIMeta {itemTs, createdAt, updatedAt} = meta
-        ciInfo = ChatItemInfo {chatItemId = itemId, itemTs, createdAt, updatedAt, itemVersions}
+    let CIMeta {itemTs, createdAt, updatedAt, itemTimed} = meta
+        ciInfo =
+          ChatItemInfo
+            { chatItemId = itemId,
+              itemTs,
+              createdAt,
+              updatedAt,
+              deleteAt = itemTimed >>= timedDeleteAt',
+              itemVersions
+            }
     pure $ CRChatItemInfo user chatItem ciInfo
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
@@ -493,7 +501,7 @@ processChatCommand = \case
               sendDirectFileInline ct ft sharedMsgId
             _ -> pure ()
           ci <- saveSndChatItem' user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
-          forM_ (timed_ >>= deleteAt) $
+          forM_ (timed_ >>= timedDeleteAt') $
             startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci)
           setActive $ ActiveC c
           pure $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
@@ -550,7 +558,7 @@ processChatCommand = \case
           msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
           ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
-          forM_ (timed_ >>= deleteAt) $
+          forM_ (timed_ >>= timedDeleteAt') $
             startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
           setActive $ ActiveG gName
           pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
@@ -1853,8 +1861,8 @@ processChatCommand = \case
       forM (chatTTL >>= (itemTTL <|>)) $ \ttl ->
         CITimed ttl
           <$> if live
-                then pure Nothing
-                else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
+            then pure Nothing
+            else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
     drgRandomBytes :: Int -> m ByteString
     drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
     privateGetUser :: UserId -> m User
@@ -2345,7 +2353,7 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-cleanupManagerInterval :: Int64
+cleanupManagerInterval :: NominalDiffTime
 cleanupManagerInterval = 1800 -- 30 minutes
 
 cleanupManager :: forall m. ChatMonad m => m ()
@@ -2358,13 +2366,13 @@ cleanupManager = do
       forM_ us cleanupUser
       forM_ us' cleanupUser
       cleanupMessages `catchError` (toView . CRChatError Nothing)
-    liftIO $ threadDelay' $ cleanupManagerInterval * 1000000
+    liftIO $ threadDelay' $ diffToMicroseconds cleanupManagerInterval
   where
     cleanupUser user =
       cleanupTimedItems user `catchError` (toView . CRChatError (Just user))
     cleanupTimedItems user = do
       ts <- liftIO getCurrentTime
-      let startTimedThreadCutoff = addUTCTime (realToFrac cleanupManagerInterval) ts
+      let startTimedThreadCutoff = addUTCTime cleanupManagerInterval ts
       timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
     cleanupMessages = do
@@ -2375,7 +2383,7 @@ cleanupManager = do
 startProximateTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 startProximateTimedItemThread user itemRef deleteAt = do
   ts <- liftIO getCurrentTime
-  when (diffInSeconds deleteAt ts <= cleanupManagerInterval) $
+  when (diffUTCTime deleteAt ts <= cleanupManagerInterval) $
     startTimedItemThread user itemRef deleteAt
 
 startTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
@@ -2396,7 +2404,7 @@ startTimedItemThread user itemRef deleteAt = do
 deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
-  liftIO $ threadDelay' $ diffInMicros deleteAt ts
+  liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime deleteAt ts
   waitChatStarted
   case cType of
     CTDirect -> do
@@ -2409,7 +2417,7 @@ deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
 
 startUpdatedTimedItemThread :: ChatMonad m => User -> ChatRef -> ChatItem c d -> ChatItem c d -> m ()
 startUpdatedTimedItemThread user chatRef ci ci' =
-  case (chatItemTimed ci >>= deleteAt, chatItemTimed ci' >>= deleteAt) of
+  case (chatItemTimed ci >>= timedDeleteAt', chatItemTimed ci' >>= timedDeleteAt') of
     (Nothing, Just deleteAt') ->
       startProximateTimedItemThread user (chatRef, chatItemId' ci') deleteAt'
     _ -> pure ()
@@ -3455,7 +3463,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
                 reactions <- getGroupCIReactions db g itemMemberId sharedMsgId
                 let ci' = CChatItem md ci {reactions}
-                    r =  ACIReaction SCTGroup SMDRcv (GroupChat g) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
+                    r = ACIReaction SCTGroup SMDRcv (GroupChat g) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
                 pure $ Just $ CRChatItemReaction user r add
               else pure Nothing
           mapM_ toView cr_
@@ -5047,9 +5055,6 @@ timeItToView s action = do
   t1 <- liftIO getCurrentTime
   a <- action
   t2 <- liftIO getCurrentTime
-  let diff = diffInMillis t2 t1
+  let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView $ CRTimedAction s diff
   pure a
-
-diffInMillis :: UTCTime -> UTCTime -> Int64
-diffInMillis a b = (`div` 1000000000) $ diffInPicos a b

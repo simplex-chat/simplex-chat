@@ -49,6 +49,9 @@ struct ChatItemInfoView: View {
                     if !chatItemSent {
                         infoRow("Received at", localTimestamp(chatItemInfo.createdAt))
                     }
+                    if let deleteAt = chatItemInfo.deleteAt {
+                        infoRow("To be deleted at", localTimestamp(deleteAt))
+                    }
 
                     if !chatItemInfo.itemVersions.isEmpty {
                         Divider()
@@ -121,6 +124,9 @@ struct ChatItemInfoView: View {
         shareText += "Sent at: \(localTimestamp(chatItemInfo.itemTs))" + nl
         if !chatItemSent {
             shareText += "Received at: \(localTimestamp(chatItemInfo.createdAt))" + nl
+        }
+        if let deleteAt = chatItemInfo.deleteAt {
+            shareText += "To be deleted at: \(localTimestamp(deleteAt))" + nl
         }
         if !chatItemInfo.itemVersions.isEmpty {
             shareText += nl + "Edit history" + nl + nl
