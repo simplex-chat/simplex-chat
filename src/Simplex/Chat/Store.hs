@@ -4849,8 +4849,8 @@ getDirectChatReactions_ db ct c@Chat {chatItems} = do
   pure c {chatItems = chatItems'}
 
 getGroupChatReactions_ :: DB.Connection -> GroupInfo -> Chat 'CTGroup -> IO (Chat 'CTGroup)
-getGroupChatReactions_ db g@GroupInfo {membership} c@Chat {chatItems} = do
-  chatItems' <- forM chatItems $ \(CChatItem md ci@ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) -> do
+getGroupChatReactions_ db g c@Chat {chatItems} = do
+  chatItems' <- forM chatItems $ \(CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) -> do
     let GroupMember {memberId} = chatItemMember g ci
     reactions <- maybe (pure []) (getGroupCIReactions db g memberId) itemSharedMsgId
     pure $ CChatItem md ci {reactions}
@@ -4883,12 +4883,12 @@ getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
       (groupId, itemMemberId, itemSharedMsgId)
 
 getACIReactions :: DB.Connection -> AChatItem -> IO AChatItem
-getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
+getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
   Just itemSharedMId -> case chat of
     DirectChat ct -> do
       reactions <- getDirectCIReactions db ct itemSharedMId
       pure $ AChatItem SCTDirect md chat ci {reactions}
-    GroupChat g@GroupInfo {membership = GroupMember {memberId}} -> do
+    GroupChat g -> do
       let GroupMember {memberId} = chatItemMember g ci
       reactions <- getGroupCIReactions db g memberId itemSharedMId
       pure $ AChatItem SCTGroup md chat ci {reactions}
