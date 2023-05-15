@@ -67,6 +67,8 @@ struct CustomTimePicker: View {
             if let selection = selection,
                selection > 0 {
                 (selectedUnit, selectedDuration) = CustomTimeUnit.toTimeUnit(seconds: selection)
+            } else {
+                selection = selectedUnit.toSeconds * selectedDuration
             }
         }
         .onChange(of: selectedUnit) { unit in
@@ -114,6 +116,7 @@ struct CustomTimePickerView: View {
                             Text(confirmButtonText)
                                 .fontWeight(.medium)
                         }
+                        .disabled(selection == nil)
                     }
                 }
         }
