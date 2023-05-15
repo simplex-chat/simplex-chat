@@ -444,6 +444,7 @@ struct ChatView: View {
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var chat: Chat
         @Environment(\.colorScheme) var colorScheme
+        @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
         var ci: ChatItem
         var showMember: Bool = false
         var maxWidth: CGFloat
@@ -473,8 +474,8 @@ struct ChatView: View {
             VStack(alignment: .trailing, spacing: 4) {
                 ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                     .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
-                if ci.reactions.count > 0 {
-                    chatItemReactions(ci.reactions)
+                if ci.content.msgContent != nil && ci.meta.itemDeleted == nil && ci.reactions.count > 0 {
+                    chatItemReactions()
                         .padding(.bottom, 4)
                 }
             }
@@ -505,27 +506,37 @@ struct ChatView: View {
                 }
         }
 
-        private func chatItemReactions(_ reactions: [CIReaction]) -> some View {
+        private func chatItemReactions() -> some View {
             HStack(spacing: 4) {
-                ForEach(reactions, id: \.reaction) { r in
-                    HStack(spacing: 4) {
+                ForEach(ci.reactions, id: \.reaction) { r in
+                    let v = HStack(spacing: 4) {
                         switch r.reaction {
-                        case let .emoji(emoji): Text(emoji).font(.caption)
+                        case let .emoji(emoji): Text(emoji.rawValue).font(.caption)
+                        case .unknown: EmptyView()
                         }
                         if r.totalReacted > 1 {
-                            Text("\(r.totalReacted)").font(.caption).foregroundColor(.secondary)
+                            Text("\(r.totalReacted)")
+                                .font(.caption)
+                                .fontWeight(r.userReacted ? .bold : .light)
+                                .foregroundColor(r.userReacted ? .accentColor : .secondary)
                         }
                     }
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 6)
                     .padding(.vertical, 4)
-                    .background(!r.userReacted ? Color.clear : colorScheme == .dark ? sentColorDark : sentColorLight)
-                    .cornerRadius(16)
+
+                    if chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted) {
+                        v.onTapGesture {
+                            setReaction(r.reaction, add: !r.userReacted)
+                        }
+                    } else {
+                        v
+                    }
                 }
             }
         }
 
-        private func menu(live: Bool) -> [UIAction] {
-            var menu: [UIAction] = []
+        private func menu(live: Bool) -> [UIMenuElement] {
+            var menu: [UIMenuElement] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
                     menu.append(replyUIAction())
@@ -554,6 +565,10 @@ struct ChatView: View {
                    let file = ci.file,
                    let cancelAction = file.cancelAction  {
                     menu.append(cancelFileUIAction(file.fileId, cancelAction))
+                }
+                if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction && developerTools,
+                   let rm = reactionUIMenu() {
+                    menu.append(rm)
                 }
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
@@ -586,7 +601,42 @@ struct ChatView: View {
                 }
             }
         }
-        
+
+        private func reactionUIMenu() -> UIMenu? {
+            let rs = MsgReaction.values.compactMap { r in
+                ci.reactions.contains(where: { $0.reaction == r })
+                ? nil
+                : UIAction(title: r.text) { _ in setReaction(r, add: true) }
+            }
+            if rs.count > 0 {
+                return UIMenu(
+                    title: NSLocalizedString("React...", comment: "chat item menu"),
+                    image: UIImage(systemName: "hand.thumbsup"),
+                    children: rs
+                )
+            }
+            return nil
+        }
+
+        private func setReaction(_ r: MsgReaction, add: Bool) {
+            Task {
+                do {
+                    let chatItem = try await apiChatItemReaction(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemId: ci.id,
+                        reaction: r,
+                        add: add
+                    )
+                    await MainActor.run {
+                        ChatModel.shared.updateChatItem(chat.chatInfo, chatItem)
+                    }
+                } catch let error {
+                    logger.error("apiChatItemReaction error: \(responseError(error))")
+                }
+            }
+        }
+
         private func shareUIAction() -> UIAction {
             UIAction(
                 title: NSLocalizedString("Share", comment: "chat item action"),

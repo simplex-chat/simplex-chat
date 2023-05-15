@@ -91,9 +91,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts testView
-  CRChatItemReaction u (ACIReaction _ _ chat reaction) added
-    | showReactions -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction chat reaction added ts tz
-    | otherwise -> []
+  CRChatItemReaction u (ACIReaction _ _ chat reaction) added -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc n t -> ttyUser u $ viewSentBroadcast mc n ts t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
@@ -511,8 +509,8 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} toItem by
       Just (AChatItem _ _ _ ci) -> chatItemDeletedText ci $ chatInfoMembership chat
     prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
-viewItemReaction :: forall c d. ChatInfo c -> CIReaction c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
-viewItemReaction chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content}, sentAt, reaction} added ts tz =
+viewItemReaction :: forall c d. Bool -> ChatInfo c -> CIReaction c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
+viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content}, sentAt, reaction} added ts tz =
   case (chat, chatDir) of
     (DirectChat c, CIDirectRcv) -> case content of
       CIRcvMsgContent mc -> view from $ reactionMsg mc
@@ -531,7 +529,9 @@ viewItemReaction chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {cha
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]
   where
-    view from msg = viewReceivedReaction from msg reactionText ts $ utcToZonedTime tz sentAt
+    view from msg
+      | showReactions = viewReceivedReaction from msg reactionText ts $ utcToZonedTime tz sentAt
+      | otherwise = []
     reactionText = plain $ (if added then "+ " else "- ") <> [emoji]
     MREmoji (MREmojiChar emoji) = reaction
     sentText = plain $ (if added then "added " else "removed ") <> [emoji]

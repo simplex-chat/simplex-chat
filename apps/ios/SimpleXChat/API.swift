@@ -124,6 +124,9 @@ public func chatResponse(_ s: String) -> ChatResponse {
     //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
     do {
         let r = try jsonDecoder.decode(APIResponse.self, from: d)
+        if case .chatItemReaction = r.resp {
+            print(s)
+        }
         return r.resp
     } catch {
         logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")

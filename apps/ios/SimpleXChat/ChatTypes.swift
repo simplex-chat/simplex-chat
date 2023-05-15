@@ -183,12 +183,20 @@ public typealias ChatId = String
 public struct FullPreferences: Decodable, Equatable {
     public var timedMessages: TimedMessagesPreference
     public var fullDelete: SimplePreference
+    public var reactions: SimplePreference
     public var voice: SimplePreference
     public var calls: SimplePreference
 
-    public init(timedMessages: TimedMessagesPreference, fullDelete: SimplePreference, voice: SimplePreference, calls: SimplePreference) {
+    public init(
+        timedMessages: TimedMessagesPreference,
+        fullDelete: SimplePreference,
+        reactions: SimplePreference,
+        voice: SimplePreference,
+        calls: SimplePreference
+    ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
         self.calls = calls
     }
@@ -196,6 +204,7 @@ public struct FullPreferences: Decodable, Equatable {
     public static let sampleData = FullPreferences(
         timedMessages:  TimedMessagesPreference(allow: .no),
         fullDelete: SimplePreference(allow: .no),
+        reactions: SimplePreference(allow: .yes),
         voice: SimplePreference(allow: .yes),
         calls: SimplePreference(allow: .yes)
     )
@@ -204,20 +213,35 @@ public struct FullPreferences: Decodable, Equatable {
 public struct Preferences: Codable {
     public var timedMessages: TimedMessagesPreference?
     public var fullDelete: SimplePreference?
+    public var reactions: SimplePreference?
     public var voice: SimplePreference?
     public var calls: SimplePreference?
 
-    public init(timedMessages: TimedMessagesPreference?, fullDelete: SimplePreference?, voice: SimplePreference?, calls: SimplePreference?) {
+    public init(
+        timedMessages: TimedMessagesPreference?,
+        fullDelete: SimplePreference?,
+        reactions: SimplePreference?,
+        voice: SimplePreference?,
+        calls: SimplePreference?
+    ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
         self.calls = calls
     }
 
-    func copy(timedMessages: TimedMessagesPreference? = nil, fullDelete: SimplePreference? = nil, voice: SimplePreference? = nil, calls: SimplePreference? = nil) -> Preferences {
+    func copy(
+        timedMessages: TimedMessagesPreference? = nil,
+        fullDelete: SimplePreference? = nil,
+        reactions: SimplePreference? = nil,
+        voice: SimplePreference? = nil,
+        calls: SimplePreference? = nil
+    ) -> Preferences {
         Preferences(
             timedMessages: timedMessages ?? self.timedMessages,
             fullDelete: fullDelete ?? self.fullDelete,
+            reactions: reactions ?? self.reactions,
             voice: voice ?? self.voice,
             calls: calls ?? self.calls
         )
@@ -227,6 +251,7 @@ public struct Preferences: Codable {
         switch feature {
         case .timedMessages: return copy(timedMessages: TimedMessagesPreference(allow: allowed, ttl: param ?? timedMessages?.ttl))
         case .fullDelete: return copy(fullDelete: SimplePreference(allow: allowed))
+        case .reactions: return copy(reactions: SimplePreference(allow: allowed))
         case .voice: return copy(voice: SimplePreference(allow: allowed))
         case .calls: return copy(calls: SimplePreference(allow: allowed))
         }
@@ -235,6 +260,7 @@ public struct Preferences: Codable {
     public static let sampleData = Preferences(
         timedMessages: TimedMessagesPreference(allow: .no),
         fullDelete: SimplePreference(allow: .no),
+        reactions: SimplePreference(allow: .yes),
         voice: SimplePreference(allow: .yes),
         calls: SimplePreference(allow: .yes)
     )
@@ -244,6 +270,7 @@ public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> 
     Preferences(
         timedMessages: fullPreferences.timedMessages,
         fullDelete: fullPreferences.fullDelete,
+        reactions: fullPreferences.reactions,
         voice: fullPreferences.voice,
         calls: fullPreferences.calls
     )
@@ -253,6 +280,7 @@ public func contactUserPreferencesToPreferences(_ contactUserPreferences: Contac
     Preferences(
         timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
         fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
+        reactions: contactUserPreferences.reactions.userPreference.preference,
         voice: contactUserPreferences.voice.userPreference.preference,
         calls: contactUserPreferences.calls.userPreference.preference
     )
@@ -386,17 +414,20 @@ public func shortTimeText(_ seconds: Int?) -> LocalizedStringKey {
 public struct ContactUserPreferences: Decodable {
     public var timedMessages: ContactUserPreference<TimedMessagesPreference>
     public var fullDelete: ContactUserPreference<SimplePreference>
+    public var reactions: ContactUserPreference<SimplePreference>
     public var voice: ContactUserPreference<SimplePreference>
     public var calls: ContactUserPreference<SimplePreference>
 
     public init(
         timedMessages: ContactUserPreference<TimedMessagesPreference>,
         fullDelete: ContactUserPreference<SimplePreference>,
+        reactions: ContactUserPreference<SimplePreference>,
         voice: ContactUserPreference<SimplePreference>,
         calls: ContactUserPreference<SimplePreference>
     ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
         self.calls = calls
     }
@@ -411,6 +442,11 @@ public struct ContactUserPreferences: Decodable {
             enabled: FeatureEnabled(forUser: false, forContact: false),
             userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .no)),
             contactPreference: SimplePreference(allow: .no)
+        ),
+        reactions: ContactUserPreference<SimplePreference>(
+            enabled: FeatureEnabled(forUser: true, forContact: true),
+            userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .yes)),
+            contactPreference: SimplePreference(allow: .yes)
         ),
         voice: ContactUserPreference<SimplePreference>(
             enabled: FeatureEnabled(forUser: true, forContact: true),
@@ -491,10 +527,9 @@ public protocol Feature {
 public enum ChatFeature: String, Decodable, Feature {
     case timedMessages
     case fullDelete
+    case reactions
     case voice
     case calls
-
-    public var values: [ChatFeature] { [.fullDelete, .voice] }
 
     public var id: Self { self }
 
@@ -516,6 +551,7 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
+        case .reactions: return NSLocalizedString("Message reactions", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         case .calls: return NSLocalizedString("Audio/video calls", comment: "chat feature")
         }
@@ -525,6 +561,7 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return "stopwatch"
         case .fullDelete: return "trash.slash"
+        case .reactions: return "hand.thumbsup"
         case .voice: return "mic"
         case .calls: return "phone"
         }
@@ -534,6 +571,7 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return "stopwatch.fill"
         case .fullDelete: return "trash.slash.fill"
+        case .reactions: return "hand.thumbsup.fill"
         case .voice: return "mic.fill"
         case .calls: return "phone.fill"
         }
@@ -559,6 +597,12 @@ public enum ChatFeature: String, Decodable, Feature {
             case .always: return "Allow your contacts to irreversibly delete sent messages."
             case .yes: return "Allow irreversible message deletion only if your contact allows it to you."
             case .no: return "Contacts can mark messages for deletion; you will be able to view them."
+            }
+        case .reactions:
+            switch allowed {
+            case .always: return "Allow your contacts reacting to messages."
+            case .yes: return "Allow message reactions only if your contact allows them."
+            case .no: return "Prohibit message reactions."
             }
         case .voice:
             switch allowed {
@@ -593,6 +637,14 @@ public enum ChatFeature: String, Decodable, Feature {
                     : enabled.forContact
                     ? "Only your contact can irreversibly delete messages (you can mark them for deletion)."
                     : "Irreversible message deletion is prohibited in this chat."
+        case .reactions:
+            return enabled.forUser && enabled.forContact
+                    ? "Both you and your contact can react to messages."
+                    : enabled.forUser
+                    ? "Only you can react to messages."
+                    : enabled.forContact
+                    ? "Only your contact can react to messages."
+                    : "Message reactions are prohibited in this chat."
         case .voice:
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can send voice messages."
@@ -616,10 +668,9 @@ public enum ChatFeature: String, Decodable, Feature {
 public enum GroupFeature: String, Decodable, Feature {
     case timedMessages
     case fullDelete
+    case reactions
     case voice
     case directMessages
-
-    public var values: [GroupFeature] { [.directMessages, .fullDelete, .voice] }
 
     public var id: Self { self }
 
@@ -635,6 +686,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .directMessages: return NSLocalizedString("Direct messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
+        case .reactions: return NSLocalizedString("Message reactions", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
     }
@@ -644,6 +696,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .timedMessages: return "stopwatch"
         case .directMessages: return "arrow.left.and.right.circle"
         case .fullDelete: return "trash.slash"
+        case .reactions: return "hand.thumbsup"
         case .voice: return "mic"
         }
     }
@@ -653,6 +706,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .timedMessages: return "stopwatch.fill"
         case .directMessages: return "arrow.left.and.right.circle.fill"
         case .fullDelete: return "trash.slash.fill"
+        case .reactions: return "hand.thumbsup.fill"
         case .voice: return "mic.fill"
         }
     }
@@ -682,6 +736,11 @@ public enum GroupFeature: String, Decodable, Feature {
                 case .on: return "Allow to irreversibly delete sent messages."
                 case .off: return "Prohibit irreversible message deletion."
                 }
+            case .reactions:
+                switch enabled {
+                case .on: return "Allow message reactions."
+                case .off: return "Prohibit messages reactions."
+                }
             case .voice:
                 switch enabled {
                 case .on: return "Allow to send voice messages."
@@ -704,6 +763,11 @@ public enum GroupFeature: String, Decodable, Feature {
                 switch enabled {
                 case .on: return "Group members can irreversibly delete sent messages."
                 case .off: return "Irreversible message deletion is prohibited in this group."
+                }
+            case .reactions:
+                switch enabled {
+                case .on: return "Group members can react to messages."
+                case .off: return "Message reactions are prohibited in this group."
                 }
             case .voice:
                 switch enabled {
@@ -750,13 +814,22 @@ public struct ContactFeaturesAllowed: Equatable {
     public var timedMessagesAllowed: Bool
     public var timedMessagesTTL: Int?
     public var fullDelete: ContactFeatureAllowed
+    public var reactions: ContactFeatureAllowed
     public var voice: ContactFeatureAllowed
     public var calls: ContactFeatureAllowed
 
-    public init(timedMessagesAllowed: Bool, timedMessagesTTL: Int?, fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed, calls: ContactFeatureAllowed) {
+    public init(
+        timedMessagesAllowed: Bool,
+        timedMessagesTTL: Int?,
+        fullDelete: ContactFeatureAllowed,
+        reactions: ContactFeatureAllowed,
+        voice: ContactFeatureAllowed,
+        calls: ContactFeatureAllowed
+    ) {
         self.timedMessagesAllowed = timedMessagesAllowed
         self.timedMessagesTTL = timedMessagesTTL
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
         self.calls = calls
     }
@@ -765,6 +838,7 @@ public struct ContactFeaturesAllowed: Equatable {
         timedMessagesAllowed: false,
         timedMessagesTTL: nil,
         fullDelete: ContactFeatureAllowed.userDefault(.no),
+        reactions: ContactFeatureAllowed.userDefault(.yes),
         voice: ContactFeatureAllowed.userDefault(.yes),
         calls: ContactFeatureAllowed.userDefault(.yes)
     )
@@ -777,6 +851,7 @@ public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactU
         timedMessagesAllowed: allow == .yes || allow == .always,
         timedMessagesTTL: pref.preference.ttl,
         fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
+        reactions: contactUserPrefToFeatureAllowed(contactUserPreferences.reactions),
         voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
         calls: contactUserPrefToFeatureAllowed(contactUserPreferences.calls)
     )
@@ -798,6 +873,7 @@ public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeatu
     Preferences(
         timedMessages: TimedMessagesPreference(allow: contactFeaturesAllowed.timedMessagesAllowed ? .yes : .no, ttl: contactFeaturesAllowed.timedMessagesTTL),
         fullDelete: contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
+        reactions: contactFeatureAllowedToPref(contactFeaturesAllowed.reactions),
         voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
         calls: contactFeatureAllowedToPref(contactFeaturesAllowed.calls)
     )
@@ -834,12 +910,20 @@ public struct FullGroupPreferences: Decodable, Equatable {
     public var timedMessages: TimedMessagesGroupPreference
     public var directMessages: GroupPreference
     public var fullDelete: GroupPreference
+    public var reactions: GroupPreference
     public var voice: GroupPreference
 
-    public init(timedMessages:  TimedMessagesGroupPreference, directMessages: GroupPreference, fullDelete: GroupPreference, voice: GroupPreference) {
+    public init(
+        timedMessages: TimedMessagesGroupPreference,
+        directMessages: GroupPreference,
+        fullDelete: GroupPreference,
+        reactions: GroupPreference,
+        voice: GroupPreference
+    ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
     }
 
@@ -847,6 +931,7 @@ public struct FullGroupPreferences: Decodable, Equatable {
         timedMessages: TimedMessagesGroupPreference(enable: .off),
         directMessages: GroupPreference(enable: .off),
         fullDelete: GroupPreference(enable: .off),
+        reactions: GroupPreference(enable: .on),
         voice: GroupPreference(enable: .on)
     )
 }
@@ -855,12 +940,20 @@ public struct GroupPreferences: Codable {
     public var timedMessages: TimedMessagesGroupPreference?
     public var directMessages: GroupPreference?
     public var fullDelete: GroupPreference?
+    public var reactions: GroupPreference?
     public var voice: GroupPreference?
 
-    public init(timedMessages: TimedMessagesGroupPreference?, directMessages: GroupPreference?, fullDelete: GroupPreference?, voice: GroupPreference?) {
+    public init(
+        timedMessages: TimedMessagesGroupPreference?,
+        directMessages: GroupPreference?,
+        fullDelete: GroupPreference?,
+        reactions: GroupPreference?,
+        voice: GroupPreference?
+    ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
     }
 
@@ -868,6 +961,7 @@ public struct GroupPreferences: Codable {
         timedMessages: TimedMessagesGroupPreference(enable: .off),
         directMessages: GroupPreference(enable: .off),
         fullDelete: GroupPreference(enable: .off),
+        reactions: GroupPreference(enable: .on),
         voice: GroupPreference(enable: .on)
     )
 }
@@ -877,6 +971,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         timedMessages: fullPreferences.timedMessages,
         directMessages: fullPreferences.directMessages,
         fullDelete: fullPreferences.fullDelete,
+        reactions: fullPreferences.reactions,
         voice: fullPreferences.voice
     )
 }
@@ -1086,6 +1181,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             switch feature {
             case .timedMessages: return cups.timedMessages.enabled.forUser
             case .fullDelete: return cups.fullDelete.enabled.forUser
+            case .reactions: return cups.reactions.enabled.forUser
             case .voice: return cups.voice.enabled.forUser
             case .calls: return cups.calls.enabled.forUser
             }
@@ -1094,6 +1190,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             switch feature {
             case .timedMessages: return prefs.timedMessages.on
             case .fullDelete: return prefs.fullDelete.on
+            case .reactions: return prefs.reactions.on
             case .voice: return prefs.voice.on
             case .calls: return false
             }
@@ -1249,6 +1346,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         switch feature {
         case .timedMessages: return mergedPreferences.timedMessages.contactPreference.allow != .no
         case .fullDelete: return mergedPreferences.fullDelete.contactPreference.allow != .no
+        case .reactions: return mergedPreferences.reactions.contactPreference.allow != .no
         case .voice: return mergedPreferences.voice.contactPreference.allow != .no
         case .calls: return mergedPreferences.calls.contactPreference.allow != .no
         }
@@ -1258,6 +1356,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         switch feature {
         case .timedMessages: return mergedPreferences.timedMessages.userPreference.preference.allow != .no
         case .fullDelete: return mergedPreferences.fullDelete.userPreference.preference.allow != .no
+        case .reactions: return mergedPreferences.reactions.userPreference.preference.allow != .no
         case .voice: return mergedPreferences.voice.userPreference.preference.allow != .no
         case .calls: return mergedPreferences.calls.userPreference.preference.allow != .no
         }
@@ -1802,24 +1901,26 @@ public struct AChatItem: Decodable {
     }
 }
 
+public struct ACIReaction: Decodable {
+    public var chatInfo: ChatInfo
+    public var chatReaction: CIReaction
+}
+
+public struct CIReaction: Decodable {
+    public var chatDir: CIDirection
+    public var chatItem: ChatItem
+    public var sentAt: Date
+    public var reaction: MsgReaction
+}
+
 public struct ChatItem: Identifiable, Decodable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
         self.quotedItem = quotedItem
-        self.reactions = [] // [
-//            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: false, totalReacted: 1),
-//            CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
-//            CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
-//            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
-//            CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
-//            CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
-//            CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
-//            CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
-//            CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
-//        ]
+        self.reactions = reactions
         self.file = file
     }
 
@@ -1828,24 +1929,14 @@ public struct ChatItem: Identifiable, Decodable {
     public var content: CIContent
     public var formattedText: [FormattedText]?
     public var quotedItem: CIQuote?
-    public var reactions: [CIReaction] = [] // [
-//        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: false, totalReacted: 1),
-//        CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
-//        CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
-//        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
-//        CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
-//        CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
-//        CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
-//        CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
-//        CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
-//    ]
+    public var reactions: [CIReactionCount]
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, quotedItem, file
+        case chatDir, meta, content, formattedText, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }
@@ -1918,6 +2009,10 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvModerated: return true
         case .invalidJSON: return false
         }
+    }
+
+    public var allowAddReaction: Bool {
+        meta.itemDeleted == nil && !isLiveDummy && reactions.filter({ $0.userReacted }).count < 3
     }
 
     public func autoReceiveFile() -> CIFile? {
@@ -2367,14 +2462,79 @@ public struct CIQuote: Decodable, ItemContent {
     }
 }
 
-public struct CIReaction: Decodable {
+public struct CIReactionCount: Decodable {
     public var reaction: MsgReaction
     public var userReacted: Bool
     public var totalReacted: Int
 }
 
-public enum MsgReaction: Decodable, Hashable {
-    case emoji(emoji: String)
+public enum MsgReaction: Hashable {
+    case emoji(MREmojiChar)
+    case unknown
+
+    public var text: String {
+        switch self {
+        case let .emoji(emoji): return emoji.rawValue
+        case .unknown: return ""
+        }
+    }
+
+    public var cmdString: String {
+        switch self {
+        case let .emoji(emoji): return emoji.cmdString
+        case .unknown: return ""
+        }
+    }
+
+    public static var values: [MsgReaction] =
+        MREmojiChar.allCases.map { .emoji($0) }
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case emoji
+    }
+}
+
+public enum MREmojiChar: String, Codable, CaseIterable {
+    case thumbsup = "👍"
+    case thumbsdown = "👎"
+    case smile = "😀"
+    case celebration = "🎉"
+    case confused = "😕"
+    case heart = "❤"
+    case launch = "🚀"
+    case looking = "👀"
+
+    public var cmdString: String {
+        switch self {
+        case .thumbsup: return "+"
+        case .thumbsdown: return "-"
+        case .smile: return ")"
+        case .celebration: return "!"
+        case .confused: return "?"
+        case .heart: return "*"
+        case .launch: return "^"
+        case .looking: return "%"
+        }
+    }
+}
+
+extension MsgReaction: Decodable {
+    public init(from decoder: Decoder) throws {
+        do {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let type = try container.decode(String.self, forKey: CodingKeys.type)
+            switch type {
+            case "emoji":
+                let emoji = try container.decode(MREmojiChar.self, forKey: CodingKeys.emoji)
+                self = .emoji(emoji)
+            default:
+                self = .unknown
+            }
+        } catch {
+            self = .unknown
+        }
+    }
 }
 
 public struct CIFile: Decodable {

@@ -343,6 +343,12 @@ func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent
     throw r
 }
 
+func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, reaction: MsgReaction, add: Bool) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiChatItemReaction(type: type, id: id, itemId: itemId, reaction: reaction, add: add), bgDelay: msgDelay)
+    if case let .chatItemReaction(_, reaction, _) = r { return reaction.chatReaction.chatItem }
+    throw r
+}
+
 func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode) async throws -> (ChatItem, ChatItem?) {
     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemId: itemId, mode: mode), bgDelay: msgDelay)
     if case let .chatItemDeleted(_, deletedChatItem, toChatItem, _) = r { return (deletedChatItem.chatItem, toChatItem?.chatItem) }
@@ -1264,6 +1270,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case let .chatItemUpdated(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .chatItemReaction(user, r, _):
+            if active(user) {
+                m.updateChatItem(r.chatInfo, r.chatReaction.chatItem)
+            }
         case let .chatItemDeleted(user, deletedChatItem, toChatItem, _):
             if !active(user) {
                 if toChatItem == nil && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled {

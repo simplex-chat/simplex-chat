@@ -12,6 +12,7 @@ import SimpleXChat
 struct GroupPreferencesView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @Binding var groupInfo: GroupInfo
     @State var preferences: FullGroupPreferences
     @State var currentPreferences: FullGroupPreferences
@@ -25,6 +26,9 @@ struct GroupPreferencesView: View {
                 featureSection(.timedMessages, $preferences.timedMessages.enable)
                 featureSection(.fullDelete, $preferences.fullDelete.enable)
                 featureSection(.directMessages, $preferences.directMessages.enable)
+                if developerTools {
+                    featureSection(.reactions, $preferences.reactions.enable)
+                }
                 featureSection(.voice, $preferences.voice.enable)
 
                 if groupInfo.canEdit {
