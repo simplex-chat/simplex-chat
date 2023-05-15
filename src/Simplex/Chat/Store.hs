@@ -3443,6 +3443,7 @@ deleteContactCIs db user@User {userId} ct@Contact {contactId} = do
   connIds <- getContactConnIds_ db user ct
   forM_ connIds $ \connId ->
     DB.execute db "DELETE FROM messages WHERE connection_id = ?" (Only connId)
+  DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
 getContactConnIds_ :: DB.Connection -> User -> Contact -> IO [Int64]
@@ -3458,6 +3459,7 @@ getGroupFileInfo db User {userId} GroupInfo {groupId} =
 deleteGroupCIs :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupCIs db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
+  DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage e) -> ExceptT StoreError IO SndMessage
@@ -4442,6 +4444,7 @@ deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
   let itemId = chatItemId' ci
   deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
+  deleteDirectCIReactions_ db contactId ci
   DB.execute
     db
     [sql|
@@ -4582,10 +4585,11 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO ()
-deleteGroupChatItem db User {userId} GroupInfo {groupId} (CChatItem _ ci) = do
+deleteGroupChatItem db User {userId} g@GroupInfo {groupId} (CChatItem _ ci) = do
   let itemId = chatItemId' ci
   deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
+  deleteGroupCIReactions_ db g ci
   DB.execute
     db
     [sql|
@@ -4845,13 +4849,10 @@ getDirectChatReactions_ db ct c@Chat {chatItems} = do
   pure c {chatItems = chatItems'}
 
 getGroupChatReactions_ :: DB.Connection -> GroupInfo -> Chat 'CTGroup -> IO (Chat 'CTGroup)
-getGroupChatReactions_ db g@GroupInfo {membership} c@Chat {chatItems} = do
-  chatItems' <- forM chatItems $ \(CChatItem md ci@ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) -> do
-    let GroupMember {memberId} = membership
-        itemMemberId = case chatDir of
-          CIGroupSnd -> memberId
-          CIGroupRcv GroupMember {memberId = mId} -> mId
-    reactions <- maybe (pure []) (getGroupCIReactions db g itemMemberId) itemSharedMsgId
+getGroupChatReactions_ db g c@Chat {chatItems} = do
+  chatItems' <- forM chatItems $ \(CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) -> do
+    let GroupMember {memberId} = chatItemMember g ci
+    reactions <- maybe (pure []) (getGroupCIReactions db g memberId) itemSharedMsgId
     pure $ CChatItem md ci {reactions}
   pure c {chatItems = chatItems'}
 
@@ -4882,19 +4883,30 @@ getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
       (groupId, itemMemberId, itemSharedMsgId)
 
 getACIReactions :: DB.Connection -> AChatItem -> IO AChatItem
-getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
+getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
   Just itemSharedMId -> case chat of
     DirectChat ct -> do
       reactions <- getDirectCIReactions db ct itemSharedMId
       pure $ AChatItem SCTDirect md chat ci {reactions}
-    GroupChat g@GroupInfo {membership = GroupMember {memberId}} -> do
-      let itemMemberId = case chatDir of
-            CIGroupSnd -> memberId
-            CIGroupRcv GroupMember {memberId = mId} -> mId
-      reactions <- getGroupCIReactions db g itemMemberId itemSharedMId
+    GroupChat g -> do
+      let GroupMember {memberId} = chatItemMember g ci
+      reactions <- getGroupCIReactions db g memberId itemSharedMId
       pure $ AChatItem SCTGroup md chat ci {reactions}
     _ -> pure aci
   _ -> pure aci
+
+deleteDirectCIReactions_ :: DB.Connection -> ContactId -> ChatItem 'CTDirect d -> IO ()
+deleteDirectCIReactions_ db contactId ChatItem {meta = CIMeta {itemSharedMsgId}} =
+  forM_ itemSharedMsgId $ \itemSharedMId -> 
+    DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ? AND shared_msg_id = ?" (contactId, itemSharedMId)
+
+deleteGroupCIReactions_ :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
+deleteGroupCIReactions_ db g@GroupInfo {groupId} ci@ChatItem {meta = CIMeta {itemSharedMsgId}} =
+  forM_ itemSharedMsgId $ \itemSharedMId -> do
+    let GroupMember {memberId} = chatItemMember g ci
+    DB.execute db
+      "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
+      (groupId, itemSharedMId, memberId)
 
 toCIReaction :: (MsgReaction, Bool, Int) -> CIReactionCount
 toCIReaction (reaction, userReacted, totalReacted) = CIReactionCount {reaction, userReacted, totalReacted}
@@ -5449,6 +5461,7 @@ deleteContactExpiredCIs db user@User {userId} ct@Contact {contactId} expirationD
   connIds <- getContactConnIds_ db user ct
   forM_ connIds $ \connId ->
     DB.execute db "DELETE FROM messages WHERE connection_id = ? AND created_at <= ?" (connId, expirationDate)
+  DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ? AND created_at <= ?" (contactId, expirationDate)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ?" (userId, contactId, expirationDate)
 
 getGroupExpiredFileInfo :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO [CIFileInfo]
@@ -5462,6 +5475,7 @@ getGroupExpiredFileInfo db User {userId} GroupInfo {groupId} expirationDate crea
 deleteGroupExpiredCIs :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO ()
 deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff = do
   DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, min expirationDate createdAtCutoff)
+  DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ? AND reaction_ts <= ? AND created_at <= ?" (groupId, expirationDate, createdAtCutoff)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ?" (userId, groupId, expirationDate, createdAtCutoff)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.

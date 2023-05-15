@@ -753,15 +753,12 @@ processChatCommand = \case
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTGroup ->
       withStore (\db -> (,) <$> getGroup db user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
-        (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}, chatDir}) -> do
+        (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
           unless (groupFeatureAllowed SGFReactions g) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           unless (ciReactionAllowed ci) $
             throwChatError $ CECommandError "reaction not allowed - chat item has no content"
-          let GroupMember {memberId} = membership
-              itemMemberId = case chatDir of
-                CIGroupSnd -> memberId
-                CIGroupRcv GroupMember {memberId = mId} -> mId
+          let GroupMember {memberId = itemMemberId} = chatItemMember g ci
           rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
           checkReactionAllowed rs
           SndMessage {msgId} <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)

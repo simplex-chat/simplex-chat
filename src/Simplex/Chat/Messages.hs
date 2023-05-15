@@ -204,6 +204,11 @@ chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
 
+chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
+chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
+  CIGroupSnd -> membership
+  CIGroupRcv m -> m
+
 data CIDeletedState = CIDeletedState
   { markedDeleted :: Bool,
     deletedByMember :: Maybe GroupMember
