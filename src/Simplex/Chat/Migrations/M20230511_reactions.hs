@@ -27,11 +27,17 @@ CREATE INDEX idx_chat_item_reactions_shared_msg_id ON chat_item_reactions(shared
 CREATE INDEX idx_chat_item_reactions_contact_id ON chat_item_reactions(contact_id);
 CREATE INDEX idx_chat_item_reactions_group_id ON chat_item_reactions(group_id);
 CREATE INDEX idx_chat_item_reactions_group_member_id ON chat_item_reactions(group_member_id);
+
+CREATE INDEX idx_chat_item_reactions_contact ON chat_item_reactions(contact_id, shared_msg_id);
+CREATE INDEX idx_chat_item_reactions_group ON chat_item_reactions(group_id, item_member_id, shared_msg_id);
 |]
 
 down_m20230511_reactions :: Query
 down_m20230511_reactions =
   [sql|
+DROP INDEX idx_chat_item_reactions_group;
+DROP INDEX idx_chat_item_reactions_contact;
+
 DROP INDEX idx_chat_item_reactions_group_member_id;
 DROP INDEX idx_chat_item_reactions_group_id;
 DROP INDEX idx_chat_item_reactions_contact_id;
