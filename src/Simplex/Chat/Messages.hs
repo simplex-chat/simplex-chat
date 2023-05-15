@@ -204,6 +204,9 @@ chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
 
+timedDeleteAt' :: CITimed -> Maybe UTCTime
+timedDeleteAt' CITimed {deleteAt} = deleteAt
+
 chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
 chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
   CIGroupSnd -> membership
@@ -1502,6 +1505,7 @@ data ChatItemInfo = ChatItemInfo
     itemTs :: UTCTime,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
+    deleteAt :: Maybe UTCTime,
     itemVersions :: [ChatItemVersion]
   }
   deriving (Eq, Show, Generic)

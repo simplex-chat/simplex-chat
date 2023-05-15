@@ -2954,6 +2954,7 @@ public struct ChatItemInfo: Decodable {
     public var itemTs: Date
     public var createdAt: Date
     public var updatedAt: Date
+    public var deleteAt: Date?
     public var itemVersions: [ChatItemVersion]
 }
 
