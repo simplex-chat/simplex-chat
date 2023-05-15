@@ -1355,12 +1355,12 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
         val file = cItem.file
         val mc = cItem.content.msgContent
-        if (file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV) {
-          val acceptImages = appPrefs.privacyAcceptImages.get()
-          if ((mc is MsgContent.MCImage && acceptImages)
-            || (mc is MsgContent.MCVoice && ((file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && acceptImages) || cInfo is ChatInfo.Group))) {
-            withApi { receiveFile(r.user, file.fileId) } // TODO check inlineFileMode != IFMSent
-          }
+        if (file != null &&
+            appPrefs.privacyAcceptImages.get() &&
+            ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
+                || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
+                || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
+          withApi { receiveFile(r.user, file.fileId) }
         }
         if (cItem.showNotification && (!SimplexApp.context.isAppOnForeground || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)

@@ -36,8 +36,9 @@ class AudioRecorder {
             try av.setActive(true)
             let settings: [String : Any] = [
                 AVFormatIDKey: kAudioFormatMPEG4AAC,
-                AVSampleRateKey: 12000,
-                AVEncoderBitRateKey: 12000,
+                AVSampleRateKey: 16000,
+                AVEncoderBitRateKey: 32000,
+                AVEncoderBitRateStrategyKey: AVAudioBitRateStrategy_VariableConstrained,
                 AVNumberOfChannelsKey: 1
             ]
             let url = getAppFilePath(fileName)
@@ -102,11 +103,14 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         self.onFinishPlayback = onFinishPlayback
     }
 
-    func start(fileName: String) {
+    func start(fileName: String, at: TimeInterval?) {
         let url = getAppFilePath(fileName)
         audioPlayer = try? AVAudioPlayer(contentsOf: url)
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
+        if let at = at {
+            audioPlayer?.currentTime = at
+        }
         audioPlayer?.play()
 
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
@@ -123,6 +127,17 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
 
     func play() {
         audioPlayer?.play()
+    }
+
+    func seek(_ to: TimeInterval) {
+        if audioPlayer?.isPlaying == true {
+            audioPlayer?.pause()
+            audioPlayer?.currentTime = to
+            audioPlayer?.play()
+        } else {
+            audioPlayer?.currentTime = to
+        }
+        self.onTimer?(to)
     }
 
     func stop() {

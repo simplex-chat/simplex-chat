@@ -301,9 +301,9 @@ func apiGetChatItemInfo(itemId: Int64) async throws -> ChatItemInfo {
     throw r
 }
 
-func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false) async -> ChatItem? {
+func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
     let chatModel = ChatModel.shared
-    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live)
+    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
     let r: ChatResponse
     if type == .direct {
         var cItem: ChatItem!
@@ -1240,15 +1240,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                 m.increaseUnreadCounter(user: user)
             }
-            if let file = cItem.file,
-               let mc = cItem.content.msgContent,
-               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV {
-                let acceptImages = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES)
-                if (mc.isImage && acceptImages)
-                    || (mc.isVoice && ((file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND && acceptImages) || cInfo.chatType == .group)) {
-                    Task {
-                        await receiveFile(user: user, fileId: file.fileId) // TODO check inlineFileMode != IFMSent
-                    }
+            if let file = cItem.autoReceiveFile() {
+                Task {
+                    await receiveFile(user: user, fileId: file.fileId)
                 }
             }
             if cItem.showNotification {

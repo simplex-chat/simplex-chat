@@ -219,17 +219,25 @@ struct ChatView: View {
         .padding(.vertical, 8)
     }
     
+    private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
+        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil
+    }
+
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
-                    let maxWidth =
-                    cInfo.chatType == .group
-                    ? (g.size.width - 28) * 0.84 - 42
-                    : (g.size.width - 32) * 0.84
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
+                            let voiceNoFrame = voiceWithoutFrame(ci)
+                            let maxWidth = cInfo.chatType == .group
+                                            ? voiceNoFrame
+                                                ? (g.size.width - 28) - 42
+                                                : (g.size.width - 28) * 0.84 - 42
+                                            : voiceNoFrame
+                                                ? (g.size.width - 32)
+                                                : (g.size.width - 32) * 0.84
                             chatItemView(ci, maxWidth)
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear {
@@ -435,6 +443,7 @@ struct ChatView: View {
     
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var chat: Chat
+        @Environment(\.colorScheme) var colorScheme
         var ci: ChatItem
         var showMember: Bool = false
         var maxWidth: CGFloat
@@ -448,15 +457,27 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         
+        @State private var allowMenu: Bool = true
+        
+        @State private var audioPlayer: AudioPlayer?
+        @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
+        @State private var playbackTime: TimeInterval?
+
         var body: some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             let uiMenu: Binding<UIMenu> = Binding(
                 get: { UIMenu(title: "", children: menu(live: composeState.liveMessage != nil)) },
                 set: { _ in }
             )
-
-            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
-                .uiKitContextMenu(menu: uiMenu)
+            
+            VStack(alignment: .trailing, spacing: 4) {
+                ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+                    .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
+                if ci.reactions.count > 0 {
+                    chatItemReactions(ci.reactions)
+                        .padding(.bottom, 4)
+                }
+            }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
@@ -469,13 +490,40 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+                .onDisappear {
+                    if ci.content.msgContent?.isVoice == true {
+                        allowMenu = true
+                        audioPlayer?.stop()
+                        playbackState = .noPlayback
+                        playbackTime = TimeInterval(0)
+                    }
+                }
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {
                     ChatItemInfoView(chatItemSent: ci.chatDir.sent, chatItemInfo: $chatItemInfo)
                 }
         }
-        
+
+        private func chatItemReactions(_ reactions: [CIReaction]) -> some View {
+            HStack(spacing: 4) {
+                ForEach(reactions, id: \.reaction) { r in
+                    HStack(spacing: 4) {
+                        switch r.reaction {
+                        case let .emoji(emoji): Text(emoji).font(.caption)
+                        }
+                        if r.totalReacted > 1 {
+                            Text("\(r.totalReacted)").font(.caption).foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(!r.userReacted ? Color.clear : colorScheme == .dark ? sentColorDark : sentColorLight)
+                    .cornerRadius(16)
+                }
+            }
+        }
+
         private func menu(live: Bool) -> [UIAction] {
             var menu: [UIAction] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
@@ -696,7 +744,7 @@ struct ChatView: View {
             chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
         }
     }
-    
+
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
         case .groupSnd: return true

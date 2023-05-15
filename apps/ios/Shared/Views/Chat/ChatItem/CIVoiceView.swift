@@ -13,14 +13,20 @@ struct CIVoiceView: View {
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
-    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
-    @State var playbackTime: TimeInterval?
+    @Binding var audioPlayer: AudioPlayer?
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+    @Binding var allowMenu: Bool
+    @State private var seek: (TimeInterval) -> Void = { _ in }
 
     var body: some View {
         Group {
             if chatItem.chatDir.sent {
                 VStack (alignment: .trailing, spacing: 6) {
                     HStack {
+                        if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
+                            playbackSlider()
+                        }
                         playerTime()
                         player()
                     }
@@ -32,13 +38,16 @@ struct CIVoiceView: View {
                     HStack {
                         player()
                         playerTime()
+                        if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
+                            playbackSlider()
+                        }
                     }
                     .frame(alignment: .leading)
                     metaView().padding(.leading, -6)
                 }
             }
         }
-        .padding([.top, .horizontal], 4)
+        .padding(.top, 4)
         .padding(.bottom, 8)
     }
 
@@ -48,8 +57,11 @@ struct CIVoiceView: View {
             recordingFile: recordingFile,
             recordingTime: TimeInterval(duration),
             showBackground: true,
+            seek: $seek,
+            audioPlayer: $audioPlayer,
             playbackState: $playbackState,
-            playbackTime: $playbackTime
+            playbackTime: $playbackTime,
+            allowMenu: $allowMenu
         )
     }
 
@@ -60,6 +72,22 @@ struct CIVoiceView: View {
             playbackTime: $playbackTime
         )
         .foregroundColor(.secondary)
+    }
+    
+    private func playbackSlider() -> some View {
+            ComposeVoiceView.SliderBar(
+                length: TimeInterval(duration),
+                progress: $playbackTime,
+                seek: {
+                    let time = max(0.0001, $0)
+                    seek(time)
+                    playbackTime = time
+                })
+            .onChange(of: .playing == playbackState || (playbackTime ?? 0) > 0) { show in
+                if !show {
+                    allowMenu = true
+                }
+            }
     }
 
     private func metaView() -> some View {
@@ -95,10 +123,11 @@ struct VoiceMessagePlayer: View {
     var recordingTime: TimeInterval
     var showBackground: Bool
 
-    @State private var audioPlayer: AudioPlayer?
+    @Binding var seek: (TimeInterval) -> Void
+    @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
-    @State private var startingPlayback: Bool = false
+    @Binding var allowMenu: Bool
 
     var body: some View {
         ZStack {
@@ -109,7 +138,7 @@ struct VoiceMessagePlayer: View {
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
                 case .sndError: playbackButton()
-                case .rcvInvitation: loadingIcon()
+                case .rcvInvitation: downloadButton(recordingFile)
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
                 case .rcvComplete: playbackButton()
@@ -120,17 +149,23 @@ struct VoiceMessagePlayer: View {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
             }
         }
-        .onDisappear {
-            audioPlayer?.stop()
+        .onAppear {
+            seek = { to in audioPlayer?.seek(to) }
+            audioPlayer?.onTimer = { playbackTime = $0 }
+            audioPlayer?.onFinishPlayback = {
+                playbackState = .noPlayback
+                playbackTime = TimeInterval(0)
+            }
         }
-        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
-            if !startingPlayback {
+        .onChange(of: chatModel.stopPreviousRecPlay) { it in
+            if let recordingFileName = getLoadedFileName(recordingFile), chatModel.stopPreviousRecPlay != getAppFilePath(recordingFileName) {
                 audioPlayer?.stop()
                 playbackState = .noPlayback
                 playbackTime = TimeInterval(0)
-            } else {
-                startingPlayback = false
             }
+        }
+        .onChange(of: playbackState) { state in
+            allowMenu = state == .paused || state == .noPlayback
         }
     }
 
@@ -179,6 +214,18 @@ struct VoiceMessagePlayer: View {
         }
     }
 
+    private func downloadButton(_ recordingFile: CIFile) -> some View {
+        Button {
+            Task {
+                if let user = ChatModel.shared.currentUser {
+                    await receiveFile(user: user, fileId: recordingFile.fileId)
+                }
+            }
+        } label: {
+            playPauseIcon("play.fill")
+        }
+    }
+
     private struct ProgressCircle: View {
         var length: TimeInterval
         @Binding var progress: TimeInterval?
@@ -204,7 +251,6 @@ struct VoiceMessagePlayer: View {
     }
 
     private func startPlayback(_ recordingFileName: String) {
-        startingPlayback = true
         chatModel.stopPreviousRecPlay = getAppFilePath(recordingFileName)
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
@@ -213,8 +259,7 @@ struct VoiceMessagePlayer: View {
                 playbackTime = TimeInterval(0)
             }
         )
-        audioPlayer?.start(fileName: recordingFileName)
-        playbackTime = TimeInterval(0)
+        audioPlayer?.start(fileName: recordingFileName, at: playbackTime)
         playbackState = .playing
     }
 }
@@ -240,13 +285,15 @@ struct CIVoiceView_Previews: PreviewProvider {
                 chatItem: ChatItem.getVoiceMsgContentSample(),
                 recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
                 duration: 30,
-                playbackState: .playing,
-                playbackTime: TimeInterval(20)
+                audioPlayer: .constant(nil),
+                playbackState: .constant(.playing),
+                playbackTime: .constant(TimeInterval(20)),
+                allowMenu: Binding.constant(true)
             )
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage, revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile, revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
         }
         .previewLayout(.fixed(width: 360, height: 360))
         .environmentObject(Chat.sampleData)

@@ -54,6 +54,8 @@ chatGroupTests = do
     it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
   describe "group message errors" $ do
     xit "show message decryption error and update count" testGroupMsgDecryptError
+  describe "message reactions" $ do
+    it "set group message reactions" testSetGroupMessageReactions
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup
@@ -1289,6 +1291,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Disappearing messages: off"
       alice <## "Direct messages: on"
       alice <## "Full deletion: off"
+      alice <## "Message reactions: on"
       alice <## "Voice messages: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
@@ -2155,3 +2158,72 @@ testGroupMsgDecryptError tmp =
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
       copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+
+testSetGroupMessageReactions :: HasCallStack => FilePath -> IO ()
+testSetGroupMessageReactions =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      cath <# "#team alice> hi"
+      bob ##> "+1 #team hi"
+      bob <## "added 👍"
+      alice <# "#team bob> > alice hi"
+      alice <## "    + 👍"
+      cath <# "#team bob> > alice hi"
+      cath <## "    + 👍"
+      bob ##> "+1 #team hi"
+      bob <## "bad chat command: reaction already added"
+      bob ##> "+^ #team hi"
+      bob <## "added 🚀"
+      alice <# "#team bob> > alice hi"
+      alice <## "    + 🚀"
+      cath <# "#team bob> > alice hi"
+      cath <## "    + 🚀"
+      alice ##> "/tail #team 1"
+      alice <# "#team hi"
+      alice <## "      👍 1 🚀 1"
+      bob ##> "/tail #team 1"
+      bob <# "#team alice> hi"
+      bob <## "      👍 1 🚀 1"
+      bob ##> "/tail #team 1"
+      bob <# "#team alice> hi"
+      bob <## "      👍 1 🚀 1"
+      alice ##> "+1 #team hi"
+      alice <## "added 👍"
+      bob <# "#team alice> > alice hi"
+      bob <## "    + 👍"
+      cath <# "#team alice> > alice hi"
+      cath <## "    + 👍"
+      alice ##> "/tail #team 1"
+      alice <# "#team hi"
+      alice <## "      👍 2 🚀 1"
+      bob ##> "/tail #team 1"
+      bob <# "#team alice> hi"
+      bob <## "      👍 2 🚀 1"
+      cath ##> "/tail #team 1"
+      cath <# "#team alice> hi"
+      cath <## "      👍 2 🚀 1"
+      bob ##> "-1 #team hi"
+      bob <## "removed 👍"
+      alice <# "#team bob> > alice hi"
+      alice <## "    - 👍"
+      cath <# "#team bob> > alice hi"
+      cath <## "    - 👍"
+      bob ##> "-^ #team hi"
+      bob <## "removed 🚀"
+      alice <# "#team bob> > alice hi"
+      alice <## "    - 🚀"
+      cath <# "#team bob> > alice hi"
+      cath <## "    - 🚀"
+      alice ##> "/tail #team 1"
+      alice <# "#team hi"
+      alice <## "      👍 1"
+      bob ##> "/tail #team 1"
+      bob <# "#team alice> hi"
+      bob <## "      👍 1"
+      cath ##> "/tail #team 1"
+      cath <# "#team alice> hi"
+      cath <## "      👍 1"

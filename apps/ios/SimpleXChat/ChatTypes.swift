@@ -280,60 +280,107 @@ public struct TimedMessagesPreference: Preference {
     }
 
     public static var ttlValues: [Int?] {
-        [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
+        [3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
+    }
+}
+
+public enum CustomTimeUnit {
+    case second
+    case minute
+    case hour
+    case day
+    case week
+    case month
+
+    public var toSeconds: Int {
+        switch self {
+        case .second: return 1
+        case .minute: return 60
+        case .hour: return 3600
+        case .day: return 86400
+        case .week: return 7 * 86400
+        case .month: return 30 * 86400
+        }
     }
 
-    public static func ttlText(_ ttl: Int?) -> String {
-        guard let ttl = ttl else { return "off" }
-        if ttl == 0 { return "0 sec" }
-        let (m_, s) = divMod(ttl, by: 60)
-        let (h_, m) = divMod(m_, by: 60)
-        let (d_, h) = divMod(h_, by: 24)
-        let (mm, d) = divMod(d_, by: 30)
-        return maybe(mm,
-                     mm == 1
-                     ? NSLocalizedString("1 month", comment: "message ttl")
-                     : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "message ttl"), mm)
-                    )
-            + maybe(d,
-                    d == 1
-                    ? NSLocalizedString("1 day", comment: "message ttl")
-                    : d == 7
-                    ? NSLocalizedString("1 week", comment: "message ttl")
-                    : d == 14
-                    ? NSLocalizedString("2 weeks", comment: "message ttl")
-                    : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "message ttl"), d)
-                    )
-            + maybe(h,
-                    h == 1
-                    ? NSLocalizedString("1 hour", comment: "message ttl")
-                    : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "message ttl"), h)
-                    )
-            + maybe(m, String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "message ttl"), m))
-            + maybe(s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "message ttl"), s))
+    public var text: String {
+        switch self {
+        case .second: return NSLocalizedString("seconds", comment: "time unit")
+        case .minute: return NSLocalizedString("minutes", comment: "time unit")
+        case .hour: return NSLocalizedString("hours", comment: "time unit")
+        case .day: return NSLocalizedString("days", comment: "time unit")
+        case .week: return NSLocalizedString("weeks", comment: "time unit")
+        case .month: return NSLocalizedString("months", comment: "time unit")
+        }
     }
 
-    public static func shortTtlText(_ ttl: Int?) -> LocalizedStringKey {
-        guard let ttl = ttl else { return "off" }
-        let m = ttl / 60
-        if m == 0 { return "\(ttl)s" }
-        let h = m / 60
-        if h == 0 { return "\(m)m" }
-        let d = h / 24
-        if d == 0 { return "\(h)h" }
-        let mm = d / 30
-        if mm > 0 { return "\(mm)mth" }
-        let w = d / 7
-        return w == 0 || d % 7 != 0 ? "\(d)d" : "\(w)w"
+    public static func toTimeUnit(seconds: Int) -> (CustomTimeUnit, Int) {
+        let tryUnits = [month, week, day, hour, minute]
+        var selectedUnit: (CustomTimeUnit, Int)? = nil
+        for unit in tryUnits {
+            let (v, r) = divMod(seconds, by: unit.toSeconds)
+            if r == 0 {
+                selectedUnit = (unit, v)
+                break
+            }
+        }
+        return selectedUnit ?? (CustomTimeUnit.second, seconds)
     }
 
-    static func divMod(_ n: Int, by d: Int) -> (Int, Int) {
+    private static func divMod(_ n: Int, by d: Int) -> (Int, Int) {
         (n / d, n % d)
     }
 
-    static func maybe(_ n: Int, _ s: String) -> String {
-        n == 0 ? "" : s
+    public static func toText(seconds: Int) -> String {
+        let (unit, value) = toTimeUnit(seconds: seconds)
+        switch unit {
+        case .second:
+            return String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "time interval"), value)
+        case .minute:
+            return String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "time interval"), value)
+        case .hour:
+            return value == 1
+            ? NSLocalizedString("1 hour", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "time interval"), value)
+        case .day:
+            return value == 1
+            ? NSLocalizedString("1 day", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "time interval"), value)
+        case .week:
+            return value == 1
+            ? NSLocalizedString("1 week", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d weeks", comment: "time interval"), value)
+        case .month:
+            return value == 1
+            ? NSLocalizedString("1 month", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "time interval"), value)
+        }
     }
+
+    public static func toShortText(seconds: Int) -> LocalizedStringKey {
+        let (unit, value) = toTimeUnit(seconds: seconds)
+        switch unit {
+        case .second: return "\(value)s"
+        case .minute: return "\(value)m"
+        case .hour: return "\(value)h"
+        case .day: return "\(value)d"
+        case .week: return "\(value)w"
+        case .month: return "\(value)mth"
+        }
+    }
+}
+
+
+public func timeText(_ seconds: Int?) -> String {
+    guard let seconds = seconds else { return "off" }
+    if seconds == 0 { return "0 sec" }
+    return CustomTimeUnit.toText(seconds: seconds)
+}
+
+public func shortTimeText(_ seconds: Int?) -> LocalizedStringKey {
+    guard let seconds = seconds else { return "off" }
+    if seconds == 0 { return "0s" }
+    return CustomTimeUnit.toShortText(seconds: seconds)
 }
 
 public struct ContactUserPreferences: Decodable {
@@ -1762,6 +1809,17 @@ public struct ChatItem: Identifiable, Decodable {
         self.content = content
         self.formattedText = formattedText
         self.quotedItem = quotedItem
+        self.reactions = [] // [
+//            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: false, totalReacted: 1),
+//            CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
+//            CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
+//            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
+//        ]
         self.file = file
     }
 
@@ -1770,6 +1828,17 @@ public struct ChatItem: Identifiable, Decodable {
     public var content: CIContent
     public var formattedText: [FormattedText]?
     public var quotedItem: CIQuote?
+    public var reactions: [CIReaction] = [] // [
+//        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: false, totalReacted: 1),
+//        CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
+//        CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
+//        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
+//    ]
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
@@ -1849,6 +1918,18 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvModerated: return true
         case .invalidJSON: return false
         }
+    }
+
+    public func autoReceiveFile() -> CIFile? {
+        if let file = file,
+           let mc = content.msgContent,
+           privacyAcceptImagesGroupDefault.get(),
+           (mc.isImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
+            || (mc.isVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
+            || (mc.isVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus != .rcvAccepted) {
+            return file
+        }
+        return nil
     }
 
     public var showMutableNotification: Bool {
@@ -2215,13 +2296,13 @@ public enum CIContent: Decodable, ItemContent {
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
         feature.hasParam
-        ? "\(feature.text): \(TimedMessagesPreference.ttlText(param))"
+        ? "\(feature.text): \(timeText(param))"
         : "\(feature.text): \(enabled)"
     }
 
     public static func preferenceText(_ feature: Feature, _ allowed: FeatureAllowed, _ param: Int?) -> String {
         allowed != .no && feature.hasParam && param != nil
-        ? String.localizedStringWithFormat(NSLocalizedString("offered %@: %@", comment: "feature offered item"), feature.text, TimedMessagesPreference.ttlText(param))
+        ? String.localizedStringWithFormat(NSLocalizedString("offered %@: %@", comment: "feature offered item"), feature.text, timeText(param))
         : allowed != .no
         ? String.localizedStringWithFormat(NSLocalizedString("offered %@", comment: "feature offered item"), feature.text)
         : String.localizedStringWithFormat(NSLocalizedString("cancelled %@", comment: "feature offered item"), feature.text)
@@ -2284,6 +2365,16 @@ public struct CIQuote: Decodable, ItemContent {
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
     }
+}
+
+public struct CIReaction: Decodable {
+    public var reaction: MsgReaction
+    public var userReacted: Bool
+    public var totalReacted: Int
+}
+
+public enum MsgReaction: Decodable, Hashable {
+    case emoji(emoji: String)
 }
 
 public struct CIFile: Decodable {
@@ -2383,7 +2474,7 @@ public enum FileProtocol: String, Decodable {
     case xftp = "xftp"
 }
 
-public enum CIFileStatus: Decodable {
+public enum CIFileStatus: Decodable, Equatable {
     case sndStored
     case sndTransfer(sndProgress: Int64, sndTotal: Int64)
     case sndComplete
