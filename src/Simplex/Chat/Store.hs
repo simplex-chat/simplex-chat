@@ -4901,7 +4901,7 @@ getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {chatDir, meta = CIMeta 
   _ -> pure aci
 
 deleteDirectCIReactions_ :: DB.Connection -> ContactId -> ChatItem 'CTDirect d -> IO ()
-deleteDirectCIReactions_ db contactId ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}} = case itemSharedMsgId of
+deleteDirectCIReactions_ db contactId ChatItem {meta = CIMeta {itemSharedMsgId}} = case itemSharedMsgId of
   Just itemSharedMId -> 
     DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ? AND shared_msg_id = ?" (contactId, itemSharedMId)
   _ -> pure ()
