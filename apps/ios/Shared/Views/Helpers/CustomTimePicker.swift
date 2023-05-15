@@ -136,12 +136,12 @@ struct CustomTimePickerView: View {
 
 struct DropdownCustomTimePicker: View {
     @Binding var selection: Int?
-    @State var dropdownSelection: DropdownSelection
     var label: LocalizedStringKey
     var dropdownValues: [Int?]
     var customPickerConfirmButtonText: LocalizedStringKey
     var customPickerDescription: LocalizedStringKey? = nil
     var customPickerTimeUnitsLimits = CustomTimePicker.TimeUnitLimits.defaultUnitsLimits
+    @State private var dropdownSelection: DropdownSelection = .dropdownValue(value: nil)
     @State private var showCustomTimePicker = false
     @State private var selectedCustomTime: Int? = nil
 

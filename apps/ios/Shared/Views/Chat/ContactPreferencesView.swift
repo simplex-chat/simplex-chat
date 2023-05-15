@@ -91,7 +91,6 @@ struct ContactPreferencesView: View {
             if featuresAllowed.timedMessagesAllowed {
                 DropdownCustomTimePicker(
                     selection: $featuresAllowed.timedMessagesTTL,
-                    dropdownSelection: DropdownCustomTimePicker.DropdownSelection.dropdownValue(value: featuresAllowed.timedMessagesTTL),
                     label: "Delete after",
                     dropdownValues: TimedMessagesPreference.ttlValues,
                     customPickerConfirmButtonText: "Select",
