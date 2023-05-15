@@ -602,4 +602,9 @@
     <string name="settings_section_title_themes">TEMAS</string>
     <string name="theme_dark">Escuro</string>
     <string name="dark_theme">Tema escuro</string>
+    <string name="chat_item_ttl_none">nunca</string>
+    <string name="self_destruct_new_display_name">Novo nome para exibição:</string>
+    <string name="new_in_version">Novidades %s</string>
+    <string name="notification_new_contact_request">Novo pedido de contato</string>
+    <string name="new_database_archive">Novo arquivo de base de dados</string>
 </resources>
