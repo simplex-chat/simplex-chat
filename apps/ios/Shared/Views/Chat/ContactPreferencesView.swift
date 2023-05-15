@@ -94,7 +94,7 @@ struct ContactPreferencesView: View {
                     label: "Delete after",
                     dropdownValues: TimedMessagesPreference.ttlValues,
                     customPickerConfirmButtonText: "Select",
-                    customPickerDescription: "When enabled, sent and received messages will disappear after selected time, once they have been seen."
+                    customPickerDescription: "Delete after"
                 )
                 .frame(height: 36)
             } else if pref.contactPreference.allow == .yes || pref.contactPreference.allow == .always {

@@ -44,17 +44,17 @@ struct CustomTimePicker: View {
     var body: some View {
         HStack(spacing: 0) {
             Group {
-                Picker("Unit", selection: $selectedUnit) {
-                    ForEach(timeUnitsLimits.map { $0.timeUnit }, id: \.self) { timeUnit in
-                        Text(timeUnit.text)
-                    }
-                }
                 Picker("Duration", selection: $selectedDuration) {
                     let selectedUnitLimits = timeUnitsLimits.first(where: { $0.timeUnit == selectedUnit }) ?? TimeUnitLimits.defaultUnitLimits(selectedUnit)
                     let selectedUnitValues = Array(selectedUnitLimits.minValue...selectedUnitLimits.maxValue)
                     let values = selectedUnitValues + (selectedUnitValues.contains(selectedDuration) ? [] : [selectedDuration])
                     ForEach(values, id: \.self) { value in
                         Text("\(value)")
+                    }
+                }
+                Picker("Unit", selection: $selectedUnit) {
+                    ForEach(timeUnitsLimits.map { $0.timeUnit }, id: \.self) { timeUnit in
+                        Text(timeUnit.text)
                     }
                 }
             }
@@ -208,6 +208,9 @@ struct DropdownCustomTimePicker: View {
             description: customPickerDescription,
             timeUnitsLimits: customPickerTimeUnitsLimits
         )
+        .onAppear {
+            selectedCustomTime = selection
+        }
     }
 }
 

@@ -200,7 +200,7 @@ struct SendMessageView: View {
                     customDisappearingMessageTimeDefault.set(time)
                 }
             },
-            description: "Once seen, disappear after:"
+            description: "Delete after"
         )
     }
 
