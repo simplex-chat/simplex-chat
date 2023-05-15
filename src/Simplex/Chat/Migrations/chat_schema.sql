@@ -637,6 +637,5 @@ CREATE INDEX idx_chat_item_reactions_contact ON chat_item_reactions(
 );
 CREATE INDEX idx_chat_item_reactions_group ON chat_item_reactions(
   group_id,
-  item_member_id,
   shared_msg_id
 );
