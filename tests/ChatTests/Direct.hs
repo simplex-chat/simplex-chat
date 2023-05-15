@@ -85,6 +85,8 @@ chatDirectTests = do
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
     xit "show message decryption error and update count" testMsgDecryptError
+  describe "message reactions" $ do
+    it "set message reactions" testSetMessageReactions
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -421,13 +423,13 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/5] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/6] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/6]"
+    bob <# "alice> [LIVE started] use /show [on/off/7]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
@@ -1691,14 +1693,15 @@ testUserPrivacy =
       alice <##? chatHistory
       alice ##> "/_get items count=10"
       alice <##? chatHistory
-      alice ##> "/_get items before=9 count=10"
+      alice ##> "/_get items before=11 count=10"
       alice
         <##? [ "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
+               "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items after=8 count=10"
+      alice ##> "/_get items after=10 count=10"
       alice
         <##? [ "@bob hello",
                "bob> hey",
@@ -1756,6 +1759,7 @@ testUserPrivacy =
     chatHistory =
       [ "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
+        "bob> Message reactions: enabled",
         "bob> Voice messages: enabled",
         "bob> Audio/video calls: enabled",
         "@bob hello",
@@ -1938,3 +1942,51 @@ testMsgDecryptError tmp =
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
       copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+
+testSetMessageReactions :: HasCallStack => FilePath -> IO ()
+testSetMessageReactions =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob ##> "+1 alice hi"
+      bob <## "added 👍"
+      alice <# "bob> >> hi"
+      alice <## "    + 👍"
+      bob ##> "+1 alice hi"
+      bob <## "bad chat command: reaction already added"
+      bob ##> "+^ alice hi"
+      bob <## "added 🚀"
+      alice <# "bob> >> hi"
+      alice <## "    + 🚀"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 1 🚀 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 1 🚀 1"
+      alice ##> "+1 bob hi"
+      alice <## "added 👍"
+      bob <# "alice> > hi"
+      bob <## "    + 👍"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 2 🚀 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 2 🚀 1"
+      bob ##> "-1 alice hi"
+      bob <## "removed 👍"
+      alice <# "bob> >> hi"
+      alice <## "    - 👍"
+      bob ##> "-^ alice hi"
+      bob <## "removed 🚀"
+      alice <# "bob> >> hi"
+      alice <## "    - 🚀"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 1"

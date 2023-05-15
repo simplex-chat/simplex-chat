@@ -1762,6 +1762,17 @@ public struct ChatItem: Identifiable, Decodable {
         self.content = content
         self.formattedText = formattedText
         self.quotedItem = quotedItem
+        self.reactions = [] // [
+//            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: false, totalReacted: 1),
+//            CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
+//            CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
+//            CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
+//            CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
+//        ]
         self.file = file
     }
 
@@ -1770,6 +1781,17 @@ public struct ChatItem: Identifiable, Decodable {
     public var content: CIContent
     public var formattedText: [FormattedText]?
     public var quotedItem: CIQuote?
+    public var reactions: [CIReaction] = [] // [
+//        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: false, totalReacted: 1),
+//        CIReaction(reaction: .emoji(emoji: "❤️"), userReacted: false, totalReacted: 1),
+//        CIReaction(reaction: .emoji(emoji: "🚀"), userReacted: false, totalReacted: 3),
+//        CIReaction(reaction: .emoji(emoji: "👍"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "👎"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "👀"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "🎉"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "😀"), userReacted: true, totalReacted: 2),
+//        CIReaction(reaction: .emoji(emoji: "😕"), userReacted: true, totalReacted: 2),
+//    ]
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
@@ -2296,6 +2318,16 @@ public struct CIQuote: Decodable, ItemContent {
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
     }
+}
+
+public struct CIReaction: Decodable {
+    public var reaction: MsgReaction
+    public var userReacted: Bool
+    public var totalReacted: Int
+}
+
+public enum MsgReaction: Decodable, Hashable {
+    case emoji(emoji: String)
 }
 
 public struct CIFile: Decodable {

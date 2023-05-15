@@ -104,6 +104,7 @@ data ChatConfig = ChatConfig
     inlineFiles :: InlineFilesConfig,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
+    showReactions :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -218,6 +219,7 @@ data ChatCommand
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
+  | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, reaction :: MsgReaction, add :: Bool}
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
@@ -319,6 +321,7 @@ data ChatCommand
   | DeleteMemberMessage GroupName ContactName Text
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
+  | ReactToMessage {chatName :: ChatName, reactToMessage :: Text, reaction :: MsgReaction, add :: Bool}
   | APINewGroup UserId GroupProfile
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
@@ -398,6 +401,7 @@ data ChatResponse
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
+  | CRChatItemReaction {user :: User, reaction :: ACIReaction, added :: Bool}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent User MsgContent Int ZonedTime
