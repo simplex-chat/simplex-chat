@@ -775,7 +775,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CEInvalidChatMessage {message :: String}
+  | CEInvalidChatMessage {messageData :: Text, message :: String}
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
