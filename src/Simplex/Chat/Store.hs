@@ -4851,11 +4851,8 @@ getDirectChatReactions_ db ct c@Chat {chatItems} = do
 getGroupChatReactions_ :: DB.Connection -> GroupInfo -> Chat 'CTGroup -> IO (Chat 'CTGroup)
 getGroupChatReactions_ db g@GroupInfo {membership} c@Chat {chatItems} = do
   chatItems' <- forM chatItems $ \(CChatItem md ci@ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) -> do
-    let GroupMember {memberId} = membership
-        itemMemberId = case chatDir of
-          CIGroupSnd -> memberId
-          CIGroupRcv GroupMember {memberId = mId} -> mId
-    reactions <- maybe (pure []) (getGroupCIReactions db g itemMemberId) itemSharedMsgId
+    let GroupMember {memberId} = chatItemMember g ci
+    reactions <- maybe (pure []) (getGroupCIReactions db g memberId) itemSharedMsgId
     pure $ CChatItem md ci {reactions}
   pure c {chatItems = chatItems'}
 
@@ -4892,10 +4889,8 @@ getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {chatDir, meta = CIMeta 
       reactions <- getDirectCIReactions db ct itemSharedMId
       pure $ AChatItem SCTDirect md chat ci {reactions}
     GroupChat g@GroupInfo {membership = GroupMember {memberId}} -> do
-      let itemMemberId = case chatDir of
-            CIGroupSnd -> memberId
-            CIGroupRcv GroupMember {memberId = mId} -> mId
-      reactions <- getGroupCIReactions db g itemMemberId itemSharedMId
+      let GroupMember {memberId} = chatItemMember g ci
+      reactions <- getGroupCIReactions db g memberId itemSharedMId
       pure $ AChatItem SCTGroup md chat ci {reactions}
     _ -> pure aci
   _ -> pure aci
@@ -4907,14 +4902,12 @@ deleteDirectCIReactions_ db contactId ChatItem {meta = CIMeta {itemSharedMsgId}}
   _ -> pure ()
 
 deleteGroupCIReactions_ :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
-deleteGroupCIReactions_ db GroupInfo {groupId, membership = GroupMember {memberId}} ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}} = case itemSharedMsgId of
+deleteGroupCIReactions_ db g@GroupInfo {groupId} ci@ChatItem {meta = CIMeta {itemSharedMsgId}} = case itemSharedMsgId of
   Just itemSharedMId -> do
-    let itemMemberId :: MemberId = case chatDir of
-          CIGroupSnd -> memberId
-          CIGroupRcv GroupMember {memberId = mId} -> mId
+    let GroupMember {memberId} = chatItemMember g ci
     DB.execute db
       "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
-      (groupId, itemSharedMId, itemMemberId)
+      (groupId, itemSharedMId, memberId)
   _ -> pure ()
 
 toCIReaction :: (MsgReaction, Bool, Int) -> CIReactionCount
