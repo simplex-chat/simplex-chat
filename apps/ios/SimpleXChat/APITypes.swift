@@ -37,7 +37,7 @@ public enum ChatCommand {
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(itemId: Int64)
-    case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool)
+    case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
@@ -141,9 +141,10 @@ public enum ChatCommand {
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
             case let .apiGetChatItemInfo(itemId): return "/_get item info \(itemId)"
-            case let .apiSendMessage(type, id, file, quotedItemId, mc, live):
+            case let .apiSendMessage(type, id, file, quotedItemId, mc, live, ttl):
                 let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
-                return "/_send \(ref(type, id)) live=\(onOff(live)) json \(msg)"
+                let ttlStr = ttl != nil ? "\(ttl!)" : "default"
+                return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"

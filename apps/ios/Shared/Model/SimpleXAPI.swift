@@ -301,9 +301,9 @@ func apiGetChatItemInfo(itemId: Int64) async throws -> ChatItemInfo {
     throw r
 }
 
-func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false) async -> ChatItem? {
+func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
     let chatModel = ChatModel.shared
-    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live)
+    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
     let r: ChatResponse
     if type == .direct {
         var cItem: ChatItem!

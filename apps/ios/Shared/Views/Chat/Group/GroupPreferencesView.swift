@@ -75,14 +75,21 @@ struct GroupPreferencesView: View {
                     Toggle(feature.text, isOn: enable)
                 }
                 if timedOn {
-                    timedMessagesTTLPicker($preferences.timedMessages.ttl)
+                    DropdownCustomTimePicker(
+                        selection: $preferences.timedMessages.ttl,
+                        label: "Delete after",
+                        dropdownValues: TimedMessagesPreference.ttlValues,
+                        customPickerConfirmButtonText: "Select",
+                        customPickerDescription: "Delete after"
+                    )
+                    .frame(height: 36)
                 }
             } else {
                 settingsRow(icon, color: color) {
                     infoRow(Text(feature.text), enableFeature.wrappedValue.text)
                 }
                 if timedOn {
-                    infoRow("Delete after", TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
+                    infoRow("Delete after", timeText(preferences.timedMessages.ttl))
                 }
             }
         } footer: {
