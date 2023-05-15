@@ -3447,7 +3447,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       when (groupFeatureAllowed SGFReactions g) $ do
         rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
         when (reactionAllowed add reaction rs) $ do
-          withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
           updateChatItemReaction `catchCINotFound` \_ ->
             withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
       where
