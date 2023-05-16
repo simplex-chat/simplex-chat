@@ -837,7 +837,7 @@ viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, preset
       else
         [ "",
           "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
-          "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to switch to configure " <> pName <> " servers",
+          "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to configure " <> pName <> " servers",
           "use " <> highlight (srvCmd <> " default") <> " to remove configured " <> pName <> " servers and use presets"
         ]
         <> case p of
