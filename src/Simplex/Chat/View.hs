@@ -829,7 +829,6 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
--- TODO make more generic messages or split
 viewUserServers :: AUserProtoServers -> Bool -> [StyledString]
 viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers}) testView =
   if testView
@@ -838,8 +837,8 @@ viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers}) testV
       [ customServers,
         "",
         "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
-        "use " <> highlight (srvCmd <> " set <srv1[,srv2,...]>") <> " to switch to custom " <> pName <> " servers",
-        "use " <> highlight (srvCmd <> " default") <> " to remove custom " <> pName <> " servers and use default"
+        "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to switch to configure " <> pName <> " servers",
+        "use " <> highlight (srvCmd <> " default") <> " to remove configured " <> pName <> " servers and use presets"
       ]
         <> case p of
           SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
