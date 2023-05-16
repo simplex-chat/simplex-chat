@@ -586,4 +586,34 @@
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">זה יכול לקרות כאשר אתם או איש הקשר שלכם השתמשתם בגיבוי ישן של מסד הנתונים.</string>
     <string name="join_group_question">להצטרף לקבוצה\?</string>
     <string name="join_group_button">הצטרף</string>
+    <string name="large_file">קובץ גדול!</string>
+    <string name="thousand_abbreviation">אלף</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">ודאו שכתובות שרתי ה־WebRTC ICE הן בפורמט הנכון, מופרדות בשורה ולא משוכפלות.</string>
+    <string name="v4_4_live_messages">הודעות חיות</string>
+    <string name="live_message">הודעה חיה!</string>
+    <string name="image_descr_link_preview">תצוגה מקדימה של קישור</string>
+    <string name="make_private_connection">צור חיבור פרטי</string>
+    <string name="lock_after">נעל אחרי</string>
+    <string name="lock_mode">מצב נעילה</string>
+    <string name="joining_group">מצטרף לקבוצה</string>
+    <string name="leave_group_button">עזוב</string>
+    <string name="make_profile_private">הפוך את הפרופיל לפרטי!</string>
+    <string name="live">הודעה חיה</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">ודאו שכתובות שרתי ה־SMP הן בפורמט הנכון, מופרדות בשורה ולא משוכפלות.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">ודאו שכתובות שרתי ה־XFTP הן בפורמט הנכון, מופרדות בשורה ולא משוכפלות.</string>
+    <string name="auth_log_in_using_credential">התחבר באמצעות האישור שלך</string>
+    <string name="learn_more">למדו עוד</string>
+    <string name="markdown_help">עזרה במרקדאון</string>
+    <string name="email_invite_subject">בואו נדבר ב־Simplex Chat</string>
+    <string name="many_people_asked_how_can_it_deliver">אנשים רבים שאלו: <i>אם ל־<xliff:g id="appName">SimpleX</xliff:g> אין מזהי משתמש, איך ניתן להעביר הודעות\?</i></string>
+    <string name="keychain_error">שגיאת Keychain</string>
+    <string name="join_group_incognito_button">הצטרף עם זהות נסתרת</string>
+    <string name="leave_group_question">לעזוב קבוצה\?</string>
+    <string name="rcv_group_event_member_left">עזב</string>
+    <string name="group_member_status_left">עזב</string>
+    <string name="button_leave_group">עזוב קבוצה</string>
+    <string name="info_row_local_name">שם מקומי</string>
+    <string name="users_delete_data_only">נתוני פרופיל מקומיים בלבד</string>
+    <string name="theme_light">בהיר</string>
+    <string name="import_theme_error_desc">ודאו שלקובץ יש תחביר YAML תקין. ייצאו ערכת נושא כדי לקבל דוגמה למבנה תקין של קובץ ערכת נושא.</string>
 </resources>
