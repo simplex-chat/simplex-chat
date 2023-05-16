@@ -49,7 +49,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
@@ -91,7 +91,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts testView
-  CRChatItemReaction u (ACIReaction _ _ chat reaction) added -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
+  CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc n t -> ttyUser u $ viewSentBroadcast mc n ts t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
@@ -536,13 +536,16 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       | showReactions = viewReceivedReaction from msg reactionText ts $ utcToZonedTime tz sentAt
       | otherwise = []
     reactionText = plain $ (if added then "+ " else "- ") <> [emoji]
-    MREmoji (MREmojiChar emoji) = reaction
+    emoji = case reaction of
+      MREmoji (MREmojiChar c) -> c
+      _ -> '?'
     sentText = plain $ (if added then "added " else "removed ") <> [emoji]
 
 viewItemReactions :: ChatItem c d -> [StyledString]
 viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | not (null reactions)]
   where
     viewReactions = mconcat . intersperse " " . map viewReaction
+    viewReaction CIReactionCount {reaction = MRUnknown {}} = "?"
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
@@ -829,18 +832,17 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
--- TODO make more generic messages or split
 viewUserServers :: AUserProtoServers -> Bool -> [StyledString]
-viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers}) testView =
-  if testView
-    then [customServers]
-    else
-      [ customServers,
-        "",
-        "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
-        "use " <> highlight (srvCmd <> " set <srv1[,srv2,...]>") <> " to switch to custom " <> pName <> " servers",
-        "use " <> highlight (srvCmd <> " default") <> " to remove custom " <> pName <> " servers and use default"
-      ]
+viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, presetServers}) testView =
+  customServers <>
+    if testView
+      then []
+      else
+        [ "",
+          "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
+          "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to configure " <> pName <> " servers",
+          "use " <> highlight (srvCmd <> " default") <> " to remove configured " <> pName <> " servers and use presets"
+        ]
         <> case p of
           SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
           SPXFTP -> ["(chat option " <> highlight' "-xftp-servers" <> " has precedence over saved XFTP servers for chat session)"]
@@ -849,8 +851,8 @@ viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers}) testV
     pName = protocolName p
     customServers =
       if null protoServers
-        then "no custom SMP servers saved"
-        else viewServers protoServers
+        then ("no " <> pName <> " servers saved, using presets: ") : viewServers id presetServers
+        else viewServers (\ServerCfg {server} -> server) protoServers
 
 protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
 protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
@@ -918,8 +920,8 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
   ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
     <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
-viewServers :: ProtocolTypeI p => NonEmpty (ServerCfg p) -> StyledString
-viewServers = plain . intercalate ", " . map (B.unpack . strEncode . (\ServerCfg {server} -> server)) . L.toList
+viewServers :: ProtocolTypeI p => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
+viewServers f = map (plain . B.unpack . strEncode . f) . L.toList
 
 viewServerHosts :: [SMPServer] -> StyledString
 viewServerHosts = plain . intercalate ", " . map showSMPServer
