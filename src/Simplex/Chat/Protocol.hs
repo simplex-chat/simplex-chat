@@ -28,6 +28,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
+import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -225,15 +226,28 @@ data AChatMsgEvent = forall e. MsgEncodingI e => ACME (SMsgEncoding e) (ChatMsgE
 
 deriving instance Show AChatMsgEvent
 
-data MsgReaction = MREmoji {emoji :: MREmojiChar}
-  deriving (Eq, Show, Generic)
+data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
+  deriving (Eq, Show)
 
-instance ToJSON MsgReaction where
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "MR"
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "MR"
+emojiTag :: IsString a => a
+emojiTag = "emoji"
 
 instance FromJSON MsgReaction where
-  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "MR"
+  parseJSON (J.Object v) = do
+    tag <- v .: "type"
+    if tag == emojiTag
+      then (MREmoji <$> v .: emojiTag) <|> pure (MRUnknown tag v)
+      else pure $ MRUnknown tag v
+  parseJSON invalid =
+    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON MsgReaction where
+  toJSON = \case
+    MRUnknown {json} -> J.Object json
+    MREmoji emoji -> J.object ["type" .= (emojiTag :: Text), emojiTag .= emoji]
+  toEncoding = \case
+    MRUnknown {json} -> JE.value $ J.Object json
+    MREmoji emoji -> J.pairs $ "type" .= (emojiTag :: Text) <> emojiTag .= emoji
 
 instance ToField MsgReaction where
   toField = toField . encodeJSON
