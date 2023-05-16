@@ -49,7 +49,7 @@ struct GroupMemberInfoView: View {
 
     private func knownDirectChat(_ contactId: Int64) -> Chat? {
         if let chat = chatModel.getContactChat(contactId),
-           chat.chatInfo.contact?.directOrUsed ?? false {
+           chat.chatInfo.contact?.directOrUsed == true {
             return chat
         } else {
             return nil
