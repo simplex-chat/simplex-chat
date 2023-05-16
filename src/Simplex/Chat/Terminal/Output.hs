@@ -14,6 +14,7 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Data.List (intercalate)
 import Data.Time.Clock (getCurrentTime)
+import Data.Time.LocalTime (getCurrentTimeZone)
 import Simplex.Chat (processChatCommand)
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages hiding (NewChatItem (..))
@@ -121,8 +122,8 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
     liveItems <- readTVarIO showLiveItems
     responseString cc liveItems r >>= printResp
   where
-    markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
-      case (muted chat item, itemStatus) of
+    markChatItemRead (AChatItem _ _ chat item@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
+      case (muted chat chatDir, itemStatus) of
         (False, CISRcvNew) -> do
           let itemId = chatItemId' item
               chatRef = chatInfoToRef chat
@@ -137,7 +138,8 @@ responseString :: ChatController -> Bool -> ChatResponse -> IO [StyledString]
 responseString cc liveItems r = do
   user <- readTVarIO $ currentUser cc
   ts <- getCurrentTime
-  pure $ responseToView user (config cc) liveItems ts r
+  tz <- getCurrentTimeZone
+  pure $ responseToView user (config cc) liveItems ts tz r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

@@ -47,6 +47,9 @@ fun SetNotificationsMode(m: ChatModel) {
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
     }
+  LaunchedEffect(Unit) {
+    m.controller.ntfManager.createNtfChannelsMaybeShowAlert()
+  }
 }
 
 @Composable

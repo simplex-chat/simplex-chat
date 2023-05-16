@@ -31,8 +31,10 @@ chatDirectTests = do
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
+    it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
+    it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
   describe "SMP servers" $ do
@@ -83,6 +85,8 @@ chatDirectTests = do
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
     xit "show message decryption error and update count" testMsgDecryptError
+  describe "message reactions" $ do
+    it "set message reactions" testSetMessageReactions
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -227,6 +231,9 @@ testDirectMessageUpdate =
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
 
+      alice ##> ("/_update item @2 " <> itemId 1 <> " text hello 🙂")
+      alice <## "message didn't change"
+
       alice ##> ("/_update item @2 " <> itemId 1 <> " text hey 👋")
       alice <# "@bob [edited] hey 👋"
       bob <# "alice> [edited] hey 👋"
@@ -267,6 +274,73 @@ testDirectMessageUpdate =
 
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "greetings 🤝"), Nothing), ((0, "hey Alice"), Just (1, "hello 🙂")), ((0, "greetings Alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "greetings 🤝"), Nothing), ((1, "hey Alice"), Just (0, "hello 🙂")), ((1, "greetings Alice"), Just (0, "hey 👋"))])
+
+testDirectMessageEditHistory :: HasCallStack => FilePath -> IO ()
+testDirectMessageEditHistory =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "@bob hello!"
+      bob <# "alice> hello!"
+
+      alice ##> ("/_get item info " <> itemId 1)
+      alice <##. "sent at: "
+      bob ##> ("/_get item info " <> itemId 1)
+      bob <##. "sent at: "
+      bob <##. "received at: "
+
+      alice ##> ("/_update item @2 " <> itemId 1 <> " text hey 👋")
+      alice <# "@bob [edited] hey 👋"
+      bob <# "alice> [edited] hey 👋"
+
+      alice ##> ("/_get item info " <> itemId 1)
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> ("/_get item info " <> itemId 1)
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hey 👋"
+      bob .<## ": hello!"
+
+      alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
+      alice <# "@bob [edited] hello there"
+      bob <# "alice> [edited] hello there"
+
+      alice ##> "/item info @bob hello"
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hello there"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> "/item info @alice hello"
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hello there"
+      bob .<## ": hey 👋"
+      bob .<## ": hello!"
+
+      bob #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+
+      alice ##> ("/_update item @2 " <> itemId 1 <> " text hey there")
+      alice <# "@bob [edited] hey there"
+      bob <# "alice> [edited] hey there"
+
+      alice ##> "/item info @bob hey"
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hey there"
+      alice .<## ": hello there"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> "/item info @alice hey"
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hey there"
 
 testDirectMessageDelete :: HasCallStack => FilePath -> IO ()
 testDirectMessageDelete =
@@ -349,16 +423,54 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/5] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/6] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/6]"
+    bob <# "alice> [LIVE started] use /show [on/off/7]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
+    -- live message has edit history
+    alice ##> ("/_get item info " <> itemId 2)
+    alice <##. "sent at: "
+    alice <## "message history:"
+    alice .<## ": hello 2"
+    alice .<## ":"
+    bob ##> ("/_get item info " <> itemId 2)
+    bob <##. "sent at: "
+    bob <##. "received at: "
+    bob <## "message history:"
+    bob .<## ": hello 2"
+    bob .<## ":"
+
+testDirectTimedMessage :: HasCallStack => FilePath -> IO ()
+testDirectTimedMessage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_send @2 ttl=1 text hello!"
+      alice <# "@bob hello!"
+      bob <# "alice> hello!"
+      alice <## "timed message deleted: hello!"
+      bob <## "timed message deleted: hello!"
+
+      alice ##> "/_send @2 live=off ttl=1 text hey"
+      alice <# "@bob hey"
+      bob <# "alice> hey"
+      alice <## "timed message deleted: hey"
+      bob <## "timed message deleted: hey"
+
+      alice ##> "/_send @2 ttl=default text hello"
+      alice <# "@bob hello"
+      bob <# "alice> hello"
+
+      alice ##> "/_send @2 live=off text hi"
+      alice <# "@bob hi"
+      bob <# "alice> hi"
 
 testRepeatAuthErrorsDisableContact :: HasCallStack => FilePath -> IO ()
 testRepeatAuthErrorsDisableContact =
@@ -1581,14 +1693,15 @@ testUserPrivacy =
       alice <##? chatHistory
       alice ##> "/_get items count=10"
       alice <##? chatHistory
-      alice ##> "/_get items before=9 count=10"
+      alice ##> "/_get items before=11 count=10"
       alice
         <##? [ "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
+               "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items after=8 count=10"
+      alice ##> "/_get items after=10 count=10"
       alice
         <##? [ "@bob hello",
                "bob> hey",
@@ -1646,6 +1759,7 @@ testUserPrivacy =
     chatHistory =
       [ "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
+        "bob> Message reactions: enabled",
         "bob> Voice messages: enabled",
         "bob> Audio/video calls: enabled",
         "@bob hello",
@@ -1828,3 +1942,51 @@ testMsgDecryptError tmp =
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
       copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+
+testSetMessageReactions :: HasCallStack => FilePath -> IO ()
+testSetMessageReactions =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob ##> "+1 alice hi"
+      bob <## "added 👍"
+      alice <# "bob> >> hi"
+      alice <## "    + 👍"
+      bob ##> "+1 alice hi"
+      bob <## "bad chat command: reaction already added"
+      bob ##> "+^ alice hi"
+      bob <## "added 🚀"
+      alice <# "bob> >> hi"
+      alice <## "    + 🚀"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 1 🚀 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 1 🚀 1"
+      alice ##> "+1 bob hi"
+      alice <## "added 👍"
+      bob <# "alice> > hi"
+      bob <## "    + 👍"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 2 🚀 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 2 🚀 1"
+      bob ##> "-1 alice hi"
+      bob <## "removed 👍"
+      alice <# "bob> >> hi"
+      alice <## "    - 👍"
+      bob ##> "-^ alice hi"
+      bob <## "removed 🚀"
+      alice <# "bob> >> hi"
+      alice <## "    - 🚀"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 1"

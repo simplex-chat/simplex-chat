@@ -104,6 +104,7 @@ data ChatConfig = ChatConfig
     inlineFiles :: InlineFilesConfig,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
+    showReactions :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -180,7 +181,7 @@ instance ToJSON HelpSection where
 
 data ChatCommand
   = ShowActiveUser
-  | CreateActiveUser Profile Bool
+  | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
   | SetActiveUser UserName (Maybe UserPwd)
@@ -213,10 +214,12 @@ data ChatCommand
   | APIGetChats {userId :: UserId, pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
-  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
+  | APIGetChatItemInfo ChatItemId
+  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
+  | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, reaction :: MsgReaction, add :: Bool}
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
@@ -318,6 +321,7 @@ data ChatCommand
   | DeleteMemberMessage GroupName ContactName Text
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
+  | ReactToMessage {chatName :: ChatName, reactToMessage :: Text, reaction :: MsgReaction, add :: Bool}
   | APINewGroup UserId GroupProfile
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
@@ -341,6 +345,7 @@ data ChatCommand
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
+  | ShowChatItemInfo ChatName Text
   | ShowLiveItems Bool
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
@@ -378,6 +383,7 @@ data ChatResponse
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat}
   | CRChatItems {user :: User, chatItems :: [AChatItem]}
+  | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserProtoServers {user :: User, servers :: AUserProtoServers}
@@ -394,6 +400,8 @@ data ChatResponse
   | CRNewChatItem {user :: User, chatItem :: AChatItem}
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
+  | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
+  | CRChatItemReaction {user :: User, reaction :: ACIReaction, added :: Bool}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent User MsgContent Int ZonedTime
@@ -516,6 +524,7 @@ data ChatResponse
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
+  | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show, Generic)
 
 logResponseToFile :: ChatResponse -> Bool
@@ -766,7 +775,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CEInvalidChatMessage {message :: String}
+  | CEInvalidChatMessage {messageData :: Text, message :: String}
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}

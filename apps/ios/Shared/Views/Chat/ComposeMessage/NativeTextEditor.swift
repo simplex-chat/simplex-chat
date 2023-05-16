@@ -104,31 +104,33 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     func textViewDidChange(_ textView: UITextView) {
-        var images: [UploadContent] = []
-        var rangeDiff = 0
-        let newAttributedText = NSMutableAttributedString(attributedString: textView.attributedText)
-        textView.attributedText.enumerateAttribute(
-            NSAttributedString.Key.attachment,
-            in: NSRange(location: 0, length: textView.attributedText.length),
-            options: [],
-            using: { value, range, _ in
-                if let attachment = (value as? NSTextAttachment)?.fileWrapper?.regularFileContents {
-                    do {
-                        images.append(.animatedImage(image: try UIImage(gifData: attachment)))
-                    } catch {
-                        if let img = (value as? NSTextAttachment)?.image {
-                            images.append(.simpleImage(image: img))
+        if textView.markedTextRange == nil {
+            var images: [UploadContent] = []
+            var rangeDiff = 0
+            let newAttributedText = NSMutableAttributedString(attributedString: textView.attributedText)
+            textView.attributedText.enumerateAttribute(
+                NSAttributedString.Key.attachment,
+                in: NSRange(location: 0, length: textView.attributedText.length),
+                options: [],
+                using: { value, range, _ in
+                    if let attachment = (value as? NSTextAttachment)?.fileWrapper?.regularFileContents {
+                        do {
+                            images.append(.animatedImage(image: try UIImage(gifData: attachment)))
+                        } catch {
+                            if let img = (value as? NSTextAttachment)?.image {
+                                images.append(.simpleImage(image: img))
+                            }
                         }
+                        newAttributedText.replaceCharacters(in: NSMakeRange(range.location - rangeDiff, range.length), with: "")
+                        rangeDiff += range.length
                     }
-                    newAttributedText.replaceCharacters(in: NSMakeRange(range.location - rangeDiff, range.length), with: "")
-                    rangeDiff += range.length
                 }
+            )
+            if textView.attributedText != newAttributedText {
+                textView.attributedText = newAttributedText
             }
-        )
-        if textView.attributedText != newAttributedText {
-            textView.attributedText = newAttributedText
+            onTextChanged(textView.text, images)
         }
-        onTextChanged(textView.text, images)
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {

@@ -23,9 +23,11 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
+import androidx.core.graphics.ColorUtils
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
 import chat.simplex.app.R
@@ -233,16 +236,16 @@ private fun spannableStringToAnnotatedString(
 }
 
 // maximum image file size to be auto-accepted
-const val MAX_IMAGE_SIZE: Long = 236700
+const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
-const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE
+const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
+const val MAX_VIDEO_SIZE_AUTO_RCV: Long = 1_047_552 // 1023KB
 
-const val MAX_VOICE_SIZE_FOR_SENDING: Long = 94680 // 6 chunks * 15780 bytes per chunk
-const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 43_000
+const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 300_000
 
 const val MAX_FILE_SIZE_SMP: Long = 8000000
 
-const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824
+const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()
@@ -586,6 +589,9 @@ fun Color.darker(factor: Float = 0.1f): Color =
 
 fun Color.lighter(factor: Float = 0.1f): Color =
   Color(min(red * (1 + factor), 1f), min(green * (1 + factor), 1f), min(blue * (1 + factor), 1f), alpha)
+
+fun Color.mixWith(color: Color, alpha: Float): Color =
+  Color(ColorUtils.blendARGB(color.toArgb(), toArgb(), alpha))
 
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 

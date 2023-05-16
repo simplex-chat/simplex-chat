@@ -141,14 +141,19 @@ class AppPreferences(val context: Context) {
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
 
+  val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
   val storeDBPassphrase = mkBoolPreference(SHARED_PREFS_STORE_DB_PASSPHRASE, true)
   val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
   val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
   val initializationVectorDBPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE, null)
   val encryptedAppPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_APP_PASSPHRASE, null)
   val initializationVectorAppPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_APP_PASSPHRASE, null)
+  val encryptedSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE, null)
+  val initializationVectorSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE, null)
   val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null, true)
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
+  val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
+  val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.name)
@@ -246,6 +251,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
+    private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
@@ -272,8 +278,12 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE = "InitializationVectorDBPassphrase"
     private const val SHARED_PREFS_ENCRYPTED_APP_PASSPHRASE = "EncryptedAppPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_APP_PASSPHRASE = "InitializationVectorAppPassphrase"
+    private const val SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE = "EncryptedSelfDestructPassphrase"
+    private const val SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE = "InitializationVectorSelfDestructPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
+    private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
+    private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
     private const val SHARED_PREFS_THEMES = "Themes"
@@ -326,7 +336,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.userCreated.value = true
         apiSetIncognito(chatModel.incognito.value)
         getUserChatData()
-        chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
         chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
         startReceiver()
@@ -433,8 +442,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiCreateActiveUser(p: Profile): User? {
-    val r = sendCmd(CC.CreateActiveUser(p))
+  suspend fun apiCreateActiveUser(p: Profile?, sameServers: Boolean = false, pastTimestamp: Boolean = false): User? {
+    val r = sendCmd(CC.CreateActiveUser(p, sameServers = sameServers, pastTimestamp = pastTimestamp))
     if (r is CR.ActiveUser) return r.user
     else if (
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
@@ -1346,12 +1355,12 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
         val file = cItem.file
         val mc = cItem.content.msgContent
-        if (file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV) {
-          val acceptImages = appPrefs.privacyAcceptImages.get()
-          if ((mc is MsgContent.MCImage && acceptImages)
-            || (mc is MsgContent.MCVoice && ((file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && acceptImages) || cInfo is ChatInfo.Group))) {
-            withApi { receiveFile(r.user, file.fileId) } // TODO check inlineFileMode != IFMSent
-          }
+        if (file != null &&
+            appPrefs.privacyAcceptImages.get() &&
+            ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
+                || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
+                || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
+          withApi { receiveFile(r.user, file.fileId) }
         }
         if (cItem.showNotification && (!SimplexApp.context.isAppOnForeground || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -1852,7 +1861,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
-  class CreateActiveUser(val profile: Profile): CC()
+  class CreateActiveUser(val profile: Profile?, val sameServers: Boolean, val pastTimestamp: Boolean): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
@@ -1937,7 +1946,10 @@ sealed class CC {
   val cmdString: String get() = when (this) {
     is Console -> cmd
     is ShowActiveUser -> "/u"
-    is CreateActiveUser -> "/create user ${profile.displayName} ${profile.fullName}"
+    is CreateActiveUser -> {
+      val user = NewUser(profile, sameServers = sameServers, pastTimestamp = pastTimestamp)
+      "/_create user ${json.encodeToString(user)}"
+    }
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId${maybePwd(viewPwd)}"
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
@@ -2142,6 +2154,13 @@ sealed class CC {
     fun protoServersStr(servers: List<ServerCfg>) = json.encodeToString(ProtoServersConfig(servers))
   }
 }
+
+@Serializable
+data class NewUser(
+  val profile: Profile?,
+  val sameServers: Boolean,
+  val pastTimestamp: Boolean
+)
 
 sealed class ChatPagination {
   class Last(val count: Int): ChatPagination()

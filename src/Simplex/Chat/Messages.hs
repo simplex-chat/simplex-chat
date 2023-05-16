@@ -137,6 +137,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
+    reactions :: [CIReactionCount],
     file :: Maybe (CIFile d)
   }
   deriving (Show, Generic)
@@ -175,6 +176,11 @@ jsonCIDirection = \case
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
 
+data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
+  deriving (Show, Generic)
+
+instance ToJSON CIReactionCount where toEncoding = J.genericToEncoding J.defaultOptions
+
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (CChatItem c)
@@ -197,6 +203,14 @@ chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
+
+timedDeleteAt' :: CITimed -> Maybe UTCTime
+timedDeleteAt' CITimed {deleteAt} = deleteAt
+
+chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
+chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
+  CIGroupSnd -> membership
+  CIGroupRcv m -> m
 
 data CIDeletedState = CIDeletedState
   { markedDeleted :: Bool,
@@ -344,7 +358,7 @@ instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOpt
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
-    deleteAt :: Maybe UTCTime
+    deleteAt :: Maybe UTCTime -- this is initially Nothing for received items, the timer starts when they are read
   }
   deriving (Show, Generic)
 
@@ -353,16 +367,16 @@ instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 ttl' :: CITimed -> Int
 ttl' CITimed {ttl} = ttl
 
-contactTimedTTL :: Contact -> Maybe Int
+contactTimedTTL :: Contact -> Maybe (Maybe Int)
 contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
-  | forUser enabled && forContact enabled = ttl
+  | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
     TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
 
-groupTimedTTL :: GroupInfo -> Maybe Int
+groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
-  | enable == FEOn = Just ttl
+  | enable == FEOn = Just $ Just ttl
   | otherwise = Nothing
 
 rcvContactCITimed :: Contact -> Maybe Int -> Maybe CITimed
@@ -371,7 +385,7 @@ rcvContactCITimed = rcvCITimed_ . contactTimedTTL
 rcvGroupCITimed :: GroupInfo -> Maybe Int -> Maybe CITimed
 rcvGroupCITimed = rcvCITimed_ . groupTimedTTL
 
-rcvCITimed_ :: Maybe Int -> Maybe Int -> Maybe CITimed
+rcvCITimed_ :: Maybe (Maybe Int) -> Maybe Int -> Maybe CITimed
 rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL)
 
 data CIQuote (c :: ChatType) = CIQuote
@@ -387,6 +401,33 @@ data CIQuote (c :: ChatType) = CIQuote
 instance ToJSON (CIQuote c) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data CIReaction (c :: ChatType) (d :: MsgDirection) = CIReaction
+  { chatDir :: CIDirection c d,
+    chatItem :: CChatItem c,
+    sentAt :: UTCTime,
+    reaction :: MsgReaction
+  }
+  deriving (Show, Generic)
+
+instance ToJSON (CIReaction c d) where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data ACIReaction = forall c d. ACIReaction (SChatType c) (SMsgDirection d) (ChatInfo c) (CIReaction c d)
+
+deriving instance Show ACIReaction
+
+instance ToJSON ACIReaction where
+  toJSON (ACIReaction _ _ chat reaction) = J.toJSON $ JSONCIReaction chat reaction
+  toEncoding (ACIReaction _ _ chat reaction) = J.toEncoding $ JSONCIReaction chat reaction
+
+data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
+  deriving (Generic)
+
+instance ToJSON (JSONCIReaction c d) where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
@@ -765,6 +806,13 @@ instance ToJSON MsgDecryptError where
 
 instance FromJSON MsgDecryptError where
   parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MDE"
+
+ciReactionAllowed :: ChatItem c d -> Bool
+ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
+ciReactionAllowed ChatItem {content} = case content of
+  CISndMsgContent _ -> True
+  CIRcvMsgContent _ -> True
+  _ -> False
 
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
@@ -1451,3 +1499,25 @@ jsonCIDeleted :: CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted -> JCIDDeleted
   CIModerated m -> JCIDModerated m
+
+data ChatItemInfo = ChatItemInfo
+  { chatItemId :: ChatItemId,
+    itemTs :: UTCTime,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    deleteAt :: Maybe UTCTime,
+    itemVersions :: [ChatItemVersion]
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ChatItemInfo where toEncoding = J.genericToEncoding J.defaultOptions
+
+data ChatItemVersion = ChatItemVersion
+  { chatItemVersionId :: Int64,
+    msgContent :: MsgContent,
+    itemVersionTs :: UTCTime,
+    createdAt :: UTCTime
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ChatItemVersion where toEncoding = J.genericToEncoding J.defaultOptions

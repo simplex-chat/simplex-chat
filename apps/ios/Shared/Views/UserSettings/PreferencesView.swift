@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct PreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State var profile: LocalProfile
     @State var preferences: FullPreferences
     @State var currentPreferences: FullPreferences
@@ -20,8 +21,11 @@ struct PreferencesView: View {
             List {
                 timedMessagesFeatureSection($preferences.timedMessages.allow)
                 featureSection(.fullDelete, $preferences.fullDelete.allow)
+                if developerTools {
+                    featureSection(.reactions, $preferences.reactions.allow)
+                }
                 featureSection(.voice, $preferences.voice.allow)
-                featureSection(.calls, $preferences.calls.allow).disabled(true)
+                featureSection(.calls, $preferences.calls.allow)
 
                 Section {
                     Button("Reset") { preferences = currentPreferences }
@@ -61,7 +65,7 @@ struct PreferencesView: View {
     }
 
     private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
-        (Text(feature.allowDescription(allowFeature.wrappedValue)) + (feature == .calls ? Text("\nAvailable in v5.1").bold() : Text("")))
+        Text(feature.allowDescription(allowFeature.wrappedValue))
             .frame(height: 36, alignment: .topLeading)
     }
 

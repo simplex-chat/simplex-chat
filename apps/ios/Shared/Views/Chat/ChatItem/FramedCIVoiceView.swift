@@ -15,9 +15,15 @@ struct FramedCIVoiceView: View {
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
-    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
-    @State var playbackTime: TimeInterval?
-
+    
+    @Binding var allowMenu: Bool
+    
+    @Binding var audioPlayer: AudioPlayer?
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+    
+    @State private var seek: (TimeInterval) -> Void = { _ in }
+    
     var body: some View {
         HStack {
             VoiceMessagePlayer(
@@ -25,8 +31,11 @@ struct FramedCIVoiceView: View {
                 recordingFile: recordingFile,
                 recordingTime: TimeInterval(duration),
                 showBackground: false,
+                seek: $seek,
+                audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
-                playbackTime: $playbackTime
+                playbackTime: $playbackTime,
+                allowMenu: $allowMenu
             )
             VoiceMessagePlayerTime(
                 recordingTime: TimeInterval(duration),
@@ -35,11 +44,30 @@ struct FramedCIVoiceView: View {
             )
             .foregroundColor(.secondary)
             .frame(width: 50, alignment: .leading)
+            if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
+                playbackSlider()
+            }
         }
         .padding(.top, 6)
         .padding(.leading, 6)
         .padding(.trailing, 12)
         .padding(.bottom, chatItem.content.text.isEmpty ? 10 : 0)
+    }
+    
+    private func playbackSlider() -> some View {
+        ComposeVoiceView.SliderBar(
+            length: TimeInterval(duration),
+            progress: $playbackTime,
+            seek: {
+                let time = max(0.0001, $0)
+                seek(time)
+                playbackTime = time
+            })
+        .onChange(of: .playing == playbackState || (playbackTime ?? 0) > 0) { show in
+            if !show {
+                allowMenu = true
+            }
+        }
     }
 }
 

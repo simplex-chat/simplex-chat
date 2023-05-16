@@ -125,8 +125,8 @@ func apiGetActiveUser() throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p))
+func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp))
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -295,9 +295,15 @@ func loadChat(chat: Chat, search: String = "") {
     }
 }
 
-func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false) async -> ChatItem? {
+func apiGetChatItemInfo(itemId: Int64) async throws -> ChatItemInfo {
+    let r = await chatSendCmd(.apiGetChatItemInfo(itemId: itemId))
+    if case let .chatItemInfo(_, _, chatItemInfo) = r { return chatItemInfo }
+    throw r
+}
+
+func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
     let chatModel = ChatModel.shared
-    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live)
+    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
     let r: ChatResponse
     if type == .direct {
         var cItem: ChatItem!
@@ -334,6 +340,12 @@ private func sendMessageErrorAlert(_ r: ChatResponse) {
 func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool = false) async throws -> ChatItem {
     let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, msg: msg, live: live), bgDelay: msgDelay)
     if case let .chatItemUpdated(_, aChatItem) = r { return aChatItem.chatItem }
+    throw r
+}
+
+func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, reaction: MsgReaction, add: Bool) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiChatItemReaction(type: type, id: id, itemId: itemId, reaction: reaction, add: add), bgDelay: msgDelay)
+    if case let .chatItemReaction(_, reaction, _) = r { return reaction.chatReaction.chatItem }
     throw r
 }
 
@@ -1234,15 +1246,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                 m.increaseUnreadCounter(user: user)
             }
-            if let file = cItem.file,
-               let mc = cItem.content.msgContent,
-               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV {
-                let acceptImages = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES)
-                if (mc.isImage && acceptImages)
-                    || (mc.isVoice && ((file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND && acceptImages) || cInfo.chatType == .group)) {
-                    Task {
-                        await receiveFile(user: user, fileId: file.fileId) // TODO check inlineFileMode != IFMSent
-                    }
+            if let file = cItem.autoReceiveFile() {
+                Task {
+                    await receiveFile(user: user, fileId: file.fileId)
                 }
             }
             if cItem.showNotification {
@@ -1264,6 +1270,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case let .chatItemUpdated(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
+        case let .chatItemReaction(user, r, _):
+            if active(user) {
+                m.updateChatItem(r.chatInfo, r.chatReaction.chatItem)
+            }
         case let .chatItemDeleted(user, deletedChatItem, toChatItem, _):
             if !active(user) {
                 if toChatItem == nil && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled {

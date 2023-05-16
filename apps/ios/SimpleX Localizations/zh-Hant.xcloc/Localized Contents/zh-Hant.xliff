@@ -4207,8 +4207,8 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">已取消認證</target>
         <note>PIN entry</note>
       </trans-unit>
-      <trans-unit id="Change Passcode" xml:space="preserve" approved="no">
-        <source>Change Passcode</source>
+      <trans-unit id="Change passcode" xml:space="preserve" approved="no">
+        <source>Change passcode</source>
         <target state="translated">修改密碼</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

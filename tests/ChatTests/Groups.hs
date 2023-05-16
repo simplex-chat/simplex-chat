@@ -32,6 +32,7 @@ chatGroupTests = do
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
+    it "group message edit history" testGroupMessageEditHistory
     it "group message delete" testGroupMessageDelete
     it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
@@ -53,6 +54,8 @@ chatGroupTests = do
     it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
   describe "group message errors" $ do
     xit "show message decryption error and update count" testGroupMsgDecryptError
+  describe "message reactions" $ do
+    it "set group message reactions" testSetGroupMessageReactions
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup
@@ -456,7 +459,7 @@ testGroupSameName =
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/g team"
-      alice <## "group #team_1 (team) is created"
+      alice <## "group #team_1 is created"
       alice <## "to add members use /a team_1 <name> or /create link #team_1"
 
 testGroupDeleteWhenInvited :: HasCallStack => FilePath -> IO ()
@@ -517,7 +520,7 @@ testGroupReAddInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team_1 (team): alice invites you to join the group as admin"
+            bob <## "#team_1: alice invites you to join the group as admin"
             bob <## "use /j team_1 to accept"
         ]
 
@@ -677,7 +680,7 @@ testGroupRemoveAdd =
         ]
       alice ##> "/a team bob"
       alice <## "invitation to join the group #team sent to bob"
-      bob <## "#team_1 (team): alice invites you to join the group as admin"
+      bob <## "#team_1: alice invites you to join the group as admin"
       bob <## "use /j team_1 to accept"
       bob ##> "/j team_1"
       concurrentlyN_
@@ -819,6 +822,9 @@ testGroupMessageUpdate =
         (cath <# "#team alice> hello!")
 
       msgItemId1 <- lastItemId alice
+      alice ##> ("/_update item #1 " <> msgItemId1 <> " text hello!")
+      alice <## "message didn't change"
+
       alice ##> ("/_update item #1 " <> msgItemId1 <> " text hey 👋")
       alice <# "#team [edited] hey 👋"
       concurrently_
@@ -874,6 +880,76 @@ testGroupMessageUpdate =
       alice #$> ("/_get chat #1 count=3", chat', [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hey 👋")), ((0, "greetings!"), Just (1, "greetings 🤝"))])
       bob #$> ("/_get chat #1 count=3", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hey 👋")), ((0, "greetings!"), Just (0, "greetings 🤝"))])
       cath #$> ("/_get chat #1 count=3", chat', [((0, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (0, "hey 👋")), ((1, "greetings!"), Just (0, "greetings 🤝"))])
+
+testGroupMessageEditHistory :: HasCallStack => FilePath -> IO ()
+testGroupMessageEditHistory =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      alice #> "#team hello!"
+      bob <# "#team alice> hello!"
+      aliceItemId <- lastItemId alice
+      bobItemId <- lastItemId bob
+
+      alice ##> ("/_get item info " <> aliceItemId)
+      alice <##. "sent at: "
+      bob ##> ("/_get item info " <> bobItemId)
+      bob <##. "sent at: "
+      bob <##. "received at: "
+
+      alice ##> ("/_update item #1 " <> aliceItemId <> " text hey 👋")
+      alice <# "#team [edited] hey 👋"
+      bob <# "#team alice> [edited] hey 👋"
+
+      alice ##> ("/_get item info " <> aliceItemId)
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> ("/_get item info " <> bobItemId)
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hey 👋"
+      bob .<## ": hello!"
+
+      alice ##> ("/_update item #1 " <> aliceItemId <> " text hello there")
+      alice <# "#team [edited] hello there"
+      bob <# "#team alice> [edited] hello there"
+
+      alice ##> "/item info #team hello"
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hello there"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> "/item info #team hello"
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hello there"
+      bob .<## ": hey 👋"
+      bob .<## ": hello!"
+
+      bob #$> ("/_delete item #1 " <> bobItemId <> " internal", id, "message deleted")
+
+      alice ##> ("/_update item #1 " <> aliceItemId <> " text hey there")
+      alice <# "#team [edited] hey there"
+      bob <# "#team alice> [edited] hey there"
+
+      alice ##> "/item info #team hey"
+      alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hey there"
+      alice .<## ": hello there"
+      alice .<## ": hey 👋"
+      alice .<## ": hello!"
+      bob ##> "/item info #team hey"
+      bob <##. "sent at: "
+      bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hey there"
 
 testGroupMessageDelete :: HasCallStack => FilePath -> IO ()
 testGroupMessageDelete =
@@ -973,6 +1049,7 @@ testGroupLiveMessage =
     bob <# "#team alice> [LIVE ended] hello there"
     cath <# "#team alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
+    threadDelay 1000000
     alice `send` "/live #team"
     msgItemId2 <- lastItemId alice
     bob <#. "#team alice> [LIVE started]"
@@ -981,6 +1058,19 @@ testGroupLiveMessage =
     alice <# "#team [LIVE] hello 2"
     bob <# "#team alice> [LIVE ended] hello 2"
     cath <# "#team alice> [LIVE ended] hello 2"
+    -- live message has edit history
+    alice ##> ("/_get item info " <> msgItemId2)
+    alice <##. "sent at: "
+    alice <## "message history:"
+    alice .<## ": hello 2"
+    alice .<## ":"
+    bobItemId <- lastItemId bob
+    bob ##> ("/_get item info " <> bobItemId)
+    bob <##. "sent at: "
+    bob <##. "received at: "
+    bob <## "message history:"
+    bob .<## ": hello 2"
+    bob .<## ":"
 
 testUpdateGroupProfile :: HasCallStack => FilePath -> IO ()
 testUpdateGroupProfile =
@@ -1201,6 +1291,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Disappearing messages: off"
       alice <## "Direct messages: on"
       alice <## "Full deletion: off"
+      alice <## "Message reactions: on"
       alice <## "Voice messages: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
@@ -2067,3 +2158,72 @@ testGroupMsgDecryptError tmp =
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
       copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+
+testSetGroupMessageReactions :: HasCallStack => FilePath -> IO ()
+testSetGroupMessageReactions =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      cath <# "#team alice> hi"
+      bob ##> "+1 #team hi"
+      bob <## "added 👍"
+      alice <# "#team bob> > alice hi"
+      alice <## "    + 👍"
+      cath <# "#team bob> > alice hi"
+      cath <## "    + 👍"
+      bob ##> "+1 #team hi"
+      bob <## "bad chat command: reaction already added"
+      bob ##> "+^ #team hi"
+      bob <## "added 🚀"
+      alice <# "#team bob> > alice hi"
+      alice <## "    + 🚀"
+      cath <# "#team bob> > alice hi"
+      cath <## "    + 🚀"
+      alice ##> "/tail #team 1"
+      alice <# "#team hi"
+      alice <## "      👍 1 🚀 1"
+      bob ##> "/tail #team 1"
+      bob <# "#team alice> hi"
+      bob <## "      👍 1 🚀 1"
+      bob ##> "/tail #team 1"
+      bob <# "#team alice> hi"
+      bob <## "      👍 1 🚀 1"
+      alice ##> "+1 #team hi"
+      alice <## "added 👍"
+      bob <# "#team alice> > alice hi"
+      bob <## "    + 👍"
+      cath <# "#team alice> > alice hi"
+      cath <## "    + 👍"
+      alice ##> "/tail #team 1"
+      alice <# "#team hi"
+      alice <## "      👍 2 🚀 1"
+      bob ##> "/tail #team 1"
+      bob <# "#team alice> hi"
+      bob <## "      👍 2 🚀 1"
+      cath ##> "/tail #team 1"
+      cath <# "#team alice> hi"
+      cath <## "      👍 2 🚀 1"
+      bob ##> "-1 #team hi"
+      bob <## "removed 👍"
+      alice <# "#team bob> > alice hi"
+      alice <## "    - 👍"
+      cath <# "#team bob> > alice hi"
+      cath <## "    - 👍"
+      bob ##> "-^ #team hi"
+      bob <## "removed 🚀"
+      alice <# "#team bob> > alice hi"
+      alice <## "    - 🚀"
+      cath <# "#team bob> > alice hi"
+      cath <## "    - 🚀"
+      alice ##> "/tail #team 1"
+      alice <# "#team hi"
+      alice <## "      👍 1"
+      bob ##> "/tail #team 1"
+      bob <# "#team alice> hi"
+      bob <## "      👍 1"
+      cath ##> "/tail #team 1"
+      cath <# "#team alice> hi"
+      cath <## "      👍 1"

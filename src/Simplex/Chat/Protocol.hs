@@ -184,6 +184,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: SharedMsgId -> Maybe MemberId -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
+  XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
   XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
@@ -223,6 +224,37 @@ deriving instance Show (ChatMsgEvent e)
 data AChatMsgEvent = forall e. MsgEncodingI e => ACME (SMsgEncoding e) (ChatMsgEvent e)
 
 deriving instance Show AChatMsgEvent
+
+data MsgReaction = MREmoji {emoji :: MREmojiChar}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON MsgReaction where
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "MR"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "MR"
+
+instance FromJSON MsgReaction where
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "MR"
+
+instance ToField MsgReaction where
+  toField = toField . encodeJSON
+
+instance FromField MsgReaction where
+  fromField = fromTextField_ decodeJSON
+
+newtype MREmojiChar = MREmojiChar Char
+  deriving (Eq, Show)
+
+instance ToJSON MREmojiChar where
+  toEncoding (MREmojiChar c) = J.toEncoding c
+  toJSON (MREmojiChar c) = J.toJSON c
+
+instance FromJSON MREmojiChar where
+  parseJSON v = mrEmojiChar <$?> J.parseJSON v
+
+mrEmojiChar :: Char -> Either String MREmojiChar
+mrEmojiChar c
+  | c `elem` ("👍👎😀🎉😕❤️🚀👀" :: String) = Right $ MREmojiChar c
+  | otherwise = Left "bad emoji"
 
 data FileChunk = FileChunk {chunkNo :: Integer, chunkBytes :: ByteString} | FileChunkCancel
   deriving (Eq, Show)
@@ -358,6 +390,9 @@ msgContentText = \case
   MCFile t -> t
   MCUnknown {text} -> text
 
+toMCText :: MsgContent -> MsgContent
+toMCText = MCText . msgContentText
+
 durationText :: Int -> Text
 durationText duration =
   let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"
@@ -470,6 +505,7 @@ data CMEventTag (e :: MsgEncoding) where
   XMsgUpdate_ :: CMEventTag 'Json
   XMsgDel_ :: CMEventTag 'Json
   XMsgDeleted_ :: CMEventTag 'Json
+  XMsgReact_ :: CMEventTag 'Json
   XFile_ :: CMEventTag 'Json
   XFileAcpt_ :: CMEventTag 'Json
   XFileAcptInv_ :: CMEventTag 'Json
@@ -514,6 +550,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XMsgUpdate_ -> "x.msg.update"
     XMsgDel_ -> "x.msg.del"
     XMsgDeleted_ -> "x.msg.deleted"
+    XMsgReact_ -> "x.msg.react"
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XFileAcptInv_ -> "x.file.acpt.inv"
@@ -559,6 +596,7 @@ instance StrEncoding ACMEventTag where
         "x.msg.update" -> XMsgUpdate_
         "x.msg.del" -> XMsgDel_
         "x.msg.deleted" -> XMsgDeleted_
+        "x.msg.react" -> XMsgReact_
         "x.file" -> XFile_
         "x.file.acpt" -> XFileAcpt_
         "x.file.acpt.inv" -> XFileAcptInv_
@@ -600,6 +638,7 @@ toCMEventTag msg = case msg of
   XMsgUpdate {} -> XMsgUpdate_
   XMsgDel {} -> XMsgDel_
   XMsgDeleted -> XMsgDeleted_
+  XMsgReact {} -> XMsgReact_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XFileAcptInv {} -> XFileAcptInv_
@@ -687,6 +726,7 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
       XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> opt "ttl" <*> opt "live"
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId"
       XMsgDeleted_ -> pure XMsgDeleted
+      XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> p "reaction" <*> p "add"
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
@@ -742,6 +782,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
       XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
+      XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]        
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]

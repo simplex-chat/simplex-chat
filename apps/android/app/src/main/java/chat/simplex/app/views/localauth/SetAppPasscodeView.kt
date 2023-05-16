@@ -4,11 +4,15 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import chat.simplex.app.R
+import chat.simplex.app.views.helpers.DatabaseUtils
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun SetAppPasscodeView(
+  passcodeKeychain: DatabaseUtils.KeyStoreItem = ksAppPassword,
+  title: String = generalGetString(R.string.new_passcode),
+  reason: String? = null,
   submit: () -> Unit,
   cancel: () -> Unit,
   close: () -> Unit
@@ -23,7 +27,7 @@ fun SetAppPasscodeView(
       close()
       cancel()
     }
-    PasscodeView(passcode, title = title, submitLabel = submitLabel, submitEnabled = submitEnabled, submit = submit) {
+    PasscodeView(passcode, title = title, reason = reason, submitLabel = submitLabel, submitEnabled = submitEnabled, submit = submit) {
       close()
       cancel()
     }
@@ -36,7 +40,7 @@ fun SetAppPasscodeView(
       submitEnabled = { pwd -> pwd == enteredPassword }
     ) {
       if (passcode.value == enteredPassword) {
-        ksAppPassword.set(passcode.value)
+        passcodeKeychain.set(passcode.value)
         enteredPassword = ""
         passcode.value = ""
         close()
@@ -44,7 +48,7 @@ fun SetAppPasscodeView(
       }
     }
   } else {
-    SetPasswordView(generalGetString(R.string.new_passcode), generalGetString(R.string.save_verb)) {
+    SetPasswordView(title, generalGetString(R.string.save_verb)) {
       enteredPassword = passcode.value
       passcode.value = ""
       confirming = true

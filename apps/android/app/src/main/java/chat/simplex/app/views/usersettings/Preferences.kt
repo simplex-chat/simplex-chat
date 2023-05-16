@@ -99,11 +99,10 @@ private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllo
       FeatureAllowed.values().map { it to it.text },
       allowFeature,
       icon = feature.icon,
-      enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
       onSelected = onSelected,
     )
   }
-  SectionTextFooter(feature.allowDescription(allowFeature.value) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
+  SectionTextFooter(feature.allowDescription(allowFeature.value))
 }
 
 @Composable
