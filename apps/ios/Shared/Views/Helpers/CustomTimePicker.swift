@@ -25,9 +25,9 @@ struct CustomTimePicker: View {
             case .second: return TimeUnitLimits.init(timeUnit: .second, maxValue: 120)
             case .minute: return TimeUnitLimits.init(timeUnit: .minute, maxValue: 120)
             case .hour: return TimeUnitLimits.init(timeUnit: .hour, maxValue: 72)
-            case .day: return TimeUnitLimits.init(timeUnit: .day, maxValue: 30)
-            case .week: return TimeUnitLimits.init(timeUnit: .week, maxValue: 12)
-            case .month: return TimeUnitLimits.init(timeUnit: .month, maxValue: 3)
+            case .day: return TimeUnitLimits.init(timeUnit: .day, maxValue: 60)
+            case .week: return TimeUnitLimits.init(timeUnit: .week, maxValue: 12) // TODO in 5.2 - 54
+            case .month: return TimeUnitLimits.init(timeUnit: .month, maxValue: 3) // TODO in 5.2 - 12
             }
         }
 
