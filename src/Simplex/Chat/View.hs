@@ -91,7 +91,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts testView
-  CRChatItemReaction u (ACIReaction _ _ chat reaction) added -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
+  CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc n t -> ttyUser u $ viewSentBroadcast mc n ts t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
@@ -536,13 +536,16 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       | showReactions = viewReceivedReaction from msg reactionText ts $ utcToZonedTime tz sentAt
       | otherwise = []
     reactionText = plain $ (if added then "+ " else "- ") <> [emoji]
-    MREmoji (MREmojiChar emoji) = reaction
+    emoji = case reaction of
+      MREmoji (MREmojiChar c) -> c
+      _ -> '?'
     sentText = plain $ (if added then "added " else "removed ") <> [emoji]
 
 viewItemReactions :: ChatItem c d -> [StyledString]
 viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | not (null reactions)]
   where
     viewReactions = mconcat . intersperse " " . map viewReaction
+    viewReaction CIReactionCount {reaction = MRUnknown {}} = "?"
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
