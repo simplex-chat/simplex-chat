@@ -471,7 +471,7 @@ struct ChatView: View {
                 set: { _ in }
             )
             
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: alignment.horizontal, spacing: 4) {
                 ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                     .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
                 if ci.content.msgContent != nil && ci.meta.itemDeleted == nil && ci.reactions.count > 0 {
@@ -604,7 +604,7 @@ struct ChatView: View {
 
         private func reactionUIMenu() -> UIMenu? {
             let rs = MsgReaction.values.compactMap { r in
-                ci.reactions.contains(where: { $0.reaction == r })
+                ci.reactions.contains(where: { $0.userReacted && $0.reaction == r })
                 ? nil
                 : UIAction(title: r.text) { _ in setReaction(r, add: true) }
             }
