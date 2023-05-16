@@ -6,6 +6,8 @@ import SectionDividerSpaced
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -21,13 +23,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.QRCode
+import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
 import kotlinx.datetime.Clock
 
@@ -65,6 +67,15 @@ fun GroupMemberInfoView(
             chatModel.chatItems.addAll(c.chatItems)
             chatModel.chatId.value = c.id
             closeAll()
+          }
+        }
+      },
+      connectViaAddress = { connReqUri ->
+        val uri = Uri.parse(connReqUri)
+        withUriAction(uri) { linkType ->
+          withApi {
+            Log.d(TAG, "connectViaUri: connecting")
+            connectViaUri(chatModel, linkType, uri)
           }
         }
       },
@@ -147,11 +158,21 @@ fun GroupMemberInfoLayout(
   connectionCode: String?,
   getContactChat: (Long) -> Chat?,
   openDirectChat: (Long) -> Unit,
+  connectViaAddress: (String) -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
+  fun knownDirectChat(contactId: Long): Chat? {
+    val chat = getContactChat(contactId)
+    return if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
+      chat
+    } else {
+      null
+    }
+  }
+
   Column(
     Modifier
       .fillMaxWidth()
@@ -165,12 +186,12 @@ fun GroupMemberInfoLayout(
     }
     SectionSpacer()
 
+    val contactId = member.memberContactId
+
     if (member.memberActive) {
-      val contactId = member.memberContactId
       if (contactId != null) {
         SectionView {
-          val chat = getContactChat(contactId)
-          if ((chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) || groupInfo.fullGroupPreferences.directMessages.on) {
+          if (knownDirectChat(contactId) != null || groupInfo.fullGroupPreferences.directMessages.on) {
             OpenChatButton(onClick = { openDirectChat(contactId) })
           }
           if (connectionCode != null) {
@@ -186,6 +207,13 @@ fun GroupMemberInfoLayout(
       SectionView(stringResource(R.string.address_section_title).uppercase()) {
         QRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
         ShareAddressButton { shareText(context, member.contactLink) }
+        if (contactId != null) {
+          if (knownDirectChat(contactId) == null && !groupInfo.fullGroupPreferences.directMessages.on) {
+            ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
+          }
+        } else {
+          ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
+        }
         SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(member.displayName))
       }
       SectionDividerSpaced()
@@ -296,6 +324,17 @@ fun OpenChatButton(onClick: () -> Unit) {
 }
 
 @Composable
+fun ConnectViaAddressButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(R.drawable.ic_link),
+    stringResource(R.string.connect_button),
+    click = onClick,
+    textColor = MaterialTheme.colors.primary,
+    iconColor = MaterialTheme.colors.primary,
+  )
+}
+
+@Composable
 private fun RoleSelectionRow(
   roles: List<GroupMemberRole>,
   selectedRole: MutableState<GroupMemberRole>,
@@ -354,6 +393,7 @@ fun PreviewGroupMemberInfoLayout() {
       connectionCode = "123",
       getContactChat = { Chat.sampleData },
       openDirectChat = {},
+      connectViaAddress = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},

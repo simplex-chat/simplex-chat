@@ -638,7 +638,7 @@
     <string name="group_member_status_removed">verwijderd</string>
     <string name="group_main_profile_sent">Uw chat profiel wordt verzonden naar de groepsleden</string>
     <string name="failed_to_create_user_duplicate_desc">Je hebt al een chat profiel met dezelfde weergave naam. Kies een andere naam.</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">U bent al verbonden met <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">U bent al verbonden met <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
     <string name="error_smp_test_failed_at_step">Test mislukt bij stap %s.</string>
     <string name="smp_server_test_secure_queue">Veilige wachtrij</string>
     <string name="database_initialization_error_desc">De database werkt niet goed. Tik voor meer informatie</string>

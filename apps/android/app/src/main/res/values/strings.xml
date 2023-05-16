@@ -90,7 +90,7 @@
   <string name="error_receiving_file">Error receiving file</string>
   <string name="error_creating_address">Error creating address</string>
   <string name="contact_already_exists">Contact already exists</string>
-  <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+  <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
   <string name="invalid_connection_link">Invalid connection link</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>

@@ -228,7 +228,7 @@
     <string name="simplex_link_mode_browser">透過瀏覽器</string>
     <string name="error_sending_message">傳送訊息時出錯</string>
     <string name="contact_already_exists">聯絡人已存在</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">你已經連接到 <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>。</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">你已經連接到 <xliff:g id="contactName" example="Alice">%1$s</xliff:g>。</string>
     <string name="v4_5_transport_isolation_descr">使用個人檔案（預設值）或使用連接（測試版）。</string>
     <string name="v4_5_reduced_battery_usage">減少電量使用</string>
     <string name="v4_5_reduced_battery_usage_descr">更多改進即將推出！</string>

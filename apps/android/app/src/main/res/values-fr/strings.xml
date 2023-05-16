@@ -60,7 +60,7 @@
     <string name="invalid_connection_link">Lien de connection invalide</string>
     <string name="connection_timeout">Délai de connexion</string>
     <string name="error_sending_message">Erreur lors de l\'envoi du message</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Vous êtes déjà connecté à <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Vous êtes déjà connecté à <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
     <string name="connection_error_auth">Erreur de connexion (AUTH)</string>
     <string name="connection_error_auth_desc">A moins que votre contact ait supprimé la connexion ou que ce lien ait déjà été utilisé, il peut s\'agir d\'un bug - veuillez le signaler.
 \nPour vous connecter, veuillez demander à votre contact de créer un autre lien de connexion et vérifiez que vous disposez d\'une connexion réseau stable.</string>

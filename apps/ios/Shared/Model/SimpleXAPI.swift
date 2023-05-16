@@ -314,7 +314,9 @@ func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int6
             chatModel.messageDelivery[cItem.id] = endTask
             return cItem
         }
-        if !networkErrorAlert(r) {
+        if let networkErrorAlert = networkErrorAlert(r) {
+            AlertManager.shared.showAlert(networkErrorAlert)
+        } else {
             sendMessageErrorAlert(r)
         }
         endTask()
@@ -516,59 +518,71 @@ func apiAddContact() async -> String? {
     }
     let r = await chatSendCmd(.apiAddContact(userId: userId), bgTask: false)
     if case let .invitation(_, connReqInvitation) = r { return connReqInvitation }
-    connectionErrorAlert(r)
+    AlertManager.shared.showAlert(connectionErrorAlert(r))
     return nil
 }
 
 func apiConnect(connReq: String) async -> ConnReqType? {
+    let (connReqType, alert) = await apiConnect_(connReq: connReq)
+    if let alert = alert {
+        AlertManager.shared.showAlert(alert)
+        return nil
+    } else {
+        return connReqType
+    }
+}
+
+func apiConnect_(connReq: String) async -> (ConnReqType?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
-        return nil
+        return (nil, nil)
     }
     let r = await chatSendCmd(.apiConnect(userId: userId, connReq: connReq))
     let am = AlertManager.shared
     switch r {
-    case .sentConfirmation: return .invitation
-    case .sentInvitation: return .contact
+    case .sentConfirmation: return (.invitation, nil)
+    case .sentInvitation: return (.contact, nil)
     case let .contactAlreadyExists(_, contact):
         let m = ChatModel.shared
         if let c = m.getContactChat(contact.contactId) {
             await MainActor.run { m.chatId = c.id }
         }
-        am.showAlertMsg(
+        let alert = mkAlert(
             title: "Contact already exists",
             message: "You are already connected to \(contact.displayName)."
         )
-        return nil
+        return (nil, alert)
     case .chatCmdError(_, .error(.invalidConnReq)):
-        am.showAlertMsg(
+        let alert = mkAlert(
             title: "Invalid connection link",
             message: "Please check that you used the correct link or ask your contact to send you another one."
         )
-        return nil
+        return (nil, alert)
     case .chatCmdError(_, .errorAgent(.SMP(.AUTH))):
-        am.showAlertMsg(
+        let alert = mkAlert(
             title: "Connection error (AUTH)",
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
-        return nil
+        return (nil, alert)
     case let .chatCmdError(_, .errorAgent(.INTERNAL(internalErr))):
         if internalErr == "SEUniqueID" {
-            am.showAlertMsg(
+            let alert = mkAlert(
                 title: "Already connected?",
                 message: "It seems like you are already connected via this link. If it is not the case, there was an error (\(responseError(r)))."
             )
-            return nil
+            return (nil, alert)
         }
     default: ()
     }
-    connectionErrorAlert(r)
-    return nil
+    let alert = connectionErrorAlert(r)
+    return (nil, alert)
 }
 
-private func connectionErrorAlert(_ r: ChatResponse) {
-    if !networkErrorAlert(r) {
-        AlertManager.shared.showAlertMsg(
+private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
+    if let networkErrorAlert = networkErrorAlert(r) {
+        return networkErrorAlert
+    } else {
+        return mkAlert(
             title: "Connection error",
             message: "Error: \(String(describing: r))"
         )
@@ -710,7 +724,9 @@ func apiAcceptContactRequest(contactReqId: Int64) async -> Contact? {
             title: "Connection error (AUTH)",
             message: "Sender may have deleted the connection request."
         )
-    } else if !networkErrorAlert(r) {
+    } else if let networkErrorAlert = networkErrorAlert(r) {
+        am.showAlert(networkErrorAlert)
+    } else {
         logger.error("apiAcceptContactRequest error: \(String(describing: r))")
         am.showAlertMsg(
             title: "Error accepting contact request",
@@ -749,7 +765,9 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil) async -> AChatItem? {
             title: "Cannot receive file",
             message: "Sender cancelled file transfer."
         )
-    } else if !networkErrorAlert(r) {
+    } else if let networkErrorAlert = networkErrorAlert(r) {
+        am.showAlert(networkErrorAlert)
+    } else {
         logger.error("apiReceiveFile error: \(String(describing: r))")
         switch r {
         case .chatCmdError(_, .error(.fileAlreadyReceiving)):
@@ -782,23 +800,20 @@ func apiCancelFile(fileId: Int64) async -> AChatItem? {
     }
 }
 
-func networkErrorAlert(_ r: ChatResponse) -> Bool {
-    let am = AlertManager.shared
+func networkErrorAlert(_ r: ChatResponse) -> Alert? {
     switch r {
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
-        am.showAlertMsg(
+        return mkAlert(
             title: "Connection timeout",
             message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
-        return true
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
-        am.showAlertMsg(
+        return mkAlert(
             title: "Connection error",
             message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
-        return true
     default:
-        return false
+        return nil
     }
 }
 
