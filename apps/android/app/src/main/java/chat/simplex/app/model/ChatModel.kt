@@ -729,6 +729,7 @@ data class Contact(
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.enabled.forUser
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.enabled.forUser
+    ChatFeature.Reactions -> mergedPreferences.reactions.enabled.forUser
     ChatFeature.Voice -> mergedPreferences.voice.enabled.forUser
     ChatFeature.Calls -> mergedPreferences.calls.enabled.forUser
   }
@@ -750,12 +751,14 @@ data class Contact(
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.Voice -> mergedPreferences.voice.contactPreference.allow != FeatureAllowed.NO
+    ChatFeature.Reactions -> mergedPreferences.reactions.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.Calls -> mergedPreferences.calls.contactPreference.allow != FeatureAllowed.NO
   }
 
   fun userAllowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.userPreference.pref.allow != FeatureAllowed.NO
+    ChatFeature.Reactions -> mergedPreferences.reactions.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.Voice -> mergedPreferences.voice.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.Calls -> mergedPreferences.calls.userPreference.pref.allow != FeatureAllowed.NO
   }
@@ -888,6 +891,7 @@ data class GroupInfo (
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> fullGroupPreferences.timedMessages.on
     ChatFeature.FullDelete -> fullGroupPreferences.fullDelete.on
+    ChatFeature.Reactions -> fullGroupPreferences.reactions.on
     ChatFeature.Voice -> fullGroupPreferences.voice.on
     ChatFeature.Calls -> false
   }
@@ -1257,6 +1261,20 @@ class AChatItem (
   val chatItem: ChatItem
 )
 
+@Serializable
+class ACIReaction(
+  val chatInfo: ChatInfo,
+  val chatReaction: CIReaction
+)
+
+@Serializable
+class CIReaction(
+  val chatDir: CIDirection,
+  val chatItem: ChatItem,
+  val sentAt: Instant,
+  val reaction: MsgReaction
+)
+
 @Serializable @Stable
 data class ChatItem (
   val chatDir: CIDirection,
@@ -1264,6 +1282,7 @@ data class ChatItem (
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
   val quotedItem: CIQuote? = null,
+  val reactions: List<CIReactionCount>,
   val file: CIFile? = null
 ) {
   val id: Long get() = meta.itemId
@@ -1279,6 +1298,11 @@ data class ChatItem (
   }
 
   val isRcvNew: Boolean get() = meta.isRcvNew
+
+  val allowAddReaction: Boolean get() =
+    meta.itemDeleted == null && !isLiveDummy && (reactions.count { it.userReacted } < 3)
+
+  private val isLiveDummy: Boolean get() = meta.itemId == TEMP_LIVE_CHAT_ITEM_ID
 
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.displayName
@@ -1369,6 +1393,7 @@ data class ChatItem (
         meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, itemTimed, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem,
+        reactions = listOf(),
         file = file
       )
 
@@ -1384,6 +1409,7 @@ data class ChatItem (
         meta = CIMeta.getSample(id, Clock.System.now(), text, CIStatus.RcvRead()),
         content = CIContent.RcvMsgContent(msgContent = MsgContent.MCFile(text)),
         quotedItem = null,
+        reactions = listOf(),
         file = CIFile.getSample(fileName = fileName, fileSize = fileSize, fileStatus = fileStatus)
       )
 
@@ -1399,6 +1425,7 @@ data class ChatItem (
         meta = CIMeta.getSample(id, ts, text, status),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
+        reactions = listOf(),
         file = null
       )
 
@@ -1408,6 +1435,7 @@ data class ChatItem (
         meta = CIMeta.getSample(1, Clock.System.now(), "received invitation to join group team as admin", CIStatus.RcvRead()),
         content = CIContent.RcvGroupInvitation(groupInvitation = CIGroupInvitation.getSample(status = status), memberRole = GroupMemberRole.Admin),
         quotedItem = null,
+        reactions = listOf(),
         file = null
       )
 
@@ -1417,6 +1445,7 @@ data class ChatItem (
         meta = CIMeta.getSample(1, Clock.System.now(), "group event text", CIStatus.RcvRead()),
         content = CIContent.RcvGroupEventContent(rcvGroupEvent = RcvGroupEvent.MemberAdded(groupMemberId = 1, profile = Profile.sampleData)),
         quotedItem = null,
+        reactions = listOf(),
         file = null
       )
 
@@ -1427,6 +1456,7 @@ data class ChatItem (
         meta = CIMeta.getSample(1, Clock.System.now(), content.text, CIStatus.RcvRead()),
         content = content,
         quotedItem = null,
+        reactions = listOf(),
         file = null
       )
     }
@@ -1452,6 +1482,7 @@ data class ChatItem (
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
+        reactions = listOf(),
         file = null
       )
 
@@ -1472,6 +1503,7 @@ data class ChatItem (
         ),
         content = CIContent.SndMsgContent(MsgContent.MCText("")),
         quotedItem = null,
+        reactions = listOf(),
         file = null
       )
 
@@ -1481,6 +1513,7 @@ data class ChatItem (
         meta = meta ?: CIMeta.invalidJSON(),
         content = CIContent.InvalidJSON(json),
         quotedItem = null,
+        reactions = listOf(),
         file = null
       )
   }
@@ -1726,6 +1759,90 @@ class CIQuote (
   companion object {
     fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIDirection?): CIQuote =
       CIQuote(chatDir = chatDir, itemId = itemId, sentAt = sentAt, content = MsgContent.MCText(text))
+  }
+}
+
+@Serializable
+class CIReactionCount(val reaction: MsgReaction, val userReacted: Boolean, val totalReacted: Int)
+
+@Serializable(with = MsgReactionSerializer::class)
+sealed class MsgReaction {
+  @Serializable(with = MsgReactionSerializer::class) class Emoji(val emoji: MREmojiChar): MsgReaction()
+  @Serializable(with = MsgReactionSerializer::class) class Unknown(val type: String? = null, val json: JsonElement): MsgReaction()
+
+  val text: String get() = when (this) {
+    is Emoji -> emoji.value
+    is Unknown -> ""
+  }
+
+  val cmdString: String get() = when(this) {
+    is Emoji -> emoji.cmdString
+    is Unknown -> ""
+  }
+
+  companion object {
+    val values: List<MsgReaction> get() = MREmojiChar.values().map(::Emoji)
+  }
+}
+
+object MsgReactionSerializer : KSerializer<MsgReaction> {
+  override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgReaction", PolymorphicKind.SEALED) {
+    element("Emoji", buildClassSerialDescriptor("Emoji") {
+      element<String>("emoji")
+    })
+    element("Unknown", buildClassSerialDescriptor("Unknown"))
+  }
+
+  override fun deserialize(decoder: Decoder): MsgReaction {
+    require(decoder is JsonDecoder)
+    val json = decoder.decodeJsonElement()
+    return if (json is JsonObject && "type" in json) {
+      when(val t = json["type"]?.jsonPrimitive?.content ?: "") {
+        "emoji" -> {
+          val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
+          if (emoji == null) MsgReaction.Unknown(t, json) else MsgReaction.Emoji(emoji)
+        }
+        else -> MsgReaction.Unknown(t, json)
+      }
+    } else {
+      MsgReaction.Unknown("", json)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: MsgReaction) {
+    require(encoder is JsonEncoder)
+    val json = when (value) {
+      is MsgReaction.Emoji ->
+        buildJsonObject {
+          put("type", "emoji")
+          put("emoji", json.encodeToJsonElement(value.emoji))
+        }
+      is MsgReaction.Unknown -> value.json
+    }
+    encoder.encodeJsonElement(json)
+  }
+}
+
+@Serializable
+enum class MREmojiChar(val value: String) {
+  @SerialName("👍") ThumbsUp("👍"),
+  @SerialName("👎") ThumbsDown("👎"),
+  @SerialName("😀") Smile("😀"),
+  @SerialName("🎉") Celebration("🎉"),
+  @SerialName("😕") Confused("😕"),
+  @SerialName("❤") Heart("❤"),
+  @SerialName("🚀") Launch("🚀"),
+  @SerialName("👀") Looking("👀");
+
+  val cmdString: String get() = when(this) {
+    ThumbsUp -> "+"
+    ThumbsDown -> "-"
+    Smile -> ")"
+    Celebration -> "!"
+    Confused -> "?"
+    Heart -> "*"
+    Launch -> "^"
+    Looking -> "%"
   }
 }
 
