@@ -81,7 +81,7 @@
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor XFTP estão no formato correto, separados por linhas e não estão duplicados.</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
     <string name="error_smp_test_certificate">Possivelmente, a impressão digital do certificado no endereço do servidor está incorreta</string>
-    <string name="enter_passphrase_notification_title">Necessária senha</string>
+    <string name="enter_passphrase_notification_title">A senha é necessária</string>
     <string name="settings_notifications_mode_title">Serviço de notificações</string>
     <string name="notifications_mode_service">Sempre ligado</string>
     <string name="notification_preview_mode_contact_desc">Mostrar apenas contato</string>
@@ -607,4 +607,24 @@
     <string name="new_in_version">Novidades %s</string>
     <string name="notification_new_contact_request">Novo pedido de contato</string>
     <string name="new_database_archive">Novo arquivo de base de dados</string>
+    <string name="encrypted_with_random_passphrase">A base de dados está encriptada com uma senha aleatória, você pode alterá-la.</string>
+    <string name="enter_correct_passphrase">Insira a senha correta.</string>
+    <string name="database_backup_can_be_restored">A tentativa de alterar a senha da base de dados não foi concluída.</string>
+    <string name="database_is_not_encrypted">A sua base de dados de conversas não está encriptada - defina a senha para a proteger.</string>
+    <string name="enter_passphrase">Insira a senha…</string>
+    <string name="you_have_to_enter_passphrase_every_time">Você tem que inserir a senha sempre que a aplicação é iniciada - ela não é guardada no dispositivo.</string>
+    <string name="new_passphrase">Nova senha…</string>
+    <string name="remove_passphrase">Remover</string>
+    <string name="remove_passphrase_from_keychain">Remover senha da Keystore\?</string>
+    <string name="enter_correct_current_passphrase">Insira a senha atual correta.</string>
+    <string name="update_database_passphrase">Atualizar senha da base de dados</string>
+    <string name="notification_preview_new_message">nova mensagem</string>
+    <string name="database_passphrase_and_export">Senha da base de dados &amp; exportação</string>
+    <string name="set_password_to_export_desc">A base de dados está encriptada com uma senha aleatória. Por favor, altere-a antes de exportar.</string>
+    <string name="database_passphrase_will_be_updated">A senha de encriptação da base de dados será atualizada.</string>
+    <string name="store_passphrase_securely">Por favor armazene a senha de forma segura, você NÃO será capaz de a alterar se a perder.</string>
+    <string name="database_encryption_will_be_updated">A senha de encriptação da base de dados será atualizada e armazenada na Keystore.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">A base de dados será encriptada e a senha armazenada na Keystore.</string>
+    <string name="store_passphrase_securely_without_recover">Por favor armazene a senha de forma segura, você NÃO será capaz de aceder às conversas se a perder.</string>
+    <string name="enter_passphrase_notification_desc">Para receber notificações, por favor, digite a senha da base de dados</string>
 </resources>
