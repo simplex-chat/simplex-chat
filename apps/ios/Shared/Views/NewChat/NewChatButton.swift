@@ -112,11 +112,11 @@ func groupLinkAlert(_ connectionLink: String) -> Alert {
 }
 
 func connReqSentAlert(_ type: ConnReqType) -> Alert {
-    return Alert(
-        title: Text("Connection request sent!"),
+    return mkAlert(
+        title: "Connection request sent!",
         message: type == .contact
-            ? Text("You will be connected when your connection request is accepted, please wait or check later!")
-            : Text("You will be connected when your contact's device is online, please wait or check later!")
+            ? "You will be connected when your connection request is accepted, please wait or check later!"
+            : "You will be connected when your contact's device is online, please wait or check later!"
     )
 }
 

@@ -27,6 +27,7 @@ struct GroupMemberInfoView: View {
         case switchAddressAlert
         case connRequestSentAlert(type: ConnReqType)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
+        case other(alert: Alert)
 
         var id: String {
             switch self {
@@ -35,6 +36,7 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .connRequestSentAlert: return "connRequestSentAlert"
             case let .error(title, _): return "error \(title)"
+            case let .other(alert): return "other \(alert)"
             }
         }
     }
@@ -169,6 +171,7 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
             case let .connRequestSentAlert(type): return connReqSentAlert(type)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
+            case let .other(alert): return alert
             }
         }
     }
@@ -183,8 +186,11 @@ struct GroupMemberInfoView: View {
 
     func connectViaAddress(_ contactLink: String) {
         Task {
-            if let connReqType = await apiConnect(connReq: contactLink) {
+            let (connReqType, connectAlert) = await apiConnect_(connReq: contactLink)
+            if let connReqType = connReqType {
                 alert = .connRequestSentAlert(type: connReqType)
+            } else if let connectAlert = connectAlert {
+                alert = .other(alert: connectAlert)
             }
         }
     }
