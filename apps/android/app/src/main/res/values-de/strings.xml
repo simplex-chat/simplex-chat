@@ -63,7 +63,7 @@
     <string name="error_receiving_file">Fehler beim Empfangen der Datei</string>
     <string name="error_creating_address">Fehler beim Erstellen der Adresse</string>
     <string name="contact_already_exists">Kontakt ist bereits vorhanden</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> verbunden.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit <xliff:g id="contactName" example="Alice">%1$s</xliff:g> verbunden.</string>
     <string name="invalid_connection_link">Ungültiger Verbindungslink</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
     <string name="connection_error_auth">Verbindungsfehler (AUTH)</string>

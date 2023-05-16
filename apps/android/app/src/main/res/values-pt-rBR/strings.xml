@@ -862,7 +862,7 @@
     <string name="video_call_no_encryption">chamada de vídeo (não criptografada ponta-a-ponta)</string>
     <string name="stop_chat_question">Parar chat\?</string>
     <string name="simplex_link_mode_browser">Pelo navegador</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Você já está conectado a<xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Você já está conectado a<xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
     <string name="database_initialization_error_desc">O banco de dados não está funcionando corretamente. Toque para saber mais</string>
     <string name="waiting_for_image">Aguardando imagem</string>
     <string name="show_QR_code">Mostrar código QR</string>

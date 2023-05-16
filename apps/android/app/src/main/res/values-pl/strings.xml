@@ -1028,7 +1028,7 @@
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> CZŁONKÓW</string>
     <string name="simplex_service_notification_title">serwis <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> chce się z Tobą połączyć przez</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Jesteś już połączony z <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Jesteś już połączony z <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
     <string name="you_can_connect_to_simplex_chat_founder">Możesz <font color="#0088ff">połączyć się z deweloperami <xliff:g id="appNameFull">SimpleX Chat</xliff:g> aby zadać wszelkie pytania i otrzymywać aktualizacje</font>.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Możesz udostępnić link lub kod QR - każdy będzie mógł dołączyć do grupy. Nie stracisz członków grupy, jeśli później ją usuniesz.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Musisz używać najnowszej wersji bazy danych czatu TYLKO na jednym urządzeniu, w przeciwnym razie możesz przestać otrzymywać wiadomości od niektórych kontaktów.</string>
