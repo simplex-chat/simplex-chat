@@ -1266,4 +1266,19 @@
     <string name="you_can_share_your_address">Sie können Ihre Adresse als Link oder QR-Code teilen - jede Person kann sich mit Ihnen verbinden.</string>
     <string name="your_contacts_will_see_it">Ihre Kontakte in SimpleX werden es sehen.
 \nSie können es in den Einstellungen ändern.</string>
+    <string name="all_app_data_will_be_cleared">App-Daten werden komplett gelöscht.</string>
+    <string name="empty_chat_profile_is_created">Es wurde ein leeres Chat-Profil mit dem eingegebenen Namen erstellt und die App öffnet wie gewohnt.</string>
+    <string name="if_you_enter_self_destruct_code">Wenn Sie Ihr Selbstzerstörungspasswort während des Öffnens der App eingeben:</string>
+    <string name="self_destruct_new_display_name">Neuer angezeigter Name:</string>
+    <string name="self_destruct_passcode_changed">Das Selbstzerstörungspasswort wurde geändert!</string>
+    <string name="change_self_destruct_mode">Selbstzerstörungs-Modus ändern</string>
+    <string name="change_self_destruct_passcode">Selbstzerstörungspasswort ändern</string>
+    <string name="enabled_self_destruct_passcode">Selbstzerstörungspasswort aktivieren</string>
+    <string name="self_destruct">Selbstzerstörung</string>
+    <string name="self_destruct_passcode_enabled">Das Selbstzerstörungspasswort wurde aktiviert!</string>
+    <string name="app_passcode_replaced_with_self_destruct">Das App Passwort wurde durch das Selbstzerstörungspasswort ersetzt.</string>
+    <string name="enable_self_destruct">Selbstzerstörung aktivieren</string>
+    <string name="if_you_enter_passcode_data_removed">Wenn Sie dieses Passwort während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</string>
+    <string name="self_destruct_passcode">Selbstzerstörungspasswort</string>
+    <string name="set_passcode">Passwort eingeben</string>
 </resources>
