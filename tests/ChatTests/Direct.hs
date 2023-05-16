@@ -518,7 +518,8 @@ testGetSetSMPServers =
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
       alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
       alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
       alice #$> ("/smp default", id, "ok")
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
 
@@ -547,7 +548,8 @@ testGetSetXFTPServers =
       alice #$> ("/xftp xftp://1234-w==:password@xftp1.example.im", id, "ok")
       alice #$> ("/xftp", id, "xftp://1234-w==:password@xftp1.example.im")
       alice #$> ("/xftp xftp://2345-w==@xftp2.example.im;xftp://3456-w==@xftp3.example.im:5224", id, "ok")
-      alice #$> ("/xftp", id, "xftp://2345-w==@xftp2.example.im, xftp://3456-w==@xftp3.example.im:5224")
+      alice #$> ("/xftp", id, "xftp://2345-w==@xftp2.example.im")
+      alice <## "xftp://3456-w==@xftp3.example.im:5224"
       alice #$> ("/xftp default", id, "ok")
       alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
 
@@ -1129,7 +1131,8 @@ testCreateUserDefaultServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
       alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
 
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
@@ -1139,7 +1142,8 @@ testCreateUserDefaultServers =
       -- with same_smp=off
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
 
       alice ##> "/create user same_smp=off alisa2"
       showActiveUser alice "alisa2"
@@ -1151,12 +1155,14 @@ testCreateUserSameServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
       alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
 
       alice ##> "/create user same_smp=on alisa"
       showActiveUser alice "alisa"
 
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
 
 testDeleteUser :: HasCallStack => FilePath -> IO ()
 testDeleteUser =
