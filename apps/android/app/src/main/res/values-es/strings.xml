@@ -867,7 +867,7 @@
     <string name="voice_messages">Mensajes de voz</string>
     <string name="voice_messages_are_prohibited">Los mensajes de voz no están permitidos en este grupo.</string>
     <string name="v4_4_verify_connection_security">Comprobar la seguridad de la conexión</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">¡Ya estás conectado a <xliff:g id="contactName" example="Alice">%1$s! </xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">¡Ya estás conectado a <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
     <string name="welcome">¡Bienvenido!</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Tu perfil Chat será enviado
 \na tu contacto</string>

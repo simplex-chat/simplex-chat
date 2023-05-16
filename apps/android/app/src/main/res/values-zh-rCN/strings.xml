@@ -589,7 +589,7 @@
     <string name="icon_descr_call_pending_sent">待定来电</string>
     <string name="connection_error_auth_desc">除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。
 \n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">您已经连接到 <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>。</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">您已经连接到 <xliff:g id="contactName" example="Alice">%1$s</xliff:g>。</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">您的聊天资料将被发送
 \n给您的联系人</string>
     <string name="users_delete_with_connections">资料和服务器连接</string>

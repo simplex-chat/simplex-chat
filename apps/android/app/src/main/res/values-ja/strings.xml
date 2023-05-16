@@ -927,7 +927,7 @@
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g>ロゴ</string>
     <string name="you_need_to_allow_to_send_voice">音声メッセージを送るには、連絡相手からの音声メッセージを許可しなければなりません。</string>
     <string name="you_must_use_the_most_recent_version_of_database">あなたの最新データベースを1つの端末にしか使わなければ、一部の連絡先からメッセージが届きかねます。</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">既に繋がってます： <xliff:g id="contactName" example="Alice">%1$s!</xliff:g></string>
+    <string name="you_are_already_connected_to_vName_via_this_link">既に繋がってます： <xliff:g id="contactName" example="Alice">%1$s</xliff:g></string>
     <string name="alert_title_cant_invite_contacts_descr">シークレットモードのプロフィールでこのグループに参加しています。メインのプロフィールを守るために、招待することができません。</string>
     <string name="description_you_shared_one_time_link">使い捨てリンクを送りました</string>
     <string name="profile_will_be_sent_to_contact_sending_link">リンクを送ってくれた連絡先にあなたのプロフィールを送ります。</string>
