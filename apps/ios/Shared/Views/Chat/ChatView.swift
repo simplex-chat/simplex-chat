@@ -524,7 +524,7 @@ struct ChatView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
 
-                    if (chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction) || r.userReacted {
+                    if chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted) {
                         v.onTapGesture {
                             setReaction(r.reaction, add: !r.userReacted)
                         }
