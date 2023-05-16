@@ -471,7 +471,7 @@ struct ChatView: View {
                 set: { _ in }
             )
             
-            VStack(alignment: alignment.horizontal, spacing: 4) {
+            VStack(alignment: alignment.horizontal, spacing: 3) {
                 ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                     .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
                 if ci.content.msgContent != nil && ci.meta.itemDeleted == nil && ci.reactions.count > 0 {
@@ -524,7 +524,7 @@ struct ChatView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
 
-                    if chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted) {
+                    if (chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction) || r.userReacted {
                         v.onTapGesture {
                             setReaction(r.reaction, add: !r.userReacted)
                         }
