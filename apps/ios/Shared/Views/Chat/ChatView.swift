@@ -538,6 +538,10 @@ struct ChatView: View {
         private func menu(live: Bool) -> [UIMenuElement] {
             var menu: [UIMenuElement] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+                if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction && developerTools,
+                   let rm = reactionUIMenu() {
+                    menu.append(rm)
+                }
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
                     menu.append(replyUIAction())
                 }
@@ -565,10 +569,6 @@ struct ChatView: View {
                    let file = ci.file,
                    let cancelAction = file.cancelAction  {
                     menu.append(cancelFileUIAction(file.fileId, cancelAction))
-                }
-                if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction && developerTools,
-                   let rm = reactionUIMenu() {
-                    menu.append(rm)
                 }
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
