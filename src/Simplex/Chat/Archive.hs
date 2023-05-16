@@ -84,6 +84,8 @@ deleteStorage = do
   removeFile chatDb
   removeFile agentDb
   mapM_ removePathForcibly filesPath
+  tmpPath <- readTVarIO =<< asks tempDirectory
+  mapM_ removePathForcibly tmpPath
 
 data StorageFiles = StorageFiles
   { chatDb :: FilePath,
