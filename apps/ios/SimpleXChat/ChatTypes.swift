@@ -600,7 +600,7 @@ public enum ChatFeature: String, Decodable, Feature {
             }
         case .reactions:
             switch allowed {
-            case .always: return "Allow your contacts reacting to messages."
+            case .always: return "Allow your contacts adding message reactions."
             case .yes: return "Allow message reactions only if your contact allows them."
             case .no: return "Prohibit message reactions."
             }
@@ -639,11 +639,11 @@ public enum ChatFeature: String, Decodable, Feature {
                     : "Irreversible message deletion is prohibited in this chat."
         case .reactions:
             return enabled.forUser && enabled.forContact
-                    ? "Both you and your contact can react to messages."
+                    ? "Both you and your contact can add message reactions."
                     : enabled.forUser
-                    ? "Only you can react to messages."
+                    ? "Only you can add message reactions."
                     : enabled.forContact
-                    ? "Only your contact can react to messages."
+                    ? "Only your contact can add message reactions."
                     : "Message reactions are prohibited in this chat."
         case .voice:
             return enabled.forUser && enabled.forContact
@@ -766,7 +766,7 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .reactions:
                 switch enabled {
-                case .on: return "Group members can react to messages."
+                case .on: return "Group members can add message reactions."
                 case .off: return "Message reactions are prohibited in this group."
                 }
             case .voice:
