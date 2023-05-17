@@ -53,7 +53,7 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
   describe "group message errors" $ do
-    xit "show message decryption error and update count" testGroupMsgDecryptError
+    it "show message decryption error and update count" testGroupMsgDecryptError
   describe "message reactions" $ do
     it "set group message reactions" testSetGroupMessageReactions
 
