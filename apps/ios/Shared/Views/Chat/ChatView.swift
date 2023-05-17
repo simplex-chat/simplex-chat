@@ -526,7 +526,7 @@ struct ChatView: View {
 
                     if chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted) {
                         v.onTapGesture {
-                            setReaction(r.reaction, add: !r.userReacted)
+                            setReaction(add: !r.userReacted, reaction: r.reaction)
                         }
                     } else {
                         v
@@ -606,27 +606,27 @@ struct ChatView: View {
             let rs = MsgReaction.values.compactMap { r in
                 ci.reactions.contains(where: { $0.userReacted && $0.reaction == r })
                 ? nil
-                : UIAction(title: r.text) { _ in setReaction(r, add: true) }
+                : UIAction(title: r.text) { _ in setReaction(add: true, reaction: r) }
             }
             if rs.count > 0 {
                 return UIMenu(
                     title: NSLocalizedString("React...", comment: "chat item menu"),
-                    image: UIImage(systemName: "hand.thumbsup"),
+                    image: UIImage(systemName: "face.smiling"),
                     children: rs
                 )
             }
             return nil
         }
 
-        private func setReaction(_ r: MsgReaction, add: Bool) {
+        private func setReaction(add: Bool, reaction: MsgReaction) {
             Task {
                 do {
                     let chatItem = try await apiChatItemReaction(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         itemId: ci.id,
-                        reaction: r,
-                        add: add
+                        add: add,
+                        reaction: reaction
                     )
                     await MainActor.run {
                         ChatModel.shared.updateChatItem(chat.chatInfo, chatItem)

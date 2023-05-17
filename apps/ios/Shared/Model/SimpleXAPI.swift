@@ -345,9 +345,9 @@ func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent
     throw r
 }
 
-func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, reaction: MsgReaction, add: Bool) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiChatItemReaction(type: type, id: id, itemId: itemId, reaction: reaction, add: add), bgDelay: msgDelay)
-    if case let .chatItemReaction(_, reaction, _) = r { return reaction.chatReaction.chatItem }
+func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiChatItemReaction(type: type, id: id, itemId: itemId, add: add, reaction: reaction), bgDelay: msgDelay)
+    if case let .chatItemReaction(_, _, reaction) = r { return reaction.chatReaction.chatItem }
     throw r
 }
 
@@ -1285,7 +1285,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case let .chatItemUpdated(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
-        case let .chatItemReaction(user, r, _):
+        case let .chatItemReaction(user, _, r):
             if active(user) {
                 m.updateChatItem(r.chatInfo, r.chatReaction.chatItem)
             }
