@@ -258,8 +258,19 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           chatModel.controller.allowFeatureToContact(contact, feature, param)
         }
       },
-      setReaction = { _, _ ->
-
+      setReaction = { cInfo, cItem, add, reaction ->
+        withApi {
+          val updatedCI = chatModel.controller.apiChatItemReaction(
+            type = cInfo.chatType,
+            id = cInfo.apiId,
+            itemId = cItem.id,
+            add = add,
+            reaction = reaction
+          )
+          if (updatedCI != null) {
+            chatModel.updateChatItem(cInfo, updatedCI)
+          }
+        }
       },
       addMembers = { groupInfo ->
         hideKeyboard(view)
@@ -319,7 +330,7 @@ fun ChatLayout(
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
-  setReaction: (Boolean, MsgReaction) -> Unit,
+  setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
@@ -535,7 +546,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
-  setReaction: (Boolean, MsgReaction) -> Unit,
+  setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   setFloatingButton: (@Composable () -> Unit) -> Unit,
   onComposed: () -> Unit,
@@ -1087,7 +1098,7 @@ fun PreviewChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
-      setReaction = {_, _ -> },
+      setReaction = { _, _, _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
@@ -1148,7 +1159,7 @@ fun PreviewGroupChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
-      setReaction = { _, _ -> },
+      setReaction = { _, _, _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },

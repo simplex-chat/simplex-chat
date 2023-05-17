@@ -73,6 +73,10 @@ private fun PreferencesLayout(
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
+    FeatureSection(ChatFeature.Reactions, allowVoice) {
+      applyPrefs(preferences.copy(reactions = SimpleChatPreference(allow = it)))
+    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
     FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }

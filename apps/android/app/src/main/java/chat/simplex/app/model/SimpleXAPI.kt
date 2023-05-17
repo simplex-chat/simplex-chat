@@ -600,6 +600,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiChatItemReaction(type: ChatType, id: Long, itemId: Long, add: Boolean, reaction: MsgReaction): ChatItem? {
+    val r = sendCmd(CC.ApiChatItemReaction(type, id, itemId, add, reaction))
+    if (r is CR.ChatItemReaction) return r.reaction.chatReaction.chatItem
+    Log.e(TAG, "apiUpdateChatItem bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiDeleteChatItem(type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): CR.ChatItemDeleted? {
     val r = sendCmd(CC.ApiDeleteChatItem(type, id, itemId, mode))
     if (r is CR.ChatItemDeleted) return r
@@ -2759,7 +2766,7 @@ enum class ChatFeature: Feature {
   override fun iconFilled(): Painter = when(this) {
       TimedMessages -> painterResource(R.drawable.ic_timer_filled)
       FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
-      Reactions -> painterResource(R.drawable.ic_add_reaction) // TODO filled
+      Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
       Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
       Calls -> painterResource(R.drawable.ic_call_filled)
   }
@@ -2864,7 +2871,7 @@ enum class GroupFeature: Feature {
     TimedMessages -> painterResource(R.drawable.ic_timer_filled)
     DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle_filled)
     FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
-    Reactions -> painterResource(R.drawable.ic_add_reaction) // TODO filled
+    Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
     Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
   }
 

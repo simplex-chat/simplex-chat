@@ -4,7 +4,6 @@ This readme is currently a stub and as such is in development.
 
 Ultimately, this readme will act as a guide to contributing to the develop of the SimpleX android app.
 
-
 ## Gotchas
 
 #### SHA Signature for verification for app links/deep links
@@ -23,3 +22,13 @@ To find your SHA certificate fingerprint perform the following steps.
 More information is available [here](https://developer.android.com/training/app-links/verify-site-associations#manual-verification). If there is no response when running the `pm get-app-links` command, the intents in `AndroidManifest.xml` are likely misspecified. A verification attempt can be triggered using `adb shell pm verify-app-links --re-verify chat.simplex.app`. 
 
 Note that this is not an issue for the app store build of the app as this is signed with our app store credentials and thus there is a stable signature over users. Developers do not have general access to these credentials for development and testing.
+
+## Adding icons
+
+1. Find a [Material symbol](https://fonts.google.com/icons?icon.style=Rounded) in Rounded category.
+
+2. Set weight to 300, grade to -25 and size to 24px.
+
+3. Click on the icon, choose Android and download XML file.
+
+For example, this is [add reaction icon](https://fonts.google.com/icons?selected=Material+Symbols+Rounded:add_reaction:FILL@0;wght@300;GRAD@-25;opsz@24&icon.style=Rounded).

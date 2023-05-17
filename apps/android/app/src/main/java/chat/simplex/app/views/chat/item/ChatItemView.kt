@@ -49,7 +49,7 @@ fun ChatItemView(
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
-  setReaction: (Boolean, MsgReaction) -> Unit,
+  setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
 ) {
   val context = LocalContext.current
   val uriHandler = LocalUriHandler.current
@@ -82,22 +82,20 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row { // (spacing: 4)
+      Row {
         cItem.reactions.forEach { r ->
-          val modifier =
-            if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {
-              Modifier.clickable {
-                setReaction(!r.userReacted, r.reaction)
-              }
-            } else {
-              Modifier
+          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+          if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {
+            modifier = modifier.clickable {
+              setReaction(cInfo, cItem, !r.userReacted, r.reaction)
             }
-          Row(modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+          }
+          Row(modifier.padding(2.dp)) {
             Text(r.reaction.text, fontSize = 12.sp)
             if (r.totalReacted > 1) {
               Spacer(Modifier.width(4.dp))
               Text("${r.totalReacted}",
-                fontSize = 14.sp,
+                fontSize = 11.5.sp,
                 fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
                 color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
               )
@@ -147,7 +145,10 @@ fun ChatItemView(
             Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState())) {
               rs.forEach() { r ->
                 Box(
-                  Modifier.size(36.dp).clickable { setReaction(true, r) },
+                  Modifier.size(36.dp).clickable {
+                    setReaction(cInfo, cItem, true, r)
+                    showMenu.value = false
+                  },
                   contentAlignment = Alignment.Center
                 ) {
                   Text(r.text)
@@ -494,7 +495,7 @@ fun PreviewChatItemView() {
       acceptCall = { _ -> },
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
-      setReaction = { _, _ -> },
+      setReaction = { _, _, _, _ -> },
     )
   }
 }
@@ -516,7 +517,7 @@ fun PreviewChatItemViewDeletedContent() {
       acceptCall = { _ -> },
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
-      setReaction = { _, _ -> },
+      setReaction = { _, _, _, _ -> },
     )
   }
 }
