@@ -1378,6 +1378,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       is CR.ChatItemUpdated ->
         chatItemSimpleUpdate(r.user, r.chatItem)
+      is CR.ChatItemReaction -> {
+        if (active(r.user)) {
+          chatModel.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
+        }
+      }
       is CR.ChatItemDeleted -> {
         if (!active(r.user)) {
           if (r.toChatItem == null && r.deletedChatItem.chatItem.isRcvNew && r.deletedChatItem.chatInfo.ntfsEnabled) {
@@ -1885,7 +1890,7 @@ sealed class CC {
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
-  class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val reaction: MsgReaction, val add: Boolean): CC()
+  class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
   class ApiNewGroup(val userId: Long, val groupProfile: GroupProfile): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
@@ -1974,7 +1979,7 @@ sealed class CC {
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
-    is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${reaction.cmdString} ${onOff(add)}"
+    is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
     is ApiNewGroup -> "/_group $userId ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
@@ -3228,7 +3233,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItem") class NewChatItem(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: User, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: User, val reaction: ACIReaction, val added: Boolean): CR()
+  @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: User, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val user: User, val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
   @Serializable @SerialName("contactsList") class ContactsList(val user: User, val contacts: List<Contact>): CR()
   // group events

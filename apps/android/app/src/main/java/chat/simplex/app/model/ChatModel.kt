@@ -238,6 +238,17 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+    if (chatId.value == cInfo.id) {
+      withContext(Dispatchers.Main) {
+        val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+        if (itemIndex >= 0) {
+          chatItems[itemIndex] = cItem
+        }
+      }
+    }
+  }
+
   fun removeChatItem(cInfo: ChatInfo, cItem: ChatItem) {
     if (cItem.isRcvNew) {
       decreaseCounterInChat(cInfo.id)
@@ -1771,7 +1782,10 @@ sealed class MsgReaction {
   @Serializable(with = MsgReactionSerializer::class) class Unknown(val type: String? = null, val json: JsonElement): MsgReaction()
 
   val text: String get() = when (this) {
-    is Emoji -> emoji.value
+    is Emoji -> when (emoji) {
+      MREmojiChar.Heart -> "❤️"
+      else -> emoji.value
+    }
     is Unknown -> ""
   }
 
