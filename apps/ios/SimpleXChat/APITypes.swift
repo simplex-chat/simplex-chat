@@ -41,7 +41,7 @@ public enum ChatCommand {
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
-    case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, reaction: MsgReaction, add: Bool)
+    case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -149,7 +149,7 @@ public enum ChatCommand {
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
-            case let .apiChatItemReaction(type, id, itemId, reaction, add): return "/_reaction \(ref(type, id)) \(itemId) \(reaction.cmdString) \(onOff(add))"
+            case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -433,7 +433,7 @@ public enum ChatResponse: Decodable, Error {
     case newChatItem(user: User, chatItem: AChatItem)
     case chatItemStatusUpdated(user: User, chatItem: AChatItem)
     case chatItemUpdated(user: User, chatItem: AChatItem)
-    case chatItemReaction(user: User, reaction: ACIReaction, added: Bool)
+    case chatItemReaction(user: User, added: Bool, reaction: ACIReaction)
     case chatItemDeleted(user: User, deletedChatItem: AChatItem, toChatItem: AChatItem?, byUser: Bool)
     case contactsList(user: User, contacts: [Contact])
     // group events
@@ -668,7 +668,7 @@ public enum ChatResponse: Decodable, Error {
             case let .newChatItem(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemStatusUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
-            case let .chatItemReaction(u, reaction, added): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
+            case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
             case let .chatItemDeleted(u, deletedChatItem, toChatItem, byUser): return withUser(u, "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))\nbyUser: \(byUser)")
             case let .contactsList(u, contacts): return withUser(u, String(describing: contacts))
             case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
