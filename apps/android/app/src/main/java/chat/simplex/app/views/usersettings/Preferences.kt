@@ -72,11 +72,12 @@ private fun PreferencesLayout(
       applyPrefs(preferences.copy(fullDelete = SimpleChatPreference(allow = it)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
-    val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
-    FeatureSection(ChatFeature.Reactions, allowVoice) {
+    val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.allow) }
+    FeatureSection(ChatFeature.Reactions, allowReactions) {
       applyPrefs(preferences.copy(reactions = SimpleChatPreference(allow = it)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
+    val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }
