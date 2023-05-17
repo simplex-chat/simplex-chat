@@ -740,7 +740,7 @@ processChatCommand = \case
         SndMessage {msgId} <- sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId $ Just memberId
         delGroupChatItem user gInfo ci msgId (Just membership)
       (_, _) -> throwChatError CEInvalidChatItemDelete
-  APIChatItemReaction (ChatRef cType chatId) itemId reaction add -> withUser $ \user -> withChatLock "chatItemReaction" $ case cType of
+  APIChatItemReaction (ChatRef cType chatId) itemId add reaction -> withUser $ \user -> withChatLock "chatItemReaction" $ case cType of
     CTDirect ->
       withStore (\db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
         (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
@@ -757,7 +757,7 @@ processChatCommand = \case
             liftIO $ getDirectCIReactions db ct itemSharedMId
           let ci' = CChatItem md ci {reactions}
               r = ACIReaction SCTDirect SMDSnd (DirectChat ct) $ CIReaction CIDirectSnd ci' createdAt reaction
-          pure $ CRChatItemReaction user r add
+          pure $ CRChatItemReaction user add r
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTGroup ->
       withStore (\db -> (,) <$> getGroup db user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
@@ -776,7 +776,7 @@ processChatCommand = \case
             liftIO $ getGroupCIReactions db g itemMemberId itemSharedMId
           let ci' = CChatItem md ci {reactions}
               r = ACIReaction SCTGroup SMDSnd (GroupChat g) $ CIReaction CIGroupSnd ci' createdAt reaction
-          pure $ CRChatItemReaction user r add
+          pure $ CRChatItemReaction user add r
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
@@ -1287,10 +1287,10 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     let mc = MCText msg
     processChatCommand $ APIUpdateChatItem chatRef chatItemId live mc
-  ReactToMessage chatName msg reaction add -> withUser $ \user -> do
+  ReactToMessage add reaction chatName msg  -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
-    processChatCommand $ APIChatItemReaction chatRef chatItemId reaction add
+    processChatCommand $ APIChatItemReaction chatRef chatItemId add reaction
   APINewGroup userId gProfile -> withUserId userId $ \user -> do
     gVar <- asks idsDrg
     groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile
@@ -3443,7 +3443,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 reactions <- getDirectCIReactions db ct sharedMsgId
                 let ci' = CChatItem md ci {reactions}
                     r = ACIReaction SCTDirect SMDRcv (DirectChat ct) $ CIReaction CIDirectRcv ci' brokerTs reaction
-                pure $ Just $ CRChatItemReaction user r add
+                pure $ Just $ CRChatItemReaction user add r
               else pure Nothing
           mapM_ toView cr_
 
@@ -3464,7 +3464,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 reactions <- getGroupCIReactions db g itemMemberId sharedMsgId
                 let ci' = CChatItem md ci {reactions}
                     r = ACIReaction SCTGroup SMDRcv (GroupChat g) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
-                pure $ Just $ CRChatItemReaction user r add
+                pure $ Just $ CRChatItemReaction user add r
               else pure Nothing
           mapM_ toView cr_
 
@@ -4765,7 +4765,7 @@ chatCommandP =
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),
-      "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> reactionP <* A.space <*> onOffP),
+      "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
       "/_delete " *> (APIDeleteChat <$> chatRefP),
@@ -4884,7 +4884,7 @@ chatCommandP =
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> textP),
       ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> textP),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
-      (("+" $> True) <|> ("-" $> False)) >>= \add -> reactionP <* A.space >>= \reaction -> ReactToMessage <$> chatNameP' <* A.space <*> textP <*> pure reaction <*> pure add,
+      ReactToMessage <$> (("+" $> True) <|> ("-" $> False)) <*> reactionP <* A.space <*> chatNameP' <* A.space <*> textP,
       "/feed " *> (SendMessageBroadcast <$> msgTextP),
       ("/chats" <|> "/cs") *> (LastChats <$> (" all" $> Nothing <|> Just <$> (A.space *> A.decimal <|> pure 20))),
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
