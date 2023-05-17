@@ -212,7 +212,7 @@
     <string name="both_you_and_your_contacts_can_delete">Você e o seu contato podem eliminar irreversivelmente as mensagens enviadas.</string>
     <string name="failed_to_create_user_duplicate_desc">Você já tem um perfil de chat com o mesmo nome para exibição. Por favor, escolha outro nome.</string>
     <string name="you_are_invited_to_group">Você está convidado para o grupo</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Você também se pode conectar clicando no link. Se ele abrir no navegador, clique no botão <b>Abrir na aplicação móvel</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link">Você também se pode conectar clicando na ligação. Se ele abrir no navegador, clique no botão <b>Abrir na aplicação móvel</b>.</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Você está convidado para o grupo. Junte-se para se conectar com os membros do grupo.</string>
     <string name="info_row_group">Grupo</string>
     <string name="icon_descr_audio_on">Áudio ligado</string>
@@ -231,7 +231,7 @@
     <string name="calls_prohibited_with_this_contact">Chamadas de áudio/vídeo são proibidas.</string>
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="la_authenticate">Autenticar</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b> Digitalize o código QR </b>: para se conectar ao seu contato que mostra o código QR a si.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Leia o código QR </b>: para se conectar ao seu contato que lhe mostra o código QR.</string>
     <string name="callstatus_ended">chamada finalizada <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="callstatus_calling">a chamar…</string>
     <string name="callstatus_error">erro de chamada</string>
@@ -260,7 +260,7 @@
     <string name="chat_database_imported">Base de dados de conversa importada</string>
     <string name="chat_is_stopped">A conversa está parada</string>
     <string name="smp_servers_check_address">Verifique o endereço do servidor e tente novamente.</string>
-    <string name="profile_will_be_sent_to_contact_sending_link">O seu perfil será enviado para o contato do qual você recebeu este link.</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">O seu perfil será enviado para o contato do qual você recebeu esta ligação.</string>
     <string name="error_deleting_database">Erro ao eliminar a base de dados de conversa</string>
     <string name="error_deleting_link_for_group">Erro ao eliminar ligação de grupo</string>
     <string name="network_session_mode_user">Perfil de conversa</string>
@@ -286,7 +286,7 @@
     <string name="connect_via_contact_link">Conectar através da ligação de contato\?</string>
     <string name="connect_via_invitation_link">Conectar via convite de ligação\?</string>
     <string name="connect_via_group_link">Conectar através da ligação do grupo\?</string>
-    <string name="you_will_join_group">Você irá juntar-se a um grupo ao qual este link se refere e conectar-se aos membros do grupo.</string>
+    <string name="you_will_join_group">Você irá juntar-se a um grupo ao qual esta ligação se refere e conectar-se aos membros do grupo.</string>
     <string name="server_error">erro</string>
     <string name="failed_to_create_user_title">Erro ao criar perfil!</string>
     <string name="error_adding_members">Erro ao adicionar membro(s)</string>
@@ -627,4 +627,42 @@
     <string name="database_will_be_encrypted_and_passphrase_stored">A base de dados será encriptada e a senha armazenada na Keystore.</string>
     <string name="store_passphrase_securely_without_recover">Por favor armazene a senha de forma segura, você NÃO será capaz de aceder às conversas se a perder.</string>
     <string name="enter_passphrase_notification_desc">Para receber notificações, por favor, digite a senha da base de dados</string>
+    <string name="network_use_onion_hosts_no_desc">Hosts Onion não serão usados.</string>
+    <string name="network_use_onion_hosts_prefer_desc">Hosts Onion serão usados quando disponíveis.</string>
+    <string name="network_use_onion_hosts_required_desc_in_alert">Hosts Onion serão necessários para a conexão.</string>
+    <string name="video_call_no_encryption">chamada de vídeo (sem encriptação ponta a ponta)</string>
+    <string name="audio_call_no_encryption">chamada de áudio (não encriptada ponta a ponta)</string>
+    <string name="encrypted_audio_call">chamada de áudio encriptada ponta a ponta</string>
+    <string name="encrypted_video_call">chamada de vídeo encriptada ponta a ponta</string>
+    <string name="group_member_role_observer">observador</string>
+    <string name="ok">OK</string>
+    <string name="feature_offered_item">oferecido %s</string>
+    <string name="old_database_archive">Arquivo de base de dados antigo</string>
+    <string name="network_use_onion_hosts_required_desc">Hosts Onion serão necessários para a conexão.</string>
+    <string name="network_use_onion_hosts_prefer_desc_in_alert">Hosts Onion serão usados quando disponíveis.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Pode acontecer quando você ou sua conexão usaram o backup de base de dados antigo.</string>
+    <string name="status_e2e_encrypted">encriptado ponta a ponta</string>
+    <string name="feature_off">desligado</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: leia o código QR exibido a partir do aplicação, via <b>Ler código QR</b>.</string>
+    <string name="no_spaces">Sem espaços!</string>
+    <string name="status_contact_has_no_e2e_encryption">contato não tem encriptação ponta a ponta</string>
+    <string name="feature_offered_item_with_param">oferecido %s: %2s</string>
+    <string name="chat_preferences_off">desligado</string>
+    <string name="chat_preferences_on">ligado</string>
+    <string name="v4_6_group_moderation_descr">Agora os administradores podem:
+\n- eliminar mensagens de membros.
+\n- desativar membros (função de \"observador\")</string>
+    <string name="simplex_link_group">Ligação do grupo SimpleX</string>
+    <string name="images_limit_desc">Apenas 10 imagens podem ser enviadas ao mesmo tempo</string>
+    <string name="videos_limit_desc">Apenas 10 vídeos podem ser enviados ao mesmo tempo</string>
+    <string name="scan_QR_code">Ler código QR</string>
+    <string name="scan_qr_to_connect_to_contact">Para se conectar, o seu contato pode ler o código QR ou usar o link na aplicação.</string>
+    <string name="scan_code">Ler código</string>
+    <string name="to_verify_compare">Para verificar a encriptação de ponta a ponta com o seu contato, compare (ou leia) o código nos seus dispositivos.</string>
+    <string name="scan_code_from_contacts_app">Ler o código de segurança a partir da aplicação do seu contacto.</string>
+    <string name="smp_servers_scan_qr">Ler o código QR do servidor</string>
+    <string name="network_use_onion_hosts_no_desc_in_alert">Hosts Onion não serão usados.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Apenas dispositivos cliente armazenam perfis de utilizador, contatos, grupos e mensagens enviadas com <b>encriptação de ponta a ponta de 2 camadas</b>.</string>
+    <string name="status_contact_has_e2e_encryption">contato tem encriptação ponta a ponta</string>
+    <string name="status_no_e2e_encryption">sem encriptação ponta a ponta</string>
 </resources>
