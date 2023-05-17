@@ -1605,7 +1605,7 @@ processChatCommand = \case
         prefs' = setPreference' SCFTimedMessages pref_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupTimedMessages gName ttl_ -> do
-    let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, 86400) (FEOn,) ttl_
+    let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess

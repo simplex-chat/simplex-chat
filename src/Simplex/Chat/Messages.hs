@@ -376,7 +376,7 @@ contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessag
 
 groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
-  | enable == FEOn = Just $ Just ttl
+  | enable == FEOn = Just ttl
   | otherwise = Nothing
 
 rcvContactCITimed :: Contact -> Maybe Int -> Maybe CITimed
