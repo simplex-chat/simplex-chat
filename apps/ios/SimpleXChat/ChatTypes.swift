@@ -561,7 +561,7 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return "stopwatch"
         case .fullDelete: return "trash.slash"
-        case .reactions: return "hand.thumbsup"
+        case .reactions: return "face.smiling"
         case .voice: return "mic"
         case .calls: return "phone"
         }
@@ -571,7 +571,7 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return "stopwatch.fill"
         case .fullDelete: return "trash.slash.fill"
-        case .reactions: return "hand.thumbsup.fill"
+        case .reactions: return "face.smiling.fill"
         case .voice: return "mic.fill"
         case .calls: return "phone.fill"
         }
@@ -696,7 +696,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .timedMessages: return "stopwatch"
         case .directMessages: return "arrow.left.and.right.circle"
         case .fullDelete: return "trash.slash"
-        case .reactions: return "hand.thumbsup"
+        case .reactions: return "face.smiling"
         case .voice: return "mic"
         }
     }
@@ -706,7 +706,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .timedMessages: return "stopwatch.fill"
         case .directMessages: return "arrow.left.and.right.circle.fill"
         case .fullDelete: return "trash.slash.fill"
-        case .reactions: return "hand.thumbsup.fill"
+        case .reactions: return "face.smiling.fill"
         case .voice: return "mic.fill"
         }
     }
@@ -2469,25 +2469,17 @@ public struct CIReactionCount: Decodable {
 }
 
 public enum MsgReaction: Hashable {
-    case emoji(MREmojiChar)
-    case unknown
+    case emoji(emoji: MREmojiChar)
+    case unknown(type: String)
 
     public var text: String {
         switch self {
         case let .emoji(emoji): return emoji.rawValue
-        case .unknown: return ""
+        case .unknown: return "?"
         }
     }
 
-    public var cmdString: String {
-        switch self {
-        case let .emoji(emoji): return emoji.cmdString
-        case .unknown: return ""
-        }
-    }
-
-    public static var values: [MsgReaction] =
-        MREmojiChar.allCases.map { .emoji($0) }
+    public static var values: [MsgReaction] = MREmojiChar.allCases.map { .emoji(emoji: $0) }
 
     enum CodingKeys: String, CodingKey {
         case type
@@ -2527,12 +2519,26 @@ extension MsgReaction: Decodable {
             switch type {
             case "emoji":
                 let emoji = try container.decode(MREmojiChar.self, forKey: CodingKeys.emoji)
-                self = .emoji(emoji)
+                self = .emoji(emoji: emoji)
             default:
-                self = .unknown
+                self = .unknown(type: type)
             }
         } catch {
-            self = .unknown
+            self = .unknown(type: "")
+        }
+    }
+}
+
+extension MsgReaction: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .emoji(emoji):
+            try container.encode("emoji", forKey: .type)
+            try container.encode(emoji, forKey: .emoji)
+        // TODO use original JSON and type
+        case let .unknown(type):
+            try container.encode(type, forKey: .type)
         }
     }
 }
