@@ -84,7 +84,7 @@ chatDirectTests = do
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
-    xit "show message decryption error and update count" testMsgDecryptError
+    it "show message decryption error and update count" testMsgDecryptError
   describe "message reactions" $ do
     it "set message reactions" testSetMessageReactions
 
