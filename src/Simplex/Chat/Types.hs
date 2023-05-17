@@ -704,7 +704,7 @@ emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
   FullGroupPreferences
-    { timedMessages = TimedMessagesGroupPreference {enable = FEOff, ttl = 86400},
+    { timedMessages = TimedMessagesGroupPreference {enable = FEOff, ttl = Just 86400},
       directMessages = DirectMessagesGroupPreference {enable = FEOff},
       fullDelete = FullDeleteGroupPreference {enable = FEOff},
       -- receipts = GroupPreference {enable = FEOff},
@@ -796,7 +796,7 @@ data GroupPreference = GroupPreference
 
 data TimedMessagesGroupPreference = TimedMessagesGroupPreference
   { enable :: GroupFeatureEnabled,
-    ttl :: Int
+    ttl :: Maybe Int
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -854,7 +854,7 @@ instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
   sGroupFeature = SGFTimedMessages
-  groupPrefParam TimedMessagesGroupPreference {ttl} = Just ttl
+  groupPrefParam TimedMessagesGroupPreference {ttl} = ttl
 
 instance GroupFeatureI 'GFDirectMessages where
   type GroupFeaturePreference 'GFDirectMessages = DirectMessagesGroupPreference
