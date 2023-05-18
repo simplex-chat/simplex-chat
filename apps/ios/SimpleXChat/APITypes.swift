@@ -36,7 +36,7 @@ public enum ChatCommand {
     case apiStorageEncryption(config: DBEncryptionConfig)
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
-    case apiGetChatItemInfo(itemId: Int64)
+    case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
@@ -141,7 +141,7 @@ public enum ChatCommand {
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
-            case let .apiGetChatItemInfo(itemId): return "/_get item info \(itemId)"
+            case let .apiGetChatItemInfo(type, id, itemId): return "/_get item info \(ref(type, id)) \(itemId)"
             case let .apiSendMessage(type, id, file, quotedItemId, mc, live, ttl):
                 let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"

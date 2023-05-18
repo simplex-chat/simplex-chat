@@ -295,8 +295,8 @@ func loadChat(chat: Chat, search: String = "") {
     }
 }
 
-func apiGetChatItemInfo(itemId: Int64) async throws -> ChatItemInfo {
-    let r = await chatSendCmd(.apiGetChatItemInfo(itemId: itemId))
+func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -> ChatItemInfo {
+    let r = await chatSendCmd(.apiGetChatItemInfo(type: type, id: id, itemId: itemId))
     if case let .chatItemInfo(_, _, chatItemInfo) = r { return chatItemInfo }
     throw r
 }

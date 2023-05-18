@@ -501,7 +501,7 @@ struct ChatView: View {
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {
-                    ChatItemInfoView(chatItemSent: ci.chatDir.sent, chatItemInfo: $chatItemInfo)
+                    ChatItemInfoView(chatItem: ci, chatItemInfo: $chatItemInfo)
                 }
         }
 
@@ -620,9 +620,10 @@ struct ChatView: View {
         private func setReaction(add: Bool, reaction: MsgReaction) {
             Task {
                 do {
+                    let cInfo = chat.chatInfo
                     let chatItem = try await apiChatItemReaction(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
+                        type: cInfo.chatType,
+                        id: cInfo.apiId,
                         itemId: ci.id,
                         add: add,
                         reaction: reaction
@@ -696,12 +697,13 @@ struct ChatView: View {
 
         private func viewInfoUIAction() -> UIAction {
             UIAction(
-                title: NSLocalizedString("View details", comment: "chat item action"),
-                image: UIImage(systemName: "info")
+                title: NSLocalizedString("Info", comment: "chat item action"),
+                image: UIImage(systemName: "info.circle")
             ) { _ in
                 Task {
                     do {
-                        let ciInfo = try await apiGetChatItemInfo(itemId: ci.id)
+                        let cInfo = chat.chatInfo
+                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, itemId: ci.id)
                         await MainActor.run {
                             chatItemInfo = ciInfo
                         }

@@ -2212,10 +2212,10 @@ public enum CIDirection: Decodable {
 
 public struct CIMeta: Decodable {
     public var itemId: Int64
-    var itemTs: Date
+    public var itemTs: Date
     var itemText: String
     public var itemStatus: CIStatus
-    var createdAt: Date
+    public var createdAt: Date
     public var updatedAt: Date
     public var itemDeleted: CIDeleted?
     public var itemEdited: Bool
@@ -3120,17 +3120,13 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
 }
 
 public struct ChatItemInfo: Decodable {
-    public var chatItemId: Int64
-    public var itemTs: Date
-    public var createdAt: Date
-    public var updatedAt: Date
-    public var deleteAt: Date?
     public var itemVersions: [ChatItemVersion]
 }
 
 public struct ChatItemVersion: Decodable {
     public var chatItemVersionId: Int64
     public var msgContent: MsgContent
+    public var formattedText: [FormattedText]?
     public var itemVersionTs: Date
     public var createdAt: Date
 }
