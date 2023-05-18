@@ -1212,4 +1212,17 @@
     <string name="message_reactions">Reacties op berichten</string>
     <string name="message_reactions_prohibited_in_this_chat">Reacties op berichten zijn verboden in deze chat.</string>
     <string name="only_your_contact_can_add_message_reactions">Alleen uw contactpersoon kan berichtreacties toevoegen.</string>
+    <string name="custom_time_unit_days">dagen</string>
+    <string name="custom_time_unit_hours">uren</string>
+    <string name="custom_time_unit_minutes">minuten</string>
+    <string name="custom_time_unit_months">maanden</string>
+    <string name="custom_time_unit_weeks">weken</string>
+    <string name="send_disappearing_message_send">Versturen</string>
+    <string name="send_disappearing_message_5_minutes">5 minuten</string>
+    <string name="send_disappearing_message_30_seconds">30 seconden</string>
+    <string name="send_disappearing_message">Stuur een verdwijnend bericht</string>
+    <string name="send_disappearing_message_1_minute">1 minuut</string>
+    <string name="send_disappearing_message_custom_time">Aangepaste tijd</string>
+    <string name="disappearing_message">Verdwijnend bericht</string>
+    <string name="custom_time_unit_seconds">seconden</string>
 </resources>
