@@ -2380,3 +2380,21 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
       }
   }
 }
+
+@Serializable
+class ChatItemInfo(
+  val chatItemId: Long,
+  val itemTs: Instant,
+  val createdAt: Instant,
+  val updatedAt: Instant,
+  val deleteAt: Instant,
+  val itemVersions: List<ChatItemVersion>,
+)
+
+@Serializable
+data class ChatItemVersion(
+  val chatItemVersionId: Long,
+  val msgContent: MsgContent,
+  val itemVersionTs: Instant,
+  val createdAt: Instant,
+)

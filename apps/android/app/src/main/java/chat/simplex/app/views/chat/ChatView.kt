@@ -272,6 +272,16 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           }
         }
       },
+      showItemDetails = { cInfo, cItem ->
+        withApi {
+          val ciInfo = chatModel.controller.apiGetChatItemInfo(cItem.id)
+          if (ciInfo != null) {
+            ModalManager.shared.showModal {
+              ChatItemInfoView(cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+            }
+          }
+        }
+      },
       addMembers = { groupInfo ->
         hideKeyboard(view)
         withApi {
@@ -331,6 +341,7 @@ fun ChatLayout(
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
+  showItemDetails: (ChatInfo, ChatItem) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
@@ -373,7 +384,7 @@ fun ChatLayout(
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
-              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, setReaction, markRead, setFloatingButton, onComposed,
+              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, setReaction, showItemDetails, markRead, setFloatingButton, onComposed,
             )
           }
         }
@@ -547,6 +558,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
+  showItemDetails: (ChatInfo, ChatItem) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   setFloatingButton: (@Composable () -> Unit) -> Unit,
   onComposed: () -> Unit,
@@ -660,11 +672,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
             }
           } else {
             Box(Modifier.padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
             }
           }
         } else { // direct message
@@ -675,7 +687,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction)
+            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
           }
         }
 
@@ -1099,6 +1111,7 @@ fun PreviewChatLayout() {
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
       setReaction = { _, _, _, _ -> },
+      showItemDetails = { _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
@@ -1160,6 +1173,7 @@ fun PreviewGroupChatLayout() {
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
       setReaction = { _, _, _, _ -> },
+      showItemDetails = { _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },

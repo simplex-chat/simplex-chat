@@ -25,9 +25,9 @@ import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.ComposeContextItem
-import chat.simplex.app.views.chat.ComposeState
+import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.IncognitoView
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.datetime.Clock
 
@@ -50,6 +50,7 @@ fun ChatItemView(
   scrollToItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
+  showItemDetails: (ChatInfo, ChatItem) -> Unit,
 ) {
   val context = LocalContext.current
   val uriHandler = LocalUriHandler.current
@@ -225,6 +226,14 @@ fun ChatItemView(
             if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
               CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
             }
+            ItemAction(
+              stringResource(R.string.details_menu),
+              painterResource(R.drawable.ic_info),
+              onClick = {
+                showItemDetails(cInfo, cItem)
+                showMenu.value = false
+              }
+            )
             if (!(live && cItem.meta.isLive)) {
               DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
             }
@@ -496,6 +505,7 @@ fun PreviewChatItemView() {
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
       setReaction = { _, _, _, _ -> },
+      showItemDetails = { _, _ -> },
     )
   }
 }
@@ -518,6 +528,7 @@ fun PreviewChatItemViewDeletedContent() {
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
       setReaction = { _, _, _, _ -> },
+      showItemDetails = { _, _ -> },
     )
   }
 }

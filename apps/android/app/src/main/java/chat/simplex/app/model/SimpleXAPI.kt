@@ -593,6 +593,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  suspend fun apiGetChatItemInfo(itemId: Long): ChatItemInfo? {
+    return when (val r = sendCmd(CC.ApiGetChatItemInfo(itemId))) {
+      is CR.ApiChatItemInfo -> r.chatItemInfo
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiGetChatItemInfo", generalGetString(R.string.error_loading_details), r)
+        }
+        null
+      }
+    }
+  }
+
   suspend fun apiUpdateChatItem(type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(CC.ApiUpdateChatItem(type, id, itemId, mc, live))
     if (r is CR.ChatItemUpdated) return r.chatItem
@@ -1893,6 +1905,7 @@ sealed class CC {
   class ApiStorageEncryption(val config: DBEncryptionConfig): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
+  class ApiGetChatItemInfo(val itemId: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
@@ -1982,6 +1995,7 @@ sealed class CC {
     is ApiStorageEncryption -> "/_db encryption ${json.encodeToString(config)}"
     is ApiGetChats -> "/_get chats $userId pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
+    is ApiGetChatItemInfo -> "/_get item info $itemId"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} live=${onOff(live)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
@@ -2069,6 +2083,7 @@ sealed class CC {
     is ApiStorageEncryption -> "apiStorageEncryption"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
+    is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessage -> "apiSendMessage"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
@@ -3198,6 +3213,7 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: User, val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val user: User, val chat: Chat): CR()
+  @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: User, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: User, val servers: UserProtocolServers): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: User, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: User, val chatItemTTL: Long? = null): CR()
@@ -3310,6 +3326,7 @@ sealed class CR {
     is ChatStopped -> "chatStopped"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
+    is ApiChatItemInfo -> "chatItemInfo"
     is UserProtoServers -> "userProtoServers"
     is ServerTestResult -> "serverTestResult"
     is ChatItemTTL -> "chatItemTTL"
@@ -3419,6 +3436,7 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, json.encodeToString(chat))
+    is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(AChatItem)}\n${json.encodeToString(chatItemInfo)}")
     is UserProtoServers -> withUser(user, "servers: ${json.encodeToString(servers)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))

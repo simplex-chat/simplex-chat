@@ -83,6 +83,7 @@
   <string name="connection_error">Connection error</string>
   <string name="network_error_desc">Please check your network connection with <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> and try again.</string>
   <string name="error_sending_message">Error sending message</string>
+  <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="cannot_receive_file">Cannot receive file</string>
@@ -212,6 +213,8 @@
   <string name="copy_verb">Copy</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
+  <string name="details_menu">Details</string>
+  <string name="message_details">Message details</string>
   <string name="delete_verb">Delete</string>
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
@@ -1104,6 +1107,9 @@
   <string name="section_title_for_console">FOR CONSOLE</string>
   <string name="info_row_local_name">Local name</string>
   <string name="info_row_database_id">Database ID</string>
+  <string name="info_row_sent_at">Sent at</string>
+  <string name="info_row_received_at">Received at</string>
+  <string name="info_row_to_be_deleted_at">Received at</string>
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
