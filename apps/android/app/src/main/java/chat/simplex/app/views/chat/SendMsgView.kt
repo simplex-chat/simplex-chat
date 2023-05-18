@@ -190,6 +190,7 @@ fun SendMsgView(
                   painterResource(R.drawable.ic_timer),
                   onClick = {
                     showCustomDisappearingMessageDialogue.value = true
+                    showDropdown.value = false
                   }
                 )
               }
@@ -208,66 +209,84 @@ private fun CustomDisappearingMessageDialogue(
   sendMessage: (Int?) -> Unit,
   setShowDialog: (Boolean) -> Unit
 ) {
-  @Composable
-  fun ChoiceButton(
-    text: String,
-    onClick: () -> Unit
-  ) {
-    TextButton(onClick) {
-      Text(
-        text,
-        fontSize = 18.sp,
-        color = MaterialTheme.colors.primary
-      )
-    }
-  }
+  val showCustomTimePicker = remember { mutableStateOf(false) }
 
-  Dialog(onDismissRequest = { setShowDialog(false) }) {
-    Surface(
-      shape = RoundedCornerShape(corner = CornerSize(25.dp))
+  if (showCustomTimePicker.value) {
+    val selectedDisappearingMessageTime = remember { mutableStateOf(300) }
+    CustomTimePickerView(
+      selectedDisappearingMessageTime,
+      title = generalGetString(R.string.send_disappearing_message_delete_after),
+      confirmButtonText = generalGetString(R.string.send_disappearing_message_send),
+      confirmButtonAction = { ttl ->
+        sendMessage(ttl)
+        setShowDialog(false)
+      },
+      cancel = { setShowDialog(false) }
+    )
+  } else {
+    @Composable
+    fun ChoiceButton(
+      text: String,
+      onClick: () -> Unit
     ) {
-      Box(
-        contentAlignment = Alignment.Center
-      ) {
-        Column(
-          modifier = Modifier.padding(vertical = DEFAULT_PADDING, horizontal = DEFAULT_PADDING_HALF),
-          verticalArrangement = Arrangement.spacedBy(6.dp),
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Text(" ") // centers title
-            Text(
-              generalGetString(R.string.send_disappearing_message),
-              fontSize = 16.sp,
-              color = MaterialTheme.colors.secondary
-            )
-            Icon(
-              painterResource(R.drawable.ic_close),
-              generalGetString(R.string.icon_descr_close_button),
-              tint = colorResource(android.R.color.darker_gray),
-              modifier = Modifier
-                .size(25.dp)
-                .clickable { setShowDialog(false) }
-            )
-          }
+      TextButton(onClick) {
+        Text(
+          text,
+          fontSize = 18.sp,
+          color = MaterialTheme.colors.primary
+        )
+      }
+    }
 
-          ChoiceButton(generalGetString(R.string.send_disappearing_message_30_seconds)) {
-            sendMessage(30)
-            setShowDialog(false)
+    Dialog(onDismissRequest = { setShowDialog(false) }) {
+      Surface(
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      ) {
+        Box(
+          contentAlignment = Alignment.Center
+        ) {
+          Column(
+            modifier = Modifier.padding(DEFAULT_PADDING),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(" ") // centers title
+              Text(
+                generalGetString(R.string.send_disappearing_message),
+                fontSize = 16.sp,
+                color = MaterialTheme.colors.secondary
+              )
+              Icon(
+                painterResource(R.drawable.ic_close),
+                generalGetString(R.string.icon_descr_close_button),
+                tint = MaterialTheme.colors.secondary,
+                modifier = Modifier
+                  .size(25.dp)
+                  .clickable { setShowDialog(false) }
+              )
+            }
+
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_30_seconds)) {
+              sendMessage(30)
+              setShowDialog(false)
+            }
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_1_minute)) {
+              sendMessage(60)
+              setShowDialog(false)
+            }
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_5_minutes)) {
+              sendMessage(300)
+              setShowDialog(false)
+            }
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_custom_time)) {
+              showCustomTimePicker.value = true
+            }
           }
-          ChoiceButton(generalGetString(R.string.send_disappearing_message_1_minute)) {
-            sendMessage(60)
-            setShowDialog(false)
-          }
-          ChoiceButton(generalGetString(R.string.send_disappearing_message_5_minutes)) {
-            sendMessage(300)
-            setShowDialog(false)
-          }
-          ChoiceButton(generalGetString(R.string.send_disappearing_message_custom_time)) { sendMessage(30) }
         }
       }
     }
