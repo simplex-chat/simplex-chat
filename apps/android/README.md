@@ -27,8 +27,10 @@ Note that this is not an issue for the app store build of the app as this is sig
 
 1. Find a [Material symbol](https://fonts.google.com/icons?icon.style=Rounded) in Rounded category.
 
-2. Set weight to 300, grade to -25 and size to 24px.
+2. Set weight to 400, grade to -25 and size to 48px.
 
 3. Click on the icon, choose Android and download XML file.
+
+4. Update the color to black (#FF000000) and the size to "24.dp", as in other icons.
 
 For example, this is [add reaction icon](https://fonts.google.com/icons?selected=Material+Symbols+Rounded:add_reaction:FILL@0;wght@300;GRAD@-25;opsz@24&icon.style=Rounded).

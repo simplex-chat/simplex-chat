@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # the binaries folder should be in ~/Downloads folder
 rm -rf ./apps/ios/Libraries/mac ./apps/ios/Libraries/ios ./apps/ios/Libraries/sim
 mkdir -p ./apps/ios/Libraries/mac ./apps/ios/Libraries/ios ./apps/ios/Libraries/sim
