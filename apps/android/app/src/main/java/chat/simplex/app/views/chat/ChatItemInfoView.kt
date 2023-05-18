@@ -26,6 +26,7 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
+import kotlinx.datetime.Instant
 
 @Composable
 fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
@@ -40,7 +41,7 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
     val showMenu = remember { mutableStateOf(false) }
     val text = ciVersion.msgContent.text
     Column {
-      Box(Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 2.dp)
+      Box(Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 3.dp)
         .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
           MarkdownText(
@@ -50,12 +51,12 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
           )
         }
       }
-      Row {
+      Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
         Text(
           localTimestamp(ciVersion.itemVersionTs), fontSize = 12.sp,
-          modifier = Modifier.padding(start = 12.dp, end = 6.dp, bottom = 8.dp)
+          modifier = Modifier.padding(end = 6.dp)
         )
-        if (current) {
+        if (current && ci.meta.itemDeleted == null) {
           Text(stringResource(R.string.item_info_current), fontSize = 12.sp)
         }
       }
@@ -79,19 +80,28 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       if (!sent) {
         InfoRow(stringResource(R.string.info_row_received_at), localTimestamp(ci.meta.createdAt))
       }
-      val deleteAt = ci.meta.itemTimed?.deleteAt
-      if (deleteAt != null) {
-        InfoRow(stringResource(R.string.info_row_disappears_at), localTimestamp(deleteAt))
+      when (ci.meta.itemDeleted) {
+        is CIDeleted.Deleted ->
+          InfoRow(stringResource(R.string.info_row_deleted_at), localTimestamp(ci.meta.updatedAt))
+        is CIDeleted.Moderated ->
+          InfoRow(stringResource(R.string.info_row_moderated_at), localTimestamp(ci.meta.updatedAt))
+        else -> {
+          val deleteAt = ci.meta.itemTimed?.deleteAt
+          if (deleteAt != null) {
+            InfoRow(stringResource(R.string.info_row_disappears_at), localTimestamp(deleteAt))
+          }
+        }
       }
       if (devTools) {
         InfoRow(stringResource(R.string.info_row_database_id), ci.meta.itemId.toString())
       }
     }
-    if (ciInfo.itemVersions.isNotEmpty()) {
-      SectionDividerSpaced(maxBottomPadding = false)
+    val versions = itemVersions(ci, ciInfo)
+    if (versions.isNotEmpty()) {
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
       SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(R.string.edit_history), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
-        ciInfo.itemVersions.forEachIndexed { i, ciVersion ->
+        versions.forEachIndexed { i, ciVersion ->
           ItemVersionView(ciVersion, current = i == 0)
         }
       }
@@ -100,36 +110,55 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   }
 }
 
-fun itemInfoShareText(chatItem: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolean): String {
-  val meta = chatItem.meta
-  val sent = chatItem.chatDir.sent
+fun itemVersions(ci: ChatItem, ciInfo: ChatItemInfo): List<ChatItemVersion> {
+  val mc = ci.content.msgContent
+  return if (ciInfo.itemVersions.isNotEmpty())
+    ciInfo.itemVersions
+  else if (ci.meta.itemDeleted != null && mc != null)
+    listOf(ChatItemVersion(1, msgContent = mc, formattedText = ci.formattedText, itemVersionTs = ci.meta.itemTs, createdAt = ci.meta.createdAt))
+  else
+    listOf()
+}
+
+fun itemInfoShareText(ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolean): String {
+  val meta = ci.meta
+  val sent = ci.chatDir.sent
   val shareText = mutableListOf<String>(generalGetString(if (sent) R.string.sent_message else R.string.received_message), "")
 
   shareText.add(String.format(generalGetString(R.string.share_text_sent_at), localTimestamp(meta.itemTs)))
-  if (!chatItem.chatDir.sent) {
+  if (!ci.chatDir.sent) {
     shareText.add(String.format(generalGetString(R.string.share_text_received_at), localTimestamp(meta.createdAt)))
   }
-  meta.itemTimed?.deleteAt?.let { deleteAt ->
-    shareText.add(String.format(generalGetString(R.string.share_text_disappears_at), localTimestamp(deleteAt)))
+  when (ci.meta.itemDeleted) {
+    is CIDeleted.Deleted ->
+      shareText.add(String.format(generalGetString(R.string.share_text_deleted_at), localTimestamp(ci.meta.updatedAt)))
+    is CIDeleted.Moderated ->
+      shareText.add(String.format(generalGetString(R.string.share_text_moderated_at), localTimestamp(ci.meta.updatedAt)))
+    else -> {
+      val deleteAt = ci.meta.itemTimed?.deleteAt
+      if (deleteAt != null) {
+        shareText.add(String.format(generalGetString(R.string.share_text_disappears_at), localTimestamp(deleteAt)))
+      }
+    }
   }
   if (devTools) {
     shareText.add(String.format(generalGetString(R.string.share_text_database_id), meta.itemId))
   }
-  if (chatItemInfo.itemVersions.isNotEmpty()) {
+  val versions = itemVersions(ci, chatItemInfo)
+  if (versions.isNotEmpty()) {
     shareText.add("")
     shareText.add(generalGetString(R.string.edit_history))
-    shareText.add("")
-    for ((index, itemVersion) in chatItemInfo.itemVersions.withIndex()) {
+    versions.forEachIndexed { index, itemVersion ->
       val ts = localTimestamp(itemVersion.itemVersionTs)
+      shareText.add("")
       shareText.add(
-        if (index == 0) {
+        if (index == 0 && ci.meta.itemDeleted == null) {
           String.format(generalGetString(R.string.current_version_timestamp), ts)
         } else {
           localTimestamp(itemVersion.itemVersionTs)
         }
       )
       shareText.add(itemVersion.msgContent.text)
-      shareText.add("")
     }
   }
   return shareText.joinToString(separator = "\n")

@@ -226,14 +226,7 @@ fun ChatItemView(
             if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
               CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
             }
-            ItemAction(
-              stringResource(R.string.info_menu),
-              painterResource(R.drawable.ic_info),
-              onClick = {
-                showItemDetails(cInfo, cItem)
-                showMenu.value = false
-              }
-            )
+            ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             if (!(live && cItem.meta.isLive)) {
               DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
             }
@@ -256,6 +249,7 @@ fun ChatItemView(
                   showMenu.value = false
                 }
               )
+              ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             }
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
           }
@@ -326,7 +320,7 @@ fun ChatItemView(
         }
       }
 
-      if (cItem.content.msgContent != null && cItem.meta.itemDeleted == null && cItem.reactions.isNotEmpty()) {
+      if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
         ChatItemReactions()
       }
     }
@@ -350,6 +344,24 @@ fun CancelFileItemAction(
     color = Color.Red
   )
 }
+
+@Composable
+fun ItemInfoAction(
+  cInfo: ChatInfo,
+  cItem: ChatItem,
+  showItemDetails: (ChatInfo, ChatItem) -> Unit,
+  showMenu: MutableState<Boolean>
+) {
+  ItemAction(
+    stringResource(R.string.info_menu),
+    painterResource(R.drawable.ic_info),
+    onClick = {
+      showItemDetails(cInfo, cItem)
+      showMenu.value = false
+    }
+  )
+}
+
 
 @Composable
 fun DeleteItemAction(

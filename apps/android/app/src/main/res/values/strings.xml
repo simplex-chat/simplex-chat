@@ -1118,10 +1118,14 @@
   <string name="info_row_database_id">Database ID</string>
   <string name="info_row_sent_at">Sent at</string>
   <string name="info_row_received_at">Received at</string>
+  <string name="info_row_deleted_at">Deleted at</string>
+  <string name="info_row_moderated_at">Moderated at</string>
   <string name="info_row_disappears_at">Disappears at</string>
   <string name="share_text_database_id">Database ID: %d</string>
   <string name="share_text_sent_at">Sent at: %s</string>
   <string name="share_text_received_at">Received at: %s</string>
+  <string name="share_text_deleted_at">Deleted at: %s</string>
+  <string name="share_text_moderated_at">Moderated at: %s</string>
   <string name="share_text_disappears_at">Disappears at: %s</string>
   <string name="item_info_current">(current)</string>
   <string name="current_version_timestamp">"%s (current)"</string>
