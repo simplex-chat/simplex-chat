@@ -42,32 +42,31 @@ struct ChatItemInfoView: View {
         let meta = chatItem.meta
         GeometryReader { g in
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 16) {
                     Text(title)
                         .font(.largeTitle)
                         .bold()
                         .padding(.bottom)
 
                     let maxWidth = (g.size.width - 32) * 0.84
-                    if developerTools {
-                        infoRow("Database ID", "\(meta.itemId)")
-                    }
                     infoRow("Sent at", localTimestamp(meta.itemTs))
                     if !chatItem.chatDir.sent {
                         infoRow("Received at", localTimestamp(meta.createdAt))
                     }
                     if let deleteAt = meta.itemTimed?.deleteAt {
-                        infoRow("To be deleted at", localTimestamp(deleteAt))
+                        infoRow("Disappears at", localTimestamp(deleteAt))
+                    }
+                    if developerTools {
+                        infoRow("Database ID", "\(meta.itemId)")
                     }
 
                     if !chatItemInfo.itemVersions.isEmpty {
-                        Divider()
-                            .padding(.top)
+                        Divider().padding(.vertical)
 
                         Text("Edit history")
-                            .font(.title)
+                            .font(.title2)
                             .padding(.bottom, 4)
-                        LazyVStack(alignment: .leading, spacing: 12)  {
+                        LazyVStack(alignment: .leading, spacing: 16)  {
                             ForEach(Array(chatItemInfo.itemVersions.enumerated()), id: \.element.chatItemVersionId) { index, itemVersion in
                                 itemVersionView(itemVersion, maxWidth, current: index == 0)
                             }
@@ -112,15 +111,15 @@ struct ChatItemInfoView: View {
     private func itemInfoShareText(_ chatItemInfo: ChatItemInfo) -> String {
         let meta = chatItem.meta
         var shareText: [String] = [title, ""]
-        if developerTools {
-            shareText += [String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId) ]
-        }
         shareText += [String.localizedStringWithFormat(NSLocalizedString("Sent at: %@", comment: "copied message info"), localTimestamp(meta.itemTs))]
         if !chatItem.chatDir.sent {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Received at: %@", comment: "copied message info"), localTimestamp(meta.createdAt))]
         }
         if let deleteAt = meta.itemTimed?.deleteAt {
-            shareText += [String.localizedStringWithFormat(NSLocalizedString("To be deleted at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
+            shareText += [String.localizedStringWithFormat(NSLocalizedString("Disappears at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
+        }
+        if developerTools {
+            shareText += [String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId) ]
         }
         if !chatItemInfo.itemVersions.isEmpty {
             shareText += ["", NSLocalizedString("Edit history", comment: "copied message info"), ""]
