@@ -64,6 +64,7 @@ fun SendMsgView(
   userCanSend: Boolean,
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
+  customDisappearingMessageTimePref: SharedPreference<Int>? = null,
   sendMessage: (Int?) -> Unit,
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
@@ -71,12 +72,13 @@ fun SendMsgView(
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
-  val showCustomDisappearingMessageDialogue = remember { mutableStateOf(false) }
+  val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
 
-  if (showCustomDisappearingMessageDialogue.value) {
-    CustomDisappearingMessageDialogue(
+  if (showCustomDisappearingMessageDialog.value) {
+    CustomDisappearingMessageDialog(
       sendMessage = sendMessage,
-      setShowDialog = { showCustomDisappearingMessageDialogue.value = it }
+      setShowDialog = { showCustomDisappearingMessageDialog.value = it },
+      customDisappearingMessageTimePref = customDisappearingMessageTimePref
     )
   }
 
@@ -189,7 +191,7 @@ fun SendMsgView(
                   generalGetString(R.string.disappearing_message),
                   painterResource(R.drawable.ic_timer),
                   onClick = {
-                    showCustomDisappearingMessageDialogue.value = true
+                    showCustomDisappearingMessageDialog.value = true
                     showDropdown.value = false
                   }
                 )
@@ -205,20 +207,24 @@ fun SendMsgView(
 }
 
 @Composable
-private fun CustomDisappearingMessageDialogue(
+private fun CustomDisappearingMessageDialog(
   sendMessage: (Int?) -> Unit,
-  setShowDialog: (Boolean) -> Unit
+  setShowDialog: (Boolean) -> Unit,
+  customDisappearingMessageTimePref: SharedPreference<Int>?
 ) {
   val showCustomTimePicker = remember { mutableStateOf(false) }
 
   if (showCustomTimePicker.value) {
-    val selectedDisappearingMessageTime = remember { mutableStateOf(300) }
-    CustomTimePickerView(
+    val selectedDisappearingMessageTime = remember {
+      mutableStateOf(customDisappearingMessageTimePref?.get?.invoke() ?: 300)
+    }
+    CustomTimePickerDialog(
       selectedDisappearingMessageTime,
-      title = generalGetString(R.string.send_disappearing_message_delete_after),
+      title = generalGetString(R.string.delete_after),
       confirmButtonText = generalGetString(R.string.send_disappearing_message_send),
       confirmButtonAction = { ttl ->
         sendMessage(ttl)
+        customDisappearingMessageTimePref?.set?.invoke(ttl)
         setShowDialog(false)
       },
       cancel = { setShowDialog(false) }

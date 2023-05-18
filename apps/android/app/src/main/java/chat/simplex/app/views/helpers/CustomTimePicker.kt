@@ -133,7 +133,7 @@ data class TimeUnitLimits(
 }
 
 @Composable
-fun CustomTimePickerView(
+fun CustomTimePickerDialog(
   selection: MutableState<Int>,
   timeUnitsLimits: List<TimeUnitLimits> = TimeUnitLimits.defaultUnitsLimits,
   title: String,

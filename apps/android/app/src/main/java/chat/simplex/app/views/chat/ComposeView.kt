@@ -801,6 +801,7 @@ fun ComposeView(
         userIsObserver = userIsObserver.value,
         userCanSend = userCanSend.value,
         timedMessageAllowed = timedMessageAllowed,
+        customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
         sendMessage = { ttl ->
           sendMessage(ttl)
           resetLinkPreview()
