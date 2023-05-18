@@ -101,6 +101,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
     }
   }
   val view = LocalView.current
+  val context = LocalContext.current
   if (activeChat.value == null || user == null) {
     chatModel.chatId.value = null
   } else {
@@ -274,9 +275,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       },
       showItemDetails = { cInfo, cItem ->
         withApi {
-          val ciInfo = chatModel.controller.apiGetChatItemInfo(cItem.id)
+          val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
           if (ciInfo != null) {
-            ModalManager.shared.showModal {
+            ModalManager.shared.showModal(endButtons = { ShareButton {
+              shareText(context, itemInfoShareText(cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
+            } }) {
               ChatItemInfoView(cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
             }
           }

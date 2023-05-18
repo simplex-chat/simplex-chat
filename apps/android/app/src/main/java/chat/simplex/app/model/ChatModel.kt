@@ -1,15 +1,15 @@
 package chat.simplex.app.model
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.ComposeState
@@ -19,12 +19,16 @@ import chat.simplex.app.views.usersettings.NotificationPreviewMode
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import kotlinx.datetime.*
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.io.File
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.*
 import kotlin.random.Random
 import kotlin.time.*
 
@@ -1624,8 +1628,28 @@ fun getTimestampText(t: Instant): String {
   val time: LocalDateTime = t.toLocalDateTime(tz)
   val recent = now.date == time.date ||
       (now.date.minus(time.date).days == 1 && now.hour < 12 && time.hour >= 18 )
-  return if (recent) String.format("%02d:%02d", time.hour, time.minute)
-                else String.format("%02d/%02d", time.dayOfMonth, time.monthNumber)
+  val dateFormatter =
+    if (recent) {
+      DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+    } else {
+      DateTimeFormatter.ofPattern(
+        when (Locale.getDefault().country) {
+          "US" -> "M/dd"
+          "DE" -> "dd.MM"
+          "RU" -> "dd.MM"
+          else -> "dd/MM"
+        }
+      )
+//      DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
+    }
+  return time.toJavaLocalDateTime().format(dateFormatter)
+}
+
+fun localTimestamp(t: Instant): String {
+  val tz = TimeZone.currentSystemDefault()
+  val ts: LocalDateTime = t.toLocalDateTime(tz)
+  val dateFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+  return ts.toJavaLocalDateTime().format(dateFormatter)
 }
 
 @Serializable
@@ -2383,11 +2407,6 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
 
 @Serializable
 class ChatItemInfo(
-  val chatItemId: Long,
-  val itemTs: Instant,
-  val createdAt: Instant,
-  val updatedAt: Instant,
-  val deleteAt: Instant,
   val itemVersions: List<ChatItemVersion>,
 )
 
@@ -2395,6 +2414,7 @@ class ChatItemInfo(
 data class ChatItemVersion(
   val chatItemVersionId: Long,
   val msgContent: MsgContent,
+  val formattedText: List<FormattedText>?,
   val itemVersionTs: Instant,
   val createdAt: Instant,
 )

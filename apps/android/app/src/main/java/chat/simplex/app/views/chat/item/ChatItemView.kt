@@ -227,7 +227,7 @@ fun ChatItemView(
               CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
             }
             ItemAction(
-              stringResource(R.string.details_menu),
+              stringResource(R.string.info_menu),
               painterResource(R.drawable.ic_info),
               onClick = {
                 showItemDetails(cInfo, cItem)

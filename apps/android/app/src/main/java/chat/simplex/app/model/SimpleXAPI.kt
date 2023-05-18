@@ -595,8 +595,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun apiGetChatItemInfo(itemId: Long): ChatItemInfo? {
-    return when (val r = sendCmd(CC.ApiGetChatItemInfo(itemId))) {
+  suspend fun apiGetChatItemInfo(type: ChatType, id: Long, itemId: Long): ChatItemInfo? {
+    return when (val r = sendCmd(CC.ApiGetChatItemInfo(type, id, itemId))) {
       is CR.ApiChatItemInfo -> r.chatItemInfo
       else -> {
         if (!(networkErrorAlert(r))) {
@@ -1907,7 +1907,7 @@ sealed class CC {
   class ApiStorageEncryption(val config: DBEncryptionConfig): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
-  class ApiGetChatItemInfo(val itemId: Long): CC()
+  class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
@@ -1997,7 +1997,7 @@ sealed class CC {
     is ApiStorageEncryption -> "/_db encryption ${json.encodeToString(config)}"
     is ApiGetChats -> "/_get chats $userId pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
-    is ApiGetChatItemInfo -> "/_get item info $itemId"
+    is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id)} $itemId"
     is ApiSendMessage -> {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_send ${chatRef(type, id)} live=${onOff(live)} ttl=${ttlStr} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
