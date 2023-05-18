@@ -468,22 +468,10 @@ processChatCommand = \case
   APIGetChatItems pagination search -> withUser $ \user -> do
     chatItems <- withStore $ \db -> getAllChatItems db user pagination search
     pure $ CRChatItems user chatItems
-  APIGetChatItemInfo itemId -> withUser $ \user -> do
-    (chatItem@(AChatItem _ _ _ ChatItem {meta}), itemVersions) <- withStore $ \db -> do
-      ci <- getAChatItem db user itemId
-      versions <- liftIO $ getChatItemVersions db itemId
-      pure (ci, versions)
-    let CIMeta {itemTs, createdAt, updatedAt, itemTimed} = meta
-        ciInfo =
-          ChatItemInfo
-            { chatItemId = itemId,
-              itemTs,
-              createdAt,
-              updatedAt,
-              deleteAt = itemTimed >>= timedDeleteAt',
-              itemVersions
-            }
-    pure $ CRChatItemInfo user chatItem ciInfo
+  APIGetChatItemInfo chatRef itemId -> withUser $ \user -> do
+    (chatItem, itemVersions) <- withStore $ \db ->
+      (,) <$> getAChatItem db user chatRef itemId <*> liftIO (getChatItemVersions db itemId)
+    pure $ CRChatItemInfo user chatItem ChatItemInfo {itemVersions}
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
@@ -1490,7 +1478,9 @@ processChatCommand = \case
     chatItems <- withStore $ \db -> getAllChatItems db user (CPLast $ index + 1) Nothing
     pure $ CRChatItemId user (fmap aChatItemId . listToMaybe $ chatItems)
   ShowChatItem (Just itemId) -> withUser $ \user -> do
-    chatItem <- withStore $ \db -> getAChatItem db user itemId
+    chatItem <- withStore $ \db -> do
+      chatRef <- getChatRefViaItemId db user itemId
+      getAChatItem db user chatRef itemId
     pure $ CRChatItems user ((: []) chatItem)
   ShowChatItem Nothing -> withUser $ \user -> do
     chatItems <- withStore $ \db -> getAllChatItems db user (CPLast 1) Nothing
@@ -1498,7 +1488,7 @@ processChatCommand = \case
   ShowChatItemInfo chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     itemId <- getChatItemIdByText user chatRef msg
-    processChatCommand $ APIGetChatItemInfo itemId
+    processChatCommand $ APIGetChatItemInfo chatRef itemId
   ShowLiveItems on -> withUser $ \_ ->
     asks showLiveItems >>= atomically . (`writeTVar` on) >> ok_
   SendFile chatName f -> withUser $ \user -> do
@@ -4756,7 +4746,7 @@ chatCommandP =
       "/_get chats " *> (APIGetChats <$> A.decimal <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
-      "/_get item info " *> (APIGetChatItemInfo <$> A.decimal),
+      "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),

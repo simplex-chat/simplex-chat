@@ -95,6 +95,11 @@ private fun GroupPreferencesLayout(
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
+//    val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.enable) }
+//    FeatureSection(GroupFeature.Reactions, allowReactions, groupInfo, preferences, onTTLUpdated) {
+//      applyPrefs(preferences.copy(reactions = GroupPreference(enable = it)))
+//    }
+//    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
@@ -146,7 +151,7 @@ private fun FeatureSection(
         iconTint = iconTint,
       )
       if (timedOn) {
-        InfoRow(generalGetString(R.string.delete_after), TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
+        InfoRow(generalGetString(R.string.delete_after), timeText(preferences.timedMessages.ttl))
       }
     }
   }

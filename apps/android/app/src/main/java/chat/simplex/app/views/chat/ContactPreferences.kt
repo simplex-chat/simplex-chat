@@ -95,6 +95,11 @@ private fun ContactPreferencesLayout(
       applyPrefs(featuresAllowed.copy(fullDelete = it))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
+//    val allowReactions: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.reactions) }
+//    FeatureSection(ChatFeature.Reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, allowReactions) {
+//      applyPrefs(featuresAllowed.copy(reactions = it))
+//    }
+//    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
     FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
@@ -183,7 +188,7 @@ private fun TimedMessagesFeatureSection(
       val ttl = rememberSaveable(featuresAllowed.timedMessagesTTL) { mutableStateOf(featuresAllowed.timedMessagesTTL) }
       TimedMessagesTTLPicker(ttl, onTTLUpdated)
     } else if (pref.contactPreference.allow == FeatureAllowed.YES || pref.contactPreference.allow == FeatureAllowed.ALWAYS) {
-      InfoRow(generalGetString(R.string.delete_after), TimedMessagesPreference.ttlText(pref.contactPreference.ttl))
+      InfoRow(generalGetString(R.string.delete_after), timeText(pref.contactPreference.ttl))
     }
   }
   SectionTextFooter(ChatFeature.TimedMessages.enabledDescription(enabled))
@@ -207,7 +212,7 @@ fun TimedMessagesTTLPicker(selection: MutableState<Int?>, onSelected: (Int?) -> 
   val values = ttlValues + if (ttlValues.contains(selection.value)) listOf() else listOf(selection.value)
   ExposedDropDownSettingRow(
     generalGetString(R.string.delete_after),
-    values.map { it to TimedMessagesPreference.ttlText(it) },
+    values.map { it to timeText(it) },
     selection,
     onSelected = onSelected
   )

@@ -202,9 +202,9 @@ fun SectionDividerSpaced(maxTopPadding: Boolean = false, maxBottomPadding: Boole
   Divider(
     Modifier.padding(
       start = DEFAULT_PADDING_HALF,
-      top = if (maxTopPadding) 40.dp else 30.dp,
+      top = if (maxTopPadding) 37.dp else 27.dp,
       end = DEFAULT_PADDING_HALF,
-      bottom = if (maxBottomPadding) 40.dp else 30.dp)
+      bottom = if (maxBottomPadding) 37.dp else 27.dp)
   )
 }
 

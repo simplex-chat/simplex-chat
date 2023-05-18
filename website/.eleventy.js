@@ -212,6 +212,9 @@ module.exports = function (ty) {
       if (parsed.scheme || parsed.host || !parsed.path.endsWith(".md")) {
         return link
       }
+      if (parsed.path.startsWith("../../blog")) {
+        parsed.path = parsed.path.replace("../../blog", "/blog")
+      }
       parsed.path = parsed.path.replace(/\.md$/, ".html")
       return uri.serialize(parsed)
     }

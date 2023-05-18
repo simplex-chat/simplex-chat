@@ -227,6 +227,7 @@ module Simplex.Chat.Store
     getGroupChat,
     getAllChatItems,
     getAChatItem,
+    getChatRefViaItemId,
     getChatItemVersions,
     getDirectCIReactions,
     getDirectReactions,
@@ -4290,11 +4291,14 @@ getAllChatItems db user@User {userId} pagination search_ = do
   itemRefs <-
     rights . map toChatItemRef <$> case pagination of
       CPLast count -> liftIO $ getAllChatItemsLast_ count
-      CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem db user afterId
-      CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem db user beforeId
-  mapM (uncurry (getAChatItem_ db user) >=> liftIO . getACIReactions db) itemRefs
+      CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem_ afterId
+      CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem_ beforeId
+  mapM (uncurry (getAChatItem db user) >=> liftIO . getACIReactions db) itemRefs
   where
     search = fromMaybe "" search_
+    getAChatItem_ itemId = do
+      chatRef <- getChatRefViaItemId db user itemId
+      getAChatItem db user chatRef itemId
     getAllChatItemsLast_ count =
       reverse
         <$> DB.query
@@ -4771,7 +4775,7 @@ getGroupChatItemIdByText' db User {userId} groupId msg =
 
 getChatItemByFileId :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO AChatItem
 getChatItemByFileId db user@User {userId} fileId = do
-  (itemId, chatRef) <-
+  (chatRef, itemId) <-
     ExceptT . firstRow' toChatItemRef (SEChatItemNotFoundByFileId fileId) $
       DB.query
         db
@@ -4783,11 +4787,11 @@ getChatItemByFileId db user@User {userId} fileId = do
             LIMIT 1
           |]
         (userId, fileId)
-  getAChatItem_ db user itemId chatRef
+  getAChatItem db user chatRef itemId
 
 getChatItemByGroupId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO AChatItem
 getChatItemByGroupId db user@User {userId} groupId = do
-  (itemId, chatRef) <-
+  (chatRef, itemId) <-
     ExceptT . firstRow' toChatItemRef (SEChatItemNotFoundByGroupId groupId) $
       DB.query
         db
@@ -4799,22 +4803,20 @@ getChatItemByGroupId db user@User {userId} groupId = do
           LIMIT 1
         |]
         (userId, groupId)
-  getAChatItem_ db user itemId chatRef
+  getAChatItem db user chatRef itemId
 
-getAChatItem :: DB.Connection -> User -> ChatItemId -> ExceptT StoreError IO AChatItem
-getAChatItem db user@User {userId} itemId = do
-  chatRef <-
-    ExceptT . firstRow' toChatRef (SEChatItemNotFound itemId) $
-      DB.query db "SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?" (userId, itemId)
-  getAChatItem_ db user itemId chatRef
+getChatRefViaItemId :: DB.Connection -> User -> ChatItemId -> ExceptT StoreError IO ChatRef
+getChatRefViaItemId db User {userId} itemId = do
+  ExceptT . firstRow' toChatRef (SEChatItemNotFound itemId) $
+    DB.query db "SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?" (userId, itemId)
   where
     toChatRef = \case
       (Just contactId, Nothing) -> Right $ ChatRef CTDirect contactId
       (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId
       (_, _) -> Left $ SEBadChatItem itemId
 
-getAChatItem_ :: DB.Connection -> User -> ChatItemId -> ChatRef -> ExceptT StoreError IO AChatItem
-getAChatItem_ db user itemId = \case
+getAChatItem :: DB.Connection -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
+getAChatItem db user chatRef itemId = case chatRef of
   ChatRef CTDirect contactId -> do
     ct <- getContact db user contactId
     (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
@@ -4839,7 +4841,9 @@ getChatItemVersions db itemId = do
       (Only itemId)
   where
     toChatItemVersion :: (Int64, MsgContent, UTCTime, UTCTime) -> ChatItemVersion
-    toChatItemVersion (chatItemVersionId, msgContent, itemVersionTs, createdAt) = ChatItemVersion {chatItemVersionId, msgContent, itemVersionTs, createdAt}
+    toChatItemVersion (chatItemVersionId, msgContent, itemVersionTs, createdAt) =
+      let formattedText = parseMaybeMarkdownList $ msgContentText msgContent
+       in ChatItemVersion {chatItemVersionId, msgContent, formattedText, itemVersionTs, createdAt}
 
 getDirectChatReactions_ :: DB.Connection -> Contact -> Chat 'CTDirect -> IO (Chat 'CTDirect)
 getDirectChatReactions_ db ct c@Chat {chatItems} = do
@@ -4984,10 +4988,10 @@ updateDirectCIFileStatus db user fileId fileStatus = do
       pure $ AChatItem SCTDirect d cInfo $ updateFileStatus ci fileStatus
     _ -> pure aci
 
-toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64) -> Either StoreError (ChatItemId, ChatRef)
+toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
 toChatItemRef = \case
-  (itemId, Just contactId, Nothing) -> Right (itemId, ChatRef CTDirect contactId)
-  (itemId, Nothing, Just groupId) -> Right (itemId, ChatRef CTGroup groupId)
+  (itemId, Just contactId, Nothing) -> Right (ChatRef CTDirect contactId, itemId)
+  (itemId, Nothing, Just groupId) -> Right (ChatRef CTGroup groupId, itemId)
   (itemId, _, _) -> Left $ SEBadChatItem itemId
 
 updateDirectChatItemsRead :: DB.Connection -> User -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO ()

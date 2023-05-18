@@ -283,9 +283,9 @@ testDirectMessageEditHistory =
       alice #> "@bob hello!"
       bob <# "alice> hello!"
 
-      alice ##> ("/_get item info " <> itemId 1)
+      alice ##> ("/_get item info @2 " <> itemId 1)
       alice <##. "sent at: "
-      bob ##> ("/_get item info " <> itemId 1)
+      bob ##> ("/_get item info @2 " <> itemId 1)
       bob <##. "sent at: "
       bob <##. "received at: "
 
@@ -293,12 +293,12 @@ testDirectMessageEditHistory =
       alice <# "@bob [edited] hey 👋"
       bob <# "alice> [edited] hey 👋"
 
-      alice ##> ("/_get item info " <> itemId 1)
+      alice ##> ("/_get item info @2 " <> itemId 1)
       alice <##. "sent at: "
       alice <## "message history:"
       alice .<## ": hey 👋"
       alice .<## ": hello!"
-      bob ##> ("/_get item info " <> itemId 1)
+      bob ##> ("/_get item info @2 " <> itemId 1)
       bob <##. "sent at: "
       bob <##. "received at: "
       bob <## "message history:"
@@ -434,12 +434,12 @@ testDirectLiveMessage =
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
     -- live message has edit history
-    alice ##> ("/_get item info " <> itemId 2)
+    alice ##> ("/_get item info @2 " <> itemId 2)
     alice <##. "sent at: "
     alice <## "message history:"
     alice .<## ": hello 2"
     alice .<## ":"
-    bob ##> ("/_get item info " <> itemId 2)
+    bob ##> ("/_get item info @2 " <> itemId 2)
     bob <##. "sent at: "
     bob <##. "received at: "
     bob <## "message history:"
