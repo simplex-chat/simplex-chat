@@ -424,7 +424,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
     prohibited = styled (colored Red) ("[unexpected chat item created, please report to developers]" :: String)
 
 viewChatItemInfo :: AChatItem -> ChatItemInfo -> TimeZone -> [StyledString]
-viewChatItemInfo (AChatItem _ msgDir _ _) ChatItemInfo {itemTs, createdAt, deleteAt, itemVersions} tz =
+viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTimed, createdAt}}) ChatItemInfo {itemVersions} tz =
   ["sent at: " <> ts itemTs]
     <> receivedAt
     <> toBeDeletedAt
@@ -434,7 +434,7 @@ viewChatItemInfo (AChatItem _ msgDir _ _) ChatItemInfo {itemTs, createdAt, delet
     receivedAt = case msgDir of
       SMDRcv -> ["received at: " <> ts createdAt]
       SMDSnd -> []
-    toBeDeletedAt = case deleteAt of
+    toBeDeletedAt = case itemTimed >>= timedDeleteAt' of
       Just d -> ["to be deleted at: " <> ts d]
       Nothing -> []
     versions =
