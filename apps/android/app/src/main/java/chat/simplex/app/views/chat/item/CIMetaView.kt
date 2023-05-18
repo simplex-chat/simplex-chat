@@ -24,7 +24,7 @@ fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = Ma
       Text(
         chatItem.timestampText,
         color = metaColor,
-        fontSize = 14.sp,
+        fontSize = 12.sp,
         modifier = Modifier.padding(start = 3.dp)
       )
     } else {
