@@ -1501,12 +1501,7 @@ jsonCIDeleted = \case
   CIModerated m -> JCIDModerated m
 
 data ChatItemInfo = ChatItemInfo
-  { chatItemId :: ChatItemId,
-    itemTs :: UTCTime,
-    createdAt :: UTCTime,
-    updatedAt :: UTCTime,
-    deleteAt :: Maybe UTCTime,
-    itemVersions :: [ChatItemVersion]
+  { itemVersions :: [ChatItemVersion]
   }
   deriving (Eq, Show, Generic)
 
@@ -1515,6 +1510,7 @@ instance ToJSON ChatItemInfo where toEncoding = J.genericToEncoding J.defaultOpt
 data ChatItemVersion = ChatItemVersion
   { chatItemVersionId :: Int64,
     msgContent :: MsgContent,
+    formattedText :: Maybe MarkdownList,
     itemVersionTs :: UTCTime,
     createdAt :: UTCTime
   }
