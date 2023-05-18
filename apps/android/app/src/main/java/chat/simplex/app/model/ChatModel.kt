@@ -1715,18 +1715,18 @@ sealed class CIContent: ItemContent {
   companion object {
     fun featureText(feature: Feature, enabled: String, param: Int?): String =
       if (feature.hasParam) {
-        "${feature.text}: ${TimedMessagesPreference.ttlText(param)}"
+        "${feature.text}: ${timeText(param)}"
       } else {
         "${feature.text}: $enabled"
       }
 
     fun preferenceText(feature: Feature, allowed: FeatureAllowed, param: Int?): String = when {
       allowed != FeatureAllowed.NO && feature.hasParam && param != null ->
-        String.format(generalGetString(R.string.feature_offered_item_with_param), feature.text, TimedMessagesPreference.ttlText(param))
+        String.format(generalGetString(R.string.feature_offered_item_with_param), feature.text, timeText(param))
       allowed != FeatureAllowed.NO ->
-        String.format(generalGetString(R.string.feature_offered_item), feature.text, TimedMessagesPreference.ttlText(param))
+        String.format(generalGetString(R.string.feature_offered_item), feature.text, timeText(param))
       else ->
-        String.format(generalGetString(R.string.feature_cancelled_item), feature.text, TimedMessagesPreference.ttlText(param))
+        String.format(generalGetString(R.string.feature_cancelled_item), feature.text, timeText(param))
     }
   }
 }

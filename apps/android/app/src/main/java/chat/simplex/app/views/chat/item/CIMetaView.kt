@@ -44,7 +44,7 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
     StatusIconText(painterResource(R.drawable.ic_timer), color)
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
-      Text(TimedMessagesPreference.shortTtlText(ttl), color = color, fontSize = 13.sp)
+      Text(shortTimeText(ttl), color = color, fontSize = 13.sp)
     }
     Spacer(Modifier.width(4.dp))
   }
@@ -69,7 +69,7 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
     res += iconSpace
     val ttl = meta.itemTimed.ttl
     if (ttl != chatTTL) {
-      res += TimedMessagesPreference.shortTtlText(ttl)
+      res += shortTimeText(ttl)
     }
   }
   if (meta.statusIcon(CurrentColors.value.colors.secondary) != null || !meta.disappearing) {
