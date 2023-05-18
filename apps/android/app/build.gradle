@@ -160,6 +160,9 @@ dependencies {
     // Video support
     implementation "com.google.android.exoplayer:exoplayer:2.17.1"
 
+    // Wheel picker
+    implementation 'com.github.zj565061763:compose-wheel-picker:1.0.0-alpha10'
+
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'

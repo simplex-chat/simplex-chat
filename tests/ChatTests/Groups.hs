@@ -892,9 +892,9 @@ testGroupMessageEditHistory =
       aliceItemId <- lastItemId alice
       bobItemId <- lastItemId bob
 
-      alice ##> ("/_get item info " <> aliceItemId)
+      alice ##> ("/_get item info #1 " <> aliceItemId)
       alice <##. "sent at: "
-      bob ##> ("/_get item info " <> bobItemId)
+      bob ##> ("/_get item info #1 " <> bobItemId)
       bob <##. "sent at: "
       bob <##. "received at: "
 
@@ -902,12 +902,12 @@ testGroupMessageEditHistory =
       alice <# "#team [edited] hey 👋"
       bob <# "#team alice> [edited] hey 👋"
 
-      alice ##> ("/_get item info " <> aliceItemId)
+      alice ##> ("/_get item info #1 " <> aliceItemId)
       alice <##. "sent at: "
       alice <## "message history:"
       alice .<## ": hey 👋"
       alice .<## ": hello!"
-      bob ##> ("/_get item info " <> bobItemId)
+      bob ##> ("/_get item info #1 " <> bobItemId)
       bob <##. "sent at: "
       bob <##. "received at: "
       bob <## "message history:"
@@ -1059,13 +1059,13 @@ testGroupLiveMessage =
     bob <# "#team alice> [LIVE ended] hello 2"
     cath <# "#team alice> [LIVE ended] hello 2"
     -- live message has edit history
-    alice ##> ("/_get item info " <> msgItemId2)
+    alice ##> ("/_get item info #1 " <> msgItemId2)
     alice <##. "sent at: "
     alice <## "message history:"
     alice .<## ": hello 2"
     alice .<## ":"
     bobItemId <- lastItemId bob
-    bob ##> ("/_get item info " <> bobItemId)
+    bob ##> ("/_get item info #1 " <> bobItemId)
     bob <##. "sent at: "
     bob <##. "received at: "
     bob <## "message history:"
