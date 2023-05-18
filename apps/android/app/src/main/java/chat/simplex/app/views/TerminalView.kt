@@ -86,7 +86,7 @@ fun TerminalLayout(
             userIsObserver = false,
             userCanSend = true,
             allowVoiceToContact = {},
-            sendMessage = sendCommand,
+            sendMessage = { sendCommand() },
             sendLiveMessage = null,
             updateLiveMessage = null,
             onMessageChange = ::onMessageChange,

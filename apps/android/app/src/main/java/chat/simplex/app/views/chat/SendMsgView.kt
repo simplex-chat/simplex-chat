@@ -64,7 +64,8 @@ fun SendMsgView(
   userIsObserver: Boolean,
   userCanSend: Boolean,
   allowVoiceToContact: () -> Unit,
-  sendMessage: () -> Unit,
+  timedMessageAllowed: Boolean = false,
+  sendMessage: (Int?) -> Unit,
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
@@ -80,14 +81,15 @@ fun SendMsgView(
     NativeKeyboard(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange)
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
-      Box(Modifier
-        .matchParentSize()
-        .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(R.string.observer_cant_send_message_title),
-            text = generalGetString(R.string.observer_cant_send_message_desc)
-          )
-        })
+      Box(
+        Modifier
+          .matchParentSize()
+          .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(R.string.observer_cant_send_message_title),
+              text = generalGetString(R.string.observer_cant_send_message_desc)
+            )
+          })
       )
     }
     if (showDeleteTextButton.value) {
@@ -124,10 +126,11 @@ fun SendMsgView(
               else ->
                 RecordVoiceView(recState, stopRecOnNextClick)
             }
-            if (sendLiveMessage != null 
-                && updateLiveMessage != null
-                && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
-                && cs.contextItem is ComposeContextItem.NoContextItem) {
+            if (sendLiveMessage != null
+              && updateLiveMessage != null
+              && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
+              && cs.contextItem is ComposeContextItem.NoContextItem
+            ) {
               Spacer(Modifier.width(10.dp))
               StartLiveMessageButton(userCanSend) {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
@@ -146,27 +149,43 @@ fun SendMsgView(
           val cs = composeState.value
           val icon = if (cs.editing || cs.liveMessage != null) painterResource(R.drawable.ic_check_filled) else painterResource(R.drawable.ic_arrow_upward)
           val disabled = !cs.sendEnabled() ||
-                        (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
-                        cs.endLiveDisabled
-          if (cs.liveMessage == null &&
-            cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
-            cs.contextItem is ComposeContextItem.NoContextItem &&
-            sendLiveMessage != null && updateLiveMessage != null
-          ) {
+              (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
+              cs.endLiveDisabled
+          val showSendLiveMessageMenuButton =
+            cs.liveMessage == null && !cs.editing &&
+                cs.preview !is ComposePreview.VoicePreview &&
+                cs.contextItem is ComposeContextItem.NoContextItem &&
+                sendLiveMessage != null && updateLiveMessage != null
+          val showSendDisappearingMessageMenuButton =
+            cs.liveMessage == null && !cs.editing &&
+                timedMessageAllowed
+
+          if (showSendLiveMessageMenuButton || showSendDisappearingMessageMenuButton) {
             val showDropdown = rememberSaveable { mutableStateOf(false) }
             SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown.value = true }
-
             DefaultDropdownMenu(
               showDropdown,
             ) {
-              ItemAction(
-                generalGetString(R.string.send_live_message),
-                BoltFilled,
-                onClick = {
-                  startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
-                  showDropdown.value = false
-                }
-              )
+              if (showSendLiveMessageMenuButton && sendLiveMessage != null && updateLiveMessage != null) {
+                ItemAction(
+                  generalGetString(R.string.send_live_message),
+                  BoltFilled,
+                  onClick = {
+                    startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
+                    showDropdown.value = false
+                  }
+                )
+              }
+              if (showSendDisappearingMessageMenuButton) {
+                ItemAction(
+                  generalGetString(R.string.disappearing_message),
+                  painterResource(R.drawable.ic_timer),
+                  onClick = {
+                    // TODO show ttl picker
+                    sendMessage(30)
+                  }
+                )
+              }
             }
           } else {
             SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage)
@@ -455,14 +474,14 @@ private fun SendMsgButton(
   sizeDp: Animatable<Float, AnimationVector1D>,
   alpha: Animatable<Float, AnimationVector1D>,
   enabled: Boolean,
-  sendMessage: () -> Unit,
+  sendMessage: (Int?) -> Unit,
   onLongClick: (() -> Unit)? = null
 ) {
   val interactionSource = remember { MutableInteractionSource() }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .combinedClickable(
-        onClick = sendMessage,
+        onClick = { sendMessage(null) },
         onLongClick = onLongClick,
         enabled = enabled,
         role = Role.Button,
@@ -607,6 +626,7 @@ fun PreviewSendMsgView() {
       userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
+      timedMessageAllowed = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
@@ -637,6 +657,7 @@ fun PreviewSendMsgViewEditing() {
       userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
+      timedMessageAllowed = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
@@ -667,6 +688,7 @@ fun PreviewSendMsgViewInProgress() {
       userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
+      timedMessageAllowed = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle

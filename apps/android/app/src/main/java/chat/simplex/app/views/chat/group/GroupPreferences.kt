@@ -146,7 +146,7 @@ private fun FeatureSection(
         iconTint = iconTint,
       )
       if (timedOn) {
-        InfoRow(generalGetString(R.string.delete_after), TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
+        InfoRow(generalGetString(R.string.delete_after), timeText(preferences.timedMessages.ttl))
       }
     }
   }

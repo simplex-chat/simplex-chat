@@ -366,14 +366,15 @@ fun ComposeView(
     chatModel.filesToDelete.clear()
   }
 
-  suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: String? = null, live: Boolean = false): ChatItem? {
+  suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: String? = null, live: Boolean = false, ttl: Int?): ChatItem? {
     val aChatItem = chatModel.controller.apiSendMessage(
       type = cInfo.chatType,
       id = cInfo.apiId,
       file = file,
       quotedItemId = quoted,
       mc = mc,
-      live = live
+      live = live,
+      ttl = ttl
     )
     if (aChatItem != null) chatModel.addChatItem(cInfo, aChatItem.chatItem)
     return aChatItem?.chatItem
@@ -381,7 +382,7 @@ fun ComposeView(
 
 
 
-  suspend fun sendMessageAsync(text: String?, live: Boolean): ChatItem? {
+  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): ChatItem? {
     val cInfo = chat.chatInfo
     val cs = composeState.value
     var sent: ChatItem?
@@ -495,7 +496,8 @@ fun ComposeView(
       msgs.forEachIndexed { index, content ->
         if (index > 0) delay(100)
         sent = send(cInfo, content, if (index == 0) quotedItemId else null, files.getOrNull(index),
-          if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false
+          live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
+          ttl = ttl
         )
       }
       if (sent == null &&
@@ -503,16 +505,16 @@ fun ComposeView(
             cs.preview is ComposePreview.FilePreview ||
             cs.preview is ComposePreview.VoicePreview)
         ) {
-        sent = send(cInfo, MsgContent.MCText(msgText), quotedItemId, null, live)
+        sent = send(cInfo, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
       }
     }
     clearState(live)
     return sent
   }
 
-  fun sendMessage() {
+  fun sendMessage(ttl: Int?) {
     withBGApi {
-      sendMessageAsync(null, false)
+      sendMessageAsync(null, false, ttl)
     }
   }
 
@@ -588,7 +590,7 @@ fun ComposeView(
     val cs = composeState.value
     val typedMsg = cs.message
     if ((cs.sendEnabled() || cs.contextItem is ComposeContextItem.QuotedItem) && (cs.liveMessage == null || !cs.liveMessage?.sent)) {
-      val ci = sendMessageAsync(typedMsg, live = true)
+      val ci = sendMessageAsync(typedMsg, live = true, ttl = null)
       if (ci != null) {
         composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = typedMsg, sent = true))
       }
@@ -609,7 +611,7 @@ fun ComposeView(
     if (liveMessage != null) {
       val sentMsg = liveMessageToSend(liveMessage, typedMsg)
       if (sentMsg != null) {
-        val ci = sendMessageAsync(sentMsg, live = true)
+        val ci = sendMessageAsync(sentMsg, live = true, ttl = null)
         if (ci != null) {
           composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg, sent = true))
         }
@@ -763,7 +765,7 @@ fun ComposeView(
           if (orientation == activity.resources.configuration.orientation) {
             val cs = composeState.value
             if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
-              sendMessage()
+              sendMessage(null)
               resetLinkPreview()
               clearCurrentDraft()
               deleteUnusedFiles()
@@ -784,6 +786,9 @@ fun ComposeView(
         }
       }
 
+      // TODO in 5.2 - allow if ttl is not configured
+      // val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
+      val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) && chat.chatInfo.timedMessagesTTL != null }
       SendMsgView(
         composeState,
         showVoiceRecordIcon = true,
@@ -795,8 +800,9 @@ fun ComposeView(
         allowVoiceToContact = ::allowVoiceToContact,
         userIsObserver = userIsObserver.value,
         userCanSend = userCanSend.value,
-        sendMessage = {
-          sendMessage()
+        timedMessageAllowed = timedMessageAllowed,
+        sendMessage = { ttl ->
+          sendMessage(ttl)
           resetLinkPreview()
         },
         sendLiveMessage = ::sendLiveMessage,

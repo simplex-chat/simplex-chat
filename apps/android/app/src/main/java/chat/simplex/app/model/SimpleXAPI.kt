@@ -579,8 +579,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiSendMessage(type: ChatType, id: Long, file: String? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false): AChatItem? {
-    val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc, live)
+  suspend fun apiSendMessage(type: ChatType, id: Long, file: String? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
+    val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc, live, ttl)
     val r = sendCmd(cmd)
     return when (r) {
       is CR.NewChatItem -> r.chatItem
@@ -1881,7 +1881,7 @@ sealed class CC {
   class ApiStorageEncryption(val config: DBEncryptionConfig): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
-  class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean): CC()
+  class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
@@ -1969,7 +1969,10 @@ sealed class CC {
     is ApiStorageEncryption -> "/_db encryption ${json.encodeToString(config)}"
     is ApiGetChats -> "/_get chats $userId pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
-    is ApiSendMessage -> "/_send ${chatRef(type, id)} live=${onOff(live)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
+    is ApiSendMessage -> {
+      val ttlStr = if (ttl != null) "$ttl" else "default"
+      "/_send ${chatRef(type, id)} live=${onOff(live)} ttl=${ttlStr} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
+    }
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
@@ -2529,50 +2532,101 @@ data class TimedMessagesPreference(
 ): ChatPreference {
   companion object {
     val ttlValues: List<Int?>
-      get() = listOf(30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, null)
+      get() = listOf(3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, null)
+  }
+}
 
-    fun ttlText(ttl: Int?): String {
-      ttl ?: return generalGetString(R.string.feature_off)
-      if (ttl == 0) return  String.format(generalGetString(R.string.ttl_sec), 0)
-      val (m_, s) = divMod(ttl, 60)
-      val (h_, m) = divMod(m_, 60)
-      val (d_, h) = divMod(h_, 24)
-      val (mm, d) = divMod(d_, 30)
-      return maybe(mm, if (mm == 1) String.format(generalGetString(R.string.ttl_month), 1) else String.format(generalGetString(R.string.ttl_months), mm)) +
-          maybe(d, if (d == 1) String.format(generalGetString(R.string.ttl_day), 1) else if (d == 7) String.format(generalGetString(R.string.ttl_week), 1) else if (d == 14) String.format(generalGetString(R.string.ttl_weeks), 2) else String.format(generalGetString(R.string.ttl_days), d)) +
-          maybe(h, if (h == 1) String.format(generalGetString(R.string.ttl_hour), 1) else String.format(generalGetString(R.string.ttl_hours), h)) +
-          maybe(m, String.format(generalGetString(R.string.ttl_min), m)) +
-          maybe(s, String.format(generalGetString(R.string.ttl_sec), s))
+sealed class CustomTimeUnit {
+  object Second: CustomTimeUnit()
+  object Minute: CustomTimeUnit()
+  object Hour: CustomTimeUnit()
+  object Day: CustomTimeUnit()
+  object Week: CustomTimeUnit()
+  object Month: CustomTimeUnit()
+
+  val toSeconds: Int
+    get() =
+      when (this) {
+        Second -> 1
+        Minute -> 60
+        Hour -> 3600
+        Day -> 86400
+        Week -> 7 * 86400
+        Month -> 30 * 86400
+      }
+
+  val text: String
+    get() =
+      when (this) {
+        Second -> generalGetString(R.string.custom_time_unit_seconds)
+        Minute -> generalGetString(R.string.custom_time_unit_minutes)
+        Hour -> generalGetString(R.string.custom_time_unit_hours)
+        Day -> generalGetString(R.string.custom_time_unit_days)
+        Week -> generalGetString(R.string.custom_time_unit_weeks)
+        Month -> generalGetString(R.string.custom_time_unit_months)
+      }
+
+  companion object {
+    fun toTimeUnit(seconds: Int): Pair<CustomTimeUnit, Int> {
+      val tryUnits = listOf(Month, Week, Day, Hour, Minute)
+      var selectedUnit: Pair<CustomTimeUnit, Int>? = null
+      for (unit in tryUnits) {
+        val (v, r) = divMod(seconds, unit.toSeconds)
+        if (r == 0) {
+          selectedUnit = Pair(unit, v)
+          break
+        }
+      }
+      return selectedUnit ?: Pair(Second, seconds)
     }
 
-    fun shortTtlText(ttl: Int?): String {
-      ttl ?: return generalGetString(R.string.feature_off)
-      val m = ttl / 60
-      if (m == 0) {
-        return String.format(generalGetString(R.string.ttl_s), ttl)
-      }
-      val h = m / 60
-      if (h == 0) {
-        return String.format(generalGetString(R.string.ttl_m), m)
-      }
-      val d = h / 24
-      if (d == 0) {
-        return String.format(generalGetString(R.string.ttl_h), h)
-      }
-      val mm = d / 30
-      if (mm > 0) {
-        return String.format(generalGetString(R.string.ttl_mth), mm)
-      }
-      val w = d / 7
-      return if (w == 0 || d % 7 != 0) String.format(generalGetString(R.string.ttl_d), d) else String.format(generalGetString(R.string.ttl_w), w)
-    }
-
-    fun divMod(n: Int, d: Int): Pair<Int, Int> =
+    private fun divMod(n: Int, d: Int): Pair<Int, Int> =
       n / d to n % d
 
-    fun maybe(n: Int, s: String): String =
-      if (n == 0) "" else s
+    fun toText(seconds: Int): String {
+      val (unit, value) = toTimeUnit(seconds)
+      return when (unit) {
+        Second -> String.format(generalGetString(R.string.ttl_sec), value)
+        Minute -> String.format(generalGetString(R.string.ttl_min), value)
+        Hour -> if (value == 1) String.format(generalGetString(R.string.ttl_hour), 1) else String.format(generalGetString(R.string.ttl_hours), value)
+        Day -> if (value == 1) String.format(generalGetString(R.string.ttl_day), 1) else String.format(generalGetString(R.string.ttl_days), value)
+        Week -> if (value == 1) String.format(generalGetString(R.string.ttl_week), 1) else String.format(generalGetString(R.string.ttl_weeks), value)
+        Month -> if (value == 1) String.format(generalGetString(R.string.ttl_month), 1) else String.format(generalGetString(R.string.ttl_months), value)
+      }
+    }
+
+    fun toShortText(seconds: Int): String {
+      val (unit, value) = toTimeUnit(seconds)
+      return when (unit) {
+        Second -> String.format(generalGetString(R.string.ttl_s), value)
+        Minute -> String.format(generalGetString(R.string.ttl_m), value)
+        Hour -> String.format(generalGetString(R.string.ttl_h), value)
+        Day -> String.format(generalGetString(R.string.ttl_d), value)
+        Week -> String.format(generalGetString(R.string.ttl_w), value)
+        Month -> String.format(generalGetString(R.string.ttl_mth), value)
+      }
+    }
   }
+}
+
+fun timeText(seconds: Int?): String {
+  if (seconds == null) {
+    return generalGetString(R.string.feature_off)
+  }
+  if (seconds == 0) {
+    String.format(generalGetString(R.string.ttl_sec), 0)
+  }
+  return CustomTimeUnit.toText(seconds)
+}
+
+fun shortTimeText(seconds: Int?): String {
+  if (seconds == null) {
+    return generalGetString(R.string.feature_off)
+  }
+  if (seconds == 0) {
+    String.format(generalGetString(R.string.ttl_s), 0)
+  }
+  return CustomTimeUnit.toShortText(seconds)
 }
 
 @Serializable

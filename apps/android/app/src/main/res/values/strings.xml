@@ -338,6 +338,7 @@
   <string name="ask_your_contact_to_enable_voice">Please ask your contact to enable sending voice messages.</string>
   <string name="only_group_owners_can_enable_voice">Only group owners can enable voice messages.</string>
   <string name="send_live_message">Send live message</string>
+  <string name="disappearing_message">Disappearing message</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
@@ -1380,4 +1381,12 @@
   <string name="v5_0_app_passcode_descr">Set it instead of system authentication.</string>
   <string name="v5_0_polish_interface">Polish interface</string>
   <string name="v5_0_polish_interface_descr">Thanks to the users – contribute via Weblate!</string>
+
+  <!-- CustomTimePicker -->
+  <string name="custom_time_unit_seconds">seconds</string>
+  <string name="custom_time_unit_minutes">minutes</string>
+  <string name="custom_time_unit_hours">hours</string>
+  <string name="custom_time_unit_days">days</string>
+  <string name="custom_time_unit_weeks">weeks</string>
+  <string name="custom_time_unit_months">months</string>
 </resources>
