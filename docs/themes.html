@@ -35,7 +35,7 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Sending messages</title>
+        <title></title>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
 
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
@@ -113,7 +113,7 @@
                             
                                 <li><a href="/docs/guide/readme.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Quick start</a></li>
                             
-                                <li><a href="/docs/guide/send-messages.html" class="active lg:px-[20px] inline-block whitespace-nowrap">Sending messages</a></li>
+                                <li><a href="/docs/guide/send-messages.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Sending messages</a></li>
                             
                                 <li><a href="/docs/guide/secret-groups.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Secret groups</a></li>
                             
@@ -268,7 +268,7 @@
                             
                                 <li>
                                     
-                                        <a href="/docs/guide/send-messages.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
+                                        <a href="/docs/themes.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
                                             <img class="h-4" src="/img/flags/en.svg" alt="" srcset="">
                                             <p>English</p>
                                         </a>
@@ -453,7 +453,7 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="active" href="/docs/guide/send-messages.html">Sending messages</a>
+                                                    <a class="" href="/docs/guide/send-messages.html">Sending messages</a>
                                                 </li>
                                             
                                                 <li>
@@ -654,74 +654,31 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><h1 id="sending-editing-and-deleting-messages" tabindex="-1">Sending, editing and deleting messages</h1>
-<p>Sending text messages on SimpleX Chat is pretty straightforward, tap on your contact and then tap on text area, type in your message and tap on &quot;Send&quot; button.</p>
-<p>You need to open a conversation to send messages.</p>
-<h2 id="sending-messages" tabindex="-1">Sending messages</h2>
-<h3 id="sending-text-messages" tabindex="-1">Sending text messages</h3>
-<p>You can send, edit and quote messages in a conversation.</p>
-<p>To send, simply type in the message in the entry box and tap &quot;Send&quot;.</p>
-<p>To edit or quote a message, tap and hold the message and choose the action.</p>
-<h3 id="sending-images-and-files" tabindex="-1">Sending images and files</h3>
-<ul>
-<li>Tap 📎 (paperclip) button on the left of the message entry box.</li>
-<li>Choose between &quot;Use Camera&quot;, &quot;From Gallery&quot; and &quot;Choose file&quot;.</li>
-<li>Once you have chosen what you wish to send, tap on &quot;Send&quot; button.</li>
-</ul>
-<p>On iOS you can also paste images from the clipboard.</p>
-<h3 id="sending-voice-messages" tabindex="-1">Sending voice messages</h3>
-<img src="../../blog/images/20221206-voice.png" width="288">
-<ul>
-<li>Tap 🎤 (microphone) button on the right of the message entry box.</li>
-<li>Allow SimpleX Chat to record the voice if prompted. You will have to tap on the microphone button once again if this happens.</li>
-<li>Speak, once you've finished the recording, tap on the square stop icon on the right.</li>
-<li>You may listen to the recording before sending it, and re-record if necessary.</li>
-<li>Tap on &quot;Send&quot; button to send the recorded voice message.</li>
-</ul>
-<p>You can also tap and hold the microphone button to record a voice message. In this case the recording will stop once you release the button. You still need to tap &quot;Send&quot; to send the message.</p>
-<p><strong>Please note</strong>: if the microphone button is gray, that means voice messages are disabled in this conversation. Ask your contact or group owner to enable them (they are enabled by default).</p>
-<h3 id="how-to-use-disappearing-messages" tabindex="-1">How to use disappearing messages</h3>
-<p><img src="../../blog/images/20230103-disappearing2.png" width="288">    <img src="../../blog/images/20230103-disappearing1.png" width="288"></p>
-<ul>
-<li>Tap on name of the conversation.</li>
-<li>Toggle the slider next to &quot;Disappearing messages&quot;.</li>
-<li>Choose how long until messages are deleted after being sent in &quot;Delete after&quot;.</li>
-</ul>
-<p><strong>Please note</strong>: Your contact must also enable disappearing messages. In a group, only group owner can enable disappearing messages.</p>
-<h3 id="sending-live-messages" tabindex="-1">Sending &quot;live&quot; messages</h3>
-<img src="../../blog/images/20230103-live.png" width="288">
-<p>You can use &quot;live&quot; messages for your recipients to see the messages as you type them, without having to tap &quot;Send&quot; button until it's completed. It can be useful in these scenarios:</p>
+                    <div><h1 id="app-color-themes" tabindex="-1">App color themes</h1>
+<p>Mobile apps allow to configure, export and import color themes. Currently this is only supported in Android app.</p>
+<p>You can contribute your themes to the repository by creating a pull request.</p>
+<h2 id="how-to-contribute-a-theme" tabindex="-1">How to contribute a theme</h2>
 <ol>
-<li>Real-time conversation, like talking in person or in a discussion club. You can retract what you wrote, but your recipients would see it. Also people don’t need to guess what you’re typing. This allows to avoid interrupting the flow of conversation and still send longer messages.</li>
-<li>An activist doing live reporting when there is a risk to lose the phone or connection at any moment. This feature allows to send as much as possible, up to the last word, without having to send only very short messages.</li>
+<li>
+<p>Once you have configured your theme in the app, export it to a file and give it a descriptive name – e.g., <code>example.theme</code></p>
+</li>
+<li>
+<p>Export your app database, and import a <a href="./themes/simplex-chat.sample.zip">sample chat database</a>.</p>
+</li>
+<li>
+<p>Make three screenshots - the list of conversations with opened profile picker, conversation and privacy settings.</p>
+</li>
+<li>
+<p>Create PR that includes these files and amends this <a href="http://THEMES.md">THEMES.md</a> file, following the example below.</p>
+</li>
+<li>
+<p>Restore your database from the backup.</p>
+</li>
 </ol>
-<p>To send a &quot;live&quot; message:</p>
-<ul>
-<li>Tap ⚡️ (lightning) button on the right of the message entry box.</li>
-<li>When you do it first time, you would see and alert explaining the feature. Tap &quot;OK&quot;, and tap it again.</li>
-<li>Now you can start typing the messages, the app will be periodically sending the updates to your recipients, as you type (every few seconds, and only complete words).</li>
-</ul>
-<h3 id="sending-stickers-and-animated-messages" tabindex="-1">Sending stickers and animated messages</h3>
-<p><img src="../../blog/images/20230103-stickers1.png" width="288">    <img src="../../blog/images/20230103-stickers2.png" width="303"></p>
-<p>While there are no stickers and GIFs in the app itself, you can send them using third-party (such as <a href="https://apps.apple.com/us/app/giphy-the-gif-search-engine/id974748812">GIPHY</a> on iOS) or native (Android 13+) keyboards.</p>
-<h3 id="message-drafts" tabindex="-1">Message drafts</h3>
-<p><img src="../../blog/images/20230204-draft1.png" width="288">    <img src="../../blog/images/20230204-draft2.png" width="288"></p>
-<p>Messages are kept in the chat until they are sent, even if you leave the chat.</p>
-<p>For privacy and simplicity, we decided to allow only one message draft and keep it only until the app is stopped.</p>
-<p>Read more in <a href="/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#message-draft">this post</a>.</p>
-<h2 id="deleting-messages" tabindex="-1">Deleting messages</h2>
-<p><img src="../../blog/images/20221206-deleted1.png" width="288">    <img src="../../blog/images/20221206-deleted2.png" width="288"></p>
-<p>To delete a message, tap and hold the message and choose &quot;Delete&quot;.</p>
-<p>If you sent this message yourself within the last 24 hours, you will be offered two options:</p>
-<ul>
-<li><code>delete for everyone</code> - this will either mark the message as deleted for you and the recipient(s) (this is the default) or fully delete the message on your and recipients' devices (if you have enabled &quot;Delete for everyone&quot; in the conversation preferences)</li>
-<li><code>delete for me</code> - this will delete the message only locally.</li>
-</ul>
-<p>Please read about <a href="/blog/20221206-simplex-chat-v4.3-voice-messages.html#irreversible-message-deletion">reasons for not allowing full deletion by default</a>. TL;DR: data sovereignty.</p>
-<h2 id="moderating-messages-in-the-groups" tabindex="-1">Moderating messages in the groups</h2>
-<p>Group admins can delete member messages that are inappropriate for the groups.</p>
-<p>To remove a message of another member, tap and hold the message and choose &quot;Moderate&quot;.</p>
-<p>Please read about <a href="/blog/20230328-simplex-chat-v4-6-hidden-profiles.html#community-moderation">group moderation</a>.</p>
+<h2 id="color-themes" tabindex="-1">Color themes</h2>
+<h3 id="simplex-included-dark-blue-theme" tabindex="-1">SimpleX - included dark blue theme</h3>
+<p>Download <a href="./themes/example.theme">SimpleX theme</a></p>
+<p><img src="./themes/example-chats.png" width="240">    <img src="./themes/example-conversation.png" width="240">    <img src="./themes/example-settings.png" width="240">   </p>
 </div>
                 </article>
             </main>
