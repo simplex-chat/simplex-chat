@@ -18,7 +18,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
@@ -29,14 +29,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.*
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
@@ -44,8 +44,7 @@ import androidx.core.widget.*
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.CurrentColors
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -72,6 +71,15 @@ fun SendMsgView(
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
+  val showCustomDisappearingMessageDialogue = remember { mutableStateOf(false) }
+
+  if (showCustomDisappearingMessageDialogue.value) {
+    CustomDisappearingMessageDialogue(
+      sendMessage = sendMessage,
+      setShowDialog = { showCustomDisappearingMessageDialogue.value = it }
+    )
+  }
+
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
     val showProgress = cs.inProgress && (cs.preview is ComposePreview.MediaPreview || cs.preview is ComposePreview.FilePreview)
@@ -181,8 +189,7 @@ fun SendMsgView(
                   generalGetString(R.string.disappearing_message),
                   painterResource(R.drawable.ic_timer),
                   onClick = {
-                    // TODO show ttl picker
-                    sendMessage(30)
+                    showCustomDisappearingMessageDialogue.value = true
                   }
                 )
               }
@@ -190,6 +197,77 @@ fun SendMsgView(
           } else {
             SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage)
           }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun CustomDisappearingMessageDialogue(
+  sendMessage: (Int?) -> Unit,
+  setShowDialog: (Boolean) -> Unit
+) {
+  @Composable
+  fun ChoiceButton(
+    text: String,
+    onClick: () -> Unit
+  ) {
+    TextButton(onClick) {
+      Text(
+        text,
+        fontSize = 18.sp,
+        color = MaterialTheme.colors.primary
+      )
+    }
+  }
+
+  Dialog(onDismissRequest = { setShowDialog(false) }) {
+    Surface(
+      shape = RoundedCornerShape(corner = CornerSize(25.dp))
+    ) {
+      Box(
+        contentAlignment = Alignment.Center
+      ) {
+        Column(
+          modifier = Modifier.padding(vertical = DEFAULT_PADDING, horizontal = DEFAULT_PADDING_HALF),
+          verticalArrangement = Arrangement.spacedBy(6.dp),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Text(" ") // centers title
+            Text(
+              generalGetString(R.string.send_disappearing_message),
+              fontSize = 16.sp,
+              color = MaterialTheme.colors.secondary
+            )
+            Icon(
+              painterResource(R.drawable.ic_close),
+              generalGetString(R.string.icon_descr_close_button),
+              tint = colorResource(android.R.color.darker_gray),
+              modifier = Modifier
+                .size(25.dp)
+                .clickable { setShowDialog(false) }
+            )
+          }
+
+          ChoiceButton(generalGetString(R.string.send_disappearing_message_30_seconds)) {
+            sendMessage(30)
+            setShowDialog(false)
+          }
+          ChoiceButton(generalGetString(R.string.send_disappearing_message_1_minute)) {
+            sendMessage(60)
+            setShowDialog(false)
+          }
+          ChoiceButton(generalGetString(R.string.send_disappearing_message_5_minutes)) {
+            sendMessage(300)
+            setShowDialog(false)
+          }
+          ChoiceButton(generalGetString(R.string.send_disappearing_message_custom_time)) { sendMessage(30) }
         }
       }
     }

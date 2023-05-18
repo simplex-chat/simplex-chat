@@ -339,6 +339,11 @@
   <string name="only_group_owners_can_enable_voice">Only group owners can enable voice messages.</string>
   <string name="send_live_message">Send live message</string>
   <string name="disappearing_message">Disappearing message</string>
+  <string name="send_disappearing_message">Send disappearing message</string>
+  <string name="send_disappearing_message_30_seconds">30 seconds</string>
+  <string name="send_disappearing_message_1_minute">1 minute</string>
+  <string name="send_disappearing_message_5_minutes">5 minutes</string>
+  <string name="send_disappearing_message_custom_time">Custom time</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
