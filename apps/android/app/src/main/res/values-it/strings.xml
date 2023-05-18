@@ -1201,4 +1201,16 @@
     <string name="if_you_enter_passcode_data_removed">Se inserisci questo codice all\'apertura dell\'app, tutti i dati di essa verranno rimossi in modo irreversibile!</string>
     <string name="set_passcode">Imposta codice</string>
     <string name="change_self_destruct_passcode">Cambia codice di autodistruzione</string>
+    <string name="message_reactions">Reazioni ai messaggi</string>
+    <string name="message_reactions_prohibited_in_this_chat">Le reazioni ai messaggi sono vietate in questa chat.</string>
+    <string name="message_reactions_are_prohibited">Le reazioni ai messaggi sono vietate in questo gruppo.</string>
+    <string name="only_you_can_add_message_reactions">Solo tu puoi aggiungere reazioni ai messaggi.</string>
+    <string name="prohibit_message_reactions">Proibisci le reazioni ai messaggi.</string>
+    <string name="prohibit_message_reactions_group">Proibisci le reazioni ai messaggi.</string>
+    <string name="allow_message_reactions">Consenti reazioni ai messaggi.</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Sia tu che il tuo contatto potete aggiungere reazioni ai messaggi.</string>
+    <string name="only_your_contact_can_add_message_reactions">Solo il tuo contatto può aggiungere reazioni ai messaggi.</string>
+    <string name="allow_your_contacts_adding_message_reactions">Consenti ai tuoi contatti di aggiungere reazioni ai messaggi.</string>
+    <string name="allow_message_reactions_only_if">Consenti reazioni ai messaggi solo se il tuo contatto le consente.</string>
+    <string name="group_members_can_add_message_reactions">I membri del gruppo possono aggiungere reazioni ai messaggi.</string>
 </resources>
