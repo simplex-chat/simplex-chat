@@ -1200,4 +1200,16 @@
     <string name="if_you_enter_self_destruct_code">Als u uw zelfvernietigings wachtwoord invoert tijdens het openen van de app:</string>
     <string name="if_you_enter_passcode_data_removed">Als u deze toegangscode invoert bij het openen van de app, worden alle app-gegevens onomkeerbaar verwijderd!</string>
     <string name="set_passcode">Toegangscode instellen</string>
+    <string name="prohibit_message_reactions">Berichtreacties verbieden.</string>
+    <string name="only_you_can_add_message_reactions">Alleen jij kunt berichtreacties toevoegen.</string>
+    <string name="message_reactions_are_prohibited">Reacties op berichten zijn verboden in deze groep.</string>
+    <string name="prohibit_message_reactions_group">Berichten reacties verbieden.</string>
+    <string name="allow_message_reactions_only_if">Sta berichtreacties alleen toe als uw contactpersoon dit toestaat.</string>
+    <string name="allow_your_contacts_adding_message_reactions">Sta uw contactpersonen toe om berichtreacties toe te voegen.</string>
+    <string name="allow_message_reactions">Sta berichtreacties toe.</string>
+    <string name="group_members_can_add_message_reactions">Groepsleden kunnen berichtreacties toevoegen.</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Zowel u als uw contactpersoon kunnen berichtreacties toevoegen.</string>
+    <string name="message_reactions">Reacties op berichten</string>
+    <string name="message_reactions_prohibited_in_this_chat">Reacties op berichten zijn verboden in deze chat.</string>
+    <string name="only_your_contact_can_add_message_reactions">Alleen uw contactpersoon kan berichtreacties toevoegen.</string>
 </resources>
