@@ -706,4 +706,15 @@
     <string name="feature_off">כבוי</string>
     <string name="v4_3_voice_messages_desc">מקסימום 40 שניות, מתקבל מיידית.</string>
     <string name="feature_offered_item">מוצע על ידי %s</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">גם אתם וגם איש הקשר יכולים להוסיף תגובות אמוג׳י להודעות.</string>
+    <string name="message_reactions">תגובות אמוג׳י להודעות</string>
+    <string name="allow_message_reactions">אפשר תגובות אמוג׳י להודעות.</string>
+    <string name="message_reactions_prohibited_in_this_chat">תגובות אמוג׳י להודעות אסורות בצ׳אט זה.</string>
+    <string name="message_reactions_are_prohibited">תגובות אמוג׳י להודעות אסורות בקבוצה זו.</string>
+    <string name="allow_your_contacts_adding_message_reactions">אפשר לאנשי הקשר להוסיף תגובות אמוג׳י להודעות.</string>
+    <string name="allow_message_reactions_only_if">אפשר תגובות אמוג׳י להודעות רק אם איש הקשר מאפשר אותן.</string>
+    <string name="group_members_can_add_message_reactions">חברי הקבוצה יכולים להוסיף תגובות אמוג׳י להודעות.</string>
+    <string name="only_you_can_add_message_reactions">רק אתם יכולים להוסיף תגובות אמוג׳י להודעות.</string>
+    <string name="only_your_contact_can_add_message_reactions">רק איש הקשר שלכם יכול להוסיף תגובות אמוג׳י להודעות.</string>
+    <string name="open_verb">פתח</string>
 </resources>
