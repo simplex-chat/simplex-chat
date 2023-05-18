@@ -82,11 +82,11 @@ struct ChatItemInfoView: View {
     
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            messageText(itemVersion.msgContent.text, parseSimpleXMarkdown(itemVersion.msgContent.text), nil)
+            messageText(itemVersion.msgContent.text, itemVersion.formattedText, nil)
                 .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(ciDirFrameColor(chatItemSent: chatItem.chatDir.sent, colorScheme: colorScheme))
+                .background(chatItemFrameColor(chatItem, colorScheme))
                 .cornerRadius(18)
                 .contextMenu {
                     Button {

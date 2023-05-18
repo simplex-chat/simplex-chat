@@ -333,11 +333,7 @@ func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ colorScheme: ColorSch
 }
 
 func chatItemFrameColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
-    ciDirFrameColor(chatItemSent: ci.chatDir.sent, colorScheme: colorScheme)
-}
-
-func ciDirFrameColor(chatItemSent: Bool, colorScheme: ColorScheme) -> Color {
-    chatItemSent
+    ci.chatDir.sent
     ? (colorScheme == .light ? sentColorLight : sentColorDark)
     : Color(uiColor: .tertiarySystemGroupedBackground)
 }
