@@ -42,15 +42,15 @@ struct ChatItemInfoView: View {
                         .padding(.bottom)
 
                     let maxWidth = (g.size.width - 32) * 0.84
+                    if developerTools {
+                        infoRow("Database ID", "\(chatItemInfo.chatItemId)")
+                    }
                     infoRow("Sent at", localTimestamp(chatItemInfo.itemTs))
                     if !chatItemSent {
                         infoRow("Received at", localTimestamp(chatItemInfo.createdAt))
                     }
                     if let deleteAt = chatItemInfo.deleteAt {
                         infoRow("To be deleted at", localTimestamp(deleteAt))
-                    }
-                    if developerTools {
-                        infoRow("Database ID", "\(chatItemInfo.chatItemId)")
                     }
 
                     if !chatItemInfo.itemVersions.isEmpty {
@@ -118,15 +118,15 @@ struct ChatItemInfoView: View {
         var shareText = ""
         let nl = "\n"
         shareText += "Message details" + nl + nl
+        if developerTools {
+            shareText += "Database ID: \(chatItemInfo.chatItemId)" + nl
+        }
         shareText += "Sent at: \(localTimestamp(chatItemInfo.itemTs))" + nl
         if !chatItemSent {
             shareText += "Received at: \(localTimestamp(chatItemInfo.createdAt))" + nl
         }
         if let deleteAt = chatItemInfo.deleteAt {
             shareText += "To be deleted at: \(localTimestamp(deleteAt))" + nl
-        }
-        if developerTools {
-            shareText += "Database ID: \(chatItemInfo.chatItemId)" + nl
         }
         if !chatItemInfo.itemVersions.isEmpty {
             shareText += nl + "Edit history" + nl + nl
