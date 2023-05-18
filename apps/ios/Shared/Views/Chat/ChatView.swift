@@ -444,7 +444,6 @@ struct ChatView: View {
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var chat: Chat
         @Environment(\.colorScheme) var colorScheme
-        @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
         var ci: ChatItem
         var showMember: Bool = false
         var maxWidth: CGFloat
@@ -538,7 +537,7 @@ struct ChatView: View {
         private func menu(live: Bool) -> [UIMenuElement] {
             var menu: [UIMenuElement] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
-                if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction && developerTools,
+                if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    let rm = reactionUIMenu() {
                     menu.append(rm)
                 }

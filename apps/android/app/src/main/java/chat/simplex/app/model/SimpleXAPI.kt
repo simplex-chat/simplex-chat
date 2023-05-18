@@ -600,6 +600,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiChatItemReaction(type: ChatType, id: Long, itemId: Long, add: Boolean, reaction: MsgReaction): ChatItem? {
+    val r = sendCmd(CC.ApiChatItemReaction(type, id, itemId, add, reaction))
+    if (r is CR.ChatItemReaction) return r.reaction.chatReaction.chatItem
+    Log.e(TAG, "apiUpdateChatItem bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiDeleteChatItem(type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): CR.ChatItemDeleted? {
     val r = sendCmd(CC.ApiDeleteChatItem(type, id, itemId, mode))
     if (r is CR.ChatItemDeleted) return r
@@ -1378,6 +1385,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       is CR.ChatItemUpdated ->
         chatItemSimpleUpdate(r.user, r.chatItem)
+      is CR.ChatItemReaction -> {
+        if (active(r.user)) {
+          chatModel.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
+        }
+      }
       is CR.ChatItemDeleted -> {
         if (!active(r.user)) {
           if (r.toChatItem == null && r.deletedChatItem.chatItem.isRcvNew && r.deletedChatItem.chatInfo.ntfsEnabled) {
@@ -1885,6 +1897,7 @@ sealed class CC {
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
+  class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
   class ApiNewGroup(val userId: Long, val groupProfile: GroupProfile): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
@@ -1976,6 +1989,7 @@ sealed class CC {
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
+    is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
     is ApiNewGroup -> "/_group $userId ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
@@ -2062,6 +2076,7 @@ sealed class CC {
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
+    is ApiChatItemReaction -> "apiChatItemReaction"
     is ApiNewGroup -> "apiNewGroup"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
@@ -2476,15 +2491,23 @@ data class ChatSettings(
 data class FullChatPreferences(
   val timedMessages: TimedMessagesPreference,
   val fullDelete: SimpleChatPreference,
+  val reactions: SimpleChatPreference,
   val voice: SimpleChatPreference,
   val calls: SimpleChatPreference,
 ) {
-  fun toPreferences(): ChatPreferences = ChatPreferences(timedMessages = timedMessages, fullDelete = fullDelete, voice = voice, calls = calls)
+  fun toPreferences(): ChatPreferences = ChatPreferences(
+    timedMessages = timedMessages,
+    fullDelete = fullDelete,
+    reactions = reactions,
+    voice = voice,
+    calls = calls
+  )
 
   companion object {
     val sampleData = FullChatPreferences(
       timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
       fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
+      reactions = SimpleChatPreference(allow = FeatureAllowed.YES),
       voice = SimpleChatPreference(allow = FeatureAllowed.YES),
       calls = SimpleChatPreference(allow = FeatureAllowed.YES),
     )
@@ -2495,6 +2518,7 @@ data class FullChatPreferences(
 data class ChatPreferences(
   val timedMessages: TimedMessagesPreference?,
   val fullDelete: SimpleChatPreference?,
+  val reactions: SimpleChatPreference?,
   val voice: SimpleChatPreference?,
   val calls: SimpleChatPreference?,
 ) {
@@ -2502,6 +2526,7 @@ data class ChatPreferences(
     when (feature) {
       ChatFeature.TimedMessages -> this.copy(timedMessages = TimedMessagesPreference(allow = allowed, ttl = param ?: this.timedMessages?.ttl))
       ChatFeature.FullDelete -> this.copy(fullDelete = SimpleChatPreference(allow = allowed))
+      ChatFeature.Reactions -> this.copy(reactions = SimpleChatPreference(allow = allowed))
       ChatFeature.Voice -> this.copy(voice = SimpleChatPreference(allow = allowed))
       ChatFeature.Calls -> this.copy(calls = SimpleChatPreference(allow = allowed))
     }
@@ -2510,6 +2535,7 @@ data class ChatPreferences(
     val sampleData = ChatPreferences(
       timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
       fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
+      reactions = SimpleChatPreference(allow = FeatureAllowed.YES),
       voice = SimpleChatPreference(allow = FeatureAllowed.YES),
       calls = SimpleChatPreference(allow = FeatureAllowed.YES),
     )
@@ -2633,12 +2659,14 @@ fun shortTimeText(seconds: Int?): String {
 data class ContactUserPreferences(
   val timedMessages: ContactUserPreferenceTimed,
   val fullDelete: ContactUserPreference,
+  val reactions: ContactUserPreference,
   val voice: ContactUserPreference,
   val calls: ContactUserPreference,
 ) {
   fun toPreferences(): ChatPreferences = ChatPreferences(
     timedMessages = timedMessages.userPreference.pref,
     fullDelete = fullDelete.userPreference.pref,
+    reactions = reactions.userPreference.pref,
     voice = voice.userPreference.pref,
     calls = calls.userPreference.pref
   )
@@ -2654,6 +2682,11 @@ data class ContactUserPreferences(
         enabled = FeatureEnabled(forUser = false, forContact = false),
         userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.NO)),
         contactPreference = SimpleChatPreference(allow = FeatureAllowed.NO)
+      ),
+      reactions = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = true, forContact = true),
+        userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
+        contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
       ),
       voice = ContactUserPreference(
         enabled = FeatureEnabled(forUser = true, forContact = true),
@@ -2751,6 +2784,7 @@ interface Feature {
 enum class ChatFeature: Feature {
   @SerialName("timedMessages") TimedMessages,
   @SerialName("fullDelete") FullDelete,
+  @SerialName("reactions") Reactions,
   @SerialName("voice") Voice,
   @SerialName("calls") Calls;
 
@@ -2768,6 +2802,7 @@ enum class ChatFeature: Feature {
     get() = when(this) {
       TimedMessages -> generalGetString(R.string.timed_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
+      Reactions -> generalGetString(R.string.message_reactions)
       Voice -> generalGetString(R.string.voice_messages)
       Calls -> generalGetString(R.string.audio_video_calls)
     }
@@ -2776,6 +2811,7 @@ enum class ChatFeature: Feature {
     @Composable get() = when(this) {
       TimedMessages -> painterResource(R.drawable.ic_timer)
       FullDelete -> painterResource(R.drawable.ic_delete_forever)
+      Reactions -> painterResource(R.drawable.ic_add_reaction)
       Voice -> painterResource(R.drawable.ic_keyboard_voice)
       Calls -> painterResource(R.drawable.ic_call)
     }
@@ -2784,6 +2820,7 @@ enum class ChatFeature: Feature {
   override fun iconFilled(): Painter = when(this) {
       TimedMessages -> painterResource(R.drawable.ic_timer_filled)
       FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
+      Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
       Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
       Calls -> painterResource(R.drawable.ic_call_filled)
   }
@@ -2800,7 +2837,12 @@ enum class ChatFeature: Feature {
         FeatureAllowed.YES -> generalGetString(R.string.allow_irreversible_message_deletion_only_if)
         FeatureAllowed.NO -> generalGetString(R.string.contacts_can_mark_messages_for_deletion)
       }
-      Voice -> when (allowed) {
+      Reactions -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_adding_message_reactions)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_message_reactions_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.prohibit_message_reactions)
+      }
+        Voice -> when (allowed) {
         FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_voice_messages)
         FeatureAllowed.YES -> generalGetString(R.string.allow_voice_messages_only_if)
         FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_voice_messages)
@@ -2826,6 +2868,12 @@ enum class ChatFeature: Feature {
         enabled.forContact -> generalGetString(R.string.only_your_contact_can_delete)
         else -> generalGetString(R.string.message_deletion_prohibited)
       }
+      Reactions -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_add_message_reactions)
+        enabled.forUser -> generalGetString(R.string.only_you_can_add_message_reactions)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_add_message_reactions)
+        else -> generalGetString(R.string.message_reactions_prohibited_in_this_chat)
+      }
       Voice -> when {
         enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_send_voice)
         enabled.forUser -> generalGetString(R.string.only_you_can_send_voice)
@@ -2846,6 +2894,7 @@ enum class GroupFeature: Feature {
   @SerialName("timedMessages") TimedMessages,
   @SerialName("directMessages") DirectMessages,
   @SerialName("fullDelete") FullDelete,
+  @SerialName("reactions") Reactions,
   @SerialName("voice") Voice;
 
   override val hasParam: Boolean get() = when(this) {
@@ -2858,6 +2907,7 @@ enum class GroupFeature: Feature {
       TimedMessages -> generalGetString(R.string.timed_messages)
       DirectMessages -> generalGetString(R.string.direct_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
+      Reactions -> generalGetString(R.string.message_reactions)
       Voice -> generalGetString(R.string.voice_messages)
     }
 
@@ -2866,6 +2916,7 @@ enum class GroupFeature: Feature {
       TimedMessages -> painterResource(R.drawable.ic_timer)
       DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle)
       FullDelete -> painterResource(R.drawable.ic_delete_forever)
+      Reactions -> painterResource(R.drawable.ic_add_reaction)
       Voice -> painterResource(R.drawable.ic_keyboard_voice)
     }
 
@@ -2874,6 +2925,7 @@ enum class GroupFeature: Feature {
     TimedMessages -> painterResource(R.drawable.ic_timer_filled)
     DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle_filled)
     FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
+    Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
     Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
   }
 
@@ -2891,6 +2943,10 @@ enum class GroupFeature: Feature {
         FullDelete -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
+        }
+        Reactions -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_message_reactions)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_reactions_group)
         }
         Voice -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
@@ -2910,6 +2966,10 @@ enum class GroupFeature: Feature {
         FullDelete -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
+        }
+        Reactions -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_add_message_reactions)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.message_reactions_are_prohibited)
         }
         Voice -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
@@ -2951,6 +3011,7 @@ data class ContactFeaturesAllowed(
   val timedMessagesAllowed: Boolean,
   val timedMessagesTTL: Int?,
   val fullDelete: ContactFeatureAllowed,
+  val reactions: ContactFeatureAllowed,
   val voice: ContactFeatureAllowed,
   val calls: ContactFeatureAllowed,
 ) {
@@ -2959,6 +3020,7 @@ data class ContactFeaturesAllowed(
       timedMessagesAllowed = false,
       timedMessagesTTL = null,
       fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
+      reactions = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
       voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
       calls = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
     )
@@ -2972,6 +3034,7 @@ fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPrefere
     timedMessagesAllowed = allow == FeatureAllowed.YES || allow == FeatureAllowed.ALWAYS,
     timedMessagesTTL = pref.pref.ttl,
     fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
+    reactions = contactUserPrefToFeatureAllowed(contactUserPreferences.reactions),
     voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
     calls = contactUserPrefToFeatureAllowed(contactUserPreferences.calls),
   )
@@ -2991,6 +3054,7 @@ fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed
   ChatPreferences(
     timedMessages = TimedMessagesPreference(if (contactFeaturesAllowed.timedMessagesAllowed) FeatureAllowed.YES else FeatureAllowed.NO, contactFeaturesAllowed.timedMessagesTTL),
     fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
+    reactions = contactFeatureAllowedToPref(contactFeaturesAllowed.reactions),
     voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
     calls = contactFeatureAllowedToPref(contactFeaturesAllowed.calls),
   )
@@ -3022,16 +3086,24 @@ data class FullGroupPreferences(
   val timedMessages: TimedMessagesGroupPreference,
   val directMessages: GroupPreference,
   val fullDelete: GroupPreference,
+  val reactions: GroupPreference,
   val voice: GroupPreference
 ) {
   fun toGroupPreferences(): GroupPreferences =
-    GroupPreferences(timedMessages = timedMessages, directMessages = directMessages, fullDelete = fullDelete, voice = voice)
+    GroupPreferences(
+      timedMessages = timedMessages,
+      directMessages = directMessages,
+      fullDelete = fullDelete,
+      reactions = reactions,
+      voice = voice
+    )
 
   companion object {
     val sampleData = FullGroupPreferences(
       timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF),
       directMessages = GroupPreference(GroupFeatureEnabled.OFF),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
+      reactions = GroupPreference(GroupFeatureEnabled.ON),
       voice = GroupPreference(GroupFeatureEnabled.ON)
     )
   }
@@ -3042,6 +3114,7 @@ data class GroupPreferences(
   val timedMessages: TimedMessagesGroupPreference?,
   val directMessages: GroupPreference?,
   val fullDelete: GroupPreference?,
+  val reactions: GroupPreference?,
   val voice: GroupPreference?
 ) {
   companion object {
@@ -3049,6 +3122,7 @@ data class GroupPreferences(
       timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF),
       directMessages = GroupPreference(GroupFeatureEnabled.OFF),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
+      reactions = GroupPreference(GroupFeatureEnabled.ON),
       voice = GroupPreference(GroupFeatureEnabled.ON)
     )
   }
@@ -3220,6 +3294,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItem") class NewChatItem(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: User, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: User, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val user: User, val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
   @Serializable @SerialName("contactsList") class ContactsList(val user: User, val contacts: List<Contact>): CR()
   // group events
@@ -3331,6 +3406,7 @@ sealed class CR {
     is NewChatItem -> "newChatItem"
     is ChatItemStatusUpdated -> "chatItemStatusUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
+    is ChatItemReaction -> "chatItemReaction"
     is ChatItemDeleted -> "chatItemDeleted"
     is ContactsList -> "contactsList"
     is GroupCreated -> "groupCreated"
@@ -3440,6 +3516,7 @@ sealed class CR {
     is NewChatItem -> withUser(user, json.encodeToString(chatItem))
     is ChatItemStatusUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
+    is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
     is ChatItemDeleted -> withUser(user, "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}\nbyUser: $byUser")
     is ContactsList -> withUser(user, json.encodeToString(contacts))
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))

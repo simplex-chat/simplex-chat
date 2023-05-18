@@ -40,10 +40,10 @@ fun ComposeVoiceView(
       val audioPlaying = rememberSaveable { mutableStateOf(false) }
       Row(
         Modifier
-          .height(60.dp)
+          .height(57.dp)
           .fillMaxWidth()
           .background(sentColor)
-          .padding(top = 8.dp),
+          .padding(top = 3.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
         IconButton(
