@@ -2474,7 +2474,11 @@ public enum MsgReaction: Hashable {
 
     public var text: String {
         switch self {
-        case let .emoji(emoji): return emoji.rawValue
+        case let .emoji(emoji):
+            switch emoji {
+            case .heart: return "❤️"
+            default: return emoji.rawValue
+            }
         case .unknown: return "?"
         }
     }

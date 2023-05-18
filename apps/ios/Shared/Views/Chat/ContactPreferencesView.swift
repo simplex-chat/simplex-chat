@@ -12,7 +12,6 @@ import SimpleXChat
 struct ContactPreferencesView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @Binding var contact: Contact
     @State var featuresAllowed: ContactFeaturesAllowed
     @State var currentFeaturesAllowed: ContactFeaturesAllowed
@@ -25,9 +24,7 @@ struct ContactPreferencesView: View {
             List {
                 timedMessagesFeatureSection()
                 featureSection(.fullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, $featuresAllowed.fullDelete)
-                if developerTools {
-                    featureSection(.reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, $featuresAllowed.reactions)
-                }
+                // featureSection(.reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, $featuresAllowed.reactions)
                 featureSection(.voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, $featuresAllowed.voice)
                 featureSection(.calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, $featuresAllowed.calls)
 
