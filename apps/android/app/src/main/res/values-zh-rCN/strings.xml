@@ -802,7 +802,7 @@
     <string name="v4_4_french_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
     <string name="v4_5_transport_isolation">传输隔离</string>
     <string name="paste_connection_link_below_to_connect">将您收到的链接粘贴到下面的框中以与您的联系人联系。</string>
-    <string name="share_invitation_link">分享邀请链接</string>
+    <string name="share_invitation_link">分享一次性链接</string>
     <string name="this_string_is_not_a_connection_link">此字符串不是连接链接！</string>
     <string name="send_us_an_email">给我们发电子邮件</string>
     <string name="smp_servers">SMP 服务器</string>
@@ -908,7 +908,7 @@
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">您的联系人需要在线才能完成连接。
 \n您可以取消此连接并删除联系人（稍后尝试使用新链接）。</string>
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> 标志</string>
-    <string name="your_simplex_contact_address">您的 <xliff:g id="appName">SimpleX</xliff:g> 联系地址</string>
+    <string name="your_simplex_contact_address">您的 SimpleX 地址</string>
     <string name="install_simplex_chat_for_terminal">为终端安装 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="use_simplex_chat_servers__question">使用 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 服务器？</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">我们不会在服务器上存储您的任何联系人或消息（一旦发送）。</string>
