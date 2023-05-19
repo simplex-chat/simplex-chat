@@ -789,4 +789,9 @@
     <string name="profile_password">סיסמת פרופיל</string>
     <string name="prohibit_direct_messages">לאסור שליחת הודעות ישירות לחברי הקבוצה.</string>
     <string name="v5_0_polish_interface">ממשק פולנית</string>
+    <string name="v4_6_hidden_chat_profiles_descr">הגנו על פרופילי הצ׳אט שלכם באמצעות סיסמה!</string>
+    <string name="protect_app_screen">הגנה על מסך האפליקציה</string>
+    <string name="prohibit_sending_voice">לאסור שליחת הודעות קוליות.</string>
+    <string name="prohibit_sending_voice_messages">לאסור שליחת הודעות קוליות.</string>
+    <string name="prohibit_sending_disappearing">לאסור שליחת הודעות נעלמות.</string>
 </resources>
