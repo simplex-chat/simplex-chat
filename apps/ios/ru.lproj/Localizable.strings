@@ -2,9 +2,6 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
-"\nAvailable in v5.1" = "\nДоступно в v5.1";
-
-/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -112,19 +109,19 @@
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
 
-/* message ttl */
+/* time interval */
 "%d days" = "%d дней";
 
-/* message ttl */
+/* time interval */
 "%d hours" = "%d ч.";
 
-/* message ttl */
+/* time interval */
 "%d min" = "%d мин";
 
-/* message ttl */
+/* time interval */
 "%d months" = "%d мес.";
 
-/* message ttl */
+/* time interval */
 "%d sec" = "%d сек";
 
 /* integrity error chat item */
@@ -187,20 +184,17 @@
 /* No comment provided by engineer. */
 "~strike~" = "\\~зачеркнуть~";
 
-/* message ttl */
+/* time interval */
 "1 day" = "1 день";
 
-/* message ttl */
+/* time interval */
 "1 hour" = "1 час";
 
-/* message ttl */
+/* time interval */
 "1 month" = "1 месяц";
 
-/* message ttl */
+/* time interval */
 "1 week" = "1 неделю";
-
-/* message ttl */
-"2 weeks" = "2 недели";
 
 /* No comment provided by engineer. */
 "6" = "6";
@@ -474,9 +468,6 @@
 "Change member role?" = "Поменять роль члена группы?";
 
 /* authentication reason */
-"Change passcode" = "Изменить код доступа";
-
-/* No comment provided by engineer. */
 "Change passcode" = "Изменить код доступа";
 
 /* No comment provided by engineer. */

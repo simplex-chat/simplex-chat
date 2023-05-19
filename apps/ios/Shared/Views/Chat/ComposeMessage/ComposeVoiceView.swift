@@ -38,7 +38,7 @@ struct ComposeVoiceView: View {
     @State private var playbackTime: TimeInterval?
     @State private var startingPlayback: Bool = false
 
-    private static let previewHeight: CGFloat = 50
+    private static let previewHeight: CGFloat = 55
 
     var body: some View {
         ZStack {
@@ -66,6 +66,7 @@ struct ComposeVoiceView: View {
                 }
             }
             .padding(.trailing, 12)
+            .padding(.top, 4)
 
             ProgressBar(length: MAX_VOICE_MESSAGE_LENGTH, progress: $recordingTime)
         }
@@ -105,9 +106,12 @@ struct ComposeVoiceView: View {
                 }
             }
             .padding(.trailing, 12)
+            .padding(.top, 4)
 
             if let recordingLength = recordingTime {
-                ProgressBar(length: recordingLength, progress: $playbackTime)
+                GeometryReader { _ in
+                    SliderBar(length: recordingLength, progress: $playbackTime, seek: { audioPlayer?.seek($0) })
+                }
             }
         }
         .onChange(of: stopPlayback) { _ in
@@ -145,6 +149,18 @@ struct ComposeVoiceView: View {
         }
     }
 
+    struct SliderBar: View {
+        var length: TimeInterval
+        @Binding var progress: TimeInterval?
+        var seek: (TimeInterval) -> Void
+
+        var body: some View {
+            Slider(value: Binding(get: { progress ?? TimeInterval(0) }, set: { seek($0) }), in: 0 ... length)
+                .frame(maxWidth: .infinity)
+                .frame(height: 4)
+        }
+    }
+
     private struct ProgressBar: View {
         var length: TimeInterval
         @Binding var progress: TimeInterval?
@@ -154,10 +170,10 @@ struct ComposeVoiceView: View {
                 ZStack {
                     Rectangle()
                         .fill(Color.accentColor)
-                        .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 3)
+                        .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 4)
                         .animation(.linear, value: progress)
                 }
-                .frame(height: ComposeVoiceView.previewHeight - 1, alignment: .bottom) // minus 1 is for the bottom padding
+                .frame(height: 4)
             }
         }
     }
@@ -172,8 +188,7 @@ struct ComposeVoiceView: View {
                 playbackTime = recordingTime // animate progress bar to the end
             }
         )
-        audioPlayer?.start(fileName: recordingFileName)
-        playbackTime = TimeInterval(0)
+        audioPlayer?.start(fileName: recordingFileName, at: playbackTime)
         playbackState = .playing
     }
 }

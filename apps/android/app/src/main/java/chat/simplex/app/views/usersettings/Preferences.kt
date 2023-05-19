@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -72,6 +71,11 @@ private fun PreferencesLayout(
       applyPrefs(preferences.copy(fullDelete = SimpleChatPreference(allow = it)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
+//    val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.allow) }
+//    FeatureSection(ChatFeature.Reactions, allowReactions) {
+//      applyPrefs(preferences.copy(reactions = SimpleChatPreference(allow = it)))
+//    }
+//    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
@@ -99,11 +103,10 @@ private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllo
       FeatureAllowed.values().map { it to it.text },
       allowFeature,
       icon = feature.icon,
-      enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
       onSelected = onSelected,
     )
   }
-  SectionTextFooter(feature.allowDescription(allowFeature.value) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
+  SectionTextFooter(feature.allowDescription(allowFeature.value))
 }
 
 @Composable

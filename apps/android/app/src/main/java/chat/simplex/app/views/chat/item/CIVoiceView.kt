@@ -36,6 +36,7 @@ fun CIVoiceView(
   ci: ChatItem,
   timedMessagesTTL: Int?,
   longClick: () -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   Row(
     Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = if (hasText) 6.dp else 0.dp, end = if (hasText) 6.dp else 0.dp),
@@ -64,11 +65,11 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick) {
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick, receiveFile) {
         AudioPlayer.seekTo(it, progress, filePath)
       }
     } else {
-      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
+      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick, receiveFile)
       val metaReserve = if (edited)
         "                     "
       else
@@ -93,8 +94,8 @@ private fun VoiceLayout(
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
+  receiveFile: (Long) -> Unit,
   onProgressChanged: (Int) -> Unit,
-
 ) {
   @Composable
   fun RowScope.Slider(backgroundColor: Color, padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
@@ -142,39 +143,39 @@ private fun VoiceLayout(
       val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
       val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
       Spacer(Modifier.width(6.dp))
-      VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
+      VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
       Row(verticalAlignment = Alignment.CenterVertically) {
         DurationText(text, PaddingValues(start = 12.dp))
         Slider(if (ci.chatDir.sent) sentColor else receivedColor)
       }
     }
     sent -> {
-      Row {
-        Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
-          Spacer(Modifier.height(56.dp))
-          Slider(MaterialTheme.colors.background, PaddingValues(end = DEFAULT_PADDING_HALF + 3.dp))
-          DurationText(text, PaddingValues(end = 12.dp))
-        }
-        Column {
-          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
-          Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
-            CIMetaView(ci, timedMessagesTTL)
+      Column(horizontalAlignment = Alignment.End) {
+        Row {
+          Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
+            Spacer(Modifier.height(56.dp))
+            Slider(MaterialTheme.colors.background, PaddingValues(end = DEFAULT_PADDING_HALF + 3.dp))
+            DurationText(text, PaddingValues(end = 12.dp))
           }
+          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
+        }
+        Box(Modifier.padding(top = 6.dp, end = 6.dp)) {
+          CIMetaView(ci, timedMessagesTTL)
         }
       }
     }
     else -> {
-      Row {
-        Column {
-          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
-          Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
-            CIMetaView(ci, timedMessagesTTL)
+      Column(horizontalAlignment = Alignment.Start) {
+        Row {
+          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
+          Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
+            DurationText(text, PaddingValues(start = 12.dp))
+            Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.dp))
+            Spacer(Modifier.height(56.dp))
           }
         }
-        Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
-          DurationText(text, PaddingValues(start = 12.dp))
-          Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.dp))
-          Spacer(Modifier.height(56.dp))
+        Box(Modifier.padding(top = 6.dp)) {
+          CIMetaView(ci, timedMessagesTTL)
         }
       }
     }
@@ -245,7 +246,8 @@ private fun VoiceMsgIndicator(
   error: Boolean,
   play: () -> Unit,
   pause: () -> Unit,
-  longClick: () -> Unit
+  longClick: () -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
@@ -264,8 +266,9 @@ private fun VoiceMsgIndicator(
       PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
     }
   } else {
-    if (file?.fileStatus is CIFileStatus.RcvInvitation
-      || file?.fileStatus is CIFileStatus.RcvTransfer
+    if (file?.fileStatus is CIFileStatus.RcvInvitation) {
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick)
+    } else if (file?.fileStatus is CIFileStatus.RcvTransfer
       || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {
       Box(

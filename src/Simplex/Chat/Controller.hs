@@ -104,6 +104,7 @@ data ChatConfig = ChatConfig
     inlineFiles :: InlineFilesConfig,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
+    showReactions :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -213,11 +214,12 @@ data ChatCommand
   | APIGetChats {userId :: UserId, pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
-  | APIGetChatItemInfo ChatItemId
+  | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
+  | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
@@ -319,6 +321,7 @@ data ChatCommand
   | DeleteMemberMessage GroupName ContactName Text
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
+  | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup UserId GroupProfile
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
@@ -398,6 +401,7 @@ data ChatResponse
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
+  | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent User MsgContent Int ZonedTime
@@ -771,7 +775,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CEInvalidChatMessage {message :: String}
+  | CEInvalidChatMessage {messageData :: Text, message :: String}
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}

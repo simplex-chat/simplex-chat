@@ -95,6 +95,11 @@ private fun ContactPreferencesLayout(
       applyPrefs(featuresAllowed.copy(fullDelete = it))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
+//    val allowReactions: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.reactions) }
+//    FeatureSection(ChatFeature.Reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, allowReactions) {
+//      applyPrefs(featuresAllowed.copy(reactions = it))
+//    }
+//    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
     FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
@@ -139,7 +144,6 @@ private fun FeatureSection(
       ContactFeatureAllowed.values(userDefault).map { it to it.text },
       allowFeature,
       icon = null,
-      enabled = remember { mutableStateOf(feature != ChatFeature.Calls) },
       onSelected = onSelected
     )
     InfoRow(
@@ -147,7 +151,7 @@ private fun FeatureSection(
       pref.contactPreference.allow.text
     )
   }
-  SectionTextFooter(feature.enabledDescription(enabled) + (if (feature == ChatFeature.Calls) generalGetString(R.string.available_in_v51) else ""))
+  SectionTextFooter(feature.enabledDescription(enabled))
 }
 
 @Composable
@@ -182,9 +186,17 @@ private fun TimedMessagesFeatureSection(
     )
     if (featuresAllowed.timedMessagesAllowed) {
       val ttl = rememberSaveable(featuresAllowed.timedMessagesTTL) { mutableStateOf(featuresAllowed.timedMessagesTTL) }
-      TimedMessagesTTLPicker(ttl, onTTLUpdated)
+      DropdownCustomTimePickerSettingRow(
+        selection = ttl,
+        propagateExternalSelectionUpdate = true, // for Reset
+        label = generalGetString(R.string.delete_after),
+        dropdownValues = TimedMessagesPreference.ttlValues,
+        customPickerTitle = generalGetString(R.string.delete_after),
+        customPickerConfirmButtonText = generalGetString(R.string.custom_time_picker_select),
+        onSelected = onTTLUpdated
+      )
     } else if (pref.contactPreference.allow == FeatureAllowed.YES || pref.contactPreference.allow == FeatureAllowed.ALWAYS) {
-      InfoRow(generalGetString(R.string.delete_after), TimedMessagesPreference.ttlText(pref.contactPreference.ttl))
+      InfoRow(generalGetString(R.string.delete_after), timeText(pref.contactPreference.ttl))
     }
   }
   SectionTextFooter(ChatFeature.TimedMessages.enabledDescription(enabled))
@@ -200,18 +212,6 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
       Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
-}
-
-@Composable
-fun TimedMessagesTTLPicker(selection: MutableState<Int?>, onSelected: (Int?) -> Unit) {
-  val ttlValues = TimedMessagesPreference.ttlValues
-  val values = ttlValues + if (ttlValues.contains(selection.value)) listOf() else listOf(selection.value)
-  ExposedDropDownSettingRow(
-    generalGetString(R.string.delete_after),
-    values.map { it to TimedMessagesPreference.ttlText(it) },
-    selection,
-    onSelected = onSelected
-  )
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {

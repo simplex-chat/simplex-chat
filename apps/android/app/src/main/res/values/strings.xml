@@ -83,6 +83,7 @@
   <string name="connection_error">Connection error</string>
   <string name="network_error_desc">Please check your network connection with <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> and try again.</string>
   <string name="error_sending_message">Error sending message</string>
+  <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="cannot_receive_file">Cannot receive file</string>
@@ -90,7 +91,7 @@
   <string name="error_receiving_file">Error receiving file</string>
   <string name="error_creating_address">Error creating address</string>
   <string name="contact_already_exists">Contact already exists</string>
-  <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+  <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
   <string name="invalid_connection_link">Invalid connection link</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
@@ -212,6 +213,10 @@
   <string name="copy_verb">Copy</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
+  <string name="info_menu">Info</string>
+  <string name="sent_message">Sent message</string>
+  <string name="received_message">Received message</string>
+  <string name="edit_history">History</string>
   <string name="delete_verb">Delete</string>
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
@@ -338,6 +343,13 @@
   <string name="ask_your_contact_to_enable_voice">Please ask your contact to enable sending voice messages.</string>
   <string name="only_group_owners_can_enable_voice">Only group owners can enable voice messages.</string>
   <string name="send_live_message">Send live message</string>
+  <string name="disappearing_message">Disappearing message</string>
+  <string name="send_disappearing_message">Send disappearing message</string>
+  <string name="send_disappearing_message_30_seconds">30 seconds</string>
+  <string name="send_disappearing_message_1_minute">1 minute</string>
+  <string name="send_disappearing_message_5_minutes">5 minutes</string>
+  <string name="send_disappearing_message_custom_time">Custom time</string>
+  <string name="send_disappearing_message_send">Send</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
@@ -1100,10 +1112,25 @@
   <string name="share_address">Share address</string>
   <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
 
-  <!-- For Console chat info section -->
+  <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>
   <string name="info_row_local_name">Local name</string>
   <string name="info_row_database_id">Database ID</string>
+  <string name="info_row_updated_at">Record updated at</string>
+  <string name="info_row_sent_at">Sent at</string>
+  <string name="info_row_received_at">Received at</string>
+  <string name="info_row_deleted_at">Deleted at</string>
+  <string name="info_row_moderated_at">Moderated at</string>
+  <string name="info_row_disappears_at">Disappears at</string>
+  <string name="share_text_database_id">Database ID: %d</string>
+  <string name="share_text_updated_at">Record updated at: %s</string>
+  <string name="share_text_sent_at">Sent at: %s</string>
+  <string name="share_text_received_at">Received at: %s</string>
+  <string name="share_text_deleted_at">Deleted at: %s</string>
+  <string name="share_text_moderated_at">Moderated at: %s</string>
+  <string name="share_text_disappears_at">Disappears at: %s</string>
+  <string name="item_info_current">(current)</string>
+  <string name="current_version_timestamp">"%s (current)"</string>
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
@@ -1250,6 +1277,7 @@
   <string name="timed_messages">Disappearing messages</string>
   <string name="direct_messages">Direct messages</string>
   <string name="full_deletion">Delete for everyone</string>
+  <string name="message_reactions">Message reactions</string>
   <string name="voice_messages">Voice messages</string>
   <string name="audio_video_calls">Audio/video calls</string>
   <string name="available_in_v51">\nAvailable in v5.1</string>
@@ -1269,6 +1297,9 @@
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
   <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
+  <string name="allow_your_contacts_adding_message_reactions">Allow your contacts adding message reactions.</string>
+  <string name="allow_message_reactions_only_if">Allow message reactions only if your contact allows them.</string>
+  <string name="prohibit_message_reactions">Prohibit message reactions.</string>
   <string name="allow_your_contacts_to_call">Allow your contacts to call you.</string>
   <string name="allow_calls_only_if">Allow calls only if your contact allows them.</string>
   <string name="prohibit_calls">Prohibit audio/video calls.</string>
@@ -1284,6 +1315,10 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="both_you_and_your_contact_can_add_message_reactions">Both you and your contact can add message reactions.</string>
+  <string name="only_you_can_add_message_reactions">Only you can add message reactions.</string>
+  <string name="only_your_contact_can_add_message_reactions">Only your contact can add message reactions.</string>
+  <string name="message_reactions_prohibited_in_this_chat">Message reactions are prohibited in this chat.</string>
   <string name="both_you_and_your_contact_can_make_calls">Both you and your contact can make calls.</string>
   <string name="only_you_can_make_calls">Only you can make calls.</string>
   <string name="only_your_contact_can_make_calls">Only your contact can make calls.</string>
@@ -1296,6 +1331,8 @@
   <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
   <string name="allow_to_send_voice">Allow to send voice messages.</string>
   <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
+  <string name="allow_message_reactions">Allow message reactions.</string>
+  <string name="prohibit_message_reactions_group">Prohibit messages reactions.</string>
   <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
   <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
   <string name="group_members_can_send_dms">Group members can send direct messages.</string>
@@ -1304,6 +1341,8 @@
   <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>
   <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
+  <string name="group_members_can_add_message_reactions">Group members can add message reactions.</string>
+  <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>
@@ -1380,4 +1419,14 @@
   <string name="v5_0_app_passcode_descr">Set it instead of system authentication.</string>
   <string name="v5_0_polish_interface">Polish interface</string>
   <string name="v5_0_polish_interface_descr">Thanks to the users – contribute via Weblate!</string>
+
+  <!-- CustomTimePicker -->
+  <string name="custom_time_unit_seconds">seconds</string>
+  <string name="custom_time_unit_minutes">minutes</string>
+  <string name="custom_time_unit_hours">hours</string>
+  <string name="custom_time_unit_days">days</string>
+  <string name="custom_time_unit_weeks">weeks</string>
+  <string name="custom_time_unit_months">months</string>
+  <string name="custom_time_picker_select">Select</string>
+  <string name="custom_time_picker_custom">custom</string>
 </resources>

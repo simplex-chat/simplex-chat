@@ -35,6 +35,7 @@ data ChatOpts = ChatOpts
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
     optFilesFolder :: Maybe FilePath,
+    showReactions :: Bool,
     allowInstantFiles :: Bool,
     muteNotifications :: Bool,
     maintenance :: Bool
@@ -216,6 +217,11 @@ chatOptsP appDir defaultDbFileName = do
             <> metavar "FOLDER"
             <> help "Folder to use for sent and received files"
         )
+  showReactions <-
+    switch
+      ( long "reactions"
+          <> help "Show message reactions"
+      )
   allowInstantFiles <-
     switch
       ( long "allow-instant-files"
@@ -240,6 +246,7 @@ chatOptsP appDir defaultDbFileName = do
         chatCmdDelay,
         chatServerPort,
         optFilesFolder,
+        showReactions,
         allowInstantFiles,
         muteNotifications,
         maintenance

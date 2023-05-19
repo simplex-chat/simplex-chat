@@ -48,6 +48,7 @@ let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
 let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
+let DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME = "customDisappearingMessageTime"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -76,6 +77,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
     DEFAULT_ONBOARDING_STAGE: OnboardingStage.onboardingComplete.rawValue,
+    DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME: 300,
 ]
 
 enum SimpleXLinkMode: String, Identifiable {
@@ -111,6 +113,8 @@ let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserD
 let privacyLocalAuthModeDefault = EnumDefault<LAMode>(defaults: UserDefaults.standard, forKey: DEFAULT_LA_MODE, withDefault: .system)
 
 let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults.standard, forKey: DEFAULT_ONBOARDING_STAGE, withDefault: .onboardingComplete)
+
+let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME)
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))

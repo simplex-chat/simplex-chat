@@ -122,8 +122,8 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
     liveItems <- readTVarIO showLiveItems
     responseString cc liveItems r >>= printResp
   where
-    markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
-      case (muted chat item, itemStatus) of
+    markChatItemRead (AChatItem _ _ chat item@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
+      case (muted chat chatDir, itemStatus) of
         (False, CISRcvNew) -> do
           let itemId = chatItemId' item
               chatRef = chatInfoToRef chat

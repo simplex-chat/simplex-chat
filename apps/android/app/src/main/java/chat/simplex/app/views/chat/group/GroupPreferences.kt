@@ -17,7 +17,6 @@ import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.TimedMessagesTTLPicker
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.PreferenceToggleWithIcon
 
@@ -95,6 +94,11 @@ private fun GroupPreferencesLayout(
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
+//    val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.enable) }
+//    FeatureSection(GroupFeature.Reactions, allowReactions, groupInfo, preferences, onTTLUpdated) {
+//      applyPrefs(preferences.copy(reactions = GroupPreference(enable = it)))
+//    }
+//    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
@@ -136,7 +140,15 @@ private fun FeatureSection(
       }
       if (timedOn) {
         val ttl = rememberSaveable(preferences.timedMessages) { mutableStateOf(preferences.timedMessages.ttl) }
-        TimedMessagesTTLPicker(ttl, onTTLUpdated)
+        DropdownCustomTimePickerSettingRow(
+          selection = ttl,
+          propagateExternalSelectionUpdate = true, // for Reset
+          label = generalGetString(R.string.delete_after),
+          dropdownValues = TimedMessagesPreference.ttlValues.filterNotNull(), // TODO in 5.2 - allow "off"
+          customPickerTitle = generalGetString(R.string.delete_after),
+          customPickerConfirmButtonText = generalGetString(R.string.custom_time_picker_select),
+          onSelected = onTTLUpdated
+        )
       }
     } else {
       InfoRow(
@@ -146,7 +158,7 @@ private fun FeatureSection(
         iconTint = iconTint,
       )
       if (timedOn) {
-        InfoRow(generalGetString(R.string.delete_after), TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
+        InfoRow(generalGetString(R.string.delete_after), timeText(preferences.timedMessages.ttl))
       }
     }
   }

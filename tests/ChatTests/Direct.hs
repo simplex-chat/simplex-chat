@@ -84,7 +84,9 @@ chatDirectTests = do
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
-    xit "show message decryption error and update count" testMsgDecryptError
+    it "show message decryption error and update count" testMsgDecryptError
+  describe "message reactions" $ do
+    it "set message reactions" testSetMessageReactions
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -281,22 +283,26 @@ testDirectMessageEditHistory =
       alice #> "@bob hello!"
       bob <# "alice> hello!"
 
-      alice ##> ("/_get item info " <> itemId 1)
+      alice ##> ("/_get item info @2 " <> itemId 1)
       alice <##. "sent at: "
-      bob ##> ("/_get item info " <> itemId 1)
+      alice <## "message history:"
+      alice .<## ": hello!"
+      bob ##> ("/_get item info @2 " <> itemId 1)
       bob <##. "sent at: "
       bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hello!"
 
       alice ##> ("/_update item @2 " <> itemId 1 <> " text hey 👋")
       alice <# "@bob [edited] hey 👋"
       bob <# "alice> [edited] hey 👋"
 
-      alice ##> ("/_get item info " <> itemId 1)
+      alice ##> ("/_get item info @2 " <> itemId 1)
       alice <##. "sent at: "
       alice <## "message history:"
       alice .<## ": hey 👋"
       alice .<## ": hello!"
-      bob ##> ("/_get item info " <> itemId 1)
+      bob ##> ("/_get item info @2 " <> itemId 1)
       bob <##. "sent at: "
       bob <##. "received at: "
       bob <## "message history:"
@@ -421,23 +427,23 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/5] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/6] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/6]"
+    bob <# "alice> [LIVE started] use /show [on/off/7]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
     -- live message has edit history
-    alice ##> ("/_get item info " <> itemId 2)
+    alice ##> ("/_get item info @2 " <> itemId 2)
     alice <##. "sent at: "
     alice <## "message history:"
     alice .<## ": hello 2"
     alice .<## ":"
-    bob ##> ("/_get item info " <> itemId 2)
+    bob ##> ("/_get item info @2 " <> itemId 2)
     bob <##. "sent at: "
     bob <##. "received at: "
     bob <## "message history:"
@@ -516,7 +522,8 @@ testGetSetSMPServers =
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
       alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
       alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
       alice #$> ("/smp default", id, "ok")
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
 
@@ -545,7 +552,8 @@ testGetSetXFTPServers =
       alice #$> ("/xftp xftp://1234-w==:password@xftp1.example.im", id, "ok")
       alice #$> ("/xftp", id, "xftp://1234-w==:password@xftp1.example.im")
       alice #$> ("/xftp xftp://2345-w==@xftp2.example.im;xftp://3456-w==@xftp3.example.im:5224", id, "ok")
-      alice #$> ("/xftp", id, "xftp://2345-w==@xftp2.example.im, xftp://3456-w==@xftp3.example.im:5224")
+      alice #$> ("/xftp", id, "xftp://2345-w==@xftp2.example.im")
+      alice <## "xftp://3456-w==@xftp3.example.im:5224"
       alice #$> ("/xftp default", id, "ok")
       alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
 
@@ -1127,7 +1135,8 @@ testCreateUserDefaultServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
       alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
 
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
@@ -1137,7 +1146,8 @@ testCreateUserDefaultServers =
       -- with same_smp=off
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
 
       alice ##> "/create user same_smp=off alisa2"
       showActiveUser alice "alisa2"
@@ -1149,12 +1159,14 @@ testCreateUserSameServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
       alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
 
       alice ##> "/create user same_smp=on alisa"
       showActiveUser alice "alisa"
 
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice <## "smp://3456-w==@smp3.example.im:5224"
 
 testDeleteUser :: HasCallStack => FilePath -> IO ()
 testDeleteUser =
@@ -1691,14 +1703,15 @@ testUserPrivacy =
       alice <##? chatHistory
       alice ##> "/_get items count=10"
       alice <##? chatHistory
-      alice ##> "/_get items before=9 count=10"
+      alice ##> "/_get items before=11 count=10"
       alice
         <##? [ "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
+               "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items after=8 count=10"
+      alice ##> "/_get items after=10 count=10"
       alice
         <##? [ "@bob hello",
                "bob> hey",
@@ -1756,6 +1769,7 @@ testUserPrivacy =
     chatHistory =
       [ "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
+        "bob> Message reactions: enabled",
         "bob> Voice messages: enabled",
         "bob> Audio/video calls: enabled",
         "@bob hello",
@@ -1938,3 +1952,51 @@ testMsgDecryptError tmp =
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
       copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+
+testSetMessageReactions :: HasCallStack => FilePath -> IO ()
+testSetMessageReactions =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob ##> "+1 alice hi"
+      bob <## "added 👍"
+      alice <# "bob> >> hi"
+      alice <## "    + 👍"
+      bob ##> "+1 alice hi"
+      bob <## "bad chat command: reaction already added"
+      bob ##> "+^ alice hi"
+      bob <## "added 🚀"
+      alice <# "bob> >> hi"
+      alice <## "    + 🚀"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 1 🚀 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 1 🚀 1"
+      alice ##> "+1 bob hi"
+      alice <## "added 👍"
+      bob <# "alice> > hi"
+      bob <## "    + 👍"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 2 🚀 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 2 🚀 1"
+      bob ##> "-1 alice hi"
+      bob <## "removed 👍"
+      alice <# "bob> >> hi"
+      alice <## "    - 👍"
+      bob ##> "-^ alice hi"
+      bob <## "removed 🚀"
+      alice <# "bob> >> hi"
+      alice <## "    - 🚀"
+      alice ##> "/tail @bob 1"
+      alice <# "@bob hi"
+      alice <## "      👍 1"
+      bob ##> "/tail @alice 1"
+      bob <# "alice> hi"
+      bob <## "      👍 1"

@@ -211,6 +211,7 @@ class ChatItemProvider: PreviewParameterProvider<ChatItem> {
     meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.SndSent(), itemEdited = true),
     content = CIContent.SndMsgContent(msgContent = MsgContent.MCFile("")),
     quotedItem = null,
+    reactions = listOf(),
     file = CIFile.getSample(fileStatus = CIFileStatus.SndComplete)
   )
   private val fileChatItemWtFile = ChatItem(
@@ -218,6 +219,7 @@ class ChatItemProvider: PreviewParameterProvider<ChatItem> {
     meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.RcvRead(), ),
     content = CIContent.RcvMsgContent(msgContent = MsgContent.MCFile("")),
     quotedItem = null,
+    reactions = listOf(),
     file = null
   )
   override val values = listOf(

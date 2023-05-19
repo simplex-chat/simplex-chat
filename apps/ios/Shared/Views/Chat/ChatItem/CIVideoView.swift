@@ -251,7 +251,6 @@ struct CIVideoView: View {
             if let user = ChatModel.shared.currentUser {
                 await receiveFile(user, file.fileId)
             }
-            // TODO image accepted alert?
         }
     }
 

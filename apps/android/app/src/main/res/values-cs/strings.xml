@@ -128,7 +128,7 @@
     <string name="error_sending_message">Chyba odesílání zprávy</string>
     <string name="error_adding_members">Chyba přidávání členů</string>
     <string name="contact_already_exists">Kontakt již existuje</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Jste již připojeni k <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Jste již připojeni k <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
     <string name="invalid_connection_link">Neplatný odkaz na spojení</string>
     <string name="error_accepting_contact_request">Chyba příjmu požadavku od kontaktu</string>
     <string name="error_changing_address">Chyba změny adresy</string>
@@ -1129,4 +1129,6 @@
     <string name="stop_file__action">Zastavit soubor</string>
     <string name="stop_snd_file__title">Zastavit odesílání souboru\?</string>
     <string name="stop_rcv_file__title">Zastavit příjem souboru\?</string>
+    <string name="learn_more_about_address">O adrese SimpleX</string>
+    <string name="one_time_link_short">Jednorázový odkaz</string>
 </resources>

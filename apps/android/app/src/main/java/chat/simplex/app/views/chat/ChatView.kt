@@ -101,6 +101,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
     }
   }
   val view = LocalView.current
+  val context = LocalContext.current
   if (activeChat.value == null || user == null) {
     chatModel.chatId.value = null
   } else {
@@ -258,6 +259,32 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           chatModel.controller.allowFeatureToContact(contact, feature, param)
         }
       },
+      setReaction = { cInfo, cItem, add, reaction ->
+        withApi {
+          val updatedCI = chatModel.controller.apiChatItemReaction(
+            type = cInfo.chatType,
+            id = cInfo.apiId,
+            itemId = cItem.id,
+            add = add,
+            reaction = reaction
+          )
+          if (updatedCI != null) {
+            chatModel.updateChatItem(cInfo, updatedCI)
+          }
+        }
+      },
+      showItemDetails = { cInfo, cItem ->
+        withApi {
+          val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
+          if (ciInfo != null) {
+            ModalManager.shared.showModal(endButtons = { ShareButton {
+              shareText(context, itemInfoShareText(cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
+            } }) {
+              ChatItemInfoView(cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+            }
+          }
+        }
+      },
       addMembers = { groupInfo ->
         hideKeyboard(view)
         withApi {
@@ -316,6 +343,8 @@ fun ChatLayout(
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
+  setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
+  showItemDetails: (ChatInfo, ChatItem) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
@@ -358,7 +387,7 @@ fun ChatLayout(
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
-              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, markRead, setFloatingButton, onComposed,
+              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, setReaction, showItemDetails, markRead, setFloatingButton, onComposed,
             )
           }
         }
@@ -531,6 +560,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
+  setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
+  showItemDetails: (ChatInfo, ChatItem) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   setFloatingButton: (@Composable () -> Unit) -> Unit,
   onComposed: () -> Unit,
@@ -644,11 +675,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
             }
           } else {
             Box(Modifier.padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
             }
           }
         } else { // direct message
@@ -659,7 +690,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
+            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
           }
         }
 
@@ -1082,6 +1113,8 @@ fun PreviewChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
+      setReaction = { _, _, _, _ -> },
+      showItemDetails = { _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
@@ -1142,6 +1175,8 @@ fun PreviewGroupChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
+      setReaction = { _, _, _, _ -> },
+      showItemDetails = { _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },

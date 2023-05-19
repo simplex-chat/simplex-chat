@@ -260,7 +260,7 @@
     <string name="settings_section_title_device">DISPOSITIVO</string>
     <string name="settings_developer_tools">Ferramentas de desenvolvimento</string>
     <string name="group_member_status_introduced">conectando (introduzido)</string>
-    <string name="color_primary">Destaque</string>
+    <string name="color_primary">Acento</string>
     <string name="error_removing_member">Erro ao remover membro</string>
     <string name="error_changing_role">Erro ao alterar função</string>
     <string name="conn_level_desc_direct">direto</string>
@@ -857,12 +857,12 @@
     <string name="voice_messages">Mensagens de voz</string>
     <string name="description_via_contact_address_link">via link de endereço de contato</string>
     <string name="description_via_one_time_link">via link de uso único</string>
-    <string name="share_invitation_link">Compartilhar link de convite</string>
+    <string name="share_invitation_link">Compartilhar link único</string>
     <string name="network_use_onion_hosts">Usar hosts .onion</string>
     <string name="video_call_no_encryption">chamada de vídeo (não criptografada ponta-a-ponta)</string>
     <string name="stop_chat_question">Parar chat\?</string>
     <string name="simplex_link_mode_browser">Pelo navegador</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Você já está conectado a<xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Você já está conectado a<xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
     <string name="database_initialization_error_desc">O banco de dados não está funcionando corretamente. Toque para saber mais</string>
     <string name="waiting_for_image">Aguardando imagem</string>
     <string name="show_QR_code">Mostrar código QR</string>
@@ -1008,7 +1008,7 @@
     <string name="you_sent_group_invitation">Você enviou convite de grupo</string>
     <string name="incognito_random_profile">Seu perfil aleatório</string>
     <string name="auth_simplex_lock_turned_on">Bloqueio SimpleX ativado</string>
-    <string name="your_simplex_contact_address">Seu endereço de contato<xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="your_simplex_contact_address">Seu endereço SimpleX</string>
     <string name="network_options_reset_to_defaults">Redefinir para os padrões</string>
     <string name="image_descr_link_preview">imagem de pré-visualização do link</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger suas informações, ative o bloqueio SimpleX. Você será solicitado a completar a autenticação antes que este recurso seja ativado.</string>
@@ -1128,4 +1128,66 @@
     <string name="gallery_image_button">Imagem</string>
     <string name="decryption_error">erro de descriptografia</string>
     <string name="revoke_file__confirm">Revogar</string>
+    <string name="learn_more_about_address">Sobre o endereço SimpleX</string>
+    <string name="color_secondary_variant">Secundária adicional</string>
+    <string name="color_primary_variant">Acento adicional</string>
+    <string name="one_time_link_short">Link único</string>
+    <string name="add_address_to_your_profile">Adicione o endereço ao seu perfil, para que seus contatos possam compartilhá-lo com outras pessoas. A atualização do perfil será enviada aos seus contatos.</string>
+    <string name="create_address_and_let_people_connect">Crie um endereço para permitir que as pessoas se conectem com você.</string>
+    <string name="create_simplex_address">Criar endereço SimpleX</string>
+    <string name="continue_to_next_step">Continuar</string>
+    <string name="dont_create_address">Não criar endereço</string>
+    <string name="address_section_title">Endereço</string>
+    <string name="dark_theme">Tema escuro</string>
+    <string name="color_background">Fundo</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Todos os seus contactos permanecerão ligados. A atualização do perfil será enviada para seus contatos.</string>
+    <string name="auto_accept_contact">Aceitação automática</string>
+    <string name="customize_theme_title">Personalizar o tema</string>
+    <string name="enter_welcome_message">Digite a mensagem de boas-vindas…</string>
+    <string name="error_setting_address">Erro ao definir o endereço</string>
+    <string name="learn_more">Saiba mais</string>
+    <string name="theme_simplex">SimpleX</string>
+    <string name="import_theme_error_desc">Certifique-se que o arquivo tenha a sintaxe YAML correta. Exporte o tema para ter um exemplo da estrutura do arquivo do tema.</string>
+    <string name="export_theme">Exportar tema</string>
+    <string name="import_theme_error">Erro ao importar tema</string>
+    <string name="color_surface">Menus e alertas</string>
+    <string name="color_received_message">Mensagem recebida</string>
+    <string name="color_sent_message">Mensagem enviada</string>
+    <string name="color_title">Título</string>
+    <string name="if_you_cant_meet_in_person">Se não puderem se encontrar pessoalmente, mostre o QR code em uma chamada de vídeo ou compartilhe o link.</string>
+    <string name="scan_qr_to_connect_to_contact">Para se conectar, seu contato pode ler o QR code ou usar o link no aplicativo.</string>
+    <string name="you_can_share_your_address">Você pode compartilhar seu endereço como um link ou QR code - qualquer pessoa pode se conectar a você.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Você não perderá seus contatos se, posteriormente, excluir seu endereço.</string>
+    <string name="simplex_address">Endereço SimpleX</string>
+    <string name="you_can_accept_or_reject_connection">Quando as pessoas solicitam uma conexão, você pode aceitá-la ou rejeitá-la.</string>
+    <string name="theme_colors_section_title">CORES DO TEMA</string>
+    <string name="share_with_contacts">compartilhar com os contatos</string>
+    <string name="profile_update_will_be_sent_to_contacts">A atualização do perfil será enviada aos seus contatos.</string>
+    <string name="save_settings_question">Salvar configurações\?</string>
+    <string name="stop_sharing">Parar de compartilhar</string>
+    <string name="stop_sharing_address">Parar de compartilhar o endereço\?</string>
+    <string name="email_invite_body">Oi!
+\nConecte-se comigo via SimpleX Chat: %s</string>
+    <string name="invite_friends">Convide amigos</string>
+    <string name="email_invite_subject">Vamos conversar no SimpleX</string>
+    <string name="you_can_create_it_later">Você pode criá-lo mais tarde</string>
+    <string name="share_address">Compartilhar endereço</string>
+    <string name="you_can_share_this_address_with_your_contacts">Você pode compartilhar esse endereço com seus contatos para que eles se conectem com %s.</string>
+    <string name="group_welcome_preview">Prévia</string>
+    <string name="color_secondary">Secundária</string>
+    <string name="import_theme">Importar tema</string>
+    <string name="read_more_in_user_guide_with_link">Leia mais em <font color="#0088ff">Guia do Usuário</font>.</string>
+    <string name="enter_welcome_message_optional">Digite a mensagem de boas-vindas... (opcional)</string>
+    <string name="save_auto_accept_settings">Salvar configurações de aceitação automática</string>
+    <string name="opening_database">Abrindo banco de dados…</string>
+    <string name="auth_open_chat_profiles">Abrir perfis de bate-papo</string>
+    <string name="share_address_with_contacts_question">Compartilhar endereço com os contatos\?</string>
+    <string name="your_contacts_will_see_it">Seus contatos no SimpleX o verão.
+\nVocê pode alterá-la nas Configurações.</string>
+    <string name="your_contacts_will_remain_connected">Seus contatos continuarão conectados.</string>
+    <string name="all_app_data_will_be_cleared">Todos os dados do aplicativo serão excluídos.</string>
+    <string name="app_passcode_replaced_with_self_destruct">A senha do aplicativo é substituída por uma senha de autodestruição.</string>
+    <string name="self_destruct_new_display_name">Novo nome de exibição:</string>
+    <string name="set_passcode">Definir senha</string>
+    <string name="enable_self_destruct">Ativar autodestruição</string>
 </resources>

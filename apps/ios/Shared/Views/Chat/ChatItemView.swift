@@ -16,6 +16,22 @@ struct ChatItemView: View {
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
     @Binding var revealed: Bool
+    @Binding var allowMenu: Bool
+    @Binding var audioPlayer: AudioPlayer?
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+    init(chatInfo: ChatInfo, chatItem: ChatItem, showMember: Bool = false, maxWidth: CGFloat = .infinity, scrollProxy: ScrollViewProxy? = nil, revealed: Binding<Bool>, allowMenu: Binding<Bool> = .constant(false), audioPlayer: Binding<AudioPlayer?> = .constant(nil), playbackState: Binding<VoiceMessagePlaybackState> = .constant(.noPlayback), playbackTime: Binding<TimeInterval?> = .constant(nil)) {
+        self.chatInfo = chatInfo
+        self.chatItem = chatItem
+        self.showMember = showMember
+        self.maxWidth = maxWidth
+        _scrollProxy = .init(initialValue: scrollProxy)
+        _revealed = revealed
+        _allowMenu = allowMenu
+        _audioPlayer = audioPlayer
+        _playbackState = playbackState
+        _playbackTime = playbackTime
+    }
 
     var body: some View {
         let ci = chatItem
@@ -25,7 +41,7 @@ struct ChatItemView: View {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
-                CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration)
+                CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
                 ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
@@ -37,7 +53,7 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
+        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
     }
 }
 
@@ -109,7 +125,7 @@ struct ChatItemView_Previews: PreviewProvider {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getDeletedContentSample(), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted(deletedTs: .now)), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent, itemLive: true), revealed: Binding.constant(true))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemLive: true), revealed: Binding.constant(true))
         }
@@ -126,7 +142,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted),
+                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
                     content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
                     quotedItem: nil,
                     file: nil
@@ -148,7 +164,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted),
+                    meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
                     content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: .pending), memberRole: .admin),
                     quotedItem: nil,
                     file: nil
@@ -159,7 +175,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, itemDeleted: .deleted),
+                    meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
                     content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
                     quotedItem: nil,
                     file: nil
@@ -170,7 +186,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted),
+                    meta: CIMeta.getSample(1, .now, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
                     content: ciFeatureContent,
                     quotedItem: nil,
                     file: nil
