@@ -53,11 +53,17 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
         Text(
-          localTimestamp(ciVersion.itemVersionTs), fontSize = 12.sp,
+          localTimestamp(ciVersion.itemVersionTs),
+          fontSize = 12.sp,
+          color = MaterialTheme.colors.secondary,
           modifier = Modifier.padding(end = 6.dp)
         )
         if (current && ci.meta.itemDeleted == null) {
-          Text(stringResource(R.string.item_info_current), fontSize = 12.sp)
+          Text(
+            stringResource(R.string.item_info_current),
+            fontSize = 12.sp,
+            color = MaterialTheme.colors.secondary
+          )
         }
       }
       DefaultDropdownMenu(showMenu) {
