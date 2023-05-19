@@ -260,7 +260,7 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted)]
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted(deletedTs: .now))]
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,

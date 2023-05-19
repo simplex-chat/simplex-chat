@@ -125,7 +125,7 @@ struct ChatItemView_Previews: PreviewProvider {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getDeletedContentSample(), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted(deletedTs: .now)), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent, itemLive: true), revealed: Binding.constant(true))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemLive: true), revealed: Binding.constant(true))
         }
@@ -142,7 +142,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted),
+                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
                     content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
                     quotedItem: nil,
                     file: nil
@@ -164,7 +164,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted),
+                    meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
                     content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: .pending), memberRole: .admin),
                     quotedItem: nil,
                     file: nil
@@ -175,7 +175,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, itemDeleted: .deleted),
+                    meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
                     content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
                     quotedItem: nil,
                     file: nil
@@ -186,7 +186,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted),
+                    meta: CIMeta.getSample(1, .now, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
                     content: ciFeatureContent,
                     quotedItem: nil,
                     file: nil
