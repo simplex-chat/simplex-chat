@@ -43,7 +43,6 @@ fun <T> ExposedDropDownSettingRow(
         val maxWidth = with(LocalDensity.current) { 180.sp.toDp() }
         Text(
           values.first { it.first == selection.value }.second + (if (label != null) " $label" else ""),
-//          "abc",
           Modifier.widthIn(max = maxWidth),
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
