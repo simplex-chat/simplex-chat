@@ -136,7 +136,7 @@ struct ChatItemInfoView: View {
             if let deletedTs = deletedTs {
                 shareText += [String.localizedStringWithFormat(NSLocalizedString("Moderated at: %@", comment: "copied message info"), localTimestamp(deletedTs))]
             }
-        default: break
+        default: ()
         }
         if let deleteAt = meta.itemTimed?.deleteAt {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Disappears at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
@@ -148,21 +148,21 @@ struct ChatItemInfoView: View {
             ]
         }
         if !chatItemInfo.itemVersions.isEmpty {
-            shareText += ["", NSLocalizedString("History", comment: "copied message info"), ""]
+            shareText += ["", NSLocalizedString("History", comment: "copied message info")]
             for (index, itemVersion) in chatItemInfo.itemVersions.enumerated() {
                 shareText += [
+                    "",
                     String.localizedStringWithFormat(
                         index == 0 && ci.meta.itemDeleted == nil
                         ? NSLocalizedString("%@ (current):", comment: "copied message info")
                         : NSLocalizedString("%@:", comment: "copied message info"),
                         localTimestamp(itemVersion.itemVersionTs)
                     ),
-                    itemVersion.msgContent.text,
-                    ""
+                    itemVersion.msgContent.text
                 ]
             }
         }
-        return shareText.joined(separator: "\n").trimmingCharacters(in: .newlines)
+        return shareText.joined(separator: "\n")
     }
 }
 
