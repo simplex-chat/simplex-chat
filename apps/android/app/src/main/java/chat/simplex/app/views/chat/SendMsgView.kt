@@ -161,41 +161,51 @@ fun SendMsgView(
           val disabled = !cs.sendEnabled() ||
               (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
               cs.endLiveDisabled
-          val showSendLiveMessageMenuButton =
-            cs.liveMessage == null && !cs.editing &&
+          val showDropdown = rememberSaveable { mutableStateOf(false) }
+          
+          @Composable
+          fun MenuItems(): List<@Composable () -> Unit> {
+            val menuItems = mutableListOf<@Composable () -> Unit>()
+
+            if (cs.liveMessage == null && !cs.editing) {
+              if (
                 cs.preview !is ComposePreview.VoicePreview &&
                 cs.contextItem is ComposeContextItem.NoContextItem &&
                 sendLiveMessage != null && updateLiveMessage != null
-          val showSendDisappearingMessageMenuButton =
-            cs.liveMessage == null && !cs.editing &&
-                timedMessageAllowed
+              ) {
+                menuItems.add {
+                  ItemAction(
+                    generalGetString(R.string.send_live_message),
+                    BoltFilled,
+                    onClick = {
+                      startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
+                      showDropdown.value = false
+                    }
+                  )
+                }
+              }
+              if (timedMessageAllowed) {
+                menuItems.add {
+                  ItemAction(
+                    generalGetString(R.string.disappearing_message),
+                    painterResource(R.drawable.ic_timer),
+                    onClick = {
+                      showCustomDisappearingMessageDialog.value = true
+                      showDropdown.value = false
+                    }
+                  )
+                }
+              }
+            }
 
-          if (showSendLiveMessageMenuButton || showSendDisappearingMessageMenuButton) {
-            val showDropdown = rememberSaveable { mutableStateOf(false) }
+            return menuItems
+          }
+
+          val menuItems = MenuItems()
+          if (menuItems.isNotEmpty()) {
             SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown.value = true }
-            DefaultDropdownMenu(
-              showDropdown,
-            ) {
-              if (showSendLiveMessageMenuButton && sendLiveMessage != null && updateLiveMessage != null) {
-                ItemAction(
-                  generalGetString(R.string.send_live_message),
-                  BoltFilled,
-                  onClick = {
-                    startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
-                    showDropdown.value = false
-                  }
-                )
-              }
-              if (showSendDisappearingMessageMenuButton) {
-                ItemAction(
-                  generalGetString(R.string.disappearing_message),
-                  painterResource(R.drawable.ic_timer),
-                  onClick = {
-                    showCustomDisappearingMessageDialog.value = true
-                    showDropdown.value = false
-                  }
-                )
-              }
+            DefaultDropdownMenu(showDropdown) {
+              menuItems.forEach { composable -> composable() }
             }
           } else {
             SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage)
