@@ -24,7 +24,7 @@
     <string name="accept_contact_incognito_button">接受隐身聊天</string>
     <string name="v4_2_group_links_desc">管理员可以创建链接以加入群组。</string>
     <string name="smp_servers_preset_add">添加预设服务器</string>
-    <string name="connect_via_link">通过链接连接</string>
+    <string name="connect_via_link">通过链接进行连接</string>
     <string name="display_name_connection_established">已建立连接</string>
     <string name="connection_local_display_name">连接 <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
     <string name="connection_error">连接错误</string>
@@ -62,7 +62,7 @@
     <string name="delete_message__question">删除消息？</string>
     <string name="delete_messages">删除消息</string>
     <string name="info_row_connection">连接</string>
-    <string name="connect_via_invitation_link">通过邀请链接连接？</string>
+    <string name="connect_via_invitation_link">通过邀请链接进行连接？</string>
     <string name="connect_via_contact_link">通过联系人链接进行连接？</string>
     <string name="connect_via_group_link">通过群组链接进行连接？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
