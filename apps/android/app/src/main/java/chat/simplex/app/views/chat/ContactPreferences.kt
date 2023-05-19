@@ -186,7 +186,14 @@ private fun TimedMessagesFeatureSection(
     )
     if (featuresAllowed.timedMessagesAllowed) {
       val ttl = rememberSaveable(featuresAllowed.timedMessagesTTL) { mutableStateOf(featuresAllowed.timedMessagesTTL) }
-      TimedMessagesTTLPicker(ttl, onTTLUpdated)
+      DropdownCustomTimePickerSettingRow(
+        selection = ttl,
+        label = generalGetString(R.string.delete_after),
+        dropdownValues = TimedMessagesPreference.ttlValues,
+        customPickerTitle = generalGetString(R.string.delete_after),
+        customPickerConfirmButtonText = generalGetString(R.string.custom_time_picker_select),
+        onSelected = onTTLUpdated
+      )
     } else if (pref.contactPreference.allow == FeatureAllowed.YES || pref.contactPreference.allow == FeatureAllowed.ALWAYS) {
       InfoRow(generalGetString(R.string.delete_after), timeText(pref.contactPreference.ttl))
     }
@@ -204,18 +211,6 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
       Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
-}
-
-@Composable
-fun TimedMessagesTTLPicker(selection: MutableState<Int?>, onSelected: (Int?) -> Unit) {
-  val ttlValues = TimedMessagesPreference.ttlValues
-  val values = ttlValues + if (ttlValues.contains(selection.value)) listOf() else listOf(selection.value)
-  ExposedDropDownSettingRow(
-    generalGetString(R.string.delete_after),
-    values.map { it to timeText(it) },
-    selection,
-    onSelected = onSelected
-  )
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {

@@ -183,7 +183,7 @@ struct SendMessageView: View {
         .sheet(isPresented: $showCustomTimePicker, onDismiss: { selectedDisappearingMessageTime = customDisappearingMessageTimeDefault.get() }) {
             if #available(iOS 16.0, *) {
                 disappearingMessageCustomTimePicker()
-                    .presentationDetents([.fraction(0.6)])
+                    .presentationDetents([.medium])
             } else {
                 disappearingMessageCustomTimePicker()
             }
