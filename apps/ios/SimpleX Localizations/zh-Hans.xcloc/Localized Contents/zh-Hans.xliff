@@ -57,6 +57,14 @@
         <target>%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ (current)" xml:space="preserve">
+        <source>%@ (current)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ (current):" xml:space="preserve">
+        <source>%@ (current):</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="%@ / %@" xml:space="preserve">
         <source>%@ / %@</source>
         <target>%@ / %@</target>
@@ -86,6 +94,10 @@
         <source>%@ wants to connect!</source>
         <target>%@ 要连接！</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="%@:" xml:space="preserve">
+        <source>%@:</source>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
         <source>%d days</source>
@@ -1123,10 +1135,6 @@
         <target>创建于 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current" xml:space="preserve">
-        <source>Current</source>
-        <note>designation of the current version of the message</note>
-      </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
         <source>Current Passcode</source>
         <target>当前密码</target>
@@ -1155,6 +1163,10 @@
         <source>Database ID</source>
         <target>数据库 ID</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database ID: %d" xml:space="preserve">
+        <source>Database ID: %d</source>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
         <source>Database IDs and Transport isolation option.</source>
@@ -1429,6 +1441,14 @@
         <target>删除用户资料？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Deleted at" xml:space="preserve">
+        <source>Deleted at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Deleted at: %@" xml:space="preserve">
+        <source>Deleted at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
         <source>Description</source>
         <target>描述</target>
@@ -1498,6 +1518,14 @@
         <target>该组禁止限时消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Disappears at" xml:space="preserve">
+        <source>Disappears at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disappears at: %@" xml:space="preserve">
+        <source>Disappears at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
         <source>Disconnect</source>
         <target>断开连接</target>
@@ -1559,10 +1587,6 @@
       <trans-unit id="Edit group profile" xml:space="preserve">
         <source>Edit group profile</source>
         <target>编辑群组资料</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Edit history" xml:space="preserve">
-        <source>Edit history</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable" xml:space="preserve">
@@ -2169,6 +2193,10 @@
         <target>隐藏：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="History" xml:space="preserve">
+        <source>History</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
         <target>SimpleX的工作原理</target>
@@ -2320,6 +2348,10 @@
         <source>Incorrect security code!</source>
         <target>安全码不正确！</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Info" xml:space="preserve">
+        <source>Info</source>
+        <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Initial role" xml:space="preserve">
         <source>Initial role</source>
@@ -2601,10 +2633,6 @@
         <target>消息传递错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message details" xml:space="preserve">
-        <source>Message details</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
         <source>Message draft</source>
         <target>消息草稿</target>
@@ -2666,6 +2694,14 @@
         <source>Moderate</source>
         <target>管理员移除</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Moderated at" xml:space="preserve">
+        <source>Moderated at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Moderated at: %@" xml:space="preserve">
+        <source>Moderated at: %@</source>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
         <source>More improvements are coming soon!</source>
@@ -3248,10 +3284,18 @@
         <source>Received at</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Received at: %@" xml:space="preserve">
+        <source>Received at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
         <source>Received file event</source>
         <target>收到文件项目</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Received message" xml:space="preserve">
+        <source>Received message</source>
+        <note>message info title</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
@@ -3267,6 +3311,14 @@
         <source>Recipients see updates as you type them.</source>
         <target>对方会在您键入时看到更新。</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Record updated at" xml:space="preserve">
+        <source>Record updated at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Record updated at: %@" xml:space="preserve">
+        <source>Record updated at: %@</source>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
         <source>Reduced battery usage</source>
@@ -3629,10 +3681,18 @@
         <source>Sent at</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Sent at: %@" xml:space="preserve">
+        <source>Sent at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Sent file event" xml:space="preserve">
         <source>Sent file event</source>
         <target>已发送文件项目</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Sent message" xml:space="preserve">
+        <source>Sent message</source>
+        <note>message info title</note>
       </trans-unit>
       <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve">
         <source>Sent messages will be deleted after set time.</source>
@@ -4133,10 +4193,6 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>要提出任何问题并接收更新，请：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To be deleted at" xml:space="preserve">
-        <source>To be deleted at</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve">
         <source>To connect, your contact can scan QR code or use the link in the app.</source>
         <note>No comment provided by engineer.</note>
@@ -4423,10 +4479,6 @@ To connect, please ask your contact to create another connection link and check 
         <source>Videos and files up to 1gb</source>
         <target>最大 1gb 的视频和文件</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="View details" xml:space="preserve">
-        <source>View details</source>
-        <note>chat item action</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
         <source>View security code</source>

@@ -57,6 +57,14 @@
         <target>%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ (current)" xml:space="preserve">
+        <source>%@ (current)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ (current):" xml:space="preserve">
+        <source>%@ (current):</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="%@ / %@" xml:space="preserve">
         <source>%@ / %@</source>
         <target>%@ / %@</target>
@@ -86,6 +94,10 @@
         <source>%@ wants to connect!</source>
         <target>%@ ¡quiere conectar!</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="%@:" xml:space="preserve">
+        <source>%@:</source>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
         <source>%d days</source>
@@ -1134,10 +1146,6 @@
         <target>Creado en %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current" xml:space="preserve">
-        <source>Current</source>
-        <note>designation of the current version of the message</note>
-      </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
         <source>Current Passcode</source>
         <target>Código de acceso actual</target>
@@ -1166,6 +1174,10 @@
         <source>Database ID</source>
         <target>ID de la base de datos</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database ID: %d" xml:space="preserve">
+        <source>Database ID: %d</source>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
         <source>Database IDs and Transport isolation option.</source>
@@ -1440,6 +1452,14 @@
         <target>¿Eliminar perfil de usuario?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Deleted at" xml:space="preserve">
+        <source>Deleted at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Deleted at: %@" xml:space="preserve">
+        <source>Deleted at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
         <source>Description</source>
         <target>Descripción</target>
@@ -1509,6 +1529,14 @@
         <target>Los mensajes temporales no están permitidos en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Disappears at" xml:space="preserve">
+        <source>Disappears at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disappears at: %@" xml:space="preserve">
+        <source>Disappears at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
         <source>Disconnect</source>
         <target>Desconectar</target>
@@ -1571,10 +1599,6 @@
       <trans-unit id="Edit group profile" xml:space="preserve">
         <source>Edit group profile</source>
         <target>Editar perfil de grupo</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Edit history" xml:space="preserve">
-        <source>Edit history</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable" xml:space="preserve">
@@ -2184,6 +2208,10 @@
         <target>Ocultar:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="History" xml:space="preserve">
+        <source>History</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
         <target>Cómo funciona SimpleX</target>
@@ -2336,6 +2364,10 @@
         <source>Incorrect security code!</source>
         <target>¡Código de seguridad incorrecto!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Info" xml:space="preserve">
+        <source>Info</source>
+        <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Initial role" xml:space="preserve">
         <source>Initial role</source>
@@ -2620,10 +2652,6 @@
         <target>Error en la entrega del mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message details" xml:space="preserve">
-        <source>Message details</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
         <source>Message draft</source>
         <target>Borrador de mensaje</target>
@@ -2685,6 +2713,14 @@
         <source>Moderate</source>
         <target>Moderar</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Moderated at" xml:space="preserve">
+        <source>Moderated at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Moderated at: %@" xml:space="preserve">
+        <source>Moderated at: %@</source>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
         <source>More improvements are coming soon!</source>
@@ -3271,10 +3307,18 @@
         <source>Received at</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Received at: %@" xml:space="preserve">
+        <source>Received at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
         <source>Received file event</source>
         <target>Evento de archivo recibido</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Received message" xml:space="preserve">
+        <source>Received message</source>
+        <note>message info title</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
@@ -3290,6 +3334,14 @@
         <source>Recipients see updates as you type them.</source>
         <target>Los destinatarios ven la actualizacion mientras escribes.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Record updated at" xml:space="preserve">
+        <source>Record updated at</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Record updated at: %@" xml:space="preserve">
+        <source>Record updated at: %@</source>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
         <source>Reduced battery usage</source>
@@ -3654,10 +3706,18 @@
         <source>Sent at</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Sent at: %@" xml:space="preserve">
+        <source>Sent at: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="Sent file event" xml:space="preserve">
         <source>Sent file event</source>
         <target>Evento de archivo enviado</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Sent message" xml:space="preserve">
+        <source>Sent message</source>
+        <note>message info title</note>
       </trans-unit>
       <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve">
         <source>Sent messages will be deleted after set time.</source>
@@ -4165,10 +4225,6 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Para consultar cualquier duda y recibir actualizaciones:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To be deleted at" xml:space="preserve">
-        <source>To be deleted at</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve">
         <source>To connect, your contact can scan QR code or use the link in the app.</source>
         <target>Para conectarse, tu contacto puede escanear el código QR o usar el enlace en la aplicación.</target>
@@ -4457,10 +4513,6 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <source>Videos and files up to 1gb</source>
         <target>Vídeos y archivos de hasta 1Gb</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="View details" xml:space="preserve">
-        <source>View details</source>
-        <note>chat item action</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
         <source>View security code</source>
