@@ -309,8 +309,9 @@ Available in v5.1</source>
         <target>1周</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1-time link" xml:space="preserve">
+      <trans-unit id="1-time link" xml:space="preserve" approved="no">
         <source>1-time link</source>
+        <target state="translated">一次性链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="2 weeks" xml:space="preserve">
