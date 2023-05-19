@@ -397,7 +397,7 @@
     <string name="alert_title_no_group">未找到群组！</string>
     <string name="error_creating_link_for_group">创建群组链接错误</string>
     <string name="group_member_status_introduced">连接中（已介绍）</string>
-    <string name="set_password_to_export_desc">数据库目前使用随机密码进行加密。请在导出前更改密码。</string>
+    <string name="set_password_to_export_desc">数据库使用随机密码进行加密。请在导出前更改它。</string>
     <string name="database_passphrase_and_export">数据库密码和导出</string>
     <string name="smp_server_test_delete_queue">删除队列</string>
     <string name="smp_servers_delete_server">删除服务器</string>
