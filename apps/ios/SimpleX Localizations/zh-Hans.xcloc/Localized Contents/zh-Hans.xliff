@@ -3543,8 +3543,9 @@ Available in v5.1</source>
         <target>分享</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Share 1-time link" xml:space="preserve">
+      <trans-unit id="Share 1-time link" xml:space="preserve" approved="no">
         <source>Share 1-time link</source>
+        <target state="translated">分享一次性链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share address" xml:space="preserve">
@@ -4574,8 +4575,9 @@ SimpleX Lock must be enabled.</source>
         <target>您的 SMP 服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX address" xml:space="preserve">
+      <trans-unit id="Your SimpleX address" xml:space="preserve" approved="no">
         <source>Your SimpleX address</source>
+        <target state="translated">您的 SimpleX 地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your XFTP servers" xml:space="preserve">
