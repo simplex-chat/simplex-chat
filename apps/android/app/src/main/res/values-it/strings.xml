@@ -1213,4 +1213,19 @@
     <string name="allow_your_contacts_adding_message_reactions">Consenti ai tuoi contatti di aggiungere reazioni ai messaggi.</string>
     <string name="allow_message_reactions_only_if">Consenti reazioni ai messaggi solo se il tuo contatto le consente.</string>
     <string name="group_members_can_add_message_reactions">I membri del gruppo possono aggiungere reazioni ai messaggi.</string>
+    <string name="send_disappearing_message_30_seconds">30 secondi</string>
+    <string name="send_disappearing_message_send">Invia</string>
+    <string name="send_disappearing_message">Invia messaggio a tempo</string>
+    <string name="custom_time_unit_days">giorni</string>
+    <string name="custom_time_unit_hours">ore</string>
+    <string name="custom_time_unit_minutes">minuti</string>
+    <string name="custom_time_unit_months">mesi</string>
+    <string name="custom_time_unit_seconds">secondi</string>
+    <string name="custom_time_unit_weeks">settimane</string>
+    <string name="custom_time_picker_select">Seleziona</string>
+    <string name="send_disappearing_message_1_minute">1 minuto</string>
+    <string name="send_disappearing_message_custom_time">Tempo personalizzato</string>
+    <string name="send_disappearing_message_5_minutes">5 minuti</string>
+    <string name="custom_time_picker_custom">personalizzato</string>
+    <string name="disappearing_message">Messaggio a tempo</string>
 </resources>
