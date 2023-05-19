@@ -1113,7 +1113,7 @@
     <string name="v4_6_group_moderation_descr">管理者は次のことができます。
 \n- メンバーのメッセージを削除します。
 \n- メンバーを無効にする (メッセージの送信不可)</string>
-    <string name="v5_0_polish_interface">洗練されたインターフェース</string>
+    <string name="v5_0_polish_interface">ポーランド語のインターフェイス</string>
     <string name="downgrade_and_open_chat">ダウングレードしてチャットを開く</string>
     <string name="la_please_remember_to_store_password">パスワードを覚えるか、安全に保管してください。失われたパスワードを回復する方法はありません。</string>
     <string name="smp_server_test_download_file">ファイルをダウンロード</string>
