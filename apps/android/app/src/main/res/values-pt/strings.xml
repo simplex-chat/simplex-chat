@@ -665,4 +665,19 @@
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Apenas dispositivos cliente armazenam perfis de utilizador, contatos, grupos e mensagens enviadas com <b>encriptação de ponta a ponta de 2 camadas</b>.</string>
     <string name="status_contact_has_e2e_encryption">contato tem encriptação ponta a ponta</string>
     <string name="status_no_e2e_encryption">sem encriptação ponta a ponta</string>
+    <string name="group_member_status_creator">criador</string>
+    <string name="custom_time_unit_months">meses</string>
+    <string name="custom_time_unit_weeks">semanas</string>
+    <string name="custom_time_picker_custom">personalizado</string>
+    <string name="custom_time_picker_select">Selecionar</string>
+    <string name="send_disappearing_message_1_minute">1 minuto</string>
+    <string name="send_disappearing_message_30_seconds">30 segundos</string>
+    <string name="send_disappearing_message_5_minutes">5 minutos</string>
+    <string name="send_disappearing_message_custom_time">Horário personalizado</string>
+    <string name="item_info_current">(atual)</string>
+    <string name="custom_time_unit_days">dias</string>
+    <string name="group_member_status_intro_invitation">conectando (convite de apresentação)</string>
+    <string name="custom_time_unit_hours">horas</string>
+    <string name="custom_time_unit_minutes">minutos</string>
+    <string name="custom_time_unit_seconds">segundos</string>
 </resources>
