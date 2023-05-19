@@ -95,9 +95,9 @@
         <target>%@ will sich mit Ihnen verbinden!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@:" xml:space="preserve" approved="no">
+      <trans-unit id="%@:" xml:space="preserve">
         <source>%@:</source>
-        <target state="translated">%@:</target>
+        <target>%@:</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
@@ -130,9 +130,9 @@
         <target>%d übersprungene Nachricht(en)</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="%d weeks" xml:space="preserve" approved="no">
+      <trans-unit id="%d weeks" xml:space="preserve">
         <source>%d weeks</source>
-        <target state="translated">%d Wochen</target>
+        <target>%d Wochen</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
@@ -300,9 +300,9 @@
         <target>.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="0s" xml:space="preserve" approved="no">
+      <trans-unit id="0s" xml:space="preserve">
         <source>0s</source>
-        <target state="translated">0s</target>
+        <target>0s</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
@@ -477,9 +477,9 @@
         <target>Erweiterte Netzwerkeinstellungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All app data is deleted." xml:space="preserve" approved="no">
+      <trans-unit id="All app data is deleted." xml:space="preserve">
         <source>All app data is deleted.</source>
-        <target state="translated">App-Daten werden komplett gelöscht.</target>
+        <target>App-Daten werden komplett gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
@@ -599,9 +599,9 @@
         <target>Über ein Relais verbinden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve" approved="no">
+      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve">
         <source>An empty chat profile with the provided name is created, and the app opens as usual.</source>
-        <target state="translated">Es wurde ein leeres Chat-Profil mit dem eingegebenen Namen erstellt und die App öffnet wie gewohnt.</target>
+        <target>Es wurde ein leeres Chat-Profil mit dem eingegebenen Namen erstellt und die App öffnet wie gewohnt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve">
@@ -624,9 +624,9 @@
         <target>App Passwort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
+      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve">
         <source>App passcode is replaced with self-destruct passcode.</source>
-        <target state="translated">Das App Passwort wurde durch das Selbstzerstörungspasswort ersetzt.</target>
+        <target>Das App Passwort wurde durch das Selbstzerstörungspasswort ersetzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -828,14 +828,14 @@
         <target>Rolle ändern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct mode" xml:space="preserve" approved="no">
+      <trans-unit id="Change self-destruct mode" xml:space="preserve">
         <source>Change self-destruct mode</source>
-        <target state="translated">Selbstzerstörungs-Modus ändern</target>
+        <target>Selbstzerstörungs-Modus ändern</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve">
         <source>Change self-destruct passcode</source>
-        <target state="translated">Selbstzerstörungspasswort ändern</target>
+        <target>Selbstzerstörungspasswort ändern</target>
         <note>authentication reason
    set passcode view</note>
       </trans-unit>
@@ -1183,9 +1183,9 @@
         <target>Datenbank-ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID: %d" xml:space="preserve" approved="no">
+      <trans-unit id="Database ID: %d" xml:space="preserve">
         <source>Database ID: %d</source>
-        <target state="translated">Datenbank-ID: %d</target>
+        <target>Datenbank-ID: %d</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
@@ -1650,14 +1650,14 @@
         <target>Periodische Benachrichtigungen aktivieren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct" xml:space="preserve" approved="no">
+      <trans-unit id="Enable self-destruct" xml:space="preserve">
         <source>Enable self-destruct</source>
-        <target state="translated">Selbstzerstörung aktivieren</target>
+        <target>Selbstzerstörung aktivieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Enable self-destruct passcode" xml:space="preserve">
         <source>Enable self-destruct passcode</source>
-        <target state="translated">Selbstzerstörungspasswort aktivieren</target>
+        <target>Selbstzerstörungspasswort aktivieren</target>
         <note>set passcode view</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -2263,14 +2263,14 @@
         <target>Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs gescannt werden**, oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve" approved="no">
+      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
         <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
-        <target state="translated">Wenn Sie dieses Passwort während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</target>
+        <target>Wenn Sie dieses Passwort während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
+      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve">
         <source>If you enter your self-destruct passcode while opening the app:</source>
-        <target state="translated">Wenn Sie Ihr Selbstzerstörungspasswort während des Öffnens der App eingeben:</target>
+        <target>Wenn Sie Ihr Selbstzerstörungspasswort während des Öffnens der App eingeben:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
@@ -3020,9 +3020,9 @@
         <target>Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening database…" xml:space="preserve" approved="no">
+      <trans-unit id="Opening database…" xml:space="preserve">
         <source>Opening database…</source>
-        <target state="translated">Öffne Datenbank …</target>
+        <target>Öffne Datenbank …</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
@@ -3330,9 +3330,9 @@
         <target>Datei-Ereignis empfangen</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Received message" xml:space="preserve" approved="no">
+      <trans-unit id="Received message" xml:space="preserve">
         <source>Received message</source>
-        <target state="translated">Empfangene Nachricht</target>
+        <target>Empfangene Nachricht</target>
         <note>message info title</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -3632,24 +3632,24 @@
         <source>Select</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct" xml:space="preserve" approved="no">
+      <trans-unit id="Self-destruct" xml:space="preserve">
         <source>Self-destruct</source>
-        <target state="translated">Selbstzerstörung</target>
+        <target>Selbstzerstörung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Self-destruct passcode" xml:space="preserve">
         <source>Self-destruct passcode</source>
-        <target state="translated">Selbstzerstörungspasswort</target>
+        <target>Selbstzerstörungspasswort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve" approved="no">
+      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve">
         <source>Self-destruct passcode changed!</source>
-        <target state="translated">Das Selbstzerstörungspasswort wurde geändert!</target>
+        <target>Das Selbstzerstörungspasswort wurde geändert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve" approved="no">
+      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve">
         <source>Self-destruct passcode enabled!</source>
-        <target state="translated">Das Selbstzerstörungspasswort wurde aktiviert!</target>
+        <target>Das Selbstzerstörungspasswort wurde aktiviert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve">
@@ -3734,9 +3734,9 @@
         <target>Datei-Ereignis wurde gesendet</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Sent message" xml:space="preserve" approved="no">
+      <trans-unit id="Sent message" xml:space="preserve">
         <source>Sent message</source>
-        <target state="translated">Gesendete Nachricht</target>
+        <target>Gesendete Nachricht</target>
         <note>message info title</note>
       </trans-unit>
       <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve">
@@ -3784,9 +3784,9 @@
         <target>Anstelle der System-Authentifizierung festlegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passcode" xml:space="preserve" approved="no">
+      <trans-unit id="Set passcode" xml:space="preserve">
         <source>Set passcode</source>
-        <target state="translated">Passwort eingeben</target>
+        <target>Passwort eingeben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">

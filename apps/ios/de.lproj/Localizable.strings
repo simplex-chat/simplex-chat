@@ -109,6 +109,9 @@
 /* notification title */
 "%@ wants to connect!" = "%@ will sich mit Ihnen verbinden!";
 
+/* copied message info */
+"%@:" = "%@:";
+
 /* time interval */
 "%d days" = "%d Tage";
 
@@ -126,6 +129,9 @@
 
 /* integrity error chat item */
 "%d skipped message(s)" = "%d übersprungene Nachricht(en)";
+
+/* time interval */
+"%d weeks" = "%d Wochen";
 
 /* No comment provided by engineer. */
 "%lld" = "%lld";
@@ -186,6 +192,9 @@
 
 /* No comment provided by engineer. */
 "~strike~" = "\\~durchstreichen~";
+
+/* No comment provided by engineer. */
+"0s" = "0s";
 
 /* time interval */
 "1 day" = "täglich";
@@ -285,6 +294,9 @@
 "Advanced network settings" = "Erweiterte Netzwerkeinstellungen";
 
 /* No comment provided by engineer. */
+"All app data is deleted." = "App-Daten werden komplett gelöscht.";
+
+/* No comment provided by engineer. */
 "All chats and messages will be deleted - this cannot be undone!" = "Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
@@ -351,6 +363,9 @@
 "Always use relay" = "Über ein Relais verbinden";
 
 /* No comment provided by engineer. */
+"An empty chat profile with the provided name is created, and the app opens as usual." = "Es wurde ein leeres Chat-Profil mit dem eingegebenen Namen erstellt und die App öffnet wie gewohnt.";
+
+/* No comment provided by engineer. */
 "Answer call" = "Anruf annehmen";
 
 /* No comment provided by engineer. */
@@ -361,6 +376,9 @@
 
 /* No comment provided by engineer. */
 "App passcode" = "App Passwort";
+
+/* No comment provided by engineer. */
+"App passcode is replaced with self-destruct passcode." = "Das App Passwort wurde durch das Selbstzerstörungspasswort ersetzt.";
 
 /* No comment provided by engineer. */
 "App version" = "App Version";
@@ -502,6 +520,13 @@
 
 /* No comment provided by engineer. */
 "Change role" = "Rolle ändern";
+
+/* authentication reason */
+"Change self-destruct mode" = "Selbstzerstörungs-Modus ändern";
+
+/* authentication reason
+   set passcode view */
+"Change self-destruct passcode" = "Selbstzerstörungspasswort ändern";
 
 /* chat item text */
 "changed address for you" = "wechselte die Adresse für Sie";
@@ -785,6 +810,9 @@
 /* No comment provided by engineer. */
 "Database ID" = "Datenbank-ID";
 
+/* copied message info */
+"Database ID: %d" = "Datenbank-ID: %d";
+
 /* No comment provided by engineer. */
 "Database IDs and Transport isolation option." = "Datenbank-IDs und Transport-Isolationsoption.";
 
@@ -1045,6 +1073,12 @@
 
 /* No comment provided by engineer. */
 "Enable periodic notifications?" = "Periodische Benachrichtigungen aktivieren?";
+
+/* No comment provided by engineer. */
+"Enable self-destruct" = "Selbstzerstörung aktivieren";
+
+/* set passcode view */
+"Enable self-destruct passcode" = "Selbstzerstörungspasswort aktivieren";
 
 /* authentication reason */
 "Enable SimpleX Lock" = "SimpleX Sperre aktivieren";
@@ -1432,6 +1466,12 @@
 
 /* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs gescannt werden**, oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.";
+
+/* No comment provided by engineer. */
+"If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "Wenn Sie dieses Passwort während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!";
+
+/* No comment provided by engineer. */
+"If you enter your self-destruct passcode while opening the app:" = "Wenn Sie Ihr Selbstzerstörungspasswort während des Öffnens der App eingeben:";
 
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Tippen Sie unten auf **Später wiederholen**, wenn Sie den Chat jetzt benötigen (es wird Ihnen angeboten, die Datenbank bei einem Neustart der App zu migrieren).";
@@ -1951,6 +1991,9 @@
 "Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.";
 
 /* No comment provided by engineer. */
+"Opening database…" = "Öffne Datenbank …";
+
+/* No comment provided by engineer. */
 "Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Das Öffnen des Links über den Browser kann die Privatsphäre und Sicherheit der Verbindung reduzieren. SimpleX-Links, denen nicht vertraut wird, werden Rot sein.";
 
 /* No comment provided by engineer. */
@@ -2135,6 +2178,9 @@
 
 /* notification */
 "Received file event" = "Datei-Ereignis empfangen";
+
+/* message info title */
+"Received message" = "Empfangene Nachricht";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Der Empfang der Datei wird beendet.";
@@ -2323,6 +2369,18 @@
 "Security code" = "Sicherheitscode";
 
 /* No comment provided by engineer. */
+"Self-destruct" = "Selbstzerstörung";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode" = "Selbstzerstörungspasswort";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode changed!" = "Das Selbstzerstörungspasswort wurde geändert!";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode enabled!" = "Das Selbstzerstörungspasswort wurde aktiviert!";
+
+/* No comment provided by engineer. */
 "Send" = "Senden";
 
 /* No comment provided by engineer. */
@@ -2364,6 +2422,9 @@
 /* notification */
 "Sent file event" = "Datei-Ereignis wurde gesendet";
 
+/* message info title */
+"Sent message" = "Gesendete Nachricht";
+
 /* No comment provided by engineer. */
 "Sent messages will be deleted after set time." = "Gesendete Nachrichten werden nach der eingestellten Zeit gelöscht.";
 
@@ -2390,6 +2451,9 @@
 
 /* No comment provided by engineer. */
 "Set it instead of system authentication." = "Anstelle der System-Authentifizierung festlegen.";
+
+/* No comment provided by engineer. */
+"Set passcode" = "Passwort eingeben";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Passwort für den Export festlegen";

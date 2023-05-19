@@ -129,9 +129,9 @@
         <target>%d 跳过消息</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="%d weeks" xml:space="preserve" approved="no">
+      <trans-unit id="%d weeks" xml:space="preserve">
         <source>%d weeks</source>
-        <target state="translated">%d 星期</target>
+        <target>%d 星期</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
@@ -313,9 +313,9 @@
         <target>1时</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="1 minute" xml:space="preserve" approved="no">
+      <trans-unit id="1 minute" xml:space="preserve">
         <source>1 minute</source>
-        <target state="translated">1分钟</target>
+        <target>1分钟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve">
@@ -490,9 +490,9 @@
         <target>所有聊天记录和消息将被删除——这一行为无法撤销！只有您的消息会被删除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts will remain connected." xml:space="preserve" approved="no">
+      <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
-        <target state="translated">所有联系人会保持连接。</target>
+        <target>所有联系人会保持连接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve">
