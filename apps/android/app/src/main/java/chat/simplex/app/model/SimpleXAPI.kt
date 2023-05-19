@@ -599,9 +599,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return when (val r = sendCmd(CC.ApiGetChatItemInfo(type, id, itemId))) {
       is CR.ApiChatItemInfo -> r.chatItemInfo
       else -> {
-        if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiGetChatItemInfo", generalGetString(R.string.error_loading_details), r)
-        }
+        apiErrorAlert("apiGetChatItemInfo", generalGetString(R.string.error_loading_details), r)
         null
       }
     }

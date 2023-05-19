@@ -19,6 +19,7 @@ import chat.simplex.app.model.CIDeleted
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.generalGetString
+import kotlinx.datetime.Clock
 
 @Composable
 fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
@@ -67,7 +68,7 @@ private fun MarkedDeletedText(text: String) {
 fun PreviewMarkedDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
-      ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted()),
+      ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted(Clock.System.now())),
       null
     )
   }

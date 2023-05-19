@@ -1662,8 +1662,8 @@ sealed class CIStatus {
 
 @Serializable
 sealed class CIDeleted {
-  @Serializable @SerialName("deleted") class Deleted: CIDeleted()
-  @Serializable @SerialName("moderated") class Moderated(val byGroupMember: GroupMember): CIDeleted()
+  @Serializable @SerialName("deleted") class Deleted(val deletedTs: Instant?): CIDeleted()
+  @Serializable @SerialName("moderated") class Moderated(val deletedTs: Instant?, val byGroupMember: GroupMember): CIDeleted()
 }
 
 @Serializable
