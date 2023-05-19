@@ -1227,4 +1227,14 @@
     <string name="custom_time_unit_seconds">seconden</string>
     <string name="custom_time_picker_select">Selecteer</string>
     <string name="custom_time_picker_custom">aangepast</string>
+    <string name="info_row_moderated_at">Gemodereerd om</string>
+    <string name="info_row_updated_at">Record bijgewerkt op</string>
+    <string name="item_info_current">(huidig)</string>
+    <string name="share_text_database_id">Database-ID: %d</string>
+    <string name="info_menu">Info</string>
+    <string name="info_row_disappears_at">Verdwijnt om</string>
+    <string name="share_text_moderated_at">Gemodereerd op: %s</string>
+    <string name="share_text_disappears_at">Verdwijnt om: %s</string>
+    <string name="current_version_timestamp">%s (huidig)</string>
+    <string name="share_text_sent_at">Verzonden op: %s</string>
 </resources>
