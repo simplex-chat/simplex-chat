@@ -131,6 +131,7 @@
       </trans-unit>
       <trans-unit id="%d weeks" xml:space="preserve">
         <source>%d weeks</source>
+        <target>%d 星期</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
@@ -314,6 +315,7 @@
       </trans-unit>
       <trans-unit id="1 minute" xml:space="preserve">
         <source>1 minute</source>
+        <target>1分钟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve">
@@ -490,6 +492,7 @@
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
+        <target>所有联系人会保持连接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve">

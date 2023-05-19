@@ -127,6 +127,9 @@
 /* integrity error chat item */
 "%d skipped message(s)" = "%d 跳过消息";
 
+/* time interval */
+"%d weeks" = "%d 星期";
+
 /* No comment provided by engineer. */
 "%lld" = "%lld";
 
@@ -189,6 +192,9 @@
 
 /* time interval */
 "1 hour" = "1时";
+
+/* No comment provided by engineer. */
+"1 minute" = "1分钟";
 
 /* time interval */
 "1 month" = "1月";
@@ -280,6 +286,9 @@
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "所有聊天记录和消息将被删除——这一行为无法撤销！只有您的消息会被删除。";
+
+/* No comment provided by engineer. */
+"All your contacts will remain connected." = "所有联系人会保持连接。";
 
 /* No comment provided by engineer. */
 "Allow" = "允许";
