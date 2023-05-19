@@ -142,8 +142,10 @@ struct ChatItemInfoView: View {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Disappears at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
         }
         if developerTools {
-            shareText += [String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId)]
-            shareText += [String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))]
+            shareText += [
+                String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId),
+                String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))
+            ]
         }
         if !chatItemInfo.itemVersions.isEmpty {
             shareText += ["", NSLocalizedString("History", comment: "copied message info"), ""]
