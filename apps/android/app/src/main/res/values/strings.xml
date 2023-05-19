@@ -83,6 +83,7 @@
   <string name="connection_error">Connection error</string>
   <string name="network_error_desc">Please check your network connection with <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> and try again.</string>
   <string name="error_sending_message">Error sending message</string>
+  <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="cannot_receive_file">Cannot receive file</string>
@@ -212,6 +213,10 @@
   <string name="copy_verb">Copy</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
+  <string name="info_menu">Info</string>
+  <string name="sent_message">Sent message</string>
+  <string name="received_message">Received message</string>
+  <string name="edit_history">History</string>
   <string name="delete_verb">Delete</string>
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
@@ -1107,10 +1112,25 @@
   <string name="share_address">Share address</string>
   <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
 
-  <!-- For Console chat info section -->
+  <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>
   <string name="info_row_local_name">Local name</string>
   <string name="info_row_database_id">Database ID</string>
+  <string name="info_row_updated_at">Record updated at</string>
+  <string name="info_row_sent_at">Sent at</string>
+  <string name="info_row_received_at">Received at</string>
+  <string name="info_row_deleted_at">Deleted at</string>
+  <string name="info_row_moderated_at">Moderated at</string>
+  <string name="info_row_disappears_at">Disappears at</string>
+  <string name="share_text_database_id">Database ID: %d</string>
+  <string name="share_text_updated_at">Record updated at: %s</string>
+  <string name="share_text_sent_at">Sent at: %s</string>
+  <string name="share_text_received_at">Received at: %s</string>
+  <string name="share_text_deleted_at">Deleted at: %s</string>
+  <string name="share_text_moderated_at">Moderated at: %s</string>
+  <string name="share_text_disappears_at">Disappears at: %s</string>
+  <string name="item_info_current">(current)</string>
+  <string name="current_version_timestamp">"%s (current)"</string>
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
