@@ -205,6 +205,7 @@ fun CustomTimePickerDialog(
 @Composable
 fun DropdownCustomTimePickerSettingRow(
   selection: MutableState<Int?>,
+  propagateExternalSelectionUpdate: Boolean = false,
   label: String,
   dropdownValues: List<Int?>,
   customPickerTitle: String,
@@ -225,6 +226,13 @@ fun DropdownCustomTimePickerSettingRow(
     values.value = getValues(selectedValue)
     dropdownSelection.value = DropdownSelection.DropdownValue(selectedValue)
     onSelected(selectedValue)
+  }
+
+  if (propagateExternalSelectionUpdate) {
+    LaunchedEffect(selection.value) {
+      values.value = getValues(selection.value)
+      dropdownSelection.value = DropdownSelection.DropdownValue(selection.value)
+    }
   }
 
   ExposedDropDownSettingRow(
@@ -276,6 +284,7 @@ private sealed class DropdownSelection {
 
   override fun hashCode(): Int =
     // DO NOT REMOVE the as? cast as it will turn them into recursive hashCode calls
+    // https://youtrack.jetbrains.com/issue/KT-31239
     when (this) {
       is DropdownValue -> (this as? DropdownValue).hashCode()
       is Custom -> (this as? Custom).hashCode()

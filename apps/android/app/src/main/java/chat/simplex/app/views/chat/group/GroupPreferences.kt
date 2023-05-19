@@ -142,6 +142,7 @@ private fun FeatureSection(
         val ttl = rememberSaveable(preferences.timedMessages) { mutableStateOf(preferences.timedMessages.ttl) }
         DropdownCustomTimePickerSettingRow(
           selection = ttl,
+          propagateExternalSelectionUpdate = true, // for Reset
           label = generalGetString(R.string.delete_after),
           dropdownValues = TimedMessagesPreference.ttlValues.filterNotNull(), // TODO in 5.2 - allow "off"
           customPickerTitle = generalGetString(R.string.delete_after),
