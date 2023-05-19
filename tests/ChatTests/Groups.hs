@@ -894,9 +894,13 @@ testGroupMessageEditHistory =
 
       alice ##> ("/_get item info #1 " <> aliceItemId)
       alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hello!"
       bob ##> ("/_get item info #1 " <> bobItemId)
       bob <##. "sent at: "
       bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hello!"
 
       alice ##> ("/_update item #1 " <> aliceItemId <> " text hey 👋")
       alice <# "#team [edited] hey 👋"
