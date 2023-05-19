@@ -2,9 +2,6 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
-"\nAvailable in v5.1" = "\nDostupné ve verzi 5.1";
-
-/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -112,19 +109,19 @@
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
 
-/* message ttl */
+/* time interval */
 "%d days" = "%d dní";
 
-/* message ttl */
+/* time interval */
 "%d hours" = "%d hodin";
 
-/* message ttl */
+/* time interval */
 "%d min" = "%d minuty";
 
-/* message ttl */
+/* time interval */
 "%d months" = "%d měsíce";
 
-/* message ttl */
+/* time interval */
 "%d sec" = "%d sek";
 
 /* integrity error chat item */
@@ -187,20 +184,17 @@
 /* No comment provided by engineer. */
 "~strike~" = "\\~stávka~";
 
-/* message ttl */
+/* time interval */
 "1 day" = "1 den";
 
-/* message ttl */
+/* time interval */
 "1 hour" = "1 hodina";
 
-/* message ttl */
+/* time interval */
 "1 month" = "1 měsíc";
 
-/* message ttl */
+/* time interval */
 "1 week" = "1 týden";
-
-/* message ttl */
-"2 weeks" = "2 týdny";
 
 /* No comment provided by engineer. */
 "6" = "6";
@@ -475,9 +469,6 @@
 
 /* authentication reason */
 "Change passcode" = "Změnit heslo";
-
-/* No comment provided by engineer. */
-"Change Passcode" = "Změna hesla";
 
 /* No comment provided by engineer. */
 "Change receiving address" = "Změna adresy příjemce";
