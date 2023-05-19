@@ -323,7 +323,7 @@
     <string name="ttl_day">%d 天</string>
     <string name="group_connection_pending">连接中……</string>
     <string name="callstatus_connecting">连接通话中……</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">联系人和所有的消息都将被删除——这是不可逆回的！</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">联系人和所有的消息都将被删除——该行为是不可逆的！</string>
     <string name="notification_preview_mode_contact">联系人姓名</string>
     <string name="group_member_status_intro_invitation">连接（介绍邀请）</string>
     <string name="callstate_connecting">连接中……</string>
