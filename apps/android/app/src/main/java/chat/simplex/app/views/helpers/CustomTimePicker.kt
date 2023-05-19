@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
-import chat.simplex.app.model.CustomTimeUnit
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import com.sd.lib.compose.wheel_picker.*
 
@@ -24,23 +24,31 @@ fun CustomTimePicker(
 ) {
   fun getUnitValues(unit: CustomTimeUnit, selectedValue: Int): List<Int> {
     val unitLimits = timeUnitsLimits.firstOrNull { it.timeUnit == unit } ?: TimeUnitLimits.defaultUnitLimits(unit)
-    val unitValues = (unitLimits.minValue..unitLimits.maxValue).toList()
-    return unitValues + if (unitValues.contains(selectedValue)) emptyList() else listOf(selectedValue)
+    val regularUnitValues = (unitLimits.minValue..unitLimits.maxValue).toList()
+    return regularUnitValues + if (regularUnitValues.contains(selectedValue)) emptyList() else listOf(selectedValue)
   }
 
   val (unit, duration) = CustomTimeUnit.toTimeUnit(selection.value)
   val selectedUnit: MutableState<CustomTimeUnit> = remember { mutableStateOf(unit) }
   val selectedDuration = remember { mutableStateOf(duration) }
   val selectedUnitValues = remember { mutableStateOf(getUnitValues(selectedUnit.value, selectedDuration.value)) }
+  val isTriggered = remember { mutableStateOf(false) }
 
   LaunchedEffect(selectedUnit.value) {
-    val maxValue = timeUnitsLimits.firstOrNull { it.timeUnit == selectedUnit.value }?.maxValue
-    if (maxValue != null && selectedDuration.value > maxValue) {
-      selectedDuration.value = maxValue
-      selectedUnitValues.value = getUnitValues(selectedUnit.value, selectedDuration.value)
+    // on initial composition, if passed selection doesn't fit into picker bounds, so that selectedDuration is bigger than selectedUnit maxValue
+    // (e.g., for selection = 121 seconds: selectedUnit would be Second, selectedDuration would be 121 > selectedUnit maxValue of 120),
+    // selectedDuration would've been replaced by maxValue - isTriggered check prevents this by skipping LaunchedEffect on initial composition
+    if (isTriggered.value) {
+      val maxValue = timeUnitsLimits.firstOrNull { it.timeUnit == selectedUnit.value }?.maxValue
+      if (maxValue != null && selectedDuration.value > maxValue) {
+        selectedDuration.value = maxValue
+        selectedUnitValues.value = getUnitValues(selectedUnit.value, selectedDuration.value)
+      } else {
+        selectedUnitValues.value = getUnitValues(selectedUnit.value, selectedDuration.value)
+        selection.value = selectedUnit.value.toSeconds * selectedDuration.value
+      }
     } else {
-      selectedUnitValues.value = getUnitValues(selectedUnit.value, selectedDuration.value)
-      selection.value = selectedUnit.value.toSeconds * selectedDuration.value
+      isTriggered.value = true
     }
   }
 
@@ -190,4 +198,93 @@ fun CustomTimePickerDialog(
       }
     }
   }
+}
+
+@Composable
+fun DropdownCustomTimePickerSettingRow(
+  selection: MutableState<Int?>,
+  propagateExternalSelectionUpdate: Boolean = false,
+  label: String,
+  dropdownValues: List<Int?>,
+  customPickerTitle: String,
+  customPickerConfirmButtonText: String,
+  customPickerTimeUnitsLimits: List<TimeUnitLimits> = TimeUnitLimits.defaultUnitsLimits,
+  onSelected: (Int?) -> Unit
+) {
+  fun getValues(selectedValue: Int?): List<DropdownSelection> =
+    dropdownValues.map { DropdownSelection.DropdownValue(it) } +
+        (if (dropdownValues.contains(selectedValue)) listOf() else listOf(DropdownSelection.DropdownValue(selectedValue))) +
+        listOf(DropdownSelection.Custom)
+
+  val dropdownSelection: MutableState<DropdownSelection> = remember { mutableStateOf(DropdownSelection.DropdownValue(selection.value)) }
+  val values: MutableState<List<DropdownSelection>> = remember { mutableStateOf(getValues(selection.value)) }
+  val showCustomTimePicker = remember { mutableStateOf(false) }
+
+  fun updateValue(selectedValue: Int?) {
+    values.value = getValues(selectedValue)
+    dropdownSelection.value = DropdownSelection.DropdownValue(selectedValue)
+    onSelected(selectedValue)
+  }
+
+  if (propagateExternalSelectionUpdate) {
+    LaunchedEffect(selection.value) {
+      values.value = getValues(selection.value)
+      dropdownSelection.value = DropdownSelection.DropdownValue(selection.value)
+    }
+  }
+
+  ExposedDropDownSettingRow(
+    label,
+    values.value.map { sel: DropdownSelection ->
+      when (sel) {
+        is DropdownSelection.DropdownValue -> sel to timeText(sel.value)
+        DropdownSelection.Custom -> sel to generalGetString(R.string.custom_time_picker_custom)
+      }
+    },
+    dropdownSelection,
+    onSelected = { sel: DropdownSelection ->
+      when (sel) {
+        is DropdownSelection.DropdownValue -> updateValue(sel.value)
+        DropdownSelection.Custom -> showCustomTimePicker.value = true
+      }
+    }
+  )
+
+  if (showCustomTimePicker.value) {
+    val selectedCustomTime = remember { mutableStateOf(selection.value ?: 86400) }
+    CustomTimePickerDialog(
+      selectedCustomTime,
+      timeUnitsLimits = customPickerTimeUnitsLimits,
+      title = customPickerTitle,
+      confirmButtonText = customPickerConfirmButtonText,
+      confirmButtonAction = { time ->
+        updateValue(time)
+        showCustomTimePicker.value = false
+      },
+      cancel = {
+        dropdownSelection.value = DropdownSelection.DropdownValue(selection.value)
+        showCustomTimePicker.value = false
+      }
+    )
+  }
+}
+
+private sealed class DropdownSelection {
+  data class DropdownValue(val value: Int?): DropdownSelection()
+  object Custom: DropdownSelection()
+
+  override fun equals(other: Any?): Boolean =
+    other is DropdownSelection &&
+        when (other) {
+          is DropdownValue -> this is DropdownValue && this.value == other.value
+          is Custom -> this is Custom
+        }
+
+  override fun hashCode(): Int =
+    // DO NOT REMOVE the as? cast as it will turn them into recursive hashCode calls
+    // https://youtrack.jetbrains.com/issue/KT-31239
+    when (this) {
+      is DropdownValue -> (this as? DropdownValue).hashCode()
+      is Custom -> (this as? Custom).hashCode()
+    }
 }

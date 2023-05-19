@@ -189,7 +189,7 @@ struct DropdownCustomTimePicker: View {
         ) {
             if #available(iOS 16.0, *) {
                 customTimePicker()
-                    .presentationDetents([.fraction(0.6)])
+                    .presentationDetents([.medium])
             } else {
                 customTimePicker()
             }
