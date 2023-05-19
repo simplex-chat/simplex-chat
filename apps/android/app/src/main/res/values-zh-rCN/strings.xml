@@ -1008,7 +1008,7 @@
     <string name="should_be_at_least_one_visible_profile">应该至少有一个可见的用户资料。</string>
     <string name="user_unmute">解除静音</string>
     <string name="button_welcome_message">欢迎信息</string>
-    <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到通话请求和通知。</string>
+    <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
     <string name="group_welcome_title">欢迎信息</string>
     <string name="confirm_database_upgrades">确认数据库升级</string>
