@@ -2310,8 +2310,8 @@ public enum CIStatus: Decodable {
 }
 
 public enum CIDeleted: Decodable {
-    case deleted
-    case moderated(byGroupMember: GroupMember)
+    case deleted(deletedTs: Date?)
+    case moderated(deletedTs: Date?, byGroupMember: GroupMember)
 
     var id: String {
         switch self {

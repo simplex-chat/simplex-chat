@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct ChatItemInfoView: View {
     @Environment(\.colorScheme) var colorScheme
-    var chatItem: ChatItem
+    var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     
@@ -33,13 +33,13 @@ struct ChatItemInfoView: View {
     }
 
     private var title: String {
-        chatItem.chatDir.sent
+        ci.chatDir.sent
         ? NSLocalizedString("Sent message", comment: "message info title")
         : NSLocalizedString("Received message", comment: "message info title")
     }
 
     @ViewBuilder private func itemInfoView(_ chatItemInfo: ChatItemInfo) -> some View {
-        let meta = chatItem.meta
+        let meta = ci.meta
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -50,25 +50,37 @@ struct ChatItemInfoView: View {
 
                     let maxWidth = (g.size.width - 32) * 0.84
                     infoRow("Sent at", localTimestamp(meta.itemTs))
-                    if !chatItem.chatDir.sent {
+                    if !ci.chatDir.sent {
                         infoRow("Received at", localTimestamp(meta.createdAt))
+                    }
+                    switch (meta.itemDeleted) {
+                    case let .deleted(deletedTs):
+                        if let deletedTs = deletedTs {
+                            infoRow("Deleted at", localTimestamp(deletedTs))
+                        }
+                    case let .moderated(deletedTs, _):
+                        if let deletedTs = deletedTs {
+                            infoRow("Moderated at", localTimestamp(deletedTs))
+                        }
+                    default: EmptyView()
                     }
                     if let deleteAt = meta.itemTimed?.deleteAt {
                         infoRow("Disappears at", localTimestamp(deleteAt))
                     }
                     if developerTools {
                         infoRow("Database ID", "\(meta.itemId)")
+                        infoRow("Record updated at", localTimestamp(meta.updatedAt))
                     }
 
                     if !chatItemInfo.itemVersions.isEmpty {
                         Divider().padding(.vertical)
 
-                        Text("Edit history")
+                        Text("History")
                             .font(.title2)
                             .padding(.bottom, 4)
                         LazyVStack(alignment: .leading, spacing: 16)  {
                             ForEach(Array(chatItemInfo.itemVersions.enumerated()), id: \.element.chatItemVersionId) { index, itemVersion in
-                                itemVersionView(itemVersion, maxWidth, current: index == 0)
+                                itemVersionView(itemVersion, maxWidth, current: index == 0 && ci.meta.itemDeleted == nil)
                             }
                         }
                     }
@@ -85,7 +97,7 @@ struct ChatItemInfoView: View {
                 .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(chatItemFrameColor(chatItem, colorScheme))
+                .background(chatItemFrameColor(ci, colorScheme))
                 .cornerRadius(18)
                 .contextMenu {
                     Button {
@@ -101,32 +113,46 @@ struct ChatItemInfoView: View {
                 }
             let ts = localTimestamp(itemVersion.itemVersionTs)
             (current ? Text("\(ts) (current)") : Text(ts))
-            .foregroundStyle(.secondary)
-            .font(.caption)
-            .padding(.horizontal, 12)
+                .foregroundStyle(.secondary)
+                .font(.caption)
+                .padding(.horizontal, 12)
         }
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
     private func itemInfoShareText(_ chatItemInfo: ChatItemInfo) -> String {
-        let meta = chatItem.meta
+        let meta = ci.meta
         var shareText: [String] = [title, ""]
         shareText += [String.localizedStringWithFormat(NSLocalizedString("Sent at: %@", comment: "copied message info"), localTimestamp(meta.itemTs))]
-        if !chatItem.chatDir.sent {
+        if !ci.chatDir.sent {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Received at: %@", comment: "copied message info"), localTimestamp(meta.createdAt))]
+        }
+        switch (ci.meta.itemDeleted) {
+        case let .deleted(deletedTs):
+            if let deletedTs = deletedTs {
+                shareText += [String.localizedStringWithFormat(NSLocalizedString("Deleted at: %@", comment: "copied message info"), localTimestamp(deletedTs))]
+            }
+        case let .moderated(deletedTs, _):
+            if let deletedTs = deletedTs {
+                shareText += [String.localizedStringWithFormat(NSLocalizedString("Moderated at: %@", comment: "copied message info"), localTimestamp(deletedTs))]
+            }
+        default: break
         }
         if let deleteAt = meta.itemTimed?.deleteAt {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Disappears at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
         }
         if developerTools {
-            shareText += [String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId) ]
+            shareText += [String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId)]
+            shareText += [String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))]
         }
         if !chatItemInfo.itemVersions.isEmpty {
-            shareText += ["", NSLocalizedString("Edit history", comment: "copied message info"), ""]
+            shareText += ["", NSLocalizedString("History", comment: "copied message info"), ""]
             for (index, itemVersion) in chatItemInfo.itemVersions.enumerated() {
                 shareText += [
                     String.localizedStringWithFormat(
-                        index == 0 ? NSLocalizedString("%@ (current):", comment: "copied message info") : NSLocalizedString("%@:", comment: "copied message info"),
+                        index == 0 && ci.meta.itemDeleted == nil
+                        ? NSLocalizedString("%@ (current):", comment: "copied message info")
+                        : NSLocalizedString("%@:", comment: "copied message info"),
                         localTimestamp(itemVersion.itemVersionTs)
                     ),
                     itemVersion.msgContent.text,
@@ -147,6 +173,6 @@ func localTimestamp(_ date: Date) -> String {
 
 struct ChatItemInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatItemInfoView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), chatItemInfo: Binding.constant(nil))
+        ChatItemInfoView(ci: ChatItem.getSample(1, .directSnd, .now, "hello"), chatItemInfo: Binding.constant(nil))
     }
 }

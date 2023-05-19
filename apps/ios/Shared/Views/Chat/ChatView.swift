@@ -501,7 +501,7 @@ struct ChatView: View {
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {
-                    ChatItemInfoView(chatItem: ci, chatItemInfo: $chatItemInfo)
+                    ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
                 }
         }
 
@@ -579,6 +579,7 @@ struct ChatView: View {
                 if !ci.isDeletedContent {
                     menu.append(revealUIAction())
                 }
+                menu.append(viewInfoUIAction())
                 menu.append(deleteUIAction())
             } else if ci.isDeletedContent {
                 menu.append(deleteUIAction())
