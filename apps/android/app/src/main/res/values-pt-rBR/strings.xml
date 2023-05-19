@@ -613,8 +613,7 @@
     <string name="join_group_button">Junte-se</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Você pode compartilhar um link ou um código QR - qualquer um poderá entrar no grupo. Você não perderá membros do grupo se você deletá-los mais tarde.</string>
     <string name="users_delete_data_only">Somente dados de perfil local</string>
-    <string name="only_you_can_send_disappearing">Somente você pode enviar mensagens
-\ntemporárias.</string>
+    <string name="only_you_can_send_disappearing">Somente você pode enviar mensagens temporárias.</string>
     <string name="only_your_contact_can_send_disappearing">Somente seu contato pode enviar mensagens temporárias.</string>
     <string name="icon_descr_instant_notifications">Notificações instantâneas</string>
     <string name="service_notifications">Notificações instantâneas!</string>
