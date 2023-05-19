@@ -229,8 +229,8 @@ chatItemDeletedState ChatItem {meta = CIMeta {itemDeleted}, content} =
         _ -> CIDeletedState {markedDeleted = True, deletedByMember = byMember cid}
     byMember :: CIDeleted c -> Maybe GroupMember
     byMember = \case
-      CIModerated m -> Just m
-      CIDeleted -> Nothing
+      CIModerated _ m -> Just m
+      CIDeleted _ -> Nothing
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
@@ -336,7 +336,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemStatus :: CIStatus d,
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Maybe (CIDeleted c),
-    itemEdited :: Bool,
+    itemEditedTs :: Maybe UTCTime,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
@@ -346,13 +346,13 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive tz currentTs itemTs createdAt updatedAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Maybe UTCTime -> Maybe CITimed -> Maybe Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEditedTs itemTimed itemLive tz currentTs itemTs createdAt updatedAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, localItemTs, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEditedTs, itemTimed, itemLive, editable, localItemTs, createdAt, updatedAt}
 
 instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -1477,8 +1477,8 @@ checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
   Nothing -> Left "bad direction"
 
 data CIDeleted (c :: ChatType) where
-  CIDeleted :: CIDeleted c
-  CIModerated :: GroupMember -> CIDeleted 'CTGroup
+  CIDeleted :: UTCTime -> CIDeleted c
+  CIModerated :: UTCTime -> GroupMember -> CIDeleted 'CTGroup
 
 deriving instance Show (CIDeleted c)
 
@@ -1487,8 +1487,8 @@ instance ToJSON (CIDeleted d) where
   toEncoding = J.toEncoding . jsonCIDeleted
 
 data JSONCIDeleted
-  = JCIDDeleted
-  | JCIDModerated {byGroupMember :: GroupMember}
+  = JCIDDeleted {deletedTs :: UTCTime}
+  | JCIDModerated {deletedTs :: UTCTime, byGroupMember :: GroupMember}
   deriving (Show, Generic)
 
 instance ToJSON JSONCIDeleted where
@@ -1497,8 +1497,8 @@ instance ToJSON JSONCIDeleted where
 
 jsonCIDeleted :: CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
-  CIDeleted -> JCIDDeleted
-  CIModerated m -> JCIDModerated m
+  CIDeleted ts -> JCIDDeleted ts
+  CIModerated ts m -> JCIDModerated ts m
 
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion]
