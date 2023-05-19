@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct ChatItemInfoView: View {
     @Environment(\.colorScheme) var colorScheme
-    var chatItemSent: Bool
+    var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     
@@ -42,27 +42,39 @@ struct ChatItemInfoView: View {
                         .padding(.bottom)
 
                     let maxWidth = (g.size.width - 32) * 0.84
+                    infoRow("Sent at", localTimestamp(ci.meta.itemTs))
+                    if !ci.chatDir.sent {
+                        infoRow("Received at", localTimestamp(ci.meta.createdAt))
+                    }
+                    switch (ci.meta.itemDeleted) {
+                    case let .deleted(deletedTs):
+                        if let deletedTs = deletedTs {
+                            infoRow("Deleted at", localTimestamp(deletedTs))
+                        }
+                    case let .moderated(deletedTs, _):
+                        if let deletedTs = deletedTs {
+                            infoRow("Moderated at", localTimestamp(deletedTs))
+                        }
+                    default: EmptyView()
+                    }
+                    if let deleteAt = ci.meta.itemTimed?.deleteAt {
+                        infoRow("Disappears at", localTimestamp(deleteAt))
+                    }
                     if developerTools {
-                        infoRow("Database ID", "\(chatItemInfo.chatItemId)")
-                    }
-                    infoRow("Sent at", localTimestamp(chatItemInfo.itemTs))
-                    if !chatItemSent {
-                        infoRow("Received at", localTimestamp(chatItemInfo.createdAt))
-                    }
-                    if let deleteAt = chatItemInfo.deleteAt {
-                        infoRow("To be deleted at", localTimestamp(deleteAt))
+                        infoRow("Database ID", "\(ci.meta.itemId)")
+                        infoRow("Record updated at", localTimestamp(ci.meta.updatedAt))
                     }
 
                     if !chatItemInfo.itemVersions.isEmpty {
                         Divider()
                             .padding(.top)
 
-                        Text("Edit history")
+                        Text("History")
                             .font(.title)
                             .padding(.bottom, 4)
                         LazyVStack(alignment: .leading, spacing: 12)  {
                             ForEach(Array(chatItemInfo.itemVersions.enumerated()), id: \.element.chatItemVersionId) { index, itemVersion in
-                                itemVersionView(itemVersion, maxWidth, current: index == 0)
+                                itemVersionView(itemVersion, maxWidth, current: index == 0 && ci.meta.itemDeleted == nil)
                             }
                         }
                     }
@@ -83,7 +95,7 @@ struct ChatItemInfoView: View {
                 .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(ciDirFrameColor(chatItemSent: chatItemSent, colorScheme: colorScheme))
+                .background(ciDirFrameColor(chatItemSent: ci.chatDir.sent, colorScheme: colorScheme))
                 .cornerRadius(18)
                 .uiKitContextMenu(menu: uiMenu, allowMenu: Binding.constant(true))
             Text(
@@ -118,20 +130,32 @@ struct ChatItemInfoView: View {
         var shareText = ""
         let nl = "\n"
         shareText += "Message details" + nl + nl
+        shareText += "Sent at: \(localTimestamp(ci.meta.itemTs))" + nl
+        if !ci.chatDir.sent {
+            shareText += "Received at: \(localTimestamp(ci.meta.createdAt))" + nl
+        }
+        switch (ci.meta.itemDeleted) {
+        case let .deleted(deletedTs):
+            if let deletedTs = deletedTs {
+                shareText += "Deleted at: \(localTimestamp(deletedTs))"
+            }
+        case let .moderated(deletedTs, _):
+            if let deletedTs = deletedTs {
+                shareText += "Moderated at: \(localTimestamp(deletedTs))"
+            }
+        default: break
+        }
+        if let deleteAt = ci.meta.itemTimed?.deleteAt {
+            shareText += "Disappears at: \(localTimestamp(deleteAt))" + nl
+        }
         if developerTools {
-            shareText += "Database ID: \(chatItemInfo.chatItemId)" + nl
-        }
-        shareText += "Sent at: \(localTimestamp(chatItemInfo.itemTs))" + nl
-        if !chatItemSent {
-            shareText += "Received at: \(localTimestamp(chatItemInfo.createdAt))" + nl
-        }
-        if let deleteAt = chatItemInfo.deleteAt {
-            shareText += "To be deleted at: \(localTimestamp(deleteAt))" + nl
+            shareText += "Database ID: \(ci.meta.itemId)" + nl
+            shareText += "Record updated at: \(localTimestamp(ci.meta.updatedAt))"
         }
         if !chatItemInfo.itemVersions.isEmpty {
-            shareText += nl + "Edit history" + nl + nl
+            shareText += nl + "History" + nl + nl
             for (index, itemVersion) in chatItemInfo.itemVersions.enumerated() {
-                shareText += localTimestamp(itemVersion.itemVersionTs) + (index == 0 ? " (Current)" : "") + ":" + nl
+                shareText += localTimestamp(itemVersion.itemVersionTs) + (index == 0 && ci.meta.itemDeleted == nil ? " (Current)" : "") + ":" + nl
                 shareText += itemVersion.msgContent.text + nl + nl
             }
         }
@@ -148,6 +172,6 @@ func localTimestamp(_ date: Date) -> String {
 
 struct ChatItemInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatItemInfoView(chatItemSent: true, chatItemInfo: Binding.constant(nil))
+        ChatItemInfoView(ci: ChatItem.getSample(1, .directSnd, .now, "hello"), chatItemInfo: Binding.constant(nil))
     }
 }

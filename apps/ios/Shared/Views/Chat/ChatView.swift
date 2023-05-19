@@ -501,7 +501,7 @@ struct ChatView: View {
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {
-                    ChatItemInfoView(chatItemSent: ci.chatDir.sent, chatItemInfo: $chatItemInfo)
+                    ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
                 }
         }
 
@@ -579,6 +579,7 @@ struct ChatView: View {
                 if !ci.isDeletedContent {
                     menu.append(revealUIAction())
                 }
+                menu.append(viewInfoUIAction())
                 menu.append(deleteUIAction())
             } else if ci.isDeletedContent {
                 menu.append(deleteUIAction())
@@ -696,7 +697,7 @@ struct ChatView: View {
 
         private func viewInfoUIAction() -> UIAction {
             UIAction(
-                title: NSLocalizedString("View details", comment: "chat item action"),
+                title: NSLocalizedString("Info", comment: "chat item action"),
                 image: UIImage(systemName: "info")
             ) { _ in
                 Task {
