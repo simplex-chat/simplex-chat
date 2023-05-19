@@ -1226,4 +1226,26 @@
     <string name="send_disappearing_message_1_minute">1 minuta</string>
     <string name="allow_message_reactions_only_if">Zezwalaj na reakcje wiadomości tylko wtedy, gdy zezwala na to Twój kontakt.</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Zarówno Ty, jak i Twój kontakt możecie dodawać reakcje wiadomości.</string>
+    <string name="custom_time_picker_select">Wybierz</string>
+    <string name="custom_time_picker_custom">niestandardowy</string>
+    <string name="error_loading_details">Błąd ładowania szczegółów</string>
+    <string name="received_message">Otrzymano wiadomość</string>
+    <string name="sent_message">Wyślij wiadomość</string>
+    <string name="info_row_deleted_at">Usunięto o</string>
+    <string name="info_row_moderated_at">Moderowany o</string>
+    <string name="share_text_received_at">Otrzymane o: %s</string>
+    <string name="info_row_updated_at">Rekord zaktualizowany o</string>
+    <string name="info_row_sent_at">Wysłano o</string>
+    <string name="share_text_sent_at">Wysłano o: %s</string>
+    <string name="share_text_database_id">ID bazy danych: %d</string>
+    <string name="item_info_current">(aktualny)</string>
+    <string name="share_text_deleted_at">Usunięto o: %s</string>
+    <string name="info_row_disappears_at">Znika o</string>
+    <string name="share_text_disappears_at">Znika o: %s</string>
+    <string name="info_menu">Info</string>
+    <string name="share_text_moderated_at">Moderowany o: %s</string>
+    <string name="edit_history">Historia</string>
+    <string name="info_row_received_at">Otrzymane o</string>
+    <string name="current_version_timestamp">%s (aktualny)</string>
+    <string name="share_text_updated_at">Rekord zaktualizowany o: %s</string>
 </resources>
