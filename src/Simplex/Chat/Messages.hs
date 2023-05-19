@@ -21,7 +21,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.Maybe (isNothing)
+import Data.Maybe (isNothing, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -797,6 +797,12 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
+ciMsgContent :: CIContent d -> Maybe MsgContent
+ciMsgContent = \case
+  CISndMsgContent mc -> Just mc
+  CIRcvMsgContent mc -> Just mc
+  _ -> Nothing
+
 data MsgDecryptError = MDERatchetHeader | MDETooManySkipped
   deriving (Eq, Show, Generic)
 
@@ -809,10 +815,7 @@ instance FromJSON MsgDecryptError where
 
 ciReactionAllowed :: ChatItem c d -> Bool
 ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
-ciReactionAllowed ChatItem {content} = case content of
-  CISndMsgContent _ -> True
-  CIRcvMsgContent _ -> True
-  _ -> False
+ciReactionAllowed ChatItem {content} = isJust $ ciMsgContent content
 
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
@@ -1500,6 +1503,11 @@ jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts
   CIModerated ts m -> JCIDModerated ts m
 
+itemDeletedTs :: CIDeleted d -> Maybe UTCTime
+itemDeletedTs = \case
+  CIDeleted ts -> ts
+  CIModerated ts _ -> ts
+
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion]
   }
@@ -1517,3 +1525,16 @@ data ChatItemVersion = ChatItemVersion
   deriving (Eq, Show, Generic)
 
 instance ToJSON ChatItemVersion where toEncoding = J.genericToEncoding J.defaultOptions
+
+mkItemVersion :: ChatItem c d -> Maybe ChatItemVersion
+mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
+  where
+    CIMeta {itemId, itemTs, createdAt} = meta
+    version mc =
+      ChatItemVersion
+        { chatItemVersionId = itemId,
+          msgContent = mc,
+          formattedText = parseMaybeMarkdownList $ msgContentText mc,
+          itemVersionTs = itemTs,
+          createdAt = createdAt
+        }

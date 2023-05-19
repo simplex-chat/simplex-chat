@@ -469,9 +469,10 @@ processChatCommand = \case
     chatItems <- withStore $ \db -> getAllChatItems db user pagination search
     pure $ CRChatItems user chatItems
   APIGetChatItemInfo chatRef itemId -> withUser $ \user -> do
-    (chatItem, itemVersions) <- withStore $ \db ->
+    (aci@(AChatItem _ _ _ ci), versions) <- withStore $ \db ->
       (,) <$> getAChatItem db user chatRef itemId <*> liftIO (getChatItemVersions db itemId)
-    pure $ CRChatItemInfo user chatItem ChatItemInfo {itemVersions}
+    let itemVersions = if null versions then maybeToList $ mkItemVersion ci else versions
+    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions}
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId

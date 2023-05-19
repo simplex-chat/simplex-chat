@@ -285,9 +285,13 @@ testDirectMessageEditHistory =
 
       alice ##> ("/_get item info @2 " <> itemId 1)
       alice <##. "sent at: "
+      alice <## "message history:"
+      alice .<## ": hello!"
       bob ##> ("/_get item info @2 " <> itemId 1)
       bob <##. "sent at: "
       bob <##. "received at: "
+      bob <## "message history:"
+      bob .<## ": hello!"
 
       alice ##> ("/_update item @2 " <> itemId 1 <> " text hey 👋")
       alice <# "@bob [edited] hey 👋"

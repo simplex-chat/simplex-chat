@@ -493,38 +493,37 @@ viewItemNotChanged (AChatItem _ msgDir _ _) = case msgDir of
   SMDRcv -> []
 
 viewItemDelete :: ChatInfo c -> ChatItem c d -> Maybe AChatItem -> Bool -> Bool -> CurrentTime -> Bool -> [StyledString]
-viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} toItem byUser timed ts testView
+viewItemDelete chat ci@ChatItem {chatDir, meta, content = deletedContent} toItem byUser timed ts testView
   | timed = [plain ("timed message deleted: " <> T.unpack (ciContentToText deletedContent)) | testView]
   | byUser = [plain $ "message " <> T.unpack (fromMaybe "deleted" deletedText_)] -- deletedText_ Nothing should be impossible here
   | otherwise = case chat of
     DirectChat c -> case (chatDir, deletedContent) of
       (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c deletedText_) [] mc ts meta
       _ -> prohibited
-    GroupChat g@GroupInfo {membership} -> case (chatDir, deletedContent) of
-      (CIGroupRcv m, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m deletedText_) [] mc ts meta
-      (CIGroupSnd, CISndMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g membership deletedText_) [] mc ts meta
+    GroupChat g -> case ciMsgContent deletedContent of
+      Just mc ->
+        let m = chatItemMember g ci
+         in viewReceivedMessage (ttyFromGroupDeleted g m deletedText_) [] mc ts meta
       _ -> prohibited
     _ -> prohibited
   where
     deletedText_ :: Maybe Text
     deletedText_ = case toItem of
       Nothing -> Just "deleted"
-      Just (AChatItem _ _ _ ci) -> chatItemDeletedText ci $ chatInfoMembership chat
+      Just (AChatItem _ _ _ ci') -> chatItemDeletedText ci' $ chatInfoMembership chat
     prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
 viewItemReaction :: forall c d. Bool -> ChatInfo c -> CIReaction c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content}, sentAt, reaction} added ts tz =
   case (chat, chatDir) of
-    (DirectChat c, CIDirectRcv) -> case content of
-      CIRcvMsgContent mc -> view from $ reactionMsg mc
-      CISndMsgContent mc -> view from $ reactionMsg mc
+    (DirectChat c, CIDirectRcv) -> case ciMsgContent content of
+      Just mc -> view from $ reactionMsg mc
       _ -> []
       where
         from = ttyFromContact c
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
-    (GroupChat g, CIGroupRcv m) -> case content of
-      CIRcvMsgContent mc -> view from $ reactionMsg mc
-      CISndMsgContent mc -> view from $ reactionMsg mc
+    (GroupChat g, CIGroupRcv m) -> case ciMsgContent content of
+      Just mc -> view from $ reactionMsg mc
       _ -> []
       where
         from = ttyFromGroup g m
