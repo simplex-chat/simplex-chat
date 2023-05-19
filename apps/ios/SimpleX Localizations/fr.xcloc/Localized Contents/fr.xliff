@@ -95,8 +95,9 @@
         <target>%@ veut se connecter !</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@:" xml:space="preserve">
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
         <source>%@:</source>
+        <target state="translated">%@ :</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
@@ -299,8 +300,9 @@
         <target>.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="0s" xml:space="preserve">
+      <trans-unit id="0s" xml:space="preserve" approved="no">
         <source>0s</source>
+        <target state="translated">0s</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
@@ -1189,8 +1191,9 @@
         <target>ID de base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID: %d" xml:space="preserve">
+      <trans-unit id="Database ID: %d" xml:space="preserve" approved="no">
         <source>Database ID: %d</source>
+        <target state="translated">ID de base de données : %d</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
@@ -2687,8 +2690,9 @@
         <target state="translated">Les réactions aux messages sont interdites dans ce chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited in this group.</source>
+        <target state="translated">Les réactions aux messages sont interdites dans ce groupe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
@@ -2956,8 +2960,9 @@
         <target>Seuls les propriétaires de groupes peuvent activer les messages vocaux.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can add message reactions." xml:space="preserve">
+      <trans-unit id="Only you can add message reactions." xml:space="preserve" approved="no">
         <source>Only you can add message reactions.</source>
+        <target state="translated">Vous seul pouvez ajouter des réactions aux messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
@@ -2980,8 +2985,9 @@
         <target>Vous seul pouvez envoyer des messages vocaux.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Only your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Only your contact can add message reactions.</source>
+        <target state="translated">Seul votre contact peut ajouter des réactions aux messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
@@ -3029,8 +3035,9 @@
         <target>Protocole et code open-source – n'importe qui peut heberger un serveur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening database…" xml:space="preserve">
+      <trans-unit id="Opening database…" xml:space="preserve" approved="no">
         <source>Opening database…</source>
+        <target state="translated">Ouverture de la base de données…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
@@ -3248,12 +3255,14 @@
         <target>Interdire la suppression irréversible des messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit message reactions." xml:space="preserve">
+      <trans-unit id="Prohibit message reactions." xml:space="preserve" approved="no">
         <source>Prohibit message reactions.</source>
+        <target state="translated">Interdire les réactions aux messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit messages reactions." xml:space="preserve">
+      <trans-unit id="Prohibit messages reactions." xml:space="preserve" approved="no">
         <source>Prohibit messages reactions.</source>
+        <target state="translated">Interdire les réactions aux messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
@@ -3639,20 +3648,24 @@
         <source>Select</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct" xml:space="preserve">
+      <trans-unit id="Self-destruct" xml:space="preserve" approved="no">
         <source>Self-destruct</source>
+        <target state="translated">Autodestruction</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode" xml:space="preserve" approved="no">
         <source>Self-destruct passcode</source>
+        <target state="translated">Code d'autodestruction</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode changed!</source>
+        <target state="translated">Le code d'autodestruction a été modifié !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode enabled!</source>
+        <target state="translated">Code d'autodestruction activé !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve">
@@ -3670,8 +3683,9 @@
         <target>Envoi de message direct</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send disappearing message" xml:space="preserve">
+      <trans-unit id="Send disappearing message" xml:space="preserve" approved="no">
         <source>Send disappearing message</source>
+        <target state="translated">Envoyer un message éphémère</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
@@ -3737,8 +3751,9 @@
         <target>Événement de fichier envoyé</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Sent message" xml:space="preserve">
+      <trans-unit id="Sent message" xml:space="preserve" approved="no">
         <source>Sent message</source>
+        <target state="translated">Message envoyé</target>
         <note>message info title</note>
       </trans-unit>
       <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve">
@@ -3786,8 +3801,9 @@
         <target>Il permet de remplacer l'authentification du système.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passcode" xml:space="preserve">
+      <trans-unit id="Set passcode" xml:space="preserve" approved="no">
         <source>Set passcode</source>
+        <target state="translated">Définir le code d'accès</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -5192,8 +5208,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>la base de données a une version plus récente que celle de l'application, mais il n'y a pas de rétrogradation pour : %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="days" xml:space="preserve">
+      <trans-unit id="days" xml:space="preserve" approved="no">
         <source>days</source>
+        <target state="translated">jours</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -5271,8 +5288,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>mise à jour du profil de groupe</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="hours" xml:space="preserve">
+      <trans-unit id="hours" xml:space="preserve" approved="no">
         <source>hours</source>
+        <target state="translated">heures</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve">
@@ -5380,8 +5398,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>message reçu</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="minutes" xml:space="preserve">
+      <trans-unit id="minutes" xml:space="preserve" approved="no">
         <source>minutes</source>
+        <target state="translated">minutes</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="missed call" xml:space="preserve">
@@ -5399,8 +5418,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>modéré par %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="months" xml:space="preserve">
+      <trans-unit id="months" xml:space="preserve" approved="no">
         <source>months</source>
+        <target state="translated">mois</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
@@ -5499,8 +5519,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>sec</target>
         <note>network option</note>
       </trans-unit>
-      <trans-unit id="seconds" xml:space="preserve">
+      <trans-unit id="seconds" xml:space="preserve" approved="no">
         <source>seconds</source>
+        <target state="translated">secondes</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
@@ -5578,8 +5599,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>veut établir une connexion !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="weeks" xml:space="preserve">
+      <trans-unit id="weeks" xml:space="preserve" approved="no">
         <source>weeks</source>
+        <target state="translated">semaines</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="yes" xml:space="preserve">
