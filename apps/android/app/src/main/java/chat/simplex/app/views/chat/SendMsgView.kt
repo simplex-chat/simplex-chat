@@ -162,7 +162,7 @@ fun SendMsgView(
               (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
               cs.endLiveDisabled
           val showDropdown = rememberSaveable { mutableStateOf(false) }
-          
+
           @Composable
           fun MenuItems(): List<@Composable () -> Unit> {
             val menuItems = mutableListOf<@Composable () -> Unit>()
