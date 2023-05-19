@@ -160,7 +160,7 @@ struct ChatItemInfoView: View {
                 ]
             }
         }
-        return shareText.joined(separator: "\n")
+        return shareText.joined(separator: "\n").trimmingCharacters(in: .newlines)
     }
 }
 
