@@ -28,7 +28,7 @@ In a more narrow sense, particularly in media, blockchain is used to refer speci
 
 ## Centralized network
 
-Centralized networks are provided or controlled by a single entity. The examples are Threema, Signal, WhatsApp and Telegram. The advantage of that is that the provider can innovate faster, and to have a centralized approach to security. But the disadvantage is that this same provider can change or discontinue the service, sell or disclose all users data about who they are connected with.
+Centralized networks are provided or controlled by a single entity. The examples are Threema, Signal, WhatsApp and Telegram. The advantage of that is that the provider can innovate faster, and to have a centralized approach to security. But the disadvantage is that this same provider can change or discontinue the service, and leak, sell or disclose in some other way all users data, including about who they are connected with.
 
 ## Content padding
 
@@ -36,7 +36,26 @@ Centralized networks are provided or controlled by a single entity. The examples
 
 ## Decentralized network
 
+Decentralized network is often used to mean "the network based on decentralized blockchain". In its original meaning, decentralized network means that there is no central authority or any other point of centralization in the network, other than network protocols specification. The advantage of decentralized networks is that they are resilient to censorship and to the provider going out of business. The disadvantage is that they are often slower to innovate, and the security may be worse than with the centralized network.
+
+The examples of decentralized networks are email, web, DNS, XMPP, Matrix, BitTorrent, etc. All these examples have a shared global application-level address space. Cryptocurrency blockchains not only have a shared address space, but also a shared state, so they are more centralized than email. Tor network also has a shared global address space, but also a central authority. SimpleX network does not have a shared application-level address space (it relies on the shared transport-level addresses - SMP relay hostnames or IP addresses), and it does not have any central authority.
+
 ## Defense in depth
+
+Originally, a military strategy that seeks to delay rather than prevent the advance of an attacker, buying time and causing additional casualties by yielding space.
+
+In information security defence in depth represents the use of multiple computer security techniques to help mitigate the risk of one component of the defence being compromised or circumvented. An example could be anti-virus software installed on individual workstations when there is already virus protection on the firewalls and servers within the same environment.
+
+SimpleX network applies defense in depth approach to security by having multiple layers for the communication security and privacy:
+- double ratchet algorithm for [end-to-end encryption](#end-to-end-encryption) with [perfect forward secrecy](#perfect-forward-secrecy) and [post-compromise security](#post-compromise-security),
+- additional layer of end-to-end encryption for each messaging queue and another encryption layer of encryption from the server to the recipient inside TLS to prevent correlation by ciphertext,
+- TLS with only strong ciphers allowed,
+- mitigation of [man-in-the-middle attack](#man-in-the-middle-attack) on client-server connection via server offline certificat verification,
+- mitigation of replay attacks via signing over transport channel binding,
+- multiple layers of [message padding](#message-padding) to reduce efficiency of traffic analysis,
+- mitigation of [man-in-the-middle attack](#man-in-the-middle-attack) on client-client out-of-band channel when sending the invitation,
+- rotation of delivery queues to reduce efficitency of traffic analysis,
+- etc.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Defence_in_depth)
 
