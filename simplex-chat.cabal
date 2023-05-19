@@ -96,7 +96,7 @@ library
       Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages
       Simplex.Chat.Migrations.M20230505_chat_item_versions
       Simplex.Chat.Migrations.M20230511_reactions
-      Simplex.Chat.Migrations.M20230519_edited_deleted_ts
+      Simplex.Chat.Migrations.M20230519_item_deleted_ts
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
