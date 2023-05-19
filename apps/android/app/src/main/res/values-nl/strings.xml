@@ -1225,4 +1225,6 @@
     <string name="send_disappearing_message_custom_time">Aangepaste tijd</string>
     <string name="disappearing_message">Verdwijnend bericht</string>
     <string name="custom_time_unit_seconds">seconden</string>
+    <string name="custom_time_picker_select">Selecteer</string>
+    <string name="custom_time_picker_custom">aangepast</string>
 </resources>
