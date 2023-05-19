@@ -17,7 +17,6 @@ import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.TimedMessagesTTLPicker
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.PreferenceToggleWithIcon
 
@@ -141,7 +140,15 @@ private fun FeatureSection(
       }
       if (timedOn) {
         val ttl = rememberSaveable(preferences.timedMessages) { mutableStateOf(preferences.timedMessages.ttl) }
-        TimedMessagesTTLPicker(ttl, onTTLUpdated)
+        DropdownCustomTimePickerSettingRow(
+          selection = ttl,
+          propagateExternalSelectionUpdate = true, // for Reset
+          label = generalGetString(R.string.delete_after),
+          dropdownValues = TimedMessagesPreference.ttlValues.filterNotNull(), // TODO in 5.2 - allow "off"
+          customPickerTitle = generalGetString(R.string.delete_after),
+          customPickerConfirmButtonText = generalGetString(R.string.custom_time_picker_select),
+          onSelected = onTTLUpdated
+        )
       }
     } else {
       InfoRow(

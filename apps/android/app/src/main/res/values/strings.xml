@@ -1407,4 +1407,6 @@
   <string name="custom_time_unit_days">days</string>
   <string name="custom_time_unit_weeks">weeks</string>
   <string name="custom_time_unit_months">months</string>
+  <string name="custom_time_picker_select">Select</string>
+  <string name="custom_time_picker_custom">custom</string>
 </resources>
