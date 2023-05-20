@@ -79,7 +79,7 @@ fun SimpleButtonIconEnded(
 }
 
 @Composable
-fun SimpleButtonFrame(click: () -> Unit, modifier: Modifier = Modifier, disabled: Boolean = false, content: @Composable () -> Unit) {
+fun SimpleButtonFrame(click: () -> Unit, modifier: Modifier = Modifier, disabled: Boolean = false, content: @Composable RowScope.() -> Unit) {
   Box(Modifier.clip(RoundedCornerShape(20.dp))) {
     val modifier = if (disabled) modifier else modifier.clickable { click() }
     Row(

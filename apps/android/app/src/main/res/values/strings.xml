@@ -727,9 +727,9 @@
   <string name="onboarding_notifications_mode_off">When app is running</string>
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
-  <string name="onboarding_notifications_mode_off_desc"><b>Best for battery</b>. You will receive notifications only when the app is running, background service will NOT be used.</string>
-  <string name="onboarding_notifications_mode_periodic_desc"><b>Good for battery</b>. Background service checks for new messages every 10 minutes. You may miss calls and urgent messages.</string>
-  <string name="onboarding_notifications_mode_service_desc"><b>Uses more battery</b>! Background service is always running – notifications will be shown as soon as the messages are available.</string>
+  <string name="onboarding_notifications_mode_off_desc"><b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).</string>
+  <string name="onboarding_notifications_mode_periodic_desc"><b>Good for battery</b>. Background service checks messages every 10 minutes. You may miss calls or urgent messages.</string>
+  <string name="onboarding_notifications_mode_service_desc"><b>Uses more battery</b>! Background service always runs – notifications are shown as soon as messages are available.</string>
 
   <!-- MakeConnection -->
   <string name="paste_the_link_you_received">Paste received link</string>

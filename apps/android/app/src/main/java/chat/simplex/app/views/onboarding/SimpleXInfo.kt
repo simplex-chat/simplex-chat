@@ -43,13 +43,13 @@ fun SimpleXInfoLayout(
     Modifier
       .fillMaxSize()
       .verticalScroll(rememberScrollState())
-      .padding(start = DEFAULT_PADDING * 1.5f, end = DEFAULT_PADDING * 1.5f, top = DEFAULT_PADDING * 4,/* bottom = DEFAULT_PADDING * 4*/),
+      .padding(start = DEFAULT_PADDING , end = DEFAULT_PADDING, top = DEFAULT_PADDING),
   ) {
     Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
 
-    Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 60.dp).padding(horizontal = 48.dp), textAlign = TextAlign.Center)
+    Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 48.dp).padding(horizontal = 36.dp), textAlign = TextAlign.Center)
 
     InfoRow(painterResource(R.drawable.privacy), R.string.privacy_redefined, R.string.first_platform_without_user_ids, width = 80.dp)
     InfoRow(painterResource(R.drawable.shield), R.string.immune_to_spam_and_abuse, R.string.people_can_connect_only_via_links_you_share)
@@ -67,12 +67,11 @@ fun SimpleXInfoLayout(
     Box(
       Modifier
         .fillMaxWidth()
-        .padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING), contentAlignment = Alignment.Center
+        .padding(bottom = DEFAULT_PADDING.times(1.5f), top = DEFAULT_PADDING), contentAlignment = Alignment.Center
     ) {
       SimpleButtonDecorated(text = stringResource(R.string.how_it_works), icon = painterResource(R.drawable.ic_info),
         click = showModal { HowItWorks(user, onboardingStage) })
     }
-    Spacer(Modifier.weight(1f))
   }
 }
 
@@ -121,7 +120,7 @@ fun OnboardingActionButton(
     Modifier
       .border(border = BorderStroke(1.dp, MaterialTheme.colors.primary), shape = RoundedCornerShape(50))
       .padding(
-      horizontal = DEFAULT_PADDING * 3,
+      horizontal = DEFAULT_PADDING * 2,
       vertical = 4.dp
     )
   } else {
@@ -138,9 +137,7 @@ fun OnboardingActionButton(
     Text(stringResource(labelId), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary, fontSize = 20.sp)
     Icon(
       painterResource(R.drawable.ic_arrow_forward_ios), "next stage", tint = MaterialTheme.colors.primary,
-      modifier = Modifier
-        .padding(start = DEFAULT_PADDING, top = 5.dp)
-        .size(15.dp)
+      modifier = Modifier.padding(start = DEFAULT_PADDING.div(4)).size(20.dp)
     )
   }
 }
