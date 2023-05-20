@@ -297,10 +297,13 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
+        <target state="translated">- wiadomości głosowe do 5 minut.
+- niestandardowy czas zniknięcia.
+- historia edycji.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="." xml:space="preserve">
@@ -498,8 +501,9 @@
         <target>Wszystkie czaty i wiadomości zostaną usunięte - nie można tego cofnąć!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is erased when it is entered." xml:space="preserve">
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
         <source>All data is erased when it is entered.</source>
+        <target state="translated">Wszystkie dane są usuwane po jego wprowadzeniu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -737,8 +741,9 @@
         <target>Zły hash wiadomości</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better messages" xml:space="preserve">
+      <trans-unit id="Better messages" xml:space="preserve" approved="no">
         <source>Better messages</source>
+        <target state="translated">Lepsze wiadomości</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -2060,8 +2065,9 @@
         <target>Pliki i media</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
+      <trans-unit id="Finally, we have them! 🚀" xml:space="preserve" approved="no">
         <source>Finally, we have them! 🚀</source>
+        <target state="translated">W końcu je mamy! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -2522,8 +2528,9 @@
         <target>Włoski interfejs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Japanese interface" xml:space="preserve">
+      <trans-unit id="Japanese interface" xml:space="preserve" approved="no">
         <source>Japanese interface</source>
+        <target state="translated">Japoński interfejs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join" xml:space="preserve">
@@ -3350,8 +3357,9 @@
         <target>Czytaj</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more" xml:space="preserve">
+      <trans-unit id="Read more" xml:space="preserve" approved="no">
         <source>Read more</source>
+        <target state="translated">Przeczytaj więcej</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
