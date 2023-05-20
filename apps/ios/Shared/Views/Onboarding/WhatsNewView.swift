@@ -10,6 +10,7 @@ import SwiftUI
 
 private struct VersionDescription {
     var version: String
+    var post: URL?
     var features: [FeatureDescription]
 }
 
@@ -22,11 +23,12 @@ private struct FeatureDescription {
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
         version: "v4.2",
+        post: URL(string: "https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"),
         features: [
             FeatureDescription(
                 icon: "checkmark.shield",
                 title: "Security assessment",
-                description: "SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)."
+                description: "SimpleX Chat security was audited by Trail of Bits."
             ),
             FeatureDescription(
                 icon: "person.2",
@@ -42,6 +44,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v4.3",
+        post: URL(string: "https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html"),
         features: [
             FeatureDescription(
                 icon: "mic",
@@ -67,6 +70,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v4.4",
+        post: URL(string: "https://simplex.chat/blog/20230103-simplex-chat-v4.4-disappearing-messages.html"),
         features: [
             FeatureDescription(
                 icon: "stopwatch",
@@ -97,6 +101,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v4.5",
+        post: URL(string: "https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html"),
         features: [
             FeatureDescription(
                 icon: "person.crop.rectangle.stack",
@@ -132,6 +137,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v4.6",
+        post: URL(string: "https://simplex.chat/blog/20230328-simplex-chat-v4-6-hidden-profiles.html"),
         features: [
             FeatureDescription(
                 icon: "lock",
@@ -167,6 +173,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v5.0",
+        post: URL(string: "https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html"),
         features: [
             FeatureDescription(
                 icon: "arrow.up.doc",
@@ -181,6 +188,35 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "character",
                 title: "Polish interface",
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
+            ),
+        ]
+    ),
+    // Also
+    // preference to disable calls per contact
+    // access welcome message via a group profile
+    VersionDescription(
+        version: "v5.1",
+        post: URL(string: "https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html"),
+        features: [
+            FeatureDescription(
+                icon: "face.smiling",
+                title: "Message reactions",
+                description: "Finally, we have them! 🚀"
+            ),
+            FeatureDescription(
+                icon: "arrow.up.message",
+                title: "Better messages",
+                description: "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history."
+            ),
+            FeatureDescription(
+                icon: "lock",
+                title: "Self-destruct passcode",
+                description: "All data is erased when it is entered."
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "Japanese interface",
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
@@ -218,6 +254,14 @@ struct WhatsNewView: View {
                         ForEach(v.features, id: \.icon) { f in
                             featureDescription(f.icon, f.title, f.description)
                                 .padding(.bottom, 8)
+                        }
+                        if let post = v.post {
+                            Link(destination: post) {
+                                HStack {
+                                    Text("Read more")
+                                    Image(systemName: "arrow.up.right.circle")
+                                }
+                            }
                         }
                         if !viaSettings {
                             Spacer()

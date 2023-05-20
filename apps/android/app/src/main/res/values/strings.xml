@@ -1367,6 +1367,7 @@
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>
   <string name="new_in_version">New in %s</string>
+  <string name="whats_new_read_more">Read more</string>
   <string name="v4_2_security_assessment">Security assessment</string>
   <string name="v4_2_security_assessment_desc">SimpleX Chat security was audited by Trail of Bits.</string>
   <string name="v4_2_group_links">Group links</string>
@@ -1419,6 +1420,16 @@
   <string name="v5_0_app_passcode_descr">Set it instead of system authentication.</string>
   <string name="v5_0_polish_interface">Polish interface</string>
   <string name="v5_0_polish_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v5_1_message_reactions">Message reactions</string>
+  <string name="v5_1_message_reactions_descr">Finally, we have them! 🚀</string>
+  <string name="v5_1_self_destruct_passcode">Self-destruct passcode</string>
+  <string name="v5_1_self_destruct_passcode_descr">All data is erased when it is entered.</string>
+  <string name="v5_1_custom_themes">Custom themes</string>
+  <string name="v5_1_custom_themes_descr">Customize and share color themes.</string>
+  <string name="v5_1_better_messages">Better messages</string>
+  <string name="v5_1_better_messages_descr">- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history.</string>
+  <string name="v5_1_japanese_portuguese_interface">Japanese and Portuguese UI</string>
+  <string name="whats_new_thanks_to_users_contribute_weblate">Thanks to the users – contribute via Weblate!</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

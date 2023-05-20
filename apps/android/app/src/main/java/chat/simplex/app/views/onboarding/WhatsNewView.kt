@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.BuildConfig
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
@@ -42,9 +43,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       )
     }
 
-    Column(
-      modifier = Modifier.padding(bottom = 12.dp)
-    ) {
+    Column(modifier = Modifier.padding(bottom = 12.dp)) {
       Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -53,16 +52,16 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         Icon(icon, stringResource(titleId), tint = MaterialTheme.colors.secondary)
         Text(
           generalGetString(titleId),
-          maxLines = 1,
+          maxLines = 2,
           overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.h3,
+          style = MaterialTheme.typography.h4,
           fontWeight = FontWeight.Medium
         )
         if (link != null) {
           linkButton(link)
         }
       }
-      Text(generalGetString(descrId))
+      Text(generalGetString(descrId), fontSize = 15.sp)
     }
   }
 
@@ -114,12 +113,21 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         .fillMaxSize()
         .padding(horizontal = DEFAULT_PADDING)
         .verticalScroll(rememberScrollState()),
-      verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)
+      verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING.times(0.75f))
     ) {
-      AppBarTitle(String.format(generalGetString(R.string.new_in_version), v.version))
+      AppBarTitle(String.format(generalGetString(R.string.new_in_version), v.version), bottomPadding = DEFAULT_PADDING)
 
       v.features.forEach { feature ->
         featureDescription(painterResource(feature.icon), feature.titleId, feature.descrId, feature.link)
+      }
+
+      val uriHandler = LocalUriHandler.current
+      if (v.post != null) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = DEFAULT_PADDING.div(4))) {
+          Text(stringResource(R.string.whats_new_read_more), color = MaterialTheme.colors.primary,
+            modifier = Modifier.clickable { uriHandler.openUriCatching(v.post) })
+          Icon(painterResource(R.drawable.ic_open_in_new), stringResource(R.string.whats_new_read_more), tint = MaterialTheme.colors.primary)
+        }
       }
 
       if (!viaSettings) {
@@ -153,12 +161,14 @@ private data class FeatureDescription(
 
 private data class VersionDescription(
   val version: String,
-  val features: List<FeatureDescription>
+  val features: List<FeatureDescription>,
+  val post: String? = null,
 )
 
 private val versionDescriptions: List<VersionDescription> = listOf(
   VersionDescription(
     version = "v4.2",
+    post = "https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html",
     features = listOf(
       FeatureDescription(
         icon = R.drawable.ic_verified_user,
@@ -180,6 +190,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v4.3",
+    post = "https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html",
     features = listOf(
       FeatureDescription(
         icon = R.drawable.ic_mic,
@@ -205,6 +216,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v4.4",
+    post = "https://simplex.chat/blog/20230103-simplex-chat-v4.4-disappearing-messages.html",
     features = listOf(
       FeatureDescription(
         icon = R.drawable.ic_timer,
@@ -230,6 +242,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v4.5",
+    post = "https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html",
     features = listOf(
       FeatureDescription(
         icon = R.drawable.ic_manage_accounts,
@@ -267,6 +280,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v4.6",
+    post = "https://simplex.chat/blog/20230328-simplex-chat-v4-6-hidden-profiles.html",
     features = listOf(
       FeatureDescription(
         icon = R.drawable.ic_lock,
@@ -303,6 +317,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v5.0",
+    post = "https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html",
     features = listOf(
       FeatureDescription(
         icon = R.drawable.ic_upload_file,
@@ -318,6 +333,44 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = R.drawable.ic_translate,
         titleId = R.string.v5_0_polish_interface,
         descrId = R.string.v5_0_polish_interface_descr,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
+      )
+    )
+  ),
+  // Also in v5.1
+  // preference to disable calls per contact
+  // configurable SOCKS proxy port
+  // access welcome message via a group profile
+  // improve calls on lock screen
+  // better formatting of times and dates
+  VersionDescription(
+    version = "v5.1",
+    post = "https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html",
+    features = listOf(
+      FeatureDescription(
+        icon = R.drawable.ic_add_reaction,
+        titleId = R.string.v5_1_message_reactions,
+        descrId = R.string.v5_1_message_reactions_descr
+      ),
+      FeatureDescription(
+        icon = R.drawable.ic_chat,
+        titleId = R.string.v5_1_better_messages,
+        descrId = R.string.v5_1_better_messages_descr
+      ),
+      FeatureDescription(
+        icon = R.drawable.ic_light_mode,
+        titleId = R.string.v5_1_custom_themes,
+        descrId = R.string.v5_1_custom_themes_descr
+      ),
+      FeatureDescription(
+        icon = R.drawable.ic_lock,
+        titleId = R.string.v5_1_self_destruct_passcode,
+        descrId = R.string.v5_1_self_destruct_passcode_descr
+      ),
+      FeatureDescription(
+        icon = R.drawable.ic_translate,
+        titleId = R.string.v5_1_japanese_portuguese_interface,
+        descrId = R.string.whats_new_thanks_to_users_contribute_weblate,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )

@@ -294,6 +294,12 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
+        <source>- voice messages up to 5 minutes.
+- custom time to disappear.
+- editing history.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="." xml:space="preserve">
         <source>.</source>
         <target>.</target>
@@ -478,6 +484,10 @@
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
         <target>所有聊天记录和消息将被删除——这一行为无法撤销！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve">
+        <source>All data is erased when it is entered.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -706,6 +716,10 @@
       <trans-unit id="Bad message hash" xml:space="preserve">
         <source>Bad message hash</source>
         <target>错误消息散列</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better messages" xml:space="preserve">
+        <source>Better messages</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -2007,6 +2021,10 @@
         <target>文件和媒体</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
+        <source>Finally, we have them! 🚀</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>用于控制台</target>
@@ -2456,6 +2474,10 @@
       <trans-unit id="Italian interface" xml:space="preserve">
         <source>Italian interface</source>
         <target>意大利语界面</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Japanese interface" xml:space="preserve">
+        <source>Japanese interface</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join" xml:space="preserve">
@@ -3265,6 +3287,10 @@
         <target>已读</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Read more" xml:space="preserve">
+        <source>Read more</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</source>
         <note>No comment provided by engineer.</note>
@@ -3822,9 +3848,9 @@
         <source>SimpleX Address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve">
-        <source>SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</source>
-        <target>SimpleX Chat 的安全性 [由 Trail of Bits 审核](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)。</target>
+      <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
+        <source>SimpleX Chat security was audited by Trail of Bits.</source>
+        <target>SimpleX Chat 的安全性 由 Trail of Bits 审核。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Lock" xml:space="preserve">

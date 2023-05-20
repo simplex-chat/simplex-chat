@@ -380,7 +380,7 @@
     <string name="database_passphrase_will_be_updated">データベース暗号化のパスフレーズが更新されます。</string>
     <string name="database_passphrase_is_required">チャットを開くにはデータベース暗証フレーズが必要です。</string>
     <string name="file_with_path">ファイル： %s</string>
-    <string name="archive_created_on_ts">作成日時 \u0020<xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="archive_created_on_ts">作成日時 <xliff:g id="archive_ts">%1$s</xliff:g></string>
     <string name="delete_archive">アーカイブを削除</string>
     <string name="join_group_button">参加</string>
     <string name="join_group_question">グループに参加しますか？</string>
@@ -397,7 +397,7 @@
     <string name="group_member_status_connected">接続中</string>
     <string name="group_member_status_announced">接続待ち (アナウンス済み)</string>
     <string name="icon_descr_contact_checked">連絡先が確認済み</string>
-    <string name="delete_group_question">グループを削除をしますか？</string>
+    <string name="delete_group_question">グループを削除しますか？</string>
     <string name="delete_link">リンクを削除</string>
     <string name="group_member_status_group_deleted">グループ削除済み</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">全員にとってグループが削除されます (※元に戻せません※)！</string>
@@ -637,7 +637,7 @@
     <string name="new_member_role">新しいメンバー役割</string>
     <string name="no_contacts_to_add">追加できる連絡先がありません</string>
     <string name="button_delete_group">グループを削除</string>
-    <string name="create_group_link">グループのリンクを発行する</string>
+    <string name="create_group_link">グループのリンクを生成する</string>
     <string name="button_edit_group_profile">グループのプロフィールを編集</string>
     <string name="delete_group_for_self_cannot_undo_warning">あなたにとってグループが削除されます (※元に戻せません※)！</string>
     <string name="button_leave_group">グループを脱退</string>
@@ -732,7 +732,7 @@
     <string name="scan_code">コードを読み込む</string>
     <string name="scan_code_from_contacts_app">連絡相手のアプリからセキュリティコードを読み込む</string>
     <string name="chat_lock">SimpleXロック</string>
-    <string name="is_not_verified">%s は未認証</string>
+    <string name="is_not_verified">%s は未検証</string>
     <string name="your_settings">あなたの設定</string>
     <string name="smp_servers_test_server">テストサーバ</string>
     <string name="smp_servers_save">サーバを保存</string>
@@ -1113,7 +1113,7 @@
     <string name="v4_6_group_moderation_descr">管理者は次のことができます。
 \n- メンバーのメッセージを削除します。
 \n- メンバーを無効にする (メッセージの送信不可)</string>
-    <string name="v5_0_polish_interface">洗練されたインターフェース</string>
+    <string name="v5_0_polish_interface">ポーランド語UI</string>
     <string name="downgrade_and_open_chat">ダウングレードしてチャットを開く</string>
     <string name="la_please_remember_to_store_password">パスワードを覚えるか、安全に保管してください。失われたパスワードを回復する方法はありません。</string>
     <string name="smp_server_test_download_file">ファイルをダウンロード</string>
@@ -1201,4 +1201,51 @@
     <string name="stop_rcv_file__message">ファイルの受信を停止します。</string>
     <string name="stop_rcv_file__title">ファイルの受信を停止しますか？</string>
     <string name="enter_password_to_show">検索にパスワードを入力してください</string>
+    <string name="send_disappearing_message_send">送信</string>
+    <string name="allow_message_reactions">メッセージへのリアクションを許可します。</string>
+    <string name="message_reactions_prohibited_in_this_chat">このチャットではメッセージへのリアクションは禁止されています。</string>
+    <string name="only_you_can_add_message_reactions">メッセージへのリアクションを追加できるのは、あなただけです。</string>
+    <string name="only_your_contact_can_add_message_reactions">メッセージへのリアクションを追加できるのは連絡先だけです。</string>
+    <string name="prohibit_message_reactions_group">メッセージへのリアクションは禁止されています。</string>
+    <string name="custom_time_picker_select">選択</string>
+    <string name="custom_time_picker_custom">カスタム</string>
+    <string name="error_loading_details">詳細読み込みエラー</string>
+    <string name="edit_history">履歴</string>
+    <string name="info_menu">情報</string>
+    <string name="received_message">受信したメッセージ</string>
+    <string name="sent_message">送信済みメッセージ</string>
+    <string name="send_disappearing_message_custom_time">カスタム時間</string>
+    <string name="send_disappearing_message">消えるメッセージを送信</string>
+    <string name="info_row_received_at">受信</string>
+    <string name="info_row_sent_at">送信日時</string>
+    <string name="share_text_database_id">データベースID: %d</string>
+    <string name="share_text_deleted_at">削除されました: %s</string>
+    <string name="info_row_disappears_at">に消えます</string>
+    <string name="info_row_moderated_at">モデレーターによって介入済み</string>
+    <string name="share_text_received_at">受信: %s</string>
+    <string name="share_text_updated_at">レコード更新日時: %s</string>
+    <string name="share_text_sent_at">送信日時: %s</string>
+    <string name="item_info_current">（現在）</string>
+    <string name="share_text_disappears_at">%s :に消えます</string>
+    <string name="share_text_moderated_at">モデレーターによって介入済み: %s</string>
+    <string name="current_version_timestamp">%s (現在)</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">自分も相手もメッセージへのリアクションを追加できます。</string>
+    <string name="message_reactions">メッセージへのリアクション</string>
+    <string name="prohibit_message_reactions">メッセージへのリアクションは禁止されています。</string>
+    <string name="custom_time_unit_minutes">分</string>
+    <string name="custom_time_unit_seconds">秒</string>
+    <string name="custom_time_unit_days">日</string>
+    <string name="custom_time_unit_hours">時間</string>
+    <string name="custom_time_unit_months">月</string>
+    <string name="custom_time_unit_weeks">週</string>
+    <string name="send_disappearing_message_1_minute">1分</string>
+    <string name="send_disappearing_message_30_seconds">30秒</string>
+    <string name="send_disappearing_message_5_minutes">5分</string>
+    <string name="allow_message_reactions_only_if">連絡先が許可している場合にのみ、メッセージへのリアクションを許可します。</string>
+    <string name="allow_your_contacts_adding_message_reactions">連絡先がメッセージへのリアクションを追加できるようにします。</string>
+    <string name="info_row_deleted_at">削除完了</string>
+    <string name="disappearing_message">消えるメッセージ</string>
+    <string name="group_members_can_add_message_reactions">グループメンバーはメッセージへのリアクションを追加できます。</string>
+    <string name="message_reactions_are_prohibited">このグループではメッセージへのリアクションは禁止されています。</string>
+    <string name="info_row_updated_at">レコード更新日時</string>
 </resources>
