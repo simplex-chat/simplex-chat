@@ -2495,24 +2495,9 @@ public enum MREmojiChar: String, Codable, CaseIterable {
     case thumbsup = "👍"
     case thumbsdown = "👎"
     case smile = "😀"
-    case celebration = "🎉"
-    case confused = "😕"
+    case sad = "😢"
     case heart = "❤"
     case launch = "🚀"
-    case looking = "👀"
-
-    public var cmdString: String {
-        switch self {
-        case .thumbsup: return "+"
-        case .thumbsdown: return "-"
-        case .smile: return ")"
-        case .celebration: return "!"
-        case .confused: return "?"
-        case .heart: return "*"
-        case .launch: return "^"
-        case .looking: return "%"
-        }
-    }
 }
 
 extension MsgReaction: Decodable {
