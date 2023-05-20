@@ -1226,4 +1226,39 @@
     <string name="custom_time_unit_days">jours</string>
     <string name="custom_time_unit_months">mois</string>
     <string name="only_your_contact_can_add_message_reactions">Seul votre contact peut ajouter des réactions aux messages.</string>
+    <string name="error_loading_details">Erreur de chargement des détails</string>
+    <string name="edit_history">Historique</string>
+    <string name="info_menu">Info</string>
+    <string name="received_message">Message reçu</string>
+    <string name="custom_time_picker_custom">personnalisé</string>
+    <string name="custom_time_picker_select">Choisir</string>
+    <string name="whats_new_read_more">En savoir plus</string>
+    <string name="v5_1_better_messages_descr">- messages vocaux pouvant durer jusqu\'à 5 minutes.
+\n- délai personnalisé de disparition.
+\n- l\'historique de modification.</string>
+    <string name="share_text_received_at">Reçu à : %s</string>
+    <string name="v5_1_better_messages">Meilleurs messages</string>
+    <string name="v5_1_custom_themes">Thèmes personnalisés</string>
+    <string name="v5_1_self_destruct_passcode_descr">Toutes les données sont effacées lorsqu\'il est saisi.</string>
+    <string name="v5_1_custom_themes_descr">Personnalisez et partagez des thèmes de couleurs.</string>
+    <string name="item_info_current">(actuel)</string>
+    <string name="info_row_deleted_at">Supprimé à</string>
+    <string name="info_row_received_at">Reçu à</string>
+    <string name="info_row_sent_at">Envoyé à</string>
+    <string name="share_text_database_id">ID de base de données : %d</string>
+    <string name="share_text_deleted_at">Supprimé à : %s</string>
+    <string name="share_text_disappears_at">Disparaît à : %s</string>
+    <string name="info_row_disappears_at">Disparaît à</string>
+    <string name="v5_1_japanese_portuguese_interface">Interface en japonais et en portugais</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Merci aux utilisateurs - contribuez via Weblate !</string>
+    <string name="v5_1_message_reactions_descr">Enfin, les voilà ! 🚀</string>
+    <string name="info_row_moderated_at">Modéré à</string>
+    <string name="share_text_updated_at">Enregistrement mis à jour à : %s</string>
+    <string name="v5_1_message_reactions">Réactions aux messages</string>
+    <string name="share_text_moderated_at">Modéré à : %s</string>
+    <string name="info_row_updated_at">Enregistrement mis à jour à</string>
+    <string name="current_version_timestamp">%s (actuel)</string>
+    <string name="v5_1_self_destruct_passcode">Code d\'autodestruction</string>
+    <string name="share_text_sent_at">Envoyé à : %s</string>
+    <string name="sent_message">Message envoyé</string>
 </resources>
