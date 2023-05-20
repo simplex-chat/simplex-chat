@@ -321,6 +321,43 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
+  ),
+  // Also in v5.1
+  // preference to disable calls per contact
+  // configurable SOCKS proxy port
+  // access welcome message via a group profile
+  // improve calls on lock screen
+  // better formatting of times and dates
+  VersionDescription(
+    version = "v5.1",
+    features = listOf(
+      FeatureDescription(
+        icon = R.drawable.ic_add_reaction,
+        titleId = R.string.v5_1_message_reactions,
+        descrId = R.string.v5_1_message_reactions_descr
+      ),
+      FeatureDescription(
+        icon = R.drawable.ic_chat,
+        titleId = R.string.v5_1_better_messages,
+        descrId = R.string.v5_1_better_messages_descr
+      ),
+      FeatureDescription(
+        icon = R.drawable.ic_light_mode,
+        titleId = R.string.v5_1_custom_themes,
+        descrId = R.string.v5_1_custom_themes_descr
+      ),
+      FeatureDescription(
+        icon = R.drawable.ic_lock,
+        titleId = R.string.v5_1_self_destruct_passcode,
+        descrId = R.string.v5_1_self_destruct_passcode_descr
+      ),
+      FeatureDescription(
+        icon = R.drawable.ic_translate,
+        titleId = R.string.v5_1_japanese_portuguese_interface,
+        descrId = R.string.whats_new_thanks_to_users_contribute_weblate,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
+      )
+    )
   )
 )
 

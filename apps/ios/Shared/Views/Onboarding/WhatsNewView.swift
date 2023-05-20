@@ -184,6 +184,34 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
+    ),
+    // Also
+    // preference to disable calls per contact
+    // access welcome message via a group profile
+    VersionDescription(
+        version: "v5.1",
+        features: [
+            FeatureDescription(
+                icon: "face.smiling",
+                title: "Message reactions",
+                description: "Finally, we have them! 🚀"
+            ),
+            FeatureDescription(
+                icon: "arrow.up.message",
+                title: "Better messages",
+                description: "- voice: up to 5\" and 2x quality.\n- custom time to disappear.\n- editing history."
+            ),
+            FeatureDescription(
+                icon: "lock",
+                title: "Self-destruct passcode",
+                description: "All data is erased when it is entered."
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "Japanese interface",
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
+            ),
+        ]
     )
 ]
 

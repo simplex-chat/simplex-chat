@@ -1419,6 +1419,16 @@
   <string name="v5_0_app_passcode_descr">Set it instead of system authentication.</string>
   <string name="v5_0_polish_interface">Polish interface</string>
   <string name="v5_0_polish_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v5_1_message_reactions">Message reactions</string>
+  <string name="v5_1_message_reactions_descr">Finally, we have them! 🚀</string>
+  <string name="v5_1_self_destruct_passcode">Self-destruct passcode</string>
+  <string name="v5_1_self_destruct_passcode_descr">All data is erased when it is entered.</string>
+  <string name="v5_1_custom_themes">Custom themes</string>
+  <string name="v5_1_custom_themes_descr">Customize and share color themes.</string>
+  <string name="v5_1_better_messages">Better messages</string>
+  <string name="v5_1_better_messages_descr">- voice: up to 5\" and 2x quality.\n- custom time to disappear.\n- editing history.</string>
+  <string name="v5_1_japanese_portuguese_interface">Japanese and Portuguese</string>
+  <string name="whats_new_thanks_to_users_contribute_weblate">Thanks to the users – contribute via Weblate!</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
