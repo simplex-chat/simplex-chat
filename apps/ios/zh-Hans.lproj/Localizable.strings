@@ -2365,7 +2365,7 @@
 "Show:" = "显示：";
 
 /* No comment provided by engineer. */
-"SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "SimpleX Chat 的安全性 [由 Trail of Bits 审核](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)。";
+"SimpleX Chat security was audited by Trail of Bits." = "SimpleX Chat 的安全性 由 Trail of Bits 审核。";
 
 /* simplex link type */
 "SimpleX contact address" = "SimpleX 联系地址";
