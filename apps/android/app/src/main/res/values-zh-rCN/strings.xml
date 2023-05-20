@@ -1131,4 +1131,24 @@
     <string name="calls_prohibited_with_this_contact">禁止音频/视频通话。</string>
     <string name="send_disappearing_message_1_minute">1分钟</string>
     <string name="one_time_link_short">一次性链接</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">您和您的联系人都可以添加消息回应。</string>
+    <string name="allow_message_reactions">允许消息回应。</string>
+    <string name="allow_message_reactions_only_if">只有您的联系人允许时才允许消息回应。</string>
+    <string name="app_passcode_replaced_with_self_destruct">应用程序密码被替换为自毁密码。</string>
+    <string name="change_self_destruct_mode">更改自毁模式</string>
+    <string name="learn_more_about_address">关于 SimpleX 地址</string>
+    <string name="continue_to_next_step">继续</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">您的所有联系人将保持连接。个人资料更新将发送给您的联系人。</string>
+    <string name="auto_accept_contact">自动接受</string>
+    <string name="color_secondary_variant">额外的次要</string>
+    <string name="color_background">背景</string>
+    <string name="send_disappearing_message_5_minutes">5分钟</string>
+    <string name="send_disappearing_message_30_seconds">30秒</string>
+    <string name="address_section_title">地址</string>
+    <string name="add_address_to_your_profile">将地址添加到您的个人资料，以便您的联系人可以与其他人共享。个人资料更新将发送给您的联系人。</string>
+    <string name="allow_your_contacts_adding_message_reactions">允许您的联系人添加消息回应。</string>
+    <string name="color_primary_variant">额外的强调色</string>
+    <string name="all_app_data_will_be_cleared">已删除所有应用程序数据。</string>
+    <string name="empty_chat_profile_is_created">已创建一个包含所提供名字的空白聊天资料，应用程序照常打开。</string>
+    <string name="change_self_destruct_passcode">更改自毁密码</string>
 </resources>
