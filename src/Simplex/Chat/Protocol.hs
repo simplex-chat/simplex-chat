@@ -267,7 +267,7 @@ instance FromJSON MREmojiChar where
 
 mrEmojiChar :: Char -> Either String MREmojiChar
 mrEmojiChar c
-  | c `elem` ("👍👎😀🎉😕❤️🚀👀" :: String) = Right $ MREmojiChar c
+  | c `elem` ("👍👎😀😢❤️🚀" :: String) = Right $ MREmojiChar c
   | otherwise = Left "bad emoji"
 
 data FileChunk = FileChunk {chunkNo :: Integer, chunkBytes :: ByteString} | FileChunkCancel
