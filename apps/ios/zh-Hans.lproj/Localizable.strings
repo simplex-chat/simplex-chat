@@ -2,9 +2,6 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
-"\nAvailable in v5.1" = "\n在 v5.1 中可用";
-
-/* No comment provided by engineer. */
 " " = " ";
 
 /* No comment provided by engineer. */
@@ -112,23 +109,26 @@
 /* notification title */
 "%@ wants to connect!" = "%@ 要连接！";
 
-/* message ttl */
+/* time interval */
 "%d days" = "%d 天";
 
-/* message ttl */
+/* time interval */
 "%d hours" = "%d 小时";
 
-/* message ttl */
+/* time interval */
 "%d min" = "%d 分钟";
 
-/* message ttl */
+/* time interval */
 "%d months" = "%d 月";
 
-/* message ttl */
+/* time interval */
 "%d sec" = "%d 秒";
 
 /* integrity error chat item */
 "%d skipped message(s)" = "%d 跳过消息";
+
+/* time interval */
+"%d weeks" = "%d 星期";
 
 /* No comment provided by engineer. */
 "%lld" = "%lld";
@@ -187,20 +187,23 @@
 /* No comment provided by engineer. */
 "~strike~" = "\\~删去~";
 
-/* message ttl */
+/* time interval */
 "1 day" = "1天";
 
-/* message ttl */
+/* time interval */
 "1 hour" = "1时";
 
-/* message ttl */
+/* No comment provided by engineer. */
+"1 minute" = "1分钟";
+
+/* time interval */
 "1 month" = "1月";
 
-/* message ttl */
+/* time interval */
 "1 week" = "1周";
 
-/* message ttl */
-"2 weeks" = "2周";
+/* No comment provided by engineer. */
+"1-time link" = "一次性链接";
 
 /* No comment provided by engineer. */
 "6" = "6";
@@ -209,7 +212,7 @@
 "A new contact" = "新联系人";
 
 /* No comment provided by engineer. */
-"A random profile will be sent to the contact that you received this link from" = "一个随机资料将被发送到收到您链接的联系人那里";
+"A random profile will be sent to the contact that you received this link from" = "一个随机个人资料将被发送至给予您链接的联系人那里";
 
 /* No comment provided by engineer. */
 "A random profile will be sent to your contact" = "一个随机资料将发送给您的联系人";
@@ -285,6 +288,9 @@
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "所有聊天记录和消息将被删除——这一行为无法撤销！只有您的消息会被删除。";
 
 /* No comment provided by engineer. */
+"All your contacts will remain connected." = "所有联系人会保持连接。";
+
+/* No comment provided by engineer. */
 "Allow" = "允许";
 
 /* No comment provided by engineer. */
@@ -297,7 +303,7 @@
 "Allow irreversible message deletion only if your contact allows it to you." = "仅有您的联系人许可后才允许不可撤回消息移除。";
 
 /* No comment provided by engineer. */
-"Allow sending direct messages to members." = "允许直接发送消息给成员。";
+"Allow sending direct messages to members." = "允许向成员发送私信。";
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "允许发送限时消息。";
@@ -477,9 +483,6 @@
 "Change passcode" = "更改密码";
 
 /* No comment provided by engineer. */
-"Change passcode" = "更改密码";
-
-/* No comment provided by engineer. */
 "Change receiving address" = "更改接收地址";
 
 /* No comment provided by engineer. */
@@ -594,7 +597,7 @@
 "connect to SimpleX Chat developers." = "连接到 SimpleX Chat 开发者。";
 
 /* No comment provided by engineer. */
-"Connect via contact link?" = "通过联系人链接连接？";
+"Connect via contact link?" = "通过联系人链接进行连接？";
 
 /* No comment provided by engineer. */
 "Connect via group link?" = "通过群组链接连接？";
@@ -945,10 +948,10 @@
 "direct" = "直接";
 
 /* chat feature */
-"Direct messages" = "私聊";
+"Direct messages" = "私信";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "此群中禁止成员之间私聊。";
+"Direct messages between members are prohibited in this group." = "此群中禁止成员之间私信。";
 
 /* authentication reason */
 "Disable SimpleX Lock" = "禁用 SimpleX 锁定";
@@ -2035,7 +2038,7 @@
 "Prohibit irreversible message deletion." = "禁止不可撤回消息删除。";
 
 /* No comment provided by engineer. */
-"Prohibit sending direct messages to members." = "禁止直接向成员发送私信。";
+"Prohibit sending direct messages to members." = "禁止向成员发送私信。";
 
 /* No comment provided by engineer. */
 "Prohibit sending disappearing messages." = "禁止发送限时消息。";
@@ -2341,6 +2344,9 @@
 "Share" = "分享";
 
 /* No comment provided by engineer. */
+"Share 1-time link" = "分享一次性链接";
+
+/* No comment provided by engineer. */
 "Share link" = "分享链接";
 
 /* No comment provided by engineer. */
@@ -2359,7 +2365,7 @@
 "Show:" = "显示：";
 
 /* No comment provided by engineer. */
-"SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "SimpleX Chat 的安全性 [由 Trail of Bits 审核](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)。";
+"SimpleX Chat security was audited by Trail of Bits." = "SimpleX Chat 的安全性 由 Trail of Bits 审核。";
 
 /* simplex link type */
 "SimpleX contact address" = "SimpleX 联系地址";
@@ -3065,6 +3071,9 @@
 
 /* No comment provided by engineer. */
 "Your settings" = "您的设置";
+
+/* No comment provided by engineer. */
+"Your SimpleX address" = "您的 SimpleX 地址";
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "您的 SMP 服务器";

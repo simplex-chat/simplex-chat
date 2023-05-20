@@ -1,0 +1,15 @@
+/* Bundle name */
+"CFBundleName" = "SimpleX";
+
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "SimpleX は、他のユーザーに接続したりビデオ通話を行うために QR コードをスキャンするためにカメラにアクセスする必要があります。";
+
+/* Privacy - Face ID Usage Description */
+"NSFaceIDUsageDescription" = "SimpleX はローカル認証に Face ID を使用します";
+
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "SimpleX では、音声通話やビデオ通話、および音声メッセージの録音のためにマイクへのアクセスが必要です。";
+
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "SimpleX は、キャプチャおよび受信したメディアを保存するためにフォト ライブラリにアクセスする必要があります";
+

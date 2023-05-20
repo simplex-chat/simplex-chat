@@ -44,7 +44,7 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
     StatusIconText(painterResource(R.drawable.ic_timer), color)
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
-      Text(shortTimeText(ttl), color = color, fontSize = 13.sp)
+      Text(shortTimeText(ttl), color = color, fontSize = 12.sp)
     }
     Spacer(Modifier.width(4.dp))
   }
@@ -57,7 +57,7 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
     StatusIconText(painterResource(R.drawable.ic_circle_filled), Color.Transparent)
     Spacer(Modifier.width(4.dp))
   }
-  Text(meta.timestampText, color = color, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+  Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 // the conditions in this function should match CIMetaText

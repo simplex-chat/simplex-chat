@@ -2212,10 +2212,10 @@ public enum CIDirection: Decodable {
 
 public struct CIMeta: Decodable {
     public var itemId: Int64
-    var itemTs: Date
+    public var itemTs: Date
     var itemText: String
     public var itemStatus: CIStatus
-    var createdAt: Date
+    public var createdAt: Date
     public var updatedAt: Date
     public var itemDeleted: CIDeleted?
     public var itemEdited: Bool
@@ -2310,8 +2310,8 @@ public enum CIStatus: Decodable {
 }
 
 public enum CIDeleted: Decodable {
-    case deleted
-    case moderated(byGroupMember: GroupMember)
+    case deleted(deletedTs: Date?)
+    case moderated(deletedTs: Date?, byGroupMember: GroupMember)
 
     var id: String {
         switch self {
@@ -2495,24 +2495,9 @@ public enum MREmojiChar: String, Codable, CaseIterable {
     case thumbsup = "👍"
     case thumbsdown = "👎"
     case smile = "😀"
-    case celebration = "🎉"
-    case confused = "😕"
+    case sad = "😢"
     case heart = "❤"
     case launch = "🚀"
-    case looking = "👀"
-
-    public var cmdString: String {
-        switch self {
-        case .thumbsup: return "+"
-        case .thumbsdown: return "-"
-        case .smile: return ")"
-        case .celebration: return "!"
-        case .confused: return "?"
-        case .heart: return "*"
-        case .launch: return "^"
-        case .looking: return "%"
-        }
-    }
 }
 
 extension MsgReaction: Decodable {
@@ -3120,17 +3105,13 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
 }
 
 public struct ChatItemInfo: Decodable {
-    public var chatItemId: Int64
-    public var itemTs: Date
-    public var createdAt: Date
-    public var updatedAt: Date
-    public var deleteAt: Date?
     public var itemVersions: [ChatItemVersion]
 }
 
 public struct ChatItemVersion: Decodable {
     public var chatItemVersionId: Int64
     public var msgContent: MsgContent
+    public var formattedText: [FormattedText]?
     public var itemVersionTs: Date
     public var createdAt: Date
 }

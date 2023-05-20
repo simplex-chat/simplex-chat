@@ -83,6 +83,7 @@
   <string name="connection_error">Connection error</string>
   <string name="network_error_desc">Please check your network connection with <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> and try again.</string>
   <string name="error_sending_message">Error sending message</string>
+  <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="cannot_receive_file">Cannot receive file</string>
@@ -212,6 +213,10 @@
   <string name="copy_verb">Copy</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
+  <string name="info_menu">Info</string>
+  <string name="sent_message">Sent message</string>
+  <string name="received_message">Received message</string>
+  <string name="edit_history">History</string>
   <string name="delete_verb">Delete</string>
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
@@ -722,9 +727,9 @@
   <string name="onboarding_notifications_mode_off">When app is running</string>
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
-  <string name="onboarding_notifications_mode_off_desc"><b>Best for battery</b>. You will receive notifications only when the app is running, background service will NOT be used.</string>
-  <string name="onboarding_notifications_mode_periodic_desc"><b>Good for battery</b>. Background service checks for new messages every 10 minutes. You may miss calls and urgent messages.</string>
-  <string name="onboarding_notifications_mode_service_desc"><b>Uses more battery</b>! Background service is always running – notifications will be shown as soon as the messages are available.</string>
+  <string name="onboarding_notifications_mode_off_desc"><b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).</string>
+  <string name="onboarding_notifications_mode_periodic_desc"><b>Good for battery</b>. Background service checks messages every 10 minutes. You may miss calls or urgent messages.</string>
+  <string name="onboarding_notifications_mode_service_desc"><b>Uses more battery</b>! Background service always runs – notifications are shown as soon as messages are available.</string>
 
   <!-- MakeConnection -->
   <string name="paste_the_link_you_received">Paste received link</string>
@@ -1107,10 +1112,25 @@
   <string name="share_address">Share address</string>
   <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
 
-  <!-- For Console chat info section -->
+  <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>
   <string name="info_row_local_name">Local name</string>
   <string name="info_row_database_id">Database ID</string>
+  <string name="info_row_updated_at">Record updated at</string>
+  <string name="info_row_sent_at">Sent at</string>
+  <string name="info_row_received_at">Received at</string>
+  <string name="info_row_deleted_at">Deleted at</string>
+  <string name="info_row_moderated_at">Moderated at</string>
+  <string name="info_row_disappears_at">Disappears at</string>
+  <string name="share_text_database_id">Database ID: %d</string>
+  <string name="share_text_updated_at">Record updated at: %s</string>
+  <string name="share_text_sent_at">Sent at: %s</string>
+  <string name="share_text_received_at">Received at: %s</string>
+  <string name="share_text_deleted_at">Deleted at: %s</string>
+  <string name="share_text_moderated_at">Moderated at: %s</string>
+  <string name="share_text_disappears_at">Disappears at: %s</string>
+  <string name="item_info_current">(current)</string>
+  <string name="current_version_timestamp">"%s (current)"</string>
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
@@ -1347,6 +1367,7 @@
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>
   <string name="new_in_version">New in %s</string>
+  <string name="whats_new_read_more">Read more</string>
   <string name="v4_2_security_assessment">Security assessment</string>
   <string name="v4_2_security_assessment_desc">SimpleX Chat security was audited by Trail of Bits.</string>
   <string name="v4_2_group_links">Group links</string>
@@ -1399,6 +1420,16 @@
   <string name="v5_0_app_passcode_descr">Set it instead of system authentication.</string>
   <string name="v5_0_polish_interface">Polish interface</string>
   <string name="v5_0_polish_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v5_1_message_reactions">Message reactions</string>
+  <string name="v5_1_message_reactions_descr">Finally, we have them! 🚀</string>
+  <string name="v5_1_self_destruct_passcode">Self-destruct passcode</string>
+  <string name="v5_1_self_destruct_passcode_descr">All data is erased when it is entered.</string>
+  <string name="v5_1_custom_themes">Custom themes</string>
+  <string name="v5_1_custom_themes_descr">Customize and share color themes.</string>
+  <string name="v5_1_better_messages">Better messages</string>
+  <string name="v5_1_better_messages_descr">- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history.</string>
+  <string name="v5_1_japanese_portuguese_interface">Japanese and Portuguese UI</string>
+  <string name="whats_new_thanks_to_users_contribute_weblate">Thanks to the users – contribute via Weblate!</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

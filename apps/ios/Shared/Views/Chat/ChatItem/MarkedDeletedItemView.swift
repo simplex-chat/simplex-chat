@@ -19,7 +19,7 @@ struct MarkedDeletedItemView: View {
             if showMember, let member = chatItem.memberDisplayName {
                 Text(member).font(.caption).fontWeight(.medium) + Text(": ").font(.caption)
             }
-            if case let .moderated(byGroupMember) = chatItem.meta.itemDeleted {
+            if case let .moderated(_, byGroupMember) = chatItem.meta.itemDeleted {
                 markedDeletedText("moderated by \(byGroupMember.chatViewName)")
             } else {
                 markedDeletedText("marked deleted")
@@ -46,7 +46,7 @@ struct MarkedDeletedItemView: View {
 struct MarkedDeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            MarkedDeletedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted))
+            MarkedDeletedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted(deletedTs: .now)))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

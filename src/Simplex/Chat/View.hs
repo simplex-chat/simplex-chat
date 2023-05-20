@@ -633,7 +633,7 @@ connReqContact_ intro cReq =
     "",
     "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
-    "to share with your contacts: " <> highlight' "/profile_address on",
+    -- "to share with your contacts: " <> highlight' "/profile_address on",
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
 

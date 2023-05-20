@@ -54,11 +54,11 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         close()
       }
     })*/
-    Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
-      AppBarTitle(stringResource(R.string.create_profile))
-      ReadableText(R.string.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues())
-      ReadableText(R.string.profile_is_only_shared_with_your_contacts, TextAlign.Center)
-      Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
+    Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+      AppBarTitle(stringResource(R.string.create_profile), bottomPadding = DEFAULT_PADDING)
+      ReadableText(R.string.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1)
+      ReadableText(R.string.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1)
+      Spacer(Modifier.height(DEFAULT_PADDING))
       Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(
           stringResource(R.string.display_name),

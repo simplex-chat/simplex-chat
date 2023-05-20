@@ -21,6 +21,7 @@ struct TerminalView: View {
     @FocusState private var keyboardVisible: Bool
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
+    @State private var scrolled = false
 
     var body: some View {
         if authorized {
@@ -51,7 +52,12 @@ struct TerminalView: View {
                                 .padding(.horizontal)
                             }
                         }
-                        .onAppear { scrollToBottom(proxy) }
+                        .onAppear {
+                            if !scrolled {
+                                scrollToBottom(proxy)
+                                scrolled = true
+                            }
+                        }
                         .onChange(of: chatModel.terminalItems.count) { _ in scrollToBottom(proxy) }
                         .onChange(of: keyboardVisible) { _ in
                             if keyboardVisible {

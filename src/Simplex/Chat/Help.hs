@@ -201,7 +201,7 @@ myAddressHelpInfo =
     styleMarkdown
     [ green "Your contact address commands:",
       indent <> highlight "/address                 " <> " - create your address",
-      indent <> highlight "/profile_address on/off  " <> " - share address with your contacts (it will be added to your profile)",
+      -- indent <> highlight "/profile_address on/off  " <> " - share address with your contacts (it will be added to your profile)",
       indent <> highlight "/delete_address          " <> " - delete your address (accepted contacts will remain connected)",
       indent <> highlight "/show_address            " <> " - show your address",
       indent <> highlight "/accept <name>           " <> " - accept contact request",
