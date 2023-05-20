@@ -1237,4 +1237,14 @@
     <string name="share_text_disappears_at">Verdwijnt om: %s</string>
     <string name="current_version_timestamp">%s (huidig)</string>
     <string name="share_text_sent_at">Verzonden op: %s</string>
+    <string name="error_loading_details">Fout bij het laden van details</string>
+    <string name="sent_message">Verzonden bericht</string>
+    <string name="info_row_deleted_at">Verwijderd om</string>
+    <string name="info_row_received_at">Ontvangen om</string>
+    <string name="info_row_sent_at">Verzonden op</string>
+    <string name="share_text_deleted_at">Verwijderd om: %s</string>
+    <string name="share_text_received_at">Ontvangen op: %s</string>
+    <string name="share_text_updated_at">Record bijgewerkt op: %s</string>
+    <string name="edit_history">Geschiedenis</string>
+    <string name="received_message">Ontvangen bericht</string>
 </resources>
