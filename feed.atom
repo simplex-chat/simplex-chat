@@ -4,7 +4,7 @@
     <subtitle>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</subtitle>
     <link href="https://simplex.chat/feed.atom" rel="self"/>
     <link href="https://simplex.chat/,"/>
-    <updated>2023-04-22T00:00:00Z</updated>
+    <updated>2023-05-23T00:00:00Z</updated>
     <id>https://simplex.chat/,</id>
     <author>
         <name>SimpleX Chat</name>
@@ -1466,6 +1466,17 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Thank you,&lt;/p&gt;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</content>
+            
+        </entry>
+        <entry>
+            <title>SimpleX Chat: v5.1 released with message reactions and self-destruct passcode</title>
+            <link href="https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html"/>
+            
+            <updated>23 May 2023</updated>
+            <id>https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html</id>
+            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v51-released-with-message-reactions-and-self-destruct-passcode&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat: v5.1 released with message reactions and self-destruct passcode&lt;/h1&gt;
+&lt;p&gt;This is a placeholder for the release announcement.&lt;/p&gt;
 </content>
             
         </entry>
