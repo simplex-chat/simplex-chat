@@ -571,9 +571,7 @@
     <string name="no_call_on_lock_screen">關閉</string>
     <string name="icon_descr_call_missed">你錯過了通話</string>
     <string name="open_verb">開啟</string>
-    <string name="open_simplex_chat_to_accept_call">開啟
-\n<xliff:g id="appNameFull">
-\nSimpleX Chat</xliff:g> 以接受通話</string>
+    <string name="open_simplex_chat_to_accept_call">開啟 <xliff:g id="appNameFull"> SimpleX Chat</xliff:g> 以接受通話</string>
     <string name="icon_descr_call_rejected">已拒絕通話</string>
     <string name="show_call_on_lock_screen">顯示</string>
     <string name="icon_descr_call_connecting">連接通話中</string>
@@ -797,8 +795,7 @@
     <string name="group_invitation_item_description">邀請至群組 <xliff:g id="group_name">%1$s</xliff:g></string>
     <string name="icon_descr_add_members">邀請成員</string>
     <string name="alert_title_no_group">群組找不到！</string>
-    <string name="rcv_group_event_member_deleted">已移除
-\n<xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">已移除 <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_group_deleted">已刪除群組</string>
     <string name="group_member_status_group_deleted">群組已經刪除</string>
     <string name="group_member_status_invited">已邀請</string>
@@ -1146,8 +1143,7 @@
     <string name="auto_accept_contact">自動接受</string>
     <string name="continue_to_next_step">繼續</string>
     <string name="dont_create_address">不用建立聯絡地址</string>
-    <string name="enter_welcome_message_optional">輸入歡迎訊息…
-\n（可選擇的）</string>
+    <string name="enter_welcome_message_optional">輸入歡迎訊息… （可選擇的）</string>
     <string name="email_invite_body">你好！ 
 \n透過 SimpleX Chat 來和我連接吧：%s</string>
     <string name="save_auto_accept_settings">儲存自動接受的設定</string>
@@ -1192,7 +1188,7 @@
     <string name="all_app_data_will_be_cleared">已刪除所有的應用程式數據。</string>
     <string name="set_passcode">設定密碼</string>
     <string name="you_can_share_this_address_with_your_contacts">你可以與聯絡人分享此地址，讓他們使用 %s 進行連接。</string>
-    <string name="your_contacts_will_see_it">在 SimpeleX ，你的聯絡人會看到此。
+    <string name="your_contacts_will_see_it">在 SimpleX ，你的聯絡人會看到此。
 \n你可以在設定中修改。</string>
     <string name="you_can_create_it_later">你可以在稍後建立它</string>
     <string name="scan_qr_to_connect_to_contact">為了連接，你的聯絡人可以掃描二維碼或使用此應用程式的連結。</string>
