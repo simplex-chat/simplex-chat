@@ -2835,9 +2835,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">顯示預覽</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve" approved="no">
-        <source>SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</source>
-        <target state="translated">SimpleX Chat 的安全性［由 Trail of Bits 審核］（https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html）。</target>
+      <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
+        <source>SimpleX Chat security was audited by Trail of Bits.</source>
+        <target state="translated">SimpleX Chat 的安全性由 Trail of Bits 審核。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Lock" xml:space="preserve" approved="no">

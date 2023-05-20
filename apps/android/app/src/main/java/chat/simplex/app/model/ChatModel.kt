@@ -1811,11 +1811,6 @@ sealed class MsgReaction {
     is Unknown -> ""
   }
 
-  val cmdString: String get() = when(this) {
-    is Emoji -> emoji.cmdString
-    is Unknown -> ""
-  }
-
   companion object {
     val values: List<MsgReaction> get() = MREmojiChar.values().map(::Emoji)
   }
@@ -1864,22 +1859,9 @@ enum class MREmojiChar(val value: String) {
   @SerialName("👍") ThumbsUp("👍"),
   @SerialName("👎") ThumbsDown("👎"),
   @SerialName("😀") Smile("😀"),
-  @SerialName("🎉") Celebration("🎉"),
-  @SerialName("😕") Confused("😕"),
+  @SerialName("😕") Sad("😢"),
   @SerialName("❤") Heart("❤"),
-  @SerialName("🚀") Launch("🚀"),
-  @SerialName("👀") Looking("👀");
-
-  val cmdString: String get() = when(this) {
-    ThumbsUp -> "+"
-    ThumbsDown -> "-"
-    Smile -> ")"
-    Celebration -> "!"
-    Confused -> "?"
-    Heart -> "*"
-    Launch -> "^"
-    Looking -> "%"
-  }
+  @SerialName("🚀") Launch("🚀");
 }
 
 @Serializable

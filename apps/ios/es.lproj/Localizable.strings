@@ -2507,7 +2507,7 @@
 "SimpleX Address" = "Dirección SimpleX";
 
 /* No comment provided by engineer. */
-"SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "La seguridad de SimpleX Chat ha sido [auditada por Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
+"SimpleX Chat security was audited by Trail of Bits." = "La seguridad de SimpleX Chat ha sido auditada por Trail of Bits.";
 
 /* simplex link type */
 "SimpleX contact address" = "Dirección de contacto SimpleX";
