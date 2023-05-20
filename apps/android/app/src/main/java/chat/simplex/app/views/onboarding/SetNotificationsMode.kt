@@ -40,13 +40,13 @@ fun SetNotificationsMode(m: ChatModel) {
       NotificationButton(currentMode, NotificationsMode.SERVICE, R.string.onboarding_notifications_mode_service, R.string.onboarding_notifications_mode_service_desc)
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
-    Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-        OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
-          changeNotificationsMode(currentMode.value, m)
-        }
+    Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), contentAlignment = Alignment.Center) {
+      OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
+        changeNotificationsMode(currentMode.value, m)
       }
-      Spacer(Modifier.fillMaxHeight().weight(1f))
     }
+    Spacer(Modifier.fillMaxHeight().weight(1f))
+  }
   LaunchedEffect(Unit) {
     m.controller.ntfManager.createNtfChannelsMaybeShowAlert()
   }
@@ -59,10 +59,10 @@ private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mod
     border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),
     shape = RoundedCornerShape(35.dp),
   ) {
-    Column(Modifier.padding(horizontal = 14.dp).padding(top = 4.dp, bottom = 8.dp)) {
+    Column(Modifier.padding(horizontal = 10.dp).padding(top = 4.dp, bottom = 8.dp)) {
       Text(
         stringResource(title),
-        style = MaterialTheme.typography.h2,
+        style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Medium,
         color = if (currentMode.value == mode) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         modifier = Modifier.padding(bottom = 8.dp).align(Alignment.CenterHorizontally),
@@ -70,6 +70,7 @@ private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mod
       )
       Text(annotatedStringResource(description),
         Modifier.align(Alignment.CenterHorizontally),
+        fontSize = 15.sp,
         color = MaterialTheme.colors.onBackground,
         lineHeight = 24.sp,
         textAlign = TextAlign.Center

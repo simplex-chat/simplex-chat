@@ -30,7 +30,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .padding(20.dp)
+        .padding(top = 20.dp)
     ) {
       CreateProfilePanel(chatModel, close)
       LaunchedEffect(Unit) {
