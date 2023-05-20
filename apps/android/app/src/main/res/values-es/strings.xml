@@ -1125,7 +1125,7 @@
     <string name="only_your_contact_can_make_calls">Sólo tu contacto puede realizar llamadas.</string>
     <string name="prohibit_calls">No se permiten llamadas y videollamadas.</string>
     <string name="v5_0_app_passcode">Código de acceso a la aplicación</string>
-    <string name="v5_0_polish_interface">Interfaz polaco</string>
+    <string name="v5_0_polish_interface">Interfaz en polaco</string>
     <string name="v5_0_app_passcode_descr">Úsalo en lugar de la autenticación del sistema.</string>
     <string name="v5_0_polish_interface_descr">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
     <string name="v5_0_large_files_support">Vídeos y archivos de hasta 1Gb</string>
@@ -1249,4 +1249,17 @@
     <string name="allow_your_contacts_adding_message_reactions">Permitir que tus contactos añadan reacciones a los mensajes.</string>
     <string name="info_row_deleted_at">Eliminado a las</string>
     <string name="allow_message_reactions_only_if">Se permiten las reacciones a los mensajes pero sólo si tu contacto también las permite.</string>
+    <string name="v5_1_custom_themes">Temas personalizados</string>
+    <string name="v5_1_self_destruct_passcode">Código de autodestrucción</string>
+    <string name="v5_1_better_messages_descr">- mensajes de voz de hasta 5 minutos.
+\n- tiempo personalizado para mensajes temporales.
+\n- historial de edición.</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
+    <string name="v5_1_better_messages">Mensajes mejorados</string>
+    <string name="v5_1_self_destruct_passcode_descr">Al introducirlo todos los datos son borrados.</string>
+    <string name="v5_1_custom_themes_descr">Personalizar y compartir temas de color.</string>
+    <string name="v5_1_message_reactions_descr">¡Por fin los tenemos! 🚀</string>
+    <string name="v5_1_message_reactions">Reacciones a los mensajes</string>
+    <string name="whats_new_read_more">Más información</string>
+    <string name="v5_1_japanese_portuguese_interface">Interfaz en japonés y portugués</string>
 </resources>
