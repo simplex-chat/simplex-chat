@@ -86,8 +86,10 @@ android {
         "es",
         "fr",
         "it",
+        "ja",
         "nl",
         "pl",
+        "pt-rBR",
         "ru",
         "zh-rCN"
     )
