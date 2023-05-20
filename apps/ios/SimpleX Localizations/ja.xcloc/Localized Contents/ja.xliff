@@ -2884,9 +2884,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">プレビューを表示</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve" approved="no">
-        <source>SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</source>
-        <target state="translated">SimpleX Chat のセキュリティは [Trail of Bits によって監査されました](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)。</target>
+      <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve" approved="no">
+        <source>SimpleX Chat security was audited by Trail of Bits.</source>
+        <target state="translated">SimpleX Chat のセキュリティは Trail of Bits によって監査されました。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Lock" xml:space="preserve" approved="no">

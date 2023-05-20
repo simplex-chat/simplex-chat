@@ -2350,7 +2350,7 @@
 "Show:" = "Zobrazit:";
 
 /* No comment provided by engineer. */
-"SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "Zabezpečení SimpleX chatu bylo [auditováno společností Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
+"SimpleX Chat security was audited by Trail of Bits." = "Zabezpečení SimpleX chatu bylo auditováno společností Trail of Bits.";
 
 /* simplex link type */
 "SimpleX contact address" = "SimpleX kontaktní adresa";
