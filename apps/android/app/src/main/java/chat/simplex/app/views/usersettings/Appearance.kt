@@ -320,8 +320,10 @@ private fun LangSelector(state: State<String>, onSelected: (String) -> Unit) {
     "es" to "Español",
     "fr" to "Français",
     "it" to "Italiano",
+    "ja" to "日本語",
     "nl" to "Nederlands",
     "pl" to "Polski",
+    "pt-BR" to "Português (Brasil)",
     "ru" to "Русский",
     "zh-CN" to "简体中文"
   )
