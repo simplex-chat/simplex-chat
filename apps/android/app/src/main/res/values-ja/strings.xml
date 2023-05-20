@@ -1248,4 +1248,15 @@
     <string name="group_members_can_add_message_reactions">グループメンバーはメッセージへのリアクションを追加できます。</string>
     <string name="message_reactions_are_prohibited">このグループではメッセージへのリアクションは禁止されています。</string>
     <string name="info_row_updated_at">レコード更新日時</string>
+    <string name="v5_1_message_reactions">メッセージへのリアクション</string>
+    <string name="v5_1_self_destruct_passcode">自己破壊パスコード</string>
+    <string name="v5_1_custom_themes">カスタムテーマ</string>
+    <string name="v5_1_japanese_portuguese_interface">日本語とポルトガル語UI</string>
+    <string name="v5_1_better_messages_descr">- 最長 5 分間の音声メッセージ。
+\n- 消えるまでのカスタム時間。
+\n- 編集履歴。</string>
+    <string name="whats_new_read_more">続きを読む</string>
+    <string name="v5_1_self_destruct_passcode_descr">入力するとすべてのデータが消去されます。</string>
+    <string name="v5_1_custom_themes_descr">カラーテーマをカスタマイズして共有することができます。</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
 </resources>
