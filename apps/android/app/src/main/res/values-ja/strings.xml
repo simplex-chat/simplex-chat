@@ -77,7 +77,7 @@
     <string name="notifications_mode_service_desc">バックグラウンド機能が常にオンで、メッセージが到着次第に通知が出ます。</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>新しい連絡先を追加</b>：使い捨てのQRコードを発行</string>
     <string name="turning_off_service_and_periodic">電池省エネをオンに、バックグラウンド機能と定期的な受信依頼をオフにします。設定メニューにて変更できます。</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>電池消費が最少</b>：アプリがアクティブ時のみに通知が出ます。</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>電池消費が最少</b>：アプリがアクティブ時のみに通知が出ます（バックグラウンドサービス無し）。</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>設定メニューにてオフにできます。</b> アプリがアクティブ時に通知が出ます。</string>
     <string name="both_you_and_your_contacts_can_delete">あなたと連絡相手が送信済みメッセージを永久削除できます。</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QRコードを読み込み</b>：連絡相手のQRコードをスキャンすると繋がります。</string>
@@ -1133,10 +1133,10 @@
     <string name="should_be_at_least_one_visible_profile">少なくとも1つのユーザープロフィールが表示されている必要があります。</string>
     <string name="should_be_at_least_one_profile">少なくとも1つのユーザープロファイルが必要です。</string>
     <string name="make_profile_private">プロフィールを非表示にできます！</string>
-    <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話している間は監視できます。</string>
+    <string name="relay_server_protects_ip">リレー サーバーを使用することによってIPアドレスが保護されますが、通話の経過時間が検知される場合もあります。</string>
     <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか\?</string>
     <string name="icon_descr_call_pending_sent">保留中の通話</string>
-    <string name="invalid_migration_confirmation">無効な移行の確認</string>
+    <string name="invalid_migration_confirmation">データ移行の確認が正しくない</string>
     <string name="feature_offered_item">%s を提供しました</string>
     <string name="callstate_received_confirmation">確認を受け取りました…</string>
     <string name="feature_offered_item_with_param">提供された %s: %2s</string>
