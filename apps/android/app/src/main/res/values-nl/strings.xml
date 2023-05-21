@@ -66,7 +66,7 @@
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
     <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Goed voor batterij</b>. Achtergrondservice controleert elke 10 minuten op nieuwe berichten. U kunt oproepen en dringende berichten missen.</string>
+    <string name="onboarding_notifications_mode_periodic_desc">[X0x] Goed voor de batterij&lt;/b&gt;. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.</string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scan QR-code</b>: om verbinding te maken met uw contactpersoon die u de QR-code laat zien.</string>
     <string name="integrity_msg_bad_id">Onjuiste bericht ID</string>
@@ -99,13 +99,13 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Nieuw contact toevoegen</b>: om uw eenmalige QR-code voor uw contact te maken.</string>
     <string name="icon_descr_call_ended">Oproep beëindigd</string>
     <string name="turning_off_service_and_periodic">Batterijoptimalisatie is actief, waardoor achtergrondservice en periodieke verzoeken om nieuwe berichten worden uitgeschakeld. Je kunt ze weer inschakelen via instellingen.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Beste voor de batterij</b>. U ontvangt alleen meldingen als de app draait, de achtergronddienst wordt NIET gebruikt.</string>
+    <string name="onboarding_notifications_mode_off_desc">[X0x] Het beste voor de batterij&lt;/b&gt;. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Het kan worden uitgeschakeld via instellingen</b>, meldingen worden nog steeds weergegeven terwijl de app actief is.</string>
     <string name="both_you_and_your_contacts_can_delete">Zowel jij als je contactpersoon kunnen verzonden berichten onherroepelijk verwijderen.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contactpersoon kunnen verdwijnende berichten sturen.</string>
     <string name="both_you_and_your_contact_can_send_voice">Zowel jij als je contactpersoon kunnen spraak berichten verzenden.</string>
     <string name="impossible_to_recover_passphrase"><b>Let op</b>: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijt raakt.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Gebruikt meer batterij</b>! Achtergrondservice is altijd actief, meldingen worden weergegeven zodra de berichten beschikbaar zijn.</string>
+    <string name="onboarding_notifications_mode_service_desc">[X0x] Gebruikt meer batterij&lt;/b&gt;! Achtergrondservice wordt altijd uitgevoerd - meldingen worden weergegeven zodra berichten beschikbaar zijn.</string>
     <string name="icon_descr_cancel_link_preview">link voorbeeld annuleren</string>
     <string name="callstatus_ended">oproep beëindigd <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="database_initialization_error_title">Kan de database niet initialiseren</string>
@@ -632,7 +632,7 @@
     <string name="you_control_servers_to_receive_your_contacts_to_send">U bepaalt via welke server(s) je de berichten <b>ontvangt</b>, uw contacten de servers die u gebruikt om ze berichten te sturen.</string>
     <string name="icon_descr_video_on">Video aan</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
-    <string name="messages_section_description">Deze instelling is van toepassing op berichten in jou huidige chat profiel</string>
+    <string name="messages_section_description">Deze instelling is van toepassing op berichten in uw huidige chat profiel</string>
     <string name="save_archive">Bewaar archief</string>
     <string name="rcv_group_event_updated_group_profile">bijgewerkt groep profiel</string>
     <string name="group_member_status_removed">verwijderd</string>
@@ -1240,11 +1240,24 @@
     <string name="error_loading_details">Fout bij het laden van details</string>
     <string name="sent_message">Verzonden bericht</string>
     <string name="info_row_deleted_at">Verwijderd om</string>
-    <string name="info_row_received_at">Ontvangen om</string>
+    <string name="info_row_received_at">Ontvangen op</string>
     <string name="info_row_sent_at">Verzonden op</string>
     <string name="share_text_deleted_at">Verwijderd om: %s</string>
     <string name="share_text_received_at">Ontvangen op: %s</string>
     <string name="share_text_updated_at">Record bijgewerkt op: %s</string>
     <string name="edit_history">Geschiedenis</string>
     <string name="received_message">Ontvangen bericht</string>
+    <string name="whats_new_read_more">Lees meer</string>
+    <string name="v5_1_message_reactions">Reacties op berichten</string>
+    <string name="v5_1_self_destruct_passcode_descr">Alle gegevens worden bij het invoeren gewist.</string>
+    <string name="v5_1_better_messages">Betere berichten</string>
+    <string name="v5_1_custom_themes_descr">Pas kleuren thema\'s aan en deel ze.</string>
+    <string name="v5_1_custom_themes">Aangepaste thema\'s</string>
+    <string name="v5_1_message_reactions_descr">Eindelijk, we hebben ze! 🚀</string>
+    <string name="v5_1_japanese_portuguese_interface">Japanse en Portugese gebruikersinterface</string>
+    <string name="v5_1_self_destruct_passcode">Zelfvernietigingscode</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Dank aan de gebruikers – draag bij via Weblate!</string>
+    <string name="v5_1_better_messages_descr">- spraakberichten tot 5 minuten.
+\n- aangepaste tijd om te verdwijnen.
+\n- bewerkingsgeschiedenis.</string>
 </resources>
