@@ -96,7 +96,7 @@
     <string name="network_session_mode_user_description">Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chat profiel dat je in de app hebt </b>.</string>
     <string name="audio_call_no_encryption">audio oproep (niet e2e versleuteld)</string>
     <string name="notifications_mode_service_desc">Achtergrondservice is altijd actief, meldingen worden weergegeven zodra de berichten beschikbaar zijn.</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Nieuw contact toevoegen</b>: om uw eenmalige QR-code voor uw contact te maken.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>Nieuw contact toevoegen</b>: om een eenmalige QR-code voor uw contact te maken.</string>
     <string name="icon_descr_call_ended">Oproep beëindigd</string>
     <string name="turning_off_service_and_periodic">Batterijoptimalisatie is actief, waardoor achtergrondservice en periodieke verzoeken om nieuwe berichten worden uitgeschakeld. Je kunt ze weer inschakelen via instellingen.</string>
     <string name="onboarding_notifications_mode_off_desc">[X0x] Het beste voor de batterij&lt;/b&gt;. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).</string>
@@ -760,7 +760,7 @@
     <string name="your_chat_database">Uw chat database</string>
     <string name="set_password_to_export">Wachtwoord instellen om te exporteren</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Start de app opnieuw om een nieuw chat profiel aan te maken.</string>
-    <string name="you_must_use_the_most_recent_version_of_database">U mag de meest recente versie van uw chat database ALLEEN op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</string>
+    <string name="you_must_use_the_most_recent_version_of_database">U mag de meest recente versie van uw chat-database ALLEEN op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</string>
     <string name="restart_the_app_to_use_imported_chat_database">Start de app opnieuw om de geïmporteerde chat database te gebruiken.</string>
     <string name="stop_chat_to_enable_database_actions">Stop de chat om database acties mogelijk te maken.</string>
     <string name="delete_files_and_media_desc">Deze actie kan niet ongedaan worden gemaakt, alle ontvangen en verzonden bestanden en media worden verwijderd. Foto\'s met een lage resolutie blijven behouden.</string>
