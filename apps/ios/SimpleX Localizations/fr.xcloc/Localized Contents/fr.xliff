@@ -3384,12 +3384,12 @@
       </trans-unit>
       <trans-unit id="Received at" xml:space="preserve" approved="no">
         <source>Received at</source>
-        <target state="translated">Reçu à</target>
+        <target state="translated">Reçu le</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received at: %@" xml:space="preserve" approved="no">
         <source>Received at: %@</source>
-        <target state="translated">Reçu à : %@</target>
+        <target state="translated">Reçu le : %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
@@ -3419,7 +3419,7 @@
       </trans-unit>
       <trans-unit id="Record updated at" xml:space="preserve" approved="no">
         <source>Record updated at</source>
-        <target state="translated">Enregistrement mis à jour à</target>
+        <target state="translated">Enregistrement mis à jour le</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Record updated at: %@" xml:space="preserve" approved="no">
@@ -3794,12 +3794,12 @@
       </trans-unit>
       <trans-unit id="Sent at" xml:space="preserve" approved="no">
         <source>Sent at</source>
-        <target state="translated">Envoyé à</target>
+        <target state="translated">Envoyé le</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent at: %@" xml:space="preserve" approved="no">
         <source>Sent at: %@</source>
-        <target state="translated">Envoyé à : %@</target>
+        <target state="translated">Envoyé le : %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Sent file event" xml:space="preserve">
