@@ -72,7 +72,7 @@
     <string name="allow_voice_messages_only_if">仅有您的联系人许可后才允许语音消息。</string>
     <string name="group_info_member_you">您: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="allow_your_contacts_to_send_voice_messages">允许您的联系人发送语音消息。</string>
-    <string name="chat_preferences_always">一直</string>
+    <string name="chat_preferences_always">始终</string>
     <string name="notifications_mode_service">始终开启</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">允许您的联系人发送限时消息。</string>
     <string name="app_version_code">应用程序构建：%s</string>
@@ -121,14 +121,14 @@
 \n&lt;b&gt;请注意&lt;/b&gt;：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>添加新联系人</b>：为您的联系人创建一次性二维码。</string>
-    <string name="onboarding_notifications_mode_off_desc"><b> 最长续航 </b>。您只会在应用程序运行时收到通知，后台服务不会被使用。</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b> 较长续航 </b>。后台服务每 10 分钟检查一次新消息。您可能会错过来电和紧急信息。</string>
+    <string name="onboarding_notifications_mode_off_desc"><b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。</string>
     <string name="bold">加粗</string>
     <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以不可逆转地删除已发送的消息。</string>
     <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
     <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b> 可以在设置里禁用它 </b> - 应用程序运行时仍会显示通知。</string>
-    <string name="onboarding_notifications_mode_service_desc"><b> 使用更多电量 </b>！后台服务会始终运行——一旦收到消息，就会显示通知。</string>
+    <string name="onboarding_notifications_mode_service_desc"><b> 使用更多电量 </b>！后台服务始终运行——一旦收到消息，就会显示通知。</string>
     <string name="impossible_to_recover_passphrase"><b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。</string>
     <string name="call_already_ended">通话已结束！</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>扫描二维码</b> ：与向您展示二维码的联系人联系。</string>
@@ -1007,10 +1007,10 @@
     <string name="v4_6_chinese_spanish_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
     <string name="should_be_at_least_one_visible_profile">应该至少有一个可见的用户资料。</string>
     <string name="user_unmute">解除静音</string>
-    <string name="button_welcome_message">欢迎信息</string>
+    <string name="button_welcome_message">欢迎消息</string>
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
-    <string name="group_welcome_title">欢迎信息</string>
+    <string name="group_welcome_title">欢迎消息</string>
     <string name="confirm_database_upgrades">确认数据库升级</string>
     <string name="settings_section_title_experimenta">实验性</string>
     <string name="database_upgrade">数据库升级</string>
@@ -1151,4 +1151,32 @@
     <string name="all_app_data_will_be_cleared">已删除所有应用程序数据。</string>
     <string name="empty_chat_profile_is_created">已创建一个包含所提供名字的空白聊天资料，应用程序照常打开。</string>
     <string name="change_self_destruct_passcode">更改自毁密码</string>
+    <string name="self_destruct_passcode">自毁密码</string>
+    <string name="error_loading_details">加载细节错误</string>
+    <string name="send_disappearing_message_custom_time">自定义时间</string>
+    <string name="disappearing_message">限时消息</string>
+    <string name="enable_self_destruct">启用自毁功能</string>
+    <string name="enabled_self_destruct_passcode">启用自毁密码</string>
+    <string name="self_destruct">自毁</string>
+    <string name="share_text_database_id">数据库 ID：%d</string>
+    <string name="info_row_disappears_at">消失在</string>
+    <string name="error_setting_address">设置地址错误</string>
+    <string name="customize_theme_title">自定义主题</string>
+    <string name="create_address_and_let_people_connect">创建一个地址，让人们与您联系。</string>
+    <string name="create_simplex_address">创建 SimpleX 地址</string>
+    <string name="enter_welcome_message_optional">输入欢迎消息……（可选）</string>
+    <string name="dont_create_address">不创建地址</string>
+    <string name="enter_welcome_message">输入欢迎消息……</string>
+    <string name="dark_theme">深色主题</string>
+    <string name="export_theme">导出主题</string>
+    <string name="v5_1_self_destruct_passcode_descr">所有数据在输入后将被删除。</string>
+    <string name="v5_1_better_messages">更好的消息</string>
+    <string name="v5_1_custom_themes_descr">自定义和分享主题色。</string>
+    <string name="v5_1_custom_themes">自定义主题</string>
+    <string name="custom_time_unit_days">天</string>
+    <string name="custom_time_picker_custom">自定义</string>
+    <string name="item_info_current">（当前）</string>
+    <string name="info_row_deleted_at">已删除在</string>
+    <string name="share_text_deleted_at">已删除在：%s</string>
+    <string name="share_text_disappears_at">消失在：%s</string>
 </resources>
