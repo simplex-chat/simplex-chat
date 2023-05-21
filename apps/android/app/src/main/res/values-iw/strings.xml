@@ -99,8 +99,8 @@
     <string name="authentication_cancelled">אימות בוטל</string>
     <string name="auth_unavailable">אימות לא זמין</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>הוסף איש קשר חדש</b>: ליצירת קוד QR חד פעמי עבור איש הקשר שלך.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת, שירות הרקע לא יופעל.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות חדשות כל 10 דקות. שיחות והודעות דחופות עלולות להתפספס.</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת (ללא שירות רקע).</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.</string>
     <string name="both_you_and_your_contacts_can_delete">גם אתם וגם איש הקשר יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">גם אתם וגם איש הקשר יכולים לשלוח הודעות נעלמות.</string>
     <string name="cannot_receive_file">לא ניתן לקבל את הקובץ</string>
@@ -440,7 +440,7 @@
     <string name="error_starting_chat">שגיאה בהפעלת צ׳אט</string>
     <string name="error_with_info">שגיאה: %s</string>
     <string name="error_updating_link_for_group">שגיאה בעדכון קישור קבוצה</string>
-    <string name="export_theme">ייצא ערכת נושא</string>
+    <string name="export_theme">ייצא ערכת צבעים</string>
     <string name="icon_descr_expand_role">הרחב בחירת תפקיד</string>
     <string name="file_will_be_received_when_contact_is_online">הקובץ ייתקבל כאשר איש הקשר יהיה מקוון, אנא חכו או בידקו מאוחר יותר!</string>
     <string name="full_name__field">שם מלא:</string>
@@ -480,8 +480,8 @@
     <string name="snd_group_event_group_profile_updated">פרופיל הקבוצה עודכן</string>
     <string name="group_profile_is_stored_on_members_devices">פרופיל הקבוצה מאוחסן במכשירי חברי הקבוצה, לא על השרתים.</string>
     <string name="all_app_data_will_be_cleared">כל נתוני האפליקציה יימחקו.</string>
-    <string name="empty_chat_profile_is_created">פרופיל צ׳אט ריק עם השם שסופק נוצר, והאפליקציה נפתחת כרגיל.</string>
-    <string name="app_passcode_replaced_with_self_destruct">קוד הגישה לאפליקציה מוחלף עם קוד הגישה להשמדה עצמית.</string>
+    <string name="empty_chat_profile_is_created">פרופיל צ׳אט ריק עם השם שסופק ייווצר, והאפליקציה תיפתח כרגיל.</string>
+    <string name="app_passcode_replaced_with_self_destruct">קוד הגישה לאפליקציה יוחלף עם קוד הגישה להשמדה עצמית.</string>
     <string name="v4_3_improved_privacy_and_security_desc">ניתן להסתיר את מסך האפליקציה במסך האפליקציות האחרונות.</string>
     <string name="v4_6_hidden_chat_profiles">פרופילי צ׳אט מוסתרים</string>
     <string name="v4_6_group_moderation">ניהול קבוצה</string>
@@ -529,8 +529,8 @@
     <string name="image_will_be_received_when_contact_completes_uploading">התמונה תתקבל כאשר איש הקשר יסיים להעלות אותה.</string>
     <string name="image_will_be_received_when_contact_is_online">התמונה תתקבל כאשר איש הקשר יהיה מקוון, אנא המתינו או בידקו מאוחר יותר!</string>
     <string name="import_database_confirmation">ייבא</string>
-    <string name="import_theme">ייבא ערכת נושא</string>
-    <string name="import_theme_error">שגיאה בייבוא ערכת נושא</string>
+    <string name="import_theme">ייבא ערכת צבעים</string>
+    <string name="import_theme_error">שגיאה בייבוא ערכת צבעים</string>
     <string name="group_unsupported_incognito_main_profile_sent">מצב זהות נסתרת אינו נתמך כאן – הפרופיל הראשי שלך יישלח לחברי הקבוצה</string>
     <string name="v4_3_improved_server_configuration">תצורת שרתים משופרת</string>
     <string name="v4_3_improved_privacy_and_security">פרטיות ואבטחה משופרים</string>
@@ -615,7 +615,7 @@
     <string name="info_row_local_name">שם מקומי</string>
     <string name="users_delete_data_only">נתוני פרופיל מקומיים בלבד</string>
     <string name="theme_light">בהיר</string>
-    <string name="import_theme_error_desc">ודאו שלקובץ יש תחביר YAML תקין. ייצאו ערכת נושא כדי לקבל דוגמה למבנה תקין של קובץ ערכת נושא.</string>
+    <string name="import_theme_error_desc">ודאו שלקובץ יש תחביר YAML תקין. ייצאו ערכת צבעים כדי לקבל דוגמה למבנה תקין של קובץ ערכת צבעים.</string>
     <string name="message_delivery_error_desc">ככל הנראה איש קשר זה מחק את החיבור איתך.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">ייעשה שימוש במארחי Onion כאשר יהיו זמינים.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">מארחי Onion יידרשו לחיבור.</string>
@@ -824,4 +824,17 @@
     <string name="button_remove_member">הסר חבר קבוצה</string>
     <string name="remove_member_confirmation">הסר</string>
     <string name="feature_received_prohibited">התקבל, לא מאופשר</string>
+    <string name="enabled_self_destruct_passcode">יצירת קוד גישה להשמדה עצמית</string>
+    <string name="change_self_destruct_mode">שינוי מצב השמדה עצמית</string>
+    <string name="change_self_destruct_passcode">שנה קוד גישה להשמדה עצמית</string>
+    <string name="share_text_database_id">מזהה מסד נתונים: %d</string>
+    <string name="share_text_deleted_at">נמחק ב: %s</string>
+    <string name="share_text_disappears_at">ייעלם ב: %s</string>
+    <string name="v5_1_self_destruct_passcode_descr">כל הנתונים נמחקים בהזנת הקוד.</string>
+    <string name="v5_1_better_messages">הודעות משופרות</string>
+    <string name="v5_1_custom_themes_descr">התאימו אישית ושתפו ערכות צבעים.</string>
+    <string name="v5_1_custom_themes">ערכות צבעים מותאמות אישית</string>
+    <string name="item_info_current">(נוכחי)</string>
+    <string name="info_row_deleted_at">נמחק</string>
+    <string name="info_row_disappears_at">ייעלם</string>
 </resources>
