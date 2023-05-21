@@ -1006,7 +1006,7 @@
     <string name="opening_database">データベースを開いています…</string>
     <string name="observer_cant_send_message_title">メッセージを送信できませんでした！</string>
     <string name="gallery_video_button">ビデオ</string>
-    <string name="above_then_preposition_continuation">上記の場合、次のようになります:</string>
+    <string name="above_then_preposition_continuation">← から：</string>
     <string name="network_socks_proxy_settings">SOCKSプロキシー設定</string>
     <string name="your_XFTP_servers">あなたのXFTPサーバ</string>
     <string name="add_address_to_your_profile">プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。</string>
