@@ -1277,7 +1277,7 @@
     <string name="your_contacts_will_remain_connected">Ваши контакты сохраняться.</string>
     <string name="customize_theme_title">Настроить тему</string>
     <string name="create_address_and_let_people_connect">Создайте адрес, чтобы можно было соединиться с вами.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">Все Ваши контакты сохраняться. Обновленный профиль будет отправлено Вашим контактам.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Все Ваши контакты сохраняться. Обновленный профиль будет отправлен Вашим контактам.</string>
     <string name="add_address_to_your_profile">Добавьте адрес в свой профиль, чтобы Ваши контакты могли поделиться им. Профиль будет отправлен Вашим контактам.</string>
     <string name="create_simplex_address">Создать адрес SimpleX</string>
     <string name="share_with_contacts">Поделиться с контактами</string>
@@ -1311,7 +1311,7 @@
     <string name="color_received_message">Полученное сообщение</string>
     <string name="color_sent_message">Отправленное сообщение</string>
     <string name="whats_new_read_more">Узнать больше</string>
-    <string name="v5_1_message_reactions_descr">Наконец-то они есть! 🚀</string>
+    <string name="v5_1_message_reactions_descr">Наконец-то, мы их добавили! 🚀</string>
     <string name="v5_1_japanese_portuguese_interface">Японский и Португальский UI</string>
     <string name="v5_1_message_reactions">Реакции на сообщения</string>
     <string name="v5_1_self_destruct_passcode">Код самоуничтожения</string>
