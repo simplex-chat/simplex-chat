@@ -1236,15 +1236,15 @@
     <string name="v5_1_better_messages_descr">- messages vocaux pouvant durer jusqu\'à 5 minutes.
 \n- délai personnalisé de disparition.
 \n- l\'historique de modification.</string>
-    <string name="share_text_received_at">Reçu à : %s</string>
+    <string name="share_text_received_at">Reçu le : %s</string>
     <string name="v5_1_better_messages">Meilleurs messages</string>
     <string name="v5_1_custom_themes">Thèmes personnalisés</string>
     <string name="v5_1_self_destruct_passcode_descr">Toutes les données sont effacées lorsqu\'il est saisi.</string>
     <string name="v5_1_custom_themes_descr">Personnalisez et partagez des thèmes de couleurs.</string>
     <string name="item_info_current">(actuel)</string>
     <string name="info_row_deleted_at">Supprimé à</string>
-    <string name="info_row_received_at">Reçu à</string>
-    <string name="info_row_sent_at">Envoyé à</string>
+    <string name="info_row_received_at">Reçu le</string>
+    <string name="info_row_sent_at">Envoyé le</string>
     <string name="share_text_database_id">ID de base de données : %d</string>
     <string name="share_text_deleted_at">Supprimé à : %s</string>
     <string name="share_text_disappears_at">Disparaît à : %s</string>
@@ -1253,12 +1253,12 @@
     <string name="whats_new_thanks_to_users_contribute_weblate">Merci aux utilisateurs - contribuez via Weblate !</string>
     <string name="v5_1_message_reactions_descr">Enfin, les voilà ! 🚀</string>
     <string name="info_row_moderated_at">Modéré à</string>
-    <string name="share_text_updated_at">Enregistrement mis à jour à : %s</string>
+    <string name="share_text_updated_at">Enregistrement mis à jour le : %s</string>
     <string name="v5_1_message_reactions">Réactions aux messages</string>
     <string name="share_text_moderated_at">Modéré à : %s</string>
-    <string name="info_row_updated_at">Enregistrement mis à jour à</string>
+    <string name="info_row_updated_at">Enregistrement mis à jour le</string>
     <string name="current_version_timestamp">%s (actuel)</string>
     <string name="v5_1_self_destruct_passcode">Code d\'autodestruction</string>
-    <string name="share_text_sent_at">Envoyé à : %s</string>
+    <string name="share_text_sent_at">Envoyé le : %s</string>
     <string name="sent_message">Message envoyé</string>
 </resources>
