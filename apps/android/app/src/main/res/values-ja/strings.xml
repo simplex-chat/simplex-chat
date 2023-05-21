@@ -995,7 +995,7 @@
     <string name="database_upgrade">データベースアップグレード</string>
     <string name="audio_video_calls">音声/ビデオ通話</string>
     <string name="calls_prohibited_with_this_contact">音声/ビデオ通話は禁止されています。</string>
-    <string name="feature_received_prohibited">受け取った、禁止された</string>
+    <string name="feature_received_prohibited">禁帯出</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTPサーバーのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
     <string name="smp_server_test_delete_file">ファイルの削除</string>
     <string name="icon_descr_waiting_for_video">ビデオ待機中</string>
@@ -1133,7 +1133,7 @@
     <string name="should_be_at_least_one_visible_profile">少なくとも1つのユーザープロフィールが表示されている必要があります。</string>
     <string name="should_be_at_least_one_profile">少なくとも1つのユーザープロファイルが必要です。</string>
     <string name="make_profile_private">プロフィールを非表示にできます！</string>
-    <string name="relay_server_protects_ip">リレー サーバーを使用することによってIPアドレスが保護されますが、通話の経過時間が検知される場合もあります。</string>
+    <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話時間は監視されます。</string>
     <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか\?</string>
     <string name="icon_descr_call_pending_sent">保留中の通話</string>
     <string name="invalid_migration_confirmation">データ移行の確認が正しくない</string>
