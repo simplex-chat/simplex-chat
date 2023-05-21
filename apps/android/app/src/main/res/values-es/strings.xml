@@ -3,8 +3,8 @@
     <string name="auth_unavailable">Autenticación no disponible</string>
     <string name="accept_contact_button">Aceptar</string>
     <string name="network_settings">Configuración avanzada de red</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Mejor para la batería</b>. Recibirás notificaciones sólo cuando la aplicación se esté ejecutando, el servicio NO se usará en segundo plano.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes nuevos cada 10 minutos. Puedes perderte llamadas y mensajes urgentes.</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Mejor para la batería</b>. Recibirás notificaciones sólo cuando la aplicación se esté ejecutando, SIN servicio en segundo plano.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes cada 10 minutos. Puedes perder llamadas o mensajes urgentes.</string>
     <string name="accept_call_on_lock_screen">Aceptar</string>
     <string name="full_backup">Copia de seguridad de los datos de la aplicación</string>
     <string name="chat_item_ttl_day">un dia</string>
@@ -78,7 +78,7 @@
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
     <string name="impossible_to_recover_passphrase"><b>Atención</b>: NO podrás recuperar o cambiar la contraseña si la pierdes.</string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>¡Gasta más batería!</b> El servicio en segundo plano está siempre en funcionamiento - las notificaciones se mostrarán tan pronto como los mensajes estén disponibles.</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta siempre y las notificaciones se mostrarán en cuanto haya mensajes disponibles.</string>
     <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis eliminar de forma irreversible los mensajes enviados.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes temporales.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Escanear código QR</b>: para conectar con tu contacto mediante su código QR.</string>
@@ -261,7 +261,7 @@
     <string name="change_member_role_question">¿Cambiar rol de grupo\?</string>
     <string name="v4_4_verify_connection_security_desc">Compara los códigos de seguridad con tus contactos</string>
     <string name="choose_file">Archivo</string>
-    <string name="clear_verb">Limpiar</string>
+    <string name="clear_verb">Vaciar</string>
     <string name="clear_chat_button">Vaciar chat</string>
     <string name="configure_ICE_servers">Configurar servidores ICE</string>
     <string name="callstatus_ended">Llamada terminada <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
@@ -1142,7 +1142,7 @@
     <string name="read_more_in_user_guide_with_link">Más información en la <font color="#0088ff">Guía de usuario</font>.</string>
     <string name="one_time_link_short">Enlace de un uso</string>
     <string name="simplex_address">Dirección SimpleX</string>
-    <string name="you_can_accept_or_reject_connection">Cuando alguien solicita conectarse, puedes aceptar o rechazar.</string>
+    <string name="you_can_accept_or_reject_connection">Cuando alguien desee conectarse podrás aceptar o rechazar su solicitud.</string>
     <string name="share_address">Compartir dirección</string>
     <string name="enter_welcome_message">Introduce mensaje de bienvenida…</string>
     <string name="theme_simplex">SimpleX</string>
@@ -1186,7 +1186,7 @@
     <string name="your_contacts_will_see_it">Tus contactos en SimpleX lo verán.
 \nPuedes cambiarlo en Configuración.</string>
     <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
-    <string name="you_wont_lose_your_contacts_if_delete_address">No perderás tus contactos si más tarde borras tu dirección.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">No perderás tus contactos si más tarde decides borrar tu dirección.</string>
     <string name="all_app_data_will_be_cleared">Todos los datos de la aplicación se han eliminado.</string>
     <string name="empty_chat_profile_is_created">Se creará un perfil de chat vacío con el nombre proporcionado, y la aplicación se abrirá como de costumbre.</string>
     <string name="self_destruct">Autodestrucción</string>
