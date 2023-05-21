@@ -388,7 +388,7 @@
     <string name="onboarding_notifications_mode_off">Quand l\'application fonctionne</string>
     <string name="onboarding_notifications_mode_periodic">Périodique</string>
     <string name="onboarding_notifications_mode_service">Instantanée</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Économie de batterie</b>. Vous recevrez des notifications uniquement lorsque l\'application est en cours d\'exécution, le service de fond ne sera PAS utilisé.</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Économie de batterie</b>. Vous recevrez des notifications uniquement lorsque l\'application est en cours d\'exécution (PAS de service d\'arrière-plan)</string>
     <string name="about_simplex_chat">À propos de <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="how_to_use_simplex_chat">Comment l\'utiliser</string>
     <string name="markdown_help">Aide Markdown</string>
@@ -462,8 +462,8 @@
     <string name="many_people_asked_how_can_it_deliver">Beaucoup se demandent : <i>si <xliff:g id="appName">SimpleX</xliff:g> n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.</string>
     <string name="read_more_in_github_with_link">Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. Le service de fond vérifie les nouveaux messages toutes les 10 minutes. Vous risquez de manquer des appels et des messages urgents.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'afficheront dès que les messages seront disponibles.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. Le service de fond vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'affichent dès que les messages sont disponibles.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> message⸱s manqué⸱s</string>
     <string name="integrity_msg_bad_id">ID de message incorrecte</string>
     <string name="settings_section_title_settings">PARAMÈTRES</string>
