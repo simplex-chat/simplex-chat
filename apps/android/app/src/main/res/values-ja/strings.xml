@@ -1034,7 +1034,7 @@
     <string name="allow_your_contacts_to_call">連絡先からの通話を許可する。</string>
     <string name="allow_calls_only_if">連絡先が通話を許可している場合のみ通話を許可する。</string>
     <string name="available_in_v51">"
-\nv5.1で利用可能予定"</string>
+\nv5.1 で利用可能"</string>
     <string name="only_your_contact_can_make_calls">連絡先からのみ通話ができます。</string>
     <string name="both_you_and_your_contact_can_make_calls">あなたからも連絡先からも通話ができます。</string>
     <string name="language_system">システム</string>
@@ -1259,4 +1259,6 @@
     <string name="v5_1_self_destruct_passcode_descr">入力するとすべてのデータが消去されます。</string>
     <string name="v5_1_custom_themes_descr">カラーテーマをカスタマイズして共有することができます。</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
+    <string name="v5_1_message_reactions_descr">ついに、私たちはそれらを手に入れました! 🚀</string>
+    <string name="v5_1_better_messages">より良いメッセージ</string>
 </resources>
