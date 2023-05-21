@@ -182,7 +182,7 @@
     <string name="you_have_no_chats">У Вас нет чатов</string>
     <!-- ShareListView.kt -->
     <string name="share_message">Отправить сообщение…</string>
-    <string name="share_image">Отправить изображение…</string>
+    <string name="share_image">Поделиться изображением…</string>
     <string name="share_file">Отправить файл…</string>
     <!-- ComposeView.kt, helpers -->
     <string name="attach">Прикрепить</string>
@@ -334,7 +334,7 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен
 \nВашему контакту</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если Вы не можете встретиться лично, Вы можете <b>сосканировать QR код во время видеозвонка</b>, или Ваш контакт может отправить Вам ссылку.</string>
-    <string name="share_invitation_link">Поделиться ссылкой</string>
+    <string name="share_invitation_link">Поделиться одноразовой ссылкой</string>
     <string name="paste_connection_link_below_to_connect">Чтобы соединиться, вставьте в это поле ссылку, полученную от Вашего контакта.</string>
     <string name="your_profile_will_be_sent">Ваш профиль будет отправлен Вашему контакту</string>
     <!-- PasteToConnect.kt -->
@@ -345,7 +345,7 @@
     <string name="one_time_link">Одноразовая ссылка</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
-    <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
+    <string name="your_simplex_contact_address">Ваш адрес SimpleX</string>
     <string name="database_passphrase_and_export">Пароль и экспорт базы</string>
     <string name="about_simplex_chat">Информация о <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
@@ -913,8 +913,8 @@
     <string name="onboarding_notifications_mode_off">Когда приложение запущено</string>
     <string name="onboarding_notifications_mode_periodic">Периодически</string>
     <string name="onboarding_notifications_mode_service">Мгновенно</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Больше расход батареи</b>! Фоновый сервис постоянно запущен - уведомления будут показаны как только есть новые сообщения.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Меньше расход батареи</b>. Фоновый сервис проверяет новые сообщения каждые 10 минут. Вы можете пропустить звонки и срочные сообщения.</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Больше расход батареи</b>! Фоновый сервис постоянно запущен - уведомления будут показаны как только есть сообщения.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Меньше расход батареи</b>. Фоновый сервис проверяет сообщения каждые 10 минут. Вы можете пропустить звонки и срочные сообщения.</string>
     <string name="onboarding_notifications_mode_subtitle">Можно изменить позже в настройках.</string>
     <string name="live">LIVE</string>
     <string name="send_live_message">Отправить живое сообщение</string>
@@ -1162,7 +1162,7 @@
     <string name="lock_not_enabled">Блокировка SimpleX не включена!</string>
     <string name="alert_title_msg_bad_hash">Ошибка хэш сообщения</string>
     <string name="alert_text_msg_bad_hash">Хэш предыдущего сообщения отличается.</string>
-    <string name="confirm_passcode">Подтвердить Код</string>
+    <string name="confirm_passcode">Подтвердить код</string>
     <string name="incorrect_passcode">Неправильный код</string>
     <string name="lock_after">Заблокировать через</string>
     <string name="lock_mode">Режим блокировки</string>
@@ -1211,4 +1211,136 @@
     <string name="revoke_file__action">Отозвать файл</string>
     <string name="stop_rcv_file__title">Остановить приём файла\?</string>
     <string name="you_can_turn_on_lock">Вы можете включить Блокировку SimpleX через Настройки.</string>
+    <string name="only_you_can_add_message_reactions">Только Вы можете добавлять реакции на сообщения.</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">И Вы, и Ваш контакт можете добавлять реакции на сообщения.</string>
+    <string name="one_time_link_short">Одноразовая ссылка</string>
+    <string name="simplex_address">Адрес SimpleX</string>
+    <string name="you_can_accept_or_reject_connection">Когда Вы получите запрос на подключение, Вы можете принять или отклонить его.</string>
+    <string name="enabled_self_destruct_passcode">Включить код самоуничтожения</string>
+    <string name="all_app_data_will_be_cleared">Все данные приложения будут удалены.</string>
+    <string name="if_you_enter_self_destruct_code">Если Вы введёте код самоуничтожения при открытии приложения:</string>
+    <string name="self_destruct_new_display_name">Новое имя:</string>
+    <string name="set_passcode">Установить код доступа</string>
+    <string name="edit_history">История</string>
+    <string name="info_menu">Информация</string>
+    <string name="auth_open_chat_profiles">Открыть профили чата</string>
+    <string name="received_message">Полученное сообщение</string>
+    <string name="sent_message">Отправленное сообщение</string>
+    <string name="disappearing_message">Исчезающее сообщение</string>
+    <string name="send_disappearing_message">Отправить исчезающее сообщение</string>
+    <string name="send_disappearing_message_5_minutes">5 минут</string>
+    <string name="send_disappearing_message_custom_time">Пользовательское время</string>
+    <string name="send_disappearing_message_send">Отправить</string>
+    <string name="invite_friends">Пригласить друзей</string>
+    <string name="save_auto_accept_settings">Сохранить настройки автоприема</string>
+    <string name="change_self_destruct_mode">Изменить режим самоуничтожения</string>
+    <string name="change_self_destruct_passcode">Изменить код самоуничтожения</string>
+    <string name="self_destruct">Самоуничтожение</string>
+    <string name="self_destruct_passcode_enabled">Код самоуничтожения включен!</string>
+    <string name="app_passcode_replaced_with_self_destruct">Код доступа в приложение будет заменен кодом самоуничтожения.</string>
+    <string name="enable_self_destruct">Включить самоуничтожение</string>
+    <string name="self_destruct_passcode">Код самоуничтожения</string>
+    <string name="self_destruct_passcode_changed">Код самоуничтожения изменен!</string>
+    <string name="empty_chat_profile_is_created">Будет создан пустой профиль чата с указанным именем, и приложение откроется в обычном режиме.</string>
+    <string name="if_you_enter_passcode_data_removed">Если Вы введете этот код при открытии приложения, все данные приложения будут безвозвратно удалены!</string>
+    <string name="item_info_current">(текущий)</string>
+    <string name="share_text_database_id">ID базы данных: %d</string>
+    <string name="info_row_moderated_at">Модерировано</string>
+    <string name="share_text_moderated_at">Модерировано: %s</string>
+    <string name="info_row_received_at">Получено</string>
+    <string name="share_text_received_at">Получено: %s</string>
+    <string name="share_text_updated_at">Запись обновлена: %s</string>
+    <string name="current_version_timestamp">%s (текущее)</string>
+    <string name="info_row_sent_at">Отправлено</string>
+    <string name="share_text_sent_at">Отправлено: %s</string>
+    <string name="message_reactions">Реакции на сообщения</string>
+    <string name="allow_message_reactions">Разрешить реакции на сообщения.</string>
+    <string name="allow_message_reactions_only_if">Разрешить реакции на сообщения, только если ваш контакт разрешает их.</string>
+    <string name="allow_your_contacts_adding_message_reactions">Разрешить контактам добавлять реакции на сообщения.</string>
+    <string name="group_members_can_add_message_reactions">Члены группы могут добавлять реакции на сообщения.</string>
+    <string name="message_reactions_prohibited_in_this_chat">Реакции на сообщения в этом чате запрещены.</string>
+    <string name="message_reactions_are_prohibited">Реакции на сообщения запрещены в этой группе.</string>
+    <string name="only_your_contact_can_add_message_reactions">Только Ваш контакт может добавлять реакции на сообщения.</string>
+    <string name="prohibit_message_reactions">Запретить реакции на сообщения.</string>
+    <string name="prohibit_message_reactions_group">Запретить реакции на сообщения.</string>
+    <string name="custom_time_unit_seconds">секунд</string>
+    <string name="theme_colors_section_title">ЦВЕТА ТЕМЫ</string>
+    <string name="share_address_with_contacts_question">Поделиться адресом с контактами\?</string>
+    <string name="profile_update_will_be_sent_to_contacts">Обновлённый профиль будет отправлен Вашим контактам.</string>
+    <string name="learn_more_about_address">Об адресе SimpleX</string>
+    <string name="learn_more">Узнать больше</string>
+    <string name="if_you_cant_meet_in_person">Если Вы не можете встретиться лично, покажите QR-код во время видеозвонка или поделитесь ссылкой.</string>
+    <string name="scan_qr_to_connect_to_contact">Чтобы подключиться, Ваш контакт может отсканировать QR-код или использовать ссылку в приложении.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Вы не потеряете контакты, если позже удалите Ваш адрес.</string>
+    <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода - любой может соединиться с Вами.</string>
+    <string name="read_more_in_user_guide_with_link">Узнать больше в <font color="#0088ff">Руководстве пользователя</font>.</string>
+    <string name="your_contacts_will_remain_connected">Ваши контакты сохраняться.</string>
+    <string name="customize_theme_title">Настроить тему</string>
+    <string name="create_address_and_let_people_connect">Создайте адрес, чтобы можно было соединиться с вами.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Все Ваши контакты сохраняться. Обновленный профиль будет отправлено Вашим контактам.</string>
+    <string name="add_address_to_your_profile">Добавьте адрес в свой профиль, чтобы Ваши контакты могли поделиться им. Профиль будет отправлен Вашим контактам.</string>
+    <string name="create_simplex_address">Создать адрес SimpleX</string>
+    <string name="share_with_contacts">Поделиться с контактами</string>
+    <string name="stop_sharing_address">Прекратить делиться адресом\?</string>
+    <string name="auto_accept_contact">Автоприем</string>
+    <string name="enter_welcome_message_optional">Введите приветственное сообщение... (опционально)</string>
+    <string name="save_settings_question">Сохранить настройки\?</string>
+    <string name="stop_sharing">Прекратить делиться</string>
+    <string name="continue_to_next_step">Продолжить</string>
+    <string name="dont_create_address">Не создавать адрес</string>
+    <string name="you_can_create_it_later">Вы можете создать его позже</string>
+    <string name="your_contacts_will_see_it">Ваши контакты в SimpleX получат этот адрес.
+\nВы можете изменить это в Настройках.</string>
+    <string name="address_section_title">Адрес</string>
+    <string name="enter_welcome_message">Введите приветственное сообщение…</string>
+    <string name="group_welcome_preview">Просмотр</string>
+    <string name="share_address">Поделиться адресом</string>
+    <string name="you_can_share_this_address_with_your_contacts">Вы можете поделиться этим адресом с Вашими контактами, чтобы они могли соединиться с %s.</string>
+    <string name="dark_theme">Темная тема</string>
+    <string name="import_theme">Импорт темы</string>
+    <string name="import_theme_error">Ошибка импорта темы</string>
+    <string name="theme_simplex">SimpleX</string>
+    <string name="color_secondary">Вторичный</string>
+    <string name="color_surface">Меню и диалоги</string>
+    <string name="export_theme">Экспорт темы</string>
+    <string name="color_title">Заголовок</string>
+    <string name="import_theme_error_desc">Убедитесь, что файл имеет правильный формат YAML. Экспортируйте тему, чтобы получить пример файла темы.</string>
+    <string name="color_secondary_variant">Вторичный 2</string>
+    <string name="color_primary_variant">Дополнительный акцент</string>
+    <string name="color_background">Фон</string>
+    <string name="color_received_message">Полученное сообщение</string>
+    <string name="color_sent_message">Отправленное сообщение</string>
+    <string name="whats_new_read_more">Узнать больше</string>
+    <string name="v5_1_message_reactions_descr">Наконец-то они есть! 🚀</string>
+    <string name="v5_1_japanese_portuguese_interface">Японский и Португальский UI</string>
+    <string name="v5_1_message_reactions">Реакции на сообщения</string>
+    <string name="v5_1_self_destruct_passcode">Код самоуничтожения</string>
+    <string name="v5_1_self_destruct_passcode_descr">Все данные удаляются при его вводе.</string>
+    <string name="v5_1_better_messages">Улучшенные сообщения</string>
+    <string name="v5_1_custom_themes_descr">Настраивайте и делитесь темами.</string>
+    <string name="v5_1_custom_themes">Пользовательские темы</string>
+    <string name="v5_1_better_messages_descr">- голосовые сообщения до 5 минут.
+\n- настройка времени исчезающих сообщений.
+\n- история редактирования.</string>
+    <string name="custom_time_picker_custom">другое</string>
+    <string name="custom_time_unit_days">дней</string>
+    <string name="custom_time_unit_hours">часов</string>
+    <string name="custom_time_unit_minutes">минут</string>
+    <string name="custom_time_unit_months">месяцев</string>
+    <string name="custom_time_picker_select">Выбрать</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="custom_time_unit_weeks">недель</string>
+    <string name="send_disappearing_message_1_minute">1 минута</string>
+    <string name="send_disappearing_message_30_seconds">30 секунд</string>
+    <string name="share_text_deleted_at">Удалено: %s</string>
+    <string name="info_row_deleted_at">Удалено</string>
+    <string name="info_row_disappears_at">Исчезает</string>
+    <string name="share_text_disappears_at">Исчезает: %s</string>
+    <string name="error_loading_details">Ошибка загрузки информации</string>
+    <string name="error_setting_address">Ошибка установки адреса</string>
+    <string name="email_invite_body">Привет!
+\nСвяжитесь со мной через SimpleX Chat: %s</string>
+    <string name="email_invite_subject">Давайте поговорим в SimpleX Chat</string>
+    <string name="opening_database">Открытие базы данных…</string>
+    <string name="info_row_updated_at">Запись обновлена</string>
 </resources>
