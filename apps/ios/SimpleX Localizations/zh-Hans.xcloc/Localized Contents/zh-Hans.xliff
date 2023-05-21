@@ -4569,9 +4569,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>欢迎%@！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message" xml:space="preserve">
+      <trans-unit id="Welcome message" xml:space="preserve" approved="no">
         <source>Welcome message</source>
-        <target>欢迎信息</target>
+        <target state="translated">欢迎消息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -5001,9 +5001,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>管理员</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="always" xml:space="preserve">
+      <trans-unit id="always" xml:space="preserve" approved="no">
         <source>always</source>
-        <target>一直</target>
+        <target state="translated">始终</target>
         <note>pref value</note>
       </trans-unit>
       <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
