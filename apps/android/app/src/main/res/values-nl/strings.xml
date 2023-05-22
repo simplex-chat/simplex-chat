@@ -66,7 +66,7 @@
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
     <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
-    <string name="onboarding_notifications_mode_periodic_desc">[X0x] Goed voor de batterij&lt;/b&gt;. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Goed voor de batterij</b>. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.</string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scan QR-code</b>: om verbinding te maken met uw contactpersoon die u de QR-code laat zien.</string>
     <string name="integrity_msg_bad_id">Onjuiste bericht ID</string>
