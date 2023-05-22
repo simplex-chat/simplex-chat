@@ -910,7 +910,7 @@
     <string name="group_info_member_you">Tú: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puedes compartir un enlace o un código QR: cualquiera podrá unirse al grupo. Si lo eliminas más tarde los miembros del grupo no se perderán.</string>
     <string name="incognito_info_share">Cuando compartes un perfil incógnito con alguien, este perfil también se usará para los grupos a los que te inviten.</string>
-    <string name="your_preferences">Tus preferencias</string>
+    <string name="your_preferences">Mis preferencias</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Con mensaje de bienvenida opcional.</string>
     <string name="you_are_observer">Tu rol es observador</string>
     <string name="verify_security_code">Comprobar código de seguridad</string>
@@ -1063,12 +1063,12 @@
     <string name="host_verb">Host</string>
     <string name="network_socks_proxy_settings">Configuración proxy SOCKS</string>
     <string name="la_authenticate">Autenticar</string>
-    <string name="la_current_app_passcode">Código de acceso actual</string>
+    <string name="la_current_app_passcode">Código de acceso</string>
     <string name="authentication_cancelled">Autenticación cancelada</string>
     <string name="change_lock_mode">Cambiar el modo de bloqueo</string>
     <string name="la_seconds">%d segundos</string>
     <string name="la_auth_failed">Error de autenticación</string>
-    <string name="la_change_app_passcode">Cambiar el código de acceso</string>
+    <string name="la_change_app_passcode">Cambiar código de acceso</string>
     <string name="passcode_not_changed">¡Código de acceso no cambiado!</string>
     <string name="la_lock_mode_system">Autenticación del sistema</string>
     <string name="la_no_app_password">Sin código de acceso de la aplicación</string>
@@ -1076,18 +1076,18 @@
     <string name="la_lock_mode">Modo Bloqueo SimpleX</string>
     <string name="la_could_not_be_verified">No has podido ser autenticado. Inténtalo de nuevo.</string>
     <string name="la_minutes">%d minutos</string>
-    <string name="la_enter_app_passcode">Introducir el código de acceso</string>
+    <string name="la_enter_app_passcode">Introduce código</string>
     <string name="la_immediately">Inmediatamente</string>
     <string name="la_please_remember_to_store_password">Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay ninguna manera de recuperar un código perdido!</string>
     <string name="lock_not_enabled">¡Bloqueo SimpleX no activado!</string>
     <string name="you_can_turn_on_lock">Puedes activar el Bloqueo SimpleX a través de Configuración.</string>
-    <string name="confirm_passcode">Confirmar el código de acceso</string>
+    <string name="confirm_passcode">Confirma código</string>
     <string name="enable_lock">Activar bloqueo</string>
     <string name="lock_after">Bloquear después de</string>
     <string name="lock_mode">Modo de bloqueo</string>
     <string name="submit_passcode">Enviar</string>
     <string name="incorrect_passcode">Código de acceso incorrecto</string>
-    <string name="new_passcode">Nuevo código de acceso</string>
+    <string name="new_passcode">Código nuevo</string>
     <string name="la_mode_passcode">Código de acceso</string>
     <string name="passcode_changed">¡Código de acceso cambiado!</string>
     <string name="passcode_set">¡Código de acceso guardado!</string>
@@ -1124,7 +1124,7 @@
     <string name="only_you_can_make_calls">Sólo tú puedes realizar llamadas.</string>
     <string name="only_your_contact_can_make_calls">Sólo tu contacto puede realizar llamadas.</string>
     <string name="prohibit_calls">No se permiten llamadas y videollamadas.</string>
-    <string name="v5_0_app_passcode">Código de acceso a la aplicación</string>
+    <string name="v5_0_app_passcode">Código de acceso de la aplicación</string>
     <string name="v5_0_polish_interface">Interfaz en polaco</string>
     <string name="v5_0_app_passcode_descr">Úsalo en lugar de la autenticación del sistema.</string>
     <string name="v5_0_polish_interface_descr">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
@@ -1142,7 +1142,7 @@
     <string name="read_more_in_user_guide_with_link">Más información en la <font color="#0088ff">Guía de usuario</font>.</string>
     <string name="one_time_link_short">Enlace un uso</string>
     <string name="simplex_address">Dirección SimpleX</string>
-    <string name="you_can_accept_or_reject_connection">Cuando alguien desee conectarse podrás aceptar o rechazar su solicitud.</string>
+    <string name="you_can_accept_or_reject_connection">Cuando alguien solicite conectarse podrás aceptar o rechazar su solicitud.</string>
     <string name="share_address">Compartir dirección</string>
     <string name="enter_welcome_message">Introduce mensaje de bienvenida…</string>
     <string name="theme_simplex">SimpleX</string>
@@ -1186,14 +1186,14 @@
     <string name="your_contacts_will_see_it">Tus contactos en SimpleX lo verán.
 \nPuedes cambiarlo en Configuración.</string>
     <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
-    <string name="you_wont_lose_your_contacts_if_delete_address">No perderás tus contactos si más tarde decides borrar tu dirección.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Si más tarde decides borrar tu dirección los contactos no se perderán.</string>
     <string name="all_app_data_will_be_cleared">Todos los datos de la aplicación se eliminarán.</string>
     <string name="empty_chat_profile_is_created">Se creará un perfil vacío con el nombre proporcionado, y la aplicación se abrirá como de costumbre.</string>
     <string name="self_destruct">Autodestrucción</string>
     <string name="enabled_self_destruct_passcode">Activar código de autodestrucción</string>
     <string name="app_passcode_replaced_with_self_destruct">El código de acceso será reemplazado por código de autodestrucción.</string>
     <string name="change_self_destruct_mode">Cambiar el modo de autodestrucción</string>
-    <string name="change_self_destruct_passcode">Cambiar código de autodestrucción</string>
+    <string name="change_self_destruct_passcode">Cambiar código autodestrucción</string>
     <string name="if_you_enter_passcode_data_removed">¡Si introduces este código al abrir la aplicación, todos los datos de la misma se eliminarán de forma irreversible!</string>
     <string name="if_you_enter_self_destruct_code">Si al abrir la aplicación introduces el código de autodestrucción:</string>
     <string name="self_destruct_new_display_name">Nuevo nombre mostrado:</string>
@@ -1201,7 +1201,7 @@
     <string name="self_destruct_passcode_changed">¡Código de autodestrucción cambiado!</string>
     <string name="self_destruct_passcode_enabled">¡Código de autodestrucción activado!</string>
     <string name="enable_self_destruct">Activar autodestrucción</string>
-    <string name="set_passcode">Introduce el código de acceso</string>
+    <string name="set_passcode">Código autodestrucción</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Tanto tú como tu contacto podéis añadir reacciones a los mensajes.</string>
     <string name="custom_time_picker_select">Seleccionar</string>
     <string name="custom_time_picker_custom">personalizado</string>
