@@ -97,15 +97,17 @@ struct ChatItemInfoView: View {
                 .background(chatItemFrameColor(ci, colorScheme))
                 .cornerRadius(18)
                 .contextMenu {
-                    Button {
-                        showShareSheet(items: [itemVersion.msgContent.text])
-                    } label: {
-                        Label("Share", systemImage: "square.and.arrow.up")
-                    }
-                    Button {
-                        UIPasteboard.general.string = itemVersion.msgContent.text
-                    } label: {
-                        Label("Copy", systemImage: "doc.on.doc")
+                    if itemVersion.msgContent.text != "" {
+                        Button {
+                            showShareSheet(items: [itemVersion.msgContent.text])
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                        Button {
+                            UIPasteboard.general.string = itemVersion.msgContent.text
+                        } label: {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
                     }
                 }
             let ts = localTimestamp(itemVersion.itemVersionTs)
@@ -121,7 +123,7 @@ struct ChatItemInfoView: View {
         if itemVersion.msgContent.text != "" {
             messageText(itemVersion.msgContent.text, itemVersion.formattedText, nil)
         } else {
-            Text(ci.text)
+            Text("[no text]")
                 .italic()
                 .foregroundColor(.secondary)
         }
@@ -166,7 +168,7 @@ struct ChatItemInfoView: View {
                         : NSLocalizedString("%@:", comment: "copied message info"),
                         localTimestamp(itemVersion.itemVersionTs)
                     ),
-                    itemVersion.msgContent.text != "" ? itemVersion.msgContent.text : ci.text
+                    itemVersion.msgContent.text != "" ? itemVersion.msgContent.text : NSLocalizedString("[no text]", comment: "copied message info")
                 ]
             }
         }

@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
@@ -36,19 +37,32 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
 
   @Composable
   fun ItemVersionView(ciVersion: ChatItemVersion, current: Boolean) {
-    val showMenu = remember { mutableStateOf(false) }
     val text = ciVersion.msgContent.text
+    val showMenu = remember { mutableStateOf(false) }
+
+    @Composable
+    fun VersionText() {
+      if (text != "") {
+        MarkdownText(
+          text, if (text.isEmpty()) emptyList() else ciVersion.formattedText,
+          linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
+          onLinkLongClick = { showMenu.value = true }
+        )
+      } else {
+        Text(
+          generalGetString(R.string.item_info_no_text),
+          style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp, fontStyle = FontStyle.Italic)
+        )
+      }
+    }
+
     Column {
       Box(
         Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          MarkdownText(
-            text, if (text.isEmpty()) emptyList() else ciVersion.formattedText,
-            linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
-            onLinkLongClick = { showMenu.value = true }
-          )
+          VersionText()
         }
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
@@ -66,15 +80,17 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
           )
         }
       }
-      DefaultDropdownMenu(showMenu) {
-        ItemAction(stringResource(R.string.share_verb), painterResource(R.drawable.ic_share), onClick = {
-          shareText(context, text)
-          showMenu.value = false
-        })
-        ItemAction(stringResource(R.string.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
-          copyText(context, text)
-          showMenu.value = false
-        })
+      if (text != "") {
+        DefaultDropdownMenu(showMenu) {
+          ItemAction(stringResource(R.string.share_verb), painterResource(R.drawable.ic_share), onClick = {
+            shareText(context, text)
+            showMenu.value = false
+          })
+          ItemAction(stringResource(R.string.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
+            copyText(context, text)
+            showMenu.value = false
+          })
+        }
       }
     }
   }
@@ -162,7 +178,7 @@ fun itemInfoShareText(ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolea
           localTimestamp(itemVersion.itemVersionTs)
         }
       )
-      shareText.add(itemVersion.msgContent.text)
+      shareText.add(if (itemVersion.msgContent.text != "") itemVersion.msgContent.text else generalGetString(R.string.item_info_no_text))
     }
   }
   return shareText.joinToString(separator = "\n")

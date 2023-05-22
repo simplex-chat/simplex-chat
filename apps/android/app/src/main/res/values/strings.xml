@@ -1131,6 +1131,7 @@
   <string name="share_text_disappears_at">Disappears at: %s</string>
   <string name="item_info_current">(current)</string>
   <string name="current_version_timestamp">"%s (current)"</string>
+  <string name="item_info_no_text">[no text]</string>
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
