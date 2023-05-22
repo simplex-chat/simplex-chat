@@ -119,7 +119,7 @@
     "simplex-network-overlay-card-1-li-3": "P2P 并未解决<a href='https://zh.wikipedia.org/wiki/%E4%B8%AD%E9%97%B4%E4%BA%BA%E6%94%BB%E5%87%BB'>中间人攻击(MITM Attack)</a> 问题。大多数现有的 P2P 实现没有使用带外通讯来进行初始密钥的交换，而 SimpleX 使用带外通讯，或者在某些情况下，使用预先存在的安全和可信连接来进行初始密钥交换。",
     "simplex-network-overlay-card-1-li-5": "所有已知的 P2P 网络都可能受到 <a href='https://en.wikipedia.org/wiki/Sybil_attack'>Sybil 攻击</a>，因为每个节点都是可发现的，并且网络作为一个整体运行。 已知的缓解措施不是需要一个中心化的组件就是需要昂贵的<a href='https://en.wikipedia.org/wiki/Proof_of_work'>工作量证明</a>。而 SimpleX 网络没有服务器可发现性，它是碎片化的并且作为多个隔离的子网运行，这样全网络范围的攻击便无从实现。",
     "simplex-network-overlay-card-1-li-6": "P2P 网络可能受到 <a href='https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent'>DRDoS 攻击</a> 。客户端有能力重新广播和放大流量，从而导致整个网络范围内的服务中断。 SimpleX 客户端仅中继来自已知连接的流量，因此不能被攻击者用来放大整个网络的流量。",
-    "privacy-matters-overlay-card-1-p-2": "在线零售商知道收入较低的人更有可能在紧急情况下进行购买，因此他们可能会收取更高的价格或取消折扣。",
+    "privacy-matters-overlay-card-1-p-2": "在线零售商知道收入较低的人更有可能在紧急情况下购买商品，因此他们可能会收取更高的价格或取消折扣。",
     "privacy-matters-overlay-card-1-p-3": "一些金融和保险公司使用社交图谱来确定利率和保费。 它通常会让收入较低的人支付更多—— 它被称为<a href='https://fairbydesign.com/povertypremium/' target='_blank'>“贫困溢价”</a>。",
     "privacy-matters-overlay-card-1-p-4": "SimpleX 平台比任何替代方案都能更好地保护您人际关系层面的隐私，防止您的社交图谱被任何公司或组织使用。 即使人们使用 SimpleX Chat 提供的服务器，我们也不知道用户数量或他们的连接数。",
     "privacy-matters-overlay-card-2-p-1": "不久前，我们观察到几次大选被<a href='https://en.wikipedia.org/wiki/Facebook–Cambridge_Analytica_data_scandal' target='_blank'>一家知名咨询公司</a>操纵，该公司使用我们的社交图谱扭曲我们对现实世界的看法并操纵我们的选票。",
