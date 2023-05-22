@@ -272,8 +272,8 @@
     <string name="settings_section_title_icon">ICONA APP</string>
     <string name="incognito_random_profile_from_contact_description">Verrà inviato un profilo casuale al contatto da cui hai ricevuto questo link</string>
     <string name="incognito_random_profile_description">Verrà inviato un profilo casuale al tuo contatto</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Ideale per la batteria</b>. Riceverai notifiche solo quando l\'app è in esecuzione, il servizio in secondo piano NON verrà usato.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Consuma più batteria</b>! Il servizio in secondo piano è sempre attivo: le notifiche verranno mostrate non appena i messaggi saranno disponibili.</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Ideale per la batteria</b>. Riceverai notifiche solo quando l\'app è in esecuzione (NO servizio in secondo piano).</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Consuma più batteria</b>! Servizio in secondo piano sempre attivo: le notifiche sono mostrate non appena i messaggi sono disponibili.</string>
     <string name="callstatus_calling">chiamata…</string>
     <string name="icon_descr_cancel_link_preview">annulla anteprima link</string>
     <string name="cannot_access_keychain">Impossibile accedere al Keystore per salvare la password del database</string>
@@ -357,7 +357,7 @@
     <string name="how_to_use_markdown">Come usare il markdown</string>
     <string name="icon_descr_audio_call">chiamata audio</string>
     <string name="audio_call_no_encryption">chiamata audio (non crittografata e2e)</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Buono per la batteria</b>. Il servizio in secondo piano controlla nuovi messaggi ogni 10 minuti. Potresti perdere chiamate e messaggi urgenti.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Buono per la batteria</b>. Il servizio in secondo piano cerca messaggi ogni 10 minuti. Potresti perdere chiamate o messaggi urgenti.</string>
     <string name="call_already_ended">Chiamata già terminata!</string>
     <string name="create_your_profile">Crea il tuo profilo</string>
     <string name="decentralized">Decentralizzato</string>
@@ -1228,4 +1228,37 @@
     <string name="send_disappearing_message_5_minutes">5 minuti</string>
     <string name="custom_time_picker_custom">personalizzato</string>
     <string name="disappearing_message">Messaggio a tempo</string>
+    <string name="error_loading_details">Errore caricamento dettagli</string>
+    <string name="info_menu">Informazioni</string>
+    <string name="edit_history">Cronologia</string>
+    <string name="received_message">Messaggio ricevuto</string>
+    <string name="sent_message">Messaggio inviato</string>
+    <string name="share_text_database_id">ID database: %d</string>
+    <string name="info_row_moderated_at">Moderato il</string>
+    <string name="share_text_moderated_at">Moderato il: %s</string>
+    <string name="info_row_received_at">Ricevuto il</string>
+    <string name="share_text_received_at">Ricevuto il: %s</string>
+    <string name="info_row_updated_at">Registro aggiornato il</string>
+    <string name="share_text_updated_at">Registro aggiornato il: %s</string>
+    <string name="info_row_sent_at">Inviato il</string>
+    <string name="share_text_sent_at">Inviato il: %s</string>
+    <string name="current_version_timestamp">%s (attuale)</string>
+    <string name="whats_new_read_more">Leggi tutto</string>
+    <string name="v5_1_self_destruct_passcode_descr">Tutti i dati vengono cancellati quando inserito.</string>
+    <string name="v5_1_custom_themes_descr">Personalizza e condividi temi di colore.</string>
+    <string name="v5_1_custom_themes">Temi personalizzati</string>
+    <string name="v5_1_message_reactions_descr">Finalmente le abbiamo! 🚀</string>
+    <string name="v5_1_message_reactions">Reazioni ai messaggi</string>
+    <string name="v5_1_self_destruct_passcode">Codice di autodistruzione</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Grazie agli utenti – contribuite via Weblate!</string>
+    <string name="v5_1_better_messages_descr">- messaggi vocali fino a 5 minuti.
+\n- tempo di scomparsa personalizzato.
+\n- cronologia delle modifiche.</string>
+    <string name="v5_1_better_messages">Messaggi migliorati</string>
+    <string name="v5_1_japanese_portuguese_interface">Interfaccia giapponese e portoghese</string>
+    <string name="item_info_current">(attuale)</string>
+    <string name="info_row_deleted_at">Eliminato il</string>
+    <string name="share_text_deleted_at">Eliminato il: %s</string>
+    <string name="info_row_disappears_at">Scompare il</string>
+    <string name="share_text_disappears_at">Scompare il: %s</string>
 </resources>
