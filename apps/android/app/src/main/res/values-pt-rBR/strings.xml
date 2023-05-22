@@ -733,7 +733,7 @@
     <string name="above_then_preposition_continuation">acima, então:</string>
     <string name="to_connect_via_link_title">Para conectar via link</string>
     <string name="image_descr_qr_code">QR Code</string>
-    <string name="mark_code_verified">Marcado como verificado</string>
+    <string name="mark_code_verified">Marcar como verificado</string>
     <string name="to_verify_compare">Para verificar a criptografia de ponta-a-ponta com seu contato, compare (ou escaneie) o código em seus dispositivos.</string>
     <string name="smp_save_servers_question">Salvar servidores\?</string>
     <string name="smp_servers_per_user">Os servidores para novas conexões do seu perfil de chat atual</string>
@@ -807,7 +807,7 @@
     <string name="no_details">sem detalhes</string>
     <string name="add_contact">Link de convite de uso único</string>
     <string name="smp_servers_your_server_address">Seu endereço de servidor</string>
-    <string name="your_settings">Suas configurações</string>
+    <string name="your_settings">Configurações</string>
     <string name="is_verified">%s é verificado</string>
     <string name="is_not_verified">%s não é verificado</string>
     <string name="add_contact_or_create_group">Começar novo chat</string>
@@ -1258,4 +1258,5 @@
     <string name="info_row_sent_at">Enviado em</string>
     <string name="change_self_destruct_passcode">Alterar senha de auto-destruição</string>
     <string name="if_you_enter_self_destruct_code">Se você digitar sua senha de auto-destruição ao abrir o aplicativo:</string>
+    <string name="item_info_no_text">Sem texto</string>
 </resources>
