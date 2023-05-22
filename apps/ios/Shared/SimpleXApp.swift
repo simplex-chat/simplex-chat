@@ -50,10 +50,10 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        showInitializationView = true
+                    showInitializationView = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        initChatAndMigrate()
                     }
-                    initChatAndMigrate()
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
