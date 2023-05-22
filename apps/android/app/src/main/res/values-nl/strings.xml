@@ -910,7 +910,8 @@
     <string name="this_string_is_not_a_connection_link">Deze string is geen verbinding link!</string>
     <string name="enable_automatic_deletion_message">Deze actie kan niet ongedaan worden gemaakt, de berichten die eerder zijn verzonden en ontvangen dan geselecteerd, worden verwijderd. Het kan enkele minuten duren.</string>
     <string name="switch_receiving_address_desc">Deze functie is experimenteel! Het werkt alleen als op de andere client versie 4.2 is geïnstalleerd. U zou het bericht in het gesprek moeten zien zodra de adreswijziging is voltooid. Controleer of u nog steeds berichten van dit contact (of groepslid) kunt ontvangen.</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Om je privacy te behouden, heeft de app in plaats van push meldingen een <b><xliff:g id="appName">SimpleX</xliff:g> achtergrondservice</b> – deze gebruikt een paar procent van de batterij per dag.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Om je privacy te behouden, heeft de app in plaats van push meldingen een
+\n <b><xliff:g id="appName">SimpleX</xliff:g> achtergrond service</b> - deze gebruikt een paar procent van de batterij per dag.</string>
     <string name="chat_preferences_you_allow">Jij staat toe</string>
     <string name="you_are_invited_to_group">Je bent uitgenodigd voor de groep</string>
     <string name="you_can_connect_to_simplex_chat_founder">U kunt <font color="#0088ff">verbinding maken met <xliff:g id="appNameFull">SimpleX Chat</xliff:g> ontwikkelaars om vragen te stellen en updates te ontvangen</font>.</string>
