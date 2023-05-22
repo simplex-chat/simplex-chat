@@ -303,7 +303,10 @@ fun SimplexLockView(
         LockDelaySelector(remember { laLockDelay.state }) { laLockDelay.set(it) }
         if (showChangePasscode.value && laMode.value == LAMode.PASSCODE) {
           SectionItemView({ changeLAPassword() }) {
-            Text(generalGetString(R.string.la_change_app_passcode))
+            Text(
+              generalGetString(R.string.la_change_app_passcode),
+              color = MaterialTheme.colors.primary
+            )
           }
         }
       }
@@ -342,7 +345,10 @@ fun SimplexLockView(
               }
             }
             SectionItemView({ changeSelfDestructPassword() }) {
-              Text(stringResource(R.string.change_self_destruct_passcode))
+              Text(
+                stringResource(R.string.change_self_destruct_passcode),
+                color = MaterialTheme.colors.primary
+              )
             }
           }
         }
