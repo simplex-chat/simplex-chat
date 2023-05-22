@@ -117,8 +117,8 @@
     <string name="icon_descr_audio_on">开启音频</string>
     <string name="icon_descr_asked_to_receive">已要求接收图片</string>
     <string name="network_session_mode_user_description">一个单独的TCP连接（和SOCKS凭证）将被用于<b>，用于您在应用程序中的每个聊天资料</b> 。</string>
-    <string name="network_session_mode_entity_description">每个联系人和群组成员&lt;/b&gt; 将使用单独的 TCP 连接（和 SOCKS 凭证）&lt;b&gt;。
-\n&lt;b&gt;请注意&lt;/b&gt;：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
+    <string name="network_session_mode_entity_description">每个联系人和群组成员 <b>将使用单独的 TCP 连接（和 SOCKS 凭证）</b>。
+\n<b>请注意</b>：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>添加新联系人</b>：为您的联系人创建一次性二维码。</string>
     <string name="onboarding_notifications_mode_off_desc"><b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。</string>
@@ -950,7 +950,7 @@
     <string name="ttl_m">%dm</string>
     <string name="ttl_mth">%dmth</string>
     <string name="waiting_for_file">等待文件中</string>
-    <string name="contact_sent_large_file">您的联系人发送的文件大于当前支持的最大大小 (&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"maxFileSize\"&gt;%1$s&lt;/xliff :g&gt;).</string>
+    <string name="contact_sent_large_file">您的联系人发送的文件大于当前支持的最大大小 (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">当您的连接请求被接受后，您将可以连接，请稍等或稍后检查！</string>
     <string name="smp_servers_use_server">使用服务器</string>
     <string name="smp_servers_your_server_address">您的服务器地址</string>

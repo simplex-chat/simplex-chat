@@ -473,7 +473,7 @@
     <string name="v4_5_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
     <string name="button_add_members">Nodig leden uit</string>
     <string name="notification_display_mode_hidden_desc">Verberg contact en bericht</string>
-    <string name="turn_off_battery_optimization">Om het te gebruiken &lt;b xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\"&gt;batterijoptimalisatie uitschakelen&lt;/b&gt; voor &lt;xliff:g xmlns:xliff=\"urn:oasis: names:tc:xliff:document:1.2\" id=\"appName\"&gt;SimpleX&lt;/xliff:g&gt; in het volgende dialoogvenster. Anders worden de meldingen uitgeschakeld.</string>
+    <string name="turn_off_battery_optimization">Om het te gebruiken <b>batterijoptimalisatie uitschakelen</b> voor <xliff:g xmlns:xliff="urn:oasis: names:tc:xliff:document:1.2" id="appName">SimpleX</xliff:g> in het volgende dialoogvenster. Anders worden de meldingen uitgeschakeld.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Als u ervoor kiest om te weigeren, wordt de afzender NIET op de hoogte gesteld.</string>
     <string name="onboarding_notifications_mode_service">Onmiddellijk</string>
     <string name="rcv_group_event_member_added">heeft <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> uitgenodigd</string>

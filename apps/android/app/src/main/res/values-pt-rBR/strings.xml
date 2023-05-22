@@ -687,7 +687,7 @@
     <string name="settings_section_title_you">VOCÊ</string>
     <string name="settings_section_title_messages">MENSAGENS E ARQUIVOS</string>
     <string name="your_chat_database">Seu banco de dados de chat</string>
-    <string name="snd_group_event_member_deleted">Você removeu&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"member profile\" example=\"alice (Alice)\"&gt;</string>
+    <string name="snd_group_event_member_deleted">Você removeu <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="group_member_status_removed">removido</string>
     <string name="group_member_status_left">saiu</string>
     <string name="group_member_role_owner">proprietário</string>
@@ -794,7 +794,7 @@
     <string name="videos_limit_title">Excesso de vídeos!</string>
     <string name="icon_descr_video_asked_to_receive">Solicitou receber o vídeo</string>
     <string name="videos_limit_desc">Apenas 10 vídeos podem ser enviados ao mesmo tempo</string>
-    <string name="contact_sent_large_file">Seu contato enviou um arquivo maior que o tamanho máximo permitido (&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"maxFileSize\"&gt;).</string>
+    <string name="contact_sent_large_file">Seu contato enviou um arquivo maior que o tamanho máximo permitido (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
     <string name="file_will_be_received_when_contact_completes_uploading">O arquivo será recebido quando seu contato concluir o upload.</string>
     <string name="smp_servers_test_some_failed">Alguns servidores falharam o teste:</string>
     <string name="smp_servers_save">Salvar servidores</string>
@@ -893,7 +893,7 @@
     <string name="v4_5_private_filenames_descr">Para proteger o fuso horário, os arquivos de imagem/voz usam UTC.</string>
     <string name="unknown_message_format">formato de mensagem desconhecido</string>
     <string name="description_via_group_link">via link de grupo</string>
-    <string name="simplex_link_connection">via&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"serverHost\" example=\"smp.simplex.im\"&gt;</string>
+    <string name="simplex_link_connection">via <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
     <string name="connection_error_auth_desc">A menos que seu contato tenha excluído a conexão ou este link já tenha sido usado, pode ser um bug - por favor, relate-o.
 \nPara se conectar, peça ao seu contato para criar outro link de conexão e verifique se você tem uma conexão de rede estável.</string>
     <string name="error_smp_test_failed_at_step">O teste falhou na etapa %s.</string>
