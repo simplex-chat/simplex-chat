@@ -1261,4 +1261,5 @@
     <string name="v5_1_self_destruct_passcode">Code d\'autodestruction</string>
     <string name="share_text_sent_at">Envoyé le : %s</string>
     <string name="sent_message">Message envoyé</string>
+    <string name="item_info_no_text">aucun texte</string>
 </resources>
