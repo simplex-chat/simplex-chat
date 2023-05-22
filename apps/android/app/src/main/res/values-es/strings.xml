@@ -1003,7 +1003,7 @@
     <string name="v4_6_reduced_battery_usage">Reducción consumo de batería</string>
     <string name="v4_6_group_welcome_message">Mensaje de bienvenida en grupos</string>
     <string name="v4_6_reduced_battery_usage_descr">¡Más mejoras en camino!</string>
-    <string name="hidden_profile_password">Contraseña de perfil oculto</string>
+    <string name="hidden_profile_password">Contraseña del perfil oculto</string>
     <string name="save_welcome_message_question">¿Guardar mensaje de bienvenida\?</string>
     <string name="user_unmute">Activar audio</string>
     <string name="you_can_hide_or_mute_user_profile">Puedes ocultar o silenciar un perfil. Mantenlo pulsado para abrir el menú.</string>
@@ -1011,7 +1011,7 @@
     <string name="v4_6_group_moderation_descr">Ahora los administradores pueden:
 \n- borrar mensajes de los miembros.
 \n- desactivar el rol a miembros (pasando a rol \"observador\")</string>
-    <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página Tus perfiles Chat.</string>
+    <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página Mis perfiles.</string>
     <string name="database_upgrade">Actualización de la base de datos</string>
     <string name="database_downgrade">Volviendo a versión anterior de la base de datos</string>
     <string name="invalid_migration_confirmation">Confirmación de migración no válida</string>
