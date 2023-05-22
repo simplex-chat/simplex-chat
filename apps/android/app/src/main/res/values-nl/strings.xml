@@ -99,7 +99,7 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Nieuw contact toevoegen</b>: om een eenmalige QR-code voor uw contact te maken.</string>
     <string name="icon_descr_call_ended">Oproep beëindigd</string>
     <string name="turning_off_service_and_periodic">Batterijoptimalisatie is actief, waardoor achtergrondservice en periodieke verzoeken om nieuwe berichten worden uitgeschakeld. Je kunt ze weer inschakelen via instellingen.</string>
-    <string name="onboarding_notifications_mode_off_desc">[X0x] Het beste voor de batterij&lt;/b&gt;. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Het beste voor de batterij</b>. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Het kan worden uitgeschakeld via instellingen</b>, meldingen worden nog steeds weergegeven terwijl de app actief is.</string>
     <string name="both_you_and_your_contacts_can_delete">Zowel jij als je contactpersoon kunnen verzonden berichten onherroepelijk verwijderen.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contactpersoon kunnen verdwijnende berichten sturen.</string>
