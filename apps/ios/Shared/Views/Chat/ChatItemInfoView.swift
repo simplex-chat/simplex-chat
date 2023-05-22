@@ -16,19 +16,15 @@ struct ChatItemInfoView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     
     var body: some View {
-        if let chatItemInfo = chatItemInfo {
-            NavigationView {
-                itemInfoView(chatItemInfo)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button { showShareSheet(items: [itemInfoShareText(chatItemInfo)]) } label: {
-                                Image(systemName: "square.and.arrow.up")
-                            }
+        NavigationView {
+            itemInfoView()
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button { showShareSheet(items: [itemInfoShareText()]) } label: {
+                            Image(systemName: "square.and.arrow.up")
                         }
                     }
-            }
-        } else {
-            Text("No message details")
+                }
         }
     }
 
@@ -38,7 +34,7 @@ struct ChatItemInfoView: View {
         : NSLocalizedString("Received message", comment: "message info title")
     }
 
-    @ViewBuilder private func itemInfoView(_ chatItemInfo: ChatItemInfo) -> some View {
+    @ViewBuilder private func itemInfoView() -> some View {
         let meta = ci.meta
         GeometryReader { g in
             ScrollView {
@@ -72,7 +68,8 @@ struct ChatItemInfoView: View {
                         infoRow("Record updated at", localTimestamp(meta.updatedAt))
                     }
 
-                    if !chatItemInfo.itemVersions.isEmpty {
+                    if let chatItemInfo = chatItemInfo,
+                       !chatItemInfo.itemVersions.isEmpty {
                         Divider().padding(.vertical)
 
                         Text("History")
@@ -93,7 +90,7 @@ struct ChatItemInfoView: View {
     
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            messageText(itemVersion.msgContent.text, itemVersion.formattedText, nil)
+            versionText(itemVersion)
                 .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -120,7 +117,17 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    private func itemInfoShareText(_ chatItemInfo: ChatItemInfo) -> String {
+    @ViewBuilder private func versionText(_ itemVersion: ChatItemVersion) -> some View {
+        if itemVersion.msgContent.text != "" {
+            messageText(itemVersion.msgContent.text, itemVersion.formattedText, nil)
+        } else {
+            Text(ci.text)
+                .italic()
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func itemInfoShareText() -> String {
         let meta = ci.meta
         var shareText: [String] = [title, ""]
         shareText += [String.localizedStringWithFormat(NSLocalizedString("Sent at: %@", comment: "copied message info"), localTimestamp(meta.itemTs))]
@@ -147,7 +154,8 @@ struct ChatItemInfoView: View {
                 String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))
             ]
         }
-        if !chatItemInfo.itemVersions.isEmpty {
+        if let chatItemInfo = chatItemInfo,
+           !chatItemInfo.itemVersions.isEmpty {
             shareText += ["", NSLocalizedString("History", comment: "copied message info")]
             for (index, itemVersion) in chatItemInfo.itemVersions.enumerated() {
                 shareText += [
@@ -158,7 +166,7 @@ struct ChatItemInfoView: View {
                         : NSLocalizedString("%@:", comment: "copied message info"),
                         localTimestamp(itemVersion.itemVersionTs)
                     ),
-                    itemVersion.msgContent.text
+                    itemVersion.msgContent.text != "" ? itemVersion.msgContent.text : ci.text
                 ]
             }
         }
