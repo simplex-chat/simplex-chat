@@ -178,7 +178,8 @@ fun itemInfoShareText(ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolea
           localTimestamp(itemVersion.itemVersionTs)
         }
       )
-      shareText.add(if (itemVersion.msgContent.text != "") itemVersion.msgContent.text else generalGetString(R.string.item_info_no_text))
+      val t = itemVersion.msgContent.text
+      shareText.add(if (t != "") t else generalGetString(R.string.item_info_no_text))
     }
   }
   return shareText.joinToString(separator = "\n")
