@@ -1017,9 +1017,9 @@
         <target>Conectar mediante enlace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via link / QR code" xml:space="preserve">
+      <trans-unit id="Connect via link / QR code" xml:space="preserve" approved="no">
         <source>Connect via link / QR code</source>
-        <target>Conectar mediante enlace / Código QR</target>
+        <target state="translated">Conecta vía enlace / Código QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link?" xml:space="preserve">
@@ -1097,9 +1097,9 @@
         <target>¡El contacto aun no se ha conectado!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact name" xml:space="preserve">
+      <trans-unit id="Contact name" xml:space="preserve" approved="no">
         <source>Contact name</source>
-        <target>Nombre del contacto</target>
+        <target state="translated">Contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact preferences" xml:space="preserve">
@@ -1157,9 +1157,9 @@
         <target>Crear enlace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create one-time invitation link" xml:space="preserve">
+      <trans-unit id="Create one-time invitation link" xml:space="preserve" approved="no">
         <source>Create one-time invitation link</source>
-        <target>Crear enlace de invitación de un solo uso</target>
+        <target state="translated">Crea enlace de invitación de un uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create queue" xml:space="preserve">
@@ -1167,9 +1167,9 @@
         <target>Crear cola</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create secret group" xml:space="preserve">
+      <trans-unit id="Create secret group" xml:space="preserve" approved="no">
         <source>Create secret group</source>
-        <target>Crear grupo secreto</target>
+        <target state="translated">Crea grupo secreto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -1207,14 +1207,14 @@
         <target>Oscuro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID" xml:space="preserve">
+      <trans-unit id="Database ID" xml:space="preserve" approved="no">
         <source>Database ID</source>
-        <target>ID de base de datos</target>
+        <target state="translated">ID base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID: %d" xml:space="preserve">
+      <trans-unit id="Database ID: %d" xml:space="preserve" approved="no">
         <source>Database ID: %d</source>
-        <target>ID de base de datos: %d</target>
+        <target state="translated">ID base de datos: %d</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
@@ -1335,9 +1335,9 @@
         <target>¿Eliminar la dirección?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete after" xml:space="preserve">
+      <trans-unit id="Delete after" xml:space="preserve" approved="no">
         <source>Delete after</source>
-        <target>Eliminar después de</target>
+        <target state="translated">Eliminar en</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete all files" xml:space="preserve">
@@ -1450,9 +1450,9 @@
         <target>Eliminar mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete messages after" xml:space="preserve">
+      <trans-unit id="Delete messages after" xml:space="preserve" approved="no">
         <source>Delete messages after</source>
-        <target>Eliminar después de</target>
+        <target state="translated">Eliminar en</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete old database" xml:space="preserve">
@@ -1470,9 +1470,9 @@
         <target>Eliminar conexión pendiente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete pending connection?" xml:space="preserve">
+      <trans-unit id="Delete pending connection?" xml:space="preserve" approved="no">
         <source>Delete pending connection?</source>
-        <target>¿Eliminar conexion pendiente?</target>
+        <target state="translated">¿Eliminar la conexion pendiente?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete profile" xml:space="preserve">
@@ -2240,9 +2240,9 @@
         <target>Contraseña de perfil oculto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide" xml:space="preserve">
+      <trans-unit id="Hide" xml:space="preserve" approved="no">
         <source>Hide</source>
-        <target>Ocultar</target>
+        <target state="translated">Sin vista previa</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
@@ -2628,14 +2628,14 @@
         <target>Sólo datos del perfil local</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Lock after" xml:space="preserve">
+      <trans-unit id="Lock after" xml:space="preserve" approved="no">
         <source>Lock after</source>
-        <target>Bloquear después de</target>
+        <target state="translated">Bloquear en</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Lock mode" xml:space="preserve">
+      <trans-unit id="Lock mode" xml:space="preserve" approved="no">
         <source>Lock mode</source>
-        <target>Modo de bloqueo</target>
+        <target state="translated">Modo bloqueo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2733,9 +2733,9 @@
         <target>Las reacciones a los mensajes no están permitidas en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message text" xml:space="preserve">
+      <trans-unit id="Message text" xml:space="preserve" approved="no">
         <source>Message text</source>
-        <target>Texto del mensaje</target>
+        <target state="translated">Contacto y texto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages" xml:space="preserve">
@@ -4674,9 +4674,9 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>Novedades</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When available" xml:space="preserve">
+      <trans-unit id="When available" xml:space="preserve" approved="no">
         <source>When available</source>
-        <target>Si disponible</target>
+        <target state="translated">Si disponibles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
@@ -4801,9 +4801,9 @@ Bloqueo SimpleX debe estar activado.</target>
         <target>Puedes activar el Bloqueo SimpleX a través de Configuración.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
+      <trans-unit id="You can use markdown to format messages:" xml:space="preserve" approved="no">
         <source>You can use markdown to format messages:</source>
-        <target>Puedes usar la sintaxis markdown para dar formato a los mensajes:</target>
+        <target state="translated">Puedes usar la sintaxis markdown para dar formato a tus mensajes:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
@@ -5087,9 +5087,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>\`a + b`</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="above, then choose:" xml:space="preserve">
+      <trans-unit id="above, then choose:" xml:space="preserve" approved="no">
         <source>above, then choose:</source>
-        <target>arriba y luego elige:</target>
+        <target state="translated">y después elige:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve">
@@ -5497,8 +5497,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>sin cifrar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no text" xml:space="preserve">
+      <trans-unit id="no text" xml:space="preserve" approved="no">
         <source>no text</source>
+        <target state="translated">sin texto</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
