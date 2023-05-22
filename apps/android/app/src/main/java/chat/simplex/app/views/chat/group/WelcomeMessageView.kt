@@ -118,7 +118,9 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
     Modifier.height(140.dp)
   ) {
     SelectionContainer(
-      Modifier.verticalScroll(rememberScrollState())
+      Modifier
+        .verticalScroll(rememberScrollState())
+        .fillMaxWidth()
     ) {
       MarkdownText(
         text,

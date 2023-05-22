@@ -56,7 +56,9 @@ struct GroupWelcomeView: View {
         ScrollView {
             messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
                 .allowsHitTesting(false)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(height: 140, alignment: .topLeading)
     }
 
     private func editorView() -> some View {
@@ -80,7 +82,6 @@ struct GroupWelcomeView: View {
                     }
                 } else {
                     textPreview()
-                        .frame(height: 140, alignment: .topLeading)
                 }
 
                 Button {
