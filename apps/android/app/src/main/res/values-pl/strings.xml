@@ -1248,4 +1248,17 @@
     <string name="info_row_received_at">Otrzymane o</string>
     <string name="current_version_timestamp">%s (aktualny)</string>
     <string name="share_text_updated_at">Rekord zaktualizowany o: %s</string>
+    <string name="v5_1_self_destruct_passcode_descr">Wszystkie dane są usuwane po jego wprowadzeniu.</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Podziękowania dla użytkowników - wkład za pośrednictwem Weblate!</string>
+    <string name="v5_1_message_reactions">Reakcje wiadomości</string>
+    <string name="v5_1_better_messages">Lepsze wiadomości</string>
+    <string name="v5_1_custom_themes_descr">Dostosuj i udostępniaj motywy kolorów.</string>
+    <string name="v5_1_custom_themes">Niestandardowe motywy</string>
+    <string name="v5_1_message_reactions_descr">W końcu je mamy! 🚀</string>
+    <string name="v5_1_japanese_portuguese_interface">Japoński i portugalski interfejs użytkownika</string>
+    <string name="whats_new_read_more">Przeczytaj więcej</string>
+    <string name="v5_1_self_destruct_passcode">Pin samozniszczenia</string>
+    <string name="v5_1_better_messages_descr">- wiadomości głosowe do 5 minut.
+\n- niestandardowy czas zniknięcia.
+\n- historia edycji.</string>
 </resources>

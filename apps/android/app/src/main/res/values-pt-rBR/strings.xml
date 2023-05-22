@@ -77,8 +77,8 @@
     <string name="chat_console">Console de chat</string>
     <string name="smp_servers_check_address">Verifique o endereço do servidor e tente novamente.</string>
     <string name="network_session_mode_user_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada perfil de chat que você tiver no aplicativo</b>.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Melhor para bateria</b>. Você receberá notificações apenas quando o aplicativo estiver em execução, o serviço em segundo plano NÃO será usado.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Melhor para bateria</b>. Você receberá notificações apenas quando o aplicativo estiver em execução (sem segundo plano).</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações são exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="settings_section_title_chats">CHATS</string>
     <string name="settings_section_title_icon">ÍCONE DO APP</string>
     <string name="chat_database_section">BANCO DE DADOS DE CHAT</string>
@@ -87,7 +87,7 @@
     <string name="change_database_passphrase_question">Alterar senha do banco de dados\?</string>
     <string name="chat_archive_header">Arquivo de chat</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">endereço alterado para você</string>
-    <string name="both_you_and_your_contact_can_send_disappearing">Você e seu contato podem enviar mensagens que desaparecem.</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">Você e seu contato podem enviar mensagens temporárias.</string>
     <string name="full_backup">Backup de dados do aplicativo</string>
     <string name="settings_section_title_calls">CHAMADAS</string>
     <string name="v4_2_auto_accept_contact_requests">Aceitar solicitações de contato automaticamente</string>
@@ -95,7 +95,7 @@
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="network_session_mode_entity_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada contato e membro do grupo</b>.
 \n<b>Observação</b>: se você tiver muitas conexões, o consumo de bateria e tráfego pode ser substancialmente maior e algumas conexões podem falhar.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Bom para bateria</b>. O serviço em segundo plano verifica novas mensagens a cada 10 minutos. Você pode perder chamadas e mensagens urgentes.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Bom para bateria</b>. O serviço em segundo plano procura por mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.</string>
     <string name="callstatus_ended">chamda encerrada <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="chat_with_developers">Chat com os desenvolvedores</string>
     <string name="create_group_link">Criar link de grupo</string>
@@ -109,7 +109,7 @@
     <string name="notification_preview_somebody">Contato oculto:</string>
     <string name="copy_verb">Copiar</string>
     <string name="allow_verb">Permitir</string>
-    <string name="allow_to_send_disappearing">Permitir enviar mensagens que desaparecem.</string>
+    <string name="allow_to_send_disappearing">Permitir enviar mensagens temporárias.</string>
     <string name="allow_direct_messages">Permitir o envio de mensagens diretas aos membros.</string>
     <string name="connect_via_link_or_qr">Conectar via link/QR</string>
     <string name="clear_chat_warning">Todas as mensagens serão excluídas - isso não pode ser desfeito! As mensagens serão excluídas APENAS para você.</string>
@@ -142,7 +142,7 @@
     <string name="accept_feature">Aceitar</string>
     <string name="allow_disappearing_messages_only_if">Permitir mensagens temporárias apenas se o seu contato permitir.</string>
     <string name="allow_irreversible_message_deletion_only_if">Permita a exclusão irreversível da mensagem somente se o seu contato permitir.</string>
-    <string name="allow_your_contacts_to_send_disappearing_messages">Permitir que seus contatos enviem mensagens que desaparecem.</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Permitir que seus contatos enviem mensagens temporárias.</string>
     <string name="allow_voice_messages_only_if">Permitir mensagens de voz somente se o seu contato permitir.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Permitir que seus contatos enviem mensagens de voz.</string>
     <string name="group_member_role_admin">administrador</string>
@@ -346,11 +346,11 @@
     <string name="ttl_h">%dh</string>
     <string name="ttl_hours">%d horas</string>
     <string name="description_via_contact_address_link_incognito">anônimo via link de endereço de contato</string>
-    <string name="description_via_one_time_link_incognito">anônimo via link único</string>
+    <string name="description_via_one_time_link_incognito">anônimo via link de uso único</string>
     <string name="hide_verb">Ocultar</string>
     <string name="from_gallery_button">Da Galeria</string>
     <string name="gallery_video_button">Vídeo</string>
-    <string name="group_members_can_send_disappearing">Os membros do grupo podem enviar mensagens que desaparecem.</string>
+    <string name="group_members_can_send_disappearing">Os membros do grupo podem enviar mensagens temporárias.</string>
     <string name="icon_descr_file">Arquivo</string>
     <string name="full_name__field">Nome completo:</string>
     <string name="incoming_audio_call">Chamada de áudio recebida</string>
@@ -463,7 +463,7 @@
     <string name="paste_connection_link_below_to_connect">Cole o link que você recebeu na caixa abaixo para conectar com o seu contato.</string>
     <string name="new_in_version">Novo em %s</string>
     <string name="send_us_an_email">Envie-nos um e-mail</string>
-    <string name="smp_servers_scan_qr">Escanear código QR do servidor</string>
+    <string name="smp_servers_scan_qr">Escanear QR code do servidor</string>
     <string name="your_SMP_servers">Seus servidores SMP</string>
     <string name="chat_item_ttl_none">nunca</string>
     <string name="restore_database_alert_title">Restaurar o backup do banco de dados\?</string>
@@ -604,7 +604,7 @@
     <string name="markdown_in_messages">Markdown em mensagens</string>
     <string name="smp_servers">Servidores SMP</string>
     <string name="smp_servers_preset_address">Endereço do servidor pré-definido</string>
-    <string name="many_people_asked_how_can_it_deliver">Muitos perguntaram:<i> se <xliff:g id="appName">SimpleX</xliff:g> não tem identificadores de usuários, como ele pode mandar memsagens\?</i></string>
+    <string name="many_people_asked_how_can_it_deliver">Muitos perguntaram:<i> se <xliff:g id="appName">SimpleX</xliff:g> não tem identificadores de usuários, como ele pode mandar mensagens\?</i></string>
     <string name="reject">Rejeitar</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> mensagens ignoradas</string>
     <string name="protect_app_screen">Proteger a tela do app</string>
@@ -856,7 +856,7 @@
     <string name="voice_messages">Mensagens de voz</string>
     <string name="description_via_contact_address_link">via link de endereço de contato</string>
     <string name="description_via_one_time_link">via link de uso único</string>
-    <string name="share_invitation_link">Compartilhar link único</string>
+    <string name="share_invitation_link">Compartilhar link de uso único</string>
     <string name="network_use_onion_hosts">Usar hosts .onion</string>
     <string name="video_call_no_encryption">chamada de vídeo (não criptografada ponta-a-ponta)</string>
     <string name="stop_chat_question">Parar chat\?</string>
@@ -965,7 +965,7 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">O contato com o qual você compartilhou este link NÃO será capaz de se conectar!</string>
     <string name="icon_descr_simplex_team">Equipe <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="use_simplex_chat_servers__question">Usar servidores<xliff:g id="appNameFull">SimpleX</xliff:g>\?</string>
-    <string name="using_simplex_chat_servers">Usando servidores<xliff:g id="appNameFull">SimpleX</xliff:g>.</string>
+    <string name="using_simplex_chat_servers">Usando servidores <xliff:g id="appNameFull">SimpleX</xliff:g>.</string>
     <string name="show_developer_options">Mostrar opções para desenvolvedores</string>
     <string name="v4_6_audio_video_calls_descr">Suporte bluetooth e outras melhorias.</string>
     <string name="to_reveal_profile_enter_password">Para revelar seu perfil oculto, digite uma senha em um campo de busca em sua página de perfis de chat.</string>
@@ -1033,7 +1033,7 @@
     <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
     <string name="confirm_database_upgrades">Confirme as atualizações do banco de dados</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Perfis de usuário, contatos, grupos e mensagens enviadas com <b>criptografia de ponta-a-ponta</b> são armazenados somente no seu dispositivo.</string>
-    <string name="thank_you_for_installing_simplex">Obrigado por instalar<xliff:g id="appNameFull">SimpleX</xliff:g>!</string>
+    <string name="thank_you_for_installing_simplex">Obrigado por instalar <xliff:g id="appNameFull">SimpleX</xliff:g>!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">A plataforma de mensagens que protege sua privacidade e segurança.</string>
     <string name="invite_prohibited_description">Você está tentando convidar um contato com quem compartilhou um perfil anônimo para o grupo no qual está usando seu perfil principal</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">Você controla por meio de qual(is) servidor(es) <b>receber</b> as mensagens, seus contatos controlam os servidores que você usa para enviar mensagens.</string>
@@ -1129,7 +1129,7 @@
     <string name="learn_more_about_address">Sobre o endereço SimpleX</string>
     <string name="color_secondary_variant">Secundária adicional</string>
     <string name="color_primary_variant">Acento adicional</string>
-    <string name="one_time_link_short">Link único</string>
+    <string name="one_time_link_short">Link de uso único</string>
     <string name="add_address_to_your_profile">Adicione o endereço ao seu perfil, para que seus contatos possam compartilhá-lo com outras pessoas. A atualização do perfil será enviada aos seus contatos.</string>
     <string name="create_address_and_let_people_connect">Crie um endereço para permitir que as pessoas se conectem com você.</string>
     <string name="create_simplex_address">Criar endereço SimpleX</string>
@@ -1184,8 +1184,78 @@
 \nVocê pode alterá-la nas Configurações.</string>
     <string name="your_contacts_will_remain_connected">Seus contatos continuarão conectados.</string>
     <string name="all_app_data_will_be_cleared">Todos os dados do aplicativo serão excluídos.</string>
-    <string name="app_passcode_replaced_with_self_destruct">A senha do aplicativo é substituída por uma senha de autodestruição.</string>
+    <string name="app_passcode_replaced_with_self_destruct">A senha do aplicativo é substituída por uma senha de auto-destruição.</string>
     <string name="self_destruct_new_display_name">Novo nome de exibição:</string>
     <string name="set_passcode">Definir senha</string>
-    <string name="enable_self_destruct">Ativar autodestruição</string>
+    <string name="enable_self_destruct">Ativar auto-destruição</string>
+    <string name="send_disappearing_message">Enviar mensagem temporária</string>
+    <string name="send_disappearing_message_1_minute">1 minuto</string>
+    <string name="send_disappearing_message_30_seconds">30 segundos</string>
+    <string name="send_disappearing_message_5_minutes">5 minutos</string>
+    <string name="send_disappearing_message_custom_time">Horário personalizado</string>
+    <string name="disappearing_message">Mensagem temporária</string>
+    <string name="send_disappearing_message_send">Enviar</string>
+    <string name="self_destruct_passcode_changed">A senha de auto-destruição foi alterada!</string>
+    <string name="self_destruct_passcode">Senha de auto-destruição</string>
+    <string name="self_destruct_passcode_enabled">Senha de auto-destruição ativada!</string>
+    <string name="enabled_self_destruct_passcode">Ativar senha de auto-destruição</string>
+    <string name="allow_message_reactions">Permitir reações à mensagens.</string>
+    <string name="only_you_can_add_message_reactions">Somente você pode adicionar reações à mensagens.</string>
+    <string name="only_your_contact_can_add_message_reactions">Somente seu contato pode adicionar reações à mensagens.</string>
+    <string name="message_reactions_are_prohibited">Reações à mensagens são proibidas neste grupo.</string>
+    <string name="custom_time_unit_hours">horas</string>
+    <string name="custom_time_unit_minutes">minutos</string>
+    <string name="custom_time_unit_seconds">segundos</string>
+    <string name="self_destruct">Auto-destruição</string>
+    <string name="error_loading_details">Erro ao carregar detalhes</string>
+    <string name="edit_history">Histórico</string>
+    <string name="info_menu">Info</string>
+    <string name="received_message">Mensagem recebida</string>
+    <string name="sent_message">Mensagem enviada</string>
+    <string name="empty_chat_profile_is_created">Um perfil chat vazio com o nome fornecido é criado, e o aplicativo é aberto normalmente.</string>
+    <string name="change_self_destruct_mode">Alterar o modo de auto-destruição</string>
+    <string name="if_you_enter_passcode_data_removed">Se você digitar essa senha ao abrir o aplicativo, todos os dados do aplicativo serão excluídos irreversivelmente!</string>
+    <string name="info_row_deleted_at">Excluído em</string>
+    <string name="info_row_received_at">Recebido em</string>
+    <string name="info_row_updated_at">Registro atualizado em</string>
+    <string name="share_text_database_id">ID do banco de dados: %d</string>
+    <string name="share_text_deleted_at">Excluído em: %s</string>
+    <string name="info_row_disappears_at">Desaparece em</string>
+    <string name="share_text_disappears_at">Desaparece em: %s</string>
+    <string name="info_row_moderated_at">Moderado em</string>
+    <string name="share_text_moderated_at">Moderado em: %s</string>
+    <string name="share_text_received_at">Recebido em: %s</string>
+    <string name="share_text_updated_at">Registro atualizado em: %s</string>
+    <string name="item_info_current">(atual)</string>
+    <string name="current_version_timestamp">%s (atual)</string>
+    <string name="allow_your_contacts_adding_message_reactions">Permitir que seus contatos adicionem reações à mensagens.</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Você e seu contato podem adicionar reações à mensagens.</string>
+    <string name="group_members_can_add_message_reactions">Os membros do grupo podem adicionar reações às mensagens.</string>
+    <string name="message_reactions_prohibited_in_this_chat">Reações à mensagens são proibidas neste chat.</string>
+    <string name="prohibit_message_reactions">Proibir reações à mensagens.</string>
+    <string name="custom_time_picker_custom">personalizado</string>
+    <string name="whats_new_read_more">Ler mais</string>
+    <string name="v5_1_self_destruct_passcode_descr">Todos seus dados são apagados quando digitado</string>
+    <string name="v5_1_message_reactions_descr">Finalmente, nós os temos! 🚀</string>
+    <string name="v5_1_message_reactions">Reações à mensagens</string>
+    <string name="v5_1_self_destruct_passcode">Senha de auto-destruição</string>
+    <string name="v5_1_better_messages">Mensagens melhores</string>
+    <string name="v5_1_japanese_portuguese_interface">IU em japonês e português</string>
+    <string name="custom_time_unit_months">meses</string>
+    <string name="custom_time_picker_select">Selecionar</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Obrigado aos usuários – contribua via Weblate!</string>
+    <string name="v5_1_better_messages_descr">- mensagens de voz de até 5 minutos
+\n- tempo personalizado para desaparecer.
+\n- histórico de edição.</string>
+    <string name="custom_time_unit_weeks">semanas</string>
+    <string name="allow_message_reactions_only_if">Permitir reações à mensagens somente se o seu contato permitir.</string>
+    <string name="v5_1_custom_themes_descr">Personalize e compartilhe temas de cores.</string>
+    <string name="v5_1_custom_themes">Temas personalizados</string>
+    <string name="custom_time_unit_days">dias</string>
+    <string name="message_reactions">Reações à mensagens</string>
+    <string name="prohibit_message_reactions_group">Proibir reações à mensagens.</string>
+    <string name="share_text_sent_at">Enviado em: %s</string>
+    <string name="info_row_sent_at">Enviado em</string>
+    <string name="change_self_destruct_passcode">Alterar senha de auto-destruição</string>
+    <string name="if_you_enter_self_destruct_code">Se você digitar sua senha de auto-destruição ao abrir o aplicativo:</string>
 </resources>

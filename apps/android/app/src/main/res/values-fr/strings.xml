@@ -388,7 +388,7 @@
     <string name="onboarding_notifications_mode_off">Quand l\'application fonctionne</string>
     <string name="onboarding_notifications_mode_periodic">Périodique</string>
     <string name="onboarding_notifications_mode_service">Instantanée</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Économie de batterie</b>. Vous recevrez des notifications uniquement lorsque l\'application est en cours d\'exécution, le service de fond ne sera PAS utilisé.</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Économie de batterie</b>. Vous recevrez des notifications uniquement lorsque l\'application est en cours d\'exécution (PAS de service d\'arrière-plan)</string>
     <string name="about_simplex_chat">À propos de <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="how_to_use_simplex_chat">Comment l\'utiliser</string>
     <string name="markdown_help">Aide Markdown</string>
@@ -462,8 +462,8 @@
     <string name="many_people_asked_how_can_it_deliver">Beaucoup se demandent : <i>si <xliff:g id="appName">SimpleX</xliff:g> n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.</string>
     <string name="read_more_in_github_with_link">Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. Le service de fond vérifie les nouveaux messages toutes les 10 minutes. Vous risquez de manquer des appels et des messages urgents.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'afficheront dès que les messages seront disponibles.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. Le service de fond vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'affichent dès que les messages sont disponibles.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> message⸱s manqué⸱s</string>
     <string name="integrity_msg_bad_id">ID de message incorrecte</string>
     <string name="settings_section_title_settings">PARAMÈTRES</string>
@@ -1226,4 +1226,39 @@
     <string name="custom_time_unit_days">jours</string>
     <string name="custom_time_unit_months">mois</string>
     <string name="only_your_contact_can_add_message_reactions">Seul votre contact peut ajouter des réactions aux messages.</string>
+    <string name="error_loading_details">Erreur de chargement des détails</string>
+    <string name="edit_history">Historique</string>
+    <string name="info_menu">Info</string>
+    <string name="received_message">Message reçu</string>
+    <string name="custom_time_picker_custom">personnalisé</string>
+    <string name="custom_time_picker_select">Choisir</string>
+    <string name="whats_new_read_more">En savoir plus</string>
+    <string name="v5_1_better_messages_descr">- messages vocaux pouvant durer jusqu\'à 5 minutes.
+\n- délai personnalisé de disparition.
+\n- l\'historique de modification.</string>
+    <string name="share_text_received_at">Reçu le : %s</string>
+    <string name="v5_1_better_messages">Meilleurs messages</string>
+    <string name="v5_1_custom_themes">Thèmes personnalisés</string>
+    <string name="v5_1_self_destruct_passcode_descr">Toutes les données sont effacées lorsqu\'il est saisi.</string>
+    <string name="v5_1_custom_themes_descr">Personnalisez et partagez des thèmes de couleurs.</string>
+    <string name="item_info_current">(actuel)</string>
+    <string name="info_row_deleted_at">Supprimé à</string>
+    <string name="info_row_received_at">Reçu le</string>
+    <string name="info_row_sent_at">Envoyé le</string>
+    <string name="share_text_database_id">ID de base de données : %d</string>
+    <string name="share_text_deleted_at">Supprimé à : %s</string>
+    <string name="share_text_disappears_at">Disparaît à : %s</string>
+    <string name="info_row_disappears_at">Disparaît à</string>
+    <string name="v5_1_japanese_portuguese_interface">Interface en japonais et en portugais</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Merci aux utilisateurs - contribuez via Weblate !</string>
+    <string name="v5_1_message_reactions_descr">Enfin, les voilà ! 🚀</string>
+    <string name="info_row_moderated_at">Modéré à</string>
+    <string name="share_text_updated_at">Enregistrement mis à jour le : %s</string>
+    <string name="v5_1_message_reactions">Réactions aux messages</string>
+    <string name="share_text_moderated_at">Modéré à : %s</string>
+    <string name="info_row_updated_at">Enregistrement mis à jour le</string>
+    <string name="current_version_timestamp">%s (actuel)</string>
+    <string name="v5_1_self_destruct_passcode">Code d\'autodestruction</string>
+    <string name="share_text_sent_at">Envoyé le : %s</string>
+    <string name="sent_message">Message envoyé</string>
 </resources>

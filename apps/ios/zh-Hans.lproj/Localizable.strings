@@ -336,7 +336,7 @@
 "Already connected?" = "已连接？";
 
 /* pref value */
-"always" = "一直";
+"always" = "始终";
 
 /* No comment provided by engineer. */
 "Always use relay" = "一直使用中继";
@@ -2827,7 +2827,7 @@
 "Welcome %@!" = "欢迎%@！";
 
 /* No comment provided by engineer. */
-"Welcome message" = "欢迎信息";
+"Welcome message" = "欢迎消息";
 
 /* No comment provided by engineer. */
 "What's new" = "更新内容";

@@ -20,6 +20,9 @@
 "_italic_" = "\\_italique_";
 
 /* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- messages vocaux pouvant durer jusqu'à 5 minutes.\n- délai personnalisé de disparition.\n- l'historique de modification.";
+
+/* No comment provided by engineer. */
 ", " = ", ";
 
 /* No comment provided by engineer. */
@@ -87,6 +90,12 @@
 
 /* No comment provided by engineer. */
 "%@" = "%@";
+
+/* No comment provided by engineer. */
+"%@ (current)" = "%@ (actuel)";
+
+/* copied message info */
+"%@ (current):" = "%@ (actuel) :";
 
 /* No comment provided by engineer. */
 "%@ / %@" = "%@ / %@";
@@ -309,6 +318,9 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Toutes les discussions et tous les messages seront supprimés - il est impossible de revenir en arrière !";
 
 /* No comment provided by engineer. */
+"All data is erased when it is entered." = "Toutes les données sont effacées lorsqu'il est saisi.";
+
+/* No comment provided by engineer. */
 "All group members will remain connected." = "Tous les membres du groupe resteront connectés.";
 
 /* No comment provided by engineer. */
@@ -460,6 +472,9 @@
 
 /* No comment provided by engineer. */
 "Bad message ID" = "Mauvais ID de message";
+
+/* No comment provided by engineer. */
+"Better messages" = "Meilleurs messages";
 
 /* No comment provided by engineer. */
 "bold" = "gras";
@@ -810,6 +825,9 @@
 /* No comment provided by engineer. */
 "Currently maximum supported file size is %@." = "Actuellement, la taille maximale des fichiers supportés est de %@.";
 
+/* dropdown time picker choice */
+"custom" = "personnalisé";
+
 /* No comment provided by engineer. */
 "Custom time" = "Délai personnalisé";
 
@@ -993,6 +1011,12 @@
 /* deleted chat item */
 "deleted" = "supprimé";
 
+/* No comment provided by engineer. */
+"Deleted at" = "Supprimé à";
+
+/* copied message info */
+"Deleted at: %@" = "Supprimé à : %@";
+
 /* rcv group event chat item */
 "deleted group" = "groupe supprimé";
 
@@ -1044,6 +1068,12 @@
 /* No comment provided by engineer. */
 "Disappearing messages are prohibited in this group." = "Les messages éphémères sont interdits dans ce groupe.";
 
+/* No comment provided by engineer. */
+"Disappears at" = "Disparaît à";
+
+/* copied message info */
+"Disappears at: %@" = "Disparaît à : %@";
+
 /* server test step */
 "Disconnect" = "Se déconnecter";
 
@@ -1076,6 +1106,9 @@
 
 /* integrity error chat item */
 "duplicate message" = "message dupliqué";
+
+/* No comment provided by engineer. */
+"Duration" = "Durée";
 
 /* No comment provided by engineer. */
 "e2e encrypted" = "chiffré de bout en bout";
@@ -1357,6 +1390,9 @@
 "Files & media" = "Fichiers & médias";
 
 /* No comment provided by engineer. */
+"Finally, we have them! 🚀" = "Enfin, les voilà ! 🚀";
+
+/* No comment provided by engineer. */
 "For console" = "Pour la console";
 
 /* No comment provided by engineer. */
@@ -1476,6 +1512,9 @@
 /* No comment provided by engineer. */
 "Hide:" = "Cacher :";
 
+/* copied message info */
+"History" = "Historique";
+
 /* time unit */
 "hours" = "heures";
 
@@ -1584,6 +1623,9 @@
 /* connection level description */
 "indirect (%d)" = "indirect (%d)";
 
+/* chat item action */
+"Info" = "Info";
+
 /* No comment provided by engineer. */
 "Initial role" = "Rôle initial";
 
@@ -1673,6 +1715,9 @@
 
 /* No comment provided by engineer. */
 "italic" = "italique";
+
+/* No comment provided by engineer. */
+"Japanese interface" = "Interface en japonais";
 
 /* No comment provided by engineer. */
 "Join" = "Rejoindre";
@@ -1849,6 +1894,12 @@
 "moderated" = "modéré";
 
 /* No comment provided by engineer. */
+"Moderated at" = "Modéré à";
+
+/* copied message info */
+"Moderated at: %@" = "Modéré à : %@";
+
+/* No comment provided by engineer. */
 "moderated by %@" = "modéré par %@";
 
 /* time unit */
@@ -1892,6 +1943,9 @@
 
 /* No comment provided by engineer. */
 "New database archive" = "Nouvelle archive de base de données";
+
+/* No comment provided by engineer. */
+"New display name" = "Nouveau nom d'affichage";
 
 /* No comment provided by engineer. */
 "New in %@" = "Nouveautés de la %@";
@@ -2218,8 +2272,14 @@
 /* No comment provided by engineer. */
 "Rate the app" = "Évaluer l'app";
 
+/* chat item menu */
+"React..." = "Réagir...";
+
 /* No comment provided by engineer. */
 "Read" = "Lire";
+
+/* No comment provided by engineer. */
+"Read more" = "En savoir plus";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Pour en savoir plus, consultez le [Guide de l'utilisateur](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
@@ -2237,10 +2297,19 @@
 "received answer…" = "réponse reçu…";
 
 /* No comment provided by engineer. */
+"Received at" = "Reçu le";
+
+/* copied message info */
+"Received at: %@" = "Reçu le : %@";
+
+/* No comment provided by engineer. */
 "received confirmation…" = "confimation reçu…";
 
 /* notification */
 "Received file event" = "Événement de fichier reçu";
+
+/* message info title */
+"Received message" = "Message reçu";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "La réception du fichier sera interrompue.";
@@ -2250,6 +2319,12 @@
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Les destinataires voient les mises à jour au fur et à mesure que vous les tapez.";
+
+/* No comment provided by engineer. */
+"Record updated at" = "Enregistrement mis à jour le";
+
+/* copied message info */
+"Record updated at: %@" = "Enregistrement mis à jour le : %@";
 
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Réduction de la consommation de batterie";
@@ -2432,6 +2507,9 @@
 "Security code" = "Code de sécurité";
 
 /* No comment provided by engineer. */
+"Select" = "Choisir";
+
+/* No comment provided by engineer. */
 "Self-destruct" = "Autodestruction";
 
 /* No comment provided by engineer. */
@@ -2484,6 +2562,12 @@
 
 /* No comment provided by engineer. */
 "Sending via" = "Envoi via";
+
+/* No comment provided by engineer. */
+"Sent at" = "Envoyé le";
+
+/* copied message info */
+"Sent at: %@" = "Envoyé le : %@";
 
 /* notification */
 "Sent file event" = "Événement de fichier envoyé";
@@ -2871,6 +2955,9 @@
 
 /* No comment provided by engineer. */
 "Unhide profile" = "Dévoiler le profil";
+
+/* No comment provided by engineer. */
+"Unit" = "Unité";
 
 /* connection info */
 "unknown" = "inconnu";

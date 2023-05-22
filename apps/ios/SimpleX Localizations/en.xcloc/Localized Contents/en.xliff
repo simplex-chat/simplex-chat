@@ -2908,11 +2908,6 @@
         <target>Group not found!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No message details" xml:space="preserve">
-        <source>No message details</source>
-        <target>No message details</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
         <source>No permission to record voice message</source>
         <target>No permission to record voice message</target>
@@ -5500,6 +5495,11 @@ SimpleX servers cannot see your profile.</target>
         <source>no e2e encryption</source>
         <target>no e2e encryption</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="no text" xml:space="preserve">
+        <source>no text</source>
+        <target>no text</target>
+        <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
         <source>observer</source>

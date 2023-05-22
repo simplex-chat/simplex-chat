@@ -77,7 +77,7 @@
     <string name="notifications_mode_service_desc">バックグラウンド機能が常にオンで、メッセージが到着次第に通知が出ます。</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>新しい連絡先を追加</b>：使い捨てのQRコードを発行</string>
     <string name="turning_off_service_and_periodic">電池省エネをオンに、バックグラウンド機能と定期的な受信依頼をオフにします。設定メニューにて変更できます。</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>電池消費が最少</b>：アプリがアクティブ時のみに通知が出ます。</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>電池消費が最少</b>：アプリがアクティブ時のみに通知が出ます（バックグラウンドサービス無し）。</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>設定メニューにてオフにできます。</b> アプリがアクティブ時に通知が出ます。</string>
     <string name="both_you_and_your_contacts_can_delete">あなたと連絡相手が送信済みメッセージを永久削除できます。</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QRコードを読み込み</b>：連絡相手のQRコードをスキャンすると繋がります。</string>
@@ -995,7 +995,7 @@
     <string name="database_upgrade">データベースアップグレード</string>
     <string name="audio_video_calls">音声/ビデオ通話</string>
     <string name="calls_prohibited_with_this_contact">音声/ビデオ通話は禁止されています。</string>
-    <string name="feature_received_prohibited">受け取った、禁止された</string>
+    <string name="feature_received_prohibited">禁帯出</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTPサーバーのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
     <string name="smp_server_test_delete_file">ファイルの削除</string>
     <string name="icon_descr_waiting_for_video">ビデオ待機中</string>
@@ -1006,7 +1006,7 @@
     <string name="opening_database">データベースを開いています…</string>
     <string name="observer_cant_send_message_title">メッセージを送信できませんでした！</string>
     <string name="gallery_video_button">ビデオ</string>
-    <string name="above_then_preposition_continuation">上記の場合、次のようになります:</string>
+    <string name="above_then_preposition_continuation">← から：</string>
     <string name="network_socks_proxy_settings">SOCKSプロキシー設定</string>
     <string name="your_XFTP_servers">あなたのXFTPサーバ</string>
     <string name="add_address_to_your_profile">プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。</string>
@@ -1034,7 +1034,7 @@
     <string name="allow_your_contacts_to_call">連絡先からの通話を許可する。</string>
     <string name="allow_calls_only_if">連絡先が通話を許可している場合のみ通話を許可する。</string>
     <string name="available_in_v51">"
-\nv5.1で利用可能予定"</string>
+\nv5.1 で利用可能"</string>
     <string name="only_your_contact_can_make_calls">連絡先からのみ通話ができます。</string>
     <string name="both_you_and_your_contact_can_make_calls">あなたからも連絡先からも通話ができます。</string>
     <string name="language_system">システム</string>
@@ -1133,10 +1133,10 @@
     <string name="should_be_at_least_one_visible_profile">少なくとも1つのユーザープロフィールが表示されている必要があります。</string>
     <string name="should_be_at_least_one_profile">少なくとも1つのユーザープロファイルが必要です。</string>
     <string name="make_profile_private">プロフィールを非表示にできます！</string>
-    <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話している間は監視できます。</string>
+    <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話時間は監視されます。</string>
     <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか\?</string>
     <string name="icon_descr_call_pending_sent">保留中の通話</string>
-    <string name="invalid_migration_confirmation">無効な移行の確認</string>
+    <string name="invalid_migration_confirmation">データ移行の確認が正しくない</string>
     <string name="feature_offered_item">%s を提供しました</string>
     <string name="callstate_received_confirmation">確認を受け取りました…</string>
     <string name="feature_offered_item_with_param">提供された %s: %2s</string>
@@ -1248,4 +1248,17 @@
     <string name="group_members_can_add_message_reactions">グループメンバーはメッセージへのリアクションを追加できます。</string>
     <string name="message_reactions_are_prohibited">このグループではメッセージへのリアクションは禁止されています。</string>
     <string name="info_row_updated_at">レコード更新日時</string>
+    <string name="v5_1_message_reactions">メッセージへのリアクション</string>
+    <string name="v5_1_self_destruct_passcode">自己破壊パスコード</string>
+    <string name="v5_1_custom_themes">カスタムテーマ</string>
+    <string name="v5_1_japanese_portuguese_interface">日本語とポルトガル語UI</string>
+    <string name="v5_1_better_messages_descr">- 最長 5 分間の音声メッセージ。
+\n- 消えるまでのカスタム時間。
+\n- 編集履歴。</string>
+    <string name="whats_new_read_more">続きを読む</string>
+    <string name="v5_1_self_destruct_passcode_descr">入力するとすべてのデータが消去されます。</string>
+    <string name="v5_1_custom_themes_descr">カラーテーマをカスタマイズして共有することができます。</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
+    <string name="v5_1_message_reactions_descr">ついに、私たちはそれらを手に入れました! 🚀</string>
+    <string name="v5_1_better_messages">より良いメッセージ</string>
 </resources>
