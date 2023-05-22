@@ -68,6 +68,7 @@ jobs:
         with:
           minimum-size: 16GB
           maximum-size: 16GB
+          disk-root: "C:"
 
       - name: Clone project
         uses: actions/checkout@v2
