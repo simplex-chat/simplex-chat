@@ -965,7 +965,7 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">O contato com o qual você compartilhou este link NÃO será capaz de se conectar!</string>
     <string name="icon_descr_simplex_team">Equipe <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="use_simplex_chat_servers__question">Usar servidores<xliff:g id="appNameFull">SimpleX</xliff:g>\?</string>
-    <string name="using_simplex_chat_servers">Usando servidores<xliff:g id="appNameFull"> SimpleX</xliff:g>.</string>
+    <string name="using_simplex_chat_servers">Usando servidores <xliff:g id="appNameFull">SimpleX</xliff:g>.</string>
     <string name="show_developer_options">Mostrar opções para desenvolvedores</string>
     <string name="v4_6_audio_video_calls_descr">Suporte bluetooth e outras melhorias.</string>
     <string name="to_reveal_profile_enter_password">Para revelar seu perfil oculto, digite uma senha em um campo de busca em sua página de perfis de chat.</string>
