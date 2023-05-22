@@ -5496,8 +5496,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>sans chiffrement de bout en bout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no text" xml:space="preserve">
+      <trans-unit id="no text" xml:space="preserve" approved="no">
         <source>no text</source>
+        <target state="translated">aucun texte</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
