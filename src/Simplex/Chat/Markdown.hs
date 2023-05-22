@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -17,10 +18,11 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.List (intercalate)
+import Data.List (foldl', intercalate, minimumBy)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isNothing)
+import Data.Ord (comparing)
 import Data.Semigroup (sconcat)
 import Data.String
 import Data.Text (Text)
@@ -105,12 +107,18 @@ data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
   deriving (Eq, Show, Generic)
 
 instance ToJSON FormattedText where
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding $ sumTypeJSON id
 
 instance IsString FormattedText where
   fromString = FormattedText Nothing . T.pack
 
 type MarkdownList = [FormattedText]
+
+data EditedText =  EditedText {format :: Maybe Format, text :: Text, added :: Maybe Bool}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON EditedText where
+  toEncoding = J.genericToEncoding $ sumTypeJSON id
 
 data ParsedMarkdown = ParsedMarkdown {formattedText :: Maybe MarkdownList}
   deriving (Generic)
@@ -125,7 +133,7 @@ unmarked = Markdown Nothing
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
 parseMaybeMarkdownList s =
   let m = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
-   in if all (isNothing . format) m then Nothing else Just m
+   in if all (isNothing . (format :: FormattedText -> Maybe Format)) m then Nothing else Just m
 
 parseMarkdownList :: Text -> MarkdownList
 parseMarkdownList = markdownToList . parseMarkdown
@@ -234,3 +242,60 @@ markdownP = mconcat <$> A.many' fragmentP
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
+
+data EditedChar = EditedChar {format :: Maybe Format, char :: Char, operation :: Maybe EditingOperation}
+  deriving (Show, Eq)
+
+data EditingOperation = EOAdd | EODelete | EOSubstitute
+  deriving (Show, Eq)
+
+type EditedString  = [EditedChar]
+
+formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
+formattedEditedText s s' = wagnerFisher (toEditedChars s) (toEditedChars s')
+
+toEditedChars :: [FormattedText] -> [EditedChar]
+toEditedChars = concatMap toChars
+  where
+    toChars FormattedText {format, text} =
+      map (\char -> EditedChar {format, char, operation = Nothing}) $ T.unpack $ text
+
+-- fromEditedChars :: [EditedChar] -> [EditedText]
+-- fromEditedChars = reverse . foldl' addChar []
+--   where
+--     addChar :: [EditedText] -> EditedChar -> [EditedText]
+--     addChar [] c = [toText c]
+--     addChar ts@(t : rest) c
+--       | sameFormat t c = appendChar t c : rest
+--       | otherwise = toText c : ts
+--     toText :: EditedChar -> EditedText
+--     toText EditedChar {format, char, added} = EditedText {format, text = T.singleton char, added}
+--     sameFormat :: EditedText -> EditedChar -> Bool
+--     sameFormat EditedText {format, added} EditedChar {format = format', added = added'} = format == format' && added == added'
+--     appendChar :: EditedText -> EditedChar -> EditedText
+--     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
+
+wagnerFisher :: [EditedChar] -> [EditedChar] -> EditedString
+wagnerFisher s1 s2 = extractEdits $ foldl' computeRow initialRow s2
+  where
+    computeRow :: ([(Int, EditedString)], [(Int, EditedString)]) -> EditedChar -> ([(Int, EditedString)], [(Int, EditedString)])
+    computeRow (prevRow, currRow) c2 = (currRow, computeNewRow prevRow currRow c2)
+
+    computeNewRow :: [(Int, EditedString)] -> [(Int, EditedString)] -> EditedChar -> [(Int, EditedString)]
+    computeNewRow prevRow currRow c2 = foldl' (computeCell c2 prevRow) [(head currRow)] (zip3 s1 prevRow (tail currRow))
+
+    computeCell :: EditedChar -> [(Int, EditedString)] -> [(Int, EditedString)] -> (EditedChar, (Int, EditedString), (Int, EditedString)) -> [(Int, EditedString)]
+    computeCell c2 prevRow newRow (c1, (diagScore, _), (leftScore, _)) = newRow ++ [minimumBy (comparing fst) 
+            [ (diagScore + if char c1 == char c2 then 0 else 1, if char c1 == char c2 then snd (prevRow !! (length newRow)) ++ [EditedChar (format' c1) (char c1) Nothing] else snd (prevRow !! (length newRow)) ++ [EditedChar (format' c1) (char c1) (Just EOSubstitute), EditedChar (format' c2) (char c2) (Just EOSubstitute)])
+            , (leftScore + 1, snd (prevRow !! (length newRow)) ++ [EditedChar (format' c2) (char c2) (Just EOAdd)])
+            , (fst (prevRow !! (length newRow)) + 1, snd (newRow !! (length prevRow)) ++ [EditedChar (format' c1) (char c1) (Just EODelete)])
+            ]]
+
+    initialRow :: ([(Int, EditedString)], [(Int, EditedString)])
+    initialRow = ([(0, [])] ++ zipWith (\i c -> (i + 1, [EditedChar (format' c) (char c) (Just EODelete)])) [1..] s1, 
+                  [(0, [])] ++ zipWith (\i c -> (i + 1, [EditedChar (format' c) (char c) (Just EOAdd)])) [1..] s2)
+
+    extractEdits :: ([(Int, EditedString)], [(Int, EditedString)]) -> EditedString
+    extractEdits = snd . last . snd
+
+    format' = format :: EditedChar -> Maybe Format

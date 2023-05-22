@@ -20,6 +20,7 @@ markdownTests = do
   textWithEmail
   textWithPhone
   multilineMarkdownList
+  formattedEditedTextTests
 
 textFormat :: Spec
 textFormat = describe "text format (bold)" do
@@ -206,3 +207,22 @@ multilineMarkdownList = describe "multiline markdown" do
     parseMaybeMarkdownList "http://simplex.chat\nhttp://app.simplex.chat" `shouldBe` Just [uri' "http://simplex.chat", "\n", uri' "http://app.simplex.chat"]
   it "no markdown" do
     parseMaybeMarkdownList "not a\nmarkdown" `shouldBe` Nothing
+
+plainText :: Text -> FormattedText
+plainText = FormattedText Nothing
+
+redText :: Text -> FormattedText
+redText = FormattedText $ Just $ colored Red
+
+plainEdited :: Text -> Bool -> EditedText
+plainEdited t added = EditedText Nothing t (Just added)
+
+redEdited :: Text -> Bool -> EditedText
+redEdited t added = EditedText (Just $ colored Red) t (Just added)
+
+formattedEditedTextTests :: Spec
+formattedEditedTextTests = fdescribe "show edits using Wagner-Fisher algorithm" do
+  it "one character change" do
+    formattedEditedText [plainText "Hrllo"] [plainText "Hello"]
+      `shouldBe` []
+      -- `shouldBe` [plainText "H", plainEdited "r" False, plainEdited "e" True, plainText "llo"]
