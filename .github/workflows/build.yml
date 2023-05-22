@@ -67,6 +67,7 @@ jobs:
         uses: al-cheb/configure-pagefile-action@v1.3
         with:
           minimum-size: 16GB
+          maximum-size: 16GB
 
       - name: Clone project
         uses: actions/checkout@v2
