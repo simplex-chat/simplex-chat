@@ -2235,9 +2235,9 @@
         <target>Perfiles Chat ocultos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hidden profile password" xml:space="preserve">
+      <trans-unit id="Hidden profile password" xml:space="preserve" approved="no">
         <source>Hidden profile password</source>
-        <target>Contraseña de perfil oculto</target>
+        <target state="translated">Contraseña del perfil oculto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hide" xml:space="preserve" approved="no">
@@ -4351,9 +4351,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Para grabar el mensaje de voz concede permiso para usar el micrófono.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
+      <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve" approved="no">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
-        <target>Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página **Tus perfiles Chat**.</target>
+        <target state="translated">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página **Mis perfiles**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
