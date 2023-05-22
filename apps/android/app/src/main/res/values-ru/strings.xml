@@ -1215,7 +1215,7 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">И Вы, и Ваш контакт можете добавлять реакции на сообщения.</string>
     <string name="one_time_link_short">Одноразовая ссылка</string>
     <string name="simplex_address">Адрес SimpleX</string>
-    <string name="you_can_accept_or_reject_connection">Когда Вы получите запрос на подключение, Вы можете принять или отклонить его.</string>
+    <string name="you_can_accept_or_reject_connection">Когда Вы получите запрос на соединение, Вы можете принять или отклонить его.</string>
     <string name="enabled_self_destruct_passcode">Включить код самоуничтожения</string>
     <string name="all_app_data_will_be_cleared">Все данные приложения будут удалены.</string>
     <string name="if_you_enter_self_destruct_code">Если Вы введёте код самоуничтожения при открытии приложения:</string>
@@ -1238,12 +1238,12 @@
     <string name="self_destruct">Самоуничтожение</string>
     <string name="self_destruct_passcode_enabled">Код самоуничтожения включен!</string>
     <string name="app_passcode_replaced_with_self_destruct">Код доступа в приложение будет заменен кодом самоуничтожения.</string>
-    <string name="enable_self_destruct">Включить самоуничтожение</string>
+    <string name="enable_self_destruct">Включить код самоуничтожения</string>
     <string name="self_destruct_passcode">Код самоуничтожения</string>
     <string name="self_destruct_passcode_changed">Код самоуничтожения изменен!</string>
     <string name="empty_chat_profile_is_created">Будет создан пустой профиль чата с указанным именем, и приложение откроется в обычном режиме.</string>
     <string name="if_you_enter_passcode_data_removed">Если Вы введете этот код при открытии приложения, все данные приложения будут безвозвратно удалены!</string>
-    <string name="item_info_current">(текущий)</string>
+    <string name="item_info_current">(текущее)</string>
     <string name="share_text_database_id">ID базы данных: %d</string>
     <string name="info_row_moderated_at">Модерировано</string>
     <string name="share_text_moderated_at">Модерировано: %s</string>
@@ -1270,14 +1270,14 @@
     <string name="learn_more_about_address">Об адресе SimpleX</string>
     <string name="learn_more">Узнать больше</string>
     <string name="if_you_cant_meet_in_person">Если Вы не можете встретиться лично, покажите QR-код во время видеозвонка или поделитесь ссылкой.</string>
-    <string name="scan_qr_to_connect_to_contact">Чтобы подключиться, Ваш контакт может отсканировать QR-код или использовать ссылку в приложении.</string>
+    <string name="scan_qr_to_connect_to_contact">Чтобы соединиться с Вами, Ваш контакт может отсканировать QR-код или использовать ссылку в приложении.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Вы не потеряете контакты, если позже удалите Ваш адрес.</string>
     <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода - любой может соединиться с Вами.</string>
     <string name="read_more_in_user_guide_with_link">Узнать больше в <font color="#0088ff">Руководстве пользователя</font>.</string>
-    <string name="your_contacts_will_remain_connected">Ваши контакты сохраняться.</string>
+    <string name="your_contacts_will_remain_connected">Ваши контакты сохранятся.</string>
     <string name="customize_theme_title">Настроить тему</string>
     <string name="create_address_and_let_people_connect">Создайте адрес, чтобы можно было соединиться с вами.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">Все Ваши контакты сохраняться. Обновленный профиль будет отправлен Вашим контактам.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Все Ваши контакты сохранятся. Обновленный профиль будет отправлен Вашим контактам.</string>
     <string name="add_address_to_your_profile">Добавьте адрес в свой профиль, чтобы Ваши контакты могли поделиться им. Профиль будет отправлен Вашим контактам.</string>
     <string name="create_simplex_address">Создать адрес SimpleX</string>
     <string name="share_with_contacts">Поделиться с контактами</string>
