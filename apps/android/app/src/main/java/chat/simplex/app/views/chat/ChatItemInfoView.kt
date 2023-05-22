@@ -37,8 +37,8 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
 
   @Composable
   fun ItemVersionView(ciVersion: ChatItemVersion, current: Boolean) {
-    val text = ciVersion.msgContent.text
     val showMenu = remember { mutableStateOf(false) }
+    val text = ciVersion.msgContent.text
 
     @Composable
     fun VersionText() {
