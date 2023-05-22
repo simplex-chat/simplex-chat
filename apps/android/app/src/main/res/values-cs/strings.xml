@@ -1238,8 +1238,7 @@
     <string name="allow_message_reactions_only_if">Povolit reakce na zprávy, pokud je váš kontakt povolí.</string>
     <string name="create_simplex_address">Vytvořit SimpleX adresu</string>
     <string name="continue_to_next_step">Pokračovat</string>
-    <string name="enter_welcome_message_optional">Zadat uvítací zprávu...
-\n(volitelně)</string>
+    <string name="enter_welcome_message_optional">Zadat uvítací zprávu... (volitelně)</string>
     <string name="if_you_cant_meet_in_person">Pokud se nemůžete setkat osobně, zobrazte QR kód ve videohovoru nebo sdílejte odkaz.</string>
     <string name="change_self_destruct_mode">Změnit režim sebedestrukce</string>
     <string name="change_self_destruct_passcode">Změnit sebedestrukční heslo</string>
@@ -1258,7 +1257,6 @@
     <string name="your_contacts_will_remain_connected">Vaše kontakty zůstanou připojeny.</string>
     <string name="you_can_share_this_address_with_your_contacts">Tuto adresu můžete sdílet se svými kontakty, aby se mohli připojit k %s.</string>
     <string name="your_contacts_will_see_it">Vaše kontakty v SimpleX ji uvidí.
-\n
 \nMůžete ji změnit v Nastavení.</string>
     <string name="you_can_share_your_address">Svou adresu můžete sdílet jako odkaz nebo QR kód - kdokoli se k vám může připojit.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Pokud později adresu odstraníte, o kontakty nepřijdete.</string>
