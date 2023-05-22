@@ -123,7 +123,7 @@ struct ChatItemInfoView: View {
         if itemVersion.msgContent.text != "" {
             messageText(itemVersion.msgContent.text, itemVersion.formattedText, nil)
         } else {
-            Text("[no text]")
+            Text("no text")
                 .italic()
                 .foregroundColor(.secondary)
         }
@@ -160,6 +160,7 @@ struct ChatItemInfoView: View {
            !chatItemInfo.itemVersions.isEmpty {
             shareText += ["", NSLocalizedString("History", comment: "copied message info")]
             for (index, itemVersion) in chatItemInfo.itemVersions.enumerated() {
+                let t = itemVersion.msgContent.text
                 shareText += [
                     "",
                     String.localizedStringWithFormat(
@@ -168,7 +169,7 @@ struct ChatItemInfoView: View {
                         : NSLocalizedString("%@:", comment: "copied message info"),
                         localTimestamp(itemVersion.itemVersionTs)
                     ),
-                    itemVersion.msgContent.text != "" ? itemVersion.msgContent.text : NSLocalizedString("[no text]", comment: "copied message info")
+                    t != "" ? t : NSLocalizedString("no text", comment: "copied message info in history")
                 ]
             }
         }
