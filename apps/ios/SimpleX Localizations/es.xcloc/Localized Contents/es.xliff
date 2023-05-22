@@ -641,9 +641,9 @@
         <target>Icono aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode" xml:space="preserve">
+      <trans-unit id="App passcode" xml:space="preserve" approved="no">
         <source>App passcode</source>
-        <target>Código de acceso a la aplicación</target>
+        <target state="translated">Código de acceso de la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
@@ -836,9 +836,9 @@
         <target>¿Cambiar el rol del miembro?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change passcode" xml:space="preserve">
+      <trans-unit id="Change passcode" xml:space="preserve" approved="no">
         <source>Change passcode</source>
-        <target>Cambiar el código de acceso</target>
+        <target state="translated">Cambiar código de acceso</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
@@ -861,9 +861,9 @@
         <target>Cambiar el modo de autodestrucción</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
         <source>Change self-destruct passcode</source>
-        <target>Cambiar código de autodestrucción</target>
+        <target state="translated">Cambiar código autodestrucción</target>
         <note>authentication reason
    set passcode view</note>
       </trans-unit>
@@ -977,9 +977,9 @@
         <target>Confirmar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm Passcode" xml:space="preserve">
+      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
         <source>Confirm Passcode</source>
-        <target>Confirmar el código de acceso</target>
+        <target state="translated">Confirma Código</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
@@ -1182,9 +1182,9 @@
         <target>Creado en %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current Passcode" xml:space="preserve">
+      <trans-unit id="Current Passcode" xml:space="preserve" approved="no">
         <source>Current Passcode</source>
-        <target>Código de acceso actual</target>
+        <target state="translated">Código de Acceso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current passphrase…" xml:space="preserve">
@@ -1740,9 +1740,9 @@
         <target>Mensaje cifrado: error inesperado</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Enter Passcode" xml:space="preserve">
+      <trans-unit id="Enter Passcode" xml:space="preserve" approved="no">
         <source>Enter Passcode</source>
-        <target>Introducir código de acceso</target>
+        <target state="translated">Introduce Código</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">
@@ -2833,9 +2833,9 @@
         <target>Estado de la red</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New Passcode" xml:space="preserve">
+      <trans-unit id="New Passcode" xml:space="preserve" approved="no">
         <source>New Passcode</source>
-        <target>Código de acceso nuevo</target>
+        <target state="translated">Código Nuevo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -3857,9 +3857,9 @@
         <target>Úsalo en lugar de la autenticación del sistema.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passcode" xml:space="preserve">
+      <trans-unit id="Set passcode" xml:space="preserve" approved="no">
         <source>Set passcode</source>
-        <target>Introduce el código de acceso</target>
+        <target state="translated">Código autodestrucción</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -5020,9 +5020,9 @@ Puedes cambiarlo en Configuración.</target>
         <target>Tu perfil actual</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your preferences" xml:space="preserve">
+      <trans-unit id="Your preferences" xml:space="preserve" approved="no">
         <source>Your preferences</source>
-        <target>Tus preferencias</target>
+        <target state="translated">Mis preferencias</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your privacy" xml:space="preserve">
