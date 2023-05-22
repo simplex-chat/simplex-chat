@@ -58,7 +58,7 @@ struct GroupWelcomeView: View {
                 .allowsHitTesting(false)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: 140, alignment: .topLeading)
+        .frame(alignment: .topLeading)
     }
 
     private func editorView() -> some View {

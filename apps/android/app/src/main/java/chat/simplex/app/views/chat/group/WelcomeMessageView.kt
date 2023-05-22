@@ -114,14 +114,8 @@ private fun GroupWelcomeLayout(
 
 @Composable
 private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boolean = true) {
-  Column(
-    Modifier.height(140.dp)
-  ) {
-    SelectionContainer(
-      Modifier
-        .verticalScroll(rememberScrollState())
-        .fillMaxWidth()
-    ) {
+  Column {
+    SelectionContainer(Modifier.fillMaxWidth()) {
       MarkdownText(
         text,
         formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
