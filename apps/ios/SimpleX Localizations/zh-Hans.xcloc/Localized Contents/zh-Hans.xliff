@@ -3362,8 +3362,9 @@
         <target state="translated">在 [用户指南](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address) 中阅读更多内容。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve" approved="no">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
+        <target state="translated">在 [用户指南](https://simplex.chat/docs/guide/readme.html#connect-to-friends) 中阅读更多内容。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
@@ -3376,12 +3377,14 @@
         <target>在我们的 [GitHub 仓库](https://github.com/simplex-chat/simplex-chat#readme) 中阅读更多信息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at" xml:space="preserve">
+      <trans-unit id="Received at" xml:space="preserve" approved="no">
         <source>Received at</source>
+        <target state="translated">已收到于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at: %@" xml:space="preserve">
+      <trans-unit id="Received at: %@" xml:space="preserve" approved="no">
         <source>Received at: %@</source>
+        <target state="translated">已收到于：%@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
@@ -3389,8 +3392,9 @@
         <target>收到文件项目</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Received message" xml:space="preserve">
+      <trans-unit id="Received message" xml:space="preserve" approved="no">
         <source>Received message</source>
+        <target state="translated">收到的信息</target>
         <note>message info title</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -3408,12 +3412,14 @@
         <target>对方会在您键入时看到更新。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at" xml:space="preserve">
+      <trans-unit id="Record updated at" xml:space="preserve" approved="no">
         <source>Record updated at</source>
+        <target state="translated">记录更新于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at: %@" xml:space="preserve">
+      <trans-unit id="Record updated at: %@" xml:space="preserve" approved="no">
         <source>Record updated at: %@</source>
+        <target state="translated">记录更新于：%@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
@@ -3591,8 +3597,9 @@
         <target>保存存档</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save auto-accept settings" xml:space="preserve">
+      <trans-unit id="Save auto-accept settings" xml:space="preserve" approved="no">
         <source>Save auto-accept settings</source>
+        <target state="translated">保存自动接受设置</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
@@ -3630,8 +3637,9 @@
         <target>保存服务器？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save settings?" xml:space="preserve">
+      <trans-unit id="Save settings?" xml:space="preserve" approved="no">
         <source>Save settings?</source>
+        <target state="translated">保存设置？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save welcome message?" xml:space="preserve">
