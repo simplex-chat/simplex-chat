@@ -57,12 +57,14 @@
         <target>%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ (current)" xml:space="preserve">
+      <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
         <source>%@ (current)</source>
+        <target state="translated">%@ (attuale)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ (current):" xml:space="preserve">
+      <trans-unit id="%@ (current):" xml:space="preserve" approved="no">
         <source>%@ (current):</source>
+        <target state="translated">%@ (attuale):</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%@ / %@" xml:space="preserve">
@@ -295,10 +297,13 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
+        <target state="translated">- messaggi vocali fino a 5 minuti.
+- tempo di scomparsa personalizzato.
+- cronologia delle modifiche.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="." xml:space="preserve">
@@ -496,8 +501,9 @@
         <target>Tutte le chat e i messaggi verranno eliminati. Non è reversibile!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is erased when it is entered." xml:space="preserve">
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
         <source>All data is erased when it is entered.</source>
+        <target state="translated">Tutti i dati vengono cancellati quando inserito.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -735,8 +741,9 @@
         <target>Hash del messaggio errato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better messages" xml:space="preserve">
+      <trans-unit id="Better messages" xml:space="preserve" approved="no">
         <source>Better messages</source>
+        <target state="translated">Messaggi migliorati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -1483,12 +1490,14 @@
         <target>Eliminare il profilo utente?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at" xml:space="preserve">
+      <trans-unit id="Deleted at" xml:space="preserve" approved="no">
         <source>Deleted at</source>
+        <target state="translated">Eliminato il</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at: %@" xml:space="preserve">
+      <trans-unit id="Deleted at: %@" xml:space="preserve" approved="no">
         <source>Deleted at: %@</source>
+        <target state="translated">Eliminato il: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1561,12 +1570,14 @@
         <target>I messaggi a tempo sono vietati in questo gruppo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at" xml:space="preserve">
+      <trans-unit id="Disappears at" xml:space="preserve" approved="no">
         <source>Disappears at</source>
+        <target state="translated">Scompare il</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at: %@" xml:space="preserve">
+      <trans-unit id="Disappears at: %@" xml:space="preserve" approved="no">
         <source>Disappears at: %@</source>
+        <target state="translated">Scompare il: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -1619,8 +1630,9 @@
         <target>Nome da mostrare doppio!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Duration" xml:space="preserve">
+      <trans-unit id="Duration" xml:space="preserve" approved="no">
         <source>Duration</source>
+        <target state="translated">Durata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
@@ -2053,8 +2065,9 @@
         <target>File e multimediali</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
+      <trans-unit id="Finally, we have them! 🚀" xml:space="preserve" approved="no">
         <source>Finally, we have them! 🚀</source>
+        <target state="translated">Finalmente le abbiamo! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -2247,8 +2260,9 @@
         <target>Nascondi:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="History" xml:space="preserve">
+      <trans-unit id="History" xml:space="preserve" approved="no">
         <source>History</source>
+        <target state="translated">Cronologia</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -2406,8 +2420,9 @@
         <target>Codice di sicurezza sbagliato!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Info" xml:space="preserve">
+      <trans-unit id="Info" xml:space="preserve" approved="no">
         <source>Info</source>
+        <target state="translated">Informazioni</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Initial role" xml:space="preserve">
@@ -2513,8 +2528,9 @@
         <target>Interfaccia italiana</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Japanese interface" xml:space="preserve">
+      <trans-unit id="Japanese interface" xml:space="preserve" approved="no">
         <source>Japanese interface</source>
+        <target state="translated">Interfaccia giapponese</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join" xml:space="preserve">
@@ -2762,12 +2778,14 @@
         <target>Modera</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Moderated at" xml:space="preserve">
+      <trans-unit id="Moderated at" xml:space="preserve" approved="no">
         <source>Moderated at</source>
+        <target state="translated">Moderato il</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Moderated at: %@" xml:space="preserve">
+      <trans-unit id="Moderated at: %@" xml:space="preserve" approved="no">
         <source>Moderated at: %@</source>
+        <target state="translated">Moderato il: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
@@ -2835,8 +2853,9 @@
         <target>Nuovo archivio database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New display name" xml:space="preserve">
+      <trans-unit id="New display name" xml:space="preserve" approved="no">
         <source>New display name</source>
+        <target state="translated">Nuovo nome da mostrare</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
@@ -2889,8 +2908,9 @@
         <target>Gruppo non trovato!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No message details" xml:space="preserve">
+      <trans-unit id="No message details" xml:space="preserve" approved="no">
         <source>No message details</source>
+        <target state="translated">Nessun dettaglio del messaggio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -3327,8 +3347,9 @@
         <target>Valuta l'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="React..." xml:space="preserve">
+      <trans-unit id="React..." xml:space="preserve" approved="no">
         <source>React...</source>
+        <target state="translated">Reagisci...</target>
         <note>chat item menu</note>
       </trans-unit>
       <trans-unit id="Read" xml:space="preserve">
@@ -3336,8 +3357,9 @@
         <target>Leggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more" xml:space="preserve">
+      <trans-unit id="Read more" xml:space="preserve" approved="no">
         <source>Read more</source>
+        <target state="translated">Leggi tutto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
@@ -3360,12 +3382,14 @@
         <target>Maggiori informazioni nel nostro [repository GitHub](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at" xml:space="preserve">
+      <trans-unit id="Received at" xml:space="preserve" approved="no">
         <source>Received at</source>
+        <target state="translated">Ricevuto il</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at: %@" xml:space="preserve">
+      <trans-unit id="Received at: %@" xml:space="preserve" approved="no">
         <source>Received at: %@</source>
+        <target state="translated">Ricevuto il: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
@@ -3393,12 +3417,14 @@
         <target>I destinatari vedono gli aggiornamenti mentre li digiti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at" xml:space="preserve">
+      <trans-unit id="Record updated at" xml:space="preserve" approved="no">
         <source>Record updated at</source>
+        <target state="translated">Registro aggiornato il</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at: %@" xml:space="preserve">
+      <trans-unit id="Record updated at: %@" xml:space="preserve" approved="no">
         <source>Record updated at: %@</source>
+        <target state="translated">Registro aggiornato il: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
@@ -3766,12 +3792,14 @@
         <target>Invio tramite</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent at" xml:space="preserve">
+      <trans-unit id="Sent at" xml:space="preserve" approved="no">
         <source>Sent at</source>
+        <target state="translated">Inviato il</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent at: %@" xml:space="preserve">
+      <trans-unit id="Sent at: %@" xml:space="preserve" approved="no">
         <source>Sent at: %@</source>
+        <target state="translated">Inviato il: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Sent file event" xml:space="preserve">
@@ -4403,8 +4431,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Svela profilo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unit" xml:space="preserve">
+      <trans-unit id="Unit" xml:space="preserve" approved="no">
         <source>Unit</source>
+        <target state="translated">Unità</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
