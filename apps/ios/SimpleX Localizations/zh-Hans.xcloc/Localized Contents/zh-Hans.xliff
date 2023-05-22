@@ -2847,10 +2847,6 @@
         <target>未找到群组！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No message details" xml:space="preserve">
-        <source>No message details</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
         <source>No permission to record voice message</source>
         <target>没有录制语音消息的权限</target>
@@ -4569,9 +4565,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>欢迎%@！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message" xml:space="preserve" approved="no">
+      <trans-unit id="Welcome message" xml:space="preserve">
         <source>Welcome message</source>
-        <target state="translated">欢迎消息</target>
+        <target>欢迎消息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -5001,9 +4997,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>管理员</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="always" xml:space="preserve" approved="no">
+      <trans-unit id="always" xml:space="preserve">
         <source>always</source>
-        <target state="translated">始终</target>
+        <target>始终</target>
         <note>pref value</note>
       </trans-unit>
       <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
@@ -5390,6 +5386,10 @@ SimpleX 服务器无法看到您的资料。</target>
         <source>no e2e encryption</source>
         <target>无端到端加密</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="no text" xml:space="preserve">
+        <source>no text</source>
+        <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
         <source>observer</source>

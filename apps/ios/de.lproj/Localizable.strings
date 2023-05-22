@@ -20,6 +20,9 @@
 "_italic_" = "\\_kursiv_";
 
 /* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- Bis zu 5 Minuten lange Sprachnachrichten\n- Zeit für verschwindende Nachrichten anpassen\n- Vergangenheit bearbeiten";
+
+/* No comment provided by engineer. */
 ", " = ", ";
 
 /* No comment provided by engineer. */
@@ -87,6 +90,12 @@
 
 /* No comment provided by engineer. */
 "%@" = "%@";
+
+/* No comment provided by engineer. */
+"%@ (current)" = "%@ (aktuell)";
+
+/* copied message info */
+"%@ (current):" = "%@ (aktuell):";
 
 /* No comment provided by engineer. */
 "%@ / %@" = "%@ / %@";
@@ -202,6 +211,9 @@
 /* time interval */
 "1 hour" = "1 Stunde";
 
+/* No comment provided by engineer. */
+"1 minute" = "1 Minute";
+
 /* time interval */
 "1 month" = "monatlich";
 
@@ -212,7 +224,13 @@
 "1-time link" = "Einmal-Link";
 
 /* No comment provided by engineer. */
+"5 minutes" = "5 Minuten";
+
+/* No comment provided by engineer. */
 "6" = "6";
+
+/* No comment provided by engineer. */
+"30 seconds" = "30 Sekunden";
 
 /* notification title */
 "A new contact" = "Ein neuer Kontakt";
@@ -300,6 +318,9 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
+"All data is erased when it is entered." = "Sobald es eingegeben wird, werden alle Daten gelöscht.";
+
+/* No comment provided by engineer. */
 "All group members will remain connected." = "Alle Gruppenmitglieder bleiben verbunden.";
 
 /* No comment provided by engineer. */
@@ -324,6 +345,12 @@
 "Allow irreversible message deletion only if your contact allows it to you." = "Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.";
 
 /* No comment provided by engineer. */
+"Allow message reactions only if your contact allows them." = "Reaktionen auf Nachrichten sind nur möglich, falls Ihr Kontakt dies erlaubt.";
+
+/* No comment provided by engineer. */
+"Allow message reactions." = "Reaktionen auf Nachrichten erlauben.";
+
+/* No comment provided by engineer. */
 "Allow sending direct messages to members." = "Das Senden von Direktnachrichten an Gruppenmitglieder erlauben.";
 
 /* No comment provided by engineer. */
@@ -340,6 +367,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages?" = "Sprachnachricht erlauben?";
+
+/* No comment provided by engineer. */
+"Allow your contacts adding message reactions." = "Erlauben Sie Ihren Kontakten Reaktionen auf Nachrichten zu geben.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to call you." = "Erlaubt Ihren Kontakten Sie anzurufen.";
@@ -444,7 +474,13 @@
 "Bad message ID" = "Falsche Nachrichten-ID";
 
 /* No comment provided by engineer. */
+"Better messages" = "Verbesserungen bei Nachrichten";
+
+/* No comment provided by engineer. */
 "bold" = "fett";
+
+/* No comment provided by engineer. */
+"Both you and your contact can add message reactions." = "Sowohl Sie, als auch Ihr Kontakt können Reaktionen auf Nachrichten geben.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "Sowohl Ihr Kontakt, als auch Sie können gesendete Nachrichten unwiederbringlich löschen.";
@@ -789,6 +825,12 @@
 /* No comment provided by engineer. */
 "Currently maximum supported file size is %@." = "Die derzeit maximal unterstützte Dateigröße beträgt %@.";
 
+/* dropdown time picker choice */
+"custom" = "Benutzerdefiniert";
+
+/* No comment provided by engineer. */
+"Custom time" = "Zeit anpassen";
+
 /* No comment provided by engineer. */
 "Dark" = "Dunkel";
 
@@ -848,6 +890,9 @@
 
 /* No comment provided by engineer. */
 "Database will be migrated when the app restarts" = "Die Datenbank wird beim nächsten Start der App migriert";
+
+/* time unit */
+"days" = "Tage";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Dezentral";
@@ -966,6 +1011,12 @@
 /* deleted chat item */
 "deleted" = "Gelöscht";
 
+/* No comment provided by engineer. */
+"Deleted at" = "Gelöscht um";
+
+/* copied message info */
+"Deleted at: %@" = "Gelöscht um: %@";
+
 /* rcv group event chat item */
 "deleted group" = "Gruppe gelöscht";
 
@@ -1005,6 +1056,9 @@
 /* authentication reason */
 "Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
 
+/* No comment provided by engineer. */
+"Disappearing message" = "Verschwindende Nachricht";
+
 /* chat feature */
 "Disappearing messages" = "verschwindende Nachrichten";
 
@@ -1013,6 +1067,12 @@
 
 /* No comment provided by engineer. */
 "Disappearing messages are prohibited in this group." = "In dieser Gruppe sind verschwindende Nachrichten nicht erlaubt.";
+
+/* No comment provided by engineer. */
+"Disappears at" = "Verschwindet um";
+
+/* copied message info */
+"Disappears at: %@" = "Verschwindet um: %@";
 
 /* server test step */
 "Disconnect" = "Trennen";
@@ -1046,6 +1106,9 @@
 
 /* integrity error chat item */
 "duplicate message" = "Doppelte Nachricht";
+
+/* No comment provided by engineer. */
+"Duration" = "Dauer";
 
 /* No comment provided by engineer. */
 "e2e encrypted" = "E2E-verschlüsselt";
@@ -1327,6 +1390,9 @@
 "Files & media" = "Dateien & Medien";
 
 /* No comment provided by engineer. */
+"Finally, we have them! 🚀" = "Endlich haben wir sie! 🚀";
+
+/* No comment provided by engineer. */
 "For console" = "Für Konsole";
 
 /* No comment provided by engineer. */
@@ -1379,6 +1445,9 @@
 
 /* No comment provided by engineer. */
 "Group links" = "Gruppen-Links";
+
+/* No comment provided by engineer. */
+"Group members can add message reactions." = "Gruppenmitglieder können eine Reaktion auf Nachrichten geben.";
 
 /* No comment provided by engineer. */
 "Group members can irreversibly delete sent messages." = "Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.";
@@ -1442,6 +1511,12 @@
 
 /* No comment provided by engineer. */
 "Hide:" = "Verberge:";
+
+/* copied message info */
+"History" = "Vergangenheit";
+
+/* time unit */
+"hours" = "Stunden";
 
 /* No comment provided by engineer. */
 "How it works" = "Wie es funktioniert";
@@ -1548,6 +1623,9 @@
 /* connection level description */
 "indirect (%d)" = "indirekt (%d)";
 
+/* chat item action */
+"Info" = "Information";
+
 /* No comment provided by engineer. */
 "Initial role" = "Anfängliche Rolle";
 
@@ -1637,6 +1715,9 @@
 
 /* No comment provided by engineer. */
 "italic" = "kursiv";
+
+/* No comment provided by engineer. */
+"Japanese interface" = "Japanische Benutzeroberfläche";
 
 /* No comment provided by engineer. */
 "Join" = "Beitreten";
@@ -1764,6 +1845,15 @@
 /* No comment provided by engineer. */
 "Message draft" = "Nachrichtenentwurf";
 
+/* chat feature */
+"Message reactions" = "Reaktionen auf Nachrichten";
+
+/* No comment provided by engineer. */
+"Message reactions are prohibited in this chat." = "In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.";
+
+/* No comment provided by engineer. */
+"Message reactions are prohibited in this group." = "In dieser Gruppe sind Reaktionen auf Nachrichten nicht erlaubt.";
+
 /* notification */
 "message received" = "Nachricht empfangen";
 
@@ -1791,6 +1881,9 @@
 /* No comment provided by engineer. */
 "Migrations: %@" = "Migrationen: %@";
 
+/* time unit */
+"minutes" = "Minuten";
+
 /* call status */
 "missed call" = "Anruf verpasst";
 
@@ -1801,7 +1894,16 @@
 "moderated" = "Moderiert";
 
 /* No comment provided by engineer. */
+"Moderated at" = "Moderiert um";
+
+/* copied message info */
+"Moderated at: %@" = "Moderiert um: %@";
+
+/* No comment provided by engineer. */
 "moderated by %@" = "Von %@ moderiert";
+
+/* time unit */
+"months" = "Monate";
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Weitere Verbesserungen sind bald verfügbar!";
@@ -1841,6 +1943,9 @@
 
 /* No comment provided by engineer. */
 "New database archive" = "Neues Datenbankarchiv";
+
+/* No comment provided by engineer. */
+"New display name" = "Neuer Anzeigename";
 
 /* No comment provided by engineer. */
 "New in %@" = "Neu in %@";
@@ -1952,6 +2057,9 @@
 "Only group owners can enable voice messages." = "Sprachnachrichten können nur von Gruppen-Eigentümern aktiviert werden.";
 
 /* No comment provided by engineer. */
+"Only you can add message reactions." = "Nur Sie können Reaktionen auf Nachrichten geben.";
+
+/* No comment provided by engineer. */
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).";
 
 /* No comment provided by engineer. */
@@ -1962,6 +2070,9 @@
 
 /* No comment provided by engineer. */
 "Only you can send voice messages." = "Nur Sie können Sprachnachrichten versenden.";
+
+/* No comment provided by engineer. */
+"Only your contact can add message reactions." = "Nur Ihr Kontakt kann Reaktionen auf Nachrichten geben.";
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).";
@@ -2132,6 +2243,12 @@
 "Prohibit irreversible message deletion." = "Unwiederbringliches löschen von Nachrichten nicht erlauben.";
 
 /* No comment provided by engineer. */
+"Prohibit message reactions." = "Reaktionen auf Nachrichten nicht erlauben.";
+
+/* No comment provided by engineer. */
+"Prohibit messages reactions." = "Reaktionen auf Nachrichten nicht erlauben.";
+
+/* No comment provided by engineer. */
 "Prohibit sending direct messages to members." = "Das Senden von Direktnachrichten an Gruppenmitglieder nicht erlauben.";
 
 /* No comment provided by engineer. */
@@ -2155,8 +2272,14 @@
 /* No comment provided by engineer. */
 "Rate the app" = "Bewerten Sie die App";
 
+/* chat item menu */
+"React..." = "Reaktion...";
+
 /* No comment provided by engineer. */
 "Read" = "Gelesen";
+
+/* No comment provided by engineer. */
+"Read more" = "Mehr erfahren";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Mehr dazu in der [Benutzeranleitung](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address) lesen.";
@@ -2172,6 +2295,12 @@
 
 /* No comment provided by engineer. */
 "received answer…" = "Antwort erhalten…";
+
+/* No comment provided by engineer. */
+"Received at" = "Empfangen um";
+
+/* copied message info */
+"Received at: %@" = "Empfangen um: %@";
 
 /* No comment provided by engineer. */
 "received confirmation…" = "Bestätigung erhalten…";
@@ -2190,6 +2319,12 @@
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Die Empfänger sehen Nachrichtenaktualisierungen, während Sie sie eingeben.";
+
+/* No comment provided by engineer. */
+"Record updated at" = "Datensatz aktualisiert um";
+
+/* copied message info */
+"Record updated at: %@" = "Datensatz aktualisiert um: %@";
 
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Reduzierter Batterieverbrauch";
@@ -2356,6 +2491,9 @@
 /* network option */
 "sec" = "sek";
 
+/* time unit */
+"seconds" = "Sekunden";
+
 /* No comment provided by engineer. */
 "secret" = "geheim";
 
@@ -2367,6 +2505,9 @@
 
 /* No comment provided by engineer. */
 "Security code" = "Sicherheitscode";
+
+/* No comment provided by engineer. */
+"Select" = "Auswählen";
 
 /* No comment provided by engineer. */
 "Self-destruct" = "Selbstzerstörung";
@@ -2388,6 +2529,9 @@
 
 /* No comment provided by engineer. */
 "Send direct message" = "Direktnachricht senden";
+
+/* No comment provided by engineer. */
+"Send disappearing message" = "Verschwindende Nachricht senden";
 
 /* No comment provided by engineer. */
 "Send link previews" = "Link-Vorschau senden";
@@ -2418,6 +2562,12 @@
 
 /* No comment provided by engineer. */
 "Sending via" = "Senden über";
+
+/* No comment provided by engineer. */
+"Sent at" = "Gesendet um";
+
+/* copied message info */
+"Sent at: %@" = "Gesendet um: %@";
 
 /* notification */
 "Sent file event" = "Datei-Ereignis wurde gesendet";
@@ -2806,6 +2956,9 @@
 /* No comment provided by engineer. */
 "Unhide profile" = "Verbergen des Profils aufheben";
 
+/* No comment provided by engineer. */
+"Unit" = "Einheit";
+
 /* connection info */
 "unknown" = "Unbekannt";
 
@@ -2973,6 +3126,9 @@
 
 /* No comment provided by engineer. */
 "WebRTC ICE servers" = "WebRTC ICE-Server";
+
+/* time unit */
+"weeks" = "Wochen";
 
 /* No comment provided by engineer. */
 "Welcome %@!" = "Willkommen %@!";

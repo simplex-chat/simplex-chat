@@ -20,6 +20,9 @@
 "_italic_" = "\\_cursief_";
 
 /* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- spraakberichten tot 5 minuten.\n- aangepaste tijd om te verdwijnen.\n- bewerkingsgeschiedenis.";
+
+/* No comment provided by engineer. */
 ", " = ", ";
 
 /* No comment provided by engineer. */
@@ -315,6 +318,9 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Alle chats en berichten worden verwijderd, dit kan niet ongedaan worden gemaakt!";
 
 /* No comment provided by engineer. */
+"All data is erased when it is entered." = "Alle gegevens worden bij het invoeren gewist.";
+
+/* No comment provided by engineer. */
 "All group members will remain connected." = "Alle groepsleden blijven verbonden.";
 
 /* No comment provided by engineer. */
@@ -466,6 +472,9 @@
 
 /* No comment provided by engineer. */
 "Bad message ID" = "Onjuiste bericht ID";
+
+/* No comment provided by engineer. */
+"Better messages" = "Betere berichten";
 
 /* No comment provided by engineer. */
 "bold" = "vetgedrukt";
@@ -1381,6 +1390,9 @@
 "Files & media" = "Bestanden en media";
 
 /* No comment provided by engineer. */
+"Finally, we have them! 🚀" = "Eindelijk, we hebben ze! 🚀";
+
+/* No comment provided by engineer. */
 "For console" = "Voor console";
 
 /* No comment provided by engineer. */
@@ -1705,6 +1717,9 @@
 "italic" = "cursief";
 
 /* No comment provided by engineer. */
+"Japanese interface" = "Japanse interface";
+
+/* No comment provided by engineer. */
 "Join" = "Word lid van";
 
 /* No comment provided by engineer. */
@@ -1973,9 +1988,6 @@
 
 /* No comment provided by engineer. */
 "No group!" = "Groep niet gevonden!";
-
-/* No comment provided by engineer. */
-"No message details" = "Geen berichtdetails";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Geen toestemming om spraakbericht op te nemen";
@@ -2267,6 +2279,9 @@
 "Read" = "Lees";
 
 /* No comment provided by engineer. */
+"Read more" = "Lees meer";
+
+/* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Lees meer in de [Gebruikershandleiding](https://simplex.chat/docs/guide/app-settings.html#uw-simplex-contactadres).";
 
 /* No comment provided by engineer. */
@@ -2282,7 +2297,7 @@
 "received answer…" = "antwoord gekregen…";
 
 /* No comment provided by engineer. */
-"Received at" = "Ontvangen om";
+"Received at" = "Ontvangen op";
 
 /* copied message info */
 "Received at: %@" = "Ontvangen op: %@";

@@ -20,6 +20,9 @@
 "_italic_" = "\\_kursywa_";
 
 /* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- wiadomości głosowe do 5 minut.\n- niestandardowy czas zniknięcia.\n- historia edycji.";
+
+/* No comment provided by engineer. */
 ", " = ", ";
 
 /* No comment provided by engineer. */
@@ -315,6 +318,9 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Wszystkie czaty i wiadomości zostaną usunięte - nie można tego cofnąć!";
 
 /* No comment provided by engineer. */
+"All data is erased when it is entered." = "Wszystkie dane są usuwane po jego wprowadzeniu.";
+
+/* No comment provided by engineer. */
 "All group members will remain connected." = "Wszyscy członkowie grupy pozostaną połączeni.";
 
 /* No comment provided by engineer. */
@@ -466,6 +472,9 @@
 
 /* No comment provided by engineer. */
 "Bad message ID" = "Zły identyfikator wiadomości";
+
+/* No comment provided by engineer. */
+"Better messages" = "Lepsze wiadomości";
 
 /* No comment provided by engineer. */
 "bold" = "pogrubiona";
@@ -1381,6 +1390,9 @@
 "Files & media" = "Pliki i media";
 
 /* No comment provided by engineer. */
+"Finally, we have them! 🚀" = "W końcu je mamy! 🚀";
+
+/* No comment provided by engineer. */
 "For console" = "Dla konsoli";
 
 /* No comment provided by engineer. */
@@ -1705,6 +1717,9 @@
 "italic" = "kursywa";
 
 /* No comment provided by engineer. */
+"Japanese interface" = "Japoński interfejs";
+
+/* No comment provided by engineer. */
 "Join" = "Dołącz";
 
 /* No comment provided by engineer. */
@@ -1973,9 +1988,6 @@
 
 /* No comment provided by engineer. */
 "No group!" = "Nie znaleziono grupy!";
-
-/* No comment provided by engineer. */
-"No message details" = "Brak szczegółów wiadomości";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Brak uprawnień do nagrywania wiadomości głosowej";
@@ -2265,6 +2277,9 @@
 
 /* No comment provided by engineer. */
 "Read" = "Czytaj";
+
+/* No comment provided by engineer. */
+"Read more" = "Przeczytaj więcej";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Przeczytaj więcej w [Podręczniku Użytkownika](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
