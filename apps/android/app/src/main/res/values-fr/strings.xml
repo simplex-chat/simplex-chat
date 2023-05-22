@@ -1247,8 +1247,8 @@
     <string name="info_row_sent_at">Envoyé le</string>
     <string name="share_text_database_id">ID de base de données : %d</string>
     <string name="share_text_deleted_at">Supprimé à : %s</string>
-    <string name="share_text_disappears_at">Disparaît à : %s</string>
-    <string name="info_row_disappears_at">Disparaît à</string>
+    <string name="share_text_disappears_at">Disparaîtra le : %s</string>
+    <string name="info_row_disappears_at">Disparaîtra le</string>
     <string name="v5_1_japanese_portuguese_interface">Interface en japonais et en portugais</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Merci aux utilisateurs - contribuez via Weblate !</string>
     <string name="v5_1_message_reactions_descr">Enfin, les voilà ! 🚀</string>
