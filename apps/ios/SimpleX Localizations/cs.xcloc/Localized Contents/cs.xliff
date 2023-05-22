@@ -1772,8 +1772,7 @@
       </trans-unit>
       <trans-unit id="Enter welcome message… (optional)" xml:space="preserve" approved="no">
         <source>Enter welcome message… (optional)</source>
-        <target state="translated">Zadat uvítací zprávu...
-(volitelně)</target>
+        <target state="translated">Zadat uvítací zprávu... (volitelně)</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve">
