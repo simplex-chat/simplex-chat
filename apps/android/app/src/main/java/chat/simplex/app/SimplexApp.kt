@@ -36,8 +36,6 @@ external fun chatParseServer(str: String): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
-  lateinit var chatController: ChatController
-
   var isAppOnForeground: Boolean = false
 
   val defaultLocale: Locale = Locale.getDefault()
@@ -53,11 +51,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     val ctrl = if (res is DBMigrationResult.OK) {
       migrated[1] as Long
     } else null
-    if (::chatController.isInitialized) {
-      chatController.ctrl = ctrl
-    } else {
-      chatController = ChatController(ctrl, ntfManager, applicationContext, appPreferences)
-    }
+    chatController.ctrl = ctrl
     chatModel.chatDbEncrypted.value = dbKey != ""
     chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
@@ -100,15 +94,20 @@ class SimplexApp: Application(), LifecycleEventObserver {
     AppPreferences(applicationContext)
   }
 
+  val chatController: ChatController by lazy {
+    ChatController(0L, ntfManager, applicationContext, appPreferences)
+  }
+
+
   override fun onCreate() {
     super.onCreate()
     context = this
     context.getDir("temp", MODE_PRIVATE).deleteRecursively()
-    runBlocking {
+    withBGApi {
       initChatController()
-      ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
       runMigrations()
     }
+    ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
