@@ -14,6 +14,7 @@ enum DatabaseAlert: Identifiable {
     case exportProhibited
     case importArchive
     case archiveImported
+    case archiveImportedWithErrors(archiveErrors: [ArchiveError])
     case deleteChat
     case chatDeleted
     case deleteLegacyDatabase
@@ -27,6 +28,7 @@ enum DatabaseAlert: Identifiable {
         case .exportProhibited: return "exportProhibited"
         case .importArchive: return "importArchive"
         case .archiveImported: return "archiveImported"
+        case .archiveImportedWithErrors: return "archiveImportedWithErrors"
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
@@ -251,7 +253,18 @@ struct DatabaseView: View {
                 title: Text("Chat database imported"),
                 message: Text("Restart the app to use imported chat database")
             )
-
+        case let .archiveImportedWithErrors(archiveErrors):
+            if archiveErrors.contains(where: { $0.isImportFileError } ) {
+                return Alert(
+                    title: Text("Chat database imported"),
+                    message: Text("Restart the app to use imported chat database. Some files couldn't be imported - see Chat console for more details.")
+                )
+            } else {
+                return Alert(
+                    title: Text("Chat database imported"),
+                    message: Text("Restart the app to use imported chat database. Some non-fatal errors occured during import - see Chat console for more details.")
+                )
+            }
         case .deleteChat:
             return Alert(
                 title: Text("Delete chat profile?"),
@@ -351,9 +364,13 @@ struct DatabaseView: View {
                     try await apiDeleteStorage()
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
-                        try await apiImportArchive(config: config)
+                        let archiveErrors = try await apiImportArchive(config: config)
                         _ = kcDatabasePassword.remove()
-                        await operationEnded(.archiveImported)
+                        if !archiveErrors.isEmpty {
+                            await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors))
+                        } else {
+                            await operationEnded(.archiveImported)
+                        }
                     } catch let error {
                         await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
                     }
