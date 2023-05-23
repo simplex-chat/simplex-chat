@@ -81,7 +81,7 @@ copyDirectoryFiles fromDir toDir = do
   fs <- listDirectory fromDir
   foldM
     ( \fileErrs f -> do
-        copyDirectoryFile f $> fileErrs `catchError` \e -> pure ((Just f, e) : fileErrs)
+        (copyDirectoryFile f $> fileErrs) `catchError` \e -> pure ((Just f, e) : fileErrs)
     )
     []
     fs
