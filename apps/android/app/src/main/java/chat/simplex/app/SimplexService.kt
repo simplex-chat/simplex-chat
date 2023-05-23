@@ -330,7 +330,7 @@ class SimplexService: Service() {
     * It happens in background thread, so other places that relies on database should wait til the end of migration
     * */
     suspend fun waitDbMigrationEnds(chatController: ChatController) {
-      var maxWaitTime = 60_000
+      var maxWaitTime = 50_000
       while (chatController.chatModel.chatDbStatus.value == null && maxWaitTime > 0) {
         delay(50)
         maxWaitTime -= 50
