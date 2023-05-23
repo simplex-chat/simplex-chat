@@ -1,5 +1,20 @@
 # Blog
 
+May 23, 2023 [SimpleX Chat v5.1 released](./20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md)
+
+What's new in v5.1:
+- message reactions 🚀
+- improved messages:
+  - voice messages up to 5 minutes.
+  - custom time to disappear.
+  - message editing history.
+- new design and customizable themes that you can share!<sup>*</sup>
+- self-destruct passcode
+
+Also, we added Japanese and Portuguese (Brazil)<sup>*</sup> interface languages, thanks to our users and Weblate.
+
+\* These features are available in the Android version only.language interface, thanks to our users and Weblate!
+
 Apr 22, 2023 [SimpleX Chat: vision and funding, v5.0 released](./20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md)
 
 SimpleX Chat vision and funding:

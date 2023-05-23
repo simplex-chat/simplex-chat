@@ -1,6 +1,6 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Chat: v5.1 released with message reactions and self-destruct passcode"
+title: "SimpleX Chat v5.1 released: message reactions and self-destruct passcode"
 date: 2023-05-23
 image: images/20230523-reactions.png
 imageBottom: true
@@ -8,7 +8,7 @@ previewBody: blog_previews/20230523.html
 permalink: "/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html"
 ---
 
-# SimpleX Chat: v5.1 released with message reactions and self-destruct passcode
+# SimpleX Chat v5.1 released: message reactions and self-destruct passcode
 
 **Published:** May 23, 2023
 
@@ -30,7 +30,7 @@ There are lots of small improvements and fixes in this release:
   - improved calls on lock screen<sup>*</sup>.
   - locale-dependent formatting of time and date<sup>*</sup>.
 
-Also, we added Japanese and Portuguese (Brazil)<sup>*</sup> interface languages, thanks to [the users' community and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
+Also, we added Japanese and Portuguese (Brazil)<sup>*</sup> interface languages, thanks to [our users and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
 
 \* These features are available in the Android version only.
 
@@ -62,7 +62,7 @@ With the new XFTP protocol that allows sending files up to 1gb it is now possibl
 
 Since [v4.4](./20230103-simplex-chat-v4.4-disappearing-messages.md#disappearing-messages) disappearing messages were only configurable for the whole conversation, with a limited choice of allowed times between 30 seconds and 1 month.
 
-This version allows to configure the time for messages to disappear more granularly, in the range from 1 second to 3 months. You can also set a different time to disappear when you send the message (hold send button), as long as disappearing messages are enabled in the conversation.
+This version allows to configure the time for messages to disappear more granularly, in the range from 1 second to 3 months. You can also set a different time to disappear when you send the message (hold the Send button), as long as disappearing messages are enabled in the conversation.
 
 ### Message editing history
 
