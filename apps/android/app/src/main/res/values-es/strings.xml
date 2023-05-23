@@ -141,7 +141,7 @@
     <string name="group_member_status_intro_invitation">conectando (invitación de presentación )</string>
     <string name="group_member_status_accepted">conectando (aceptado)</string>
     <string name="group_member_status_announced">conectando (anunciado)</string>
-    <string name="connection_local_display_name">conexión&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"connection ID\" example=\"1\"&gt;</string>
+    <string name="connection_local_display_name">conexión <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
     <string name="connect_via_link_or_qr">Conectar mediante enlace / Código QR</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No se puede deshacer!</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
