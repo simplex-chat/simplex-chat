@@ -248,7 +248,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel e
-  CRImportArchiveFileErrors fileErrs -> ["import archive file errors: " <> plain (show fileErrs)]
+  CRArchiveImported fileErrs -> if null fileErrs then ["ok"] else ["archive import file errors: " <> plain (show fileErrs)]
   CRTimedAction _ _ -> []
   where
     ttyUser :: User -> [StyledString] -> [StyledString]

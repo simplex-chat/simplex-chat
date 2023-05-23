@@ -448,9 +448,10 @@ processChatCommand = \case
     ts <- liftIO getCurrentTime
     let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
     processChatCommand $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
-  APIImportArchive cfg -> withStoreChanged $ do
+  APIImportArchive cfg -> checkChatStopped $ do
     fileErrs <- importArchive cfg
-    unless (null fileErrs) $ toView $ CRImportArchiveFileErrors fileErrs
+    setStoreChanged
+    pure $ CRArchiveImported fileErrs
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
