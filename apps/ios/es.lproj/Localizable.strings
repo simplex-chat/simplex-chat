@@ -20,6 +20,9 @@
 "_italic_" = "\\_italic_";
 
 /* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- mensajes de voz de hasta 5 minutos.\n- tiempo personalizado para mensajes temporales.\n- historial de edición.";
+
+/* No comment provided by engineer. */
 ", " = ", ";
 
 /* No comment provided by engineer. */
@@ -218,7 +221,7 @@
 "1 week" = "una semana";
 
 /* No comment provided by engineer. */
-"1-time link" = "Enlace de un uso";
+"1-time link" = "Enlace un uso";
 
 /* No comment provided by engineer. */
 "5 minutes" = "5 minutos";
@@ -309,10 +312,13 @@
 "Advanced network settings" = "Configuración avanzada de red";
 
 /* No comment provided by engineer. */
-"All app data is deleted." = "Todos los datos de la aplicación se han eliminado.";
+"All app data is deleted." = "Todos los datos de la aplicación se eliminarán.";
 
 /* No comment provided by engineer. */
 "All chats and messages will be deleted - this cannot be undone!" = "Se eliminarán todos los chats y mensajes. ¡No se puede deshacer!";
+
+/* No comment provided by engineer. */
+"All data is erased when it is entered." = "Al introducirlo todos los datos son borrados.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Todos los miembros del grupo permanecerán conectados.";
@@ -399,10 +405,10 @@
 "App icon" = "Icono aplicación";
 
 /* No comment provided by engineer. */
-"App passcode" = "Código de acceso a la aplicación";
+"App passcode" = "Código de acceso de la aplicación";
 
 /* No comment provided by engineer. */
-"App passcode is replaced with self-destruct passcode." = "El código de acceso se ha reemplazado por código de autodestrucción.";
+"App passcode is replaced with self-destruct passcode." = "El código de acceso será reemplazado por código de autodestrucción.";
 
 /* No comment provided by engineer. */
 "App version" = "Versión de la aplicación";
@@ -466,6 +472,9 @@
 
 /* No comment provided by engineer. */
 "Bad message ID" = "ID de mensaje incorrecto";
+
+/* No comment provided by engineer. */
+"Better messages" = "Mensajes mejorados";
 
 /* No comment provided by engineer. */
 "bold" = "negrita";
@@ -537,7 +546,7 @@
 "Change member role?" = "¿Cambiar el rol del miembro?";
 
 /* authentication reason */
-"Change passcode" = "Cambiar el código de acceso";
+"Change passcode" = "Cambiar código de acceso";
 
 /* No comment provided by engineer. */
 "Change receiving address" = "Cambiar servidor de recepción";
@@ -553,7 +562,7 @@
 
 /* authentication reason
    set passcode view */
-"Change self-destruct passcode" = "Cambiar código de autodestrucción";
+"Change self-destruct passcode" = "Cambiar código autodestrucción";
 
 /* chat item text */
 "changed address for you" = "el servidor de envío ha cambiado para tí";
@@ -649,7 +658,7 @@
 "Confirm new passphrase…" = "Confirme nueva contraseña…";
 
 /* No comment provided by engineer. */
-"Confirm Passcode" = "Confirmar el código de acceso";
+"Confirm Passcode" = "Confirma Código";
 
 /* No comment provided by engineer. */
 "Confirm password" = "Confirmar contraseña";
@@ -808,7 +817,7 @@
 "creator" = "creador";
 
 /* No comment provided by engineer. */
-"Current Passcode" = "Código de acceso actual";
+"Current Passcode" = "Código de Acceso";
 
 /* No comment provided by engineer. */
 "Current passphrase…" = "Contraseña actual…";
@@ -841,10 +850,10 @@
 "Database error" = "Error de la base de datos";
 
 /* No comment provided by engineer. */
-"Database ID" = "ID de la base de datos";
+"Database ID" = "ID de base de datos";
 
 /* copied message info */
-"Database ID: %d" = "ID de la base de datos: %d";
+"Database ID: %d" = "ID de base de datos: %d";
 
 /* No comment provided by engineer. */
 "Database IDs and Transport isolation option." = "IDs de la base de datos y opciónes de aislamiento de transporte.";
@@ -1003,10 +1012,10 @@
 "deleted" = "eliminado";
 
 /* No comment provided by engineer. */
-"Deleted at" = "Eliminado a las";
+"Deleted at" = "Eliminado el";
 
 /* copied message info */
-"Deleted at: %@" = "Eliminado a las: %@";
+"Deleted at: %@" = "Eliminado el: %@";
 
 /* rcv group event chat item */
 "deleted group" = "grupo eliminado";
@@ -1060,10 +1069,10 @@
 "Disappearing messages are prohibited in this group." = "Los mensajes temporales no están permitidos en este grupo.";
 
 /* No comment provided by engineer. */
-"Disappears at" = "Desaparece a las";
+"Disappears at" = "Desaparecerá el";
 
 /* copied message info */
-"Disappears at: %@" = "Desaparece a las: %@";
+"Disappears at: %@" = "Desaparecerá el: %@";
 
 /* server test step */
 "Disconnect" = "Desconectar";
@@ -1186,7 +1195,7 @@
 "Enter correct passphrase." = "Introduce la contraseña correcta.";
 
 /* No comment provided by engineer. */
-"Enter Passcode" = "Introducir código de acceso";
+"Enter Passcode" = "Introduce Código";
 
 /* No comment provided by engineer. */
 "Enter passphrase…" = "Introduce la contraseña…";
@@ -1381,6 +1390,9 @@
 "Files & media" = "Archivos y multimedia";
 
 /* No comment provided by engineer. */
+"Finally, we have them! 🚀" = "¡Por fin los tenemos! 🚀";
+
+/* No comment provided by engineer. */
 "For console" = "Para consola";
 
 /* No comment provided by engineer. */
@@ -1447,7 +1459,7 @@
 "Group members can send disappearing messages." = "Los miembros del grupo pueden enviar mensajes temporales.";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "Los miembros del grupo pueden mandar mensajes de voz.";
+"Group members can send voice messages." = "Los miembros del grupo pueden enviar mensajes de voz.";
 
 /* notification */
 "Group message:" = "Mensaje de grupo:";
@@ -1501,7 +1513,7 @@
 "Hide:" = "Ocultar:";
 
 /* copied message info */
-"History" = "Historia";
+"History" = "Historial";
 
 /* time unit */
 "hours" = "horas";
@@ -1519,7 +1531,7 @@
 "How to use it" = "Guía de uso";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Cómo usar tus servidores";
+"How to use your servers" = "Cómo usar los servidores";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "Servidores ICE (uno por línea)";
@@ -1534,7 +1546,7 @@
 "If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "¡Si introduces este código al abrir la aplicación, todos los datos de la misma se eliminarán de forma irreversible!";
 
 /* No comment provided by engineer. */
-"If you enter your self-destruct passcode while opening the app:" = "Si introduces el código de autodestrucción al abrir la aplicación:";
+"If you enter your self-destruct passcode while opening the app:" = "Si al abrir la aplicación introduces el código de autodestrucción:";
 
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Si necesitas usar el chat ahora pulsa **Hacerlo más tarde** más abajo (se ofrecerá migrar la base de datos cuando se reinicie la aplicación).";
@@ -1582,13 +1594,13 @@
 "Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." = "La función del modo incógnito es proteger la identidad del perfil principal: por cada contacto nuevo se genera un perfil aleatorio.";
 
 /* chat list item description */
-"incognito via contact address link" = "Incógnito mediante enlace de dirección del contacto";
+"incognito via contact address link" = "en modo incógnito mediante enlace de dirección del contacto";
 
 /* chat list item description */
-"incognito via group link" = "Incógnito mediante enlace de grupo";
+"incognito via group link" = "en modo incógnito mediante enlace de grupo";
 
 /* chat list item description */
-"incognito via one-time link" = "Incógnito mediante enlace de un uso";
+"incognito via one-time link" = "en modo incógnito mediante enlace de un solo uso";
 
 /* notification */
 "Incoming audio call" = "Llamada entrante";
@@ -1612,7 +1624,7 @@
 "indirect (%d)" = "indirecta (%d)";
 
 /* chat item action */
-"Info" = "Información";
+"Info" = "Detalles";
 
 /* No comment provided by engineer. */
 "Initial role" = "Rol inicial";
@@ -1663,7 +1675,7 @@
 "invited" = "ha invitado a";
 
 /* rcv group event chat item */
-"invited %@" = "invitado %@";
+"invited %@" = "ha invitado a %@";
 
 /* chat list item title */
 "invited to connect" = "invitado a conectarse";
@@ -1703,6 +1715,9 @@
 
 /* No comment provided by engineer. */
 "italic" = "cursiva";
+
+/* No comment provided by engineer. */
+"Japanese interface" = "Interfáz en japonés";
 
 /* No comment provided by engineer. */
 "Join" = "Únete";
@@ -1879,10 +1894,10 @@
 "moderated" = "moderado";
 
 /* No comment provided by engineer. */
-"Moderated at" = "Moderado a las";
+"Moderated at" = "Moderado el";
 
 /* copied message info */
-"Moderated at: %@" = "Moderado a las: %@";
+"Moderated at: %@" = "Moderado el: %@";
 
 /* No comment provided by engineer. */
 "moderated by %@" = "moderado por %@";
@@ -1945,7 +1960,7 @@
 "New message" = "mensaje nuevo";
 
 /* No comment provided by engineer. */
-"New Passcode" = "Código de acceso nuevo";
+"New Passcode" = "Código Nuevo";
 
 /* No comment provided by engineer. */
 "New passphrase…" = "Contraseña nueva…";
@@ -1973,9 +1988,6 @@
 
 /* No comment provided by engineer. */
 "No group!" = "¡Grupo no encontrado!";
-
-/* No comment provided by engineer. */
-"No message details" = "Sin detalles del mensaje";
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Sin permiso para grabar mensajes de voz";
@@ -2030,7 +2042,7 @@
 "Onion hosts will be required for connection. Requires enabling VPN." = "Se requieren hosts .onion para la conexión. Requiere activación de la VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Se usarán hosts .onion cuando estén disponibles. Requiere activación de la VPN.";
+"Onion hosts will be used when available. Requires enabling VPN." = "Se usarán hosts .onion si están disponibles. Requiere activación de la VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "No se usarán hosts .onion.";
@@ -2171,7 +2183,7 @@
 "Please enter the previous password after restoring database backup. This action can not be undone." = "Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.";
 
 /* No comment provided by engineer. */
-"Please remember or store it securely - there is no way to recover a lost passcode!" = "Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay ninguna manera de recuperar un código de acceso perdido!";
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay ninguna manera de recuperar un código perdido!";
 
 /* No comment provided by engineer. */
 "Please report it to the developers." = "Por favor, informa a los desarrolladores.";
@@ -2267,6 +2279,9 @@
 "Read" = "Leer";
 
 /* No comment provided by engineer. */
+"Read more" = "Saber más";
+
+/* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Más información en el [Manual de usuario](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
 
 /* No comment provided by engineer. */
@@ -2282,10 +2297,10 @@
 "received answer…" = "respuesta recibida…";
 
 /* No comment provided by engineer. */
-"Received at" = "Recibido a las";
+"Received at" = "Recibido el";
 
 /* copied message info */
-"Received at: %@" = "Recibido a las: %@";
+"Received at: %@" = "Recibido el: %@";
 
 /* No comment provided by engineer. */
 "received confirmation…" = "confirmación recibida…";
@@ -2294,22 +2309,22 @@
 "Received file event" = "Evento de archivo recibido";
 
 /* message info title */
-"Received message" = "Mensaje recibido";
+"Received message" = "Mensaje entrante";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Se detendrá la recepción del archivo.";
 
 /* No comment provided by engineer. */
-"Receiving via" = "Recibes vía";
+"Receiving via" = "Recibiendo vía";
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "Los destinatarios ven la actualizacion mientras escribes.";
 
 /* No comment provided by engineer. */
-"Record updated at" = "Registro actualizado a las";
+"Record updated at" = "Registro actualizado";
 
 /* copied message info */
-"Record updated at: %@" = "Registro actualizado a las: %@";
+"Record updated at: %@" = "Registro actualizado: %@";
 
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Reducción del uso de la batería";
@@ -2522,7 +2537,7 @@
 "Send link previews" = "Enviar previsualizacion de enlaces";
 
 /* No comment provided by engineer. */
-"Send live message" = "Enviar mensaje en vivo";
+"Send live message" = "Mensaje en vivo";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Enviar notificaciones";
@@ -2546,19 +2561,19 @@
 "Sending file will be stopped." = "Se detendrá el envío del archivo.";
 
 /* No comment provided by engineer. */
-"Sending via" = "Envías vía";
+"Sending via" = "Enviando vía";
 
 /* No comment provided by engineer. */
-"Sent at" = "Enviado a las";
+"Sent at" = "Enviado el";
 
 /* copied message info */
-"Sent at: %@" = "Enviado a las: %@";
+"Sent at: %@" = "Enviado el: %@";
 
 /* notification */
 "Sent file event" = "Evento de archivo enviado";
 
 /* message info title */
-"Sent message" = "Mensaje enviado";
+"Sent message" = "Mensaje saliente";
 
 /* No comment provided by engineer. */
 "Sent messages will be deleted after set time." = "Los mensajes enviados se eliminarán una vez transcurrido el tiempo establecido.";
@@ -2588,7 +2603,7 @@
 "Set it instead of system authentication." = "Úsalo en lugar de la autenticación del sistema.";
 
 /* No comment provided by engineer. */
-"Set passcode" = "Introduce el código de acceso";
+"Set passcode" = "Código autodestrucción";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Escribe la contraseña para exportar";
@@ -2990,7 +3005,7 @@
 "Update transport isolation mode?" = "¿Actualizar el modo de aislamiento de transporte?";
 
 /* rcv group event chat item */
-"updated group profile" = "ha actualizado el perfil de grupo";
+"updated group profile" = "ha actualizado el perfil del grupo";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Al actualizar la configuración el cliente se reconectará a todos los servidores.";
@@ -3128,7 +3143,7 @@
 "When available" = "Si disponible";
 
 /* No comment provided by engineer. */
-"When people request to connect, you can accept or reject it." = "Cuando alguien solicita conectarse, puedes aceptar o rechazar.";
+"When people request to connect, you can accept or reject it." = "Cuando alguien solicite conectarse podrás aceptar o rechazar la solicitud.";
 
 /* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Cuando compartes un perfil incógnito con alguien, este perfil también se usará para los grupos a los que te inviten.";
@@ -3230,7 +3245,7 @@
 "You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Tú controlas a través de qué servidor(es) **recibes** los mensajes. Tus contactos controlan a través de qué servidor(es) **envías** tus mensajes.";
 
 /* No comment provided by engineer. */
-"You could not be verified; please try again." = "No has podido ser verificado. Inténtelo de nuevo.";
+"You could not be verified; please try again." = "No has podido ser autenticado. Inténtalo de nuevo.";
 
 /* No comment provided by engineer. */
 "You have no chats" = "No tienes chats";
@@ -3245,7 +3260,7 @@
 "You joined this group" = "Te has unido a este grupo";
 
 /* No comment provided by engineer. */
-"You joined this group. Connecting to inviting group member." = "Te has unido a este grupo. Conectando con miembro del grupo invitado.";
+"You joined this group. Connecting to inviting group member." = "Te has unido a este grupo. Conectando con el miembro que emite la invitacíon.";
 
 /* snd group event chat item */
 "you left" = "has salido";
@@ -3269,7 +3284,7 @@
 "you shared one-time link" = "has compartido un enlace de un uso";
 
 /* chat list item description */
-"you shared one-time link incognito" = "has compartido enlace de un uso en modo incógnito";
+"you shared one-time link incognito" = "has compartido enlace de un solo uso en modo incógnito";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Te conectarás al grupo cuando el dispositivo del anfitrión esté en línea, por favor espera o compruébalo más tarde.";
@@ -3305,10 +3320,10 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Estás usando un perfil incógnito para este grupo, por tanto para evitar compartir tu perfil principal no se permite invitar a contactos";
 
 /* No comment provided by engineer. */
-"Your %@ servers" = "Tus servidores %@";
+"Your %@ servers" = "Mis servidores %@";
 
 /* No comment provided by engineer. */
-"Your calls" = "Tus llamadas";
+"Your calls" = "Mis llamadas";
 
 /* No comment provided by engineer. */
 "Your chat database" = "Base de datos Chat";
@@ -3326,7 +3341,7 @@
 "Your chat profiles" = "Mis perfiles";
 
 /* No comment provided by engineer. */
-"Your chats" = "Tus chats";
+"Your chats" = "Mis chats";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Tu contacto debe estar en línea para que se complete la conexión.\nPuedes cancelar esta conexión y eliminar el contacto (e intentarlo más tarde con un enlace nuevo).";
@@ -3350,10 +3365,10 @@
 "Your current profile" = "Tu perfil actual";
 
 /* No comment provided by engineer. */
-"Your ICE servers" = "Tus servidores ICE";
+"Your ICE servers" = "Mis servidores ICE";
 
 /* No comment provided by engineer. */
-"Your preferences" = "Tus preferencias";
+"Your preferences" = "Mis preferencias";
 
 /* No comment provided by engineer. */
 "Your privacy" = "Privacidad";
@@ -3383,8 +3398,8 @@
 "Your SimpleX address" = "Mi dirección SimpleX";
 
 /* No comment provided by engineer. */
-"Your SMP servers" = "Tus servidores SMP";
+"Your SMP servers" = "Mis servidores SMP";
 
 /* No comment provided by engineer. */
-"Your XFTP servers" = "Tus servidores XFTP";
+"Your XFTP servers" = "Mis servidores XFTP";
 

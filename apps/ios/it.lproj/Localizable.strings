@@ -20,6 +20,9 @@
 "_italic_" = "\\_corsivo_";
 
 /* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- messaggi vocali fino a 5 minuti.\n- tempo di scomparsa personalizzato.\n- cronologia delle modifiche.";
+
+/* No comment provided by engineer. */
 ", " = ", ";
 
 /* No comment provided by engineer. */
@@ -87,6 +90,12 @@
 
 /* No comment provided by engineer. */
 "%@" = "%@";
+
+/* No comment provided by engineer. */
+"%@ (current)" = "%@ (attuale)";
+
+/* copied message info */
+"%@ (current):" = "%@ (attuale):";
 
 /* No comment provided by engineer. */
 "%@ / %@" = "%@ / %@";
@@ -309,6 +318,9 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Tutte le chat e i messaggi verranno eliminati. Non è reversibile!";
 
 /* No comment provided by engineer. */
+"All data is erased when it is entered." = "Tutti i dati vengono cancellati quando inserito.";
+
+/* No comment provided by engineer. */
 "All group members will remain connected." = "Tutti i membri del gruppo resteranno connessi.";
 
 /* No comment provided by engineer. */
@@ -460,6 +472,9 @@
 
 /* No comment provided by engineer. */
 "Bad message ID" = "ID del messaggio errato";
+
+/* No comment provided by engineer. */
+"Better messages" = "Messaggi migliorati";
 
 /* No comment provided by engineer. */
 "bold" = "grassetto";
@@ -996,6 +1011,12 @@
 /* deleted chat item */
 "deleted" = "eliminato";
 
+/* No comment provided by engineer. */
+"Deleted at" = "Eliminato il";
+
+/* copied message info */
+"Deleted at: %@" = "Eliminato il: %@";
+
 /* rcv group event chat item */
 "deleted group" = "gruppo eliminato";
 
@@ -1047,6 +1068,12 @@
 /* No comment provided by engineer. */
 "Disappearing messages are prohibited in this group." = "I messaggi a tempo sono vietati in questo gruppo.";
 
+/* No comment provided by engineer. */
+"Disappears at" = "Scompare il";
+
+/* copied message info */
+"Disappears at: %@" = "Scompare il: %@";
+
 /* server test step */
 "Disconnect" = "Disconnetti";
 
@@ -1079,6 +1106,9 @@
 
 /* integrity error chat item */
 "duplicate message" = "messaggio duplicato";
+
+/* No comment provided by engineer. */
+"Duration" = "Durata";
 
 /* No comment provided by engineer. */
 "e2e encrypted" = "crittografato e2e";
@@ -1360,6 +1390,9 @@
 "Files & media" = "File e multimediali";
 
 /* No comment provided by engineer. */
+"Finally, we have them! 🚀" = "Finalmente le abbiamo! 🚀";
+
+/* No comment provided by engineer. */
 "For console" = "Per console";
 
 /* No comment provided by engineer. */
@@ -1479,6 +1512,9 @@
 /* No comment provided by engineer. */
 "Hide:" = "Nascondi:";
 
+/* copied message info */
+"History" = "Cronologia";
+
 /* time unit */
 "hours" = "ore";
 
@@ -1587,6 +1623,9 @@
 /* connection level description */
 "indirect (%d)" = "indiretta (%d)";
 
+/* chat item action */
+"Info" = "Informazioni";
+
 /* No comment provided by engineer. */
 "Initial role" = "Ruolo iniziale";
 
@@ -1676,6 +1715,9 @@
 
 /* No comment provided by engineer. */
 "italic" = "corsivo";
+
+/* No comment provided by engineer. */
+"Japanese interface" = "Interfaccia giapponese";
 
 /* No comment provided by engineer. */
 "Join" = "Entra";
@@ -1852,6 +1894,12 @@
 "moderated" = "moderato";
 
 /* No comment provided by engineer. */
+"Moderated at" = "Moderato il";
+
+/* copied message info */
+"Moderated at: %@" = "Moderato il: %@";
+
+/* No comment provided by engineer. */
 "moderated by %@" = "moderato da %@";
 
 /* time unit */
@@ -1895,6 +1943,9 @@
 
 /* No comment provided by engineer. */
 "New database archive" = "Nuovo archivio database";
+
+/* No comment provided by engineer. */
+"New display name" = "Nuovo nome da mostrare";
 
 /* No comment provided by engineer. */
 "New in %@" = "Novità nella %@";
@@ -2221,8 +2272,14 @@
 /* No comment provided by engineer. */
 "Rate the app" = "Valuta l'app";
 
+/* chat item menu */
+"React..." = "Reagisci...";
+
 /* No comment provided by engineer. */
 "Read" = "Leggi";
+
+/* No comment provided by engineer. */
+"Read more" = "Leggi tutto";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Maggiori informazioni nella [Guida per l'utente](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
@@ -2238,6 +2295,12 @@
 
 /* No comment provided by engineer. */
 "received answer…" = "risposta ricevuta…";
+
+/* No comment provided by engineer. */
+"Received at" = "Ricevuto il";
+
+/* copied message info */
+"Received at: %@" = "Ricevuto il: %@";
 
 /* No comment provided by engineer. */
 "received confirmation…" = "conferma ricevuta…";
@@ -2256,6 +2319,12 @@
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "I destinatari vedono gli aggiornamenti mentre li digiti.";
+
+/* No comment provided by engineer. */
+"Record updated at" = "Registro aggiornato il";
+
+/* copied message info */
+"Record updated at: %@" = "Registro aggiornato il: %@";
 
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Consumo di batteria ridotto";
@@ -2493,6 +2562,12 @@
 
 /* No comment provided by engineer. */
 "Sending via" = "Invio tramite";
+
+/* No comment provided by engineer. */
+"Sent at" = "Inviato il";
+
+/* copied message info */
+"Sent at: %@" = "Inviato il: %@";
 
 /* notification */
 "Sent file event" = "Evento file inviato";
@@ -2880,6 +2955,9 @@
 
 /* No comment provided by engineer. */
 "Unhide profile" = "Svela profilo";
+
+/* No comment provided by engineer. */
+"Unit" = "Unità";
 
 /* connection info */
 "unknown" = "sconosciuto";

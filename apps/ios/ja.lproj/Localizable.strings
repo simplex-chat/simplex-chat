@@ -20,6 +20,9 @@
 "_italic_" = "\\_斜体_";
 
 /* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- 最長 5 分間の音声メッセージ。\n- 消えるまでのカスタム時間。\n- 編集履歴。";
+
+/* No comment provided by engineer. */
 ", " = ", ";
 
 /* No comment provided by engineer. */
@@ -303,7 +306,7 @@
 "admin" = "管理者";
 
 /* No comment provided by engineer. */
-"Admins can create the links to join groups." = "管理者はグループの参加リンクを発行できます。";
+"Admins can create the links to join groups." = "管理者はグループの参加リンクを生成できます。";
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "ネットワーク詳細設定";
@@ -313,6 +316,9 @@
 
 /* No comment provided by engineer. */
 "All chats and messages will be deleted - this cannot be undone!" = "全チャットとメッセージが削除されます(※元に戻せません※)！";
+
+/* No comment provided by engineer. */
+"All data is erased when it is entered." = "入力するとすべてのデータが消去されます。";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "グループ全員の接続が継続します。";
@@ -781,13 +787,13 @@
 "Create file" = "ファイルを作成";
 
 /* No comment provided by engineer. */
-"Create group link" = "グループのリンクを発行する";
+"Create group link" = "グループのリンクを生成する";
 
 /* No comment provided by engineer. */
-"Create link" = "リンクを発行する";
+"Create link" = "リンクを生成する";
 
 /* No comment provided by engineer. */
-"Create one-time invitation link" = "使い捨ての招待リンクを発行する";
+"Create one-time invitation link" = "使い捨ての招待リンクを生成する";
 
 /* server test step */
 "Create queue" = "キューの作成";
@@ -1234,7 +1240,7 @@
 "Error creating group" = "グループの作成エラー";
 
 /* No comment provided by engineer. */
-"Error creating group link" = "グループリンク発行にエラー発生";
+"Error creating group link" = "グループリンク生成にエラー発生";
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "プロフィール作成にエラー発生！";
@@ -1372,7 +1378,7 @@
 "File will be received when your contact completes uploading it." = "連絡先がアップロードを完了した時点で、ファイルを受信します。";
 
 /* No comment provided by engineer. */
-"File will be received when your contact is online, please wait or check later!" = "連絡先がオンラインになったら受信されます。しばらくお待ちください。";
+"File will be received when your contact is online, please wait or check later!" = "連絡先がオンラインになったら受信されます。しばらくお待ちください！";
 
 /* No comment provided by engineer. */
 "File: %@" = "ファイル: %@";
@@ -1531,7 +1537,7 @@
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "直接会えない場合は、**ビデオ通話で QR コードを表示する**か、リンクを共有してください。";
 
 /* No comment provided by engineer. */
-"If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "アプリを開くときにこのパスコードを入力すると、アプリのすべてのデータが元に戻せないように削除されます。";
+"If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "アプリを開くときにこのパスコードを入力すると、アプリのすべてのデータが元に戻せないように削除されます！";
 
 /* No comment provided by engineer. */
 "If you enter your self-destruct passcode while opening the app:" = "アプリを開いているときに自己破壊パスコードを入力した場合:";
@@ -1703,6 +1709,9 @@
 
 /* No comment provided by engineer. */
 "italic" = "斜体";
+
+/* No comment provided by engineer. */
+"Japanese interface" = "日本語UI";
 
 /* No comment provided by engineer. */
 "Join" = "参加";
@@ -1975,9 +1984,6 @@
 "No group!" = "グループが見つかりません！";
 
 /* No comment provided by engineer. */
-"No message details" = "メッセージの詳細はありません";
-
-/* No comment provided by engineer. */
 "No permission to record voice message" = "音声メッセージを録音する権限がありません";
 
 /* No comment provided by engineer. */
@@ -2186,7 +2192,7 @@
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "パスフレーズを失くさないように保管してください。失くすと変更できなくなります。";
 
 /* No comment provided by engineer. */
-"Polish interface" = "洗練されたインターフェース";
+"Polish interface" = "ポーランド語UI";
 
 /* server test error */
 "Possibly, certificate fingerprint in server address is incorrect" = "サーバアドレスの証明証IDが正しくないかもしれません";
@@ -2265,6 +2271,9 @@
 
 /* No comment provided by engineer. */
 "Read" = "読む";
+
+/* No comment provided by engineer. */
+"Read more" = "続きを読む";
 
 /* No comment provided by engineer. */
 "Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "詳しくは[ユーザーガイド](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)をご覧ください。";
