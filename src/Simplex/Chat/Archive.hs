@@ -48,7 +48,7 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
 
-importArchive :: ChatMonad m => ArchiveConfig -> m [(Maybe String, ChatError)]
+importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
@@ -57,7 +57,7 @@ importArchive cfg@ArchiveConfig {archivePath} =
     backup agentDb
     copyFile (dir </> archiveChatDbFile) chatDb
     copyFile (dir </> archiveAgentDbFile) agentDb
-    copyFiles dir filesPath `catchError` \e -> pure [(Nothing, e)]
+    copyFiles dir filesPath `catchError` \e -> pure [AEImport e]
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
     copyFiles dir filesPath = do
@@ -75,14 +75,14 @@ withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
   Just tmpDir -> withTempDirectory tmpDir
   _ -> withSystemTempDirectory
 
-copyDirectoryFiles :: ChatMonad m => FilePath -> FilePath -> m [(Maybe String, ChatError)]
+copyDirectoryFiles :: ChatMonad m => FilePath -> FilePath -> m [ArchiveError]
 copyDirectoryFiles fromDir toDir = do
   createDirectoryIfMissing False toDir
   fs <- listDirectory fromDir
   foldM copyFileCatchError [] fs
   where
     copyFileCatchError fileErrs f =
-      (copyDirectoryFile f $> fileErrs) `catchError` \e -> pure ((Just f, e) : fileErrs)
+      (copyDirectoryFile f $> fileErrs) `catchError` \e -> pure (AEImportFile f e : fileErrs)
     copyDirectoryFile f = do
       let fn = takeFileName f
           f' = fromDir </> fn
