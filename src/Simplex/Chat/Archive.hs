@@ -79,12 +79,15 @@ copyDirectoryFiles :: ChatMonad m => FilePath -> FilePath -> m [(Maybe String, C
 copyDirectoryFiles fromDir toDir = do
   createDirectoryIfMissing False toDir
   fs <- listDirectory fromDir
-  fileErrsVar <- newTVarIO []
-  forM_ fs $ \f ->
-    copyDirectoryFile f `catchError` \e -> do
-      fileErrs <- readTVarIO fileErrsVar
-      atomically $ writeTVar fileErrsVar ((Just f, e) : fileErrs)
-  readTVarIO fileErrsVar
+  foldM
+    ( \fileErrs f -> do
+        r <- runExceptT $ copyDirectoryFile f
+        case r of
+          Left e -> pure $ (Just f, e) : fileErrs
+          Right _ -> pure fileErrs
+    )
+    []
+    fs
   where
     copyDirectoryFile f = do
       let fn = takeFileName f
