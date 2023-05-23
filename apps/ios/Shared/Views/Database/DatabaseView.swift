@@ -253,18 +253,11 @@ struct DatabaseView: View {
                 title: Text("Chat database imported"),
                 message: Text("Restart the app to use imported chat database")
             )
-        case let .archiveImportedWithErrors(archiveErrors):
-            if archiveErrors.contains(where: { $0.isImportFileError } ) {
-                return Alert(
-                    title: Text("Chat database imported"),
-                    message: Text("Restart the app to use imported chat database. Some files couldn't be imported - see Chat console for more details.")
-                )
-            } else {
-                return Alert(
-                    title: Text("Chat database imported"),
-                    message: Text("Restart the app to use imported chat database. Some non-fatal errors occured during import - see Chat console for more details.")
-                )
-            }
+        case .archiveImportedWithErrors:
+            return Alert(
+                title: Text("Chat database imported"),
+                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occured during import - see Chat console for more details.")
+            )
         case .deleteChat:
             return Alert(
                 title: Text("Delete chat profile?"),

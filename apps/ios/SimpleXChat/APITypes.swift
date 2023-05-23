@@ -1393,11 +1393,4 @@ public enum SMPAgentError: Decodable {
 public enum ArchiveError: Decodable {
     case `import`(chatError: ChatError)
     case importFile(file: String, chatError: ChatError)
-
-    public var isImportFileError: Bool {
-        switch self {
-        case .importFile: return true
-        default: return false
-        }
-    }
 }
