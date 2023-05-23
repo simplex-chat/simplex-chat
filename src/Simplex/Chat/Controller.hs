@@ -524,6 +524,7 @@ data ChatResponse
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
+  | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show, Generic)
 
@@ -868,3 +869,12 @@ unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m 
 unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
   where
     unset a' = if a == a' then ActiveNone else a'
+
+data ArchiveError
+  = AEImport {chatError :: ChatError}
+  | AEImportFile {file :: String, chatError :: ChatError}
+  deriving (Show, Exception, Generic)
+
+instance ToJSON ArchiveError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
