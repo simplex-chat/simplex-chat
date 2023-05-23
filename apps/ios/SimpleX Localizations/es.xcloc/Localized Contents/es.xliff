@@ -501,9 +501,9 @@
         <target>Se eliminarán todos los chats y mensajes. ¡No se puede deshacer!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is erased when it is entered." xml:space="preserve">
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
         <source>All data is erased when it is entered.</source>
-        <target>Al introducirlo todos los datos son borrados.</target>
+        <target state="translated">Al introducirlo todos los datos son eliminados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -1490,14 +1490,14 @@
         <target>¿Eliminar perfil de usuario?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at" xml:space="preserve">
+      <trans-unit id="Deleted at" xml:space="preserve" approved="no">
         <source>Deleted at</source>
-        <target>Eliminado el</target>
+        <target state="translated">Eliminado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at: %@" xml:space="preserve">
+      <trans-unit id="Deleted at: %@" xml:space="preserve" approved="no">
         <source>Deleted at: %@</source>
-        <target>Eliminado el: %@</target>
+        <target state="translated">Eliminado: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1570,14 +1570,14 @@
         <target>Los mensajes temporales no están permitidos en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at" xml:space="preserve">
+      <trans-unit id="Disappears at" xml:space="preserve" approved="no">
         <source>Disappears at</source>
-        <target>Desaparecerá el</target>
+        <target state="translated">Desaparecerá</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at: %@" xml:space="preserve">
+      <trans-unit id="Disappears at: %@" xml:space="preserve" approved="no">
         <source>Disappears at: %@</source>
-        <target>Desaparecerá el: %@</target>
+        <target state="translated">Desaparecerá: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -2778,14 +2778,14 @@
         <target>Moderar</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Moderated at" xml:space="preserve">
+      <trans-unit id="Moderated at" xml:space="preserve" approved="no">
         <source>Moderated at</source>
-        <target>Moderado el</target>
+        <target state="translated">Moderado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Moderated at: %@" xml:space="preserve">
+      <trans-unit id="Moderated at: %@" xml:space="preserve" approved="no">
         <source>Moderated at: %@</source>
-        <target>Moderado el: %@</target>
+        <target state="translated">Moderado: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
@@ -2928,13 +2928,13 @@
         <target>¡Las notificaciones están desactivadas!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
+      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve" approved="no">
         <source>Now admins can:
 - delete members' messages.
 - disable members ("observer" role)</source>
-        <target>Ahora los administradores pueden:
-- borrar mensajes de los miembros.
-- desactivar el rol a miembros (pasando a rol "observador")</target>
+        <target state="translated">Ahora los administradores pueden:
+- eliminar mensajes de los miembros.
+- desactivar el rol miembro (a rol "observador")</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off" xml:space="preserve">
@@ -3377,14 +3377,14 @@
         <target>Más información en nuestro [repositorio GitHub](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at" xml:space="preserve">
+      <trans-unit id="Received at" xml:space="preserve" approved="no">
         <source>Received at</source>
-        <target>Recibido el</target>
+        <target state="translated">Recibido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at: %@" xml:space="preserve">
+      <trans-unit id="Received at: %@" xml:space="preserve" approved="no">
         <source>Received at: %@</source>
-        <target>Recibido el: %@</target>
+        <target state="translated">Recibido: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
@@ -3412,14 +3412,14 @@
         <target>Los destinatarios ven la actualizacion mientras escribes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at" xml:space="preserve">
+      <trans-unit id="Record updated at" xml:space="preserve" approved="no">
         <source>Record updated at</source>
-        <target>Registro actualizado</target>
+        <target state="translated">Registro actualiz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at: %@" xml:space="preserve">
+      <trans-unit id="Record updated at: %@" xml:space="preserve" approved="no">
         <source>Record updated at: %@</source>
-        <target>Registro actualizado: %@</target>
+        <target state="translated">Registro actualiz: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
@@ -3787,14 +3787,14 @@
         <target>Enviando vía</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent at" xml:space="preserve">
+      <trans-unit id="Sent at" xml:space="preserve" approved="no">
         <source>Sent at</source>
-        <target>Enviado el</target>
+        <target state="translated">Enviado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent at: %@" xml:space="preserve">
+      <trans-unit id="Sent at: %@" xml:space="preserve" approved="no">
         <source>Sent at: %@</source>
-        <target>Enviado el: %@</target>
+        <target state="translated">Enviado: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Sent file event" xml:space="preserve">
