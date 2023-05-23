@@ -495,6 +495,7 @@ public enum ChatResponse: Decodable, Error {
     case cmdOk(user: User?)
     case chatCmdError(user_: User?, chatError: ChatError)
     case chatError(user_: User?, chatError: ChatError)
+    case archiveImported(fileErrors: [])
 
     public var responseType: String {
         get {
