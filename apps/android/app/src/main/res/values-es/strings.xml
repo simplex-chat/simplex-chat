@@ -1010,7 +1010,7 @@
     <string name="you_will_still_receive_calls_and_ntfs">Seguirás recibiendo llamadas y notificaciones de los perfiles silenciados cuando estén activos.</string>
     <string name="v4_6_group_moderation_descr">Ahora los administradores pueden:
 \n- borrar mensajes de los miembros.
-\n- desactivar el rol a miembros (pasando a rol \"observador\")</string>
+\n- desactivar el rol miembro (a rol \"observador\")</string>
     <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página Mis perfiles.</string>
     <string name="database_upgrade">Actualización de la base de datos</string>
     <string name="database_downgrade">Volviendo a versión anterior de la base de datos</string>
@@ -1186,7 +1186,7 @@
     <string name="your_contacts_will_see_it">Tus contactos en SimpleX lo verán.
 \nPuedes cambiarlo en Configuración.</string>
     <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
-    <string name="you_wont_lose_your_contacts_if_delete_address">Si más tarde decides borrar tu dirección los contactos no se perderán.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Si más tarde decides eliminar tu dirección los contactos no se perderán.</string>
     <string name="all_app_data_will_be_cleared">Todos los datos de la aplicación se eliminarán.</string>
     <string name="empty_chat_profile_is_created">Se creará un perfil vacío con el nombre proporcionado, y la aplicación se abrirá como de costumbre.</string>
     <string name="self_destruct">Autodestrucción</string>
@@ -1213,19 +1213,19 @@
     <string name="send_disappearing_message">Enviar mensaje temporal</string>
     <string name="send_disappearing_message_custom_time">Tiempo personalizado</string>
     <string name="send_disappearing_message_send">Enviar</string>
-    <string name="info_row_moderated_at">Moderado el</string>
-    <string name="info_row_received_at">Recibido el</string>
-    <string name="info_row_sent_at">Enviado el</string>
+    <string name="info_row_moderated_at">Moderado</string>
+    <string name="info_row_received_at">Recibido</string>
+    <string name="info_row_sent_at">Enviado</string>
     <string name="item_info_current">(actual)</string>
     <string name="share_text_database_id">ID base de datos: %d</string>
-    <string name="share_text_deleted_at">Borrado el: %s</string>
-    <string name="share_text_disappears_at">Desaparecerá el: %s</string>
-    <string name="share_text_moderated_at">Moderado el: %s</string>
-    <string name="share_text_received_at">Recibido el: %s</string>
-    <string name="share_text_updated_at">Registro actualizado: %s</string>
+    <string name="share_text_deleted_at">Eliminado: %s</string>
+    <string name="share_text_disappears_at">Desaparecerá: %s</string>
+    <string name="share_text_moderated_at">Moderado: %s</string>
+    <string name="share_text_received_at">Recibido: %s</string>
+    <string name="share_text_updated_at">Registro actualiz: %s</string>
     <string name="current_version_timestamp">%s (actual)</string>
-    <string name="share_text_sent_at">Enviado el: %s</string>
-    <string name="info_row_disappears_at">Desaparecerá el</string>
+    <string name="share_text_sent_at">Enviado: %s</string>
+    <string name="info_row_disappears_at">Desaparecerá</string>
     <string name="message_reactions">Reacciones a los mensajes</string>
     <string name="prohibit_message_reactions">No se permiten reacciones a los mensajes.</string>
     <string name="allow_message_reactions">Permitir reacciones a los mensajes.</string>
@@ -1243,11 +1243,11 @@
     <string name="message_reactions_are_prohibited">Las reacciones a los mensajes no están permitidas en este grupo.</string>
     <string name="only_your_contact_can_add_message_reactions">Sólo tu contacto puede añadir reacciones a los mensajes.</string>
     <string name="send_disappearing_message_1_minute">1 minuto</string>
-    <string name="info_row_updated_at">Registro actualizado</string>
+    <string name="info_row_updated_at">Registro actualiz</string>
     <string name="send_disappearing_message_30_seconds">30 segundos</string>
     <string name="send_disappearing_message_5_minutes">5 minutos</string>
     <string name="allow_your_contacts_adding_message_reactions">Permitir que tus contactos añadan reacciones a los mensajes.</string>
-    <string name="info_row_deleted_at">Eliminado el</string>
+    <string name="info_row_deleted_at">Eliminado</string>
     <string name="allow_message_reactions_only_if">Se permiten las reacciones a los mensajes pero sólo si tu contacto también las permite.</string>
     <string name="v5_1_custom_themes">Temas personalizados</string>
     <string name="v5_1_self_destruct_passcode">Código de autodestrucción</string>
@@ -1256,7 +1256,7 @@
 \n- historial de edición.</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
     <string name="v5_1_better_messages">Mensajes mejorados</string>
-    <string name="v5_1_self_destruct_passcode_descr">Al introducirlo todos los datos son borrados.</string>
+    <string name="v5_1_self_destruct_passcode_descr">Al introducirlo todos los datos son eliminados.</string>
     <string name="v5_1_custom_themes_descr">Personalizar y compartir temas de color.</string>
     <string name="v5_1_message_reactions_descr">¡Por fin los tenemos! 🚀</string>
     <string name="v5_1_message_reactions">Reacciones a los mensajes</string>
