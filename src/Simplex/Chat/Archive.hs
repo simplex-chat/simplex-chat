@@ -79,13 +79,10 @@ copyDirectoryFiles :: ChatMonad m => FilePath -> FilePath -> m [(Maybe String, C
 copyDirectoryFiles fromDir toDir = do
   createDirectoryIfMissing False toDir
   fs <- listDirectory fromDir
-  foldM
-    ( \fileErrs f -> do
-        (copyDirectoryFile f $> fileErrs) `catchError` \e -> pure ((Just f, e) : fileErrs)
-    )
-    []
-    fs
+  foldM copyFileCatchError [] fs
   where
+    copyFileCatchError fileErrs f =
+      (copyDirectoryFile f $> fileErrs) `catchError` \e -> pure ((Just f, e) : fileErrs)
     copyDirectoryFile f = do
       let fn = takeFileName f
           f' = fromDir </> fn
