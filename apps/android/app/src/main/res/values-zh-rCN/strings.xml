@@ -787,7 +787,7 @@
     <string name="settings_section_title_support">支持 SIMPLEX CHAT</string>
     <string name="send_link_previews">发送链接预览</string>
     <string name="settings_section_title_socks">SOCKS 代理</string>
-    <string name="stop_chat_question">停止聊天程序？</string>
+    <string name="stop_chat_question">停止聊天？</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。</string>
     <string name="restore_database">恢复数据库备份</string>
     <string name="restore_database_alert_title">恢复数据库备份？</string>
@@ -847,7 +847,7 @@
     <string name="use_chat">使用聊天</string>
     <string name="read_more_in_github_with_link">在我们的 <font color="#0088ff">GitHub 存储库</font> 中阅读更多内容。</string>
     <string name="auth_open_chat_console">打开聊天控制台</string>
-    <string name="auth_stop_chat">Stop chat</string>
+    <string name="auth_stop_chat">停止聊天</string>
     <string name="toast_permission_denied">权限被拒绝！</string>
     <string name="chat_help_tap_button">点击按钮</string>
     <string name="thank_you_for_installing_simplex">感谢您安装 <xliff:g id="appNameFull">SimpleX Chat</xliff:g>！</string>
@@ -1108,7 +1108,7 @@
     <string name="stop_snd_file__message">即将停止发送文件。</string>
     <string name="stop_rcv_file__title">停止接收文件？</string>
     <string name="stop_rcv_file__message">即将停止接收文件。</string>
-    <string name="stop_file__confirm">Stop</string>
+    <string name="stop_file__confirm">停止</string>
     <string name="revoke_file__action">撤销文件</string>
     <string name="revoke_file__title">撤销文件？</string>
     <string name="revoke_file__message">文件将从服务器中删除。</string>
@@ -1183,7 +1183,7 @@
     <string name="only_you_can_add_message_reactions">只有您可以添加消息回应。</string>
     <string name="group_members_can_add_message_reactions">群组成员可以添加信息回应。</string>
     <string name="message_reactions_are_prohibited">该群组禁用了消息回应。</string>
-    <string name="self_destruct_passcode_changed">自毁密码已改变!</string>
+    <string name="self_destruct_passcode_changed">自毁密码已更改!</string>
     <string name="self_destruct_passcode_enabled">自毁密码已启用!</string>
     <string name="set_passcode">设置密码</string>
     <string name="info_menu">信息</string>
@@ -1234,7 +1234,7 @@
     <string name="whats_new_read_more">阅读更多</string>
     <string name="v5_1_message_reactions_descr">终于我们有它们了！ 🚀</string>
     <string name="v5_1_message_reactions">消息回应</string>
-    <string name="v5_1_self_destruct_passcode">自毁式密码</string>
+    <string name="v5_1_self_destruct_passcode">自毁密码</string>
     <string name="custom_time_unit_hours">小时</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">感谢用户——通过 Weblate 做出贡献！</string>
     <string name="v5_1_japanese_portuguese_interface">日语和葡萄牙语用户界面</string>
@@ -1242,7 +1242,7 @@
     <string name="custom_time_unit_seconds">秒</string>
     <string name="custom_time_unit_months">月</string>
     <string name="custom_time_picker_select">选择</string>
-    <string name="custom_time_unit_weeks">周数</string>
+    <string name="custom_time_unit_weeks">周</string>
     <string name="item_info_no_text">无文本</string>
     <string name="import_theme_error">导入主题错误</string>
     <string name="color_surface">菜单和警报</string>
