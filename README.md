@@ -112,6 +112,7 @@ Languages in progress: Arabic, Japanese, Korean, Portuguese and [others](https:/
 
 We would love to have you join the development! You can help us with:
 
+- [share the color theme](./docs/THEMES.md) you use in Android app!
 - writing a tutorial or recipes about hosting servers, chat bot automations, etc.
 - contributing to SimpleX Chat knowledge-base.
 - developing features - please connect to us via chat so we can help you get started.
@@ -196,6 +197,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent updates:
+
+[May 23, 2023. SimpleX Chat: v5.1 released with message reactions and self-destruct passcode](./blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
 
 [Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
 
@@ -316,25 +319,27 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Sending and receiving large files via [XFTP protocol](./blog/20230301-simplex-file-transfer-protocol.md).
 - ✅ Video messages.
 - ✅ App access passcode.
-- 🏗 Improved Android app UI design.
-- 🏗 SMP queue redundancy and rotation (manual is supported).
-- 🏗 Reduced battery and traffic usage in large groups.
+- ✅ Improved Android app UI design.
+- ✅ Optional alternative access password.
+- ✅ Message reactions
+- ✅ Message editing history
+- ✅ Reduced battery and traffic usage in large groups.
+- 🏗 Desktop client.
+- 🏗 Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
+- SMP queue redundancy and rotation (manual is supported).
 - Include optional message into connection request sent via contact address.
-- Ephemeral/disappearing/OTR conversations with the existing contacts.
-- Optional alternative access password.
 - Local app files encryption.
 - Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).
-- Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
-- Privately share your location.
+- Large groups, communities and public channels.
 - Feeds/broadcasts.
+- Ephemeral/disappearing/OTR conversations with the existing contacts.
+- Privately share your location.
 - Web widgets for custom interactivity in the chats.
 - Programmable chat automations / rules (automatic replies/forward/deletion/sending, reminders, etc.).
 - Supporting the same profile on multiple devices.
-- Desktop client.
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
-- Hosting server for large groups, communities and public channels.
 - Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - High capacity multi-node SMP relays.
 
