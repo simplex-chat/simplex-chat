@@ -2,8 +2,8 @@
 layout: layouts/article.html
 title: "SimpleX Chat: v5.1 released with message reactions and self-destruct passcode"
 date: 2023-05-23
-# image: images/20230422-video.png
-# imageBottom: true
+image: images/20230523-reactions.png
+imageBottom: true
 previewBody: blog_previews/20230523.html
 permalink: "/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html"
 ---
@@ -36,6 +36,8 @@ Also, we added Japanese and Portuguese (Brazil)<sup>*</sup> interface languages,
 
 ## Message reactions
 
+<img src="./images/20230523-reactions.png" width="288">
+
 No idea why it took us so long to add them – finally we have them, and they are great.
 
 We didn't like the view of other messengers plagued by 40 different reactions on a message, and we were not quite sure what can be done about it, so we initially decided to limit available reaction to just 6: thumbs up 👍, down 👎, smile 😀, tear 😢, heart ❤️ and rocket 🚀. But unlike some other messengers, we don't limit the reactions to just one per message - you can put up to 3.
@@ -48,11 +50,15 @@ The next app version will allow prohibiting the reactions per conversation, as y
 
 ### Voice messages: up to 5 minutes, better quality, playback control
 
+<img src="./images/20230523-voice.png" width="288">
+
 Since [v4.3](./20221206-simplex-chat-v4.3-voice-messages.md#instant-voice-messages) voice messages were sent in small 16kb chunks, so we had to limit them to 30-40 seconds for better user experience, as sending larger files would require the sender to be online.
 
 With the new XFTP protocol that allows sending files up to 1gb it is now possible to increase the message size - we decided to limit it at 5 min, increasing their quality twice (the bitrate is increased from 16 to 32kbps). We also added a slider to control the playback.
 
 ### Disappearing messages: choose any time!
+
+<img src="./images/20230523-disappearing1.png" width="288"> &nbsp;&nbsp; <img src="./images/20230523-disappearing2.png" width="288">
 
 Since [v4.4](./20230103-simplex-chat-v4.4-disappearing-messages.md#disappearing-messages) disappearing messages were only configurable for the whole conversation, with a limited choice of allowed times between 30 seconds and 1 month.
 
@@ -60,17 +66,23 @@ This version allows to configure the time for messages to disappear more granula
 
 ### Message editing history
 
+<img src="./images/20230523-info.png" width="288">
+
 I [wrote previously](./20221206-simplex-chat-v4.3-voice-messages.md#irreversible-message-deletion) why we decided to require the recipient concent before the messages can be fully deleted by the sender - in short, it is to support recipient's data sovereignty and prevent the possibility of offensive messages being removed without any trace. By default, when the sender deletes the message it is marked as deleted, rather than fully deleted, and you can reveal the original message.
 
 You've found the workaround for it of course - it's enough to simply edit the message to hide the original content. This version adds a visible message editing history, together with other detailed information about when the message was sent, received or deleted, that wasn't visible in the conversation.
 
 ## Customize and share color themes
 
+<img src="./images/20230523-theme.png" width="288">
+
 Android app now allows choosing between three color themes - Light, Dark and SimpleX (a dark blue theme). You can customize any theme by setting 9 different colors used in the app, including titles, menus, accent colors and colors for sent and received messages.
 
 You can share your theme with other users by exporting it to a file and sending to them. You can also [contribute your favorite themes](../docs/THEMES.md) to our GitHub repository.
 
 ## Self-destruct passcode
+
+<img src="./images/20230523-self-destruct.png" width="288">
 
 This is something many of you asked before - when asked to enter the app passcode under duress, to be able to enter a special self-destruct code that would remove the app data. This feature is offered in many security tools, and now you can configure it in SimpleX Chat as well.
 
