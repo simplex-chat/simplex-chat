@@ -1251,6 +1251,7 @@ public enum ChatErrorType: Decodable {
     case invalidChatItemDelete
     case agentVersion
     case commandError(message: String)
+    case exception(message: String)
 }
 
 public enum StoreError: Decodable {

@@ -892,6 +892,7 @@
   <string name="error_importing_database">Error importing chat database</string>
   <string name="chat_database_imported">Chat database imported</string>
   <string name="restart_the_app_to_use_imported_chat_database">Restart the app to use imported chat database.</string>
+  <string name="non_fatal_errors_occured_during_import">Some non-fatal errors occurred during import - you may see Chat console for more details.</string>
   <string name="delete_chat_profile_question">Delete chat profile?</string>
   <string name="delete_chat_profile_action_cannot_be_undone_warning">This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
   <string name="chat_database_deleted">Chat database deleted</string>

@@ -178,8 +178,7 @@ fun DatabaseLayout(
       val unencrypted = chatDbEncrypted == false
       SettingsActionItem(
         if (unencrypted) painterResource(R.drawable.ic_lock_open) else if (useKeyChain) painterResource(R.drawable.ic_vpn_key_filled)
-        else painterResource(R
-          .drawable.ic_lock),
+        else painterResource(R.drawable.ic_lock),
         stringResource(R.string.database_passphrase),
         click = showSettingsModal() { DatabaseEncryptionView(it) },
         iconColor = if (unencrypted) WarningOrange else MaterialTheme.colors.secondary,
@@ -574,11 +573,17 @@ private fun importArchive(
         m.controller.apiDeleteStorage()
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
-          m.controller.apiImportArchive(config)
+          val archiveErrors = m.controller.apiImportArchive(config)
           DatabaseUtils.ksDatabasePassword.remove()
           appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
-          operationEnded(m, progressIndicator) {
-            AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
+          if (archiveErrors.isEmpty()) {
+            operationEnded(m, progressIndicator) {
+              AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), text = generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
+            }
+          } else {
+            operationEnded(m, progressIndicator) {
+              AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), text = generalGetString(R.string.restart_the_app_to_use_imported_chat_database) + "\n" + generalGetString(R.string.non_fatal_errors_occured_during_import))
+            }
           }
         } catch (e: Error) {
           operationEnded(m, progressIndicator) {

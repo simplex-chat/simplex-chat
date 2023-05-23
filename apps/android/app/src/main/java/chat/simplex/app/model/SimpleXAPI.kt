@@ -545,9 +545,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     throw Error("failed to export archive: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiImportArchive(config: ArchiveConfig) {
+  suspend fun apiImportArchive(config: ArchiveConfig): List<ArchiveError> {
     val r = sendCmd(CC.ApiImportArchive(config))
-    if (r is CR.CmdOk) return
+    if (r is CR.ArchiveImported) return r.archiveErrors
     throw Error("failed to import archive: ${r.responseType} ${r.details}")
   }
 
@@ -3369,6 +3369,7 @@ sealed class CR {
   @Serializable @SerialName("cmdOk") class CmdOk(val user: User?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: User?, val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val user_: User?, val chatError: ChatError): CR()
+  @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
 
@@ -3478,6 +3479,7 @@ sealed class CR {
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
+    is ArchiveImported -> "archiveImported"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -3590,6 +3592,7 @@ sealed class CR {
     is CmdOk -> withUser(user, noDetails())
     is ChatCmdError -> withUser(user_, chatError.string)
     is ChatRespError -> withUser(user_, chatError.string)
+    is ArchiveImported -> "${archiveErrors.map { it.string } }"
     is Response -> json
     is Invalid -> str
   }
@@ -3678,6 +3681,7 @@ sealed class ChatErrorType {
     is InvalidConnReq -> "invalidConnReq"
     is FileAlreadyReceiving -> "fileAlreadyReceiving"
     is СommandError -> "commandError $message"
+    is CEException -> "exception $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("differentActiveUser") class DifferentActiveUser: ChatErrorType()
@@ -3685,6 +3689,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("fileAlreadyReceiving") class FileAlreadyReceiving: ChatErrorType()
   @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
+  @Serializable @SerialName("exception") class CEException(val message: String): ChatErrorType()
 }
 
 @Serializable
@@ -3895,4 +3900,14 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("HAS_FILE") object HAS_FILE: XFTPErrorType()
   @Serializable @SerialName("FILE_IO") object FILE_IO: XFTPErrorType()
   @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
+}
+
+@Serializable
+sealed class ArchiveError {
+  val string: String get() = when (this) {
+    is ArchiveErrorImport -> "import ${chatError.string}"
+    is ArchiveErrorImportFile -> "importFile $file ${chatError.string}"
+  }
+  @Serializable @SerialName("import") class ArchiveErrorImport(val chatError: ChatError): ArchiveError()
+  @Serializable @SerialName("importFile") class ArchiveErrorImportFile(val file: String, val chatError: ChatError): ArchiveError()
 }

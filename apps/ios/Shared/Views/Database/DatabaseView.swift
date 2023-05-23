@@ -256,7 +256,7 @@ struct DatabaseView: View {
         case .archiveImportedWithErrors:
             return Alert(
                 title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occured during import - you may see Chat console for more details.")
+                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occurred during import - you may see Chat console for more details.")
             )
         case .deleteChat:
             return Alert(
@@ -359,10 +359,10 @@ struct DatabaseView: View {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         let archiveErrors = try await apiImportArchive(config: config)
                         _ = kcDatabasePassword.remove()
-                        if !archiveErrors.isEmpty {
-                            await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors))
-                        } else {
+                        if archiveErrors.isEmpty {
                             await operationEnded(.archiveImported)
+                        } else {
+                            await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors))
                         }
                     } catch let error {
                         await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
