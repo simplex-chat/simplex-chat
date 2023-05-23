@@ -256,7 +256,7 @@ struct DatabaseView: View {
         case .archiveImportedWithErrors:
             return Alert(
                 title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occured during import - see Chat console for more details.")
+                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occured during import - you may see Chat console for more details.")
             )
         case .deleteChat:
             return Alert(
