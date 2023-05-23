@@ -524,6 +524,7 @@ data ChatResponse
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
+  | CRImportArchiveFilesError {filesErrors :: [(Maybe String, ChatError)]}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show, Generic)
 
@@ -831,11 +832,6 @@ data ChatErrorType
 instance ToJSON ChatErrorType where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
-
-toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, event)
 
 data DatabaseError
   = DBErrorEncrypted

@@ -317,6 +317,11 @@ execChatCommand s = do
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
+toView :: ChatMonad' m => ChatResponse -> m ()
+toView event = do
+  q <- asks outputQ
+  atomically $ writeTBQueue q (Nothing, event)
+
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
@@ -443,7 +448,9 @@ processChatCommand = \case
     ts <- liftIO getCurrentTime
     let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
     processChatCommand $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
-  APIImportArchive cfg -> withStoreChanged $ importArchive cfg
+  APIImportArchive cfg -> withStoreChanged $ do
+    fileErrs <- importArchive cfg
+    when (not $ null fileErrs) $ toView $ CRImportArchiveFilesError fileErrs
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
