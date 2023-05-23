@@ -379,9 +379,8 @@ fun ComposeView(
     if (aChatItem != null) {
       chatModel.addChatItem(cInfo, aChatItem.chatItem)
       return aChatItem.chatItem
-    } else if (file != null) {
-      removeFile(context, file)
     }
+    if (file != null) removeFile(context, file)
     return null
   }
 
