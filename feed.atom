@@ -1470,13 +1470,87 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
             
         </entry>
         <entry>
-            <title>SimpleX Chat: v5.1 released with message reactions and self-destruct passcode</title>
+            <title>SimpleX Chat v5.1 released: message reactions and self-destruct passcode</title>
             <link href="https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html"/>
             
             <updated>23 May 2023</updated>
             <id>https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v51-released-with-message-reactions-and-self-destruct-passcode&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat: v5.1 released with message reactions and self-destruct passcode&lt;/h1&gt;
-&lt;p&gt;This is a placeholder for the release announcement.&lt;/p&gt;
+            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v51-released-message-reactions-and-self-destruct-passcode&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.1 released: message reactions and self-destruct passcode&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 23, 2023&lt;/p&gt;
+&lt;p&gt;What&#39;s new in v5.1:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html#message-reactions&quot;&gt;message reactions&lt;/a&gt; 🚀&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html#improved-messages&quot;&gt;improved messages&lt;/a&gt;:
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html#voice-messages-up-to-5-minutes-better-quality-playback-control&quot;&gt;voice messages up to 5 minutes&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html#disappearing-messages-choose-any-time&quot;&gt;custom time to disappear&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html#message-editing-history&quot;&gt;message editing history&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;new design and &lt;a href=&quot;https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html#customize-and-share-color-themes&quot;&gt;customizable themes&lt;/a&gt; that you can share!&lt;sup&gt;*&lt;/sup&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html#self-destruct-passcode&quot;&gt;self-destruct passcode&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;There are lots of small improvements and fixes in this release:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;setting to disable audio/video calls per contact.&lt;/li&gt;
+&lt;li&gt;group welcome message visible in a group profile - add the link to join the group there.&lt;/li&gt;
+&lt;li&gt;fixes for sending files.&lt;/li&gt;
+&lt;li&gt;configurable SOCKS proxy host and port&lt;sup&gt;*&lt;/sup&gt;.&lt;/li&gt;
+&lt;li&gt;improved calls on lock screen&lt;sup&gt;*&lt;/sup&gt;.&lt;/li&gt;
+&lt;li&gt;locale-dependent formatting of time and date&lt;sup&gt;*&lt;/sup&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also, we added Japanese and Portuguese (Brazil)&lt;sup&gt;*&lt;/sup&gt; interface languages, thanks to &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat&quot;&gt;our users and Weblate&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;* These features are available in the Android version only.&lt;/p&gt;
+&lt;h2 id=&quot;message-reactions&quot; tabindex=&quot;-1&quot;&gt;Message reactions&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20230523-reactions.png&quot; width=&quot;288&quot; /&gt;
+&lt;p&gt;No idea why it took us so long to add them – finally we have them, and they are great.&lt;/p&gt;
+&lt;p&gt;We didn&#39;t like the view of other messengers plagued by 40 different reactions on a message, and we were not quite sure what can be done about it, so we initially decided to limit available reactions to just 6: thumbs up 👍, down 👎, smile 😀, tear 😢, heart ❤️ and rocket 🚀. But unlike some other messengers, we don&#39;t limit the reactions to just one per message - you can put up to 3.&lt;/p&gt;
+&lt;p&gt;You can add them via the menu, or just by tapping the reaction already on the message.&lt;/p&gt;
+&lt;p&gt;The next app version will allow prohibiting the reactions per conversation, as you asked. Some groups work better with more substantive responses.&lt;/p&gt;
+&lt;h2 id=&quot;improved-messages&quot; tabindex=&quot;-1&quot;&gt;Improved messages&lt;/h2&gt;
+&lt;h3 id=&quot;voice-messages-up-to-5-minutes-better-quality-playback-control&quot; tabindex=&quot;-1&quot;&gt;Voice messages: up to 5 minutes, better quality, playback control&lt;/h3&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20230523-voice.png&quot; width=&quot;288&quot; /&gt;
+&lt;p&gt;Since &lt;a href=&quot;https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html#instant-voice-messages&quot;&gt;v4.3&lt;/a&gt; voice messages were sent in small 16kb chunks, so we had to limit them to 30-40 seconds for better user experience, as sending larger files would require the sender to be online.&lt;/p&gt;
+&lt;p&gt;With the new XFTP protocol that allows sending files up to 1gb it is now possible to increase the message size - we decided to limit it at 5 min, increasing their quality 2x (the bitrate is increased from 16 to 32kbps). We also added a slider to control the playback.&lt;/p&gt;
+&lt;h3 id=&quot;disappearing-messages-choose-any-time&quot; tabindex=&quot;-1&quot;&gt;Disappearing messages: choose any time!&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20230523-disappearing1.png&quot; width=&quot;288&quot; /&gt;    &lt;img src=&quot;https://simplex.chat/blog/images/20230523-disappearing2.png&quot; width=&quot;288&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Since &lt;a href=&quot;https://simplex.chat/blog/20230103-simplex-chat-v4.4-disappearing-messages.html#disappearing-messages&quot;&gt;v4.4&lt;/a&gt; disappearing messages were only configurable for the whole conversation, with a limited choice of allowed times between 30 seconds and 1 month.&lt;/p&gt;
+&lt;p&gt;This version allows to configure the time for messages to disappear more granularly, in the range from 1 second to 3 months. You can also set a different time to disappear when you send the message (hold the Send button), as long as disappearing messages are enabled in the conversation.&lt;/p&gt;
+&lt;h3 id=&quot;message-editing-history&quot; tabindex=&quot;-1&quot;&gt;Message editing history&lt;/h3&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20230523-info.png&quot; width=&quot;288&quot; /&gt;
+&lt;p&gt;I &lt;a href=&quot;https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html#irreversible-message-deletion&quot;&gt;wrote previously&lt;/a&gt; why we decided to require the recipient concent before the messages can be fully deleted by the sender - in short, it is to support recipient&#39;s data sovereignty and prevent the possibility of offensive messages being removed without any trace. By default, when the sender deletes the message it is marked as deleted, rather than fully deleted, and you can reveal the original message.&lt;/p&gt;
+&lt;p&gt;You&#39;ve found the workaround for it of course - it&#39;s enough to simply edit the message to hide the original content. This version adds a visible message editing history, together with other detailed information about when the message was sent, received or deleted, that wasn&#39;t visible in the conversation.&lt;/p&gt;
+&lt;h2 id=&quot;customize-and-share-color-themes&quot; tabindex=&quot;-1&quot;&gt;Customize and share color themes&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20230523-theme.png&quot; width=&quot;288&quot; /&gt;
+&lt;p&gt;Android app now allows choosing between three color themes - Light, Dark and SimpleX (a dark blue theme). You can customize any theme by setting 9 different colors used in the app, including titles, menus, accent colors and colors for sent and received messages.&lt;/p&gt;
+&lt;p&gt;You can share your theme with other users by exporting it to a file and sending to them. You can also &lt;a href=&quot;https://simplex.chat/blog/docs/THEMES.html&quot;&gt;contribute your favorite themes&lt;/a&gt; to our GitHub repository.&lt;/p&gt;
+&lt;h2 id=&quot;self-destruct-passcode&quot; tabindex=&quot;-1&quot;&gt;Self-destruct passcode&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20230523-self-destruct.png&quot; width=&quot;288&quot; /&gt;
+&lt;p&gt;This is something many of you asked before - when asked to enter the app passcode under duress, to be able to enter a special self-destruct code that would remove the app data. This feature is offered in many security tools, and now you can configure it in SimpleX Chat as well.&lt;/p&gt;
+&lt;p&gt;To enable it:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;go to app Settings &amp;gt; Privacy &amp;amp; security &amp;gt; SimpleX Lock.&lt;/li&gt;
+&lt;li&gt;switch lock mode to Passcode and, if necessary, enable lock – Self-destruct passcode will become available.&lt;/li&gt;
+&lt;li&gt;enable it, enter the main passcode and then enter and confirm self-destruct passcode.&lt;/li&gt;
+&lt;li&gt;optionally, you can set the new display name of the profile that will be created after the data was wiped. If it is left blank, a new empty profile will have a random name.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;simplex-platform&quot; tabindex=&quot;-1&quot;&gt;SimpleX platform&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html&quot;&gt;SimpleX Chat security assessment&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/#how-simplex-works&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/#why-ids-bad-for-privacy&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions&quot;&gt;How SimpleX is different from Session, Matrix, Signal, etc.&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Visit our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt; to learn more.&lt;/p&gt;
+&lt;h2 id=&quot;help-us-with-donations&quot; tabindex=&quot;-1&quot;&gt;Help us with donations&lt;/h2&gt;
+&lt;p&gt;Huge thank you to everybody who donated to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
             
         </entry>
