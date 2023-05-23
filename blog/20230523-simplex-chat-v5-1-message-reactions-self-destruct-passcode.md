@@ -38,7 +38,7 @@ Also, we added Japanese and Portuguese (Brazil)<sup>*</sup> interface languages,
 
 No idea why it took us so long to add them – finally we have them, and they are great.
 
-We didn't like the view of other messengers plagued by 40 different reactions on a message, and we were not quite sure what can be done about it, so we initially decided to limit available reaction to just 6: thunmbs up 👍, down 👎, smile 😀, tear 😢, heart ❤️ and rocket 🚀. But unlike free Telegram, we don't restrict you to just one reaction per message - you can put up to 3.
+We didn't like the view of other messengers plagued by 40 different reactions on a message, and we were not quite sure what can be done about it, so we initially decided to limit available reaction to just 6: thumbs up 👍, down 👎, smile 😀, tear 😢, heart ❤️ and rocket 🚀. But unlike free Telegram, we don't restrict you to just one reaction per message - you can put up to 3.
 
 You can add them via the menu, or just by tapping the reaction already on the message.
 
