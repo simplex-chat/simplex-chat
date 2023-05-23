@@ -827,6 +827,7 @@ data ChatErrorType
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEInternalError {message :: String}
+  | CEException {message :: String}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatErrorType where

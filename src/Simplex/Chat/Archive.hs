@@ -59,7 +59,7 @@ importArchive cfg@ArchiveConfig {archivePath} =
     copyFile (dir </> archiveChatDbFile) chatDb
     copyFile (dir </> archiveAgentDbFile) agentDb
     copyFiles dir filesPath
-      `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEInternalError $ show e]
+      `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
     copyFiles dir filesPath = do
@@ -85,7 +85,7 @@ copyDirectoryFiles fromDir toDir = do
   where
     copyFileCatchError fileErrs f =
       (copyDirectoryFile f $> fileErrs)
-        `E.catch` \(e :: E.SomeException) -> pure (AEImportFile f (ChatError . CEInternalError $ show e) : fileErrs)
+        `E.catch` \(e :: E.SomeException) -> pure (AEImportFile f (ChatError . CEException $ show e) : fileErrs)
     copyDirectoryFile f = do
       let fn = takeFileName f
           f' = fromDir </> fn
