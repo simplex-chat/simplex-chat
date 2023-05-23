@@ -36,6 +36,14 @@ Also, we added Japanese and Portuguese (Brazil)<sup>*</sup> interface languages,
 
 ## Message reactions
 
+No idea why it took us so long to add them – finally we have them, and they are great.
+
+We didn't like the view of other messengers plagued by 40 different reactions on a message, and we were not quite sure what can be done about it, so we initially decided to limit available reaction to just 6: thunmbs up 👍, down 👎, smile 😀, tear 😢, heart ❤️ and rocket 🚀. But unlike free Telegram, we don't restrict you to just one reaction per message - you can put up to 3.
+
+You can add them via the menu, or just by tapping the reaction already on the message.
+
+The next app version will allow prohibiting the reactions per conversation, as you asked. Some groups work better with more substantive responses.
+
 ## Improved messages
 
 ### Voice messages: up to 5 minutes, better quality, playback control
@@ -71,3 +79,37 @@ To enable it:
 - switch lock mode to Passcode and, if necessary, enable lock – Self-destruct passcode will become available.
 - enable it, enter the main passcode and then enter and confirm self-destruct passcode.
 - optionally, you can set the new display name of the profile that will be created after the data was wiped. If it is left blank, a new empty profile will have a random name.
+
+## SimpleX platform
+
+Some links to answer the most common questions:
+
+[SimpleX Chat security assessment](./20221108-simplex-chat-v4.2-security-audit-new-website.md).
+
+[How can SimpleX deliver messages without user identifiers](https://simplex.chat/#how-simplex-works).
+
+[What are the risks to have identifiers assigned to the users](https://simplex.chat/#why-ids-bad-for-privacy).
+
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
+
+[How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
+
+Visit our [website](https://simplex.chat) to learn more.
+
+## Help us with donations
+
+Huge thank you to everybody who donated to SimpleX Chat!
+
+We are prioritizing users privacy and security - it would be impossible without your support.
+
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+
+Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.
+
+See [this section](https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations) for the ways to donate.
+
+Thank you,
+
+Evgeny
+
+SimpleX Chat founder
