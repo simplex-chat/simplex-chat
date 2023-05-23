@@ -308,7 +308,7 @@ public struct TimedMessagesPreference: Preference {
     }
 
     public static var ttlValues: [Int?] {
-        [3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
+        [600, 3600, 86400, 7 * 86400, 30 * 86400, 3 * 30 * 86400, nil]
     }
 }
 
