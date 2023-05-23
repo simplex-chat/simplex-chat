@@ -9,9 +9,9 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
+import chat.simplex.app.model.ChatController
 import chat.simplex.app.views.helpers.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 // based on:
 // https://robertohuertas.com/2019/06/29/android_foreground_services/
@@ -86,6 +86,7 @@ class SimplexService: Service() {
     isStartingService = true
     withApi {
       val chatController = (application as SimplexApp).chatController
+      waitDbMigrationEnds(chatController)
       try {
         Log.w(TAG, "Starting foreground service")
         val chatDbStatus = chatController.chatModel.chatDbStatus.value
@@ -322,6 +323,18 @@ class SimplexService: Service() {
     fun cancelPassphraseNotification() {
       val notificationManager = SimplexApp.context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
       notificationManager.cancel(PASSPHRASE_NOTIFICATION_ID)
+    }
+
+    /*
+    * When the app starts the database is in migration process. It can take from seconds to tens of seconds.
+    * It happens in background thread, so other places that relies on database should wait til the end of migration
+    * */
+    suspend fun waitDbMigrationEnds(chatController: ChatController) {
+      var maxWaitTime = 60_000
+      while (chatController.chatModel.chatDbStatus.value == null && maxWaitTime > 0) {
+        delay(50)
+        maxWaitTime -= 50
+      }
     }
 
     private fun getPreferences(context: Context): SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
