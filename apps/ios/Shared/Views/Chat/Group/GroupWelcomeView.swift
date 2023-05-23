@@ -53,12 +53,10 @@ struct GroupWelcomeView: View {
     }
 
     private func textPreview() -> some View {
-        ScrollView {
-            messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
-                .allowsHitTesting(false)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .frame(alignment: .topLeading)
+        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil)
+            .allowsHitTesting(false)
+            .frame(minHeight: 140, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func editorView() -> some View {
