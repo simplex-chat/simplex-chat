@@ -450,7 +450,7 @@ processChatCommand = \case
     processChatCommand $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
   APIImportArchive cfg -> withStoreChanged $ do
     fileErrs <- importArchive cfg
-    unless (null fileErrs) $ toView $ CRImportArchiveFilesErrors fileErrs
+    unless (null fileErrs) $ toView $ CRImportArchiveFileErrors fileErrs
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)

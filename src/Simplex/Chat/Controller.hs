@@ -524,7 +524,7 @@ data ChatResponse
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
-  | CRImportArchiveFilesErrors {filesErrors :: [(Maybe String, ChatError)]}
+  | CRImportArchiveFileErrors {fileErrors :: [(Maybe String, ChatError)]}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show, Generic)
 
