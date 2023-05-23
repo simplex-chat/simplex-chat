@@ -48,7 +48,7 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
 
-importArchive :: ChatMonad m => ArchiveConfig -> m ()
+importArchive :: ChatMonad m => ArchiveConfig -> m [(Maybe String, ChatError)]
 importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
@@ -57,26 +57,36 @@ importArchive cfg@ArchiveConfig {archivePath} =
     backup agentDb
     copyFile (dir </> archiveChatDbFile) chatDb
     copyFile (dir </> archiveAgentDbFile) agentDb
-    let filesDir = dir </> archiveFilesFolder
-    forM_ filesPath $ \fp ->
-      whenM (doesDirectoryExist filesDir) $
-        copyDirectoryFiles filesDir fp
+    copyFiles dir filesPath `catchError` \e -> pure [(Nothing, e)]
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
+    copyFiles dir filesPath = do
+      let filesDir = dir </> archiveFilesFolder
+      case filesPath of
+        Just fp ->
+          ifM
+            (doesDirectoryExist filesDir)
+            (copyDirectoryFiles filesDir fp)
+            (pure [])
+        _ -> pure []
 
-withTempDir :: ChatMonad m => ArchiveConfig -> (String -> (FilePath -> m ()) -> m ())
+withTempDir :: ChatMonad m => ArchiveConfig -> (String -> (FilePath -> m a) -> m a)
 withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
   Just tmpDir -> withTempDirectory tmpDir
   _ -> withSystemTempDirectory
 
-copyDirectoryFiles :: MonadIO m => FilePath -> FilePath -> m ()
+copyDirectoryFiles :: ChatMonad m => FilePath -> FilePath -> m [(Maybe String, ChatError)]
 copyDirectoryFiles fromDir toDir = do
   createDirectoryIfMissing False toDir
   fs <- listDirectory fromDir
-  forM_ fs $ \f -> do
-    let fn = takeFileName f
-        f' = fromDir </> fn
-    whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
+  foldM copyFileCatchError [] fs
+  where
+    copyFileCatchError fileErrs f =
+      (copyDirectoryFile f $> fileErrs) `catchError` \e -> pure ((Just f, e) : fileErrs)
+    copyDirectoryFile f = do
+      let fn = takeFileName f
+          f' = fromDir </> fn
+      whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
 
 deleteStorage :: ChatMonad m => m ()
 deleteStorage = do
