@@ -832,6 +832,11 @@ instance ToJSON ChatErrorType where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
 
+toView :: ChatMonad' m => ChatResponse -> m ()
+toView event = do
+  q <- asks outputQ
+  atomically $ writeTBQueue q (Nothing, event)
+
 data DatabaseError
   = DBErrorEncrypted
   | DBErrorPlaintext

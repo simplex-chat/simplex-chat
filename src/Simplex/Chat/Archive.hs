@@ -57,26 +57,30 @@ importArchive cfg@ArchiveConfig {archivePath} =
     backup agentDb
     copyFile (dir </> archiveChatDbFile) chatDb
     copyFile (dir </> archiveAgentDbFile) agentDb
-    let filesDir = dir </> archiveFilesFolder
-    forM_ filesPath $ \fp ->
-      whenM (doesDirectoryExist filesDir) $
-        copyDirectoryFiles filesDir fp
+    copyFiles dir filesPath `catchError` (toView . CRChatError Nothing)
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
+    copyFiles dir filesPath = do
+      let filesDir = dir </> archiveFilesFolder
+      forM_ filesPath $ \fp ->
+        whenM (doesDirectoryExist filesDir) $
+          copyDirectoryFiles filesDir fp
 
 withTempDir :: ChatMonad m => ArchiveConfig -> (String -> (FilePath -> m ()) -> m ())
 withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
   Just tmpDir -> withTempDirectory tmpDir
   _ -> withSystemTempDirectory
 
-copyDirectoryFiles :: MonadIO m => FilePath -> FilePath -> m ()
+copyDirectoryFiles :: ChatMonad m => FilePath -> FilePath -> m ()
 copyDirectoryFiles fromDir toDir = do
   createDirectoryIfMissing False toDir
   fs <- listDirectory fromDir
-  forM_ fs $ \f -> do
-    let fn = takeFileName f
-        f' = fromDir </> fn
-    whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
+  forM_ fs $ \f -> copyDirectoryFile f `catchError` (toView . CRChatError Nothing)
+  where
+    copyDirectoryFile f = do
+      let fn = takeFileName f
+          f' = fromDir </> fn
+      whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
 
 deleteStorage :: ChatMonad m => m ()
 deleteStorage = do

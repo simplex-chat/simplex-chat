@@ -317,11 +317,6 @@ execChatCommand s = do
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
-toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, event)
-
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
@@ -1276,7 +1271,7 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     let mc = MCText msg
     processChatCommand $ APIUpdateChatItem chatRef chatItemId live mc
-  ReactToMessage add reaction chatName msg  -> withUser $ \user -> do
+  ReactToMessage add reaction chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand $ APIChatItemReaction chatRef chatItemId add reaction
