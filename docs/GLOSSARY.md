@@ -2,7 +2,7 @@
 
 Choosing a private messenger requires the understanding of many technical terms, that many users, even quite technical, often misunderstand. This list is aiming to fill this knowledge gap. Please suggest any changes or additions.
 
-While this glossary aims to be is objective and factual, it is not completely unbiased. We designed SimpleX in a way that we think is the most private, secure and resilient design for a communication network, and some definitions here reflect this view.
+While this glossary aims to be factual and objective, it is not completely unbiased. We designed SimpleX to be the most private, secure and resilient communication network, and some definitions reflect this view.
 
 ## Address portability
 
@@ -16,7 +16,7 @@ The credential that allows proving something, e.g. the right to access some reso
 
 ## Blockchain
 
-In a wide sense, blockchain means a sequence of blocks of data, where each block contains a hash of the previous block, thus providing integrity to the whole chain. Blockchains are used in many communication and information storage systems to provide integrity and immutability of the data. For example, BluRay disks use blockchain. SimpleX messaging queues also use blockchain - each message includes the hash of the previous message, to ensure the integrity – if any message is modified it will be detected by the recipient when the next message is received. Blockchain is a subset of [Merkle tree](#merkle-tree).
+In a wide sense, blockchain means a sequence of blocks of data, where each block contains a cryptographic hash of the previous block, thus providing integrity to the whole chain. Blockchains are used in many communication and information storage systems to provide integrity and immutability of the data. For example, BluRay disks use blockchain. SimpleX messaging queues also use blockchain - each message includes the hash of the previous message, to ensure the integrity – if any message is modified it will be detected by the recipient when the next message is received. Blockchains are a subset of [Merkle directed acyclic graphs](#merkle-directed-acyclic-graph).
 
 In a more narrow sense, particularly in media, blockchain is used to refer specifically to distributed ledger, where each record also includes the hash of the previous record, but the blocks have to be agreed by the participating peers using some [consensus protocol](https://en.wikipedia.org/wiki/Consensus_(computer_science)).
 
@@ -28,7 +28,7 @@ In a more narrow sense, particularly in media, blockchain is used to refer speci
 
 ## Centralized network
 
-Centralized networks are provided or controlled by a single entity. The examples are Threema, Signal, WhatsApp and Telegram. The advantage of that is that the provider can innovate faster, and to have a centralized approach to security. But the disadvantage is that this same provider can change or discontinue the service, and leak, sell or disclose in some other way all users data, including about who they are connected with.
+Centralized networks are provided or controlled by a single entity. The examples are Threema, Signal, WhatsApp and Telegram. The advantage of that design is that the provider can innovate faster, and has a centralized approach to security. But the disadvantage is that the provider can change or discontinue the service, and leak, sell or disclose in some other way all users' data, including who they are connected with.
 
 ## Content padding
 
@@ -38,23 +38,23 @@ Centralized networks are provided or controlled by a single entity. The examples
 
 Decentralized network is often used to mean "the network based on decentralized blockchain". In its original meaning, decentralized network means that there is no central authority or any other point of centralization in the network, other than network protocols specification. The advantage of decentralized networks is that they are resilient to censorship and to the provider going out of business. The disadvantage is that they are often slower to innovate, and the security may be worse than with the centralized network.
 
-The examples of decentralized networks are email, web, DNS, XMPP, Matrix, BitTorrent, etc. All these examples have a shared global application-level address space. Cryptocurrency blockchains not only have a shared address space, but also a shared state, so they are more centralized than email. Tor network also has a shared global address space, but also a central authority. SimpleX network does not have a shared application-level address space (it relies on the shared transport-level addresses - SMP relay hostnames or IP addresses), and it does not have any central authority.
+The examples of decentralized networks are email, web, DNS, XMPP, Matrix, BitTorrent, etc. All these examples have a shared global application-level address space. Cryptocurrency blockchains not only have a shared address space, but also a shared state, so they are more centralized than email. Tor network also has a shared global address space, but also a central authority. SimpleX network does not have a shared application-level address space (it relies on the shared transport-level addresses - SMP relay hostnames or IP addresses), and it does not have any central authority or any shared state.
 
 ## Defense in depth
 
-Originally, a military strategy that seeks to delay rather than prevent the advance of an attacker, buying time and causing additional casualties by yielding space.
+Originally, it is a military strategy that seeks to delay rather than prevent the advance of an attacker, buying time and causing additional casualties by yielding space.
 
-In information security defence in depth represents the use of multiple computer security techniques to help mitigate the risk of one component of the defence being compromised or circumvented. An example could be anti-virus software installed on individual workstations when there is already virus protection on the firewalls and servers within the same environment.
+In information security, defense in depth represents the use of multiple computer security techniques to help mitigate the risk of one component of the defense being compromised or circumvented. An example could be anti-virus software installed on individual workstations when there is already virus protection on the firewalls and servers within the same environment.
 
 SimpleX network applies defense in depth approach to security by having multiple layers for the communication security and privacy:
-- double ratchet algorithm for [end-to-end encryption](#end-to-end-encryption) with [perfect forward secrecy](#perfect-forward-secrecy) and [post-compromise security](#post-compromise-security),
+- double ratchet algorithm for [end-to-end encryption](#end-to-end-encryption) with [perfect forward secrecy](#forward-secrecy) and [post-compromise security](#post-compromise-security),
 - additional layer of end-to-end encryption for each messaging queue and another encryption layer of encryption from the server to the recipient inside TLS to prevent correlation by ciphertext,
 - TLS with only strong ciphers allowed,
-- mitigation of [man-in-the-middle attack](#man-in-the-middle-attack) on client-server connection via server offline certificat verification,
+- mitigation of [man-in-the-middle attack](#man-in-the-middle-attack) on client-server connection via server offline certificate verification,
 - mitigation of replay attacks via signing over transport channel binding,
 - multiple layers of [message padding](#message-padding) to reduce efficiency of traffic analysis,
 - mitigation of [man-in-the-middle attack](#man-in-the-middle-attack) on client-client out-of-band channel when sending the invitation,
-- rotation of delivery queues to reduce efficitency of traffic analysis,
+- rotation of delivery queues to reduce efficiency of traffic analysis,
 - etc.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Defence_in_depth)
@@ -63,13 +63,13 @@ SimpleX network applies defense in depth approach to security by having multiple
 
 It is used by two parties to exchange [end-to-end encrypted](#end-to-end-encryption) messages. The parties will use some [key agreement protocol](#key-agreement-protocol) to agree on the initial shared secret key.
 
-Double Ratchet algorithm provides [perfect forward secrecy](#perfect-forward-secrecy) and [post-compromise security](#post-compromise-security). It is [designed by Singal](https://signal.org/docs/specifications/doubleratchet), and used in SimpleX Chat and many other secure messengers. Most experts consider the state-of-the-art encryption protocol in message encryption.
+Double Ratchet algorithm provides [perfect forward secrecy](#forward-secrecy) and [post-compromise security](#post-compromise-security). It is [designed by Signal](https://signal.org/docs/specifications/doubleratchet), and used in SimpleX Chat and many other secure messengers. Most experts consider it the state-of-the-art encryption protocol in message encryption.
 
 ## End-to-end encryption
 
-Communication system where only the communicating parties can read the messages. It is designed to protect message content from any potential eavesdroppers – telecom and Internet providers, malicious actors, and also the provider of the communication service.
+A communication system where only the communicating parties can read the messages. It is designed to protect message content from any potential eavesdroppers – telecom and Internet providers, malicious actors, and also the provider of the communication service.
 
-End-to-end encryption requires agreeing cryptographic keys between the sender and the recipient in a way that no eavesdroppers can access the agreed keys. See [key agreement protocol](#key-agreement-protocol).
+End-to-end encryption requires agreeing cryptographic keys between the sender and the recipient in a way that no eavesdroppers can access the agreed keys. See [key agreement protocol](#key-agreement-protocol). This key exchange can be compromised via [man-in-the-middle attack](#man-in-the-middle-attack), particularly if key exchange happens via the same communication provider and no out-of-band channel is used to verify key exchange.
 
 [Wikipedia](https://en.wikipedia.org/wiki/End-to-end_encryption)
 
@@ -83,13 +83,13 @@ The advantage of that design is that there is no single organization that all us
 
 ## Forward secrecy
 
-It is a feature of a [key agreement protocol](#key-agreement-protocol) that ensures that session keys will not be compromised even if long-term secrets used in the session key exchange are compromised. Forward secrecy protects past sessions against future compromises of session or long-term keys.
+Also known as perfect forward secrecy, it is a feature of a [key agreement protocol](#key-agreement-protocol) that ensures that session keys will not be compromised even if long-term secrets used in the session key exchange are compromised. Forward secrecy protects past sessions against future compromises of session or long-term keys.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Forward_secrecy)
 
 ## Key agreement protocol
 
-Key exchange is a process of agreeing cryptographic keys between the sender and the recipient(s) of the message. It is required for [end-to-end encryption](#end-to-end-encryption) to work.
+Also known as key exchange, it is a process of agreeing cryptographic keys between the sender and the recipient(s) of the message. It is required for [end-to-end encryption](#end-to-end-encryption) to work.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Key-agreement_protocol)
 
@@ -99,23 +99,47 @@ Key exchange is a process of agreeing cryptographic keys between the sender and 
 
 ## Man-in-the-middle attack
 
+The attack when the attacker secretly relays and possibly alters the communications between two parties who believe that they are directly communicating with each other.
+
+This attack can be used to compromise [end-to-end encryption](#end-to-end-encryption) by intercepting public keys during [key exchange](#key-agreement-protocol), substituting them with the attacker's keys, and then intercepting and re-encrypting all messages, without altering their content. With this attack, while the attacker does not change message content, but she can read the messages, while the communicating parties believe the messages are end-to-end encrypted.
+
+Such attack is possible with any system that uses the same channel for key exchange as used to send messages - it includes almost all communication systems except SimpleX, where the initial public key is always passed out-of-band. Even with SimpleX, the attacker may intercept and substitute the key sent via another channel, gaining access to communication. This risk is substantially lower, as attacker does not know in advance which channel will be used to pass the key.
+
+To mitigate such attack the communicating parties must verify the integrity of key exchange - SimpleX and many other messaging apps, e.g. Signal and WhatsApp, have the feature that allows it.
+
 [Wikipedia](https://en.wikipedia.org/wiki/Man-in-the-middle_attack).
 
-## Merkle tree
+## Merkle directed acyclic graph
+
+Also known as Merkle DAG, a data structure based on a general graph structure where node contains the cryptographic hashes of the previous nodes that point to it. Merkle trees are a subset of Merkle DAGs - in this case each leaf contains a cryptographic hash of the parent.
+
+This structure by design allows to verify the integrity of the whole structure by computing its hashes and comparing with the hashes included in the nodes, in the same way as with [blockchain](#blockchain).
+
+The motivation to use DAG in distributed environments instead of a simpler linear blockchain is to allow concurrent additions, when there is no requirement for a single order of added items. Merkle DAG is used, for example, in [IPFS](https://en.wikipedia.org/wiki/InterPlanetary_File_System) and will be used in decentralized SimpleX groups.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Merkle_tree).
 
 ## Message padding
 
-Padding is the process of adding data to the beginning or the end of a message prior to encryption. Padding conceals the actual message size from any eavesdroppers. SimpleX has several encryption layers, and prior to each encryption the content is padded to a fixed size.
+Also known as content padding, it is the process of adding data to the beginning or the end of a message prior to encryption. Padding conceals the actual message size from any eavesdroppers. SimpleX has several encryption layers, and prior to each encryption the content is padded to a fixed size.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Padding_(cryptography)).
 
 ## Onion routing
 
+A technique for anonymous communication over a computer network that uses multiple layers of message encryption, analogous to the layers of an onion. The encrypted data is transmitted through a series of network nodes called "onion routers," each of which "peels" away a single layer, revealing the data's next destination. The sender remains anonymous because each intermediary knows only the location of the immediately preceding and following nodes.
+
+The most widely used onion network is [Tor](https://en.wikipedia.org/wiki/Tor_(network)).
+
+Some elements of SimpleX network use similar ideas in their design - different addresses for the same resource used by different parties, and additional encryption layers. Currently though, SimpleX messaging protocol does not protect sender network address, as the relay server is chosen by the recipient. The delivery relays chosen by sender that are planned for the future would make SimpleX design closer to onion routing.
+
 [Wikipedia](https://en.wikipedia.org/wiki/Onion_routing)
 
 ## Overlay network
+
+Nodes in the overlay network can be thought of as being connected by virtual or logical links, each of which corresponds to a path, perhaps through many physical links, in the underlying network. Tor, for example, is an overlay network on top of IP network, which in its turn is also an overlay network over some underlying physical network.
+
+SimpleX Clients also form a network using SMP relays and IP or some other overlay network (e.g., Tor), to communicate with each other. SMP relays, on another hand, do not form a network.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Overlay_network)
 
@@ -139,11 +163,11 @@ The advantage is that the participants do not depend on any servers. There are [
 
 ## Post-compromise security
 
-The quality of the end-to-end encryption scheme allowing to recover security against a passive attacker who observes encrypted messages after compromising one (or both) of the parties. Also known as recovery from compromise or break-in recovery. [Double-ratchet algorithm](#double-ratchet-algorithm) has this quality.
+Also known as break-in recovery, it is the quality of the end-to-end encryption scheme allowing to recover security against a passive attacker who observes encrypted messages after compromising one (or both) of the parties. Also known as recovery from compromise or break-in recovery. [Double-ratchet algorithm](#double-ratchet-algorithm) has this quality.
 
 ## Post-quantum cryptography
 
-Any of the proposed cryptographic systems or algorithms that are thought to be secure against an attack by a quantum computer. It appears that as of 2023 there is no system or algorithm that is proven to be secure against such attacks, or even to be secure agains attacks by massively parallel conventional computers, so a general recommendation is to use post-quantum cryptogrpahic systems in combination with the traditional cryptographic systems.
+Any of the proposed cryptographic systems or algorithms that are thought to be secure against an attack by a quantum computer. It appears that as of 2023 there is no system or algorithm that is proven to be secure against such attacks, or even to be secure against attacks by massively parallel conventional computers, so a general recommendation is to use post-quantum cryptographic systems in combination with the traditional cryptographic systems.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Post-quantum_cryptography)
 
