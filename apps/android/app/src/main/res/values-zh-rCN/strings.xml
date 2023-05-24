@@ -787,7 +787,7 @@
     <string name="settings_section_title_support">支持 SIMPLEX CHAT</string>
     <string name="send_link_previews">发送链接预览</string>
     <string name="settings_section_title_socks">SOCKS 代理</string>
-    <string name="stop_chat_question">停止聊天？</string>
+    <string name="stop_chat_question">停止聊天程序？</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。</string>
     <string name="restore_database">恢复数据库备份</string>
     <string name="restore_database_alert_title">恢复数据库备份？</string>
