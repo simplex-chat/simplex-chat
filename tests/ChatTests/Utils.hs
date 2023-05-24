@@ -410,7 +410,7 @@ connectUsers cc1 cc2 = do
     (cc1 <## (name2 <> ": contact is connected"))
 
 showName :: TestCC -> IO String
-showName (TestCC ChatController {currentUser} _ _ _ _) = do
+showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
   Just User {localDisplayName, profile = LocalProfile {fullName}} <- readTVarIO currentUser
   pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 

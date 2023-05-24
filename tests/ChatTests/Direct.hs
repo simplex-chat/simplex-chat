@@ -895,8 +895,8 @@ testMaintenanceModeWithFiles tmp = do
 
 testDatabaseEncryption :: HasCallStack => FilePath -> IO ()
 testDatabaseEncryption tmp = do
-  withNewTestChat tmp "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+  withNewTestChat tmp "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
+    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       connectUsers alice bob
@@ -914,7 +914,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
-    withTestChatOpts tmp (getTestOpts True "mykey") "alice" $ \alice -> do
+    withTestChatOpts tmp (getTestOpts True "mykey") "alice" $ \a -> withTestOutput a $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
@@ -926,7 +926,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
       alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
       alice <## "ok"
-    withTestChatOpts tmp (getTestOpts True "anotherkey") "alice" $ \alice -> do
+    withTestChatOpts tmp (getTestOpts True "anotherkey") "alice" $ \a -> withTestOutput a $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
@@ -934,7 +934,8 @@ testDatabaseEncryption tmp = do
       alice <## "chat stopped"
       alice ##> "/db decrypt anotherkey"
       alice <## "ok"
-    withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
+    withTestChat tmp "alice" $ \a -> withTestOutput a $ \alice -> do
+      testChatWorking alice bob
 
 testMuteContact :: HasCallStack => FilePath -> IO ()
 testMuteContact =
