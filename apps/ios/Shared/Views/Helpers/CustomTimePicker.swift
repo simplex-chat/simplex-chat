@@ -147,6 +147,7 @@ struct DropdownCustomTimePicker: View {
     @State private var dropdownSelection: DropdownSelection = .dropdownValue(value: nil)
     @State private var showCustomTimePicker = false
     @State private var selectedCustomTime: Int? = nil
+    @State private var justOpened = true
 
     enum DropdownSelection: Hashable {
         case dropdownValue(value: Int?)
@@ -167,7 +168,12 @@ struct DropdownCustomTimePicker: View {
             }
         }
         .onAppear {
+            if #unavailable(iOS 16) {
+                // this condition prevents re-setting picker
+                if !justOpened { return }
+            }
             dropdownSelection = .dropdownValue(value: selection)
+            justOpened = false
         }
         .onChange(of: selection) { v in
             logger.debug("*** .onChange(of: selection)")
