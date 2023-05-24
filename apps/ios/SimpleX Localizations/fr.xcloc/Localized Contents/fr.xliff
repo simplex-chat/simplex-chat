@@ -1570,14 +1570,14 @@
         <target>Les messages éphémères sont interdits dans ce groupe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at" xml:space="preserve" approved="no">
+      <trans-unit id="Disappears at" xml:space="preserve">
         <source>Disappears at</source>
-        <target state="translated">Disparaîtra le</target>
+        <target>Disparaîtra le</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at: %@" xml:space="preserve" approved="no">
+      <trans-unit id="Disappears at: %@" xml:space="preserve">
         <source>Disappears at: %@</source>
-        <target state="translated">Disparaîtra le : %@</target>
+        <target>Disparaîtra le : %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -5496,9 +5496,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>sans chiffrement de bout en bout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no text" xml:space="preserve" approved="no">
+      <trans-unit id="no text" xml:space="preserve">
         <source>no text</source>
-        <target state="translated">aucun texte</target>
+        <target>aucun texte</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">

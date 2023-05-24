@@ -5496,9 +5496,9 @@ Servery SimpleX nevidí váš profil.</target>
         <target>bez šifrování e2e</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no text" xml:space="preserve" approved="no">
+      <trans-unit id="no text" xml:space="preserve">
         <source>no text</source>
-        <target state="translated">žádný text</target>
+        <target>žádný text</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">

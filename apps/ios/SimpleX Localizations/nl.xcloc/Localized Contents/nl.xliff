@@ -5495,9 +5495,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>geen e2e versleuteling</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no text" xml:space="preserve" approved="no">
+      <trans-unit id="no text" xml:space="preserve">
         <source>no text</source>
-        <target state="translated">geen tekst</target>
+        <target>geen tekst</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">

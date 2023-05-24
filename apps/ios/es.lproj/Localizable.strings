@@ -257,7 +257,7 @@
 "About SimpleX Chat" = "Sobre SimpleX Chat";
 
 /* No comment provided by engineer. */
-"above, then choose:" = "arriba y luego elige:";
+"above, then choose:" = "y después elige:";
 
 /* No comment provided by engineer. */
 "Accent color" = "Color";
@@ -318,7 +318,7 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Se eliminarán todos los chats y mensajes. ¡No se puede deshacer!";
 
 /* No comment provided by engineer. */
-"All data is erased when it is entered." = "Al introducirlo todos los datos son borrados.";
+"All data is erased when it is entered." = "Al introducirlo todos los datos son eliminados.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Todos los miembros del grupo permanecerán conectados.";
@@ -679,7 +679,7 @@
 "Connect via link" = "Conectar mediante enlace";
 
 /* No comment provided by engineer. */
-"Connect via link / QR code" = "Conectar mediante enlace / Código QR";
+"Connect via link / QR code" = "Conecta vía enlace / Código QR";
 
 /* No comment provided by engineer. */
 "Connect via one-time link?" = "¿Conectar mediante enlace de un uso?";
@@ -763,7 +763,7 @@
 "Contact is not connected yet!" = "¡El contacto aun no se ha conectado!";
 
 /* No comment provided by engineer. */
-"Contact name" = "Nombre del contacto";
+"Contact name" = "Contacto";
 
 /* No comment provided by engineer. */
 "Contact preferences" = "Preferencias de contacto";
@@ -796,13 +796,13 @@
 "Create link" = "Crear enlace";
 
 /* No comment provided by engineer. */
-"Create one-time invitation link" = "Crear enlace de invitación de un solo uso";
+"Create one-time invitation link" = "Crea enlace de invitación de un uso";
 
 /* server test step */
 "Create queue" = "Crear cola";
 
 /* No comment provided by engineer. */
-"Create secret group" = "Crear grupo secreto";
+"Create secret group" = "Crea grupo secreto";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "Crear dirección SimpleX";
@@ -850,10 +850,10 @@
 "Database error" = "Error de la base de datos";
 
 /* No comment provided by engineer. */
-"Database ID" = "ID de base de datos";
+"Database ID" = "ID base de datos";
 
 /* copied message info */
-"Database ID: %d" = "ID de base de datos: %d";
+"Database ID: %d" = "ID base de datos: %d";
 
 /* No comment provided by engineer. */
 "Database IDs and Transport isolation option." = "IDs de la base de datos y opciónes de aislamiento de transporte.";
@@ -913,7 +913,7 @@
 "Delete address?" = "¿Eliminar la dirección?";
 
 /* No comment provided by engineer. */
-"Delete after" = "Eliminar después de";
+"Delete after" = "Eliminar en";
 
 /* No comment provided by engineer. */
 "Delete all files" = "Eliminar todos los archivos";
@@ -985,7 +985,7 @@
 "Delete messages" = "Eliminar mensaje";
 
 /* No comment provided by engineer. */
-"Delete messages after" = "Eliminar después de";
+"Delete messages after" = "Eliminar en";
 
 /* No comment provided by engineer. */
 "Delete old database" = "Eliminar base de datos antigua";
@@ -997,7 +997,7 @@
 "Delete pending connection" = "Eliminar conexión pendiente";
 
 /* No comment provided by engineer. */
-"Delete pending connection?" = "¿Eliminar conexion pendiente?";
+"Delete pending connection?" = "¿Eliminar la conexion pendiente?";
 
 /* No comment provided by engineer. */
 "Delete profile" = "Eliminar perfil";
@@ -1012,10 +1012,10 @@
 "deleted" = "eliminado";
 
 /* No comment provided by engineer. */
-"Deleted at" = "Eliminado el";
+"Deleted at" = "Eliminado";
 
 /* copied message info */
-"Deleted at: %@" = "Eliminado el: %@";
+"Deleted at: %@" = "Eliminado: %@";
 
 /* rcv group event chat item */
 "deleted group" = "grupo eliminado";
@@ -1069,10 +1069,10 @@
 "Disappearing messages are prohibited in this group." = "Los mensajes temporales no están permitidos en este grupo.";
 
 /* No comment provided by engineer. */
-"Disappears at" = "Desaparecerá el";
+"Disappears at" = "Desaparecerá";
 
 /* copied message info */
-"Disappears at: %@" = "Desaparecerá el: %@";
+"Disappears at: %@" = "Desaparecerá: %@";
 
 /* server test step */
 "Disconnect" = "Desconectar";
@@ -1498,10 +1498,10 @@
 "Hidden chat profiles" = "Perfiles Chat ocultos";
 
 /* No comment provided by engineer. */
-"Hidden profile password" = "Contraseña de perfil oculto";
+"Hidden profile password" = "Contraseña del perfil oculto";
 
 /* chat item action */
-"Hide" = "Ocultar";
+"Hide" = "Sin vista previa";
 
 /* No comment provided by engineer. */
 "Hide app screen in the recent apps." = "Ocultar pantalla de aplicaciones en aplicaciones recientes.";
@@ -1783,10 +1783,10 @@
 "Local profile data only" = "Sólo datos del perfil local";
 
 /* No comment provided by engineer. */
-"Lock after" = "Bloquear después de";
+"Lock after" = "Bloquear en";
 
 /* No comment provided by engineer. */
-"Lock mode" = "Modo de bloqueo";
+"Lock mode" = "Modo bloqueo";
 
 /* No comment provided by engineer. */
 "Make a private connection" = "Establecer una conexión privada";
@@ -1858,7 +1858,7 @@
 "message received" = "mensaje recibido";
 
 /* No comment provided by engineer. */
-"Message text" = "Texto del mensaje";
+"Message text" = "Contacto y texto";
 
 /* No comment provided by engineer. */
 "Messages" = "Mensajes";
@@ -1894,10 +1894,10 @@
 "moderated" = "moderado";
 
 /* No comment provided by engineer. */
-"Moderated at" = "Moderado el";
+"Moderated at" = "Moderado";
 
 /* copied message info */
-"Moderated at: %@" = "Moderado el: %@";
+"Moderated at: %@" = "Moderado: %@";
 
 /* No comment provided by engineer. */
 "moderated by %@" = "moderado por %@";
@@ -1995,6 +1995,9 @@
 /* No comment provided by engineer. */
 "No received or sent files" = "Sin archivos recibidos o enviados";
 
+/* copied message info in history */
+"no text" = "sin texto";
+
 /* No comment provided by engineer. */
 "Notifications" = "Notificaciones";
 
@@ -2002,7 +2005,7 @@
 "Notifications are disabled!" = "¡Las notificaciones están desactivadas!";
 
 /* No comment provided by engineer. */
-"Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)" = "Ahora los administradores pueden:\n- borrar mensajes de los miembros.\n- desactivar el rol a miembros (pasando a rol \"observador\")";
+"Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)" = "Ahora los administradores pueden:\n- eliminar mensajes de los miembros.\n- desactivar el rol miembro (a rol \"observador\")";
 
 /* member role */
 "observer" = "observador";
@@ -2297,10 +2300,10 @@
 "received answer…" = "respuesta recibida…";
 
 /* No comment provided by engineer. */
-"Received at" = "Recibido el";
+"Received at" = "Recibido";
 
 /* copied message info */
-"Received at: %@" = "Recibido el: %@";
+"Received at: %@" = "Recibido: %@";
 
 /* No comment provided by engineer. */
 "received confirmation…" = "confirmación recibida…";
@@ -2321,10 +2324,10 @@
 "Recipients see updates as you type them." = "Los destinatarios ven la actualizacion mientras escribes.";
 
 /* No comment provided by engineer. */
-"Record updated at" = "Registro actualizado";
+"Record updated at" = "Registro actualiz.";
 
 /* copied message info */
-"Record updated at: %@" = "Registro actualizado: %@";
+"Record updated at: %@" = "Registro actualiz: %@";
 
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Reducción del uso de la batería";
@@ -2564,10 +2567,10 @@
 "Sending via" = "Enviando vía";
 
 /* No comment provided by engineer. */
-"Sent at" = "Enviado el";
+"Sent at" = "Enviado";
 
 /* copied message info */
-"Sent at: %@" = "Enviado el: %@";
+"Sent at: %@" = "Enviado: %@";
 
 /* notification */
 "Sent file event" = "Evento de archivo enviado";
@@ -2912,7 +2915,7 @@
 "To record voice message please grant permission to use Microphone." = "Para grabar el mensaje de voz concede permiso para usar el micrófono.";
 
 /* No comment provided by engineer. */
-"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página **Tus perfiles Chat**.";
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página **Mis perfiles**.";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Para permitir las notificaciones automáticas instantáneas, la base de datos se debe migrar.";
@@ -3140,7 +3143,7 @@
 "What's new" = "Novedades";
 
 /* No comment provided by engineer. */
-"When available" = "Si disponible";
+"When available" = "Si disponibles";
 
 /* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Cuando alguien solicite conectarse podrás aceptar o rechazar la solicitud.";
@@ -3224,7 +3227,7 @@
 "You can turn on SimpleX Lock via Settings." = "Puedes activar el Bloqueo SimpleX a través de Configuración.";
 
 /* No comment provided by engineer. */
-"You can use markdown to format messages:" = "Puedes usar la sintaxis markdown para dar formato a los mensajes:";
+"You can use markdown to format messages:" = "Puedes usar la sintaxis markdown para dar formato a tus mensajes:";
 
 /* No comment provided by engineer. */
 "You can't send messages!" = "¡No puedes enviar mensajes!";
