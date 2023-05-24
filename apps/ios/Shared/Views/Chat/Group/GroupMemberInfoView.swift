@@ -20,6 +20,7 @@ struct GroupMemberInfoView: View {
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @State private var justOpened = true
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert(mem: GroupMember)
@@ -146,6 +147,10 @@ struct GroupMemberInfoView: View {
             }
             .navigationBarHidden(true)
             .onAppear {
+                if #unavailable(iOS 16) {
+                    // this condition prevents re-setting picker
+                    if !justOpened { return }
+                }
                 newRole = member.memberRole
                 do {
                     let stats = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
@@ -156,6 +161,7 @@ struct GroupMemberInfoView: View {
                 } catch let error {
                     logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
                 }
+                justOpened = false
             }
             .onChange(of: newRole) { _ in
                 if newRole != member.memberRole {
