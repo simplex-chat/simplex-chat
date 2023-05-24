@@ -63,7 +63,7 @@ chatFileTests = do
     it "delete uploaded file" testXFTPDeleteUploadedFile
     it "delete uploaded file in group" testXFTPDeleteUploadedFileGroup
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
-    fit "with relative paths: send and receive file" testXFTPWithRelativePaths
+    it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
     xit' "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
