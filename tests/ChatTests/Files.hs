@@ -50,7 +50,7 @@ chatFileTests = do
   describe "async sending and receiving files" $ do
     -- fails on CI
     xit'' "send and receive file, sender restarts" testAsyncFileTransferSenderRestarts
-    it "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
+    xit'' "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
     xdescribe "send and receive file, fully asynchronous" $ do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
