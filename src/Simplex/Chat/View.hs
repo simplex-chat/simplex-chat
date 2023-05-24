@@ -37,6 +37,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
+import Simplex.Chat.Messages.ChatItemContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled

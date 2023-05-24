@@ -42,6 +42,7 @@ import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.ChatItemContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
