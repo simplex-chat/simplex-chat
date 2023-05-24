@@ -1341,4 +1341,5 @@
     <string name="share_text_disappears_at">Verschwindet um: %s</string>
     <string name="edit_history">Vergangenheit</string>
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
+    <string name="item_info_no_text">Kein Text</string>
 </resources>

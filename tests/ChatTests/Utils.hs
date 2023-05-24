@@ -7,6 +7,7 @@
 module ChatTests.Utils where
 
 import ChatClient
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
@@ -199,18 +200,20 @@ groupFeatures = map (\(a, _, _) -> a) groupFeatures''
 
 groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures'' =
-    [ ((0, "Disappearing messages: off"), Nothing, Nothing),
-      ((0, "Direct messages: on"), Nothing, Nothing),
-      ((0, "Full deletion: off"), Nothing, Nothing),
-      ((0, "Message reactions: on"), Nothing, Nothing),
-      ((0, "Voice messages: on"), Nothing, Nothing)
-    ]
+  [ ((0, "Disappearing messages: off"), Nothing, Nothing),
+    ((0, "Direct messages: on"), Nothing, Nothing),
+    ((0, "Full deletion: off"), Nothing, Nothing),
+    ((0, "Message reactions: on"), Nothing, Nothing),
+    ((0, "Voice messages: on"), Nothing, Nothing)
+  ]
 
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
 
 (@@@) :: HasCallStack => TestCC -> [(String, String)] -> Expectation
-(@@@) = getChats mapChats
+(@@@) cc res = do
+  threadDelay 10000
+  getChats mapChats cc res
 
 mapChats :: [(String, String, Maybe ConnStatus)] -> [(String, String)]
 mapChats = map $ \(ldn, msg, _) -> (ldn, msg)
@@ -407,7 +410,7 @@ connectUsers cc1 cc2 = do
     (cc1 <## (name2 <> ": contact is connected"))
 
 showName :: TestCC -> IO String
-showName (TestCC ChatController {currentUser} _ _ _ _) = do
+showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
   Just User {localDisplayName, profile = LocalProfile {fullName}} <- readTVarIO currentUser
   pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
