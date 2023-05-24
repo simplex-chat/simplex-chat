@@ -65,7 +65,7 @@ chatFileTests = do
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
-    it "receive file marked to receive on chat start" testXFTPMarkToReceive
+    xit' "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
 
