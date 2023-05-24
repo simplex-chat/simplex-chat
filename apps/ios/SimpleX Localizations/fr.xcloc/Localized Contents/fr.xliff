@@ -1572,12 +1572,12 @@
       </trans-unit>
       <trans-unit id="Disappears at" xml:space="preserve">
         <source>Disappears at</source>
-        <target>Disparaît à</target>
+        <target>Disparaîtra le</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappears at: %@" xml:space="preserve">
         <source>Disappears at: %@</source>
-        <target>Disparaît à : %@</target>
+        <target>Disparaîtra le : %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -5498,6 +5498,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">
         <source>no text</source>
+        <target>aucun texte</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">

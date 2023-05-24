@@ -5498,6 +5498,7 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">
         <source>no text</source>
+        <target>brak tekstu</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
