@@ -5496,8 +5496,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Keine E2E-Verschlüsselung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no text" xml:space="preserve">
+      <trans-unit id="no text" xml:space="preserve" approved="no">
         <source>no text</source>
+        <target state="translated">Kein Text</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">

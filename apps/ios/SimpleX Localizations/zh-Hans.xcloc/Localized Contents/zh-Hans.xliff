@@ -57,12 +57,14 @@
         <target>%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ (current)" xml:space="preserve">
+      <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
         <source>%@ (current)</source>
+        <target state="translated">%@（当前）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ (current):" xml:space="preserve">
+      <trans-unit id="%@ (current):" xml:space="preserve" approved="no">
         <source>%@ (current):</source>
+        <target state="translated">%@（当前）：</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%@ / %@" xml:space="preserve">
@@ -95,8 +97,9 @@
         <target>%@ 要连接！</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@:" xml:space="preserve">
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
         <source>%@:</source>
+        <target state="translated">%@:</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
@@ -294,10 +297,13 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
+        <target state="translated">- 语音消息最长5分钟。
+- 自定义限时消息。
+- 编辑消息历史。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="." xml:space="preserve">
@@ -305,8 +311,9 @@
         <target>.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="0s" xml:space="preserve">
+      <trans-unit id="0s" xml:space="preserve" approved="no">
         <source>0s</source>
+        <target state="translated">0秒</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
@@ -339,8 +346,9 @@
         <target>一次性链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="5 minutes" xml:space="preserve">
+      <trans-unit id="5 minutes" xml:space="preserve" approved="no">
         <source>5 minutes</source>
+        <target state="translated">5分钟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="6" xml:space="preserve">
@@ -348,8 +356,9 @@
         <target>6</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="30 seconds" xml:space="preserve">
+      <trans-unit id="30 seconds" xml:space="preserve" approved="no">
         <source>30 seconds</source>
+        <target state="translated">30秒</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=": " xml:space="preserve">
@@ -357,9 +366,11 @@
         <target>: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve">
+      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve" approved="no">
         <source>&lt;p&gt;Hi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
+        <target state="translated">&lt;p&gt;你好！&lt;/p&gt;
+&lt;p&gt;&lt;a href="%@"&gt;通过 SimpleX Chat &lt;/a&gt;&lt;/p&gt;与我联系</target>
         <note>email text</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -399,8 +410,9 @@
         <target>关于SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX address" xml:space="preserve">
+      <trans-unit id="About SimpleX address" xml:space="preserve" approved="no">
         <source>About SimpleX address</source>
+        <target state="translated">关于 SimpleX 地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent color" xml:space="preserve">
@@ -429,8 +441,9 @@
         <target>接受隐身聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
+        <target state="translated">将地址添加到您的个人资料，以便您的联系人可以与其他人共享。个人资料更新将发送给您的联系人。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add preset servers" xml:space="preserve">
@@ -463,8 +476,9 @@
         <target>添加欢迎信息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address" xml:space="preserve">
+      <trans-unit id="Address" xml:space="preserve" approved="no">
         <source>Address</source>
+        <target state="translated">地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -477,8 +491,9 @@
         <target>高级网络设置</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All app data is deleted." xml:space="preserve">
+      <trans-unit id="All app data is deleted." xml:space="preserve" approved="no">
         <source>All app data is deleted.</source>
+        <target state="translated">已删除所有应用程序数据。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
@@ -486,8 +501,9 @@
         <target>所有聊天记录和消息将被删除——这一行为无法撤销！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is erased when it is entered." xml:space="preserve">
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
         <source>All data is erased when it is entered.</source>
+        <target state="translated">所有数据在输入后将被删除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -505,8 +521,9 @@
         <target>所有联系人会保持连接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>All your contacts will remain connected. Profile update will be sent to your contacts.</source>
+        <target state="translated">您的所有联系人将保持连接。个人资料更新将发送给您的联系人。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -529,12 +546,14 @@
         <target>仅有您的联系人许可后才允许不可撤回消息移除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow message reactions only if your contact allows them.</source>
+        <target state="translated">只有您的联系人允许时才允许消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions." xml:space="preserve">
+      <trans-unit id="Allow message reactions." xml:space="preserve" approved="no">
         <source>Allow message reactions.</source>
+        <target state="translated">允许消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
@@ -567,8 +586,9 @@
         <target>允许语音消息？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve">
+      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve" approved="no">
         <source>Allow your contacts adding message reactions.</source>
+        <target state="translated">允许您的联系人添加消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to call you." xml:space="preserve">
@@ -601,8 +621,9 @@
         <target>一直使用中继</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve">
+      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve" approved="no">
         <source>An empty chat profile with the provided name is created, and the app opens as usual.</source>
+        <target state="translated">已创建一个包含所提供名字的空白聊天资料，应用程序照常打开。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve">
@@ -625,8 +646,9 @@
         <target>应用程序密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve">
+      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
         <source>App passcode is replaced with self-destruct passcode.</source>
+        <target state="translated">应用程序密码被替换为自毁密码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -689,8 +711,9 @@
         <target>身份验证不可用</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept" xml:space="preserve">
+      <trans-unit id="Auto-accept" xml:space="preserve" approved="no">
         <source>Auto-accept</source>
+        <target state="translated">自动接受</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept contact requests" xml:space="preserve">
@@ -718,12 +741,14 @@
         <target>错误消息散列</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better messages" xml:space="preserve">
+      <trans-unit id="Better messages" xml:space="preserve" approved="no">
         <source>Better messages</source>
+        <target state="translated">更好的消息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Both you and your contact can add message reactions.</source>
+        <target state="translated">您和您的联系人都可以添加消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
@@ -831,12 +856,14 @@
         <target>改变角色</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct mode" xml:space="preserve">
+      <trans-unit id="Change self-destruct mode" xml:space="preserve" approved="no">
         <source>Change self-destruct mode</source>
+        <target state="translated">更改自毁模式</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
         <source>Change self-destruct passcode</source>
+        <target state="translated">更改自毁密码</target>
         <note>authentication reason
    set passcode view</note>
       </trans-unit>
@@ -1085,8 +1112,9 @@
         <target>联系人可以将信息标记为删除；您将可以查看这些信息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Continue" xml:space="preserve">
+      <trans-unit id="Continue" xml:space="preserve" approved="no">
         <source>Continue</source>
+        <target state="translated">继续</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
@@ -1104,12 +1132,14 @@
         <target>创建</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create SimpleX address" xml:space="preserve">
+      <trans-unit id="Create SimpleX address" xml:space="preserve" approved="no">
         <source>Create SimpleX address</source>
+        <target state="translated">创建 SimpleX 地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
+      <trans-unit id="Create an address to let people connect with you." xml:space="preserve" approved="no">
         <source>Create an address to let people connect with you.</source>
+        <target state="translated">创建一个地址，让人们与您联系。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -1167,8 +1197,9 @@
         <target>目前支持的最大文件大小为 %@。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Custom time" xml:space="preserve">
+      <trans-unit id="Custom time" xml:space="preserve" approved="no">
         <source>Custom time</source>
+        <target state="translated">自定义时间</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Dark" xml:space="preserve">
@@ -1181,8 +1212,9 @@
         <target>数据库 ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID: %d" xml:space="preserve">
+      <trans-unit id="Database ID: %d" xml:space="preserve" approved="no">
         <source>Database ID: %d</source>
+        <target state="translated">数据库 ID：%d</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
@@ -1458,12 +1490,14 @@
         <target>删除用户资料？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at" xml:space="preserve">
+      <trans-unit id="Deleted at" xml:space="preserve" approved="no">
         <source>Deleted at</source>
+        <target state="translated">已删除于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at: %@" xml:space="preserve">
+      <trans-unit id="Deleted at: %@" xml:space="preserve" approved="no">
         <source>Deleted at: %@</source>
+        <target state="translated">已删除于：%@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1516,8 +1550,9 @@
         <target>禁用 SimpleX 锁定</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Disappearing message" xml:space="preserve">
+      <trans-unit id="Disappearing message" xml:space="preserve" approved="no">
         <source>Disappearing message</source>
+        <target state="translated">限时消息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing messages" xml:space="preserve">
@@ -1535,12 +1570,14 @@
         <target>该组禁止限时消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at" xml:space="preserve">
+      <trans-unit id="Disappears at" xml:space="preserve" approved="no">
         <source>Disappears at</source>
+        <target state="translated">消失于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at: %@" xml:space="preserve">
+      <trans-unit id="Disappears at: %@" xml:space="preserve" approved="no">
         <source>Disappears at: %@</source>
+        <target state="translated">消失于：%@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -1568,8 +1605,9 @@
         <target>稍后再做</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't create address" xml:space="preserve">
+      <trans-unit id="Don't create address" xml:space="preserve" approved="no">
         <source>Don't create address</source>
+        <target state="translated">不创建地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
@@ -1592,8 +1630,9 @@
         <target>重复的显示名！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Duration" xml:space="preserve">
+      <trans-unit id="Duration" xml:space="preserve" approved="no">
         <source>Duration</source>
+        <target state="translated">时长</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
@@ -1646,12 +1685,14 @@
         <target>启用定期通知？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct" xml:space="preserve">
+      <trans-unit id="Enable self-destruct" xml:space="preserve" approved="no">
         <source>Enable self-destruct</source>
+        <target state="translated">启用自毁功能</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
         <source>Enable self-destruct passcode</source>
+        <target state="translated">启用自毁密码</target>
         <note>set passcode view</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -1724,12 +1765,14 @@
         <target>手动输入服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message…" xml:space="preserve">
+      <trans-unit id="Enter welcome message…" xml:space="preserve" approved="no">
         <source>Enter welcome message…</source>
+        <target state="translated">输入欢迎消息……</target>
         <note>placeholder</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
+      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve" approved="no">
         <source>Enter welcome message… (optional)</source>
+        <target state="translated">输入欢迎消息……（可选）</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve">
@@ -1897,8 +1940,9 @@
         <target>保存用户密码时出错</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending email" xml:space="preserve">
+      <trans-unit id="Error sending email" xml:space="preserve" approved="no">
         <source>Error sending email</source>
+        <target state="translated">发送电邮错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -2021,8 +2065,9 @@
         <target>文件和媒体</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
+      <trans-unit id="Finally, we have them! 🚀" xml:space="preserve" approved="no">
         <source>Finally, we have them! 🚀</source>
+        <target state="translated">终于我们有它们了！ 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -2110,8 +2155,9 @@
         <target>群组链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve">
+      <trans-unit id="Group members can add message reactions." xml:space="preserve" approved="no">
         <source>Group members can add message reactions.</source>
+        <target state="translated">群组成员可以添加信息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can irreversibly delete sent messages." xml:space="preserve">
@@ -2214,8 +2260,9 @@
         <target>隐藏：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="History" xml:space="preserve">
+      <trans-unit id="History" xml:space="preserve" approved="no">
         <source>History</source>
+        <target state="translated">历史记录</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -2248,8 +2295,9 @@
         <target>ICE 服务器（每行一个）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve">
+      <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve" approved="no">
         <source>If you can't meet in person, show QR code in a video call, or share the link.</source>
+        <target state="translated">如果您不能亲自见面，可以在视频通话中展示二维码，或分享链接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
@@ -2257,12 +2305,14 @@
         <target>如果您不能亲自见面，您可以**扫描视频通话中的二维码**，或者您的联系人可以分享邀请链接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
+      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve" approved="no">
         <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
+        <target state="translated">如果您在打开应用时输入该密码，所有应用程序数据将被不可撤回地删除！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve">
+      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
         <source>If you enter your self-destruct passcode while opening the app:</source>
+        <target state="translated">如果您在打开应用程序时输入自毁密码：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
@@ -2370,8 +2420,9 @@
         <target>安全码不正确！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Info" xml:space="preserve">
+      <trans-unit id="Info" xml:space="preserve" approved="no">
         <source>Info</source>
+        <target state="translated">信息</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Initial role" xml:space="preserve">
@@ -2416,8 +2467,9 @@
         <target>邀请已过期！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite friends" xml:space="preserve">
+      <trans-unit id="Invite friends" xml:space="preserve" approved="no">
         <source>Invite friends</source>
+        <target state="translated">邀请朋友</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
@@ -2476,8 +2528,9 @@
         <target>意大利语界面</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Japanese interface" xml:space="preserve">
+      <trans-unit id="Japanese interface" xml:space="preserve" approved="no">
         <source>Japanese interface</source>
+        <target state="translated">日语界面</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join" xml:space="preserve">
@@ -2520,8 +2573,9 @@
         <target>大文件！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Learn more" xml:space="preserve">
+      <trans-unit id="Learn more" xml:space="preserve" approved="no">
         <source>Learn more</source>
+        <target state="translated">了解更多</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
@@ -2539,8 +2593,9 @@
         <target>离开群组？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
+      <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve" approved="no">
         <source>Let's talk in SimpleX Chat</source>
+        <target state="translated">让我们一起在 SimpleX Chat 里聊天</target>
         <note>email subject</note>
       </trans-unit>
       <trans-unit id="Light" xml:space="preserve">
@@ -2663,16 +2718,19 @@
         <target>消息草稿</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions" xml:space="preserve">
+      <trans-unit id="Message reactions" xml:space="preserve" approved="no">
         <source>Message reactions</source>
+        <target state="translated">消息回应</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited in this chat.</source>
+        <target state="translated">该聊天禁用了消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited in this group.</source>
+        <target state="translated">该群组禁用了消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
@@ -2720,12 +2778,14 @@
         <target>管理员移除</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Moderated at" xml:space="preserve">
+      <trans-unit id="Moderated at" xml:space="preserve" approved="no">
         <source>Moderated at</source>
+        <target state="translated">已被管理员移除于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Moderated at: %@" xml:space="preserve">
+      <trans-unit id="Moderated at: %@" xml:space="preserve" approved="no">
         <source>Moderated at: %@</source>
+        <target state="translated">已被管理员移除于：%@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
@@ -2793,8 +2853,9 @@
         <target>新数据库存档</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New display name" xml:space="preserve">
+      <trans-unit id="New display name" xml:space="preserve" approved="no">
         <source>New display name</source>
+        <target state="translated">新显示名</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
@@ -2936,8 +2997,9 @@
         <target>只有群主可以启用语音信息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can add message reactions." xml:space="preserve">
+      <trans-unit id="Only you can add message reactions." xml:space="preserve" approved="no">
         <source>Only you can add message reactions.</source>
+        <target state="translated">只有您可以添加消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
@@ -2960,8 +3022,9 @@
         <target>只有您可以发送语音消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Only your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Only your contact can add message reactions.</source>
+        <target state="translated">只有您的联系人可以添加消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
@@ -3009,8 +3072,9 @@
         <target>开源协议和代码——任何人都可以运行服务器。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening database…" xml:space="preserve">
+      <trans-unit id="Opening database…" xml:space="preserve" approved="no">
         <source>Opening database…</source>
+        <target state="translated">打开数据库中……</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
@@ -3178,8 +3242,9 @@
         <target>预设服务器地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preview" xml:space="preserve">
+      <trans-unit id="Preview" xml:space="preserve" approved="no">
         <source>Preview</source>
+        <target state="translated">预览</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
@@ -3212,8 +3277,9 @@
         <target>个人资料密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>Profile update will be sent to your contacts.</source>
+        <target state="translated">个人资料更新将被发送给您的联系人。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
@@ -3226,12 +3292,14 @@
         <target>禁止不可撤回消息删除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit message reactions." xml:space="preserve">
+      <trans-unit id="Prohibit message reactions." xml:space="preserve" approved="no">
         <source>Prohibit message reactions.</source>
+        <target state="translated">禁止消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit messages reactions." xml:space="preserve">
+      <trans-unit id="Prohibit messages reactions." xml:space="preserve" approved="no">
         <source>Prohibit messages reactions.</source>
+        <target state="translated">禁止消息回应。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
@@ -3274,8 +3342,9 @@
         <target>评价此应用程序</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="React..." xml:space="preserve">
+      <trans-unit id="React..." xml:space="preserve" approved="no">
         <source>React...</source>
+        <target state="translated">回应……</target>
         <note>chat item menu</note>
       </trans-unit>
       <trans-unit id="Read" xml:space="preserve">
@@ -3283,16 +3352,19 @@
         <target>已读</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more" xml:space="preserve">
+      <trans-unit id="Read more" xml:space="preserve" approved="no">
         <source>Read more</source>
+        <target state="translated">阅读更多</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve" approved="no">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</source>
+        <target state="translated">在 [用户指南](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address) 中阅读更多内容。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve" approved="no">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
+        <target state="translated">在 [用户指南](https://simplex.chat/docs/guide/readme.html#connect-to-friends) 中阅读更多内容。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
@@ -3305,12 +3377,14 @@
         <target>在我们的 [GitHub 仓库](https://github.com/simplex-chat/simplex-chat#readme) 中阅读更多信息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at" xml:space="preserve">
+      <trans-unit id="Received at" xml:space="preserve" approved="no">
         <source>Received at</source>
+        <target state="translated">已收到于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at: %@" xml:space="preserve">
+      <trans-unit id="Received at: %@" xml:space="preserve" approved="no">
         <source>Received at: %@</source>
+        <target state="translated">已收到于：%@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
@@ -3318,8 +3392,9 @@
         <target>收到文件项目</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Received message" xml:space="preserve">
+      <trans-unit id="Received message" xml:space="preserve" approved="no">
         <source>Received message</source>
+        <target state="translated">收到的信息</target>
         <note>message info title</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -3337,12 +3412,14 @@
         <target>对方会在您键入时看到更新。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at" xml:space="preserve">
+      <trans-unit id="Record updated at" xml:space="preserve" approved="no">
         <source>Record updated at</source>
+        <target state="translated">记录更新于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at: %@" xml:space="preserve">
+      <trans-unit id="Record updated at: %@" xml:space="preserve" approved="no">
         <source>Record updated at: %@</source>
+        <target state="translated">记录更新于：%@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
@@ -3520,8 +3597,9 @@
         <target>保存存档</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save auto-accept settings" xml:space="preserve">
+      <trans-unit id="Save auto-accept settings" xml:space="preserve" approved="no">
         <source>Save auto-accept settings</source>
+        <target state="translated">保存自动接受设置</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
@@ -3559,8 +3637,9 @@
         <target>保存服务器？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save settings?" xml:space="preserve">
+      <trans-unit id="Save settings?" xml:space="preserve" approved="no">
         <source>Save settings?</source>
+        <target state="translated">保存设置？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save welcome message?" xml:space="preserve">
@@ -3613,24 +3692,29 @@
         <target>安全码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Select" xml:space="preserve">
+      <trans-unit id="Select" xml:space="preserve" approved="no">
         <source>Select</source>
+        <target state="translated">选择</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct" xml:space="preserve">
+      <trans-unit id="Self-destruct" xml:space="preserve" approved="no">
         <source>Self-destruct</source>
+        <target state="translated">自毁</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode" xml:space="preserve" approved="no">
         <source>Self-destruct passcode</source>
+        <target state="translated">自毁密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode changed!</source>
+        <target state="translated">自毁密码已更改!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode enabled!</source>
+        <target state="translated">自毁密码已启用!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve">
@@ -3648,8 +3732,9 @@
         <target>发送私信</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send disappearing message" xml:space="preserve">
+      <trans-unit id="Send disappearing message" xml:space="preserve" approved="no">
         <source>Send disappearing message</source>
+        <target state="translated">发送限时消息中</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
@@ -3702,12 +3787,14 @@
         <target>发送通过</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent at" xml:space="preserve">
+      <trans-unit id="Sent at" xml:space="preserve" approved="no">
         <source>Sent at</source>
+        <target state="translated">已发送于</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent at: %@" xml:space="preserve">
+      <trans-unit id="Sent at: %@" xml:space="preserve" approved="no">
         <source>Sent at: %@</source>
+        <target state="translated">已发送于：%@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Sent file event" xml:space="preserve">
@@ -3715,8 +3802,9 @@
         <target>已发送文件项目</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Sent message" xml:space="preserve">
+      <trans-unit id="Sent message" xml:space="preserve" approved="no">
         <source>Sent message</source>
+        <target state="translated">已发信息</target>
         <note>message info title</note>
       </trans-unit>
       <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve">
@@ -3764,8 +3852,9 @@
         <target>设置它以代替系统身份验证。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passcode" xml:space="preserve">
+      <trans-unit id="Set passcode" xml:space="preserve" approved="no">
         <source>Set passcode</source>
+        <target state="translated">设置密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -3798,12 +3887,14 @@
         <target>分享一次性链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share address" xml:space="preserve">
+      <trans-unit id="Share address" xml:space="preserve" approved="no">
         <source>Share address</source>
+        <target state="translated">分享地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share address with contacts?" xml:space="preserve">
+      <trans-unit id="Share address with contacts?" xml:space="preserve" approved="no">
         <source>Share address with contacts?</source>
+        <target state="translated">与联系人分享地址？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
@@ -3816,8 +3907,9 @@
         <target>分享一次性邀请链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share with contacts" xml:space="preserve">
+      <trans-unit id="Share with contacts" xml:space="preserve" approved="no">
         <source>Share with contacts</source>
+        <target state="translated">与联系人分享</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show calls in phone history" xml:space="preserve">
@@ -3840,8 +3932,9 @@
         <target>显示：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Address" xml:space="preserve">
+      <trans-unit id="SimpleX Address" xml:space="preserve" approved="no">
         <source>SimpleX Address</source>
+        <target state="translated">SimpleX 地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
@@ -3869,8 +3962,9 @@
         <target>已开启 SimpleX 锁定</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX address" xml:space="preserve">
+      <trans-unit id="SimpleX address" xml:space="preserve" approved="no">
         <source>SimpleX address</source>
+        <target state="translated">SimpleX 地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
@@ -3968,12 +4062,14 @@
         <target>停止发送文件？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sharing" xml:space="preserve">
+      <trans-unit id="Stop sharing" xml:space="preserve" approved="no">
         <source>Stop sharing</source>
+        <target state="translated">停止分享</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop sharing address?" xml:space="preserve">
+      <trans-unit id="Stop sharing address?" xml:space="preserve" approved="no">
         <source>Stop sharing address?</source>
+        <target state="translated">停止分享地址？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -4218,8 +4314,9 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>要提出任何问题并接收更新，请：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve">
+      <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve" approved="no">
         <source>To connect, your contact can scan QR code or use the link in the app.</source>
+        <target state="translated">您的联系人可以扫描二维码或使用应用程序中的链接来建立连接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To find the profile used for an incognito connection, tap the contact or group name on top of the chat." xml:space="preserve">
@@ -4329,8 +4426,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>取消隐藏个人资料</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unit" xml:space="preserve">
+      <trans-unit id="Unit" xml:space="preserve" approved="no">
         <source>Unit</source>
+        <target state="translated">单位</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown caller" xml:space="preserve">
@@ -4580,8 +4678,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>当可用时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
+      <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve" approved="no">
         <source>When people request to connect, you can accept or reject it.</source>
+        <target state="translated">当人们请求连接时，您可以接受或拒绝它。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
@@ -4654,8 +4753,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>您也可以通过点击链接进行连接。如果在浏览器中打开，请点击“在移动应用程序中打开”按钮。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can create it later" xml:space="preserve">
+      <trans-unit id="You can create it later" xml:space="preserve" approved="no">
         <source>You can create it later</source>
+        <target state="translated">您可以以后创建它</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
@@ -4680,8 +4780,9 @@ SimpleX Lock must be enabled.</source>
         <target>您可以共享链接或二维码——任何人都可以加入该群组。如果您稍后将其删除，您不会失去该组的成员。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
+      <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve" approved="no">
         <source>You can share this address with your contacts to let them connect with **%@**.</source>
+        <target state="translated">您可以与您的联系人分享该地址，让他们与 **%@** 联系。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
@@ -4799,9 +4900,9 @@ SimpleX Lock must be enabled.</source>
         <target>您将停止接收来自该群组的消息。聊天记录将被保留。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You won't lose your contacts if you later delete your address." xml:space="preserve">
+      <trans-unit id="You won't lose your contacts if you later delete your address." xml:space="preserve" approved="no">
         <source>You won't lose your contacts if you later delete your address.</source>
-        <target>如果您以后删除它，您不会丢失您的联系人。</target>
+        <target state="translated">如果您以后删除您的地址，您不会丢失您的联系人。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
@@ -4891,13 +4992,16 @@ You can cancel this connection and remove the contact (and try later with a new 
         <target>您的联系人可以允许完全删除消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
+      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve" approved="no">
         <source>Your contacts in SimpleX will see it.
 You can change it in Settings.</source>
+        <target state="translated">您的 SimpleX 的联系人会看到它。
+您可以在设置中更改它。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contacts will remain connected." xml:space="preserve">
+      <trans-unit id="Your contacts will remain connected." xml:space="preserve" approved="no">
         <source>Your contacts will remain connected.</source>
+        <target state="translated">与您的联系人保持连接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
@@ -5107,9 +5211,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>连接中（已介绍）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
+      <trans-unit id="connecting (introduction invitation)" xml:space="preserve" approved="no">
         <source>connecting (introduction invitation)</source>
-        <target>连接（介绍邀请）</target>
+        <target state="translated">连接中（介绍邀请）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call" xml:space="preserve">
@@ -5147,8 +5251,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>创建者</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="custom" xml:space="preserve">
+      <trans-unit id="custom" xml:space="preserve" approved="no">
         <source>custom</source>
+        <target state="translated">自定义</target>
         <note>dropdown time picker choice</note>
       </trans-unit>
       <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
@@ -5156,8 +5261,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>数据库版本比应用程序更新，但无法降级迁移：%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="days" xml:space="preserve">
+      <trans-unit id="days" xml:space="preserve" approved="no">
         <source>days</source>
+        <target state="translated">天</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -5235,8 +5341,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>群组资料已更新</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="hours" xml:space="preserve">
+      <trans-unit id="hours" xml:space="preserve" approved="no">
         <source>hours</source>
+        <target state="translated">小时</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve">
@@ -5344,8 +5451,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>消息已收到</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="minutes" xml:space="preserve">
+      <trans-unit id="minutes" xml:space="preserve" approved="no">
         <source>minutes</source>
+        <target state="translated">分钟</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="missed call" xml:space="preserve">
@@ -5363,8 +5471,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>由 %@ 审核</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="months" xml:space="preserve">
+      <trans-unit id="months" xml:space="preserve" approved="no">
         <source>months</source>
+        <target state="translated">月</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
@@ -5387,8 +5496,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>无端到端加密</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no text" xml:space="preserve">
+      <trans-unit id="no text" xml:space="preserve" approved="no">
         <source>no text</source>
+        <target state="translated">无文本</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
@@ -5467,8 +5577,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>秒</target>
         <note>network option</note>
       </trans-unit>
-      <trans-unit id="seconds" xml:space="preserve">
+      <trans-unit id="seconds" xml:space="preserve" approved="no">
         <source>seconds</source>
+        <target state="translated">秒</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
@@ -5546,8 +5657,9 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>想要与您连接！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="weeks" xml:space="preserve">
+      <trans-unit id="weeks" xml:space="preserve" approved="no">
         <source>weeks</source>
+        <target state="translated">周</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="yes" xml:space="preserve">
