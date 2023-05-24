@@ -990,13 +990,13 @@ testXFTPFileTransfer =
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 ./tests/tmp"
-      concurrently_
-        (alice <## "completed uploading file 1 (test.pdf) for bob")
-        ( bob
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          bob
             <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
                    "started receiving file 1 (test.pdf) from alice"
                  ]
-        )
+        ]
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
       alice ##> "/fs 1"
@@ -1176,13 +1176,13 @@ testXFTPWithChangedConfig =
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 ./tests/tmp"
-      concurrently_
-        (alice <## "completed uploading file 1 (test.pdf) for bob")
-        ( bob
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          bob
             <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
                    "started receiving file 1 (test.pdf) from alice"
                  ]
-        )
+        ]
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
       src <- B.readFile "./tests/fixtures/test.pdf"
@@ -1219,13 +1219,13 @@ testXFTPWithRelativePaths =
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1"
-      concurrently_
-        (alice <## "completed uploading file 1 (test.pdf) for bob")
-        ( bob
-            <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          bob
+            <### [ "saving file 1 from alice to test.pdf",
                    "started receiving file 1 (test.pdf) from alice"
                  ]
-        )
+        ]
       bob <## "completed receiving file 1 (test.pdf) from alice"
 
       src <- B.readFile "./tests/fixtures/test.pdf"
@@ -1351,13 +1351,13 @@ testXFTPCancelRcvRepeat =
       bob <# "alice> sends file testfile (17.0 MiB / 17825792 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 ./tests/tmp"
-      concurrently_
-        (alice <## "completed uploading file 1 (testfile) for bob")
-        ( bob
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (testfile) for bob",
+          bob
             <### [ "saving file 1 from alice to ./tests/tmp/testfile_1",
                    "started receiving file 1 (testfile) from alice"
                  ]
-        )
+        ]
 
       threadDelay 100000
 
