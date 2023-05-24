@@ -25,7 +25,6 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
-
 @Composable
 fun CIVoiceView(
   providedDurationSec: Int,
@@ -107,7 +106,8 @@ private fun VoiceLayout(
       val inactiveTrackColor =
         MaterialTheme.colors.primary.mixWith(
           backgroundColor.copy(1f).mixWith(MaterialTheme.colors.background, backgroundColor.alpha),
-          0.24f)
+          0.24f
+        )
       val width = with(LocalDensity.current) { LocalView.current.width.toDp() }
       val colors = SliderDefaults.colors(
         inactiveTrackColor = inactiveTrackColor
@@ -236,6 +236,36 @@ private fun PlayPauseButton(
 }
 
 @Composable
+private fun DownloadButton(
+  error: Boolean,
+  onClick: () -> Unit,
+  longClick: () -> Unit
+) {
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  Surface(
+    color = receivedColor,
+    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+  ) {
+    Box(
+      Modifier
+        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp)
+        .combinedClickable(
+          onClick = onClick,
+          onLongClick = longClick
+        ),
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(
+        painterResource(R.drawable.ic_arrow_downward),
+        contentDescription = null,
+        Modifier.size(36.dp),
+        tint = if (error) WarningOrange else MaterialTheme.colors.primary
+      )
+    }
+  }
+}
+
+@Composable
 private fun VoiceMsgIndicator(
   file: CIFile?,
   audioPlaying: Boolean,
@@ -265,23 +295,21 @@ private fun VoiceMsgIndicator(
     } else {
       PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
     }
-  } else {
-    if (file?.fileStatus is CIFileStatus.RcvInvitation) {
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick)
-    } else if (file?.fileStatus is CIFileStatus.RcvTransfer
-      || file?.fileStatus is CIFileStatus.RcvAccepted
+  } else if (file?.fileStatus is CIFileStatus.RcvInvitation) {
+    DownloadButton(error, onClick = { receiveFile(file.fileId) }, longClick = longClick)
+  } else if (file?.fileStatus is CIFileStatus.RcvTransfer
+    || file?.fileStatus is CIFileStatus.RcvAccepted
+  ) {
+    Box(
+      Modifier
+        .size(56.dp)
+        .clip(RoundedCornerShape(4.dp)),
+      contentAlignment = Alignment.Center
     ) {
-      Box(
-        Modifier
-          .size(56.dp)
-          .clip(RoundedCornerShape(4.dp)),
-        contentAlignment = Alignment.Center
-      ) {
-        ProgressIndicator()
-      }
-    } else {
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {}, longClick)
+      ProgressIndicator()
     }
+  } else {
+    PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {}, longClick)
   }
 }
 

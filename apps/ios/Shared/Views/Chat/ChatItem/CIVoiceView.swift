@@ -222,7 +222,7 @@ struct VoiceMessagePlayer: View {
                 }
             }
         } label: {
-            playPauseIcon("play.fill")
+            playPauseIcon("arrow.down")
         }
     }
 
