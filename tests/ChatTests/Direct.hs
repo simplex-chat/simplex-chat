@@ -1315,13 +1315,13 @@ testUsersRestartCIExpiration tmp = do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
       -- set ttl for first user
-      alice #$> ("/_ttl 1 1", id, "ok")
+      alice #$> ("/_ttl 1 2", id, "ok")
       connectUsers alice bob
 
       -- create second user and set ttl
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 3", id, "ok")
+      alice #$> ("/_ttl 2 5", id, "ok")
       connectUsers alice bob
 
       -- first user messages
@@ -1353,7 +1353,7 @@ testUsersRestartCIExpiration tmp = do
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
 
       alice #> "@bob alice 3"
       bob <# "alice> alice 3"
@@ -1365,7 +1365,7 @@ testUsersRestartCIExpiration tmp = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 3 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 5 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -1374,7 +1374,7 @@ testUsersRestartCIExpiration tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 3000000
 
       -- messages both before and after restart are deleted
       -- first user messages
@@ -1387,7 +1387,7 @@ testUsersRestartCIExpiration tmp = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 3000000
 
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
