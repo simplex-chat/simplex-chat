@@ -31,6 +31,7 @@ import GHC.Weak (deRefWeak)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.ChatItemContent
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User (..))
@@ -322,7 +323,7 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
         go _ _ = ""
     charsWithContact cs
       | live = cs
-      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" && cs /= "+"  && cs /= "-" =
+      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" && cs /= "+" && cs /= "-" =
         contactPrefix <> cs
       | (s == ">" || s == "\\" || s == "!") && cs == " " =
         cs <> contactPrefix

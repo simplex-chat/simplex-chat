@@ -329,6 +329,7 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.ChatItemContent
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
 import Simplex.Chat.Migrations.M20220205_chat_item_status
@@ -4866,8 +4867,8 @@ getGroupChatReactions_ db g c@Chat {chatItems} = do
 
 getDirectCIReactions :: DB.Connection -> Contact -> SharedMsgId -> IO [CIReactionCount]
 getDirectCIReactions db Contact {contactId} itemSharedMsgId =
-  map toCIReaction <$>
-    DB.query
+  map toCIReaction
+    <$> DB.query
       db
       [sql|
         SELECT reaction, MAX(reaction_sent), COUNT(chat_item_reaction_id)
@@ -4879,8 +4880,8 @@ getDirectCIReactions db Contact {contactId} itemSharedMsgId =
 
 getGroupCIReactions :: DB.Connection -> GroupInfo -> MemberId -> SharedMsgId -> IO [CIReactionCount]
 getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
-  map toCIReaction <$>
-    DB.query
+  map toCIReaction
+    <$> DB.query
       db
       [sql|
         SELECT reaction, MAX(reaction_sent), COUNT(chat_item_reaction_id)
@@ -4905,14 +4906,15 @@ getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemShar
 
 deleteDirectCIReactions_ :: DB.Connection -> ContactId -> ChatItem 'CTDirect d -> IO ()
 deleteDirectCIReactions_ db contactId ChatItem {meta = CIMeta {itemSharedMsgId}} =
-  forM_ itemSharedMsgId $ \itemSharedMId -> 
+  forM_ itemSharedMsgId $ \itemSharedMId ->
     DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ? AND shared_msg_id = ?" (contactId, itemSharedMId)
 
 deleteGroupCIReactions_ :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
 deleteGroupCIReactions_ db g@GroupInfo {groupId} ci@ChatItem {meta = CIMeta {itemSharedMsgId}} =
   forM_ itemSharedMsgId $ \itemSharedMId -> do
     let GroupMember {memberId} = chatItemMember g ci
-    DB.execute db
+    DB.execute
+      db
       "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
       (groupId, itemSharedMId, memberId)
 
@@ -4921,8 +4923,8 @@ toCIReaction (reaction, userReacted, totalReacted) = CIReactionCount {reaction, 
 
 getDirectReactions :: DB.Connection -> Contact -> SharedMsgId -> Bool -> IO [MsgReaction]
 getDirectReactions db ct itemSharedMId sent =
-  map fromOnly <$>
-    DB.query
+  map fromOnly
+    <$> DB.query
       db
       [sql|
         SELECT reaction
@@ -4953,8 +4955,8 @@ setDirectReaction db ct itemSharedMId sent reaction add msgId reactionTs
 
 getGroupReactions :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> IO [MsgReaction]
 getGroupReactions db GroupInfo {groupId} m itemMemberId itemSharedMId sent =
-  map fromOnly <$>
-    DB.query
+  map fromOnly
+    <$> DB.query
       db
       [sql|
         SELECT reaction
