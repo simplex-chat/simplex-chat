@@ -847,7 +847,7 @@
     <string name="use_chat">使用聊天</string>
     <string name="read_more_in_github_with_link">在我们的 <font color="#0088ff">GitHub 存储库</font> 中阅读更多内容。</string>
     <string name="auth_open_chat_console">打开聊天控制台</string>
-    <string name="auth_stop_chat">停止聊天</string>
+    <string name="auth_stop_chat">停止聊天程序</string>
     <string name="toast_permission_denied">权限被拒绝！</string>
     <string name="chat_help_tap_button">点击按钮</string>
     <string name="thank_you_for_installing_simplex">感谢您安装 <xliff:g id="appNameFull">SimpleX Chat</xliff:g>！</string>
