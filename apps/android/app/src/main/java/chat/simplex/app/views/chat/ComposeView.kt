@@ -376,8 +376,12 @@ fun ComposeView(
       live = live,
       ttl = ttl
     )
-    if (aChatItem != null) chatModel.addChatItem(cInfo, aChatItem.chatItem)
-    return aChatItem?.chatItem
+    if (aChatItem != null) {
+      chatModel.addChatItem(cInfo, aChatItem.chatItem)
+      return aChatItem.chatItem
+    }
+    if (file != null) removeFile(context, file)
+    return null
   }
 
 

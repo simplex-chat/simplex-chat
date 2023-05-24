@@ -18,6 +18,7 @@ struct ContentView: View {
     @Binding var userAuthorized: Bool?
     @Binding var canConnectCall: Bool
     @Binding var lastSuccessfulUnlock: TimeInterval?
+    @Binding var showInitializationView: Bool
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -27,7 +28,6 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
-    @State private var showInitializationView = false
 
     var body: some View {
         ZStack {
@@ -53,9 +53,6 @@ struct ContentView: View {
         .onAppear {
             if prefPerformLA { requestNtfAuthorization() }
             initAuthenticate()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                showInitializationView = true
-            }
         }
         .onChange(of: doAuthenticate) { _ in
             initAuthenticate()

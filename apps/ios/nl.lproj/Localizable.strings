@@ -1995,6 +1995,9 @@
 /* No comment provided by engineer. */
 "No received or sent files" = "Geen ontvangen of verzonden bestanden";
 
+/* copied message info in history */
+"no text" = "geen tekst";
+
 /* No comment provided by engineer. */
 "Notifications" = "Meldingen";
 

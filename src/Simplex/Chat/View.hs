@@ -49,7 +49,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtoServerWithAuth, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
@@ -248,6 +248,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel e
+  CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRTimedAction _ _ -> []
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
@@ -833,8 +834,8 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
 
 viewUserServers :: AUserProtoServers -> Bool -> [StyledString]
 viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, presetServers}) testView =
-  customServers <>
-    if testView
+  customServers
+    <> if testView
       then []
       else
         [ "",
@@ -842,9 +843,9 @@ viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, preset
           "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to configure " <> pName <> " servers",
           "use " <> highlight (srvCmd <> " default") <> " to remove configured " <> pName <> " servers and use presets"
         ]
-        <> case p of
-          SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
-          SPXFTP -> ["(chat option " <> highlight' "-xftp-servers" <> " has precedence over saved XFTP servers for chat session)"]
+          <> case p of
+            SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
+            SPXFTP -> ["(chat option " <> highlight' "-xftp-servers" <> " has precedence over saved XFTP servers for chat session)"]
   where
     srvCmd = "/" <> strEncode p
     pName = protocolName p
@@ -1436,6 +1437,7 @@ viewChatError logLevel = \case
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEInternalError e -> ["internal chat error: " <> plain e]
+    CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]

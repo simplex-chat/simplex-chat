@@ -1069,10 +1069,10 @@
 "Disappearing messages are prohibited in this group." = "Les messages éphémères sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
-"Disappears at" = "Disparaît à";
+"Disappears at" = "Disparaîtra le";
 
 /* copied message info */
-"Disappears at: %@" = "Disparaît à : %@";
+"Disappears at: %@" = "Disparaîtra le : %@";
 
 /* server test step */
 "Disconnect" = "Se déconnecter";
@@ -1994,6 +1994,9 @@
 
 /* No comment provided by engineer. */
 "No received or sent files" = "Aucun fichier reçu ou envoyé";
+
+/* copied message info in history */
+"no text" = "aucun texte";
 
 /* No comment provided by engineer. */
 "Notifications" = "Notifications";

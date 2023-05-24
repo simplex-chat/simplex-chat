@@ -448,7 +448,10 @@ processChatCommand = \case
     ts <- liftIO getCurrentTime
     let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
     processChatCommand $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
-  APIImportArchive cfg -> withStoreChanged $ importArchive cfg
+  APIImportArchive cfg -> checkChatStopped $ do
+    fileErrs <- importArchive cfg
+    setStoreChanged
+    pure $ CRArchiveImported fileErrs
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
@@ -1276,7 +1279,7 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     let mc = MCText msg
     processChatCommand $ APIUpdateChatItem chatRef chatItemId live mc
-  ReactToMessage add reaction chatName msg  -> withUser $ \user -> do
+  ReactToMessage add reaction chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand $ APIChatItemReaction chatRef chatItemId add reaction

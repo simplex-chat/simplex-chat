@@ -495,6 +495,7 @@ public enum ChatResponse: Decodable, Error {
     case cmdOk(user: User?)
     case chatCmdError(user_: User?, chatError: ChatError)
     case chatError(user_: User?, chatError: ChatError)
+    case archiveImported(archiveErrors: [ArchiveError])
 
     public var responseType: String {
         get {
@@ -609,6 +610,7 @@ public enum ChatResponse: Decodable, Error {
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
+            case .archiveImported: return "archiveImported"
             }
         }
     }
@@ -726,6 +728,7 @@ public enum ChatResponse: Decodable, Error {
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
+            case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
             }
         }
     }
@@ -1248,6 +1251,7 @@ public enum ChatErrorType: Decodable {
     case invalidChatItemDelete
     case agentVersion
     case commandError(message: String)
+    case exception(message: String)
 }
 
 public enum StoreError: Decodable {
@@ -1385,4 +1389,9 @@ public enum SMPAgentError: Decodable {
     case A_PROHIBITED
     case A_VERSION
     case A_ENCRYPTION
+}
+
+public enum ArchiveError: Decodable {
+    case `import`(chatError: ChatError)
+    case importFile(file: String, chatError: ChatError)
 }

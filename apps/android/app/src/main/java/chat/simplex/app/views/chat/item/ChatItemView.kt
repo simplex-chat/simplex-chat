@@ -288,6 +288,14 @@ fun ChatItemView(
           CICallItemView(cInfo, cItem, status, duration, acceptCall)
         }
 
+        @Composable
+        fun ModeratedItem() {
+          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
+          DefaultDropdownMenu(showMenu) {
+            DeleteItemAction(cItem, showMenu, questionText = generalGetString(R.string.delete_message_cannot_be_undone_warning), deleteMessage)
+          }
+        }
+
         when (val c = cItem.content) {
           is CIContent.SndMsgContent -> ContentItem()
           is CIContent.RcvMsgContent -> ContentItem()
@@ -314,8 +322,8 @@ fun ChatItemView(
           is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
           is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
           is CIContent.RcvGroupFeatureRejected -> CIChatFeatureView(cItem, c.groupFeature, Color.Red)
-          is CIContent.SndModerated -> MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
-          is CIContent.RcvModerated -> MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
+          is CIContent.SndModerated -> ModeratedItem()
+          is CIContent.RcvModerated -> ModeratedItem()
           is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
         }
       }

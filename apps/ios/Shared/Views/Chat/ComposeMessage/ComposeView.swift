@@ -726,6 +726,9 @@ struct ComposeView: View {
                 }
                 return chatItem
             }
+            if let file = file {
+                removeFile(file)
+            }
             return nil
         }
 
