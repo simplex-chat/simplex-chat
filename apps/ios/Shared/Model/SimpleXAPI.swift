@@ -243,8 +243,10 @@ func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }
 
-func apiImportArchive(config: ArchiveConfig) async throws {
-    try await sendCommandOkResp(.apiImportArchive(config: config))
+func apiImportArchive(config: ArchiveConfig) async throws -> [ArchiveError] {
+    let r = await chatSendCmd(.apiImportArchive(config: config))
+    if case let .archiveImported(archiveErrors) = r { return archiveErrors }
+    throw r
 }
 
 func apiDeleteStorage() async throws {
@@ -538,7 +540,6 @@ func apiConnect_(connReq: String) async -> (ConnReqType?, Alert?) {
         return (nil, nil)
     }
     let r = await chatSendCmd(.apiConnect(userId: userId, connReq: connReq))
-    let am = AlertManager.shared
     switch r {
     case .sentConfirmation: return (.invitation, nil)
     case .sentInvitation: return (.contact, nil)
