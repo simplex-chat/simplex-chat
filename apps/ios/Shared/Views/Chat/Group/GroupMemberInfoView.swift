@@ -115,8 +115,7 @@ struct GroupMemberInfoView: View {
                     }
 
                     // TODO invited by - need to get contact by contact id
-                    if developerTools,
-                       let conn = member.activeConn {
+                    if let conn = member.activeConn {
                         let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
                         infoRow("Connection", connLevelDesc)
                     }
