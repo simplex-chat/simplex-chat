@@ -44,14 +44,14 @@ chatGroupTests = do
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
-    fit "create group link, join via group link" testGroupLink
+    it "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
-    fit "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
+    it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
     it "group link member role" testGroupLinkMemberRole
-    fit "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
+    it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
   describe "group message errors" $ do
     it "show message decryption error and update count" testGroupMsgDecryptError
   describe "message reactions" $ do
@@ -1518,11 +1518,10 @@ testGroupAsync tmp = do
           dan <##> cath
           dan <##> alice
 
--- unexpected output: invitation to join the group #team sent to cath
 testGroupLink :: HasCallStack => FilePath -> IO ()
 testGroupLink =
   testChat3 aliceProfile bobProfile cathProfile $
-    \a b c -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> withTestOutput c $ \cath -> do
+    \alice bob cath -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -1545,7 +1544,7 @@ testGroupLink =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
+            alice <## "invitation to join the group #team sent to bob"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1581,7 +1580,7 @@ testGroupLink =
             <### [ "cath_1 (Catherine): contact is connected",
                    "contact cath_1 is merged into cath",
                    "use @cath <message> to send messages",
-                   EndsWith "invited to group #team via your group link",
+                   StartsWith "invitation to join the group #team sent to cath",
                    EndsWith "joined the group"
                  ],
           cath
@@ -1635,7 +1634,7 @@ testGroupLinkDeleteGroupRejoin =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
+            alice <## "invitation to join the group #team sent to bob"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1661,7 +1660,7 @@ testGroupLinkDeleteGroupRejoin =
             <### [ "bob_1 (Bob): contact is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages",
-                   EndsWith "invited to group #team via your group link",
+                   StartsWith "invitation to join the group #team sent to bob",
                    EndsWith "joined the group"
                  ],
           bob
@@ -1691,7 +1690,7 @@ testGroupLinkContactUsed =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
+            alice <## "invitation to join the group #team sent to bob"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1753,7 +1752,7 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## "use /i cath to print out this incognito profile again"
-            bob <## "cath invited to group #team via your group link"
+            bob <## "invitation to join the group #team sent to cath"
             bob <## "#team: cath joined the group",
           do
             cath <## (bobIncognito <> ": contact is connected")
@@ -1779,7 +1778,7 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## ("use /i " <> danIncognito <> " to print out this incognito profile again")
-            bob <## (danIncognito <> " invited to group #team via your group link")
+            bob <## ("invitation to join the group #team sent to " <> danIncognito)
             bob <## ("#team: " <> danIncognito <> " joined the group"),
           do
             dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
@@ -1826,11 +1825,10 @@ testGroupLinkIncognitoMembership =
           cath <# ("#team " <> danIncognito <> "> how is it going?")
         ]
 
--- unexpected output: #club: alice invites you to join the group as member
 testGroupLinkUnusedHostContactDeleted :: HasCallStack => FilePath -> IO ()
 testGroupLinkUnusedHostContactDeleted =
   testChat2 aliceProfile bobProfile $
-    \a b -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> do
+    \alice bob -> do
       -- create group 1
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -1843,7 +1841,7 @@ testGroupLinkUnusedHostContactDeleted =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
+            alice <## "invitation to join the group #team sent to bob"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1863,7 +1861,7 @@ testGroupLinkUnusedHostContactDeleted =
             <### [ "bob_1 (Bob): contact is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages",
-                   EndsWith "invited to group #club via your group link",
+                   StartsWith "invitation to join the group #club sent to bob",
                    EndsWith "joined the group"
                  ],
           bob
@@ -1938,7 +1936,7 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       concurrentlyN_
         [ do
             alice <## (bobIncognito <> ": contact is connected")
-            alice <## (bobIncognito <> " invited to group #" <> group <> " via your group link")
+            alice <## ("invitation to join the group #" <> group <> " sent to " <> bobIncognito)
             alice <## ("#" <> group <> ": " <> bobIncognito <> " joined the group"),
           do
             bob <## (bobsAliceContact <> " (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
@@ -1975,7 +1973,7 @@ testGroupLinkMemberRole =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
+            alice <## "invitation to join the group #team sent to bob"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1988,12 +1986,11 @@ testGroupLinkMemberRole =
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       alice <## "cath (Catherine): accepting request to join group #team..."
-      -- if contact existed it is merged
       concurrentlyN_
         [ alice
             <### [ "cath (Catherine): contact is connected",
-                   EndsWith "invited to group #team via your group link",
-                   EndsWith "joined the group"
+                   "invitation to join the group #team sent to cath",
+                   "#team: cath joined the group"
                  ],
           cath
             <### [ "alice (Alice): contact is connected",
@@ -2024,11 +2021,10 @@ testGroupLinkMemberRole =
         (alice <# "#team bob> hey now")
         (cath <# "#team bob> hey now")
 
--- unexpected output: invitation to join the group #team sent to bob
 testGroupLinkLeaveDelete :: HasCallStack => FilePath -> IO ()
 testGroupLinkLeaveDelete =
   testChat3 aliceProfile bobProfile cathProfile $
-    \a b c -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> withTestOutput c $ \cath -> do
+    \alice bob cath -> do
       connectUsers alice bob
       connectUsers cath bob
       alice ##> "/g team"
@@ -2044,7 +2040,7 @@ testGroupLinkLeaveDelete =
             <### [ "bob_1 (Bob): contact is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages",
-                   EndsWith "invited to group #team via your group link",
+                   StartsWith "invitation to join the group #team sent to bob",
                    EndsWith "joined the group"
                  ],
           bob
@@ -2060,7 +2056,7 @@ testGroupLinkLeaveDelete =
       concurrentlyN_
         [ alice
             <### [ "cath (Catherine): contact is connected",
-                   "cath invited to group #team via your group link",
+                   "invitation to join the group #team sent to cath",
                    "#team: cath joined the group"
                  ],
           cath

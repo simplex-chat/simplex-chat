@@ -2656,7 +2656,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
+    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, customUserProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
@@ -2758,7 +2758,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               whenUserNtfs user $ do
                 setActive $ ActiveC c
                 showToast (c <> "> ") "connected"
-              forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
                   Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_, gLinkMemRole) -> do
@@ -2903,6 +2902,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             whenUserNtfs user $ do
               setActive $ ActiveG gName
               showToast ("#" <> gName) "you are connected to group"
+            withStore' (\db -> getContactViaMember db user m) >>= \case
+              Nothing -> messageWarning "connected host does not have contact"
+              Just ct@Contact {activeConn = Connection {groupLinkId}} -> do
+                let connectedIncognito = contactConnIncognito ct || memberIncognito membership
+                forM_ groupLinkId $ \_ -> probeMatchingContacts ct connectedIncognito
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}

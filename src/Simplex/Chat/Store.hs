@@ -2352,6 +2352,7 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Co
             :. (userId, localDisplayName, contactId, localProfileId profile, createdAt, createdAt)
         )
 
+-- this method differs from getViaGroupContact in that it does not join with groups on contacts.via_group
 getContactViaMember :: DB.Connection -> User -> GroupMember -> IO (Maybe Contact)
 getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
   maybeFirstRow (toContact user) $
