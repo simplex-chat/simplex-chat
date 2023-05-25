@@ -196,6 +196,7 @@ fun ChatInfoLayout(
       }
       ContactPreferencesButton(openPreferences)
     }
+    SectionDividerSpaced()
 
     if (developerTools) {
       SectionView(title = stringResource(R.string.contact_info_section_title_contact)) {
@@ -205,9 +206,10 @@ fun ChatInfoLayout(
           else String.format(generalGetString(R.string.conn_level_desc_indirect), connLevel)
         InfoRow(stringResource(R.string.info_row_connection), connLevelDesc)
       }
+      SectionDividerSpaced()
     }
 
-    SectionDividerSpaced()
+
     if (contact.contactLink != null) {
       val context = LocalContext.current
       SectionView(stringResource(R.string.address_section_title).uppercase()) {
