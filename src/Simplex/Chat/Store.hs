@@ -3775,7 +3775,7 @@ getDirectChatPreviews_ db user@User {userId} = do
   tz <- getCurrentTimeZone
   currentTs <- getCurrentTime
   map (toDirectChatPreview tz currentTs)
-    <$> DB.queryNamed
+    <$> DB.query
       db
       [sql|
         SELECT
@@ -3807,21 +3807,17 @@ getDirectChatPreviews_ db user@User {userId} = do
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = :conn_status_rcv_new
+          WHERE item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
-        WHERE ct.user_id = :user_id
+        WHERE ct.user_id = ?
           AND ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
                 cc.connection_id AS cc_connection_id,
-                ( CASE
-                    WHEN cc.conn_status IN (:conn_status_ready, :conn_status_snd_ready) AND cc.conn_level = 0 THEN 2
-                    WHEN cc.conn_status IN (:conn_status_ready, :conn_status_snd_ready) THEN 1
-                    ELSE 0 END
-                ) AS cc_conn_status_ord
+                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
               FROM connections cc
               WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
               ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
@@ -3830,7 +3826,7 @@ getDirectChatPreviews_ db user@User {userId} = do
           )
         ORDER BY i.item_ts DESC
       |]
-      [":conn_status_rcv_new" := CISRcvNew, ":user_id" := userId, ":conn_status_ready" := ConnReady, ":conn_status_snd_ready" := ConnSndReady]
+      (CISRcvNew, userId, ConnReady, ConnSndReady)
   where
     toDirectChatPreview :: TimeZone -> UTCTime -> ContactRow :. ConnectionRow :. ChatStatsRow :. MaybeChatItemRow :. QuoteRow -> AChat
     toDirectChatPreview tz currentTs (contactRow :. connRow :. statsRow :. ciRow_) =
@@ -4107,7 +4103,7 @@ getContactIdByName db User {userId} cName =
 getContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
 getContact db user@User {userId} contactId =
   ExceptT . fmap join . firstRow (toContactOrError user) (SEContactNotFound contactId) $
-    DB.queryNamed
+    DB.query
       db
       [sql|
         SELECT
@@ -4120,16 +4116,12 @@ getContact db user@User {userId} contactId =
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
-        WHERE ct.user_id = :user_id AND ct.contact_id = :contact_id
+        WHERE ct.user_id = ? AND ct.contact_id = ?
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
                 cc.connection_id AS cc_connection_id,
-                ( CASE
-                    WHEN cc.conn_status IN (:conn_status_ready, :conn_status_snd_ready) AND cc.conn_level = 0 THEN 2
-                    WHEN cc.conn_status IN (:conn_status_ready, :conn_status_snd_ready) THEN 1
-                    ELSE 0 END
-                ) AS cc_conn_status_ord
+                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
               FROM connections cc
               WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
               ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
@@ -4137,7 +4129,7 @@ getContact db user@User {userId} contactId =
             )
           )
       |]
-      [":user_id" := userId, ":contact_id" := contactId, ":conn_status_ready" := ConnReady, ":conn_status_snd_ready" := ConnSndReady]
+      (userId, contactId, ConnReady, ConnSndReady)
 
 getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChat db user groupId pagination search_ = do

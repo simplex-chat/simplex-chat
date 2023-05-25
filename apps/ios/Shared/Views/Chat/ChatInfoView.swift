@@ -114,10 +114,9 @@ struct ChatInfoView: View {
                 Section {
                     if let code = connectionCode { verifyCodeButton(code) }
                     contactPreferencesButton()
-
                 }
 
-                if (developerTools) {
+                if developerTools {
                     Section("Contact") {
                         let connLevel = contact.activeConn.connLevel
                         let connLevelDesc = connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), connLevel)
