@@ -116,11 +116,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
-  CRSentGroupInvitation u g c _ ->
-    ttyUser u $
-      if viaGroupLink . contactConn $ c
-        then [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
-        else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+  CRSentGroupInvitation u g c _ -> ttyUser u ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
