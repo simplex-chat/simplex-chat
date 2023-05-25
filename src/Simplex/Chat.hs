@@ -3825,8 +3825,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     probeMatch c1@Contact {contactId = cId1, profile = p1} c2@Contact {contactId = cId2, profile = p2} probe =
       if profilesMatch (fromLocalProfile p1) (fromLocalProfile p2) && cId1 /= cId2
         then do
-          void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-          mergeContacts c1 c2
+          let (toCt, fromCt) = mergeToFromContacts c1 c2
+          void . sendDirectContactMessage toCt $ XInfoProbeOk probe
+          mergeContacts toCt fromCt
         else messageWarning "probeMatch ignored: profiles don't match or same contact id"
 
     xInfoProbeOk :: Contact -> Probe -> m ()
@@ -3834,8 +3835,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       r <- withStore' $ \db -> matchSentProbe db user c1 probe
       forM_ r $ \c2@Contact {contactId = cId2} ->
         if cId1 /= cId2
-          then mergeContacts c1 c2
+          then do
+            let (toCt, fromCt) = mergeToFromContacts c1 c2
+            mergeContacts toCt fromCt
           else messageWarning "xInfoProbeOk ignored: same contact id"
+
+    mergeToFromContacts :: Contact -> Contact -> (Contact, Contact)
+    mergeToFromContacts c1 c2
+      | d1 && not d2 = (c1, c2)
+      | d2 && not d1 = (c2, c1)
+      | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
+      | otherwise = (c2, c1)
+      where
+        d1 = directOrUsed c1
+        d2 = directOrUsed c2
+        ctCreatedAt Contact {createdAt} = createdAt
 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
@@ -3943,9 +3957,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts c1 c2 = do
-      withStore' $ \db -> mergeContactRecords db userId c1 c2
-      toView $ CRContactsMerged user c1 c2
+    mergeContacts toCt fromCt = do
+      deleteAgentConnectionAsync user $ aConnId $ contactConn fromCt
+      withStore' $ \db -> mergeContactRecords db userId toCt fromCt
+      toView $ CRContactsMerged user toCt fromCt
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
