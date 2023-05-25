@@ -44,14 +44,14 @@ chatGroupTests = do
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
-    it "create group link, join via group link" testGroupLink
+    fit "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
-    it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
+    fit "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
     it "group link member role" testGroupLinkMemberRole
-    it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
+    fit "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
   describe "group message errors" $ do
     it "show message decryption error and update count" testGroupMsgDecryptError
   describe "message reactions" $ do
@@ -1518,10 +1518,11 @@ testGroupAsync tmp = do
           dan <##> cath
           dan <##> alice
 
+-- unexpected output: invitation to join the group #team sent to cath
 testGroupLink :: HasCallStack => FilePath -> IO ()
 testGroupLink =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
+    \a b c -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> withTestOutput c $ \cath -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -1825,10 +1826,11 @@ testGroupLinkIncognitoMembership =
           cath <# ("#team " <> danIncognito <> "> how is it going?")
         ]
 
+-- unexpected output: #club: alice invites you to join the group as member
 testGroupLinkUnusedHostContactDeleted :: HasCallStack => FilePath -> IO ()
 testGroupLinkUnusedHostContactDeleted =
   testChat2 aliceProfile bobProfile $
-    \alice bob -> do
+    \a b -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> do
       -- create group 1
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -2022,10 +2024,11 @@ testGroupLinkMemberRole =
         (alice <# "#team bob> hey now")
         (cath <# "#team bob> hey now")
 
+-- unexpected output: invitation to join the group #team sent to bob
 testGroupLinkLeaveDelete :: HasCallStack => FilePath -> IO ()
 testGroupLinkLeaveDelete =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
+    \a b c -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> withTestOutput c $ \cath -> do
       connectUsers alice bob
       connectUsers cath bob
       alice ##> "/g team"
