@@ -116,14 +116,6 @@ struct ChatInfoView: View {
                     contactPreferencesButton()
                 }
 
-                if developerTools {
-                    Section("Contact") {
-                        let connLevel = contact.activeConn.connLevel
-                        let connLevelDesc = connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), connLevel)
-                        infoRow("Connection", connLevelDesc)
-                    }
-                }
-
                 if let contactLink = contact.contactLink {
                     Section {
                         QRCode(uri: contactLink)
@@ -136,6 +128,14 @@ struct ChatInfoView: View {
                         Text("Address")
                     } footer: {
                         Text("You can share this address with your contacts to let them connect with **\(contact.displayName)**.")
+                    }
+                }
+
+                if developerTools {
+                    Section("Contact") {
+                        let connLevel = contact.activeConn.connLevel
+                        let connLevelDesc = connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), connLevel)
+                        infoRow("Connection", connLevelDesc)
                     }
                 }
 
