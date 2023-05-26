@@ -619,7 +619,6 @@ CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON extra_xftp_file_descrip
 CREATE INDEX idx_xftp_file_descriptions_user_id ON xftp_file_descriptions(
   user_id
 );
-CREATE INDEX idx_messages_created_at ON messages(created_at);
 CREATE INDEX idx_chat_item_versions_chat_item_id ON chat_item_versions(
   chat_item_id
 );
@@ -641,6 +640,7 @@ CREATE INDEX idx_chat_item_reactions_group ON chat_item_reactions(
   group_id,
   shared_msg_id
 );
+CREATE INDEX idx_messages_created_at ON messages(created_at);
 CREATE INDEX idx_chat_item_reactions_created_by_msg_id ON chat_item_reactions(
   created_by_msg_id
 );

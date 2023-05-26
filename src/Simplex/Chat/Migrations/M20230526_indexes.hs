@@ -8,7 +8,7 @@ import Database.SQLite.Simple.QQ (sql)
 m20230526_indexes :: Query
 m20230526_indexes =
   [sql|
-CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
 
 CREATE INDEX idx_chat_item_reactions_created_by_msg_id ON chat_item_reactions(created_by_msg_id);
 |]
@@ -18,5 +18,5 @@ down_m20230526_indexes =
   [sql|
 DROP INDEX idx_chat_item_reactions_created_by_msg_id;
 
-DROP INDEX IF EXISTS idx_messages_created_at;
+DROP INDEX idx_messages_created_at;
 |]
