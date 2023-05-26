@@ -394,6 +394,7 @@ import Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_me
 import Simplex.Chat.Migrations.M20230505_chat_item_versions
 import Simplex.Chat.Migrations.M20230511_reactions
 import Simplex.Chat.Migrations.M20230519_item_deleted_ts
+import Simplex.Chat.Migrations.M20230526_indexes
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -473,7 +474,8 @@ schemaMigrations =
     ("20230504_recreate_msg_delivery_events_cleanup_messages", m20230504_recreate_msg_delivery_events_cleanup_messages, Just down_m20230504_recreate_msg_delivery_events_cleanup_messages),
     ("20230505_chat_item_versions", m20230505_chat_item_versions, Just down_m20230505_chat_item_versions),
     ("20230511_reactions", m20230511_reactions, Just down_m20230511_reactions),
-    ("20230519_item_deleted_ts", m20230519_item_deleted_ts, Just down_m20230519_item_deleted_ts)
+    ("20230519_item_deleted_ts", m20230519_item_deleted_ts, Just down_m20230519_item_deleted_ts),
+    ("20230526_indexes", m20230526_indexes, Just down_m20230526_indexes)
   ]
 
 -- | The list of migrations in ascending order by date

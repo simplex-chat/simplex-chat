@@ -640,3 +640,7 @@ CREATE INDEX idx_chat_item_reactions_group ON chat_item_reactions(
   group_id,
   shared_msg_id
 );
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+CREATE INDEX idx_chat_item_reactions_created_by_msg_id ON chat_item_reactions(
+  created_by_msg_id
+);
