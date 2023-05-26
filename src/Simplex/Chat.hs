@@ -69,7 +69,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withTransactionCtx)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
@@ -1938,6 +1938,8 @@ startExpireCIThread user@User {userId} = do
     _ -> pure ()
   where
     runExpireCIs = do
+      delay <- asks (initialCleanupManagerDelay . config)
+      liftIO $ threadDelay' delay
       interval <- asks $ ciExpirationInterval . config
       forever $ do
         flip catchError (toView . CRChatError (Just user)) $ do
@@ -4715,11 +4717,18 @@ withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
 withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
 withStoreCtx ctx_ action = do
   ChatController {chatStore} <- ask
-  liftEitherError ChatErrorStore $
-    withTransaction chatStore (runExceptT . action) `E.catch` handleInternal
+  liftEitherError ChatErrorStore $ case ctx_ of
+    Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
+    Just ctx -> do
+      t1 <- liftIO getCurrentTime
+      putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
+      r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
+      t2 <- liftIO getCurrentTime
+      putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
+      pure r
   where
-    handleInternal :: E.SomeException -> IO (Either StoreError a)
-    handleInternal e = pure . Left . SEInternalError $ show e <> maybe "" (\ctx -> " (" <> ctx <> ")") ctx_
+    handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
+    handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
