@@ -4154,15 +4154,17 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
     chSize = fromIntegral chunkSize
 
 parseChatMessage :: ChatMonad m => Connection -> ByteString -> m (ChatMessage 'Json)
-parseChatMessage = parseChatMessage_
+parseChatMessage conn = parseChatMessage_ conn Nothing
 {-# INLINE parseChatMessage #-}
 
-parseAChatMessage :: ChatMonad m => Connection -> ByteString -> m AChatMessage
-parseAChatMessage = parseChatMessage_
+parseAChatMessage :: ChatMonad m => Connection -> MsgMeta -> ByteString -> m AChatMessage
+parseAChatMessage conn msgMeta = parseChatMessage_ conn (Just msgMeta)
 {-# INLINE parseAChatMessage #-}
 
-parseChatMessage_ :: (ChatMonad m, StrEncoding s) => Connection -> ByteString -> m s
-parseChatMessage_ conn s = liftEither . first (ChatError . CEInvalidChatMessage conn (safeDecodeUtf8 s)) $ strDecode s
+parseChatMessage_ :: (ChatMonad m, StrEncoding s) => Connection -> Maybe MsgMeta -> ByteString -> m s
+parseChatMessage_ conn msgMeta s = liftEither . first (ChatError . errType) $ strDecode s
+  where
+    errType = CEInvalidChatMessage conn (msgMetaToJson <$> msgMeta) (safeDecodeUtf8 s)
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
@@ -4377,7 +4379,7 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
 
 saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> m RcvMessage
 saveRcvMSG conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
-  ACMsg _ ChatMessage {msgId = sharedMsgId_, chatMsgEvent} <- parseAChatMessage conn msgBody
+  ACMsg _ ChatMessage {msgId = sharedMsgId_, chatMsgEvent} <- parseAChatMessage conn agentMsgMeta msgBody
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}

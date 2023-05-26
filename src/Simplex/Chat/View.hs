@@ -1384,7 +1384,12 @@ viewChatError logLevel = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CEInvalidChatMessage Connection {connId} msg e -> [plain $ "chat message error: " <> e <> " (" <> T.unpack (T.take 120 msg) <> "), connection id: " <> show connId]
+    CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
+      [ plain $
+          ("chat message error: " <> e <> " (" <> T.unpack (T.take 120 msg) <> ")")
+            <> (", connection id: " <> show connId)
+            <> maybe "" (\MsgMetaJSON {rcvId} -> ", agent msg rcv id: " <> show rcvId) msgMeta_
+      ]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
     CEContactDisabled Contact {localDisplayName = c} -> [ttyContact c <> ": disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
     CEConnectionDisabled Connection {connId, connType} -> [plain $ "connection " <> textEncode connType <> " (" <> tshow connId <> ") is disabled" | logLevel <= CLLWarning]
