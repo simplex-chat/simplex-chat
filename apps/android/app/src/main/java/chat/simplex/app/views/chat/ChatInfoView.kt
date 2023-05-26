@@ -208,16 +208,16 @@ fun ChatInfoLayout(
       SectionDividerSpaced()
     }
 
-    if (developerTools) {
-      SectionView(title = stringResource(R.string.contact_info_section_title_contact)) {
-        val connLevel = contact.activeConn.connLevel
-        val connLevelDesc =
-          if (connLevel == 0) stringResource(R.string.conn_level_desc_direct)
-          else String.format(generalGetString(R.string.conn_level_desc_indirect), connLevel)
-        InfoRow(stringResource(R.string.info_row_connection), connLevelDesc)
-      }
-      SectionDividerSpaced()
-    }
+//    if (developerTools) {
+//      SectionView(title = stringResource(R.string.contact_info_section_title_contact)) { // search member_info_section_title_member
+//        val connLevel = contact.activeConn.connLevel
+//        val connLevelDesc =
+//          if (connLevel == 0) stringResource(R.string.conn_level_desc_direct)
+//          else String.format(generalGetString(R.string.conn_level_desc_indirect), connLevel)
+//        InfoRow(stringResource(R.string.info_row_connection), connLevelDesc)
+//      }
+//      SectionDividerSpaced()
+//    }
 
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
       SwitchAddressButton(switchContactAddress)

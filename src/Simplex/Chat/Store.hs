@@ -1720,6 +1720,10 @@ mergeContactRecords db userId toCt fromCt = do
       (currentTs, userId, toContactId)
   DB.execute
     db
+    "UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+    (toContactId, currentTs, fromContactId, userId)
+  DB.execute
+    db
     "UPDATE connections SET via_contact = ?, updated_at = ? WHERE via_contact = ? AND user_id = ?"
     (toContactId, currentTs, fromContactId, userId)
   DB.execute

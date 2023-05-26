@@ -3962,7 +3962,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     mergeContacts :: Contact -> Contact -> m ()
     mergeContacts toCt fromCt = do
-      deleteAgentConnectionAsync user $ aConnId $ contactConn fromCt
       withStore' $ \db -> mergeContactRecords db userId toCt fromCt
       toView $ CRContactsMerged user toCt fromCt
 
