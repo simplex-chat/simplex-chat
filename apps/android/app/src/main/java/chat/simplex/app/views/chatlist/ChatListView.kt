@@ -176,7 +176,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     BackHandler(onBack = hideSearchOnBack)
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
-  if (chatModel.chats.size >= 8) {
+  if (chatModel.chats.size > 0) {
     barButtons.add {
       IconButton({ showSearch = true }) {
         Icon(painterResource(R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)

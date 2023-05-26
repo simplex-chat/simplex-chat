@@ -29,11 +29,7 @@ struct ChatListView: View {
                     if chatModel.chats.isEmpty {
                         onboardingButtons()
                     }
-                    if chatModel.chats.count > 8 {
-                        chatList.searchable(text: $searchText)
-                    } else {
-                        chatList
-                    }
+                    chatListView
                 }
             }
             if userPickerVisible {
@@ -47,18 +43,12 @@ struct ChatListView: View {
         }
     }
 
-    var chatList: some View {
-        List {
-            ForEach(filteredChats(), id: \.viewId) { chat in
-                ChatListNavLink(chat: chat)
-                    .padding(.trailing, -16)
-                    .disabled(chatModel.chatRunning != true)
-            }
-        }
-        .onChange(of: chatModel.chatId) { _ in
-            if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
-                chatModel.chatToTop = nil
-                chatModel.popChat(chatId)
+    private var chatListView: some View {
+        VStack {
+            if chatModel.chats.count > 0 {
+                chatList.searchable(text: $searchText)
+            } else {
+                chatList
             }
         }
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
@@ -112,6 +102,22 @@ struct ChatListView: View {
                 case .some(false): chatStoppedIcon()
                 case .none: EmptyView()
                 }
+            }
+        }
+    }
+
+    private var chatList: some View {
+        List {
+            ForEach(filteredChats(), id: \.viewId) { chat in
+                ChatListNavLink(chat: chat)
+                    .padding(.trailing, -16)
+                    .disabled(chatModel.chatRunning != true)
+            }
+        }
+        .onChange(of: chatModel.chatId) { _ in
+            if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
+                chatModel.chatToTop = nil
+                chatModel.popChat(chatId)
             }
         }
     }
