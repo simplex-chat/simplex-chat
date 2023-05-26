@@ -154,7 +154,7 @@
       </trans-unit>
       <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">
         <source>%lld file(s) with total size of %@</source>
-        <target>合計サイズ %@ の %lld 件のファイル</target>
+        <target>%lld 個のファイル（合計サイズ: %@）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve">
