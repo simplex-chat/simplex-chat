@@ -779,7 +779,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CEInvalidChatMessage {messageData :: Text, message :: String}
+  | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
