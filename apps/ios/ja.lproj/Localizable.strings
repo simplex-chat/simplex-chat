@@ -152,7 +152,7 @@
 "%lld contact(s) selected" = "%lld 件の連絡先が選択されました";
 
 /* No comment provided by engineer. */
-"%lld file(s) with total size of %@" = "合計サイズ %@ の %lld 件のファイル";
+"%lld file(s) with total size of %@" = "%lld 個のファイル（合計サイズ: %@）";
 
 /* No comment provided by engineer. */
 "%lld members" = "%lld 人のメンバー";
