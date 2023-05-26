@@ -18,12 +18,16 @@ CREATE TABLE msg_delivery_events (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+
 DELETE FROM messages WHERE created_at < datetime('now', '-30 days');
 |]
 
 down_m20230504_recreate_msg_delivery_events_cleanup_messages :: Query
 down_m20230504_recreate_msg_delivery_events_cleanup_messages =
   [sql|
+DROP INDEX IF EXISTS idx_messages_created_at;
+
 DROP TABLE msg_delivery_events;
 
 CREATE TABLE msg_delivery_events (
