@@ -1544,7 +1544,7 @@ testGroupLink =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "invitation to join the group #team sent to bob"
+            alice <## "bob invited to group #team via your group link"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1580,7 +1580,7 @@ testGroupLink =
             <### [ "cath_1 (Catherine): contact is connected",
                    "contact cath_1 is merged into cath",
                    "use @cath <message> to send messages",
-                   StartsWith "invitation to join the group #team sent to cath",
+                   EndsWith "invited to group #team via your group link",
                    EndsWith "joined the group"
                  ],
           cath
@@ -1634,7 +1634,7 @@ testGroupLinkDeleteGroupRejoin =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "invitation to join the group #team sent to bob"
+            alice <## "bob invited to group #team via your group link"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1660,7 +1660,7 @@ testGroupLinkDeleteGroupRejoin =
             <### [ "bob_1 (Bob): contact is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages",
-                   StartsWith "invitation to join the group #team sent to bob",
+                   EndsWith "invited to group #team via your group link",
                    EndsWith "joined the group"
                  ],
           bob
@@ -1690,7 +1690,7 @@ testGroupLinkContactUsed =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "invitation to join the group #team sent to bob"
+            alice <## "bob invited to group #team via your group link"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1752,7 +1752,7 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## "use /i cath to print out this incognito profile again"
-            bob <## "invitation to join the group #team sent to cath"
+            bob <## "cath invited to group #team via your group link"
             bob <## "#team: cath joined the group",
           do
             cath <## (bobIncognito <> ": contact is connected")
@@ -1778,7 +1778,7 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## ("use /i " <> danIncognito <> " to print out this incognito profile again")
-            bob <## ("invitation to join the group #team sent to " <> danIncognito)
+            bob <## (danIncognito <> " invited to group #team via your group link")
             bob <## ("#team: " <> danIncognito <> " joined the group"),
           do
             dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
@@ -1841,7 +1841,7 @@ testGroupLinkUnusedHostContactDeleted =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "invitation to join the group #team sent to bob"
+            alice <## "bob invited to group #team via your group link"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1861,7 +1861,7 @@ testGroupLinkUnusedHostContactDeleted =
             <### [ "bob_1 (Bob): contact is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages",
-                   StartsWith "invitation to join the group #club sent to bob",
+                   EndsWith "invited to group #club via your group link",
                    EndsWith "joined the group"
                  ],
           bob
@@ -1936,7 +1936,7 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       concurrentlyN_
         [ do
             alice <## (bobIncognito <> ": contact is connected")
-            alice <## ("invitation to join the group #" <> group <> " sent to " <> bobIncognito)
+            alice <## (bobIncognito <> " invited to group #" <> group <> " via your group link")
             alice <## ("#" <> group <> ": " <> bobIncognito <> " joined the group"),
           do
             bob <## (bobsAliceContact <> " (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
@@ -1973,7 +1973,7 @@ testGroupLinkMemberRole =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "invitation to join the group #team sent to bob"
+            alice <## "bob invited to group #team via your group link"
             alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
@@ -1986,11 +1986,12 @@ testGroupLinkMemberRole =
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       alice <## "cath (Catherine): accepting request to join group #team..."
+      -- if contact existed it is merged
       concurrentlyN_
         [ alice
             <### [ "cath (Catherine): contact is connected",
-                   "invitation to join the group #team sent to cath",
-                   "#team: cath joined the group"
+                   EndsWith "invited to group #team via your group link",
+                   EndsWith "joined the group"
                  ],
           cath
             <### [ "alice (Alice): contact is connected",
@@ -2040,7 +2041,7 @@ testGroupLinkLeaveDelete =
             <### [ "bob_1 (Bob): contact is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages",
-                   StartsWith "invitation to join the group #team sent to bob",
+                   EndsWith "invited to group #team via your group link",
                    EndsWith "joined the group"
                  ],
           bob
@@ -2056,7 +2057,7 @@ testGroupLinkLeaveDelete =
       concurrentlyN_
         [ alice
             <### [ "cath (Catherine): contact is connected",
-                   "invitation to join the group #team sent to cath",
+                   "cath invited to group #team via your group link",
                    "#team: cath joined the group"
                  ],
           cath

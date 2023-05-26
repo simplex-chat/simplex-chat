@@ -196,25 +196,14 @@ fun ChatInfoLayout(
       }
       ContactPreferencesButton(openPreferences)
     }
-    SectionDividerSpaced()
 
+    SectionDividerSpaced()
     if (contact.contactLink != null) {
       val context = LocalContext.current
       SectionView(stringResource(R.string.address_section_title).uppercase()) {
         QRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
         ShareAddressButton { shareText(context, contact.contactLink) }
         SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(contact.displayName))
-      }
-      SectionDividerSpaced()
-    }
-
-    if (developerTools) {
-      SectionView(title = stringResource(R.string.contact_info_section_title_contact)) {
-        val connLevel = contact.activeConn.connLevel
-        val connLevelDesc =
-          if (connLevel == 0) stringResource(R.string.conn_level_desc_direct)
-          else String.format(generalGetString(R.string.conn_level_desc_indirect), connLevel)
-        InfoRow(stringResource(R.string.info_row_connection), connLevelDesc)
       }
       SectionDividerSpaced()
     }
