@@ -120,7 +120,9 @@ defaultChatConfig =
       subscriptionEvents = False,
       hostEvents = False,
       testView = False,
-      ciExpirationInterval = 1800 * 1000000 -- 30 minutes
+      initialCleanupManagerDelay = 30 * 1000000, -- 30 seconds
+      cleanupManagerInterval = 30 * 60, -- 30 minutes
+      ciExpirationInterval = 30 * 60 * 1000000 -- 30 minutes
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
@@ -2349,26 +2351,33 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-cleanupManagerInterval :: NominalDiffTime
-cleanupManagerInterval = 1800 -- 30 minutes
-
 cleanupManager :: forall m. ChatMonad m => m ()
 cleanupManager = do
+  interval <- asks (cleanupManagerInterval . config)
+  runWithoutInitialDelay interval
+  delay <- asks (initialCleanupManagerDelay . config)
+  liftIO $ threadDelay' delay
   forever $ do
     flip catchError (toView . CRChatError Nothing) $ do
       waitChatStarted
       users <- withStore' getUsers
       let (us, us') = partition activeUser users
-      forM_ us cleanupUser
-      forM_ us' cleanupUser
+      forM_ us $ cleanupUser interval
+      forM_ us' $ cleanupUser interval
       cleanupMessages `catchError` (toView . CRChatError Nothing)
-    liftIO $ threadDelay' $ diffToMicroseconds cleanupManagerInterval
+    liftIO $ threadDelay' $ diffToMicroseconds interval
   where
-    cleanupUser user =
-      cleanupTimedItems user `catchError` (toView . CRChatError (Just user))
-    cleanupTimedItems user = do
+    runWithoutInitialDelay cleanupInterval = flip catchError (toView . CRChatError Nothing) $ do
+      waitChatStarted
+      users <- withStore' getUsers
+      let (us, us') = partition activeUser users
+      forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
+      forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
+    cleanupUser cleanupInterval user =
+      cleanupTimedItems cleanupInterval user `catchError` (toView . CRChatError (Just user))
+    cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
-      let startTimedThreadCutoff = addUTCTime cleanupManagerInterval ts
+      let startTimedThreadCutoff = addUTCTime cleanupInterval ts
       timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
     cleanupMessages = do
@@ -2378,8 +2387,9 @@ cleanupManager = do
 
 startProximateTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 startProximateTimedItemThread user itemRef deleteAt = do
+  interval <- asks (cleanupManagerInterval . config)
   ts <- liftIO getCurrentTime
-  when (diffUTCTime deleteAt ts <= cleanupManagerInterval) $
+  when (diffUTCTime deleteAt ts <= interval) $
     startTimedItemThread user itemRef deleteAt
 
 startTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
