@@ -125,11 +125,11 @@
                             
                                 <li><a href="/docs/guide/secret-groups.html" class=" lg:px-[20px] inline-block whitespace-nowrap">秘密群组</a></li>
                             
-                                <li><a href="/docs/guide/chat-profiles.html" class=" lg:px-[20px] inline-block whitespace-nowrap">聊天资料</a></li>
+                                <li><a href="/docs/guide/chat-profiles.html" class=" lg:px-[20px] inline-block whitespace-nowrap">聊天档案</a></li>
                             
                                 <li><a href="/docs/guide/managing-data.html" class=" lg:px-[20px] inline-block whitespace-nowrap">管理数据</a></li>
                             
-                                <li><a href="/docs/guide/audio-video-calls.html" class=" lg:px-[20px] inline-block whitespace-nowrap">语音和视频通话</a></li>
+                                <li><a href="/docs/guide/audio-video-calls.html" class=" lg:px-[20px] inline-block whitespace-nowrap">音视频通话</a></li>
                             
                                 <li><a href="/docs/guide/privacy-security.html" class=" lg:px-[20px] inline-block whitespace-nowrap">隐私和安全</a></li>
                             
@@ -144,7 +144,7 @@
 
                     <li class="nav-link relative">
                         <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">参考</span>
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">参考资料</span>
                             <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
                                 <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
@@ -528,7 +528,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="primary-header text-center xl:text-left xl:rtl:text-right font-bold text-[38px] md:text-[55px] leading-[46px] md:leading-[63px] mb-2 xl:mb-8">重新定义隐私</p>
                         <p class="secondary-header text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[38px] leading-[36px] md:leading-[43px] mb-2 xl:mb-8 tracking-[0.01em]">首个不使用用户ID的即时通讯软件</p>
                         <p class="landing-page-header-article-paragraph text-black dark:text-white text-center xl:text-justify text-[16px] leading-[24px] mb-[20px] header-description">
-                            其他应用需要用户 ID：Signal、Matrix、Session、Briar、Jami、Cwtch 等。<br>SimpleX 不需要，<strong>甚至不需要随机数</strong>。<br>这从根本上改善了您的隐私。
+                            其他应用——如Signal、Matrix、Session、Briar、Jami、Cwtch 等——都需要用户 ID。<br>而SimpleX 不需要用户ID，连<strong>随机生成</strong>的也不需要。<br>这从根本上改善了您的隐私。
                         </p>
                         <a href="javascript:void(0)" data-show-overlay="why-ids-bad-for-privacy" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left xl:rtl:text-right text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">为什么用户 ID 不利于隐私？</a>
                         
@@ -586,7 +586,7 @@ window.addEventListener('scroll',changeHeaderBg);
     许多用户问：<em>如果 SimpleX 没有用户标识符，它怎么知道将消息传递到哪里？</em>
 </p>
 <p>
-    为了传递消息，与所有其他平台使用用户 ID不同，SimpleX 使用消息队列的临时匿名成对标识符，来区分开您的每个连接——没有长期标识符。
+    为了传递消息，SimpleX 使用消息队列的临时匿名成对标识符(而非其他平台使用的用户 ID)来区分您的每个连接——没有长期标识符这种东西。
 </p>
 <p>
     您定义用于接收消息的服务器、您的联系人—— 您用来向他们发送消息的服务器。 每个会话都很可能会使用两个不同的服务器。
@@ -686,7 +686,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             建立私人连接
                         </p>
                         <p class="text-center text-black dark:text-white xl:text-justify leading-[24px] text-[16px] mb-10 xl:mb-[25px] header-description">
-                            该视频向您展示如何通过一次性二维码、当面或通过视频链接来连接到您的朋友。您还可以通过共享邀请链接来建立连接。
+                            右侧的视频向您展示了如何通过一次性二维码、面对面交流或通过视频交换链接来连接到您的朋友。您同样可以通过共享邀请链接来进行连接。
                         </p>
                     </article>
 
@@ -737,27 +737,27 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
                     <p class="font-medium text-xl text-center text-grey-black dark:text-white">广告和价格歧视</p>
                     
-                    <a href="javascript:void(0);" data-show-overlay="privacy-saves-money" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">隐私能为您省钱</a>
+                    <a href="javascript:void(0);" data-show-overlay="privacy-saves-money" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">隐私为您省钱</a>
                     
     
     <div id="privacy-saves-money" data-scroll-to="why-privacy" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">隐私能为您省钱</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">隐私为您省钱</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    许多大公司使用您联系人的信息来估算您的收入，向您兜售您并不真正需要的产品，并确定推荐商品的价格区间。
+    许多大型公司会使用您的人际关系来估算您的收入，决定商品的价格，并向您兜售您并不真正需要的产品。
 </p>
 <p>
-    在线零售商知道收入较低的人更有可能进行紧急购买，因此他们可能会收取更高的价格或取消折扣。
+    在线零售商知道收入较低的人更有可能在紧急情况下购买商品，因此他们可能会收取更高的价格或取消折扣。
 </p>
 <p>
-    一些金融和保险公司使用社交图谱来确定利率和保费。 它通常会让收入较低的人支付更多—— 它被称为<a href='https://fairbydesign.com/povertypremium/' target='_blank'>'贫困溢价'</a>。
+    一些金融和保险公司使用社交图谱来确定利率和保费。 它通常会让收入较低的人支付更多—— 它被称为<a href='https://fairbydesign.com/povertypremium/' target='_blank'>“贫困溢价”</a>。
 </p>
 <p>
-    SimpleX 平台比任何替代方案都更好地保护您的连接隐私，完全防止您的社交图谱被任何公司或组织使用。 即使人们使用 SimpleX Chat 提供的服务器，我们也不知道用户数量或他们的连接数。
+    SimpleX 平台比任何替代方案都能更好地保护您人际关系层面的隐私，防止您的社交图谱被任何公司或组织使用。 即使人们使用 SimpleX Chat 提供的服务器，我们也不知道用户数量或他们的连接数。
 </p>
 
                         </div>
@@ -782,7 +782,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/privacy-section-2.svg" alt="">
                 </div>
                 <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
-                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">操纵选举</p>
+                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">对选举的操纵</p>
                     
                     <a href="javascript:void(0);" data-show-overlay="privacy-gives-power" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">隐私给您力量</a>
                     
@@ -798,7 +798,7 @@ window.addEventListener('scroll',changeHeaderBg);
     不久前，我们观察到几次大选被<a href='https://en.wikipedia.org/wiki/Facebook–Cambridge_Analytica_data_scandal' target='_blank'>一家知名咨询公司</a>操纵，该公司使用我们的社交图谱扭曲我们对现实世界的看法并操纵我们的选票。
 </p>
 <p>
-    为了客观并做出独立的决定，您需要控制您的信息空间。 只有当您使用无法访问您的社交图谱的私人通信平台时这才有可能。
+    为了客观并做出独立的决定，您需要控制您的信息空间。 而这只有当您使用没有能力访问您的社交图谱的，注重隐私的通信平台时，这才有可能。
 </p>
 <p>
     SimpleX 是第一个没有设计任何用户标识符的平台，这样能比任何已知的替代方案都更好地保护您的连接图谱。
@@ -828,12 +828,12 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
                     <p class="font-medium text-xl text-center text-grey-black dark:text-white">因无辜结社而被起诉</p>
                     
-                    <a href="javascript:void(0);" data-show-overlay="privacy-protects-freedom" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">隐私保护您的自由</a>
+                    <a href="javascript:void(0);" data-show-overlay="privacy-protects-freedom" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">隐私保您自由</a>
                     
     
     <div id="privacy-protects-freedom" data-scroll-to="why-privacy" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">隐私保护您的自由</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">隐私保您自由</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -893,7 +893,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#1</p>
-                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">您有完全的隐私</p>
+                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">您有完整的隐私</p>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
@@ -944,7 +944,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#2</p>
-                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">您可以免受垃圾邮件和滥用的侵害</p>
+                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">您可以免受垃圾消息和平台滥用的侵害</p>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
@@ -1108,7 +1108,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
     <div id="privacy-of-identity-contacts-metadata" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 ">您的身份、个人资料、联系人和元数据的完全隐私</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 ">您的身份、个人资料、联系人和元数据的完整隐私</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -1150,7 +1150,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
     <div id="protection-from-spam-and-abuse" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 ">防止垃圾邮件和滥用的最佳保护</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 ">防止垃圾消息和平台滥用的最佳保护</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -1234,7 +1234,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
     <div id="you-own-simplex-network" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 ">完全去中心化—— 用户拥有 SimpleX 网络</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 ">完全去中心化 —— 用户拥有 SimpleX 网络</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
@@ -1379,9 +1379,9 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">临时匿名成对标识符</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">SimpleX 为每个用户联系人或组成员使用临时匿名成对地址和凭据。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">SimpleX 为每个用户的联系人或群组成员均使用临时匿名成对地址和凭据。</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">它允许在没有用户配置文件标识符的情况下传递消息，提供比替代方案更好的元数据隐私。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">它让在没有用户标识符的情况下传递消息成为可能，并提供比替代方案更好的元数据隐私。</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">点击关闭</p>
@@ -1397,9 +1397,9 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">带外密钥交换</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">许多通信平台容易受到服务器或网络提供商的 MITM 攻击。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">许多通信平台容易受到服务器或网络提供商的中间人攻击。</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">为防止这种情况，当您将地址作为链接或二维码共享时，SimpleX 应用程序会在带外传递一次性密钥。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">为防止这种情况，当您将通讯地址作为链接或二维码共享时，SimpleX 应用程序会在带外传递一次性密钥。</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">点击关闭</p>
@@ -1415,7 +1415,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">双层端到端加密</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">双棘轮协议——具有完美前向保密和入侵恢复功能的 OTR 消息传递。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">双棘轮协议——具有完美前向保密和入侵恢复功能的 OTR(不留记录即时通讯) 消息传递。</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">每个队列中的网络与密码学库加密盒(NaCL cryptobox)可防止 TLS 受到威胁时消息队列之间的流量关联。</p>
                             
@@ -1430,12 +1430,12 @@ window.addEventListener('scroll',changeHeaderBg);
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="/img/new/private-7-dark.svg" alt=""/>
                     </div>
                     <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">消息完整性认证</p>
+                        <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">消息完整性验证</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">为了保证完整性，消息按顺序编号并包含前一条消息的哈希值。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">为了保证消息完整性，消息按顺序编号并会包含前一条消息的哈希值。</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">如果添加、删除或更改任何消息，收件人将收到警报。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">如果添加、删除或更改任何消息，收件人都会收到警告。</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">点击关闭</p>
@@ -1464,10 +1464,10 @@ window.addEventListener('scroll',changeHeaderBg);
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="/img/new/private-8-dark.svg" alt=""/>
                     </div>
                     <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">消息混合以减少相关性</p>
+                        <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">通过消息混合减少相关性</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">SimpleX 服务器充当低延迟混合节点—— 传入和传出消息的顺序不同。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">SimpleX 服务器会充当低延迟混合节点，打乱传入和传出消息的顺序。</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">点击关闭</p>
@@ -1483,9 +1483,9 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">安全认证的TLS传输</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">客户端-服务器之间的连接只使用具有强加密算法的 TLS 1.2/1.3。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">客户端与服务器之间的连接只使用强加密的 TLS 1.2/1.3。</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">服务器指纹和通道绑定可防止 MITM 和重放攻击。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">服务器指纹和通道绑定可防止中间人与重放攻击。</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">禁用连接恢复以防止会话攻击。</p>
                             
@@ -1503,9 +1503,9 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">可选择通过 Tor 访问</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">为了保护您的 IP 地址，您可以通过 Tor 或其他一些传输覆盖网络访问服务器。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">为了保护您的 IP 地址，您可以通过 Tor 或其他传输覆盖网络访问服务器。</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">要通过 Tor 使用 SimpleX，请安装 <a href="https://guardianproject.info/apps/org.torproject.android/" target="_blank">Orbot app</a> 并启用 SOCKS5 代理（或在 iOS 上的 <a href="https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone" target="_blank">VPN</a>）。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">要通过 Tor 使用 SimpleX，请安装 <a href="https://guardianproject.info/apps/org.torproject.android/" target="_blank">Orbot</a> 应用并启用 SOCKS5 代理（在 <a href="https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone" target="_blank">iOS</a>上需要使用 VPN 模式）。</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">点击关闭</p>
@@ -1521,9 +1521,9 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">单向消息队列</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">每个消息队列在一个方向上传递消息，具有不同的发送和接收地址。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">每个消息队列都有不同的发送和接收地址，单向地传递消息。</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">与传统的消息代理相比，它减少了攻击向量和可用的元数据。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">与传统的消息代理相比，它减少了攻击媒介和可用的元数据。</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">点击关闭</p>
@@ -1539,7 +1539,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">多层级的内容填充</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">SimpleX 为每个加密层使用内容填充来阻断长度扩展攻击。</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">SimpleX 为每个加密层进行内容填充来对抗长度扩展攻击。</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">它使不同大小的消息在服务器和网络监视者看来是一样的。</p>
                             
@@ -1585,32 +1585,32 @@ window.addEventListener('scroll',changeHeaderBg);
     
     <div id="comparison-with-p2p-protocols" data-scroll-to="network" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 ">与 P2P 消息传递协议的比较</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 ">与 P2P 通讯协议的比较</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    <a href='https://en.wikipedia.org/wiki/Peer-to-peer'>P2P</a> 消息传递协议和应用程序存在各种问题，使得它们不如 SimpleX 可靠，分析起来更复杂，并且 容易受到多种类型的攻击。
+    <a href='https://zh.wikipedia.org/wiki/%E5%B0%8D%E7%AD%89%E7%B6%B2%E8%B7%AF'>P2P</a> 消息传递协议和应用程序存在各种问题，使得它们不如 SimpleX 可靠，分析起来更复杂，并且 容易受到多种类型的攻击。
 </p>
 <ol style="list-style: auto; padding-left: 1em;">
     <li>
-        P2P 网络依赖于 <a href='https://en.wikipedia.org/wiki/Distributed_hash_table'>DHT</a> 的某些变体来路由消息。 DHT 设计必须平衡交付保证和延迟。 SimpleX 比 P2P 具有更好的传递保证和更低的延迟，因为消息可以通过多个服务器并行地冗余传递，使用接收者选择的服务器。 在 P2P 网络中，消息使用算法选择的节点按顺序通过 <em>O(log N)</em> 个节点。
+        P2P 网络依赖于<a href='https://zh.wikipedia.org/wiki/%E5%88%86%E6%95%A3%E5%BC%8F%E9%9B%9C%E6%B9%8A%E8%A1%A8'> 分布式散列表(DHT) </a> 的某些变体来路由消息。 DHT 在设计上必须平衡可达性和延迟。 SimpleX 比 P2P 具有更好的可达性和更低的延迟，因为消息可以通过通讯双方选择的多个服务器并行地冗余传递。若是在 P2P 网络中，消息则需要使用算法选择，并依次通过 <em>O(log N)</em> 个节点。
     </li>
     <li>
-        与大多数 P2P 网络不同，SimpleX 设计没有任何类型的全局用户标识符，甚至临时的也没有，并且仅使用临时的成对标识符，提供更好的匿名性和元数据保护。
+        与大多数 P2P 网络不同，SimpleX 在设计上没有任何类型的全局用户标识符，甚至临时的也没有。SimpleX 仅使用临时的成对标识符，提供更好的匿名性和元数据保护。
     </li>
     <li>
-        P2P 没有解决<a href='https://en.wikipedia.org/wiki/Man-in-the-middle_attack'>MITM attack</a> 问题，大多数现有的实现不使用带外 用于初始密钥交换的消息。 SimpleX 使用带外消息，或者在某些情况下，使用预先存在的安全和可信连接来进行初始密钥交换。
+        P2P 并未解决<a href='https://zh.wikipedia.org/wiki/%E4%B8%AD%E9%97%B4%E4%BA%BA%E6%94%BB%E5%87%BB'>中间人攻击(MITM Attack)</a> 问题。大多数现有的 P2P 实现没有使用带外通讯来进行初始密钥的交换，而 SimpleX 使用带外通讯，或者在某些情况下，使用预先存在的安全和可信连接来进行初始密钥交换。
     </li>
     <li>
-        P2P 实施可能会被某些互联网提供商（如 <a href='https://en.wikipedia.org/wiki/BitTorrent'>BitTorrent</a>）阻止。 SimpleX 与传输无关——它可以在标准网络协议上工作，例如 WebSockets。
+        P2P 实现（如 <a href='https://zh.wikipedia.org/wiki/BitTorrent_(%E5%8D%8F%E8%AE%AE)'>BitTorrent</a>）可能会被某些互联网提供商阻止。 SimpleX 与传输协议无关——它可以在标准网络协议上工作，例如 WebSockets。
     </li>
     <li>
-        所有已知的 P2P 网络都可能容易受到 <a href='https://en.wikipedia.org/wiki/Sybil_attack'>Sybil 攻击</a>，因为每个节点都是可发现的，并且网络作为一个整体运行。 缓解它的已知措施需要集中式组件或昂贵的<a href='https://en.wikipedia.org/wiki/Proof_of_work'>工作量证明</a>。 SimpleX 网络没有服务器可发现性，它是分散的并且作为多个隔离的子网运行，使得网络范围的攻击不可能。
+        所有已知的 P2P 网络都可能受到 <a href='https://en.wikipedia.org/wiki/Sybil_attack'>Sybil 攻击</a>，因为每个节点都是可发现的，并且网络作为一个整体运行。 已知的缓解措施不是需要一个中心化的组件就是需要昂贵的<a href='https://en.wikipedia.org/wiki/Proof_of_work'>工作量证明</a>。而 SimpleX 网络没有服务器可发现性，它是碎片化的并且作为多个隔离的子网运行，这样全网络范围的攻击便无从实现。
     </li>
     <li>
-        P2P 网络可能容易受到 <a href='https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent'>DRDoS 攻击</a> ，当客户端可以重新广播和放大流量时，会导致网络范围内的拒绝服务。 SimpleX 客户端仅中继来自已知连接的流量，不能被攻击者用来放大整个网络的流量。
+        P2P 网络可能受到 <a href='https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent'>DRDoS 攻击</a> 。客户端有能力重新广播和放大流量，从而导致整个网络范围内的服务中断。 SimpleX 客户端仅中继来自已知连接的流量，因此不能被攻击者用来放大整个网络的流量。
     </li>
 </ol>
                         </div>
@@ -1705,8 +1705,8 @@ window.addEventListener('scroll',changeHeaderBg);
 
         <!-- Tab links -->
         <div class="tabs hidden md:flex gap-2 mb-24">
-            <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">1. 用户可体验什么</div>
-            <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">2. SimpleX 的运作原理</div>
+            <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">1. 用户会体验到什么</div>
+            <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">2. 背后的运作原理</div>
             <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">3. 服务器能看到什么</div>
         </div>
 
@@ -1715,11 +1715,11 @@ window.addEventListener('scroll',changeHeaderBg);
             <div class="swiper-wrapper h-[inherit] mb-20 md:mb-0">
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">1. 用户可体验什么</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">1. 用户会体验到什么</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-1.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            您可以像在任何其他即时通讯软件中一样创建联系人和群组，并进行双向对话。
+                            您可以创建联系人和群组，并进行双向对话，就像是任何其他即时通讯软件一样。
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             它是如何在单向消息队列与没有用户识别符的情况下工作的？
@@ -1728,14 +1728,14 @@ window.addEventListener('scroll',changeHeaderBg);
                 </div>
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">2. SimpleX 的运作原理</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">2. 背后的运作原理</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-2.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            对于每个连接，您会使用两个单独的消息队列通过不同的服务器发送和接收消息。
+                            对于每个连接，您都会使用两个单独的消息队列，通过不同的服务器发送和接收消息。
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            服务器只传送单向消息，而无法全面了解用户的会话或连接。
+                            服务器只会单向传输消息，而无法掌握用户的会话或连接的全貌。
                         </p>
                     </div>
                 </div>
@@ -1745,7 +1745,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-3.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            服务器对每个队列都有单独的匿名凭证，并且不知道它们属于哪些用户。
+                            服务器对每个队列都有单独的匿名凭证，并且不知道这些凭证属于哪些用户。
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             用户可以通过使用 Tor 访问服务器以进一步提高元数据隐私，防止通过 IP 地址关联实际身份。
@@ -1860,7 +1860,7 @@ window.addEventListener("load", function () {
                     <li> 公钥或其他一些全球唯一的 ID</li>
                     <li> 如果运营商的服务器受到威胁</li>
                     <li> 不保护用户的元数据</li>
-                    <li> P2P 是分布式的，它们不是联合的 - 它们作为单个网络运行</li>
+                    <li> P2P 是分布式的，而非联邦式的 - 它们作为单个网络运行</li>
                     <li> P2P 网络要么拥有中央管理机制，要么整个网络都可能受到损害 - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">参见此处</a></li>
                 </ol>
             </div>
