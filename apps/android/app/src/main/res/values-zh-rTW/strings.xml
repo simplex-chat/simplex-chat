@@ -5,7 +5,7 @@
     <string name="about_simplex">關於 SimpleX</string>
     <string name="accept_call_on_lock_screen">接受</string>
     <string name="accept_feature">接受</string>
-    <string name="chat_item_ttl_day">1 日</string>
+    <string name="chat_item_ttl_day">1天</string>
     <string name="chat_item_ttl_month">1 個月</string>
     <string name="accept_contact_button">接受</string>
     <string name="about_simplex_chat">關於 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
@@ -14,15 +14,15 @@
     <string name="network_enable_socks_info">要在端口啟用 SOCKS 代理伺服器嗎？在啟用這個選項之前，必須先啟用代理伺服器。</string>
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後，選按：</string>
-    <string name="smp_servers_preset_add">加入預設伺服器</string>
+    <string name="smp_servers_preset_add">新增預設伺服器</string>
     <string name="smp_servers_add">新增伺服器…</string>
     <string name="accept">接受</string>
     <string name="auth_unavailable">認證無效</string>
     <string name="allow_verb">允許</string>
     <string name="display_name__field">顯示名稱：</string>
     <string name="full_name__field">全名：</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>使用更多電量</b>！通知服務會長期在背景中運行 – 一但有訊息就會顯示在通知內。</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>對電量友善</b>。通知服務於每十分鐘檢查一次新的訊息。你可能會錯過通話或迫切的訊息。</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>使用更多電量</b>！通知服務長期在背景中運行 – 有效的訊息就會即時顯示在通知內。</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>對電量友善</b>。通知服務於每十分鐘檢查一次訊息。你可能會錯過通話和迫切的訊息。</string>
     <string name="answer_call">回應通話請求</string>
     <string name="clear_contacts_selection_button">清除</string>
     <string name="allow_direct_messages">允許在群組內選擇成員後傳送訊息。</string>
@@ -48,7 +48,7 @@
     <string name="allow_voice_messages_question">允許使用語音訊息？</string>
     <string name="cancel_verb">取消</string>
     <string name="icon_descr_cancel_live_message">取消實況訊息</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>新增新的聯絡人</b>：新的聯絡人可以使用二維碼建立你的一次性二維碼。</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>新增新的聯絡人</b>：建立你的一次性二維碼給你的聯絡人。</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>掃描二維碼</b>：連接到向你出示二維碼的聯絡人。</string>
     <string name="choose_file">選擇檔案</string>
     <string name="use_camera_button">相機</string>
@@ -79,7 +79,7 @@
     <string name="callstatus_in_progress">通話中</string>
     <string name="secret">私密</string>
     <string name="callstate_connected">已連接</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>對電量最好</b>。 只有在應用程式運行中的時侯才可以接收訊息通知，後台服務並不會使用。</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>對電量最好</b>。 只有在應用程式運行中的時侯才可以接收訊息通知。（沒有後台服務）</string>
     <string name="encrypted_video_call">已經完成端對端加密視訊通話</string>
     <string name="video_call_no_encryption">視訊通話（沒有端對端加密）</string>
     <string name="call_already_ended">通話已經結束了！</string>
@@ -105,7 +105,7 @@
     <string name="chat_is_stopped_indication">聊天室已停止運作</string>
     <string name="only_group_owners_can_change_prefs">只有這個群組的負責人才能修改群組內的設定。</string>
     <string name="change_verb">修改</string>
-    <string name="users_add">加入新的個人檔案</string>
+    <string name="users_add">新增新的個人檔案</string>
     <string name="users_delete_all_chats_deleted">所有對話和對話記錄會刪除 - 這不能還原！</string>
     <string name="incognito">匿名聊天模式</string>
     <string name="chat_preferences_always">經常</string>
@@ -179,7 +179,7 @@
     <string name="mute_chat">靜音</string>
     <string name="unmute_chat">解除靜音</string>
     <string name="your_settings">你的設定</string>
-    <string name="smp_servers_add_to_another_device">加入到另一個裝置上</string>
+    <string name="smp_servers_add_to_another_device">新增到另一個裝置上</string>
     <string name="smp_servers_check_address">檢查輸入的伺服器地址，然後再試一次。</string>
     <string name="chat_console">終端機對話</string>
     <string name="star_on_github">於 Github 給個星星</string>
@@ -195,7 +195,7 @@
     <string name="delete_after">多久後刪除</string>
     <string name="all_group_members_will_remain_connected">群組內所有成員會保持連接。</string>
     <string name="color_primary">自訂顏色</string>
-    <string name="moderated_description">即時顯示訊息</string>
+    <string name="moderated_description">已移除</string>
     <string name="simplex_link_group">SimpleX 群組連結</string>
     <string name="v4_5_private_filenames">私人檔案名稱</string>
     <string name="error_adding_members">加入成員(s)時出錯</string>
@@ -329,7 +329,7 @@
     <string name="smp_server_test_disconnect">斷開連接</string>
     <string name="turn_off_battery_optimization">為了使用它，請 <b>禁用電量優化</b> 為了 <xliff:g id="appName">SimpleX</xliff:g> 在下一個對話中。否則，將禁用通知功能。</string>
     <string name="enter_passphrase_notification_desc">在接收通知之前，請你輸入數據庫的密碼</string>
-    <string name="periodic_notifications_desc">應用程式會定期推送新的訊息 — 它每天會消耗百分之幾的電量。應用程式將不使用推送通知 — 你裝置中的數據不會傳送至伺服器。</string>
+    <string name="periodic_notifications_desc">應用程式會定期取得新的訊息 — 它每天會消耗百分之幾的電量。應用程式將不使用推送通知 — 你裝置中的數據不會傳送至伺服器。</string>
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> 服務</string>
     <string name="simplex_service_notification_text">正在接收訊息…</string>
     <string name="hide_notification">隱藏</string>
@@ -366,7 +366,7 @@
     <string name="send_live_message_desc">傳送實況訊息 - 這會即時顯示你在輸入中的文字</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">（掃描或使用剪貼薄貼上）</string>
     <string name="toast_permission_denied">權限被拒絕！</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">為了保護你的私隱，<b><xliff:g id="appName">SimpleX</xliff:g></b> 有一個後台通知服務 – 它每天使用你幾 % 的電量。</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">為了保護你的私隱，<b><xliff:g id="appName">SimpleX</xliff:g></b> 有一個後台通知服務 – 它每天使用百分之幾的電量。</string>
     <string name="periodic_notifications">定期通知</string>
     <string name="notifications_mode_periodic_desc">每十分鐘會檢查一次訊息，最快可設為每分鐘檢查一次</string>
     <string name="notification_preview_mode_message">訊息文字</string>
@@ -653,7 +653,7 @@
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">你可以分享連結或二維碼 - 任何人也可以加入至此群組內。直到你刪除群組前，你也不會遺失群組。</string>
     <string name="group_main_profile_sent">你的個人檔案會傳送給群組內的成員</string>
     <string name="save_group_profile">儲存群組檔案</string>
-    <string name="voice_prohibited_in_this_chat">語音訊息於這個聊天窒是禁用的。</string>
+    <string name="voice_prohibited_in_this_chat">語音訊息於這個聊天室是禁用的。</string>
     <string name="v4_3_irreversible_message_deletion_desc">允許你的聯絡人可以完全刪除訊息。</string>
     <string name="first_platform_without_user_ids">第一個沒有任何用戶識別符的通訊平台 – 以私隱為設計。</string>
     <string name="next_generation_of_private_messaging">新一代的私密訊息平台</string>
@@ -762,11 +762,11 @@
     <string name="reset_color">重設顏色</string>
     <string name="feature_off">關閉</string>
     <string name="feature_received_prohibited">已接收，已禁用</string>
-    <string name="accept_feature_set_1_day">設定為一日</string>
+    <string name="accept_feature_set_1_day">設定為1天</string>
     <string name="contacts_can_mark_messages_for_deletion">聯絡人可以標記訊息為已刪除；你仍可以看到那些訊息。</string>
     <string name="prohibit_sending_voice_messages">禁止傳送語音訊息。</string>
     <string name="only_your_contact_can_send_disappearing">只有你的聯絡人可以傳送自動銷毀的訊息。</string>
-    <string name="disappearing_prohibited_in_this_chat">自動銷毀訊息已被禁用於此聊天室。</string>
+    <string name="disappearing_prohibited_in_this_chat">自動銷毀訊息於這個聊天室內是禁用的。</string>
     <string name="message_deletion_prohibited">不可逆地刪除訊息於這個聊天室內是禁用的。</string>
     <string name="only_you_can_send_voice">只有你可以傳送語音訊息。</string>
     <string name="direct_messages_are_prohibited_in_chat">私訊群組內的成員於這個群組內是禁用的。</string>
@@ -856,14 +856,14 @@
     <string name="ttl_mth">%dmth</string>
     <string name="ttl_hour">%d 小時</string>
     <string name="ttl_h">%dh</string>
-    <string name="ttl_day">%d 日</string>
+    <string name="ttl_day">%d 天</string>
     <string name="ttl_days">%d 天</string>
     <string name="ttl_d">%dd</string>
     <string name="ttl_week">%d 星期</string>
     <string name="ttl_weeks">%d 個星期</string>
     <string name="ttl_w">%dw</string>
     <string name="new_in_version">更新於 %s</string>
-    <string name="v4_3_voice_messages_desc">最多四十秒後刪除，立即接收到訊息。</string>
+    <string name="v4_3_voice_messages_desc">最多四十秒後，立即接收到訊息。</string>
     <string name="v4_3_irreversible_message_deletion">不可逆地刪除訊息</string>
     <string name="v4_3_improved_privacy_and_security">增強隱私和安全性</string>
     <string name="v4_4_disappearing_messages_desc">已傳送的訊息將在設定的時間後被刪除。</string>
@@ -908,7 +908,7 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">你將停止接收來自此群組的訊息。群組內的記錄會保留。</string>
     <string name="you_rejected_group_invitation">你已拒絕加入群組</string>
     <string name="group_member_status_announced">連接中（宣布階段）</string>
-    <string name="num_contacts_selected">%d 已選擇多個聊絡人</string>
+    <string name="num_contacts_selected">已選擇%d 個聯絡人</string>
     <string name="your_ice_servers">你的 ICE 伺服器</string>
     <string name="webrtc_ice_servers">WebRTC ICE 伺服器</string>
     <string name="update_database">更新</string>
@@ -952,11 +952,11 @@
     <string name="icon_descr_video_off">關閉視訊</string>
     <string name="snd_group_event_changed_role_for_yourself">你修改了自己的身份為 %s</string>
     <string name="snd_conn_event_switch_queue_phase_completed">你修改了聯絡地址</string>
-    <string name="moderated_item_description">由 %s 管理</string>
+    <string name="moderated_item_description">由 %s 移除</string>
     <string name="moderate_message_will_be_deleted_warning">將為所有成員刪除該訊息。</string>
     <string name="delete_member_message__question">刪除成員訊息？</string>
     <string name="moderate_verb">主持</string>
-    <string name="moderate_message_will_be_marked_warning">該訊息將對所有成員標記為已審核。</string>
+    <string name="moderate_message_will_be_marked_warning">該訊息將對所有成員標記為已移除。</string>
     <string name="observer_cant_send_message_title">你不能傳送訊息！</string>
     <string name="you_are_observer">你是觀察者</string>
     <string name="group_member_role_observer">觀察者</string>
@@ -988,7 +988,7 @@
 \n- 禁用成員（“觀察員”角色）</string>
     <string name="v4_6_hidden_chat_profiles_descr">使用密碼保護你的聊天資料！</string>
     <string name="relay_server_protects_ip">中繼伺服器保護你的 IP 地址，但它可以觀察通話的持續時間。</string>
-    <string name="button_add_welcome_message">添加歡迎信息</string>
+    <string name="button_add_welcome_message">新增歡迎信息</string>
     <string name="error_saving_user_password">儲存用戶密碼時出錯</string>
     <string name="error_updating_user_privacy">更新用戶隱私時出錯</string>
     <string name="relay_server_if_necessary">中繼伺服器僅在必要時使用。 另一方可以觀察到你的 IP 地址。</string>
@@ -1197,7 +1197,38 @@
     <string name="you_can_accept_or_reject_connection">當有人向你發出連接請求，你可以接受或拒絕請求。</string>
     <string name="your_contacts_will_remain_connected">你的聯絡人會保持連接。</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">你的所有聯絡人會保持連接。更新了的個人檔案將傳送給你的聯絡人。</string>
-    <string name="add_address_to_your_profile">將聯絡地址加入到你的個人檔案中，以便你的聯絡人與其他人分享你的聯絡地址。更新了的個人檔案將傳送給你的聯絡人。</string>
+    <string name="add_address_to_your_profile">將聯絡地址新增到你的個人檔案中，以便你的聯絡人與其他人分享你的聯絡地址。更新了的個人檔案將傳送給你的聯絡人。</string>
     <string name="email_invite_subject">讓我們在 SimpleX Chat中聊天</string>
     <string name="import_theme_error_desc">確保檔案具有正確的 YAML 語法。匯出主題以獲得主題檔案結構的範例。</string>
+    <string name="message_reactions">訊息互動</string>
+    <string name="allow_your_contacts_adding_message_reactions">允許你的聯絡人新增訊息互動。</string>
+    <string name="custom_time_unit_days">天</string>
+    <string name="custom_time_unit_weeks">星期</string>
+    <string name="info_menu">個人訊息</string>
+    <string name="edit_history">紀錄</string>
+    <string name="sent_message">已傳送訊息</string>
+    <string name="received_message">已接收訊息</string>
+    <string name="send_disappearing_message_custom_time">自定義時間</string>
+    <string name="send_disappearing_message_send">傳送</string>
+    <string name="disappearing_message">自動銷毀訊息</string>
+    <string name="share_text_moderated_at">已移除在：%s</string>
+    <string name="item_info_current">（目前的）</string>
+    <string name="allow_message_reactions">允許訊息互動。</string>
+    <string name="v5_1_better_messages">更佳的訊息</string>
+    <string name="v5_1_custom_themes_descr">自定義和分享顏色主題</string>
+    <string name="v5_1_custom_themes">自定義主題</string>
+    <string name="custom_time_unit_hours">小時</string>
+    <string name="custom_time_picker_select">選擇</string>
+    <string name="custom_time_unit_minutes">分鐘</string>
+    <string name="custom_time_unit_months">個月</string>
+    <string name="custom_time_unit_seconds">秒</string>
+    <string name="custom_time_picker_custom">自定義</string>
+    <string name="info_row_received_at">已接收在</string>
+    <string name="info_row_deleted_at">已刪除在</string>
+    <string name="info_row_sent_at">已傳送在</string>
+    <string name="share_text_database_id">數據庫 ID：%d</string>
+    <string name="info_row_moderated_at">已移除在</string>
+    <string name="send_disappearing_message_1_minute">1分鐘</string>
+    <string name="send_disappearing_message_30_seconds">30秒</string>
+    <string name="send_disappearing_message_5_minutes">5分鐘</string>
 </resources>
