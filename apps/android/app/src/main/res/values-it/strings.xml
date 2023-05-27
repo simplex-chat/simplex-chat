@@ -1260,4 +1260,6 @@
     <string name="share_text_deleted_at">Eliminato il: %s</string>
     <string name="info_row_disappears_at">Scompare il</string>
     <string name="share_text_disappears_at">Scompare il: %s</string>
+    <string name="item_info_no_text">nessun testo</string>
+    <string name="non_fatal_errors_occured_during_import">Si sono verificati alcuni errori non gravi durante l\'importazione: vedi la console della chat per i dettagli.</string>
 </resources>
