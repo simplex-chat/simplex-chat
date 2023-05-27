@@ -86,6 +86,7 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
 
 func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) -> ChatResponse {
     logger.debug("chatSendCmd \(cmd.cmdType)")
+    let start = Date.now
     let resp = bgTask
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
                 : sendSimpleXCmd(cmd)
@@ -94,7 +95,7 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
     DispatchQueue.main.async {
-        ChatModel.shared.addTerminalItem(.cmd(.now, cmd.obfuscated))
+        ChatModel.shared.addTerminalItem(.cmd(start, cmd.obfuscated))
         ChatModel.shared.addTerminalItem(.resp(.now, resp))
     }
     return resp
