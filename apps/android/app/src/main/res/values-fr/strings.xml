@@ -1261,4 +1261,5 @@
     <string name="share_text_sent_at">Envoyé le : %s</string>
     <string name="sent_message">Message envoyé</string>
     <string name="item_info_no_text">aucun texte</string>
+    <string name="non_fatal_errors_occured_during_import">Des erreurs non fatales se sont produites lors de l\'importation - vous pouvez consulter la console de chat pour plus de détails.</string>
 </resources>
