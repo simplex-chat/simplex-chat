@@ -1262,4 +1262,5 @@
     <string name="v5_1_better_messages_descr">- 语音消息最长5分钟。
 \n- 自定义限时消息。
 \n- 编辑消息历史。</string>
+    <string name="non_fatal_errors_occured_during_import">导入过程中发生了一些非致命错误——您可以查看聊天控制台了解更多详细信息。</string>
 </resources>
