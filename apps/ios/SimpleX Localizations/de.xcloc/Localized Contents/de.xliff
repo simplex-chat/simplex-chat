@@ -297,13 +297,13 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
-        <target>- Bis zu 5 Minuten lange Sprachnachrichten
-- Zeit für verschwindende Nachrichten anpassen
-- Vergangenheit bearbeiten</target>
+        <target state="translated">- Bis zu 5 Minuten lange Sprachnachrichten
+- Zeitdauer für verschwindende Nachrichten anpassen
+- Nachrichten-Historie bearbeiten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="." xml:space="preserve">
@@ -491,9 +491,9 @@
         <target>Erweiterte Netzwerkeinstellungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All app data is deleted." xml:space="preserve">
+      <trans-unit id="All app data is deleted." xml:space="preserve" approved="no">
         <source>All app data is deleted.</source>
-        <target>App-Daten werden komplett gelöscht.</target>
+        <target state="translated">Werden die App-Daten komplett gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
@@ -501,9 +501,9 @@
         <target>Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is erased when it is entered." xml:space="preserve">
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
         <source>All data is erased when it is entered.</source>
-        <target>Sobald es eingegeben wird, werden alle Daten gelöscht.</target>
+        <target state="translated">Alle Daten werden gelöscht, sobald diese eingegeben wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -641,14 +641,14 @@
         <target>App Icon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode" xml:space="preserve">
+      <trans-unit id="App passcode" xml:space="preserve" approved="no">
         <source>App passcode</source>
-        <target>App Passwort</target>
+        <target state="translated">App-PIN</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve">
+      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
         <source>App passcode is replaced with self-destruct passcode.</source>
-        <target>Das App Passwort wurde durch das Selbstzerstörungspasswort ersetzt.</target>
+        <target state="translated">Die App-PIN wurde durch die Selbstzerstörungs-PIN ersetzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -836,9 +836,9 @@
         <target>Die Mitgliederrolle ändern?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change passcode" xml:space="preserve">
+      <trans-unit id="Change passcode" xml:space="preserve" approved="no">
         <source>Change passcode</source>
-        <target>Passwort ändern</target>
+        <target state="translated">PIN ändern</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
@@ -861,9 +861,9 @@
         <target>Selbstzerstörungs-Modus ändern</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
         <source>Change self-destruct passcode</source>
-        <target>Selbstzerstörungspasswort ändern</target>
+        <target state="translated">Selbstzerstörungs-PIN ändern</target>
         <note>authentication reason
    set passcode view</note>
       </trans-unit>
@@ -977,9 +977,9 @@
         <target>Bestätigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm Passcode" xml:space="preserve">
+      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
         <source>Confirm Passcode</source>
-        <target>Passwort bestätigen</target>
+        <target state="translated">PIN bestätigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
@@ -1182,9 +1182,9 @@
         <target>Erstellt am %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current Passcode" xml:space="preserve">
+      <trans-unit id="Current Passcode" xml:space="preserve" approved="no">
         <source>Current Passcode</source>
-        <target>Aktuelles Passwort</target>
+        <target state="translated">Aktuelle PIN</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current passphrase…" xml:space="preserve">
@@ -1690,9 +1690,9 @@
         <target>Selbstzerstörung aktivieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
         <source>Enable self-destruct passcode</source>
-        <target>Selbstzerstörungspasswort aktivieren</target>
+        <target state="translated">Selbstzerstörungs-PIN aktivieren</target>
         <note>set passcode view</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -1740,9 +1740,9 @@
         <target>Verschlüsselte Nachricht: Unerwarteter Fehler</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Enter Passcode" xml:space="preserve">
+      <trans-unit id="Enter Passcode" xml:space="preserve" approved="no">
         <source>Enter Passcode</source>
-        <target>Passwort eingeben</target>
+        <target state="translated">PIN eingeben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">
@@ -1925,9 +1925,9 @@
         <target>Fehler beim Speichern des Gruppenprofils</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving passcode" xml:space="preserve">
+      <trans-unit id="Error saving passcode" xml:space="preserve" approved="no">
         <source>Error saving passcode</source>
-        <target>Fehler beim Speichern des Passworts</target>
+        <target state="translated">Fehler beim Speichern der PIN</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
@@ -2305,14 +2305,14 @@
         <target>Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs gescannt werden**, oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
+      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve" approved="no">
         <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
-        <target>Wenn Sie dieses Passwort während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</target>
+        <target state="translated">Wenn Sie diese PIN während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve">
+      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
         <source>If you enter your self-destruct passcode while opening the app:</source>
-        <target>Wenn Sie Ihr Selbstzerstörungspasswort während des Öffnens der App eingeben:</target>
+        <target state="translated">Wenn Sie Ihre Selbstzerstörungs-PIN während des Öffnens der App eingeben:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
@@ -2410,9 +2410,9 @@
         <target>Inkompatible Datenbank-Version</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incorrect passcode" xml:space="preserve">
+      <trans-unit id="Incorrect passcode" xml:space="preserve" approved="no">
         <source>Incorrect passcode</source>
-        <target>Passwort falsch</target>
+        <target state="translated">PIN ist falsch</target>
         <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Incorrect security code!" xml:space="preserve">
@@ -2833,9 +2833,9 @@
         <target>Netzwerkstatus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New Passcode" xml:space="preserve">
+      <trans-unit id="New Passcode" xml:space="preserve" approved="no">
         <source>New Passcode</source>
-        <target>Neues Passwort</target>
+        <target state="translated">Neue PIN</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -3092,29 +3092,29 @@
         <target>PING-Intervall</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode" xml:space="preserve">
+      <trans-unit id="Passcode" xml:space="preserve" approved="no">
         <source>Passcode</source>
-        <target>Passwort</target>
+        <target state="translated">PIN</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode changed!" xml:space="preserve">
+      <trans-unit id="Passcode changed!" xml:space="preserve" approved="no">
         <source>Passcode changed!</source>
-        <target>Passwort geändert!</target>
+        <target state="translated">Die PIN wurde geändert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode entry" xml:space="preserve">
+      <trans-unit id="Passcode entry" xml:space="preserve" approved="no">
         <source>Passcode entry</source>
-        <target>Passworteingabe</target>
+        <target state="translated">PIN-Eingabe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode not changed!" xml:space="preserve">
+      <trans-unit id="Passcode not changed!" xml:space="preserve" approved="no">
         <source>Passcode not changed!</source>
-        <target>Passwort wurde nicht geändert!</target>
+        <target state="translated">Die PIN wurde nicht geändert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passcode set!" xml:space="preserve">
+      <trans-unit id="Passcode set!" xml:space="preserve" approved="no">
         <source>Passcode set!</source>
-        <target>Passwort wurde geändert!</target>
+        <target state="translated">Die PIN wurde geändert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
@@ -3192,9 +3192,9 @@
         <target>Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve">
+      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve" approved="no">
         <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
-        <target>Es gibt keine Möglichkeit ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!</target>
+        <target state="translated">Es gibt keine Möglichkeit eine vergessene PIN wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie sie sicher ab!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please report it to the developers." xml:space="preserve">
@@ -3702,19 +3702,19 @@
         <target>Selbstzerstörung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode" xml:space="preserve" approved="no">
         <source>Self-destruct passcode</source>
-        <target>Selbstzerstörungspasswort</target>
+        <target state="translated">Selbstzerstörungs-PIN</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode changed!</source>
-        <target>Das Selbstzerstörungspasswort wurde geändert!</target>
+        <target state="translated">Die Selbstzerstörungs-PIN wurde geändert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode enabled!</source>
-        <target>Das Selbstzerstörungspasswort wurde aktiviert!</target>
+        <target state="translated">Die Selbstzerstörungs-PIN wurde aktiviert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve">
@@ -3852,9 +3852,9 @@
         <target>Anstelle der System-Authentifizierung festlegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passcode" xml:space="preserve">
+      <trans-unit id="Set passcode" xml:space="preserve" approved="no">
         <source>Set passcode</source>
-        <target>Passwort eingeben</target>
+        <target state="translated">PIN eingeben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -4076,9 +4076,9 @@
         <target>Das Teilen der Adresse beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Submit" xml:space="preserve">
+      <trans-unit id="Submit" xml:space="preserve" approved="no">
         <source>Submit</source>
-        <target>Übermitteln</target>
+        <target state="translated">Bestätigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
