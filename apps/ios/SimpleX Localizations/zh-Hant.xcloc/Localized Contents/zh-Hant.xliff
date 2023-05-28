@@ -84,7 +84,7 @@
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve" approved="no">
         <source>%d days</source>
-        <target state="translated">%d 日</target>
+        <target state="translated">%d 天</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve" approved="no">
@@ -259,7 +259,7 @@
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve" approved="no">
         <source>1 day</source>
-        <target state="translated">一日</target>
+        <target state="translated">1天</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 hour" xml:space="preserve" approved="no">
@@ -2224,7 +2224,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
-        <target state="translated">只有這個群組的負責人才能修改群組內的設定。</target>
+        <target state="translated">只有群組的負責人才能修改群組內的設定。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable voice messages." xml:space="preserve" approved="no">
@@ -2239,7 +2239,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Only you can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only you can send disappearing messages.</source>
-        <target state="translated">只有你能傳送自動銷毀的訊息。</target>
+        <target state="translated">只有你可以傳送自動銷毀的訊息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve" approved="no">
@@ -2469,7 +2469,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve" approved="no">
         <source>Recipients see updates as you type them.</source>
-        <target state="translated">當你輸入訊息時侯，對方將可以即時看到你輸入的內容。</target>
+        <target state="translated">當你輸入訊息的時侯，對方會即時看到你輸入的內容。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reject" xml:space="preserve" approved="no">
@@ -2779,7 +2779,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Set 1 day" xml:space="preserve" approved="no">
         <source>Set 1 day</source>
-        <target state="translated">設定為一日</target>
+        <target state="translated">設定為1天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set contact name…" xml:space="preserve" approved="no">
@@ -5491,6 +5491,337 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve" approved="no">
         <source>Videos and files up to 1gb</source>
         <target state="translated">影片和檔案和最大上限為1gb</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%d weeks" xml:space="preserve" approved="no">
+        <source>%d weeks</source>
+        <target state="translated">%d 個星期</target>
+        <note>time interval</note>
+      </trans-unit>
+      <trans-unit id="5 minutes" xml:space="preserve" approved="no">
+        <source>5 minutes</source>
+        <target state="translated">5分鐘</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All app data is deleted." xml:space="preserve" approved="no">
+        <source>All app data is deleted.</source>
+        <target state="translated">已刪除所有的應用程式數據。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
+        <source>App passcode is replaced with self-destruct passcode.</source>
+        <target state="translated">應用程式密碼已替換為自毀密碼。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disappearing message" xml:space="preserve" approved="no">
+        <source>Disappearing message</source>
+        <target state="translated">自動銷毀訊息</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
+        <source>Enable self-destruct passcode</source>
+        <target state="translated">啟用自毀密碼</target>
+        <note>set passcode view</note>
+      </trans-unit>
+      <trans-unit id="Group members can add message reactions." xml:space="preserve" approved="no">
+        <source>Group members can add message reactions.</source>
+        <target state="translated">群組內的成員可以新增訊息互動。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
+        <source>If you enter your self-destruct passcode while opening the app:</source>
+        <target state="translated">如果你在開啟應用程式時輸入自毀密碼：</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Self-destruct" xml:space="preserve" approved="no">
+        <source>Self-destruct</source>
+        <target state="translated">自毁</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Select" xml:space="preserve" approved="no">
+        <source>Select</source>
+        <target state="translated">選擇</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
+        <source>%@ (current)</source>
+        <target state="translated">%@ (目前的)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ (current):" xml:space="preserve" approved="no">
+        <source>%@ (current):</source>
+        <target state="translated">%@ (目前的)：</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
+        <source>%@:</source>
+        <target state="translated">%@：</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Deleted at" xml:space="preserve" approved="no">
+        <source>Deleted at</source>
+        <target state="translated">已刪除在</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Deleted at: %@" xml:space="preserve" approved="no">
+        <source>Deleted at: %@</source>
+        <target state="translated">已刪除在：%@</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="New display name" xml:space="preserve" approved="no">
+        <source>New display name</source>
+        <target state="translated">新的顯示名稱</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Opening database…" xml:space="preserve" approved="no">
+        <source>Opening database…</source>
+        <target state="translated">開啟數據庫中…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sent at" xml:space="preserve" approved="no">
+        <source>Sent at</source>
+        <target state="translated">已傳送在</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Set passcode" xml:space="preserve" approved="no">
+        <source>Set passcode</source>
+        <target state="translated">設定密碼</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sent message" xml:space="preserve" approved="no">
+        <source>Sent message</source>
+        <target state="translated">已傳送訊息</target>
+        <note>message info title</note>
+      </trans-unit>
+      <trans-unit id="Sent at: %@" xml:space="preserve" approved="no">
+        <source>Sent at: %@</source>
+        <target state="translated">已傳送在：%@</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="custom" xml:space="preserve" approved="no">
+        <source>custom</source>
+        <target state="translated">自定義</target>
+        <note>dropdown time picker choice</note>
+      </trans-unit>
+      <trans-unit id="days" xml:space="preserve" approved="no">
+        <source>days</source>
+        <target state="translated">天</target>
+        <note>time unit</note>
+      </trans-unit>
+      <trans-unit id="0s" xml:space="preserve" approved="no">
+        <source>0s</source>
+        <target state="translated">0秒</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="1 minute" xml:space="preserve" approved="no">
+        <source>1 minute</source>
+        <target state="translated">1分鐘</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow message reactions." xml:space="preserve" approved="no">
+        <source>Allow message reactions.</source>
+        <target state="translated">允許訊息回應。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve" approved="no">
+        <source>An empty chat profile with the provided name is created, and the app opens as usual.</source>
+        <target state="translated">已建立一個具有所提供名稱的空白對話檔案，而應用程式將照常開啟。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better messages" xml:space="preserve" approved="no">
+        <source>Better messages</source>
+        <target state="translated">更佳的訊息</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change self-destruct mode" xml:space="preserve" approved="no">
+        <source>Change self-destruct mode</source>
+        <target state="translated">修改自毁模式</target>
+        <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
+        <source>Change self-destruct passcode</source>
+        <target state="translated">修改自毀密碼</target>
+        <note>authentication reason
+   set passcode view</note>
+      </trans-unit>
+      <trans-unit id="Custom time" xml:space="preserve" approved="no">
+        <source>Custom time</source>
+        <target state="translated">自定義時間</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database ID: %d" xml:space="preserve" approved="no">
+        <source>Database ID: %d</source>
+        <target state="translated">數據庫 ID：%d</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Enable self-destruct" xml:space="preserve" approved="no">
+        <source>Enable self-destruct</source>
+        <target state="translated">啟用自毀</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Finally, we have them! 🚀" xml:space="preserve" approved="no">
+        <source>Finally, we have them! 🚀</source>
+        <target state="translated">終於，我們有了它們！🚀</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="History" xml:space="preserve" approved="no">
+        <source>History</source>
+        <target state="translated">紀錄</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve" approved="no">
+        <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
+        <target state="translated">如果你在開啟應用程式時輸入此密碼，所有應用程式資料將被不可逆轉地刪除！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Info" xml:space="preserve" approved="no">
+        <source>Info</source>
+        <target state="translated">個人訊息</target>
+        <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Japanese interface" xml:space="preserve" approved="no">
+        <source>Japanese interface</source>
+        <target state="translated">日本語言界面</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message reactions" xml:space="preserve" approved="no">
+        <source>Message reactions</source>
+        <target state="translated">訊息互動</target>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Moderated at: %@" xml:space="preserve" approved="no">
+        <source>Moderated at: %@</source>
+        <target state="translated">已移除在：%@</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Moderated at" xml:space="preserve" approved="no">
+        <source>Moderated at</source>
+        <target state="translated">已移除在</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve" approved="no">
+        <source>Message reactions are prohibited in this group.</source>
+        <target state="translated">訊息互動於這個群組內是禁用的。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only you can add message reactions." xml:space="preserve" approved="no">
+        <source>Only you can add message reactions.</source>
+        <target state="translated">只有你可以新增訊息互動。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only your contact can add message reactions." xml:space="preserve" approved="no">
+        <source>Only your contact can add message reactions.</source>
+        <target state="translated">只有你的聯絡人可以新增訊息互動。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit message reactions." xml:space="preserve" approved="no">
+        <source>Prohibit message reactions.</source>
+        <target state="translated">禁止訊息互動。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more" xml:space="preserve" approved="no">
+        <source>Read more</source>
+        <target state="translated">查看更多</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="React..." xml:space="preserve" approved="no">
+        <source>React...</source>
+        <target state="translated">互動...</target>
+        <note>chat item menu</note>
+      </trans-unit>
+      <trans-unit id="Prohibit messages reactions." xml:space="preserve" approved="no">
+        <source>Prohibit messages reactions.</source>
+        <target state="translated">禁止訊息互動。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Received message" xml:space="preserve" approved="no">
+        <source>Received message</source>
+        <target state="translated">已接收訊息</target>
+        <note>message info title</note>
+      </trans-unit>
+      <trans-unit id="Received at: %@" xml:space="preserve" approved="no">
+        <source>Received at: %@</source>
+        <target state="translated">已接收在：%@</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Received at" xml:space="preserve" approved="no">
+        <source>Received at</source>
+        <target state="translated">已接收在</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Record updated at: %@" xml:space="preserve" approved="no">
+        <source>Record updated at: %@</source>
+        <target state="translated">紀錄已更新在：%@</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Record updated at" xml:space="preserve" approved="no">
+        <source>Record updated at</source>
+        <target state="translated">紀錄已更新在</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve" approved="no">
+        <source>Self-destruct passcode enabled!</source>
+        <target state="translated">已啟用自毀密碼！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve" approved="no">
+        <source>Self-destruct passcode changed!</source>
+        <target state="translated">已修改自毀密碼！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Self-destruct passcode" xml:space="preserve" approved="no">
+        <source>Self-destruct passcode</source>
+        <target state="translated">自毀密碼</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send disappearing message" xml:space="preserve" approved="no">
+        <source>Send disappearing message</source>
+        <target state="translated">傳送自動銷毀訊息</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unit" xml:space="preserve" approved="no">
+        <source>Unit</source>
+        <target state="translated">單位</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="hours" xml:space="preserve" approved="no">
+        <source>hours</source>
+        <target state="translated">小時</target>
+        <note>time unit</note>
+      </trans-unit>
+      <trans-unit id="minutes" xml:space="preserve" approved="no">
+        <source>minutes</source>
+        <target state="translated">分鐘</target>
+        <note>time unit</note>
+      </trans-unit>
+      <trans-unit id="weeks" xml:space="preserve" approved="no">
+        <source>weeks</source>
+        <target state="translated">星期</target>
+        <note>time unit</note>
+      </trans-unit>
+      <trans-unit id="seconds" xml:space="preserve" approved="no">
+        <source>seconds</source>
+        <target state="translated">秒</target>
+        <note>time unit</note>
+      </trans-unit>
+      <trans-unit id="months" xml:space="preserve" approved="no">
+        <source>months</source>
+        <target state="translated">個月</target>
+        <note>time unit</note>
+      </trans-unit>
+      <trans-unit id="no text" xml:space="preserve" approved="no">
+        <source>no text</source>
+        <target state="translated">沒有文字</target>
+        <note>copied message info in history</note>
+      </trans-unit>
+      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve" approved="no">
+        <source>Message reactions are prohibited in this chat.</source>
+        <target state="translated">訊息互動於這個聊天室是禁用的。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="30 seconds" xml:space="preserve" approved="no">
+        <source>30 seconds</source>
+        <target state="translated">30秒</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
