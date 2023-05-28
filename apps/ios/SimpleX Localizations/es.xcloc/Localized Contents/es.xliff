@@ -1137,9 +1137,9 @@
         <target>Crear dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
+      <trans-unit id="Create an address to let people connect with you." xml:space="preserve" approved="no">
         <source>Create an address to let people connect with you.</source>
-        <target>Crear una dirección para que la gente se pueda conectar contigo.</target>
+        <target state="translated">Crear una dirección para que otras personas se puedan conectar contigo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -4923,14 +4923,14 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>Mis servidores %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your ICE servers" xml:space="preserve">
+      <trans-unit id="Your ICE servers" xml:space="preserve" approved="no">
         <source>Your ICE servers</source>
-        <target>Mis servidores ICE</target>
+        <target state="translated">Servidores ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SMP servers" xml:space="preserve">
+      <trans-unit id="Your SMP servers" xml:space="preserve" approved="no">
         <source>Your SMP servers</source>
-        <target>Mis servidores SMP</target>
+        <target state="translated">Servidores SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SimpleX address" xml:space="preserve">
@@ -4938,14 +4938,14 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>Mi dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your XFTP servers" xml:space="preserve">
+      <trans-unit id="Your XFTP servers" xml:space="preserve" approved="no">
         <source>Your XFTP servers</source>
-        <target>Mis servidores XFTP</target>
+        <target state="translated">Servidores XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your calls" xml:space="preserve">
+      <trans-unit id="Your calls" xml:space="preserve" approved="no">
         <source>Your calls</source>
-        <target>Mis llamadas</target>
+        <target state="translated">Llamadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database" xml:space="preserve">
@@ -4973,9 +4973,9 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>Mis perfiles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chats" xml:space="preserve">
+      <trans-unit id="Your chats" xml:space="preserve" approved="no">
         <source>Your chats</source>
-        <target>Mis chats</target>
+        <target state="translated">Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
