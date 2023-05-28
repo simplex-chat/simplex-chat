@@ -1,2 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="send_disappearing_message_1_minute">1 นาที</string>
+    <string name="send_disappearing_message_30_seconds">30 วินาที</string>
+    <string name="above_then_preposition_continuation">ด้านบน, จากนั้น:</string>
+    <string name="accept_contact_button">รับ</string>
+    <string name="accept_contact_incognito_button">ยอมรับโหมดไม่ระบุตัวตน</string>
+    <string name="about_simplex_chat">เกี่ยวกับ <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="callstatus_accepted">รับสาย</string>
+    <string name="accept_call_on_lock_screen">รับ</string>
+    <string name="chat_item_ttl_week">1 สัปดาห์</string>
+    <string name="color_primary">สีเน้น</string>
+    <string name="accept_feature">รับ</string>
+    <string name="chat_item_ttl_day">1 วัน</string>
+    <string name="chat_item_ttl_month">1 เดือน</string>
+    <string name="accept">รับ</string>
+    <string name="accept_connection_request__question">ยอมรับการเชื่อมต่อหรือไม่\?</string>
+    <string name="one_time_link_short">ลิงก์สำหรับใช้ 1 ครั้ง</string>
+    <string name="send_disappearing_message_5_minutes">5 นาที</string>
+    <string name="about_simplex">เกี่ยวกับ SimpleX</string>
+    <string name="network_enable_socks_info">เข้าถึงเซิร์ฟเวอร์ผ่านพร็อกซี SOCKS บนพอร์ต %d หรือไม่\? ต้องเริ่มพร็อกซีก่อนที่จะเปิดใช้งานตัวเลือกนี้</string>
+    <string name="add_address_to_your_profile">เพิ่มที่อยู่ลงในโปรไฟล์ของคุณ เพื่อให้ผู้ติดต่อของคุณสามารถแชร์กับผู้อื่นได้ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ</string>
+</resources>
