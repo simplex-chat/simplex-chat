@@ -20,4 +20,5 @@
     <string name="about_simplex">เกี่ยวกับ SimpleX</string>
     <string name="network_enable_socks_info">เข้าถึงเซิร์ฟเวอร์ผ่านพร็อกซี SOCKS บนพอร์ต %d หรือไม่\? ต้องเริ่มพร็อกซีก่อนที่จะเปิดใช้งานตัวเลือกนี้</string>
     <string name="add_address_to_your_profile">เพิ่มที่อยู่ลงในโปรไฟล์ของคุณ เพื่อให้ผู้ติดต่อของคุณสามารถแชร์กับผู้อื่นได้ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ</string>
+    <string name="color_primary_variant">เน้นสีเพิ่มเติม</string>
 </resources>
