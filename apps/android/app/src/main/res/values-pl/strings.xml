@@ -1261,4 +1261,5 @@
 \n- niestandardowy czas zniknięcia.
 \n- historia edycji.</string>
     <string name="item_info_no_text">brak tekstu</string>
+    <string name="non_fatal_errors_occured_during_import">Podczas importu wystąpiły niekrytyczne błędy - więcej szczegółów można znaleźć w konsoli czatu.</string>
 </resources>
