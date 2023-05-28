@@ -476,7 +476,7 @@
     <string name="chat_item_ttl_none">nunca</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Se requieren hosts .onion para la conexión</string>
     <string name="network_use_onion_hosts_no_desc">No se usarán hosts .onion</string>
-    <string name="settings_notification_preview_title">Vista previa de notificación</string>
+    <string name="settings_notification_preview_title">Vista previa de notificaciones</string>
     <string name="alert_title_group_invitation_expired">¡Invitación caducada!</string>
     <string name="group_member_status_left">ha salido</string>
     <string name="v4_4_live_messages">Mensajes en vivo</string>
@@ -852,7 +852,7 @@
     <string name="smp_servers_use_server_for_new_conn">Usar para conexiones nuevas</string>
     <string name="theme_system">Sistema</string>
     <string name="description_via_one_time_link">mediante enlace de un solo uso</string>
-    <string name="your_chats">Mis chats</string>
+    <string name="your_chats">Chats</string>
     <string name="voice_message_send_text">Mensaje de voz…</string>
     <string name="icon_descr_video_off">Desactivar vídeo</string>
     <string name="icon_descr_video_on">Activar vídeo</string>
@@ -871,7 +871,7 @@
     <string name="welcome">¡Bienvenido!</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Tu perfil Chat será enviado
 \na tu contacto</string>
-    <string name="your_ICE_servers">Mis servidores ICE</string>
+    <string name="your_ICE_servers">Servidores ICE</string>
     <string name="you_rejected_group_invitation">Has rechazado la invitación del grupo.</string>
     <string name="snd_group_event_changed_member_role">has cambiado el rol de %s a %s</string>
     <string name="call_connection_via_relay">mediante relay</string>
@@ -918,15 +918,15 @@
     <string name="you_invited_your_contact">Has invitado a tu contacto</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="your_settings">Configuración</string>
-    <string name="your_SMP_servers">Mis servidores SMP</string>
+    <string name="your_SMP_servers">Servidores SMP</string>
     <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
     <string name="your_profile_is_stored_on_your_device">Tu perfil, contactos y mensajes entregados se almacenan en tu dispositivo.</string>
     <string name="callstate_waiting_for_answer">esperando respuesta…</string>
     <string name="callstate_waiting_for_confirmation">esperando confirmación…</string>
     <string name="onboarding_notifications_mode_off">Cuando la aplicación se está ejecutando</string>
     <string name="icon_descr_video_call">Videollamada</string>
-    <string name="your_calls">Mis llamadas</string>
-    <string name="your_ice_servers">Mis servidores ICE</string>
+    <string name="your_calls">Llamadas</string>
+    <string name="your_ice_servers">Servidores ICE</string>
     <string name="your_privacy">Privacidad</string>
     <string name="settings_section_title_you">MIS DATOS</string>
     <string name="your_chat_database">Base de datos Chat</string>
@@ -1054,7 +1054,7 @@
     <string name="smp_server_test_delete_file">Eliminar archivo</string>
     <string name="smp_server_test_upload_file">Subir archivo</string>
     <string name="xftp_servers">Servidores XFTP</string>
-    <string name="your_XFTP_servers">Mis servidores XFTP</string>
+    <string name="your_XFTP_servers">Servidores XFTP</string>
     <string name="port_verb">Puerto</string>
     <string name="network_proxy_port">puerto %d</string>
     <string name="disable_onion_hosts_when_not_supported">Configura <i>Usar hosts .onion</i> a No si el proxy SOCKS no los admite.</string>
@@ -1159,7 +1159,7 @@
     <string name="dark_theme">Tema oscuro</string>
     <string name="customize_theme_title">Personalizar tema</string>
     <string name="enter_welcome_message_optional">Introduce mensaje de bienvenida… (opcional)</string>
-    <string name="create_address_and_let_people_connect">Crear una dirección para que la gente se pueda conectar contigo.</string>
+    <string name="create_address_and_let_people_connect">Crear una dirección para que otras personas se puedan conectar contigo.</string>
     <string name="dont_create_address">No crear dirección</string>
     <string name="email_invite_body">¡Hola!
 \nConecta conmigo a través de SimpleX Chat: %s</string>
@@ -1263,4 +1263,5 @@
     <string name="whats_new_read_more">Saber más</string>
     <string name="v5_1_japanese_portuguese_interface">Interfaz en japonés y portugués</string>
     <string name="item_info_no_text">sin texto</string>
+    <string name="non_fatal_errors_occured_during_import">Algunos errores no críticos ocurrieron durante la importación - para más detalles puedes ver la consola de Chat.</string>
 </resources>
