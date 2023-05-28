@@ -32,7 +32,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
-import Data.Time (ZonedTime)
+import Data.Time (NominalDiffTime, ZonedTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
@@ -110,6 +110,8 @@ data ChatConfig = ChatConfig
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
     testView :: Bool,
+    initialCleanupManagerDelay :: Int64,
+    cleanupManagerInterval :: NominalDiffTime,
     ciExpirationInterval :: Int64 -- microseconds
   }
 
@@ -777,7 +779,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CEInvalidChatMessage {messageData :: Text, message :: String}
+  | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}

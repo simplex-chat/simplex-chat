@@ -116,7 +116,11 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
-  CRSentGroupInvitation u g c _ -> ttyUser u ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+  CRSentGroupInvitation u g c _ ->
+    ttyUser u $
+      if viaGroupLink . contactConn $ c
+        then [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
+        else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
@@ -1380,7 +1384,12 @@ viewChatError logLevel = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CEInvalidChatMessage msg e -> [plain $ "chat message error: " <> e <> " (" <> T.unpack (T.take 120 msg) <> ")"]
+    CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
+      [ plain $
+          ("chat message error: " <> e <> " (" <> T.unpack (T.take 120 msg) <> ")")
+            <> (", connection id: " <> show connId)
+            <> maybe "" (\MsgMetaJSON {rcvId} -> ", agent msg rcv id: " <> show rcvId) msgMeta_
+      ]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
     CEContactDisabled Contact {localDisplayName = c} -> [ttyContact c <> ": disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
     CEConnectionDisabled Connection {connId, connType} -> [plain $ "connection " <> textEncode connType <> " (" <> tshow connId <> ") is disabled" | logLevel <= CLLWarning]

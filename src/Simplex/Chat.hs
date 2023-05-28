@@ -120,7 +120,9 @@ defaultChatConfig =
       subscriptionEvents = False,
       hostEvents = False,
       testView = False,
-      ciExpirationInterval = 1800 * 1000000 -- 30 minutes
+      initialCleanupManagerDelay = 30 * 1000000, -- 30 seconds
+      cleanupManagerInterval = 30 * 60, -- 30 minutes
+      ciExpirationInterval = 30 * 60 * 1000000 -- 30 minutes
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
@@ -2349,26 +2351,33 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-cleanupManagerInterval :: NominalDiffTime
-cleanupManagerInterval = 1800 -- 30 minutes
-
 cleanupManager :: forall m. ChatMonad m => m ()
 cleanupManager = do
+  interval <- asks (cleanupManagerInterval . config)
+  runWithoutInitialDelay interval
+  delay <- asks (initialCleanupManagerDelay . config)
+  liftIO $ threadDelay' delay
   forever $ do
     flip catchError (toView . CRChatError Nothing) $ do
       waitChatStarted
       users <- withStore' getUsers
       let (us, us') = partition activeUser users
-      forM_ us cleanupUser
-      forM_ us' cleanupUser
+      forM_ us $ cleanupUser interval
+      forM_ us' $ cleanupUser interval
       cleanupMessages `catchError` (toView . CRChatError Nothing)
-    liftIO $ threadDelay' $ diffToMicroseconds cleanupManagerInterval
+    liftIO $ threadDelay' $ diffToMicroseconds interval
   where
-    cleanupUser user =
-      cleanupTimedItems user `catchError` (toView . CRChatError (Just user))
-    cleanupTimedItems user = do
+    runWithoutInitialDelay cleanupInterval = flip catchError (toView . CRChatError Nothing) $ do
+      waitChatStarted
+      users <- withStore' getUsers
+      let (us, us') = partition activeUser users
+      forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
+      forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
+    cleanupUser cleanupInterval user =
+      cleanupTimedItems cleanupInterval user `catchError` (toView . CRChatError (Just user))
+    cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
-      let startTimedThreadCutoff = addUTCTime cleanupManagerInterval ts
+      let startTimedThreadCutoff = addUTCTime cleanupInterval ts
       timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
     cleanupMessages = do
@@ -2378,8 +2387,9 @@ cleanupManager = do
 
 startProximateTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 startProximateTimedItemThread user itemRef deleteAt = do
+  interval <- asks (cleanupManagerInterval . config)
   ts <- liftIO getCurrentTime
-  when (diffUTCTime deleteAt ts <= cleanupManagerInterval) $
+  when (diffUTCTime deleteAt ts <= interval) $
     startTimedItemThread user itemRef deleteAt
 
 startTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
@@ -2656,7 +2666,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, customUserProfileId} = \case
+    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
@@ -2728,7 +2738,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
-          ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
+          ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
               -- TODO check member ID
@@ -2737,7 +2747,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               allowAgentConnectionAsync user conn confId XOk
             _ -> messageError "CONF from member must have x.grp.mem.info"
         INFO connInfo -> do
-          ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
+          ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
               -- TODO check member ID
@@ -2758,6 +2768,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               whenUserNtfs user $ do
                 setActive $ ActiveC c
                 showToast (c <> "> ") "connected"
+              forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
                   Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_, gLinkMemRole) -> do
@@ -2852,7 +2863,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
-        ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
+        ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
         case memberCategory m of
           GCInviteeMember ->
             case chatMsgEvent of
@@ -2873,7 +2884,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
-        ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
+        ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XGrpMemInfo memId _memProfile
             | sameMemberId memId m -> do
@@ -2902,11 +2913,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             whenUserNtfs user $ do
               setActive $ ActiveG gName
               showToast ("#" <> gName) "you are connected to group"
-            withStore' (\db -> getContactViaMember db user m) >>= \case
-              Nothing -> messageWarning "connected host does not have contact"
-              Just ct@Contact {activeConn = Connection {groupLinkId}} -> do
-                let connectedIncognito = contactConnIncognito ct || memberIncognito membership
-                forM_ groupLinkId $ \_ -> probeMatchingContacts ct connectedIncognito
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
@@ -3022,7 +3028,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- SMP CONF for SndFileConnection happens for direct file protocol
         -- when recipient of the file "joins" connection created by the sender
         CONF confId _ connInfo -> do
-          ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
+          ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
           case chatMsgEvent of
             -- TODO save XFileAcpt message
             XFileAcpt name
@@ -3092,7 +3098,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- when sender of the file "joins" connection created by the recipient
         -- (sender doesn't create connections for all group members)
         CONF confId _ connInfo -> do
-          ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
+          ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
           case chatMsgEvent of
             XOk -> allowAgentConnectionAsync user conn confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
             _ -> pure ()
@@ -3155,7 +3161,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
-        ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
+        ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ -> profileContactRequest invId p xContactId_
           XInfo p -> profileContactRequest invId p Nothing
@@ -3829,9 +3835,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     probeMatch c1@Contact {contactId = cId1, profile = p1} c2@Contact {contactId = cId2, profile = p2} probe =
       if profilesMatch (fromLocalProfile p1) (fromLocalProfile p2) && cId1 /= cId2
         then do
-          let (toCt, fromCt) = mergeToFromContacts c1 c2
-          void . sendDirectContactMessage toCt $ XInfoProbeOk probe
-          mergeContacts toCt fromCt
+          void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+          mergeContacts c1 c2
         else messageWarning "probeMatch ignored: profiles don't match or same contact id"
 
     xInfoProbeOk :: Contact -> Probe -> m ()
@@ -3839,21 +3844,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       r <- withStore' $ \db -> matchSentProbe db user c1 probe
       forM_ r $ \c2@Contact {contactId = cId2} ->
         if cId1 /= cId2
-          then do
-            let (toCt, fromCt) = mergeToFromContacts c1 c2
-            mergeContacts toCt fromCt
+          then mergeContacts c1 c2
           else messageWarning "xInfoProbeOk ignored: same contact id"
-
-    mergeToFromContacts :: Contact -> Contact -> (Contact, Contact)
-    mergeToFromContacts c1 c2
-      | d1 && not d2 = (c1, c2)
-      | d2 && not d1 = (c2, c1)
-      | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
-      | otherwise = (c2, c1)
-      where
-        d1 = directOrUsed c1
-        d2 = directOrUsed c2
-        ctCreatedAt Contact {createdAt} = createdAt
 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
@@ -3961,14 +3953,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts toCt fromCt = do
-      deleteAgentConnectionAsync user $ aConnId $ contactConn fromCt
-      withStore' $ \db -> mergeContactRecords db userId toCt fromCt
-      toView $ CRContactsMerged user toCt fromCt
+    mergeContacts c1 c2 = do
+      withStore' $ \db -> mergeContactRecords db userId c1 c2
+      toView $ CRContactsMerged user c1 c2
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
-      ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
+      ChatMessage {chatMsgEvent} <- parseChatMessage activeConn connInfo
       case chatMsgEvent of
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db user activeConn p
@@ -4162,16 +4153,18 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
         else sendChunks (chunkNo + 1) rest
     chSize = fromIntegral chunkSize
 
-parseChatMessage :: ChatMonad m => ByteString -> m (ChatMessage 'Json)
-parseChatMessage = parseChatMessage_
+parseChatMessage :: ChatMonad m => Connection -> ByteString -> m (ChatMessage 'Json)
+parseChatMessage conn = parseChatMessage_ conn Nothing
 {-# INLINE parseChatMessage #-}
 
-parseAChatMessage :: ChatMonad m => ByteString -> m AChatMessage
-parseAChatMessage = parseChatMessage_
+parseAChatMessage :: ChatMonad m => Connection -> MsgMeta -> ByteString -> m AChatMessage
+parseAChatMessage conn msgMeta = parseChatMessage_ conn (Just msgMeta)
 {-# INLINE parseAChatMessage #-}
 
-parseChatMessage_ :: (ChatMonad m, StrEncoding s) => ByteString -> m s
-parseChatMessage_ s = liftEither . first (ChatError . CEInvalidChatMessage (safeDecodeUtf8 s)) $ strDecode s
+parseChatMessage_ :: (ChatMonad m, StrEncoding s) => Connection -> Maybe MsgMeta -> ByteString -> m s
+parseChatMessage_ conn msgMeta s = liftEither . first (ChatError . errType) $ strDecode s
+  where
+    errType = CEInvalidChatMessage conn (msgMetaToJson <$> msgMeta) (safeDecodeUtf8 s)
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
@@ -4385,8 +4378,8 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
         _ -> pure ()
 
 saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> m RcvMessage
-saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
-  ACMsg _ ChatMessage {msgId = sharedMsgId_, chatMsgEvent} <- parseAChatMessage msgBody
+saveRcvMSG conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
+  ACMsg _ ChatMessage {msgId = sharedMsgId_, chatMsgEvent} <- parseAChatMessage conn agentMsgMeta msgBody
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}

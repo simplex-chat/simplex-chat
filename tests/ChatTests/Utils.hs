@@ -267,11 +267,7 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-data ConsoleResponse
-  = ConsoleString String
-  | WithTime String
-  | EndsWith String
-  | StartsWith String
+data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String
   deriving (Show)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
@@ -291,7 +287,6 @@ getInAnyOrder f cc ls = do
       ConsoleString s -> l == s
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
-      StartsWith s -> s `isPrefixOf` l
 
 (<###) :: HasCallStack => TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id
