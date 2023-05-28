@@ -170,5 +170,34 @@ function openOverlay() {
     }
 }
 
-window.addEventListener('load', openOverlay);
+window.addEventListener('load', () => {
+    openOverlay()
+
+    const glossaryTerms = document.querySelectorAll(".glossary-term")
+
+    glossaryTerms.forEach((glossaryTerm) => {
+        const id = glossaryTerm.dataset.glossary
+        const glossaryPopup = document.getElementById(id)
+
+        glossaryTerm.addEventListener('mouseover', function () {
+            glossaryPopup.style.visibility = "visible"
+            glossaryPopup.style.opacity = "1"
+        });
+
+        glossaryTerm.addEventListener('mouseout', function () {
+            glossaryPopup.style.visibility = "hidden"
+            glossaryPopup.style.opacity = "0"
+        });
+
+        glossaryPopup.addEventListener('mouseover', function () {
+            glossaryPopup.style.visibility = "visible"
+            glossaryPopup.style.opacity = "1"
+        });
+
+        glossaryPopup.addEventListener('mouseout', function () {
+            glossaryPopup.style.visibility = "hidden"
+            glossaryPopup.style.opacity = "0"
+        });
+    })
+});
 window.addEventListener('hashchange', openOverlay);

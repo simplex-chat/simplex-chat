@@ -3,10 +3,35 @@ const markdownItAnchor = require("markdown-it-anchor")
 const markdownItReplaceLink = require('markdown-it-replace-link')
 const slugify = require("slugify")
 const uri = require('fast-uri')
-const i18n = require('eleventy-plugin-i18n');
-const fs = require("fs");
-const path = require("path");
-const pluginRss = require('@11ty/eleventy-plugin-rss');
+const i18n = require('eleventy-plugin-i18n')
+const fs = require("fs")
+const path = require("path")
+const pluginRss = require('@11ty/eleventy-plugin-rss')
+const { JSDOM } = require('jsdom')
+
+
+// The implementation of Glossary feature
+const md = new markdownIt()
+const glossaryMarkdownContent = fs.readFileSync(path.resolve(__dirname, '../docs/GLOSSARY.md'), 'utf8')
+const glossaryHtmlContent = md.render(glossaryMarkdownContent)
+const glossaryDOM = new JSDOM(glossaryHtmlContent)
+const glossaryDocument = glossaryDOM.window.document
+const glossary = require('./src/_data/glossary.json')
+
+glossary.forEach(item => {
+  const headers = Array.from(glossaryDocument.querySelectorAll("h2"))
+  const matchingHeader = headers.find(header => header.textContent.trim() === item.definition)
+
+  if (matchingHeader) {
+    let sibling = matchingHeader.nextElementSibling
+    let definition = ''
+    while (sibling && sibling.tagName !== 'H2') {
+      definition += sibling.outerHTML || sibling.textContent
+      sibling = sibling.nextElementSibling
+    }
+    item.definition = definition
+  }
+})
 
 
 const globalConfig = {
@@ -55,6 +80,48 @@ module.exports = function (ty) {
     }
   })
 
+  ty.addFilter('applyGlossary', function (content) {
+    const dom = new JSDOM(content)
+    const { document } = dom.window
+    const body = document.querySelector('body')
+    const allContentNodes = document.querySelectorAll('p, td, a, h1, h2, h3, h4')
+
+    glossary.forEach((term, index) => {
+      let changeNoted = false
+      const id = `glossary-${index}`
+
+      allContentNodes.forEach((node) => {
+        const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
+        const replacement = `<span data-glossary=${id} class="glossary-term cursor-text text-primary-light dark:text-primary-dark inline-block">${term.term}</span>`
+        const beforeContent = node.innerHTML
+        node.innerHTML = node.innerHTML.replace(regex, replacement)
+        if (beforeContent !== node.innerHTML && !changeNoted) {
+          changeNoted = true
+        }
+      })
+
+      if (changeNoted) {
+        const transparentLayerDiv = document.createElement('div')
+        transparentLayerDiv.id = id
+        transparentLayerDiv.className = 'glossary-popup p-3 md:p-10'
+        const contentDiv = document.createElement('div')
+        contentDiv.className = 'w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100'
+        const title = document.createElement('h1')
+        title.className = 'font-bold text-active-blue mb-6'
+        title.innerHTML = term.term
+        const definitionDiv = document.createElement('div')
+        definitionDiv.className = 'text-base text-black dark:text-white'
+        definitionDiv.innerHTML = term.definition
+        contentDiv.appendChild(title)
+        contentDiv.appendChild(definitionDiv)
+        transparentLayerDiv.appendChild(contentDiv)
+        body.appendChild(transparentLayerDiv)
+      }
+    })
+
+    return dom.serialize()
+  })
+
   ty.addShortcode("completeRoute", (obj) => {
     const urlParts = obj.url.split("/")
 
@@ -88,7 +155,7 @@ module.exports = function (ty) {
     }
   })
 
-  ty.addPlugin(pluginRss);
+  ty.addPlugin(pluginRss)
 
   ty.addPlugin(i18n, {
     translations,

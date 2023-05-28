@@ -711,3 +711,44 @@ p a{
 .contact-tab:hover svg{
   transform: rotate(0deg);
 }
+
+/* Glossary */
+.glossary-popup {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  transition: all 0.5s;
+  visibility: hidden;
+  opacity: 0;
+  z-index: 10001;
+}
+
+.glossary-popup::before{
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+  background-color: #F3F6F7;
+}
+
+.dark .glossary-popup::before{
+  background-color: #0C0B13;
+}
+
+.glossary-popup h1{
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.glossary-popup p{
+  margin-bottom: 1rem;
+}
