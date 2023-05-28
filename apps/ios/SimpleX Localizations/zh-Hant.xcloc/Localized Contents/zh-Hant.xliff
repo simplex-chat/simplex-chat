@@ -5824,6 +5824,11 @@ It can happen because of some bug or when the connection is compromised.</source
         <target state="translated">30秒</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Duration" xml:space="preserve" approved="no">
+        <source>Duration</source>
+        <target state="translated">持續時間</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="zh-Hant" datatype="plaintext">
