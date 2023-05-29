@@ -192,7 +192,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
        in defaultServers {smp = smp', xftp = xftp', netCfg = networkConfig}
     agentServers :: ChatConfig -> IO InitialAgentServers
     agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
-      users <- withTransactionCtx (Just "newChatController, getUsers") chatStore getUsers
+      users <- withTransaction chatStore getUsers
       smp' <- getUserServers users SPSMP
       xftp' <- getUserServers users SPXFTP
       pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
@@ -205,7 +205,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
             initialServers :: IO [(UserId, NonEmpty (ProtoServerWithAuth p))]
             initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
             userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
-            userServers user' = activeAgentServers config protocol <$> withTransactionCtx (Just "newChatController, getProtocolServers") chatStore (`getProtocolServers` user')
+            userServers user' = activeAgentServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 activeAgentServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
 activeAgentServers ChatConfig {defaultServers} p =
@@ -4590,7 +4590,7 @@ createInternalChatItem user cd content itemTs_ = do
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
   user <-
-    withTransactionCtx (Just "getCreateActiveUser, getUsers") st getUsers >>= \case
+    withTransaction st getUsers >>= \case
       [] -> newUser
       users -> maybe (selectUser users) pure (find activeUser users)
   putStrLn $ "Current user: " <> userStr user
@@ -4616,7 +4616,7 @@ getCreateActiveUser st = do
             Right user -> pure user
     selectUser :: [User] -> IO User
     selectUser [user] = do
-      withTransactionCtx (Just "getCreateActiveUser, setActiveUser 1") st (`setActiveUser` userId (user :: User))
+      withTransaction st (`setActiveUser` userId (user :: User))
       pure user
     selectUser users = do
       putStrLn "Select user profile:"
@@ -4631,7 +4631,7 @@ getCreateActiveUser st = do
               | n <= 0 || n > length users -> putStrLn "invalid user number" >> loop
               | otherwise -> do
                 let user = users !! (n - 1)
-                withTransactionCtx (Just "getCreateActiveUser, setActiveUser 2") st (`setActiveUser` userId (user :: User))
+                withTransaction st (`setActiveUser` userId (user :: User))
                 pure user
     userStr :: User -> String
     userStr User {localDisplayName, profile = LocalProfile {fullName}} =
