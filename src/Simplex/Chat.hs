@@ -222,25 +222,23 @@ cfgServers = \case
 startChatController :: forall m. ChatMonad' m => Bool -> Bool -> Bool -> m (Async ())
 startChatController subConns enableExpireCIs startXFTPWorkers = do
   asks smpAgent >>= resumeAgentClient
-  users <- timeItToView "startChatController, getUsers" $ fromRight [] <$> runExceptT (withStore' getUsers)
-  timeItToView "startChatController, restoreCalls" $ restoreCalls
+  users <- fromRight [] <$> runExceptT (withStore' getUsers)
+  restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
     start s users = do
-      a1 <- timeItToView "startChatController, a1" $ async $ race_ notificationSubscriber agentSubscriber
+      a1 <- async $ race_ notificationSubscriber agentSubscriber
       a2 <-
-        timeItToView "startChatController, a2" $
-          if subConns
-            then Just <$> async (subscribeUsers users)
-            else pure Nothing
+        if subConns
+          then Just <$> async (subscribeUsers users)
+          else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       when startXFTPWorkers $ do
-        timeItToView "startChatController, startXFTP" $ startXFTP
-        timeItToView "startChatController, forkIO startFilesToReceive" $ void $ forkIO $ startFilesToReceive users
-      timeItToView "startChatController, startCleanupManager" $ startCleanupManager
-      when enableExpireCIs $
-        timeItToView "startChatController, startExpireCIs" $ startExpireCIs users
+        startXFTP
+        void $ forkIO $ startFilesToReceive users
+      startCleanupManager
+      when enableExpireCIs $ startExpireCIs users
       pure a1
     startXFTP = do
       tmp <- readTVarIO =<< asks tempDirectory
