@@ -95,4 +95,40 @@
     <string name="allow_voice_messages_only_if">อนุญาตข้อความเสียงเฉพาะเมื่อผู้ติดต่อของคุณอนุญาตเท่านั้น</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">ผู้ติดต่อทั้งหมดของคุณจะยังคงเชื่อมต่ออยู่ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ</string>
     <string name="chat_preferences_always">เสมอ</string>
+    <string name="available_in_v51">"
+\nพร้อมใช้งานใน v5.1"</string>
+    <string name="back">กลับ</string>
+    <string name="integrity_msg_bad_hash">แฮชข้อความไม่ดี</string>
+    <string name="notifications_mode_service_desc">บริการพื้นหลังทำงานตลอดเวลา - การแจ้งเตือนจะแสดงทันทีที่มีข้อความ</string>
+    <string name="alert_title_msg_bad_hash">แฮชข้อความไม่ดี</string>
+    <string name="integrity_msg_bad_id">ID ข้อความที่ไม่ดี</string>
+    <string name="both_you_and_your_contact_can_send_voice">ทั้งคุณและผู้ติดต่อของคุณสามารถส่งข้อความเสียงได้</string>
+    <string name="callstatus_error">การโทรล้มเหลว</string>
+    <string name="v4_5_transport_isolation_descr">ตามโปรไฟล์แชท (การตั้งค่าเริ่มต้น) หรือโดยการเชื่อมต่อ (เบต้า)</string>
+    <string name="callstatus_ended">สิ้นสุดการโทร <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="icon_descr_call_progress">กําลังโทร</string>
+    <string name="settings_section_title_calls">โทร</string>
+    <string name="turning_off_service_and_periodic">การเพิ่มประสิทธิภาพแบตเตอรี่ทํางานอยู่ บริการพื้นหลังและคําขอข้อความใหม่เป็นระยะจะถูกปิด คุณสามารถเปิดใช้งานอีกครั้งผ่านการตั้งค่า</string>
+    <string name="onboarding_notifications_mode_off_desc"><b> ดีที่สุดสําหรับแบตเตอรี่ </b> คุณจะได้รับการแจ้งเตือนเฉพาะเมื่อแอปกําลังทํางานอยู่ (ไม่มีบริการพื้นหลัง)</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b> ดีสำหรับแบตเตอรี่ </b> บริการพื้นหลังจะตรวจสอบข้อความทุกๆ 10 นาที คุณอาจไม่ได้รับสายหรือข้อความด่วน</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b> สามารถปิดใช้งานผ่านการตั้งค่า </b> - การแจ้งเตือนจะยังคงปรากฏขึ้นในขณะที่แอปกําลังทํางานอยู่</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">ทั้งคุณและผู้ติดต่อของคุณสามารถเพิ่มปฏิกิริยาของข้อความได้</string>
+    <string name="both_you_and_your_contacts_can_delete">ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้</string>
+    <string name="use_camera_button">กล้อง</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b> เพิ่มผู้ติดต่อใหม่ </b>: เพื่อสร้างรหัส QR แบบใช้ครั้งเดียวสําหรับผู้ติดต่อของคุณ</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>สแกนรหัส QR</b>: เพื่อเชื่อมต่อกับผู้ติดต่อที่แสดงรหัส QR ให้คุณ</string>
+    <string name="learn_more_about_address">เกี่ยวกับที่อยู่ SimpleX</string>
+    <string name="bold">ตัวหนา</string>
+    <string name="callstatus_calling">กำลังโทร…</string>
+    <string name="callstatus_in_progress">กําลังโทร</string>
+    <string name="onboarding_notifications_mode_service_desc"><b> ใช้แบตเตอรี่มากขึ้น </b>! บริการพื้นหลังจะทํางานเสมอ - การแจ้งเตือนจะปรากฏขึ้นทันทีที่มีข้อความ</string>
+    <string name="call_already_ended">สิ้นสุดการโทรแล้ว!</string>
+    <string name="call_on_lock_screen">โทรบนหน้าจอล็อค:</string>
+    <string name="icon_descr_call_ended">สิ้นสุดการโทร</string>
+    <string name="alert_title_msg_bad_id">ID ข้อความที่ไม่ดี</string>
+    <string name="impossible_to_recover_passphrase"><b>โปรดทราบ</b>: คุณจะไม่สามารถกู้คืนหรือเปลี่ยนรหัสผ่านได้หากคุณทำรหัสผ่านหาย</string>
+    <string name="color_background">พื้นหลัง</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">ทั้งคุณและผู้ติดต่อของคุณสามารถส่งข้อความที่หายไปได้</string>
+    <string name="both_you_and_your_contact_can_make_calls">ทั้งคุณและผู้ติดต่อของคุณสามารถโทรออกได้</string>
+    <string name="v5_1_better_messages">ข้อความที่ดีขึ้น</string>
 </resources>
