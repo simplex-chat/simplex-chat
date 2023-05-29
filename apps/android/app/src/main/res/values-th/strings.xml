@@ -131,4 +131,26 @@
     <string name="both_you_and_your_contact_can_send_disappearing">ทั้งคุณและผู้ติดต่อของคุณสามารถส่งข้อความที่หายไปได้</string>
     <string name="both_you_and_your_contact_can_make_calls">ทั้งคุณและผู้ติดต่อของคุณสามารถโทรออกได้</string>
     <string name="v5_1_better_messages">ข้อความที่ดีขึ้น</string>
+    <string name="cannot_receive_file">ไม่สามารถรับไฟล์ได้</string>
+    <string name="database_initialization_error_title">สามารถเริ่มเตรียมการใช้งานฐานข้อมูล ได้</string>
+    <string name="la_change_app_passcode">เปลี่ยนรหัสผ่าน</string>
+    <string name="icon_descr_cancel_file_preview">ยกเลิกการแสดงตัวอย่างไฟล์</string>
+    <string name="icon_descr_cancel_image_preview">ยกเลิกการแสดงตัวอย่างรูปภาพ</string>
+    <string name="cancel_verb">ยกเลิก</string>
+    <string name="icon_descr_cancel_link_preview">ยกเลิกการแสดงตัวอย่างลิงก์</string>
+    <string name="change_self_destruct_mode">เปลี่ยนโหมดทําลายตัวเอง</string>
+    <string name="cannot_access_keychain">ไม่สามารถเข้าถึง Keystore เพื่อบันทึกรหัสผ่านฐานข้อมูลได้</string>
+    <string name="rcv_group_event_changed_member_role">เปลี่ยนบทบาทของ %s เป็น %s</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">เปลี่ยนที่อยู่สําหรับคุณ</string>
+    <string name="invite_prohibited">ไม่สามารถเชิญผู้ติดต่อได้!</string>
+    <string name="change_role">เปลี่ยนบทบาท</string>
+    <string name="change_member_role_question">เปลี่ยนบทบาทกลุ่ม\?</string>
+    <string name="icon_descr_cancel_live_message">ยกเลิกข้อความสด</string>
+    <string name="feature_cancelled_item">ยกเลิกเรียบร้อยแล้ว %s</string>
+    <string name="cant_delete_user_profile">ไม่สามารถลบโปรไฟล์ผู้ใช้ได้!</string>
+    <string name="alert_title_cant_invite_contacts">ไม่สามารถเชิญผู้ติดต่อทั้งหลายได้!</string>
+    <string name="change_verb">เปลี่ยน</string>
+    <string name="change_database_passphrase_question">เปลี่ยนรหัสผ่านฐานข้อมูล\?</string>
+    <string name="rcv_group_event_changed_your_role">เปลี่ยนบทบาทของคุณเป็น %s เรียบร้อยแล้ว</string>
+    <string name="change_lock_mode">เปลี่ยนโหมดล็อค</string>
 </resources>
