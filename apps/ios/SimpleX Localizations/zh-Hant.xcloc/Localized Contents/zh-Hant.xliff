@@ -5829,6 +5829,45 @@ It can happen because of some bug or when the connection is compromised.</source
         <target state="translated">持續時間</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve" approved="no">
+        <source>Allow your contacts adding message reactions.</source>
+        <target state="translated">允許你的聯絡人新增訊息互動。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disappears at" xml:space="preserve" approved="no">
+        <source>Disappears at</source>
+        <target state="translated">銷毀於</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disappears at: %@" xml:space="preserve" approved="no">
+        <source>Disappears at: %@</source>
+        <target state="translated">銷毀於: %@</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
+        <source>- voice messages up to 5 minutes.
+- custom time to disappear.
+- editing history.</source>
+        <target state="translated">- 長達5分鐘的語音訊息。
+- 自定義消失時間。
+- 編輯紀錄。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
+        <source>All data is erased when it is entered.</source>
+        <target state="translated">所有數據會在輸入後刪除。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
+        <source>Allow message reactions only if your contact allows them.</source>
+        <target state="translated">僅當你的聯絡人允許時才允許訊息互動。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve" approved="no">
+        <source>Both you and your contact can add message reactions.</source>
+        <target state="translated">你和你的聯絡人可以新增訊息互動。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="zh-Hant" datatype="plaintext">
