@@ -2,20 +2,35 @@
 # Safety measures
 set -eu
 
+repo="https://github.com/simplex-chat/simplex-chat"
+
 u="$USER"
-tmp=$(mktemp -d -t)
+tmp="$(mktemp -d -t)"
 folder="$tmp/simplex-chat"
+libs_folder="$folder/apps/android/app/src/main/cpp/libs"
+
+nix_ver="nix-2.15.1"
+nix_url="https://releases.nixos.org/nix/$nix_ver/install"
+nix_hash="67aa37f0115195d8ddf32b5d6f471f1e60ecca0fdb3e98bcf54bc147c3078640"
+nix_config="sandbox = true
+max-jobs = auto
+experimental-features = nix-command flakes"
+
 commands="nix git curl gradle zip unzip zipalign"
+arches="${ARCHES:-aarch64 armv7a}"
+
+arch_map() {
+  case $1 in
+    aarch64) android_arch="arm64-v8a" ;;
+    armv7a) android_arch="armeabi-v7a" ;;
+  esac
+}
 
 nix_install() {
   # Pre-setup nix
   [ ! -d /nix ] && sudo sh -c "mkdir -p /nix && chown -R $u /nix"
 
   # Install nix
-  nix_ver="nix-2.14.1"
-  nix_url="https://releases.nixos.org/nix/$nix_ver/install"
-  nix_hash="565974057264f0536f600c68d59395927cd73e9fc5a60f33c1906e8f7bc33fcf"
-
   curl -sSf "$nix_url" -o "$tmp/nix-install"
   printf "%s %s" "$nix_hash" "$tmp/nix-install" | sha256sum -c
   chmod +x "$tmp/nix-install" && "$tmp/nix-install" --no-daemon
@@ -24,21 +39,17 @@ nix_install() {
 }
 
 nix_setup() {
-  printf "sandbox = true\nmax-jobs = auto\nexperimental-features = nix-command flakes\n" > "$tmp/nix.conf"
+  printf "%s" "$nix_config" > "$tmp/nix.conf"
   export NIX_CONF_DIR="$tmp/"
 }
 
 git_setup() {
   [ "$folder" != "." ] && {
-    git clone --depth=1 https://github.com/simplex-chat/simplex-chat "$folder"
+    git clone --depth=1 "$repo" "$folder"
   }
 
   # Switch to nix-android branch
   git -C "$folder" checkout "$commit"
-
-  # Create missing folders
-  mkdir -p "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
-  mkdir -p "$folder/apps/android/app/src/main/cpp/libs/armeabi-v7a"
 }
 
 checks() {
@@ -70,38 +81,50 @@ checks() {
 }
 
 build() {
-  # Build simplex lib
-  nix build "$folder#hydraJobs.aarch64-android:lib:simplex-chat.x86_64-linux"
-  unzip -o "$PWD/result/pkg-aarch64-android-libsimplex.zip" -d "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
-  
-  nix build "$folder#hydraJobs.armv7a-android:lib:simplex-chat.x86_64-linux"
-  unzip -o "$PWD/result/pkg-armv7a-android-libsimplex.zip" -d "$folder/apps/android/app/src/main/cpp/libs/armeabi-v7a"
-
-  # Build android suppprt lib
-  nix build "$folder#hydraJobs.aarch64-android:lib:support.x86_64-linux"
-  unzip -o "$PWD/result/pkg-aarch64-android-libsupport.zip" -d "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
-
-  nix build "$folder#hydraJobs.armv7a-android:lib:support.x86_64-linux"
-  unzip -o "$PWD/result/pkg-armv7a-android-libsupport.zip" -d "$folder/apps/android/app/src/main/cpp/libs/armeabi-v7a"
-
+  # Build preparations
   sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/android/app/src/main/AndroidManifest.xml"
   sed -i.bak '/android {/a lint {abortOnError false}' "$folder/apps/android/app/build.gradle"
 
-  gradle -p "$folder/apps/android/" clean build assembleRelease
+  for arch in $arches; do
+    android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
+    android_support_lib="${folder}#hydraJobs.${arch}-android:lib:support.x86_64-linux"
+    android_simplex_lib_output="${PWD}/result/pkg-${arch}-android-libsimplex.zip"
+    android_support_lib_output="${PWD}/result/pkg-${arch}-android-libsupport.zip"
+    
+    arch_map "$arch"
 
-  mkdir -p "$tmp/android-aarch64"
-  unzip -oqd "$tmp/android-aarch64/" "$folder/apps/android/app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk"
-  (cd "$tmp/android-aarch64" && zip -rq5 "$tmp/simplex-chat-aarch64.apk" . && zip -rq0 "$tmp/simplex-chat-aarch64.apk" resources.arsc res)
-  zipalign -p -f 4 "$tmp/simplex-chat-aarch64.apk" "$PWD/simplex-chat-aarch64.apk"
-  
-  mkdir -p "$tmp/android-armv7"
-  unzip -oqd "$tmp/android-armv7/" "$folder/apps/android/app/build/outputs/apk/release/app-armeabi-v7a-release-unsigned.apk"
-  (cd "$tmp/android-armv7" && zip -rq5 "$tmp/simplex-chat-armv7.apk" . && zip -rq0 "$tmp/simplex-chat-armv7.apk" resources.arsc res)
-  zipalign -p -f 4 "$tmp/simplex-chat-armv7.apk" "$PWD/simplex-chat-armv7.apk"
+    android_tmp_folder="${tmp}/android-${arch}"
+    android_apk_output="${folder}/apps/android/app/build/outputs/apk/release/app-${android_arch}-release-unsigned.apk"
+    android_apk_output_final="simplex-chat-${android_arch}.apk"
+    
+    # Create missing folders
+    mkdir -p "$libs_folder/$android_arch"
+
+    nix build "$android_simplex_lib"
+    unzip -o "$android_simplex_lib_output" -d "$libs_folder/$android_arch"
+
+    nix build "$android_support_lib"
+    unzip -o "$android_support_lib_output" -d "$libs_folder/$android_arch"
+
+    gradle -p "$folder/apps/android/" clean build assembleRelease
+    
+    mkdir -p "$android_tmp_folder"
+    unzip -oqd "$android_tmp_folder" "$android_apk_output"
+    
+    (
+     cd "$android_tmp_folder" && \
+     zip -rq5 "$tmp/$android_apk_output_final" . && \
+     zip -rq0 "$tmp/$android_apk_output_final" resources.arsc res
+    )
+
+    zipalign -p -f 4 "$tmp/$android_apk_output_final" "$PWD/$android_apk_output_final"
+
+    rm -rf "$libs_folder/$android_arch"
+  done
 }
 
 final() {
-  printf "Simplex-chat was successfully compiled: %s/simplex-chat.apk\nDelete nix and gradle caches with 'rm -rf /nix && rm \$HOME/.nix* && \$HOME/.gradle/caches' in case if no longer needed.\n" "$PWD"
+  printf 'Simplex-chat was successfully compiled: %s/simplex-chat-*.apk\nDelete nix and gradle caches with "rm -rf /nix && rm $HOME/.nix* && $HOME/.gradle/caches" in case if no longer needed.\n' "$PWD"
 }
 
 main() {
