@@ -1,7 +1,7 @@
 name: Question
 description: Ask your question
 title: "[Q]: "
-labels: ["type:question", "type:triage"]
+labels: ["question", "triage"]
 body:
 - type: markdown
   attributes:
