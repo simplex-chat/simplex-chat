@@ -1260,4 +1260,5 @@
 \n- aangepaste tijd om te verdwijnen.
 \n- bewerkingsgeschiedenis.</string>
     <string name="item_info_no_text">geen tekst</string>
+    <string name="non_fatal_errors_occured_during_import">Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - mogelijk ziet u Chatconsole voor meer informatie.</string>
 </resources>
