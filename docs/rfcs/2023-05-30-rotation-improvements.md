@@ -83,8 +83,9 @@ If permanent errors in the new queue prevent switch from completing, it will be 
 
 Solution:
 - In case of a permanent error on recipient side, delete queue (deleteQueue on server, catching errors; deleteConnRcvQueue in database), reset rcv_switch_status to NULL. However, if rcv_switch_status is one of RSSMessageReceived, RSSQueueingDelete, RSSDeleteStarted, it means that sender has already deleted the original queue and will not be able to revert, so the recipient has to complete switch regardless of permanent errors.
-- In case of a permanent error on sender side (e.g. AUTH error when trying to send QTEST), recipient has no way of knowing switch will never complete - one option is for sender to send a new message "QERR SMPQueueInfo" ( / QFAIL) in the original queue and delete queue from database; after receiving QERR recipient tries to delete queue on server, deletes queue in database, reset rcv_switch_status to NULL. A new SPFailed SwitchPhase might be required for notifying client, so that switch failure is visible in client as a new chat item.
+- In case of a permanent error on sender side (e.g. AUTH error when trying to send QTEST), recipient has no way of knowing switch will never complete - one option is for sender to send a new message "QERR SMPQueueInfo" ( / QFAIL) in the original queue and delete queue from database; after receiving QERR recipient tries to delete queue on server, deletes queue in database, reset rcv_switch_status to NULL.
 
+A new SPFailed SwitchPhase might be required for notifying client, so that switch failure is visible in client as a new chat item.
 
 In case this new QERR message would have to be added anyway - why allow stopping/re-triggering switch at all? Sender agent could send QERR on permanent error when trying to send QKEY as well. This would allow to reduce number or required statuses, and remove the need to introduce stopSwitchConnection api / stop logic in agent.
 ---
