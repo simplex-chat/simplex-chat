@@ -43,7 +43,7 @@ canStopRcvSwitch = \case
   _ -> False
 ```
 
-I don't know use for most of the statuses yet, except for debugging, and more granular control over converting switch state into UI representation. At least it seems necessary to record the very beginning of switch (async command, sync command), points of sending QADD and receiving QKEY, and to reset after ICQDelete.
+I don't know use for most of the statuses yet, except for debugging, and more granular control over converting switch state into UI representation. At least it seems necessary to record the very beginning of switch (async command, sync command), points of sending QADD and receiving QKEY, and to reset after ICQDelete. `SwitchPhase` type seems to be insufficient.
 
 When it is in progress, repeatedly switching connection in UI is only allowed in RSSSentQADD status - to avoid race conditions with internal commands processing, and sender processing.
 
