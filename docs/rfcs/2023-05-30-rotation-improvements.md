@@ -52,7 +52,11 @@ Logic of repeat switch of connection could be split into stopSwitchConnection an
 ```haskell
 stopSwitchConnection :: AgentErrorMonad m => AgentClient -> ConnId -> m ConnectionStats
 stopSwitchConnection c = do
-  -- in transaction: if rcv_switch_status is RSSSentQADD, deleteConnRcvQueue
+  -- in transaction:
+  --   if rcv_switch_status is RSSSentQADD:
+  --     - deleteConnRcvQueue
+  --     - reset rcv_switch_status to NULL
+  --   else: throw error
   -- deleteQueue on server
 ```
 
