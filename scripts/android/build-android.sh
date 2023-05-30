@@ -7,7 +7,6 @@ repo="https://github.com/simplex-chat/simplex-chat"
 u="$USER"
 tmp="$(mktemp -d -t)"
 folder="$tmp/simplex-chat"
-libs_folder="$folder/apps/android/app/src/main/cpp/libs"
 
 nix_ver="nix-2.15.1"
 nix_url="https://releases.nixos.org/nix/$nix_ver/install"
@@ -96,6 +95,7 @@ build() {
     android_tmp_folder="${tmp}/android-${arch}"
     android_apk_output="${folder}/apps/android/app/build/outputs/apk/release/app-${android_arch}-release-unsigned.apk"
     android_apk_output_final="simplex-chat-${android_arch}.apk"
+    libs_folder="$folder/apps/android/app/src/main/cpp/libs"
     
     # Create missing folders
     mkdir -p "$libs_folder/$android_arch"
