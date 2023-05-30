@@ -28,7 +28,7 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace)
+import Data.Char (isSpace, toLower)
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
@@ -137,7 +137,10 @@ _defaultNtfServers :: [NtfServer]
 _defaultNtfServers = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"]
 
 maxImageSize :: Integer
-maxImageSize = 236700
+maxImageSize = 261120 * 2 -- auto-receive on mobiles
+
+imageExtensions :: [String]
+imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
 
 maxMsgReactions :: Int
 maxMsgReactions = 3
@@ -1502,7 +1505,7 @@ processChatCommand = \case
   SendImage chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     filePath <- toFSFilePath f
-    unless (".jpg" `isSuffixOf` f || ".jpeg" `isSuffixOf` f) $ throwChatError CEFileImageType {filePath}
+    unless (any ((`isSuffixOf` map toLower f)) imageExtensions) $ throwChatError CEFileImageType {filePath}
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
     -- TODO include file description for preview
