@@ -96,7 +96,7 @@ build() {
     android_apk_output="${folder}/apps/android/app/build/outputs/apk/release/app-${android_arch}-release-unsigned.apk"
     android_apk_output_final="simplex-chat-${android_arch}.apk"
     libs_folder="$folder/apps/android/app/src/main/cpp/libs"
-    
+
     # Create missing folders
     mkdir -p "$libs_folder/$android_arch"
 
@@ -106,7 +106,9 @@ build() {
     nix build "$android_support_lib"
     unzip -o "$android_support_lib_output" -d "$libs_folder/$android_arch"
 
-    gradle -p "$folder/apps/android/" clean build assembleRelease
+    # Build only one arch
+    sed -i.bak "s/include '.*/include '${android_arch}'/" "$folder/apps/android/app/build.gradle"
+    gradle -p "$folder/apps/android/" clean assembleRelease
     
     mkdir -p "$android_tmp_folder"
     unzip -oqd "$android_tmp_folder" "$android_apk_output"
