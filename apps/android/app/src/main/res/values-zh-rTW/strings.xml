@@ -25,7 +25,7 @@
     <string name="onboarding_notifications_mode_periodic_desc"><b>對電量友善</b>。通知服務於每十分鐘檢查一次訊息。你可能會錯過通話和迫切的訊息。</string>
     <string name="answer_call">回應通話請求</string>
     <string name="clear_contacts_selection_button">清除</string>
-    <string name="allow_direct_messages">允許在群組內選擇成員後傳送訊息。</string>
+    <string name="allow_direct_messages">允許向群組內的成員傳送私訊。</string>
     <string name="ttl_sec">%d 秒</string>
     <string name="feature_cancelled_item">已取消 %s</string>
     <string name="v4_2_auto_accept_contact_requests">自動接受聯絡人請求</string>
@@ -66,7 +66,7 @@
     <string name="install_simplex_chat_for_terminal">使用終端機安裝 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="app_version_title">應用程式版本</string>
     <string name="all_your_contacts_will_remain_connected">你的所有聯絡人會保持連接。</string>
-    <string name="app_version_code">程式建構：%s</string>
+    <string name="app_version_code">應用程式建構：%s</string>
     <string name="app_version_name">應用程式版本：v%s</string>
     <string name="share_link">分享連結</string>
     <string name="your_current_profile">你目前的個人檔案</string>
@@ -80,7 +80,7 @@
     <string name="secret">私密</string>
     <string name="callstate_connected">已連接</string>
     <string name="onboarding_notifications_mode_off_desc"><b>對電量最好</b>。 只有在應用程式運行中的時侯才可以接收訊息通知。（沒有後台服務）</string>
-    <string name="encrypted_video_call">已經完成端對端加密視訊通話</string>
+    <string name="encrypted_video_call">端對端加密的視訊通話</string>
     <string name="video_call_no_encryption">視訊通話（沒有端對端加密）</string>
     <string name="call_already_ended">通話已經結束了！</string>
     <string name="icon_descr_audio_off">關閉語音</string>
@@ -89,7 +89,7 @@
     <string name="icon_descr_call_progress">通話中</string>
     <string name="icon_descr_speaker_on">開啟喇叭</string>
     <string name="settings_section_title_calls">通話</string>
-    <string name="appearance_settings">主題</string>
+    <string name="appearance_settings">樣式</string>
     <string name="audio_call_no_encryption">語音通話（沒有端對端加密）</string>
     <string name="icon_descr_audio_call">語音通話</string>
     <string name="settings_audio_video_calls">語音 &amp; 視訊通話</string>
@@ -112,11 +112,11 @@
     <string name="chat_preferences_on">開啟</string>
     <string name="your_preferences">你的設定</string>
     <string name="allow_your_contacts_to_send_voice_messages">允許你的聯絡人傳送語音訊息。</string>
-    <string name="allow_voice_messages_only_if">只能在你的聯絡人允許使用語言訊息的時候，才能使用語音訊息。</string>
+    <string name="allow_voice_messages_only_if">只能在你的聯絡人允許的情況下，才允許語言訊息。</string>
     <string name="both_you_and_your_contact_can_send_disappearing">你和你的聯絡人都可以傳送自動銷毀的訊息。</string>
     <string name="only_you_can_send_disappearing">只有你能傳送自動銷毀的訊息。</string>
     <string name="both_you_and_your_contact_can_send_voice">你和你的聯絡人都可以傳送語音訊息。</string>
-    <string name="v4_2_group_links_desc">管理員可以建立可以加入群組的連結。</string>
+    <string name="v4_2_group_links_desc">管理員可以建立加入群組的連結。</string>
     <string name="v4_3_improved_server_configuration_desc">使用二維碼掃描以新增伺服器。</string>
     <string name="chat_is_running">聊天室運行中</string>
     <string name="chat_database_section">對話數據庫</string>
@@ -127,7 +127,7 @@
     <string name="change_database_passphrase_question">修改數據庫密碼？</string>
     <string name="leave_group_question">確定要退出群組？</string>
     <string name="leave_group_button">退出</string>
-    <string name="alert_title_cant_invite_contacts">無法邀請該聯絡人！</string>
+    <string name="alert_title_cant_invite_contacts">無法邀請聯絡人！</string>
     <string name="rcv_group_event_member_connected">已連接</string>
     <string name="rcv_group_event_member_left">退出</string>
     <string name="invite_prohibited">無法邀請該聯絡人！</string>
@@ -163,7 +163,7 @@
     <string name="simplex_link_mode_full">完整連結</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>你可以透過設定關閉</b> – 當應用程式運行時，通知服務仍然會運行。</string>
     <string name="notifications_mode_service_desc">通知服務會一直在後台中運行 - 一但接收到新的訊息就會顯示在通知內。</string>
-    <string name="notifications_mode_off_desc">應用程式只會在運行中的時候才會接收訊息通知。</string>
+    <string name="notifications_mode_off_desc">此應用程式只會在運行中的時候才會接收訊息通知。</string>
     <string name="icon_descr_asked_to_receive">要求接收圖片</string>
     <string name="network_settings">進階網路設定</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">已修改你的聯絡地址</string>
@@ -404,7 +404,7 @@
     <string name="no_details">沒有詳細資料</string>
     <string name="add_contact">一次性邀請連結</string>
     <string name="copied">已複製至你的剪貼薄</string>
-    <string name="connect_via_link_or_qr">使用連結連接 / 使用二維碼連接</string>
+    <string name="connect_via_link_or_qr">透過連結 / 二維碼去連接</string>
     <string name="scan_QR_code">掃描二維碼</string>
     <string name="only_stored_on_members_devices">(僅由群組成員儲存)</string>
     <string name="contact_wants_to_connect_with_you">想和你對話！</string>
@@ -668,14 +668,14 @@
     <string name="ignore">無視</string>
     <string name="incoming_audio_call">語音通話來電</string>
     <string name="paste_the_link_you_received">貼上你接收到的連結</string>
-    <string name="status_e2e_encrypted">已經完成端對端加密</string>
+    <string name="status_e2e_encrypted">端對端加密</string>
     <string name="status_no_e2e_encryption">沒有端對端加密</string>
     <string name="icon_descr_speaker_off">關閉喇叭</string>
     <string name="settings_section_title_messages">訊息和檔案</string>
     <string name="privacy_and_security">私隱 &amp; 安全性</string>
     <string name="settings_section_title_themes">主題</string>
     <string name="v4_4_french_interface">法語界面</string>
-    <string name="encrypted_audio_call">已經完成端對端加密的語音通話</string>
+    <string name="encrypted_audio_call">端對端加密的語音通話</string>
     <string name="reject">拒絕</string>
     <string name="integrity_msg_bad_id">錯誤的訊息 ID</string>
     <string name="integrity_msg_duplicate">重覆的訊息</string>
@@ -988,7 +988,7 @@
 \n- 禁用成員（“觀察員”角色）</string>
     <string name="v4_6_hidden_chat_profiles_descr">使用密碼保護你的聊天資料！</string>
     <string name="relay_server_protects_ip">中繼伺服器保護你的 IP 地址，但它可以觀察通話的持續時間。</string>
-    <string name="button_add_welcome_message">新增歡迎信息</string>
+    <string name="button_add_welcome_message">新增歡迎訊息</string>
     <string name="error_saving_user_password">儲存用戶密碼時出錯</string>
     <string name="error_updating_user_privacy">更新用戶隱私時出錯</string>
     <string name="relay_server_if_necessary">中繼伺服器僅在必要時使用。 另一方可以觀察到你的 IP 地址。</string>
@@ -1102,7 +1102,7 @@
     <string name="allow_calls_only_if">只有你的聯絡人允許的情況下，才允許通話。</string>
     <string name="only_you_can_make_calls">只有你可以撥打通話。</string>
     <string name="only_your_contact_can_make_calls">只有你的聯絡人可以撥打通話。</string>
-    <string name="calls_prohibited_with_this_contact">禁用語言/視像通話。</string>
+    <string name="calls_prohibited_with_this_contact">禁用語言/視訊通話。</string>
     <string name="gallery_image_button">圖片</string>
     <string name="port_verb">端口</string>
     <string name="confirm_passcode">確定密碼</string>
@@ -1161,10 +1161,10 @@
     <string name="color_sent_message">已傳送訊息</string>
     <string name="color_title">標題</string>
     <string name="learn_more_about_address">關於 SimpleX 的聯絡地址</string>
-    <string name="color_primary_variant">其他顏色</string>
-    <string name="color_secondary_variant">其他輔助</string>
+    <string name="color_primary_variant">外加的顏色</string>
+    <string name="color_secondary_variant">外加的輔助</string>
     <string name="address_section_title">聯絡地址</string>
-    <string name="color_background">背景</string>
+    <string name="color_background">後台</string>
     <string name="create_address_and_let_people_connect">建立一個聯絡地址讓其他用戶與你連接。</string>
     <string name="customize_theme_title">自定義主題</string>
     <string name="dark_theme">黑暗主題</string>
@@ -1256,4 +1256,10 @@
     <string name="info_row_disappears_at">銷毀於</string>
     <string name="v5_1_message_reactions">訊息互動</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">感謝用戶-透過 Weblate 做出貢獻！</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">你和你的聯絡人可以新增訊息互動。</string>
+    <string name="non_fatal_errors_occured_during_import">導入過程中出現了一些非致命錯誤 - 你可以到綜端機對話以獲取更多詳細資訊。</string>
+    <string name="allow_message_reactions_only_if">只有你的聯絡人允許的情況下，才允許訊息互動。</string>
+    <string name="v5_1_better_messages_descr">- 長達5分鐘的語音訊息。
+\n- 自定義消失時間。
+\n- 編輯紀錄。</string>
 </resources>
