@@ -234,12 +234,12 @@
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
-        <target state="translated">**已經完成端對端加密的**語音通話</target>
+        <target state="translated">**端對端加密的**語音通話</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** video call</source>
-        <target state="translated">**已經完成端對端加密的**視頻通話</target>
+        <target state="translated">**端對端加密的**視頻通話</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve" approved="no">
@@ -355,12 +355,12 @@
       </trans-unit>
       <trans-unit id="Add servers by scanning QR codes." xml:space="preserve" approved="no">
         <source>Add servers by scanning QR codes.</source>
-        <target state="translated">使用二維碼掃描並新增伺服器。</target>
+        <target state="translated">使用二維碼掃描以新增伺服器。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add server…" xml:space="preserve" approved="no">
         <source>Add server…</source>
-        <target state="translated">新增伺服器 …</target>
+        <target state="translated">新增伺服器…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve" approved="no">
@@ -370,7 +370,7 @@
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve" approved="no">
         <source>Admins can create the links to join groups.</source>
-        <target state="translated">管理員可以建立可以加入群組的連結。</target>
+        <target state="translated">管理員可以建立加入群組的連結。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve" approved="no">
@@ -410,7 +410,7 @@
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve" approved="no">
         <source>Allow sending direct messages to members.</source>
-        <target state="translated">允許在群組內選擇成員後傳送訊息。</target>
+        <target state="translated">允許向群組內的成員傳送私訊。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve" approved="no">
@@ -430,7 +430,7 @@
       </trans-unit>
       <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow voice messages only if your contact allows them.</source>
-        <target state="translated">只能在你的聯絡人允許使用語言訊息的時候，才能使用語音訊息。</target>
+        <target state="translated">只能在你的聯絡人允許的情況下，才允許語言訊息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow voice messages?" xml:space="preserve" approved="no">
@@ -465,7 +465,7 @@
       </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve" approved="no">
         <source>App build: %@</source>
-        <target state="translated">程式建構：%@</target>
+        <target state="translated">應用程式建構：%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve" approved="no">
@@ -485,7 +485,7 @@
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve" approved="no">
         <source>Appearance</source>
-        <target state="translated">主題</target>
+        <target state="translated">樣式</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve" approved="no">
@@ -560,7 +560,7 @@
       </trans-unit>
       <trans-unit id="Can't invite contacts!" xml:space="preserve" approved="no">
         <source>Can't invite contacts!</source>
-        <target state="translated">無法邀請該聯絡人！</target>
+        <target state="translated">無法邀請聯絡人！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve" approved="no">
@@ -585,7 +585,7 @@
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
         <source>Change database passphrase?</source>
-        <target state="translated">更改數據庫密碼？</target>
+        <target state="translated">修改數據庫密碼？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve" approved="no">
@@ -710,7 +710,7 @@
       </trans-unit>
       <trans-unit id="Confirm new passphrase…" xml:space="preserve" approved="no">
         <source>Confirm new passphrase…</source>
-        <target state="translated">確定新密碼 …</target>
+        <target state="translated">確定新密碼…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve" approved="no">
@@ -735,7 +735,7 @@
       </trans-unit>
       <trans-unit id="Connect via link / QR code" xml:space="preserve" approved="no">
         <source>Connect via link / QR code</source>
-        <target state="translated">使用連結連接 / 使用二維碼連接</target>
+        <target state="translated">透過連結 / 二維碼去連接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link?" xml:space="preserve" approved="no">
@@ -779,7 +779,7 @@
       </trans-unit>
       <trans-unit id="Connection request sent!" xml:space="preserve" approved="no">
         <source>Connection request sent!</source>
-        <target state="translated">連線請求已傳送！</target>
+        <target state="translated">已傳送連線請求！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection timeout" xml:space="preserve" approved="no">
@@ -1026,7 +1026,7 @@
       </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve" approved="no">
         <source>Delete archive</source>
-        <target state="translated">刪除封存</target>
+        <target state="translated">刪除存檔</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat archive?" xml:space="preserve" approved="no">
@@ -3702,7 +3702,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="above, then choose:" xml:space="preserve" approved="no">
         <source>above, then choose:</source>
-        <target state="translated">然後選按：</target>
+        <target state="translated">然後，選按：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve" approved="no">
@@ -3892,7 +3892,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="e2e encrypted" xml:space="preserve" approved="no">
         <source>e2e encrypted</source>
-        <target state="translated">已完成端對端加密</target>
+        <target state="translated">端對端加密</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="enabled" xml:space="preserve" approved="no">
@@ -4343,7 +4343,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
         <source>Add welcome message</source>
-        <target state="translated">添加歡迎訊息</target>
+        <target state="translated">新增歡迎訊息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
@@ -4398,7 +4398,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="Delete files for all chat profiles" xml:space="preserve" approved="no">
         <source>Delete files for all chat profiles</source>
-        <target state="translated">刪除所有你的個人對話檔案及媒體檔案</target>
+        <target state="translated">刪除所有你的個人對話資料的檔案</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete user profile?" xml:space="preserve" approved="no">
@@ -4545,7 +4545,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="App passcode" xml:space="preserve" approved="no">
         <source>App passcode</source>
-        <target state="translated">程式密碼</target>
+        <target state="translated">應用程式密碼</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve" approved="no">
@@ -4732,7 +4732,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
         <source>Audio/video calls are prohibited.</source>
-        <target state="translated">禁用語言/視像通話。</target>
+        <target state="translated">禁用語言/視訊通話。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bad message ID" xml:space="preserve" approved="no">
@@ -4742,7 +4742,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
         <source>Bad message hash</source>
-        <target state="translated">錯誤訊息雜湊值</target>
+        <target state="translated">錯誤的訊息雜湊值</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change lock mode" xml:space="preserve" approved="no">
