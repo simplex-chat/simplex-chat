@@ -47,7 +47,9 @@ Manual installation requires some preliminary actions:
 
    ```sh
    # For Ubuntu
-   ufw allow 5223
+   sudo ufw allow 5223/tcp
+   # For Fedora
+   sudo firewall-cmd --permanent --add-port=5223/tcp
    ```
 
 4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
