@@ -71,7 +71,7 @@ active_home: true
                         <img class="w-full max-w-[223px] h-full max-h-[226px] dark:hidden" src="{{ section.imgLight }}" alt=""/>
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="{{ section.imgDark }}" alt=""/>
                     </div>
-                    <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
+                    <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title | i18n({}, lang ) | safe }}</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             {% for point in section.points %}

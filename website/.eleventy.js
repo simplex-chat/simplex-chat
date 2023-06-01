@@ -25,11 +25,16 @@ glossary.forEach(item => {
   if (matchingHeader) {
     let sibling = matchingHeader.nextElementSibling
     let definition = ''
+    let firstParagraph = ''
     while (sibling && sibling.tagName !== 'H2') {
+      if (sibling.tagName === 'P' && firstParagraph === '') {
+        firstParagraph = sibling.textContent
+      }
       definition += sibling.outerHTML || sibling.textContent
       sibling = sibling.nextElementSibling
     }
     item.definition = definition
+    item.tooltip = firstParagraph
   }
 })
 
@@ -92,7 +97,7 @@ module.exports = function (ty) {
 
       allContentNodes.forEach((node) => {
         const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
-        const replacement = `<span data-glossary=${id} class="glossary-term cursor-text text-primary-light dark:text-primary-dark inline-block">${term.term}</span>`
+        const replacement = `<span data-glossary=${id} class="glossary-term">${term.term}</span>`
         const beforeContent = node.innerHTML
         node.innerHTML = node.innerHTML.replace(regex, replacement)
         if (beforeContent !== node.innerHTML && !changeNoted) {
@@ -101,21 +106,20 @@ module.exports = function (ty) {
       })
 
       if (changeNoted) {
-        const transparentLayerDiv = document.createElement('div')
-        transparentLayerDiv.id = id
-        transparentLayerDiv.className = 'glossary-popup p-3 md:p-10'
-        const contentDiv = document.createElement('div')
-        contentDiv.className = 'w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100'
-        const title = document.createElement('h1')
-        title.className = 'font-bold text-active-blue mb-6'
-        title.innerHTML = term.term
-        const definitionDiv = document.createElement('div')
-        definitionDiv.className = 'text-base text-black dark:text-white'
-        definitionDiv.innerHTML = term.definition
-        contentDiv.appendChild(title)
-        contentDiv.appendChild(definitionDiv)
-        transparentLayerDiv.appendChild(contentDiv)
-        body.appendChild(transparentLayerDiv)
+        const definitionTooltipDiv = document.createElement('div')
+        definitionTooltipDiv.id = id
+        definitionTooltipDiv.className = "glossary-tooltip"
+        const titleH4 = document.createElement('h4')
+        titleH4.innerHTML = term.term
+        titleH4.className = "tooltip-title"
+        const p = document.createElement('p')
+        p.innerHTML = term.tooltip
+        const innerDiv = document.createElement('div')
+        innerDiv.appendChild(titleH4)
+        innerDiv.appendChild(p)
+        innerDiv.className = "tooltip-content"
+        definitionTooltipDiv.appendChild(innerDiv)
+        body.appendChild(definitionTooltipDiv)
       }
     })
 

@@ -428,13 +428,13 @@ header nav {
   transform: translateY(40px);
 }
 
-.card:not(.no-hover):hover > div:nth-child(1) {
+.card:not(.no-hover):hover > div:nth-child(1),
+.card.hovered > div:nth-child(1) {
   height: 200px;
-  padding: 12px 10px;
 }
-.card:not(.no-hover):hover > div:nth-child(2) {
+.card:not(.no-hover):hover > div:nth-child(2),
+.card.hovered > div:nth-child(2) {
   height: 270px;
-  padding: 8px 24px;
 }
 .card.card-active > div:nth-child(2) {
   height: 480px;
@@ -443,13 +443,16 @@ header nav {
 .card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(2),
 .card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(3),
 .card.card-active > div:nth-child(2) > *:nth-child(2),
-.card.card-active > div:nth-child(2) > *:nth-child(3) {
+.card.card-active > div:nth-child(2) > *:nth-child(3),
+.card:not(.no-hover).hovered > div:nth-child(2) > *:nth-child(2),
+.card:not(.no-hover).hovered > div:nth-child(2) > *:nth-child(3) {
   opacity: 1;
   max-height: 480px;
   transform: translateY(0px);
 }
 
-.card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(3){
+.card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(3),
+.card:not(.no-hover).hovered > div:nth-child(2) > *:nth-child(3) {
   opacity: 0;
 }
 
@@ -713,42 +716,62 @@ p a{
 }
 
 /* Glossary */
-.glossary-popup {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: transparent;
-  transition: all 0.5s;
-  visibility: hidden;
-  opacity: 0;
-  z-index: 10001;
+.glossary-term{
+  display: inline-block;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  position: relative;
+  z-index: 10000;
 }
 
-.glossary-popup::before{
+.glossary-term::before{
   content: '';
   position: absolute;
-  top: 0;
+  top: -5px;
+  bottom: -5px;
   left: 0;
   right: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0.9;
-  background-color: #F3F6F7;
+  opacity: 0;
+  z-index: 9;
 }
 
-.dark .glossary-popup::before{
-  background-color: #0C0B13;
+.glossary-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: fixed;
+  width: 320px;
+  max-width: 100%;
+  z-index: 10001; 
+  transition: opacity .5s;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
-.glossary-popup h1{
-  font-size: 1.5rem;
-  line-height: 2rem;
+.glossary-tooltip .tooltip-content{
+  background-color: #fff;
+  color: #000;
+  text-align: left;
+  padding: .8rem 1.2rem;
+  border-radius: 7px;
+  font-size: 14px;
+  line-height: 1.3rem;
+  box-shadow: 0 5px 10px rgba(0,0,0,.08);
 }
 
-.glossary-popup p{
-  margin-bottom: 1rem;
+.dark .glossary-tooltip .tooltip-content{
+  background-color: #000;
+  color: #fff;
+  box-shadow: none;
+}
+
+.tooltip-title{
+  margin-bottom: 0.5rem;
+  color: #0053d0;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.dark .tooltip-title{
+  color: #70F0F9;
 }
