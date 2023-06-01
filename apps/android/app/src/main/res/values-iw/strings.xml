@@ -1017,4 +1017,18 @@
     <string name="chat_item_ttl_seconds">%s שניות</string>
     <string name="switch_verb">החלף</string>
     <string name="switch_receiving_address">החלף כתובת קבלה</string>
+    <string name="v5_0_polish_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
+    <string name="v4_4_french_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
+    <string name="v4_5_italian_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
+    <string name="tap_to_start_new_chat">הקישו כדי להתחיל צ׳אט חדש</string>
+    <string name="smp_servers_test_server">בדוק שרת</string>
+    <string name="smp_servers_test_servers">בדוק שרתים</string>
+    <string name="chat_help_tap_button">הקישו על הכפתור</string>
+    <string name="group_invitation_tap_to_join_incognito">הקישו כדי להצטרף עם זהות נסתרת</string>
+    <string name="tap_to_activate_profile">הקישו כדי להפעיל את הפרופיל.</string>
+    <string name="v4_6_chinese_spanish_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
+    <string name="error_smp_test_failed_at_step">הבדיקה נכשלה בשלב %s.</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
+    <string name="group_invitation_tap_to_join">הקישו כדי להצטרף</string>
+    <string name="network_option_tcp_connection_timeout">תום זמן חיבור TCP</string>
 </resources>
