@@ -522,7 +522,6 @@ CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
 CREATE INDEX idx_messages_connection_id ON messages(connection_id);
 CREATE INDEX idx_chat_items_group_member_id ON chat_items(group_member_id);
 CREATE INDEX idx_chat_items_contact_id ON chat_items(contact_id);
-CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(timed_delete_at);
 CREATE INDEX idx_chat_items_item_status ON chat_items(item_status);
 CREATE INDEX idx_connections_group_member ON connections(
   user_id,
@@ -643,4 +642,13 @@ CREATE INDEX idx_chat_item_reactions_group ON chat_item_reactions(
 CREATE INDEX idx_messages_created_at ON messages(created_at);
 CREATE INDEX idx_chat_item_reactions_created_by_msg_id ON chat_item_reactions(
   created_by_msg_id
+);
+CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(
+  user_id,
+  timed_delete_at
+);
+CREATE INDEX idx_group_members_group_id ON group_members(user_id, group_id);
+CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON msg_deliveries(
+  connection_id,
+  agent_ack_cmd_id
 );
