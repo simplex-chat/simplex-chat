@@ -26,15 +26,22 @@ glossary.forEach(item => {
     let sibling = matchingHeader.nextElementSibling
     let definition = ''
     let firstParagraph = ''
+    let paragraphCount = 0
+
     while (sibling && sibling.tagName !== 'H2') {
-      if (sibling.tagName === 'P' && firstParagraph === '') {
-        firstParagraph = sibling.textContent
+      if (sibling.tagName === 'P') {
+        paragraphCount += 1
+        if (firstParagraph === '') {
+          firstParagraph = sibling.textContent
+        }
       }
       definition += sibling.outerHTML || sibling.textContent
       sibling = sibling.nextElementSibling
     }
+
     item.definition = definition
     item.tooltip = firstParagraph
+    item.hasMultipleParagraphs = paragraphCount > 1
   }
 })
 
@@ -117,6 +124,41 @@ module.exports = function (ty) {
         const innerDiv = document.createElement('div')
         innerDiv.appendChild(titleH4)
         innerDiv.appendChild(p)
+        if (term.hasMultipleParagraphs) {
+          const readMoreBtn = document.createElement('button')
+          readMoreBtn.innerHTML = "Read more"
+          readMoreBtn.className = "read-more-btn open-overlay-btn"
+          readMoreBtn.setAttribute('data-show-overlay', `overlay-${id}`)
+          innerDiv.appendChild(readMoreBtn)
+
+          const overlayDiv = document.createElement('div')
+          overlayDiv.id = `overlay-${id}`
+          overlayDiv.className = "overlay glossary-overlay hidden"
+          const overlayCardDiv = document.createElement('div')
+          overlayCardDiv.className = "overlay-card"
+          const overlayTitleH1 = document.createElement('h1')
+          overlayTitleH1.className = "overlay-title"
+          overlayTitleH1.innerHTML = term.term
+          const overlayContent = document.createElement('div')
+          overlayContent.className = "overlay-content"
+          overlayContent.innerHTML = term.definition
+          const crossSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+          crossSVG.setAttribute('class', 'close-overlay-btn')
+          crossSVG.setAttribute('id', 'cross')
+          crossSVG.setAttribute('width', '16')
+          crossSVG.setAttribute('height', '16')
+          crossSVG.setAttribute('viewBox', '0 0 13 13')
+          crossSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+          const crossPath = document.createElementNS("http://www.w3.org/2000/svg", "path")
+          crossPath.setAttribute('d', 'M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.805 0.002228 0.430001 0.002228 0.135211 0.182228C-0.159579 0.362228 -0.159579 0.697228 0.135211 0.877228L5.68885 6.27528L0.4918 11.3295C0.231501 11.5825 0.220703 12.0042 0.467664 12.2709C0.714625 12.5376 1.12625 12.5486 1.38655 12.2956L6.63302 7.196L12.1867 12.5941C12.4815 12.7741 12.8565 12.7741 13.1513 12.5941C13.4461 12.4141 13.4461 12.0791 13.1513 11.8991L12.7973 11.5525Z')
+          crossSVG.appendChild(crossPath)
+          
+          overlayCardDiv.appendChild(overlayTitleH1)
+          overlayCardDiv.appendChild(overlayContent)
+          overlayCardDiv.appendChild(crossSVG)
+          overlayDiv.appendChild(overlayCardDiv)
+          body.appendChild(overlayDiv)
+        }
         innerDiv.className = "tooltip-content"
         definitionTooltipDiv.appendChild(innerDiv)
         body.appendChild(definitionTooltipDiv)
