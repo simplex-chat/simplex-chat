@@ -46,7 +46,9 @@ Ruční instalace vyžaduje několik předběžných úkonů:
 
    ```sh
    # Pro Ubuntu
-   ufw allow 5233
+   sudo ufw allow 5233/tcp
+   # Pro Fedora
+   sudo firewall-cmd --permanent --add-port=5223/tcp
    ```
 
 4. **Volitelné** - Pokud používáte distribuci s `systemd`, vytvořte soubor `/etc/systemd/system/smp-server.service` s následujícím obsahem:
