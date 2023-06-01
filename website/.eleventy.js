@@ -30,9 +30,14 @@ glossary.forEach(item => {
 
     while (sibling && sibling.tagName !== 'H2') {
       if (sibling.tagName === 'P') {
+        Array.from(sibling.getElementsByTagName('a')).forEach(a => {
+          if (a.getAttribute('href').startsWith('#')) {
+            a.setAttribute('href', '/docs/glossary.html' + a.getAttribute('href'))
+          }
+        })
         paragraphCount += 1
         if (firstParagraph === '') {
-          firstParagraph = sibling.textContent
+          firstParagraph = sibling.innerHTML
         }
       }
       definition += sibling.outerHTML || sibling.textContent
@@ -152,7 +157,7 @@ module.exports = function (ty) {
           const crossPath = document.createElementNS("http://www.w3.org/2000/svg", "path")
           crossPath.setAttribute('d', 'M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.805 0.002228 0.430001 0.002228 0.135211 0.182228C-0.159579 0.362228 -0.159579 0.697228 0.135211 0.877228L5.68885 6.27528L0.4918 11.3295C0.231501 11.5825 0.220703 12.0042 0.467664 12.2709C0.714625 12.5376 1.12625 12.5486 1.38655 12.2956L6.63302 7.196L12.1867 12.5941C12.4815 12.7741 12.8565 12.7741 13.1513 12.5941C13.4461 12.4141 13.4461 12.0791 13.1513 11.8991L12.7973 11.5525Z')
           crossSVG.appendChild(crossPath)
-          
+
           overlayCardDiv.appendChild(overlayTitleH1)
           overlayCardDiv.appendChild(overlayContent)
           overlayCardDiv.appendChild(crossSVG)

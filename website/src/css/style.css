@@ -889,3 +889,51 @@ p a{
 .dark .close-overlay-btn{
   fill: #fff;
 }
+
+.glossary-overlay ul {
+  overflow-x: auto;
+}
+
+.glossary-overlay ul,
+.glossary-overlay ol {
+  list-style-position: inside;
+  overflow: auto;
+  margin: 1rem 0;
+  /* padding-left: 1rem; */
+}
+
+.glossary-overlay ul li,
+.glossary-overlay ol li {
+  margin-right: 0;
+  margin-left: 0;
+  -webkit-margin-start: 1.1rem;
+  color: #000;
+}
+
+.dark .glossary-overlay ul li,
+.dark .glossary-overlay ol li {
+  color: #fff;
+}
+
+.glossary-overlay ul li::marker,
+.glossary-overlay ol li::marker {
+  color: black;
+}
+
+.dark .glossary-overlay ul li::marker,
+.dark .glossary-overlay ol li::marker {
+  color: white;
+}
+
+.glossary-overlay ul li a,
+.glossary-overlay ol li a {
+  line-height: 30px;
+}
+
+.glossary-overlay ul li {
+  list-style: disc;
+}
+
+.glossary-overlay ol li {
+  list-style: decimal;
+}
