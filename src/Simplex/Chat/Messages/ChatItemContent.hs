@@ -383,9 +383,9 @@ sndGroupEventToText = \case
 rcvConnEventToText :: RcvConnEvent -> Text
 rcvConnEventToText = \case
   RCESwitchQueue phase -> case phase of
-    SPStarted -> "started changing address for you"
-    SPConfirmed -> "confirmed changing address for you"
-    SPFinalizing -> "finalizes changing address for you"
+    SPStarted -> "started changing address for you..."
+    SPConfirmed -> "confirmed changing address for you..."
+    SPFinalizing -> "finalizes changing address for you..."
     SPCompleted -> "changed address for you"
 
 sndConnEventToText :: SndConnEvent -> Text
