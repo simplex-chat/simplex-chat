@@ -1260,6 +1260,6 @@
     <string name="non_fatal_errors_occured_during_import">導入過程中出現了一些非致命錯誤 - 你可以到綜端機對話以獲取更多詳細資訊。</string>
     <string name="allow_message_reactions_only_if">只有你的聯絡人允許的情況下，才允許訊息互動。</string>
     <string name="v5_1_better_messages_descr">- 長達5分鐘的語音訊息。
-\n- 自定義消失時間。
+\n- 自定義銷毀時間。
 \n- 編輯紀錄。</string>
 </resources>
