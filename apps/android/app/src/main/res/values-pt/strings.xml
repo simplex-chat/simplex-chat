@@ -680,4 +680,16 @@
     <string name="custom_time_unit_hours">horas</string>
     <string name="custom_time_unit_minutes">minutos</string>
     <string name="custom_time_unit_seconds">segundos</string>
+    <string name="v5_1_self_destruct_passcode_descr">Todos os dados são apagados quando é inserida.</string>
+    <string name="message_reactions">Reações de mensagens</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Você e o seu contato podem adicionar reações de mensagens.</string>
+    <string name="allow_message_reactions">Permitir reações de mensagens.</string>
+    <string name="all_app_data_will_be_cleared">Todos os dados da aplicação serão eliminados.</string>
+    <string name="message_reactions_are_prohibited">Reações de mensagens são proibidas neste grupo.</string>
+    <string name="group_members_can_add_message_reactions">Os membros do grupo podem adicionar reações de mensagens.</string>
+    <string name="allow_message_reactions_only_if">Permitir reações de mensagens apenas se o seu contato as permitir.</string>
+    <string name="allow_your_contacts_adding_message_reactions">Permitir que os seus contatos adicionem reações de mensagens.</string>
+    <string name="message_reactions_prohibited_in_this_chat">Reações de mensagens são proibidas nesta conversa.</string>
+    <string name="v5_1_message_reactions">Reações de mensagens</string>
+    <string name="v5_1_message_reactions_descr">Finalmente, temo-las! 🚀</string>
 </resources>
