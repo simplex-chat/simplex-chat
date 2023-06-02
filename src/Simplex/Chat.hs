@@ -69,7 +69,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withTransactionCtx)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
@@ -1109,6 +1109,17 @@ processChatCommand = \case
     case memberConnId m of
       Just connId -> withAgent (\a -> switchConnectionAsync a "" connId) >> ok user
       _ -> throwChatError CEGroupMemberNotActive
+  APIStopSwitchContact contactId -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db user contactId
+    connectionStats <- withAgent $ \a -> stopConnectionSwitch a $ contactConnId ct
+    pure $ CRContactSwitchStopped user ct connectionStats
+  APIStopSwitchGroupMember gId gMemberId -> withUser $ \user -> do
+    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
+    case memberConnId m of
+      Just connId -> do
+        connectionStats <- withAgent $ \a -> stopConnectionSwitch a connId
+        pure $ CRGroupMemberSwitchStopped user g m connectionStats
+      _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
     ct@Contact {activeConn = conn@Connection {connId}} <- withStore $ \db -> getContact db user contactId
     code <- getConnectionCode (contactConnId ct)
@@ -1163,6 +1174,8 @@ processChatCommand = \case
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
+  StopSwitchContact cName -> withContactName cName APISwitchContact
+  StopSwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
   GetContactCode cName -> withContactName cName APIGetContactCode
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
   VerifyContact cName code -> withContactName cName (`APIVerifyContact` code)
@@ -2799,7 +2812,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> pure ()
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
-          when (phase /= SPConfirmed) $ case qd of
+          when (phase `notElem` [SPConfirmed, SPFinalizing]) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
         OK ->
@@ -2978,7 +2991,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         checkSndInlineFTComplete conn msgId
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
-        when (phase /= SPConfirmed) $ case qd of
+        when (phase `notElem` [SPConfirmed, SPFinalizing]) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
       OK ->
@@ -4721,6 +4734,7 @@ withStoreCtx ctx_ action = do
   liftEitherError ChatErrorStore $ case ctx_ of
     Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
     Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
+  where
     -- uncomment to debug store performance
     -- Just ctx -> do
     --   t1 <- liftIO getCurrentTime
@@ -4729,7 +4743,7 @@ withStoreCtx ctx_ action = do
     --   t2 <- liftIO getCurrentTime
     --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
     --   pure r
-  where
+
     handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
@@ -4839,8 +4853,12 @@ chatCommandP =
       ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayName),
       "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_switch @" *> (APISwitchContact <$> A.decimal),
+      "/_switch_stop #" *> (APIStopSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
+      "/_switch_stop @" *> (APIStopSwitchContact <$> A.decimal),
       "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/switch " *> char_ '@' *> (SwitchContact <$> displayName),
+      "/switch_stop #" *> (StopSwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
+      "/switch_stop " *> char_ '@' *> (StopSwitchContact <$> displayName),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
       "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),

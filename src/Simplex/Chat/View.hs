@@ -79,6 +79,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
+  CRContactSwitchStopped {} -> ["switch stopped"]
+  CRGroupMemberSwitchStopped {} -> ["switch stopped"]
   CRContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CRGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
@@ -917,27 +919,56 @@ viewConnectionVerified (Just _) = "connection verified" -- TODO show verificatio
 viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
-viewConnectionStats ConnectionStats {rcvServers, sndServers} =
-  ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
-    <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
+viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
+  ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
+    <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
 viewServers :: ProtocolTypeI p => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
 viewServers f = map (plain . B.unpack . strEncode . f) . L.toList
 
-viewServerHosts :: [SMPServer] -> StyledString
-viewServerHosts = plain . intercalate ", " . map showSMPServer
+viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
+viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
+  where
+    showQueueInfo RcvQueueInfo {rcvServer, rcvSwitchStatus} =
+      showSMPServer rcvServer
+        <> maybe "" (\s -> " (" <> showSwitchStatus s <> ")") rcvSwitchStatus
+    showSwitchStatus = \case
+      RSSQueueingSwch -> "switch started"
+      RSSSwchStarted -> "switch started"
+      RSSQueueingQADD -> "switch started"
+      RSSReceivedQKEY -> "switch confirmed"
+      RSSQueueingSecure -> "switch confirmed"
+      RSSSecureStarted -> "switch confirmed"
+      RSSQueueingQUSE -> "finalizing switch"
+      RSSQueueingDelete -> "finalizing switch"
+      RSSDeleteStarted -> "finalizing switch"
+
+viewSndQueuesInfo :: [SndQueueInfo] -> StyledString
+viewSndQueuesInfo = plain . intercalate ", " . map showQueueInfo
+  where
+    showQueueInfo SndQueueInfo {sndServer, sndSwitchStatus} =
+      showSMPServer sndServer
+        <> maybe "" (\s -> " (" <> showSwitchStatus s <> ")") sndSwitchStatus
+    showSwitchStatus = \case
+      SSSReceivedQADD -> "switch started"
+      SSSQueueingQKEY -> "switch started" -- switch confirmed?
+      SSSReceivedQUSE -> "switch started" -- switch confirmed?
+      SSSQueueingQTEST -> "switch confirmed" -- finalizing switch?
+      SSSSentQTEST -> "switch confirmed" -- finalizing switch?
 
 viewContactSwitch :: Contact -> SwitchProgress -> [StyledString]
 viewContactSwitch _ (SwitchProgress _ SPConfirmed _) = []
+viewContactSwitch _ (SwitchProgress _ SPFinalizing _) = []
 viewContactSwitch ct (SwitchProgress qd phase _) = case qd of
-  QDRcv -> [ttyContact' ct <> ": you " <> viewSwitchPhase phase]
-  QDSnd -> [ttyContact' ct <> " " <> viewSwitchPhase phase <> " for you"]
+  QDRcv -> [ttyContact' ct <> ": you " <> viewSwitchPhase qd phase]
+  QDSnd -> [ttyContact' ct <> " " <> viewSwitchPhase qd phase <> " for you"]
 
 viewGroupMemberSwitch :: GroupInfo -> GroupMember -> SwitchProgress -> [StyledString]
 viewGroupMemberSwitch _ _ (SwitchProgress _ SPConfirmed _) = []
+viewGroupMemberSwitch _ _ (SwitchProgress _ SPFinalizing _) = []
 viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
-  QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
-  QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
+  QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase qd phase <> " for " <> ttyMember m]
+  QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase qd phase <> " for you"]
 
 viewContactCode :: Contact -> Text -> Bool -> [StyledString]
 viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> c <> " <code from your contact>")
@@ -950,9 +981,17 @@ viewSecurityCode name cmd code testView
   | testView = [plain code]
   | otherwise = [name <> " security code:", plain code, "pass this code to your contact and use " <> highlight cmd <> " to verify"]
 
-viewSwitchPhase :: SwitchPhase -> StyledString
-viewSwitchPhase SPCompleted = "changed address"
-viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
+viewSwitchPhase :: QueueDirection -> SwitchPhase -> StyledString
+viewSwitchPhase QDRcv = \case
+  SPStarted -> "started changing address"
+  SPConfirmed -> "confirmed changing address"
+  SPFinalizing -> "are finalizing changing address"
+  SPCompleted -> "changed address"
+viewSwitchPhase QDSnd = \case
+  SPStarted -> "started changing address"
+  SPConfirmed -> "confirmed changing address"
+  SPFinalizing -> "finalizes changing address"
+  SPCompleted -> "changed address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} =
