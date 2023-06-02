@@ -365,7 +365,7 @@
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve" approved="no">
         <source>Add to another device</source>
-        <target state="translated">加入到另一個裝置上</target>
+        <target state="translated">新增到另一個裝置上</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve" approved="no">
@@ -2249,7 +2249,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
-        <target state="translated">只有你的聊絡人可以不可逆的刪除訊息（你可以將它標記為刪除）。</target>
+        <target state="translated">只有你的聯絡人可以不可逆的刪除訊息（你可以將它標記為刪除）。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve" approved="no">
@@ -4510,7 +4510,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve" approved="no">
         <source>Add profile</source>
-        <target state="translated">加入新的個人檔案</target>
+        <target state="translated">新增新的個人檔案</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
@@ -5411,7 +5411,7 @@ SimpleX Lock must be enabled.</source>
       </trans-unit>
       <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve" approved="no">
         <source>You can share your address as a link or QR code - anybody can connect to you.</source>
-        <target state="translated">你可以將你的地址作為連接或二維碼以分享 - 任何人都可以連接到你。</target>
+        <target state="translated">你可以將你的地址作為連結或二維碼以分享 - 任何人都可以連接到你。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You won't lose your contacts if you later delete your address." xml:space="preserve" approved="no">
@@ -5438,7 +5438,7 @@ You can change it in Settings.</source>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
-        <target state="translated">將聯絡地址加入到你的個人檔案中，以便你的聯絡人與其他人分享你的聯絡地址。更新了的個人檔案將傳送給你的聯絡人。</target>
+        <target state="translated">將聯絡地址新增到你的個人檔案中，以便你的聯絡人與其他人分享你的聯絡地址。更新了的個人檔案將傳送給你的聯絡人。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve" approved="no">
@@ -5849,7 +5849,7 @@ It can happen because of some bug or when the connection is compromised.</source
 - custom time to disappear.
 - editing history.</source>
         <target state="translated">- 長達5分鐘的語音訊息。
-- 自定義消失時間。
+- 自定義銷毀時間。
 - 編輯紀錄。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5860,7 +5860,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow message reactions only if your contact allows them.</source>
-        <target state="translated">僅當你的聯絡人允許時才允許訊息互動。</target>
+        <target state="translated">只有你的聯絡人允許的情況下，才允許訊息互動。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve" approved="no">
