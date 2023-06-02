@@ -4733,8 +4733,6 @@ withStoreCtx ctx_ action = do
   ChatController {chatStore} <- ask
   liftEitherError ChatErrorStore $ case ctx_ of
     Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-  where
     -- uncomment to debug store performance
     -- Just ctx -> do
     --   t1 <- liftIO getCurrentTime
@@ -4743,7 +4741,8 @@ withStoreCtx ctx_ action = do
     --   t2 <- liftIO getCurrentTime
     --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
     --   pure r
-
+    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
+  where
     handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
