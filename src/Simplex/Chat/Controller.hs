@@ -143,6 +143,12 @@ defaultInlineFilesConfig =
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
   deriving (Eq)
 
+chatActiveTo :: ChatName -> ActiveTo
+chatActiveTo (ChatName cType name) = case cType of
+  CTDirect -> ActiveC name
+  CTGroup -> ActiveG name
+  _ -> ActiveNone
+
 data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
 
 data ChatController = ChatController

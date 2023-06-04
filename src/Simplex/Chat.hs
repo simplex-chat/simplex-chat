@@ -1474,6 +1474,7 @@ processChatCommand = \case
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatResp <- processChatCommand $ APIGetChat chatRef (CPLast count) search
+    setActive $ chatActiveTo chatName
     pure $ CRChatItems user (aChatItems . chat $ chatResp)
   LastMessages Nothing count search -> withUser $ \user -> do
     chatItems <- withStore $ \db -> getAllChatItems db user (CPLast count) search
