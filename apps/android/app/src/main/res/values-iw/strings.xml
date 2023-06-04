@@ -46,7 +46,7 @@
     <string name="v4_2_group_links_desc">מנהלים יכולים ליצור קישורי הצטרפות לקבוצות.</string>
     <string name="users_delete_all_chats_deleted">כל הצ׳אטים וההודעות יימחקו – לא ניתן לבטל זאת!</string>
     <string name="users_add">הוסף פרופיל</string>
-    <string name="v4_3_improved_server_configuration_desc">הוסף שרתים על ידי סריקת קוד QR.</string>
+    <string name="v4_3_improved_server_configuration_desc">הוספת שרתים על ידי סריקת קוד QR.</string>
     <string name="smp_servers_add_to_another_device">הוסף למכשיר אחר</string>
     <string name="allow_calls_only_if">אפשר שיחות רק אם איש הקשר מאפשר אותן.</string>
     <string name="allow_irreversible_message_deletion_only_if">אפשר לאנשי קשר מחיקת הודעות בלתי הפיכה רק אם הם מאפשרים לך לעשות זאת.</string>
@@ -98,7 +98,7 @@
     <string name="v4_2_auto_accept_contact_requests">אשר אוטומטית בקשות ליצירת קשר.</string>
     <string name="authentication_cancelled">אימות בוטל</string>
     <string name="auth_unavailable">אימות לא זמין</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>הוסף איש קשר חדש</b>: ליצירת קוד QR חד פעמי עבור איש הקשר שלך.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>הוסיפו איש קשר חדש</b>: ליצירת קוד QR חד פעמי עבור איש הקשר שלכם.</string>
     <string name="onboarding_notifications_mode_off_desc"><b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת (ללא שירות רקע).</string>
     <string name="onboarding_notifications_mode_periodic_desc"><b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.</string>
     <string name="both_you_and_your_contacts_can_delete">גם אתם וגם איש הקשר יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
@@ -108,7 +108,7 @@
     <string name="cancel_verb">ביטול</string>
     <string name="icon_descr_cancel_live_message">בטל הודעה חיה</string>
     <string name="use_camera_button">מצלמה</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>סריקת קוד QR</b>: כדי להתחבר לאיש קשר המציג לכם קוד QR.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>סירקו קוד QR</b>: כדי להתחבר לאיש קשר המציג לכם קוד QR.</string>
     <string name="icon_descr_cancel_link_preview">בטל תצוגה מקדימה של קישורים</string>
     <string name="callstatus_error">שגיאת שיחה</string>
     <string name="callstatus_in_progress">שיחה מתמשכת</string>
@@ -439,7 +439,7 @@
     <string name="error_starting_chat">שגיאה בהפעלת צ׳אט</string>
     <string name="error_with_info">שגיאה: %s</string>
     <string name="error_updating_link_for_group">שגיאה בעדכון קישור קבוצה</string>
-    <string name="export_theme">ייצא ערכת צבעים</string>
+    <string name="export_theme">ייצא ערכת נושא</string>
     <string name="icon_descr_expand_role">הרחב בחירת תפקיד</string>
     <string name="file_will_be_received_when_contact_is_online">הקובץ ייתקבל כאשר איש הקשר יהיה מקוון, אנא חכו או בידקו מאוחר יותר!</string>
     <string name="full_name__field">שם מלא:</string>
@@ -528,8 +528,8 @@
     <string name="image_will_be_received_when_contact_completes_uploading">התמונה תתקבל כאשר איש הקשר יסיים להעלות אותה.</string>
     <string name="image_will_be_received_when_contact_is_online">התמונה תתקבל כאשר איש הקשר יהיה מקוון, אנא המתינו או בידקו מאוחר יותר!</string>
     <string name="import_database_confirmation">ייבא</string>
-    <string name="import_theme">ייבא ערכת צבעים</string>
-    <string name="import_theme_error">שגיאה בייבוא ערכת צבעים</string>
+    <string name="import_theme">ייבא ערכת נושא</string>
+    <string name="import_theme_error">שגיאה בייבוא ערכת נושא</string>
     <string name="group_unsupported_incognito_main_profile_sent">מצב זהות נסתרת אינו נתמך כאן – הפרופיל הראשי שלך יישלח לחברי הקבוצה</string>
     <string name="v4_3_improved_server_configuration">תצורת שרתים משופרת</string>
     <string name="v4_3_improved_privacy_and_security">פרטיות ואבטחה משופרים</string>
@@ -614,7 +614,7 @@
     <string name="info_row_local_name">שם מקומי</string>
     <string name="users_delete_data_only">נתוני פרופיל מקומיים בלבד</string>
     <string name="theme_light">בהיר</string>
-    <string name="import_theme_error_desc">ודאו שלקובץ יש תחביר YAML תקין. ייצאו ערכת צבעים כדי לקבל דוגמה למבנה תקין של קובץ ערכת צבעים.</string>
+    <string name="import_theme_error_desc">ודאו שלקובץ יש תחביר YAML תקין. ייצאו ערכת נושא כדי לקבל דוגמה למבנה תקין של קובץ ערכת נושא.</string>
     <string name="message_delivery_error_desc">ככל הנראה איש קשר זה מחק את החיבור איתך.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">ייעשה שימוש במארחי Onion כאשר יהיו זמינים.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">מארחי Onion יידרשו לחיבור.</string>
@@ -832,7 +832,7 @@
     <string name="v5_1_self_destruct_passcode_descr">כל הנתונים נמחקים בהזנת הקוד.</string>
     <string name="v5_1_better_messages">הודעות משופרות</string>
     <string name="v5_1_custom_themes_descr">התאימו אישית ושתפו ערכות צבעים.</string>
-    <string name="v5_1_custom_themes">ערכות צבעים מותאמות אישית</string>
+    <string name="v5_1_custom_themes">ערכות נושא מותאמות אישית</string>
     <string name="item_info_current">(נוכחי)</string>
     <string name="info_row_deleted_at">נמחק</string>
     <string name="info_row_disappears_at">ייעלם</string>
@@ -1031,4 +1031,44 @@
     <string name="whats_new_thanks_to_users_contribute_weblate">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
     <string name="group_invitation_tap_to_join">הקישו כדי להצטרף</string>
     <string name="network_option_tcp_connection_timeout">תום זמן חיבור TCP</string>
+    <string name="periodic_notifications_desc">האפליקציה בודקת הודעות חדשות מעת לעת - היא משתמשת בכמה אחוזים מהסוללה ביום. האפליקציה לא משתמשת בהתראות דחיפה - נתונים מהמכשיר שלך לא נשלחים לשרתים.</string>
+    <string name="member_role_will_be_changed_with_notification">התפקיד ישתנה ל־\"%s\". כל חברי הקבוצה יקבלו הודעה על כך.</string>
+    <string name="to_connect_via_link_title">כדי להתחבר באמצעות קישור</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">פלטפורמת ההודעות והיישומים המגנה על הפרטיות והאבטחה שלך.</string>
+    <string name="alert_text_msg_bad_id">המזהה של ההודעה הבאה שגוי (קטן או שווה להודעה הקודמת).
+\nזה יכול לקרות בגלל באג כלשהו או כאשר החיבור נפגע.</string>
+    <string name="theme">ערכת נושא</string>
+    <string name="database_initialization_error_desc">מסד הנתונים אינו פועל כראוי. הקישו למידע נוסף</string>
+    <string name="this_text_is_available_in_settings">טקסט זה זמין בהגדרות</string>
+    <string name="images_limit_title">יותר מדי תמונות!</string>
+    <string name="thank_you_for_installing_simplex">תודה שהתקנתם את <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="this_link_is_not_a_valid_connection_link">קישור זה אינו קישור חיבור תקין!</string>
+    <string name="theme_colors_section_title">צבעי ערכת נושא</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">שגיאה זו קבועה עבור חיבור זה, אנא התחברו מחדש.</string>
+    <string name="member_role_will_be_changed_with_invitation">התפקיד ישתנה ל־\"%s\". החבר יקבל הזמנה חדשה.</string>
+    <string name="smp_servers_per_user">השרתים לחיבורים חדשים של פרופיל הצ׳אט הנוכחי שלך</string>
+    <string name="first_platform_without_user_ids">הפלטפורמה הראשונה ללא כל מזהי משתמש - פרטית בעיצובה.</string>
+    <string name="next_generation_of_private_messaging">הדור הבא של תקשורת פרטית</string>
+    <string name="alert_text_msg_bad_hash">הגיבוב של ההודעה הקודמת שונה.</string>
+    <string name="enable_automatic_deletion_message">לא ניתן לבטל פעולה זו - ההודעות שנשלחו והתקבלו לפני הזמן שנבחר יימחקו. זה עשוי להימשך מספר דקות.</string>
+    <string name="alert_message_no_group">הקבוצה הזו כבר לא קיימת.</string>
+    <string name="incognito_info_find">כדי למצוא את הפרופיל המשמש לזהות נסתרת, הקישו על שם איש הקשר או הקבוצה בחלק העליון של הצ\'אט.</string>
+    <string name="image_decoding_exception_desc">לא ניתן לפענח את התמונה. אנא נסו תמונה אחרת או צרו קשר עם המפתחים.</string>
+    <string name="videos_limit_title">יותר מדי סרטונים!</string>
+    <string name="switch_receiving_address_desc">תכונה זו היא ניסיונית! היא תפעל רק אם לאיש הקשר יש גרסה 4.2 מותקנת. אתם אמורים לראות את ההודעה בשיחה לאחר השלמת שינוי הכתובת - בידקו שאתם עדיין יכולים לקבל הודעות מאיש קשר זה (או מחבר קבוצה).</string>
+    <string name="connection_you_accepted_will_be_cancelled">החיבור שאישרת יבוטל!</string>
+    <string name="contact_you_shared_link_with_wont_be_able_to_connect">איש הקשר שאיתו שיתפת את הקישור הזה לא יוכל להתחבר!</string>
+    <string name="this_QR_code_is_not_a_link">קוד QR זה אינו קישור!</string>
+    <string name="scan_qr_to_connect_to_contact">כדי להתחבר, איש הקשר שלך יכול לסרוק קוד QR או להשתמש בקישור באפליקציה.</string>
+    <string name="this_string_is_not_a_connection_link">מחרוזת טקסט זו אינה קישור חיבור!</string>
+    <string name="profile_is_only_shared_with_your_contacts">הפרופיל משותף רק עם אנשי הקשר שלך.</string>
+    <string name="settings_section_title_themes">ערכות נושא</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">לא ניתן לבטל פעולה זו - הפרופיל, אנשי הקשר, ההודעות והקבצים שלך יאבדו באופן בלתי הפיך.</string>
+    <string name="delete_files_and_media_desc">לא ניתן לבטל פעולה זו – כל הקבצים והמדיה שהתקבלו ונשלחו יימחקו. תמונות ברזולוציה נמוכה יישארו.</string>
+    <string name="messages_section_description">הגדרה זו חלה על הודעות בפרופיל הצ׳אט הנוכחי שלך</string>
+    <string name="database_backup_can_be_restored">הניסיון לשנות את סיסמת מסד הנתונים לא הושלם.</string>
+    <string name="color_title">כותרת</string>
+    <string name="should_be_at_least_one_profile">נדרש לפחות פרופיל משתמש אחד.</string>
+    <string name="should_be_at_least_one_visible_profile">נדרש לפחות פרופיל משתמש אחד גלוי.</string>
+    <string name="group_is_decentralized">הקבוצה מבוזרת לחלוטין - היא גלויה רק לחברי הקבוצה.</string>
 </resources>
