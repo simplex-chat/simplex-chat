@@ -1071,4 +1071,51 @@
     <string name="should_be_at_least_one_profile">נדרש לפחות פרופיל משתמש אחד.</string>
     <string name="should_be_at_least_one_visible_profile">נדרש לפחות פרופיל משתמש אחד גלוי.</string>
     <string name="group_is_decentralized">הקבוצה מבוזרת לחלוטין - היא גלויה רק לחברי הקבוצה.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">כדי לשמור על הפרטיות, במקום מזהי משתמש הקיימים בכל הפלטפורמות האחרות, ל־<xliff:g id="appName">SimpleX</xliff:g> יש מזהים לתורי הודעות, נפרדים עבור כל אחד מאנשי הקשר שלך.</string>
+    <string name="using_simplex_chat_servers">משתמש בשרתי <xliff:g id="appNameFull">SimpleX Chat</xliff:g>ז</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">מנסה להתחבר לשרת המשמש לקבלת הודעות מאיש קשר זה.</string>
+    <string name="connection_error_auth_desc">אלא אם איש הקשר שלכם מחק את החיבור או שהקישור הזה כבר היה בשימוש, זה עשוי להיות באג - אנא דווחו על כך.
+\nכדי להתחבר, אנא בקשו מאיש הקשר שלכם ליצור קישור חיבור נוסף ובידקו שיש לכם חיבור יציב לרשת.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">כדי להגן על המידע שלכם, הפעילו את SimpleX Lock.
+\nתתבקשו להשלים את האימות לפני שתכונה זו תופעל.</string>
+    <string name="smp_servers_use_server">השתמש בשרת</string>
+    <string name="network_socks_toggle_use_socks_proxy">השתמש בפרוקסי SOCKS</string>
+    <string name="update_database_passphrase">עדכן סיסמת מסד נתונים</string>
+    <string name="unknown_error">שגיאה לא ידועה</string>
+    <string name="upgrade_and_open_chat">שדרג ופתח צ׳אט</string>
+    <string name="v4_5_private_filenames_descr">כדי להגן על אזור הזמן, קובצי תמונה/קול משתמשים ב־UTC.</string>
+    <string name="smp_server_test_upload_file">העלה קובץ</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">כדי לשמור על פרטיותך, האפליקציה כוללת <b>שירות רקע <xliff:g id="appName">SimpleX</xliff:g></b> – הוא משתמש בכמה אחוזים מהסוללה ביום.</string>
+    <string name="enter_passphrase_notification_desc">כדי לקבל התראות, יש להזין את סיסמת מסד הנתונים</string>
+    <string name="auth_unlock">בטל נעילה</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">שליחה לא מורשית</string>
+    <string name="icon_descr_received_msg_status_unread">לא נקרא</string>
+    <string name="verify_security_code">אימות קוד אבטחה</string>
+    <string name="to_share_with_your_contact">(כדי לשתף עם איש הקשר שלך)</string>
+    <string name="to_start_a_new_chat_help_header">כדי להתחיל צ׳אט חדש</string>
+    <string name="smp_servers_use_server_for_new_conn">השתמש עבור חיבורים חדשים</string>
+    <string name="update_onion_hosts_settings_question">לעדכן הגדרות מארחי ‪.onion‬\?‬</string>
+    <string name="to_verify_compare">כדי לאמת הצפנה מקצה־לקצה עם איש הקשר שלכם, יש להשוות (או לסרוק) את הקוד במכשירים שלכם.</string>
+    <string name="your_chat_profiles">פרופילי צ׳אט</string>
+    <string name="update_network_session_mode_question">לעדכן מצב בידוד תעבורה\?</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">מנסה להתחבר לשרת המשמש לקבלת הודעות מאיש קשר זה (שגיאה: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+    <string name="unknown_message_format">פורמט הודעה לא ידוע</string>
+    <string name="simplex_link_mode_browser">דרך הדפדפן</string>
+    <string name="unmute_chat">בטל השתקה</string>
+    <string name="network_enable_socks">להשתמש בפרוקסי SOCKS\?</string>
+    <string name="use_simplex_chat_servers__question">להשתמש בשרתי <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\?</string>
+    <string name="network_disable_socks">להשתמש בחיבור ישיר לאינטרנט\?</string>
+    <string name="to_reveal_profile_enter_password">כדי לחשוף את הפרופיל המוסתר שלכם, הזינו סיסמה מלאה בשדה חיפוש בדף פרופילי צ׳אט.</string>
+    <string name="use_chat">שימוש בצ׳אט</string>
+    <string name="update_database">עדכן</string>
+    <string name="unknown_database_error_with_info">שגיאת מסד נתונים לא ידועה: %s</string>
+    <string name="rcv_group_event_updated_group_profile">פרופיל קבוצה עודכן</string>
+    <string name="update_network_settings_confirmation">עדכן</string>
+    <string name="unhide_chat_profile">בטל הסתרת פרופיל צ׳אט</string>
+    <string name="unhide_profile">בטל הסתרת פרופיל</string>
+    <string name="v4_4_verify_connection_security">אימות אבטחת החיבור</string>
+    <string name="user_unhide">בטל הסתרה</string>
+    <string name="update_network_settings_question">לעדכן הגדרות רשת\?</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">עדכון ההגדרות יחבר מחדש את האפליקציה לכל השרתים.</string>
+    <string name="user_unmute">בטל השתקה</string>
 </resources>
