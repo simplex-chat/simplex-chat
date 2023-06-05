@@ -530,4 +530,11 @@
     <string name="custom_time_unit_hours">ชั่วโมง</string>
     <string name="custom_time_unit_days">วัน</string>
     <string name="error_receiving_file">เกิดข้อผิดพลาดในการรับไฟล์</string>
+    <string name="if_you_enter_passcode_data_removed">หากคุณใส่รหัสผ่านนี้เมื่อเปิดแอป ข้อมูลแอปทั้งหมดจะถูกลบอย่างถาวร!</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">หากคุณเลือกที่จะปฏิเสธ ผู้ส่งจะไม่ได้รับแจ้ง</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">หากคุณไม่สามารถพบกันในชีวิตจริงได้ คุณสามารถสแกนคิวอาร์โค้ดในวิดีโอคอล &lt;/b&gt; หรือผู้ติดต่อของคุณสามารถแชร์ลิงก์เชิญได้</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">หากคุณไม่สามารถพบกันในชีวิตจริงได้ <b>ให้แสดงคิวอาร์โค้ดในวิดีโอคอล</b> หรือแชร์ลิงก์</string>
+    <string name="if_you_cant_meet_in_person">หากคุณไม่สามารถพบกันในชีวิตจริงได้ ให้แสดงคิวอาร์โค้ดในวิดีโอคอล หรือแชร์ลิงก์</string>
+    <string name="network_disable_socks_info">หากคุณยืนยัน เซิร์ฟเวอร์การส่งข้อความจะสามารถเห็นที่อยู่ IP ของคุณและผู้ให้บริการของคุณ - ซึ่งคือเซิร์ฟเวอร์ใดที่คุณกำลังเชื่อมต่ออยู่</string>
+    <string name="if_you_enter_self_destruct_code">หากคุณใส่รหัสทำลายตัวเองขณะเปิดแอป:</string>
 </resources>
