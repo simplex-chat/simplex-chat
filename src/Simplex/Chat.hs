@@ -46,7 +46,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
-import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
+import Data.Time.LocalTime (getCurrentTimeZone)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as DB
 import Simplex.Chat.Archive
@@ -1260,7 +1260,7 @@ processChatCommand = \case
               saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
           )
           `catchError` (toView . CRChatError (Just user))
-      CRBroadcastSent user mc (length cts) <$> liftIO getZonedTime
+      CRBroadcastSent user mc (length cts) <$> liftIO getCurrentTime
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -4420,10 +4420,9 @@ saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} conte
 
 mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
 mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs currentTs = do
-  tz <- getCurrentTimeZone
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) tz currentTs itemTs currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) currentTs itemTs currentTs currentTs
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 deleteDirectCI :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> Bool -> Bool -> m ChatResponse
