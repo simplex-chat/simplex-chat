@@ -1342,4 +1342,6 @@
     <string name="email_invite_subject">Давайте поговорим в SimpleX Chat</string>
     <string name="opening_database">Открытие базы данных…</string>
     <string name="info_row_updated_at">Запись обновлена</string>
+    <string name="non_fatal_errors_occured_during_import">Во время импорта произошли некоторые ошибки - для получения более подробной информации вы можете обратиться к консоли.</string>
+    <string name="item_info_no_text">нет текста</string>
 </resources>
