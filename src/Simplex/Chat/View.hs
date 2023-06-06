@@ -24,9 +24,10 @@ import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
-import Data.Time.Clock (DiffTime, UTCTime)
+import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
+import Data.Time.Calendar (addDays)
+import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Time.LocalTime (TimeZone, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime)
 import Data.Word (Word32)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
@@ -1107,15 +1108,17 @@ receivedWithTime_ ts tz from quote CIMeta {itemId, itemTs, itemEdited, itemDelet
         _ -> ""
 
 ttyMsgTime :: CurrentTime -> TimeZone -> UTCTime -> StyledString
-ttyMsgTime currentTime tz time =
-  let localTime = utcToLocalTime tz time
-      localCurrentTime = utcToLocalTime tz currentTime
-      fmt =
-        if (localDay localTime < localDay localCurrentTime)
-          && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
-          then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
-          else "%H:%M"
+ttyMsgTime now tz time =
+  let localNow = utcToLocalTime tz now
+      localTime = utcToLocalTime tz time
+      fmt = if recent localNow localTime then "%H:%M" else "%m-%d"
    in styleTime $ formatTime defaultTimeLocale fmt localTime
+  where
+    recent :: LocalTime -> LocalTime -> Bool
+    recent localNow localTime = do
+      let previousDay18 = LocalTime (addDays (-1) $ localDay localNow) (TimeOfDay 18 0 0)
+      let currentDay12 = LocalTime (localDay localNow) (TimeOfDay 12 0 0)
+      localDay localNow == localDay localTime || (localNow < currentDay12 && localTime >= previousDay18)
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewSentMessage to quote mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts tz (prependFirst to $ quote <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
