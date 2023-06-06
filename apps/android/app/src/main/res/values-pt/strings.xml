@@ -218,7 +218,7 @@
     <string name="icon_descr_audio_on">Áudio ligado</string>
     <string name="authentication_cancelled">Autenticação cancelada</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b> Adicionar novo contato</b>: para criar o seu código QR de utilização única para o seu contato.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b> Bom para a bateria </b>. O serviço em segundo plano verifica se há novas mensagens a cada 10 minutos. Você pode perder chamadas e mensagens urgentes.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b> Bom para a bateria </b>. O serviço em segundo plano verifica se há mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.</string>
     <string name="turning_off_service_and_periodic">A otimização da bateria está ativa, desativando o serviço em segundo plano e os pedidos periódicos de novas mensagens. Você pode reativá-los através das definições.</string>
     <string name="onboarding_notifications_mode_off_desc"><b>Melhor para a bateria</b>. Você receberá notificações apenas quando a aplicação estiver em execução, o serviço em segundo plano NÃO será usado.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Pode ser desativado nas definições</b> – as notificações ainda serão exibidas enquanto a aplicação estiver em execução.</string>
@@ -692,4 +692,11 @@
     <string name="message_reactions_prohibited_in_this_chat">Reações de mensagens são proibidas nesta conversa.</string>
     <string name="v5_1_message_reactions">Reações de mensagens</string>
     <string name="v5_1_message_reactions_descr">Finalmente, temo-las! 🚀</string>
+    <string name="change_self_destruct_mode">Alterar o modo de auto-destruição</string>
+    <string name="change_self_destruct_passcode">Alterar código de acesso de auto-destruição</string>
+    <string name="database_encrypted">Base de dados encriptada!</string>
+    <string name="database_will_be_encrypted">A base de dados será encriptada.</string>
+    <string name="encrypted_database">Base de dados encriptada</string>
+    <string name="group_member_status_introduced">conectando (introduzido)</string>
+    <string name="v5_1_better_messages">Melhores mensagens</string>
 </resources>
