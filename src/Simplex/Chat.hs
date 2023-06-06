@@ -355,9 +355,9 @@ processChatCommand = \case
           asks currentUser >>= readTVarIO >>= \case
             Nothing -> throwChatError CENoActiveUser
             Just user -> do
-              smpServers <- withStore' (`getProtocolServers` user)
+              servers <- withStore' (`getProtocolServers` user)
               cfg <- asks config
-              pure (activeAgentServers cfg protocol smpServers, smpServers)
+              pure (activeAgentServers cfg protocol servers, servers)
         | otherwise = do
           defServers <- asks $ defaultServers . config
           pure (cfgServers protocol defServers, [])
@@ -4989,7 +4989,7 @@ chatCommandP =
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayName <*> fullNameP
     newUserP = do
-      sameServers <- "same_smp=" *> onOffP <* A.space <|> pure False
+      sameServers <- "same_servers=" *> onOffP <* A.space <|> pure False
       (cName, fullName) <- profileNames
       let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
       pure NewUser {profile, sameServers, pastTimestamp = False}
