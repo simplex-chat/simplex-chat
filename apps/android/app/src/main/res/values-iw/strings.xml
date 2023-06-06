@@ -38,7 +38,7 @@
     <string name="allow_your_contacts_irreversibly_delete">אפשר לאנשי קשר מחיקה בלתי הפיכה של הודעות שנשלחו.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">אפשר לאנשי קשר לשלוח הודעות נעלמות.</string>
     <string name="allow_voice_messages_only_if">אפשר הודעות קוליות רק אם איש הקשר מאפשר אותן.</string>
-    <string name="allow_your_contacts_to_call">אפשר לאנשי קשר להתקשר אליך.</string>
+    <string name="allow_your_contacts_to_call">אפשר לאנשי קשר להתקשר אליכם.</string>
     <string name="allow_to_delete_messages">אפשר מחיקה בלתי הפיכה של הודעות שנשלחו.</string>
     <string name="allow_to_send_disappearing">אפשר שליחת הודעות נעלמות.</string>
     <string name="allow_to_send_voice">אפשר שליחת הודעות קוליות.</string>
@@ -1118,4 +1118,103 @@
     <string name="update_network_settings_question">לעדכן הגדרות רשת\?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">עדכון ההגדרות יחבר מחדש את האפליקציה לכל השרתים.</string>
     <string name="user_unmute">בטל השתקה</string>
+    <string name="callstate_waiting_for_confirmation">ממתין לאישור…</string>
+    <string name="callstate_waiting_for_answer">ממתין למענה…</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">איננו מאחסנים אף אחד מאנשי הקשר או ההודעות שלך (לאחר המסירה) בשרתים.</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="sender_you_pronoun">אתם</string>
+    <string name="description_via_contact_address_link">באמצעות קישור לכתובת איש קשר</string>
+    <string name="description_via_group_link">באמצעות קישור לקבוצה</string>
+    <string name="description_via_one_time_link">באמצעות קישור חד־פעמי</string>
+    <string name="failed_to_create_user_duplicate_desc">כבר יש לך פרופיל צ׳אט עם אותו שם תצוגה. יש לבחור שם אחר.</string>
+    <string name="voice_message_with_duration">הודעה קולית (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="contact_wants_to_connect_with_you">רוצה שתתחברו!</string>
+    <string name="icon_descr_address">כתובת <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="icon_descr_simplex_team">צוות <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="video_call_no_encryption">שיחת וידאו (לא מוצפנת מקצה־לקצה)</string>
+    <string name="your_calls">השיחות שלך</string>
+    <string name="settings_section_title_you">אתם</string>
+    <string name="you_have_to_enter_passphrase_every_time">יש להזין את הסיסמה בכל פעם שהאפליקציה מופעלת – היא לא מאוחסנת במכשיר.</string>
+    <string name="snd_group_event_changed_role_for_yourself">שינית תפקיד לעצמך ל%s</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">שינית כתובת</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">שינית כתובת עבור %s</string>
+    <string name="voice_messages">הודעות קוליות</string>
+    <string name="v4_3_voice_messages">הודעות קוליות</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">עם הודעת פתיחה אופציונלית.</string>
+    <string name="database_downgrade_warning">אזהרה: אתם עלולים לאבד נתונים מסוימים!</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">באפשרותך להתחיל את הצ׳אט באמצעות הגדרות האפליקציה / מסד נתונים או על ידי הפעלה מחדש של האפליקציה.</string>
+    <string name="chat_preferences_you_allow">אתם מאפשרים</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">אתם כבר מחוברים ל־<xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
+    <string name="simplex_service_notification_title">שירות <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="la_could_not_be_verified">לא ניתן היה לאמת אתכם; אנא נסו שוב.</string>
+    <string name="welcome">ברוכים הבאים!</string>
+    <string name="personal_welcome">ברוכ/ה הבא/ה <xliff:g>%1$s</xliff:g>!</string>
+    <string name="group_preview_you_are_invited">הוזמנת לקבוצה</string>
+    <string name="icon_descr_waiting_for_image">ממתין לתמונה</string>
+    <string name="waiting_for_image">ממתין לתמונה</string>
+    <string name="video_descr">סרטון</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">הסרטון יתקבל כאשר איש הקשר שלך ישלים את העלאתו.</string>
+    <string name="icon_descr_waiting_for_video">ממתין לסרטון</string>
+    <string name="video_will_be_received_when_contact_is_online">הסרטון יתקבל כאשר איש הקשר שלכם יהיה מקוון, אנא המתינו או בידקו מאוחר יותר!</string>
+    <string name="view_security_code">הצג קוד אבטחה</string>
+    <string name="voice_message_send_text">הודעה קולית…</string>
+    <string name="you_need_to_allow_to_send_voice">עליכם לאפשר לאיש הקשר שלכם לשלוח הודעות קוליות כדי שתוכלו לשלוח אותן.</string>
+    <string name="gallery_video_button">סרטון</string>
+    <string name="you_can_connect_to_simplex_chat_founder">באפשרותך <font color="#0088ff">להתחבר למפתחי <xliff:g id="appNameFull">SimpleX Chat</xliff:g> כדי לשאול כל שאלה ולקבל עדכונים</font>.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">אתם קובעים דרך אילו שרתים <b>לקבל</b> את ההודעות, אנשי הקשר שלכם – השרתים דרכם אתם שולחים להם הודעות.</string>
+    <string name="webrtc_ice_servers">שרתי WebRTC ICE</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> הודעות שדולגו</string>
+    <string name="custom_time_unit_weeks">שבועות</string>
+    <string name="you_are_observer">הינך צופה</string>
+    <string name="observer_cant_send_message_title">אין באפשרותך לשלוח הודעות!</string>
+    <string name="icon_descr_video_snd_complete">סרטון נשלח</string>
+    <string name="voice_message">הודעה קולית</string>
+    <string name="you_accepted_connection">אישרת את החיבור</string>
+    <string name="image_descr_simplex_logo">סמל <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="xftp_servers">שרתי XFTP</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> הודעות דולגו.</string>
+    <string name="wrong_passphrase">סיסמת מסד נתונים שגויה</string>
+    <string name="you_are_invited_to_group">הוזמנת לקבוצה</string>
+    <string name="you_joined_this_group">הצטרפת לקבוצה זו</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">אתם יכולים לשתף קישור או קוד QR – כל אחד יוכל להצטרף לקבוצה. לא תאבדו חברי קבוצה אם תמחקו אותו מאוחר יותר.</string>
+    <string name="incognito_info_share">כאשר אתם משתפים פרופיל זהות נסתרת עם מישהו, פרופיל זה ישמש עבור הקבוצות שהוא מזמין אתכם אליהן.</string>
+    <string name="chat_preferences_yes">כן</string>
+    <string name="simplex_link_connection">דרך <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="connected_to_server_to_receive_messages_from_contact">אתם מחוברים לשרת המשמש לקבלת הודעות מאיש קשר זה.</string>
+    <string name="you_can_turn_on_lock">באפשרותך להפעיל את SimpleX Lock דרך ההגדרות.</string>
+    <string name="you_have_no_chats">אין לך צ׳אטים</string>
+    <string name="waiting_for_video">ממתין לסרטון</string>
+    <string name="waiting_for_file">ממתין לקובץ</string>
+    <string name="voice_messages_prohibited">הודעות קוליות אסורות!</string>
+    <string name="you_invited_your_contact">הזמנת את איש הקשר שלך</string>
+    <string name="you_can_share_your_address">באפשרותכם לשתף את הכתובת שלכם כקישור או כקוד QR – כל אחד יכול להתחבר אליכם.</string>
+    <string name="you_can_accept_or_reject_connection">כאשר אנשים מבקשים להתחבר, באפשרותך לקבל או לדחות זאת.</string>
+    <string name="you_can_also_connect_by_clicking_the_link">באפשרותכם גם להתחבר על־ידי לחיצה על הקישור. אם הוא נפתח בדפדפן, ליחצו על הכפתור <b>פתח באפליקציה</b>.</string>
+    <string name="network_use_onion_hosts_prefer">כשזמין</string>
+    <string name="you_can_create_it_later">תוכלו ליצור אותה מאוחר יותר</string>
+    <string name="you_control_your_chat">אתם שולטים בצ׳אט שלכם!</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">באפשרותך להשתמש במרקדאון כדי לעצב הודעות:</string>
+    <string name="onboarding_notifications_mode_off">כאשר האפליקציה פועלת</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> רוצה שתתחברו דרך</string>
+    <string name="icon_descr_video_call">שיחת וידאו</string>
+    <string name="call_connection_via_relay">דרך ממסר</string>
+    <string name="icon_descr_video_off">וידאו כבוי</string>
+    <string name="icon_descr_video_on">וידאו פעיל</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> הודעות לא הצליחו לעבור פענוח.</string>
+    <string name="you_must_use_the_most_recent_version_of_database">עליכם להשתמש בגרסה העדכנית ביותר של מסד הנתונים שלכם במכשיר אחד בלבד, אחרת אתם עלולים להפסיק לקבל הודעות מאנשי קשר מסוימים.</string>
+    <string name="wrong_passphrase_title">סיסמה שגויה!</string>
+    <string name="you_are_invited_to_group_join_to_connect_with_group_members">הוזמנתם לקבוצה. הצטרפו כדי ליצור קשר עם חברי הקבוצה.</string>
+    <string name="snd_group_event_changed_member_role">שינית תפקיד של %s ל%s</string>
+    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> חברי קבוצה</string>
+    <string name="you_can_share_this_address_with_your_contacts">באפשרותך לשתף כתובת זו עם אנשי הקשר שלך כדי לאפשר להם להתחבר עם %s.</string>
+    <string name="voice_prohibited_in_this_chat">הודעות קוליות אסורות בצ׳אט זה.</string>
+    <string name="voice_messages_are_prohibited">הודעות קוליות אסורות בקבוצה זו.</string>
+    <string name="v5_0_large_files_support">סרטונים וקבצים עד 1GB</string>
+    <string name="v5_1_better_messages_descr">‐ הודעות קוליות עד 5 דקות.
+\n‐ זמן מותאם אישית להעלמת הודעות.
+\n‐ היסטוריית עריכה.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">הצטרפת לקבוצה זו. מתחבר לחבר הקבוצה שהזמין.</string>
+    <string name="snd_group_event_user_left">עזבת</string>
+    <string name="you_can_hide_or_mute_user_profile">ניתן להסתיר או להשתיק פרופיל משתמש – יש להחזיק אותו לפתיחת התפריט.</string>
+    <string name="whats_new">מה חדש</string>
 </resources>
