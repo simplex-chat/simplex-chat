@@ -2283,10 +2283,22 @@ let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    let now = Calendar.current.dateComponents([.day, .hour], from: .now)
-    let dc = Calendar.current.dateComponents([.day, .hour], from: date)
-    let recent = now.day == dc.day || ((now.day ?? 0) - (dc.day ?? 0) == 1 && (dc.hour ?? 0) >= 18 && (now.hour ?? 0) < 12)
-    return Text(date, format: recent ? msgTimeFormat : msgDateFormat)
+    return Text(date, format: recent(date) ? msgTimeFormat : msgDateFormat)
+}
+
+
+private func recent(_ date: Date) -> Bool {
+    let now = Date()
+    let calendar = Calendar.current
+
+    guard let previousDay = calendar.date(byAdding: DateComponents(day: -1), to: now),
+          let previousDay18 = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: previousDay),
+          let currentDay12 = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) else {
+        return false
+    }
+
+    let isSameDay = calendar.isDate(date, inSameDayAs: now)
+    return isSameDay || (now < currentDay12 && date >= previousDay18)
 }
 
 public enum CIStatus: Decodable {

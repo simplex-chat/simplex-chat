@@ -1117,7 +1117,7 @@ ttyMsgTime now tz time =
     recent :: LocalTime -> LocalTime -> Bool
     recent localNow localTime = do
       let previousDay18 = LocalTime (addDays (-1) $ localDay localNow) (TimeOfDay 18 0 0)
-      let currentDay12 = LocalTime (localDay localNow) (TimeOfDay 12 0 0)
+          currentDay12 = LocalTime (localDay localNow) (TimeOfDay 12 0 0)
       localDay localNow == localDay localTime || (localNow < currentDay12 && localTime >= previousDay18)
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
