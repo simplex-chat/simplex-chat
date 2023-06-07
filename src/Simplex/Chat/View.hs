@@ -1109,16 +1109,20 @@ receivedWithTime_ ts tz from quote CIMeta {itemId, itemTs, itemEdited, itemDelet
 
 ttyMsgTime :: CurrentTime -> TimeZone -> UTCTime -> StyledString
 ttyMsgTime now tz time =
-  let localNow = utcToLocalTime tz now
+  let fmt = if recent now tz time then "%H:%M" else "%m-%d"
       localTime = utcToLocalTime tz time
-      fmt = if recent localNow localTime then "%H:%M" else "%m-%d"
    in styleTime $ formatTime defaultTimeLocale fmt localTime
-  where
-    recent :: LocalTime -> LocalTime -> Bool
-    recent localNow localTime = do
-      let previousDay18 = LocalTime (addDays (-1) $ localDay localNow) (TimeOfDay 18 0 0)
-          currentDay12 = LocalTime (localDay localNow) (TimeOfDay 12 0 0)
-      localDay localNow == localDay localTime || (localNow < currentDay12 && localTime >= previousDay18)
+
+recent :: CurrentTime -> TimeZone -> UTCTime -> Bool
+recent now tz time = do
+  let localNow = utcToLocalTime tz now
+      localNowDay = localDay localNow
+      localTime = utcToLocalTime tz time
+      localTimeDay = localDay localTime
+      previousDay18 = LocalTime (addDays (-1) localNowDay) (TimeOfDay 18 0 0)
+      currentDay12 = LocalTime localNowDay (TimeOfDay 12 0 0)
+  localNowDay == localTimeDay
+    || (localNow < currentDay12 && localTimeDay < localNowDay && localTime >= previousDay18)
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewSentMessage to quote mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts tz (prependFirst to $ quote <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
