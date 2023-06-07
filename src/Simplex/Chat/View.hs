@@ -1122,7 +1122,7 @@ recent now tz time = do
       previousDay18 = LocalTime (addDays (-1) localNowDay) (TimeOfDay 18 0 0)
       currentDay12 = LocalTime localNowDay (TimeOfDay 12 0 0)
   localNowDay == localTimeDay
-    || (localNow < currentDay12 && localTimeDay < localNowDay && localTime >= previousDay18)
+    || (localNow < currentDay12 && localTime >= previousDay18 && localTimeDay < localNowDay)
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewSentMessage to quote mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts tz (prependFirst to $ quote <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
