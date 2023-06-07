@@ -2289,15 +2289,16 @@ public func formatTimestampText(_ date: Date) -> Text {
 private func recent(_ date: Date) -> Bool {
     let now = Date()
     let calendar = Calendar.current
-
+    
     guard let previousDay = calendar.date(byAdding: DateComponents(day: -1), to: now),
           let previousDay18 = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: previousDay),
+          let currentDay00 = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: now),
           let currentDay12 = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) else {
         return false
     }
-
+    
     let isSameDay = calendar.isDate(date, inSameDayAs: now)
-    return isSameDay || (now < currentDay12 && date >= previousDay18)
+    return isSameDay || (now < currentDay12 && date >= previousDay18 && date < currentDay00)
 }
 
 public enum CIStatus: Decodable {
