@@ -14,7 +14,6 @@ viewTests = do
 testRecent :: Spec
 testRecent = describe "recent" $ do
   let tz = hoursToTimeZone 1
-
       now1159 = UTCTime (fromGregorian 2023 6 7) (secondsToDiffTime $ 10 * 3600 + 59 * 60) -- 11:59 in tz
       now1200 = UTCTime (fromGregorian 2023 6 7) (secondsToDiffTime $ 11 * 3600) -- 12:00 in tz
       today0000 = UTCTime (fromGregorian 2023 6 6) (secondsToDiffTime $ 23 * 3600) -- 00:00 in tz
