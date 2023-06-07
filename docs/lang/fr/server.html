@@ -756,7 +756,10 @@ sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
 <li>
 <p>Autoriser le port du <code>smp-server</code> dans le pare-feu:</p>
 <pre><code class="language-sh"># Pour Ubuntu
-ufw allow 5223
+sudo ufw allow 5223/tcp
+# Pour Fedora
+sudo firewall-cmd --permanent --add-port=5223/tcp &amp;&amp; \
+sudo firewall-cmd --reload
 </code></pre>
 </li>
 <li>

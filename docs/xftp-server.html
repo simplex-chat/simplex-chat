@@ -686,7 +686,10 @@ sudo chown xftp:xftp /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
 <li>
 <p>Allow xftp-server port in firewall:</p>
 <pre><code class="language-sh"># For Ubuntu
-sudo ufw allow 443
+sudo ufw allow 443/tcp
+# For Fedora
+sudo firewall-cmd --permanent --add-port=443/tcp &amp;&amp; \
+sudo firewall-cmd --reload
 </code></pre>
 </li>
 <li>

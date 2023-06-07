@@ -772,7 +772,10 @@ sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
 <li>
 <p>Allow <code>smp-server</code> port in firewall:</p>
 <pre><code class="language-sh"># For Ubuntu
-ufw allow 5223
+sudo ufw allow 5223/tcp
+# For Fedora
+sudo firewall-cmd --permanent --add-port=5223/tcp &amp;&amp; \
+sudo firewall-cmd --reload
 </code></pre>
 </li>
 <li>
