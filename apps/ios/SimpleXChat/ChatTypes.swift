@@ -2286,7 +2286,6 @@ public func formatTimestampText(_ date: Date) -> Text {
     return Text(date, format: recent(date) ? msgTimeFormat : msgDateFormat)
 }
 
-
 private func recent(_ date: Date) -> Bool {
     let now = Date()
     let calendar = Calendar.current
