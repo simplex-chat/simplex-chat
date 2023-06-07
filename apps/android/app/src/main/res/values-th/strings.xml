@@ -537,4 +537,97 @@
     <string name="if_you_cant_meet_in_person">หากคุณไม่สามารถพบกันในชีวิตจริงได้ ให้แสดงคิวอาร์โค้ดในวิดีโอคอล หรือแชร์ลิงก์</string>
     <string name="network_disable_socks_info">หากคุณยืนยัน เซิร์ฟเวอร์การส่งข้อความจะสามารถเห็นที่อยู่ IP ของคุณและผู้ให้บริการของคุณ - ซึ่งคือเซิร์ฟเวอร์ใดที่คุณกำลังเชื่อมต่ออยู่</string>
     <string name="if_you_enter_self_destruct_code">หากคุณใส่รหัสทำลายตัวเองขณะเปิดแอป:</string>
+    <string name="group_unsupported_incognito_main_profile_sent">ไม่รองรับโหมดไม่ระบุตัวตนที่นี่ - โปรไฟล์หลักของคุณจะถูกส่งไปยังสมาชิกกลุ่ม</string>
+    <string name="incognito_info_protects">โหมดไม่ระบุตัวตนปกป้องความเป็นส่วนตัวของชื่อและรูปภาพโปรไฟล์หลักของคุณ — สำหรับผู้ติดต่อใหม่แต่ละราย จะมีการสร้างโปรไฟล์ใหม่แบบสุ่ม</string>
+    <string name="conn_level_desc_indirect">ทางอ้อม (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+    <string name="install_simplex_chat_for_terminal">ติดตั้ง <xliff:g id="appNameFull">SimpleX Chat</xliff:g> สำหรับเทอร์มินัล</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">มันสามารถเกิดขึ้นได้เมื่อ:
+\n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน
+\n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า
+\n3. การเชื่อมต่อถูกบุกรุก</string>
+    <string name="join_group_incognito_button">เข้าร่วมแบบไม่ระบุตัวตน</string>
+    <string name="thousand_abbreviation">เค</string>
+    <string name="invalid_message_format">รูปแบบข้อความไม่ถูกต้อง</string>
+    <string name="live">สด</string>
+    <string name="invalid_chat">แชทไม่ถูกต้อง</string>
+    <string name="invalid_data">ข้อมูลไม่ถูกต้อง</string>
+    <string name="display_name_invited_to_connect">ได้รับเชิญให้เชื่อมต่อ</string>
+    <string name="description_via_contact_address_link_incognito">ไม่ระบุตัวตนผ่านลิงค์ที่อยู่ติดต่อ</string>
+    <string name="description_via_group_link_incognito">ไม่ระบุตัวตนผ่านลิงก์กลุ่ม</string>
+    <string name="description_via_one_time_link_incognito">ไม่ระบุตัวตนผ่านลิงก์แบบครั้งเดียว</string>
+    <string name="invalid_connection_link">ลิงค์เชื่อมต่อไม่ถูกต้อง</string>
+    <string name="icon_descr_instant_notifications">การแจ้งเตือนทันที</string>
+    <string name="service_notifications">แจ้งเตือนทันที!</string>
+    <string name="service_notifications_disabled">ปิดการแจ้งเตือนทันทีแล้ว!</string>
+    <string name="turn_off_battery_optimization">เพื่อให้สามารถใช้งานได้ โปรด &lt;b xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\"&gt;ปิดการใช้งานการเพิ่มประสิทธิภาพแบตเตอรี่&lt;/b&gt; สำหรับ &lt;xliff:g xmlns:xliff=\"urn:oasis: ชื่อ:tc:xliff:document:1.2\" id=\"appName\"&gt;SimpleX&lt;/xliff:g&gt; ในกล่องโต้ตอบถัดไป มิฉะนั้น การแจ้งเตือนจะถูกปิดใช้งาน</string>
+    <string name="la_immediately">โดยทันที</string>
+    <string name="auth_log_in_using_credential">เข้าสู่ระบบโดยใช้ข้อมูลประจำตัวของคุณ</string>
+    <string name="info_menu">ข้อมูล</string>
+    <string name="group_preview_join_as">เข้าร่วมในชื่อ %s</string>
+    <string name="image_descr">ภาพ</string>
+    <string name="icon_descr_image_snd_complete">ส่งรูปภาพแล้ว</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">จะได้รับภาพเมื่อผู้ติดต่อของคุณอัปโหลดเสร็จสิ้น</string>
+    <string name="image_will_be_received_when_contact_is_online">จะได้รับรูปภาพเมื่อผู้ติดต่อของคุณออนไลน์ โปรดรอหรือตรวจสอบในภายหลัง!</string>
+    <string name="image_saved">ภาพถูกบันทึกไว้ในแกลเลอรีแล้ว</string>
+    <string name="large_file">ไฟล์ขนาดใหญ่!</string>
+    <string name="live_message">ข้อความสด!</string>
+    <string name="gallery_image_button">ภาพ</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">หากคุณได้รับลิงก์เชิญ <xliff:g id="appName">SimpleX Chat</xliff:g> คุณสามารถเปิดได้ในเบราว์เซอร์ของคุณ:</string>
+    <string name="image_descr_link_preview">ภาพตัวอย่างลิงค์</string>
+    <string name="invalid_QR_code">รหัส QR ไม่ถูกต้อง</string>
+    <string name="invalid_contact_link">ลิงค์ไม่ถูกต้อง!</string>
+    <string name="learn_more">ศึกษาเพิ่มเติม</string>
+    <string name="incorrect_code">รหัสความปลอดภัยไม่ถูกต้อง!</string>
+    <string name="smp_servers_invalid_address">ที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง!</string>
+    <string name="invite_friends">เชิญเพื่อน ๆ</string>
+    <string name="email_invite_subject">มาพูดคุยกันใน SimpleX Chat</string>
+    <string name="italic">ตัวเอียง</string>
+    <string name="immune_to_spam_and_abuse">ป้องกันจากสแปมและการละเมิด</string>
+    <string name="make_private_connection">สร้างการเชื่อมต่อส่วนตัว</string>
+    <string name="onboarding_notifications_mode_subtitle">สามารถเปลี่ยนแปลงได้ในภายหลังผ่านการตั้งค่า</string>
+    <string name="incoming_video_call">สายวิดีโอเข้ามา</string>
+    <string name="onboarding_notifications_mode_service">ทันที</string>
+    <string name="incoming_audio_call">สายเรียกเข้า</string>
+    <string name="ignore">ไม่สนใจ</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">สามารถเกิดขึ้นได้เมื่อคุณหรือการเชื่อมต่อของคุณใช้การสํารองข้อมูลฐานข้อมูลเก่า</string>
+    <string name="lock_mode">โหมดล็อค</string>
+    <string name="incorrect_passcode">รหัสผ่านไม่ถูกต้อง</string>
+    <string name="lock_after">ล็อคหลังจาก</string>
+    <string name="settings_section_title_incognito">โหมดไม่ระบุตัวตน</string>
+    <string name="import_database">นำเข้าฐานข้อมูล</string>
+    <string name="import_database_confirmation">นำเข้า</string>
+    <string name="import_database_question">นำเข้าฐานข้อมูลแชท\?</string>
+    <string name="keychain_error">ข้อผิดพลาดของ Keychain</string>
+    <string name="incompatible_database_version">เวอร์ชันฐานข้อมูลที่เข้ากันไม่ได้</string>
+    <string name="invalid_migration_confirmation">การยืนยันการย้ายไม่ถูกต้อง</string>
+    <string name="group_invitation_item_description">คำเชิญเข้าร่วมกลุ่ม <xliff:g id="group_name">%1$s</xliff:g></string>
+    <string name="join_group_button">เข้าร่วม</string>
+    <string name="join_group_question">เข้าร่วมกลุ่ม\?</string>
+    <string name="joining_group">กำลังจะเข้าร่วมกลุ่ม</string>
+    <string name="leave_group_button">ออกจาก</string>
+    <string name="leave_group_question">ออกจากกลุ่ม\?</string>
+    <string name="alert_title_group_invitation_expired">คำเชิญหมดอายุแล้ว!</string>
+    <string name="icon_descr_add_members">เชิญสมาชิก</string>
+    <string name="rcv_group_event_member_added">เชิญแล้ว <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_left">ออกแล้ว</string>
+    <string name="rcv_group_event_invited_via_your_group_link">เชิญผ่านลิงค์กลุ่มของคุณ</string>
+    <string name="group_member_status_invited">เชิญ</string>
+    <string name="group_member_status_left">ออกแล้ว</string>
+    <string name="initial_member_role">บทบาทเริ่มต้น</string>
+    <string name="invite_to_group_button">เชิญเข้าร่วมกลุ่ม</string>
+    <string name="button_add_members">เชิญสมาชิก</string>
+    <string name="button_leave_group">ออกจากกลุ่ม</string>
+    <string name="info_row_local_name">ชื่อภายในเครื่องเท่านั้น</string>
+    <string name="users_delete_data_only">ข้อมูลโปรไฟล์ภายในเครื่องเท่านั้น</string>
+    <string name="make_profile_private">ทำให้โปรไฟล์เป็นส่วนตัว!</string>
+    <string name="incognito">ไม่ระบุตัวตน</string>
+    <string name="incognito_info_allows">อนุญาตให้มีการเชื่อมต่อที่ไม่ระบุตัวตนจำนวนมากโดยไม่มีข้อมูลที่ใช้ร่วมกันระหว่างกันในโปรไฟล์การแชทเดียว</string>
+    <string name="import_theme">นำเข้าธีม</string>
+    <string name="import_theme_error">การนำเข้าธีมผิดพลาด</string>
+    <string name="theme_light">สว่าง</string>
+    <string name="message_deletion_prohibited_in_chat">การลบข้อความแบบกลับไม่ได้เป็นสิ่งที่ห้ามในกลุ่มนี้</string>
+    <string name="v4_3_improved_privacy_and_security">ปรับปรุงความเป็นส่วนตัวและความปลอดภัยแล้ว</string>
+    <string name="v4_3_improved_server_configuration">ปรับปรุงการตั้งค่าเซิร์ฟเวอร์แล้ว</string>
+    <string name="v4_4_live_messages">ข้อความสด</string>
+    <string name="v5_1_japanese_portuguese_interface">UI ภาษาญี่ปุ่นและโปรตุเกส</string>
 </resources>
