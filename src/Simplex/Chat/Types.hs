@@ -176,7 +176,8 @@ data Contact = Contact
     mergedPreferences :: ContactUserPreferences,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    chatTs :: Maybe UTCTime
+    chatTs :: Maybe UTCTime,
+    markedForDeletion :: Bool
   }
   deriving (Eq, Show, Generic)
 

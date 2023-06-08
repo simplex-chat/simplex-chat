@@ -112,6 +112,7 @@ data ChatConfig = ChatConfig
     testView :: Bool,
     initialCleanupManagerDelay :: Int64,
     cleanupManagerInterval :: NominalDiffTime,
+    cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64 -- microseconds
   }
 

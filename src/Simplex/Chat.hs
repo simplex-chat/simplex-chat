@@ -122,6 +122,7 @@ defaultChatConfig =
       testView = False,
       initialCleanupManagerDelay = 30 * 1000000, -- 30 seconds
       cleanupManagerInterval = 30 * 60, -- 30 minutes
+      cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000 -- 30 minutes
     }
 
@@ -859,8 +860,8 @@ processChatCommand = \case
       where
         deleteUnusedContact :: ContactId -> m [ConnId]
         deleteUnusedContact contactId = timeItM "deleteUnusedContact" $ do
-          (
-            timeItM "getContact" (withStoreCtx Nothing (\db -> getContact db user contactId)) >>= delete)
+          ( timeItM "getContact" (withStoreCtx Nothing (\db -> getContact db user contactId)) >>= delete
+            )
             `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
           where
             delete ct
@@ -870,8 +871,9 @@ processChatCommand = \case
                   Just _ -> pure []
                   Nothing -> do
                     conns <- timeItM "getContactConnections" $ withStoreCtx Nothing $ \db -> getContactConnections db userId ct
-                    timeItM "deleteContactWithoutGroups" $ withStoreCtx' Nothing (\db -> deleteContactWithoutGroups db user ct)
-                      `catchError` (toView . CRChatError (Just user))
+                    timeItM "setContactMarkedForDeletion" $
+                      withStore' (\db -> setContactMarkedForDeletion db user ct)
+                        `catchError` (toView . CRChatError (Just user))
                     pure $ map aConnId conns
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
@@ -2361,15 +2363,16 @@ cleanupManager :: forall m. ChatMonad m => m ()
 cleanupManager = do
   interval <- asks (cleanupManagerInterval . config)
   runWithoutInitialDelay interval
-  delay <- asks (initialCleanupManagerDelay . config)
-  liftIO $ threadDelay' delay
+  initialDelay <- asks (initialCleanupManagerDelay . config)
+  liftIO $ threadDelay' initialDelay
+  stepDelay <- asks (cleanupManagerStepDelay . config)
   forever $ do
     flip catchError (toView . CRChatError Nothing) $ do
       waitChatStarted
       users <- withStoreCtx' (Just "cleanupManager, getUsers 1") getUsers
       let (us, us') = partition activeUser users
-      forM_ us $ cleanupUser interval
-      forM_ us' $ cleanupUser interval
+      forM_ us $ cleanupUser interval stepDelay
+      forM_ us' $ cleanupUser interval stepDelay
       cleanupMessages `catchError` (toView . CRChatError Nothing)
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
@@ -2379,13 +2382,21 @@ cleanupManager = do
       let (us, us') = partition activeUser users
       forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
       forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
-    cleanupUser cleanupInterval user =
+    cleanupUser cleanupInterval stepDelay user = do
       cleanupTimedItems cleanupInterval user `catchError` (toView . CRChatError (Just user))
+      liftIO $ threadDelay' stepDelay
+      cleanupContactsMarkedForDeletion user `catchError` (toView . CRChatError (Just user))
+      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
       timedItems <- withStoreCtx' (Just "cleanupManager, getTimedItems") $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
+    cleanupContactsMarkedForDeletion user = do
+      contacts <- withStoreCtx' (Just "cleanupManager, getContactsMarkedForDeletion") (`getContactsMarkedForDeletion` user)
+      forM_ contacts $ \ct ->
+        withStoreCtx' (Just "cleanupManager, deleteContactWithoutGroups") (\db -> deleteContactWithoutGroups db user ct)
+          `catchError` (toView . CRChatError (Just user))
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (- (30 * nominalDay)) ts
