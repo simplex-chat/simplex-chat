@@ -562,7 +562,7 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Il contatto con cui hai condiviso questo link NON sarà in grado di connettersi!</string>
     <string name="this_link_is_not_a_valid_connection_link">Questo non è un link di connessione valido!</string>
     <string name="this_QR_code_is_not_a_link">Questo codice QR non è un link!</string>
-    <string name="unmute_chat">Riattiva audio</string>
+    <string name="unmute_chat">Riattiva notifiche</string>
     <string name="contact_wants_to_connect_with_you">vuole connettersi con te!</string>
     <string name="image_descr_simplex_logo">Logo di <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="icon_descr_address">Indirizzo di <xliff:g id="appName">SimpleX</xliff:g></string>
@@ -1009,7 +1009,7 @@
     <string name="v4_6_hidden_chat_profiles">Profili di chat nascosti</string>
     <string name="user_hide">Nascondi</string>
     <string name="v4_6_group_welcome_message_descr">Imposta il messaggio mostrato ai nuovi membri!</string>
-    <string name="user_unmute">Riattiva audio</string>
+    <string name="user_unmute">Riattiva notifiche</string>
     <string name="database_downgrade">Downgrade del database</string>
     <string name="database_upgrade">Aggiornamento del database</string>
     <string name="incompatible_database_version">Versione del database incompatibile</string>
