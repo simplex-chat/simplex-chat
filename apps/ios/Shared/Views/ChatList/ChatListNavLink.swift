@@ -108,6 +108,19 @@ struct ChatListNavLink: View {
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
+                .swipeActions(edge: .trailing) {
+                    if (groupInfo.membership.memberCurrent) {
+                        Button {
+                            AlertManager.shared.showAlert(leaveGroupAlert(groupInfo)) // TODO different text
+                        } label: {
+                            Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+                        .tint(Color.yellow)
+                    }
+                    if groupInfo.canDelete {
+                        deleteGroupChatButton(groupInfo)
+                    }
+                }
         default:
             NavLinkPlain(
                 tag: chat.chatInfo.id,
