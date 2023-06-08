@@ -321,7 +321,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (addUTCTime)
-import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Type.Equality
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
@@ -409,7 +409,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..))
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (diffToMilliseconds, eitherToMaybe, safeDecodeUtf8)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -480,7 +480,7 @@ schemaMigrations =
     ("20230519_item_deleted_ts", m20230519_item_deleted_ts, Just down_m20230519_item_deleted_ts),
     ("20230526_indexes", m20230526_indexes, Just down_m20230526_indexes),
     ("20230529_indexes", m20230529_indexes, Just down_m20230529_indexes),
-    ("20230608_indexes", m20230608_contacts_marked_for_deletion, Just down_m20230608_contacts_marked_for_deletion)
+    ("20230608_contacts_marked_for_deletion", m20230608_contacts_marked_for_deletion, Just down_m20230608_contacts_marked_for_deletion)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -847,12 +847,11 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
 -- should only be used if contact is not member of any groups
 deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> IO ()
 deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
-  timeItIO "deleteContactWithoutGroups DELETE FROM chat_items" $ DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  timeItIO "deleteContactWithoutGroups deleteContactProfile_" $ deleteContactProfile_ db userId contactId
-  timeItIO "deleteContactWithoutGroups DELETE FROM display_names" $ DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  timeItIO "deleteContactWithoutGroups DELETE FROM contacts" $ DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ customUserProfileId $ \profileId ->
-    timeItIO "deleteContactWithoutGroups deleteUnusedIncognitoProfileById_" $ deleteUnusedIncognitoProfileById_ db user profileId
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  deleteContactProfile_ db userId contactId
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
 
 setContactMarkedForDeletion :: DB.Connection -> User -> Contact -> IO ()
 setContactMarkedForDeletion db User {userId} Contact {contactId} = do
@@ -2134,12 +2133,12 @@ deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
 
 deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
-  timeItIO "DELETE FROM chat_items" $ DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  timeItIO "cleanupHostGroupLinkConn_" $ void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
-  timeItIO "DELETE FROM group_members" $ DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
+  DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   forM_ members $ \m@GroupMember {memberProfile = LocalProfile {profileId}} -> do
-    timeItIO "cleanupMemberProfileAndName_" $ cleanupMemberProfileAndName_ db user m
-    when (memberIncognito m) $ timeItIO "deleteUnusedIncognitoProfileById_" $ deleteUnusedIncognitoProfileById_ db user profileId
+    cleanupMemberProfileAndName_ db user m
+    when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
   where
     cleanupHostGroupLinkConn_ = do
       hostId <- getHostMemberId_ db user groupId
@@ -2158,11 +2157,10 @@ deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = d
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db user@User {userId} GroupInfo {groupId, localDisplayName, membership = membership@GroupMember {memberProfile = LocalProfile {profileId}}} = do
-  timeItIO "deleteGroupProfile_" $ deleteGroupProfile_ db userId groupId
-  timeItIO "DELETE FROM groups" $ DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  timeItIO "DELETE FROM display_names" $ DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  when (memberIncognito membership) $
-    timeItIO "deleteUnusedIncognitoProfileById_" $ deleteUnusedIncognitoProfileById_ db user profileId
+  deleteGroupProfile_ db userId groupId
+  DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  when (memberIncognito membership) $ deleteUnusedIncognitoProfileById_ db user profileId
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
 deleteGroupProfile_ db userId groupId =
@@ -5628,12 +5626,3 @@ data StoreError
 instance ToJSON StoreError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
-
-timeItIO :: String -> IO a -> IO a
-timeItIO s action = do
-  t1 <- getCurrentTime
-  a <- action
-  t2 <- getCurrentTime
-  let diff = diffToMilliseconds $ diffUTCTime t2 t1
-  print $ show diff <> " ms - " <> s
-  pure a

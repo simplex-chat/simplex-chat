@@ -421,7 +421,7 @@ testGroup2 =
 
 testGroupDelete :: HasCallStack => FilePath -> IO ()
 testGroupDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/d #team"
@@ -445,12 +445,15 @@ testGroupDelete =
       alice <##> bob
       alice <##> cath
       -- unused group contacts are deleted
+      threadDelay 3000000
       bob ##> "@cath hi"
       bob <## "no contact cath"
       (cath </)
       cath ##> "@bob hi"
       cath <## "no contact bob"
       (bob </)
+  where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testGroupSameName :: HasCallStack => FilePath -> IO ()
 testGroupSameName =

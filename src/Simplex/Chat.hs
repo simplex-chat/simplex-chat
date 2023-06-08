@@ -463,7 +463,7 @@ processChatCommand = \case
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
   APIGetChats userId withPCC -> withUserId userId $ \user ->
     CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC)
-  APIGetChat (ChatRef cType cId) pagination search -> withUser' $ \user -> case cType of
+  APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
       directChat <- withStore (\db -> getDirectChat db user cId pagination search)
@@ -818,7 +818,7 @@ processChatCommand = \case
         liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChat (ChatRef cType chatId) -> withUser' $ \user@User {userId} -> case cType of
+  APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
@@ -837,43 +837,41 @@ processChatCommand = \case
       deleteAgentConnectionAsync user acId
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
-    CTGroup -> timeItM "APIDeleteChat CTGroup" $ do
-      Group gInfo@GroupInfo {membership} members <- withStoreCtx (Just "getGroup") $ \db -> getGroup db user chatId
+    CTGroup -> do
+      Group gInfo@GroupInfo {membership} members <-
+        withStoreCtx (Just "APIDeleteChat CTGroup, getGroup") $ \db -> getGroup db user chatId
       let isOwner = memberRole (membership :: GroupMember) == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
-      filesInfo <- withStoreCtx' (Just "getGroupFileInfo") $ \db -> getGroupFileInfo db user gInfo
+      filesInfo <- withStoreCtx' (Just "APIDeleteChat CTGroup, getGroupFileInfo") $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
-        timeItM "deleteFilesAndConns" $ deleteFilesAndConns user filesInfo
-        timeItM "sendGroupMessage" $ when (memberActive membership && isOwner) . void $ sendGroupMessage user gInfo members XGrpDel
-        timeItM "deleteGroupLinkIfExists" $ deleteGroupLinkIfExists user gInfo
-        timeItM "deleteMembersConnections" $ deleteMembersConnections user members
+        deleteFilesAndConns user filesInfo
+        when (memberActive membership && isOwner) . void $ sendGroupMessage user gInfo members XGrpDel
+        deleteGroupLinkIfExists user gInfo
+        deleteMembersConnections user members
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
-        withStoreCtx' (Just "deleteGroupConnectionsAndFiles") $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        withStoreCtx' (Just "deleteGroupItemsAndMembers") $ \db -> deleteGroupItemsAndMembers db user gInfo members
-        withStoreCtx' (Just "deleteGroup") $ \db -> deleteGroup db user gInfo
+        withStoreCtx' (Just "APIDeleteChat CTGroup, deleteGroupConnectionsAndFiles") $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
+        withStoreCtx' (Just "APIDeleteChat CTGroup, deleteGroupItemsAndMembers") $ \db -> deleteGroupItemsAndMembers db user gInfo members
+        withStoreCtx' (Just "APIDeleteChat CTGroup, deleteGroup") $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
-        timeItM "deleteAgentConnectionsAsync =<< mapM deleteUnusedContact" $
-          deleteAgentConnectionsAsync user . concat =<< mapM deleteUnusedContact contactIds
+        deleteAgentConnectionsAsync user . concat =<< mapM deleteUnusedContact contactIds
         pure $ CRGroupDeletedUser user gInfo
       where
         deleteUnusedContact :: ContactId -> m [ConnId]
-        deleteUnusedContact contactId = timeItM "deleteUnusedContact" $ do
-          ( timeItM "getContact" (withStoreCtx Nothing (\db -> getContact db user contactId)) >>= delete
-            )
+        deleteUnusedContact contactId =
+          (withStore (\db -> getContact db user contactId) >>= delete)
             `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
           where
             delete ct
               | directOrUsed ct = pure []
               | otherwise =
-                timeItM "checkContactHasGroups" (withStoreCtx' Nothing (\db -> checkContactHasGroups db user ct)) >>= \case
+                withStore' (\db -> checkContactHasGroups db user ct) >>= \case
                   Just _ -> pure []
                   Nothing -> do
-                    conns <- timeItM "getContactConnections" $ withStoreCtx Nothing $ \db -> getContactConnections db userId ct
-                    timeItM "setContactMarkedForDeletion" $
-                      withStore' (\db -> setContactMarkedForDeletion db user ct)
-                        `catchError` (toView . CRChatError (Just user))
+                    conns <- withStore $ \db -> getContactConnections db userId ct
+                    withStore' (\db -> setContactMarkedForDeletion db user ct)
+                      `catchError` (toView . CRChatError (Just user))
                     pure $ map aConnId conns
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
@@ -1386,7 +1384,7 @@ processChatCommand = \case
               -- undeleted "member connected" chat item will prevent deletion of member record
               deleteOrUpdateMemberRecord user m
           pure $ CRUserDeletedMember user gInfo m {memberStatus = GSMemRemoved}
-  APILeaveGroup groupId -> withUser' $ \user@User {userId} -> do
+  APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     withChatLock "leaveGroup" . procCmd $ do
       msg <- sendGroupMessage user gInfo members XGrpLeave
@@ -4735,15 +4733,15 @@ withStoreCtx ctx_ action = do
   ChatController {chatStore} <- ask
   liftEitherError ChatErrorStore $ case ctx_ of
     Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-    -- Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
     -- uncomment to debug store performance
-    Just ctx -> do
-      t1 <- liftIO getCurrentTime
-      putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
-      r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
-      t2 <- liftIO getCurrentTime
-      putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
-      pure r
+    -- Just ctx -> do
+    --   t1 <- liftIO getCurrentTime
+    --   putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
+    --   r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
+    --   t2 <- liftIO getCurrentTime
+    --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
+    --   pure r
+    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
   where
     handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
@@ -5087,13 +5085,4 @@ timeItToView s action = do
   t2 <- liftIO getCurrentTime
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView $ CRTimedAction s diff
-  pure a
-
-timeItM :: ChatMonad m => String -> m a -> m a
-timeItM s action = do
-  t1 <- liftIO getCurrentTime
-  a <- action
-  t2 <- liftIO getCurrentTime
-  let diff = diffToMilliseconds $ diffUTCTime t2 t1
-  liftIO . print $ show diff <> " ms - " <> s
   pure a
