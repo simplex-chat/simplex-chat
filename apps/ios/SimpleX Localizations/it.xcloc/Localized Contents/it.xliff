@@ -4472,9 +4472,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Sblocca l'app</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Unmute" xml:space="preserve">
+      <trans-unit id="Unmute" xml:space="preserve" approved="no">
         <source>Unmute</source>
-        <target>Riattiva audio</target>
+        <target state="translated">Riattiva notifiche</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unread" xml:space="preserve">
