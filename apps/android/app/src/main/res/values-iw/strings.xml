@@ -1217,4 +1217,15 @@
     <string name="snd_group_event_user_left">עזבת</string>
     <string name="you_can_hide_or_mute_user_profile">ניתן להסתיר או להשתיק פרופיל משתמש – יש להחזיק אותו לפתיחת התפריט.</string>
     <string name="whats_new">מה חדש</string>
+    <string name="group_main_profile_sent">פרופיל הצ׳אט שלך יישלח לחברי הקבוצה</string>
+    <string name="database_is_not_encrypted">מסד הנתונים שלך אינו מוצפן – יש להגדיר סיסמה כדי להגן עליו.</string>
+    <string name="v4_3_irreversible_message_deletion_desc">אנשי הקשר שלך יכולים לאפשר מחיקת הודעות מלאה.</string>
+    <string name="your_chats">הצ׳אטים שלך</string>
+    <string name="contact_sent_large_file">איש הקשר שלך שלח קובץ גדול יותר מהגודל המרבי הנתמך כעת (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">איש הקשר שלך צריך להיות מקוון כדי שהחיבור יושלם.
+\nניתן לבטל חיבור זה ולהסיר את איש הקשר (ולנסות מאוחר יותר עם קישור חדש).</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">פרופיל הצ׳אט שלך יישלח
+\nלאיש הקשר שלך</string>
+    <string name="your_profile_will_be_sent">פרופיל הצ׳אט שלך יישלח לאיש הקשר שלך</string>
+    <string name="your_chat_database">מסד הנתונים שלך</string>
 </resources>
