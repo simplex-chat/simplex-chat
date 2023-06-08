@@ -100,6 +100,7 @@ library
       Simplex.Chat.Migrations.M20230519_item_deleted_ts
       Simplex.Chat.Migrations.M20230526_indexes
       Simplex.Chat.Migrations.M20230529_indexes
+      Simplex.Chat.Migrations.M20230608_indexes
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options

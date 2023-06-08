@@ -332,6 +332,8 @@ import Simplex.Chat.Messages.ChatItemContent
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
 import Simplex.Chat.Migrations.M20220205_chat_item_status
+import Data.Time.Clock (diffUTCTime)
+import Simplex.Messaging.Util (diffToMilliseconds)
 import Simplex.Chat.Migrations.M20220210_deduplicate_contact_requests
 import Simplex.Chat.Migrations.M20220224_messages_fks
 import Simplex.Chat.Migrations.M20220301_smp_servers
@@ -395,6 +397,7 @@ import Simplex.Chat.Migrations.M20230511_reactions
 import Simplex.Chat.Migrations.M20230519_item_deleted_ts
 import Simplex.Chat.Migrations.M20230526_indexes
 import Simplex.Chat.Migrations.M20230529_indexes
+import Simplex.Chat.Migrations.M20230608_indexes
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -476,7 +479,8 @@ schemaMigrations =
     ("20230511_reactions", m20230511_reactions, Just down_m20230511_reactions),
     ("20230519_item_deleted_ts", m20230519_item_deleted_ts, Just down_m20230519_item_deleted_ts),
     ("20230526_indexes", m20230526_indexes, Just down_m20230526_indexes),
-    ("20230529_indexes", m20230529_indexes, Just down_m20230529_indexes)
+    ("20230529_indexes", m20230529_indexes, Just down_m20230529_indexes),
+    ("20230608_indexes", m20230608_indexes, Just down_m20230608_indexes)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -843,11 +847,12 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
 -- should only be used if contact is not member of any groups
 deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> IO ()
 deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  deleteContactProfile_ db userId contactId
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
+  timeItIO "deleteContactWithoutGroups DELETE FROM chat_items" $ DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  timeItIO "deleteContactWithoutGroups deleteContactProfile_" $ deleteContactProfile_ db userId contactId
+  timeItIO "deleteContactWithoutGroups DELETE FROM display_names" $ DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  timeItIO "deleteContactWithoutGroups DELETE FROM contacts" $ DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  forM_ customUserProfileId $ \profileId ->
+    timeItIO "deleteContactWithoutGroups deleteUnusedIncognitoProfileById_" $ deleteUnusedIncognitoProfileById_ db user profileId
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
@@ -2114,12 +2119,12 @@ deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
 
 deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
-  DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  timeItIO "DELETE FROM chat_items" $ DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  timeItIO "cleanupHostGroupLinkConn_" $ void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
+  timeItIO "DELETE FROM group_members" $ DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   forM_ members $ \m@GroupMember {memberProfile = LocalProfile {profileId}} -> do
-    cleanupMemberProfileAndName_ db user m
-    when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
+    timeItIO "cleanupMemberProfileAndName_" $ cleanupMemberProfileAndName_ db user m
+    when (memberIncognito m) $ timeItIO "deleteUnusedIncognitoProfileById_" $ deleteUnusedIncognitoProfileById_ db user profileId
   where
     cleanupHostGroupLinkConn_ = do
       hostId <- getHostMemberId_ db user groupId
@@ -2138,10 +2143,11 @@ deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = d
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db user@User {userId} GroupInfo {groupId, localDisplayName, membership = membership@GroupMember {memberProfile = LocalProfile {profileId}}} = do
-  deleteGroupProfile_ db userId groupId
-  DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  when (memberIncognito membership) $ deleteUnusedIncognitoProfileById_ db user profileId
+  timeItIO "deleteGroupProfile_" $ deleteGroupProfile_ db userId groupId
+  timeItIO "DELETE FROM groups" $ DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  timeItIO "DELETE FROM display_names" $ DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  when (memberIncognito membership) $
+    timeItIO "deleteUnusedIncognitoProfileById_" $ deleteUnusedIncognitoProfileById_ db user profileId
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
 deleteGroupProfile_ db userId groupId =
@@ -5602,3 +5608,12 @@ data StoreError
 instance ToJSON StoreError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
+
+timeItIO :: String -> IO a -> IO a
+timeItIO s action = do
+  t1 <- getCurrentTime
+  a <- action
+  t2 <- getCurrentTime
+  let diff = diffToMilliseconds $ diffUTCTime t2 t1
+  print $ show diff <> " ms - " <> s
+  pure a
