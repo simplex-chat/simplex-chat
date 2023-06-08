@@ -24,9 +24,10 @@ import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
-import Data.Time.Clock (DiffTime, UTCTime)
+import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
+import Data.Time.Calendar (addDays)
+import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Time.LocalTime (TimeZone, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime)
 import Data.Word (Word32)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
@@ -1107,15 +1108,21 @@ receivedWithTime_ ts tz from quote CIMeta {itemId, itemTs, itemEdited, itemDelet
         _ -> ""
 
 ttyMsgTime :: CurrentTime -> TimeZone -> UTCTime -> StyledString
-ttyMsgTime currentTime tz time =
-  let localTime = utcToLocalTime tz time
-      localCurrentTime = utcToLocalTime tz currentTime
-      fmt =
-        if (localDay localTime < localDay localCurrentTime)
-          && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
-          then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
-          else "%H:%M"
+ttyMsgTime now tz time =
+  let fmt = if recent now tz time then "%H:%M" else "%m-%d"
+      localTime = utcToLocalTime tz time
    in styleTime $ formatTime defaultTimeLocale fmt localTime
+
+recent :: CurrentTime -> TimeZone -> UTCTime -> Bool
+recent now tz time = do
+  let localNow = utcToLocalTime tz now
+      localNowDay = localDay localNow
+      localTime = utcToLocalTime tz time
+      localTimeDay = localDay localTime
+      previousDay18 = LocalTime (addDays (-1) localNowDay) (TimeOfDay 18 0 0)
+      currentDay12 = LocalTime localNowDay (TimeOfDay 12 0 0)
+  localNowDay == localTimeDay
+    || (localNow < currentDay12 && localTime >= previousDay18 && localTimeDay < localNowDay)
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewSentMessage to quote mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts tz (prependFirst to $ quote <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
