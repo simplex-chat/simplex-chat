@@ -1228,4 +1228,11 @@
 \nלאיש הקשר שלך</string>
     <string name="your_profile_will_be_sent">פרופיל הצ׳אט שלך יישלח לאיש הקשר שלך</string>
     <string name="your_chat_database">מסד הנתונים שלך</string>
+    <string name="you_rejected_group_invitation">דחית את ההזמנה לקבוצה</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">מסד הנתונים הנוכחי שלך יימחק ויוחלף במסד הנתונים המיובא.
+\nלא ניתן לבטל פעולה זו – הפרופיל, אנשי הקשר, ההודעות והקבצים שלך ייאבדו באופן בלתי הפיך.</string>
+    <string name="your_current_profile">הפרופיל הנוכחי שלך</string>
+    <string name="your_contacts_will_remain_connected">אנשי הקשר שלך יישארו מחוברים.</string>
+    <string name="your_contacts_will_see_it">אנשי הקשר שלך ב־SimpleX ייראו זאת.
+\nניתן לשנות זאת בהגדרות.</string>
 </resources>
