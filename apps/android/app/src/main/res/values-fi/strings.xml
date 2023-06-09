@@ -1029,4 +1029,236 @@
     <string name="custom_time_unit_months">kuukautta</string>
     <string name="custom_time_unit_seconds">sekuntia</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Kiitos käyttäjille – osallistu Weblaten kautta!</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Olet jo muodostanut yhteyden <xliff:g id="contactName" example="Alice">%1$s</xliff:g> kanssa.</string>
+    <string name="connection_error_auth_desc">Ellei yhteyshenkilösi poistanut yhteyttä tai tämä linkki oli jo käytössä, se voi olla virhe - ilmoita siitä.
+\nJos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja tarkista, että verkkoyhteytesi on vakaa.</string>
+    <string name="enter_passphrase_notification_desc">Jos haluat saada ilmoituksia, kirjoita tietokannan tunnuslause</string>
+    <string name="la_notice_turn_on">Kytke päälle</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Suojaa tietosi ottamalla SimpleX Lock käyttöön.
+\nSinua kehotetaan suorittamaan todennus loppuun, ennen kuin tämä ominaisuus otetaan käyttöön.</string>
+    <string name="moderate_message_will_be_deleted_warning">Viesti poistetaan kaikilta jäseniltä.</string>
+    <string name="personal_welcome">Tervetuloa <xliff:g>%1$s</xliff:g>!</string>
+    <string name="observer_cant_send_message_title">Et voi lähettää viestejä!</string>
+    <string name="contact_sent_large_file">Kontaktisi lähetti tiedoston, joka on suurempi kuin tällä hetkellä tuettu enimmäiskoko (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
+    <string name="voice_message_send_text">Ääniviesti…</string>
+    <string name="voice_messages_prohibited">Ääniviestit kielletty!</string>
+    <string name="smp_servers_per_user">Palvelimet nykyisen keskusteluprofiilisi uusille yhteyksille</string>
+    <string name="smp_servers_use_server">Käytä palvelinta</string>
+    <string name="xftp_servers">XFTP-palvelimet</string>
+    <string name="smp_servers_your_server">Palvelimesi</string>
+    <string name="smp_servers_your_server_address">Palvelimesi osoite</string>
+    <string name="enable_automatic_deletion_message">Tätä toimintoa ei voi kumota - valittua aikaisemmin lähetetyt ja vastaanotetut viestit poistetaan. Se voi kestää useita minuutteja.</string>
+    <string name="whats_new">Uusimmat</string>
+    <string name="you_will_still_receive_calls_and_ntfs">Saat edelleen puheluita ja ilmoituksia mykistetyiltä profiileilta, kun ne ovat aktiivisia.</string>
+    <string name="network_disable_socks">Käytä suoraa Internet-yhteyttä\?</string>
+    <string name="wrong_passphrase_title">Väärä tunnuslause!</string>
+    <string name="unknown_database_error_with_info">Tuntematon tietokantavirhe: %s</string>
+    <string name="button_welcome_message">Tervetuloviesti</string>
+    <string name="group_info_member_you">sinä: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Et menetä kontaktejasi, jos poistat osoitteesi myöhemmin.</string>
+    <string name="onboarding_notifications_mode_off">Kun sovellus on käynnissä</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="profile_will_be_sent_to_contact_sending_link">Profiilisi lähetetään kontaktille, jolta sait tämän linkin.</string>
+    <string name="you_will_join_group">Liityt ryhmään, johon tämä linkki viittaa, ja muodostat yhteyden sen ryhmän jäseniin.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta (virhe: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+    <string name="sender_you_pronoun">sinä</string>
+    <string name="description_via_one_time_link">kertalinkillä</string>
+    <string name="simplex_link_connection"><xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g>:n kautta</string>
+    <string name="simplex_link_mode_browser">Selaimella</string>
+    <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> palvelu</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">luvaton lähetys</string>
+    <string name="image_decoding_exception_desc">Kuvaa ei voida purkaa. Kokeile toista kuvaa tai ota yhteyttä kehittäjiin.</string>
+    <string name="waiting_for_file">Odottaa tiedostoa</string>
+    <string name="to_start_a_new_chat_help_header">Aloita uusi keskustelu</string>
+    <string name="using_simplex_chat_servers">Käyttää <xliff:g id="appNameFull">SimpleX Chat</xliff:g> -palvelimia.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Sinä päätät, minkä palvelimien kautta viestit <b>vastaanotetaan</b>, kontaktiesi – palvelimet, joita käytät viestien lähettämiseen.</string>
+    <string name="your_privacy">Yksityisyytesi</string>
+    <string name="snd_group_event_member_deleted">poistit <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="chat_preferences_yes">kyllä</string>
+    <string name="voice_messages">Ääniviestit</string>
+    <string name="wrong_passphrase">Väärä tietokannan tunnuslause</string>
+    <string name="you_are_invited_to_group_join_to_connect_with_group_members">Sinut on kutsuttu ryhmään. Liity ottaaksesi yhteyttä ryhmän jäseniin.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Liityit tähän ryhmään. Muodostetaan yhteyttä ryhmän jäsenten kutsumiseksi.</string>
+    <string name="v4_4_verify_connection_security">Tarkista yhteyden suojaus</string>
+    <string name="moderate_message_will_be_marked_warning">Viesti merkitään moderoiduksi kaikille jäsenille.</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Video vastaanotetaan, kun kontaktisi on ladannut sen.</string>
+    <string name="your_chats">Keskustelusi</string>
+    <string name="network_enable_socks">Käytä SOCKS-välityspalvelinta\?</string>
+    <string name="you_control_your_chat">Hallitset keskustelujasi!</string>
+    <string name="your_current_profile">Nykyinen profiilisi</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Profiilisi tallennetaan laitteeseesi ja jaetaan vain kontaktiesi kanssa. <xliff:g id="appName">SimpleX</xliff:g> -palvelimet eivät näe profiiliasi.</string>
+    <string name="settings_section_title_themes">TEEMAT</string>
+    <string name="messages_section_description">Tämä asetus koskee nykyisen keskusteluprofiilisi viestejä</string>
+    <string name="delete_files_and_media_desc">Tätä toimintoa ei voi kumota - kaikki vastaanotetut ja lähetetyt tiedostot ja media poistetaan. Matalan resoluution kuvat säilyvät.</string>
+    <string name="unknown_error">Tuntematon virhe</string>
+    <string name="v4_3_irreversible_message_deletion_desc">Kontaktisi voivat sallia viestien täydellisen poistamisen.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Nykyinen keskustelut-tietokantasi poistetaan ja korvataan tuodulla tietokannalla.
+\nTätä toimenpidettä ei voi perua - profiilisi, yhteystietosi, viestisi ja tiedostosi menetetään peruuttamattomasti.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Tätä toimintoa ei voi kumota - profiilisi, kontaktisi, viestisi ja tiedostosi poistuvat peruuttamattomasti.</string>
+    <string name="you_can_hide_or_mute_user_profile">Voit piilottaa tai mykistää käyttäjäprofiilin - pidä sitä painettuna avataksesi valikon.</string>
+    <string name="la_could_not_be_verified">Sinua ei voitu todentaa; yritä uudelleen.</string>
+    <string name="you_sent_group_invitation">Lähetit ryhmäkutsun</string>
+    <string name="rcv_group_event_updated_group_profile">päivitetty ryhmäprofiili</string>
+    <string name="snd_group_event_changed_member_role">muutit %s:n rooliksi %s</string>
+    <string name="theme">Teema</string>
+    <string name="database_is_not_encrypted">Keskustelut-tietokantaasi ei ole salattu - aseta tunnuslause sen suojaamiseksi.</string>
+    <string name="update_database">Päivitä</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1"> %1$d </xliff:g> ohitetut viestit</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Voit aloittaa keskustelun sovelluksen Asetukset / Tietokanta kautta tai käynnistämällä sovelluksen uudelleen.</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">muutit osoitetta</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Sinun on tunnistauduttava, kun käynnistät sovelluksen tai jatkat sen käyttöä 30 sekunnin tauon jälkeen.</string>
+    <string name="user_unmute">Poista mykistys</string>
+    <string name="verify_security_code">Tarkista turvakoodi</string>
+    <string name="to_connect_via_link_title">Yhteys linkin kautta</string>
+    <string name="video_call_no_encryption">videopuhelu (ei e2e-salattu)</string>
+    <string name="waiting_for_image">Odottaa kuvaa</string>
+    <string name="video_will_be_received_when_contact_is_online">Video vastaanotetaan, kun kontaktisi on online-tilassa, odota tai tarkista myöhemmin!</string>
+    <string name="view_security_code">Näytä turvakoodi</string>
+    <string name="voice_message_with_duration">Ääniviesti (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="gallery_video_button">Video</string>
+    <string name="you_can_share_your_address">Voit jakaa osoitteesi linkkinä tai QR-koodina - kuka tahansa voi muodostaa yhteyden sinuun.</string>
+    <string name="to_verify_compare">Voit tarkistaa päästä päähän -salauksen kontaktisi kanssa vertaamalla (tai skannaamalla) laitteidenne koodia.</string>
+    <string name="your_contacts_will_remain_connected">Kontaktisi pysyvät yhdistettyinä.</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Viestintä- ja sovellusalusta, joka suojaa yksityisyyttäsi ja tietoturvaasi.</string>
+    <string name="icon_descr_video_call">videopuhelu</string>
+    <string name="group_info_section_title_num_members"><xliff:g id="num_members"> %1$s </xliff:g> JÄSENET</string>
+    <string name="member_role_will_be_changed_with_notification">Rooli muuttuu muotoon \"%s\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.</string>
+    <string name="member_role_will_be_changed_with_invitation">Rooli muuttuu muotoon \"%s\". Jäsen saa uuden kutsun.</string>
+    <string name="voice_prohibited_in_this_chat">Ääniviestit ovat kiellettyjä tässä keskustelussa.</string>
+    <string name="v4_3_voice_messages">Ääniviestit</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta.</string>
+    <string name="unknown_message_format">tuntematon viestimuoto</string>
+    <string name="description_via_group_link">ryhmälinkillä</string>
+    <string name="description_via_contact_address_link">kontaktiosoitelinkillä</string>
+    <string name="description_you_shared_one_time_link">jaoit kertaluonteisen linkin</string>
+    <string name="description_you_shared_one_time_link_incognito">jaoit kertaluonteisen linkin incognito-tilassa</string>
+    <string name="failed_to_create_user_duplicate_desc">Sinulla on jo keskusteluprofiili samalla näyttönimellä. Valitse toinen nimi.</string>
+    <string name="contact_wants_to_connect_with_you">haluaa olla yhteydessä sinuun!</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Kontaktin tulee olla online-tilassa, jotta yhteys voidaan muodostaa.
+\nVoit peruuttaa tämän yhteyden ja poistaa kontaktin (ja yrittää myöhemmin uudella linkillä).</string>
+    <string name="scan_qr_to_connect_to_contact">Kontaktisi voi muodostaa yhteyden skannaamalla QR-koodin tai käyttämällä sovelluksessa olevaa linkkiä.</string>
+    <string name="you_can_accept_or_reject_connection">Kun ihmiset pyytävät yhteyden muodostamista, voit hyväksyä tai hylätä sen.</string>
+    <string name="your_settings">Asetuksesi</string>
+    <string name="your_SMP_servers">SMP-palvelimesi</string>
+    <string name="your_XFTP_servers">XFTP-palvelimesi</string>
+    <string name="use_simplex_chat_servers__question">Käytä <xliff:g id="appNameFull">SimpleX Chat</xliff:g> palvelimia\?</string>
+    <string name="theme_colors_section_title">TEEMAN VÄRIT</string>
+    <string name="update_network_session_mode_question">Päivitä kuljetuksen eristystila\?</string>
+    <string name="you_can_create_it_later">Voit luoda sen myöhemmin</string>
+    <string name="your_contacts_will_see_it">Kontaktisi SimpleX:ssä näkevät sen.
+\nVoit muuttaa sitä Asetuksista.</string>
+    <string name="to_reveal_profile_enter_password">Voit paljastaa piilotetun profiilisi kirjoittamalla koko salasanan Keskusteluprofiilit-sivun hakukenttään.</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">Emme tallenna mitään kontaktejasi tai viestejäsi (kun ne on toimitettu) palvelimille.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Yksityisyyden suojaamiseksi kaikkien muiden alustojen käyttämien käyttäjätunnusten sijaan <xliff:g id="appName">SimpleX</xliff:g> käyttää viestijonojen tunnisteita, jotka ovat kaikille kontakteille erillisiä.</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice"> %1$s </xliff:g> haluaa olla yhteydessä sinuun kautta</string>
+    <string name="webrtc_ice_servers">WebRTC ICE -palvelimet</string>
+    <string name="your_chat_database">Keskustelut-tietokantasi</string>
+    <string name="you_must_use_the_most_recent_version_of_database">Sinun tulee käyttää keskustelujen-tietokannan uusinta versiota AINOSTAAN yhdessä laitteessa, muuten saatat lakata vastaanottamasta viestejä joiltakin kontakteilta.</string>
+    <string name="snd_group_event_changed_role_for_yourself">vaihdoit roolin itsellesi %s</string>
+    <string name="snd_group_event_user_left">lähdit</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Voit jakaa linkin tai QR-koodin - kuka tahansa voi liittyä ryhmään. Et menetä ryhmän jäseniä, jos poistat sen myöhemmin.</string>
+    <string name="update_network_settings_question">Päivitä verkkoasetukset\?</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">Asetusten päivittäminen yhdistää asiakkaan uudelleen kaikkiin palvelimiin.</string>
+    <string name="color_title">Otsikko</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">Valinnaisella tervetuloviestillä.</string>
+    <string name="you_have_no_chats">Sinulla ei ole keskusteluja</string>
+    <string name="images_limit_title">Liikaa kuvia!</string>
+    <string name="to_share_with_your_contact">(jaa kontaktisi kanssa)</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Keskusteluprofiilisi lähetetään
+\nkontakteillesi</string>
+    <string name="your_ICE_servers">ICE-palvelimesi</string>
+    <string name="network_use_onion_hosts_prefer">Kun saatavilla</string>
+    <string name="update_onion_hosts_settings_question">Päivitä .onion-isäntien asetus\?</string>
+    <string name="network_use_onion_hosts">Käytä .onion-isäntiä</string>
+    <string name="your_calls">Puhelusi</string>
+    <string name="alert_message_no_group">Tätä ryhmää ei enää ole olemassa.</string>
+    <string name="unhide_chat_profile">Näytä keskusteluprofiili</string>
+    <string name="unhide_profile">Näytä profiili</string>
+    <string name="incognito_info_find">Löydät inkognito-yhteydessä käytetyn profiilin napauttamalla kontaktin tai ryhmän nimeä keskustelun yläreunassa.</string>
+    <string name="chat_preferences_you_allow">Sallit</string>
+    <string name="your_preferences">Asetuksesi</string>
+    <string name="video_descr">Video</string>
+    <string name="icon_descr_video_snd_complete">Video lähetetty</string>
+    <string name="icon_descr_waiting_for_video">Odottaa videota</string>
+    <string name="this_string_is_not_a_connection_link">Tämä merkkijono ei ole yhteyslinkki!</string>
+    <string name="settings_section_title_you">SINÄ</string>
+    <string name="upgrade_and_open_chat">Päivitä ja avaa keskustelu</string>
+    <string name="v4_5_private_filenames_descr">Aikavyöhykkeen suojaamiseksi kuva-/äänitiedostot käyttävät UTC:tä.</string>
+    <string name="v5_0_large_files_support">Videot ja tiedostot 1 Gt asti</string>
+    <string name="v5_1_better_messages_descr">- ääniviestejä enintään 5 minuuttia.
+\n- muokattava kesto katoaville.
+\n- muokkaushistoria.</string>
+    <string name="you_can_turn_on_lock">Voit ottaa SimpleX Lockin käyttöön Asetusten kautta.</string>
+    <string name="this_text_is_available_in_settings">Tämä teksti on saatavilla asetuksista</string>
+    <string name="welcome">Tervetuloa!</string>
+    <string name="icon_descr_received_msg_status_unread">lukematon</string>
+    <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
+    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> Tiimi</string>
+    <string name="this_link_is_not_a_valid_connection_link">Tämä linkki ei ole kelvollinen yhteyslinkki!</string>
+    <string name="your_chat_profiles">Keskusteluprofiilisi</string>
+    <string name="smp_server_test_upload_file">Lataa tiedosto</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Yksityisyytesi säilyttämiseksi sovelluksessa on push-ilmoitusten sijaan <b><xliff:g id="appName">SimpleX</xliff:g>-taustapalvelu</b> – se kuluttaa muutaman prosentin akusta päivässä.</string>
+    <string name="auth_unlock">Avaa</string>
+    <string name="you_are_observer">olet tarkkailija</string>
+    <string name="videos_limit_title">Liikaa videoita!</string>
+    <string name="voice_message">Ääniviesti</string>
+    <string name="waiting_for_video">Odottaa videota</string>
+    <string name="switch_receiving_address_desc">Tämä ominaisuus on kokeellinen! Se toimii vain, jos toisella on asennettuna versio 4.2. Sinun pitäisi nähdä viesti keskustelussa, kun osoitteenmuutos on valmis - tarkista, että voit edelleen vastaanottaa viestejä kyseiseltä kontaktilta (tai ryhmän jäseneltä).</string>
+    <string name="you_need_to_allow_to_send_voice">Sinun on sallittava kontaktiesi lähettää ääniviestejä, jotta voit lähettää niitä.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Voit <font color="#0088ff">olla yhteydessä <xliff:g id="appNameFull">SimpleX Chatin</xliff:g> -kehittäjiin kysyäksesi kysymyksiä ja saadaksesi päivityksiä</font>.</string>
+    <string name="this_QR_code_is_not_a_link">Tämä QR-koodi ei ole linkki!</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">Sinut yhdistetään ryhmään, kun ryhmän isännän laite on online-tilassa, odota tai tarkista myöhemmin!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Sinut yhdistetään, kun yhteyspyyntösi on hyväksytty, odota tai tarkista myöhemmin!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Sinut yhdistetään, kun kontaktisi laite on online-tilassa, odota tai tarkista myöhemmin!</string>
+    <string name="you_can_also_connect_by_clicking_the_link">Voit myös muodostaa yhteyden klikkaamalla linkkiä. Jos se avautuu selaimessa, napsauta <b>Avaa mobiilisovelluksessa</b> -painiketta.</string>
+    <string name="your_simplex_contact_address">SimpleX-osoitteesi</string>
+    <string name="smp_servers_use_server_for_new_conn">Käytä uusiin yhteyksiin</string>
+    <string name="network_socks_toggle_use_socks_proxy">Käytä SOCKS-välityspalvelinta</string>
+    <string name="network_session_mode_transport_isolation">Kuljetuksen eristäminen</string>
+    <string name="your_profile_is_stored_on_your_device">Profiilisi, kontaktisi ja toimitetut viestit tallennetaan laitteellesi.</string>
+    <string name="profile_is_only_shared_with_your_contacts">Profiili jaetaan vain kontaktiesi kanssa.</string>
+    <string name="use_chat">Käytä chattia</string>
+    <string name="your_ice_servers">ICE-palvelimesi</string>
+    <string name="icon_descr_video_off">Video pois päältä</string>
+    <string name="icon_descr_video_on">Video päällä</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">Tämä virhe on pysyvä tälle yhteydelle, yhdistä uudelleen.</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Et enää saa viestejä tästä ryhmästä. Keskusteluhistoria säilytetään.</string>
+    <string name="you_are_invited_to_group">Sinut on kutsuttu ryhmään</string>
+    <string name="you_joined_this_group">Liityit tähän ryhmään</string>
+    <string name="you_rejected_group_invitation">Hylkäsit ryhmäkutsun</string>
+    <string name="alert_title_cant_invite_contacts_descr">Käytät tässä ryhmässä incognito-profiilia. Kontaktien kutsuminen ei ole sallittua, jotta pääprofiilisi ei tule jaetuksi</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">Voit käyttää markdownia viestien muotoiluun:</string>
+    <string name="icon_descr_waiting_for_image">Odottaa kuvaa</string>
+    <string name="group_preview_you_are_invited">sinut on kutsuttu ryhmään</string>
+    <string name="unmute_chat">Poista mykistys</string>
+    <string name="you_accepted_connection">Hyväksyit yhteyden</string>
+    <string name="you_invited_your_contact">Kutsuit kontaktisi</string>
+    <string name="call_connection_via_relay">releellä</string>
+    <string name="database_downgrade_warning">Varoitus: saatat menettää joitain tietoja!</string>
+    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> Osoite</string>
+    <string name="your_profile_will_be_sent">Keskusteluprofiilisi lähetetään kontakteillesi</string>
+    <string name="callstate_waiting_for_answer">odottaa vastaamista…</string>
+    <string name="next_generation_of_private_messaging">Seuraavan sukupolven yksityisviestit</string>
+    <string name="callstate_waiting_for_confirmation">odottaa vahvistusta…</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1"> %1$d </xliff:g> viestit ohitettu.</string>
+    <string name="alert_text_msg_bad_id">Seuraavan viestin tunnus on väärä (pienempi tai yhtä suuri kuin edellisen).
+\nTämä voi johtua jostain virheestä tai siitä, että yhteys on vaarantunut.</string>
+    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> viestien salauksen purku epäonnistui.</string>
+    <string name="user_unhide">Näytä</string>
+    <string name="you_have_to_enter_passphrase_every_time">Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.</string>
+    <string name="update_database_passphrase">Päivitä tietokannan tunnuslause</string>
+    <string name="you_can_share_this_address_with_your_contacts">Voit jakaa tämän osoitteen kontaktiesi kanssa, jotta he voivat muodostaa yhteyden %s:ään.</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">muutit osoitteeksi %s</string>
+    <string name="invite_prohibited_description">Yrität kutsua kontaktia, jonka kanssa olet jakanut inkognito-profiilin, ryhmään, jossa käytät pääprofiiliasi</string>
+    <string name="group_welcome_title">Tervetuloviesti</string>
+    <string name="should_be_at_least_one_profile">Käyttäjäprofiileja tulee olla vähintään yksi.</string>
+    <string name="should_be_at_least_one_visible_profile">Näkyviä käyttäjäprofiileja tulee olla vähintään yksi.</string>
+    <string name="incognito_info_share">Kun jaat inkognitoprofiilin jonkun kanssa, tätä profiilia käytetään ryhmissä, joihin tämä sinut kutsuu.</string>
+    <string name="group_main_profile_sent">Keskusteluprofiilisi lähetetään ryhmän jäsenille</string>
+    <string name="incognito_random_profile">Satunnainen profiilisi</string>
+    <string name="update_network_settings_confirmation">Päivitä</string>
+    <string name="voice_messages_are_prohibited">Ääniviestit ovat kiellettyjä tässä ryhmässä.</string>
+    <string name="v4_5_transport_isolation">Kuljetuksen eristäminen</string>
+    <string name="custom_time_unit_weeks">viikkoa</string>
 </resources>
