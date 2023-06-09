@@ -28,7 +28,7 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace)
+import Data.Char (isSpace, toLower)
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
@@ -46,7 +46,6 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
-import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as DB
 import Simplex.Chat.Archive
@@ -69,7 +68,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withTransactionCtx)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
@@ -137,7 +136,10 @@ _defaultNtfServers :: [NtfServer]
 _defaultNtfServers = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"]
 
 maxImageSize :: Integer
-maxImageSize = 236700
+maxImageSize = 261120 * 2 -- auto-receive on mobiles
+
+imageExtensions :: [String]
+imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
 
 maxMsgReactions :: Int
 maxMsgReactions = 3
@@ -352,9 +354,9 @@ processChatCommand = \case
           asks currentUser >>= readTVarIO >>= \case
             Nothing -> throwChatError CENoActiveUser
             Just user -> do
-              smpServers <- withStore' (`getProtocolServers` user)
+              servers <- withStore' (`getProtocolServers` user)
               cfg <- asks config
-              pure (activeAgentServers cfg protocol smpServers, smpServers)
+              pure (activeAgentServers cfg protocol servers, servers)
         | otherwise = do
           defServers <- asks $ defaultServers . config
           pure (cfgServers protocol defServers, [])
@@ -1257,7 +1259,7 @@ processChatCommand = \case
               saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
           )
           `catchError` (toView . CRChatError (Just user))
-      CRBroadcastSent user mc (length cts) <$> liftIO getZonedTime
+      CRBroadcastSent user mc (length cts) <$> liftIO getCurrentTime
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -1471,6 +1473,7 @@ processChatCommand = \case
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatResp <- processChatCommand $ APIGetChat chatRef (CPLast count) search
+    setActive $ chatActiveTo chatName
     pure $ CRChatItems user (aChatItems . chat $ chatResp)
   LastMessages Nothing count search -> withUser $ \user -> do
     chatItems <- withStore $ \db -> getAllChatItems db user (CPLast count) search
@@ -1502,7 +1505,7 @@ processChatCommand = \case
   SendImage chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     filePath <- toFSFilePath f
-    unless (".jpg" `isSuffixOf` f || ".jpeg" `isSuffixOf` f) $ throwChatError CEFileImageType {filePath}
+    unless (any ((`isSuffixOf` map toLower f)) imageExtensions) $ throwChatError CEFileImageType {filePath}
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
     -- TODO include file description for preview
@@ -2783,7 +2786,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
-                notifyMemberConnected gInfo m
+                notifyMemberConnected gInfo m $ Just ct
                 let connectedIncognito = contactConnIncognito ct || memberIncognito membership
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
         SENT msgId -> do
@@ -2932,11 +2935,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
-                notifyMemberConnected gInfo m
+                notifyMemberConnected gInfo m Nothing
                 messageWarning "connected member does not have contact"
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
-                  notifyMemberConnected gInfo m
+                  notifyMemberConnected gInfo m $ Just ct
                   let connectedIncognito = contactConnIncognito ct || memberIncognito membership
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
@@ -3274,10 +3277,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     groupDescriptionChatItem gInfo m descr =
       createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvMsgContent $ MCText descr) Nothing
 
-    notifyMemberConnected :: GroupInfo -> GroupMember -> m ()
-    notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} = do
+    notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> m ()
+    notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} ct_ = do
       memberConnectedChatItem gInfo m
-      toView $ CRConnectedToGroupMember user gInfo m
+      toView $ CRConnectedToGroupMember user gInfo m ct_
       let g = groupName' gInfo
       whenGroupNtfs user gInfo $ do
         setActive $ ActiveG g
@@ -4416,10 +4419,9 @@ saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} conte
 
 mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
 mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs currentTs = do
-  tz <- getCurrentTimeZone
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) tz currentTs itemTs currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) currentTs itemTs currentTs currentTs
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 deleteDirectCI :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> Bool -> Bool -> m ChatResponse
@@ -4985,7 +4987,7 @@ chatCommandP =
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayName <*> fullNameP
     newUserP = do
-      sameServers <- "same_smp=" *> onOffP <* A.space <|> pure False
+      sameServers <- "same_servers=" *> onOffP <* A.space <|> pure False
       (cName, fullName) <- profileNames
       let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
       pure NewUser {profile, sameServers, pastTimestamp = False}

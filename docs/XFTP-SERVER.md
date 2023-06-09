@@ -40,7 +40,10 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
 
    ```sh
    # For Ubuntu
-   sudo ufw allow 443
+   sudo ufw allow 443/tcp
+   # For Fedora
+   sudo firewall-cmd --permanent --add-port=443/tcp && \
+   sudo firewall-cmd --reload
    ```
 
 5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/xftp-server.service` file with the following content:

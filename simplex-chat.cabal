@@ -374,6 +374,7 @@ test-suite simplex-chat-test
       MobileTests
       ProtocolTests
       SchemaDump
+      ViewTests
       WebRTCTests
       Paths_simplex_chat
   hs-source-dirs:

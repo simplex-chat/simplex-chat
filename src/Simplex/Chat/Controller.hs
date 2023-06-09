@@ -32,7 +32,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
-import Data.Time (NominalDiffTime, ZonedTime)
+import Data.Time (NominalDiffTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
@@ -142,6 +142,12 @@ defaultInlineFilesConfig =
 
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
   deriving (Eq)
+
+chatActiveTo :: ChatName -> ActiveTo
+chatActiveTo (ChatName cType name) = case cType of
+  CTDirect -> ActiveC name
+  CTGroup -> ActiveG name
+  _ -> ActiveNone
 
 data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
 
@@ -407,7 +413,7 @@ data ChatResponse
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
-  | CRBroadcastSent User MsgContent Int ZonedTime
+  | CRBroadcastSent User MsgContent Int UTCTime
   | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk {user_ :: Maybe User}
@@ -485,7 +491,7 @@ data ChatResponse
   | CRJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CRMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CRMemberRoleUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
-  | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
   | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
