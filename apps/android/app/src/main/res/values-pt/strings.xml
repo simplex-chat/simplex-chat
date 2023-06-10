@@ -220,7 +220,7 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b> Adicionar novo contato</b>: para criar o seu código QR de utilização única para o seu contato.</string>
     <string name="onboarding_notifications_mode_periodic_desc"><b> Bom para a bateria </b>. O serviço em segundo plano verifica se há mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.</string>
     <string name="turning_off_service_and_periodic">A otimização da bateria está ativa, desativando o serviço em segundo plano e os pedidos periódicos de novas mensagens. Você pode reativá-los através das definições.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Melhor para a bateria</b>. Você receberá notificações apenas quando a aplicação estiver em execução, o serviço em segundo plano NÃO será usado.</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Melhor para a bateria</b>. Apenas receberá notificações enquanto a app estiver em execução (SEM serviço em segundo plano)</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Pode ser desativado nas definições</b> – as notificações ainda serão exibidas enquanto a aplicação estiver em execução.</string>
     <string name="onboarding_notifications_mode_service_desc"><b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="settings_audio_video_calls">Chamadas de áudio e vídeo</string>
@@ -543,7 +543,7 @@
     <string name="join_group_question">Juntar-se ao grupo\?</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Com mensagem de boas-vindas opcional.</string>
     <string name="simplex_link_connection">via <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Você já está conectado com <xliff:g id="contactName" example="Alice">%1$s! </xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Já está conectado a <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
     <string name="large_file">Ficheiro grande!</string>
     <string name="icon_descr_image_snd_complete">Imagem enviada</string>
@@ -699,4 +699,53 @@
     <string name="encrypted_database">Base de dados encriptada</string>
     <string name="group_member_status_introduced">conectando (introduzido)</string>
     <string name="v5_1_better_messages">Melhores mensagens</string>
+    <string name="icon_descr_email">Email</string>
+    <string name="network_session_mode_transport_isolation">Isolamento do Transporte</string>
+    <string name="callstate_ended">terminado</string>
+    <string name="settings_developer_tools">Ferramentas de desenvolvedor</string>
+    <string name="encrypt_database">Encriptar</string>
+    <string name="downgrade_and_open_chat">Fazer downgrade e abrir chat</string>
+    <string name="network_option_enable_tcp_keep_alive">Activar TCP manter-vivo</string>
+    <string name="chat_preferences_default">predefinido (%s)</string>
+    <string name="v4_5_transport_isolation">Isolamento do Transporte</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">A tentar connectar ao servidor usado para receber mensagens deste contacto.</string>
+    <string name="image_decoding_exception_title">Erro de descodificação</string>
+    <string name="developer_options">IDs das bases de dados e opções de isolamento do Transporte</string>
+    <string name="database_downgrade">Downgrade da base de dados</string>
+    <string name="auth_enable_simplex_lock">Activar SimpleX Lock</string>
+    <string name="edit_verb">Editar</string>
+    <string name="icon_descr_edited">editado</string>
+    <string name="disappearing_message">Mensagem temporária</string>
+    <string name="edit_image">Editar imagem</string>
+    <string name="enable_lock">Activar bloqueio</string>
+    <string name="enabled_self_destruct_passcode">Activar código de acesso auto-destrutivo</string>
+    <string name="enable_self_destruct">Activar auto-destruição</string>
+    <string name="empty_chat_profile_is_created">Um perfil vazio é criado com o nome fornecido, e a aplicação abre como de costume.</string>
+    <string name="mtr_error_no_down_migration">a versão da base de dados é mais recente do que a aplicação, mas sem migração para baixo para: %s</string>
+    <string name="share_text_disappears_at">Desaparecerá: %s</string>
+    <string name="delete_files_and_media_question">Eliminar ficheiros e multimédia\?</string>
+    <string name="share_text_deleted_at">Eliminado a: %s</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">A autenticação do dispositivo está desactivada. A desligar SimpleX Lock.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">A autenticação do dispositivo não está activada. Pode activar o SimpleX Lock através das Definições, depois de activar a autenticação do dispositivo.</string>
+    <string name="mtr_error_different">migração diferente na aplicação/base de dados: %s / %s</string>
+    <string name="allow_accepting_calls_from_lock_screen">Activar chamadas a partir do ecrã de bloqueio através das Definições.</string>
+    <string name="encrypt_database_question">Encriptar base de dados\?</string>
+    <string name="smp_servers_enter_manually">Introduzir o servidor manualmente</string>
+    <string name="enable_automatic_deletion_question">Activar a eliminação automática de mensagens\?</string>
+    <string name="button_edit_group_profile">Editar perfil de grupo</string>
+    <string name="decryption_error">Erro de desencriptação</string>
+    <string name="app_passcode_replaced_with_self_destruct">O código de acesso é substituído por um código auto-destrutivo.</string>
+    <string name="share_text_database_id">ID da base de dados: %d</string>
+    <string name="settings_section_title_develop">DESENVOLVER</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Nomes, avatares e isolamento de transporte diferentes.</string>
+    <string name="color_secondary_variant">Secundário adicional</string>
+    <string name="color_primary_variant">Realce adicional</string>
+    <string name="color_background">Fundo</string>
+    <string name="v5_1_custom_themes_descr">Customizar e partilhar temas de cor.</string>
+    <string name="v5_1_custom_themes">Temas personalizados</string>
+    <string name="info_row_deleted_at">Eliminado a</string>
+    <string name="info_row_disappears_at">Desaparecerá</string>
+    <string name="feature_enabled">activado</string>
+    <string name="feature_enabled_for_contact">activado para contacto</string>
+    <string name="feature_enabled_for_you">activado para si</string>
 </resources>
