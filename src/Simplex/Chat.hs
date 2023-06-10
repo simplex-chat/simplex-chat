@@ -46,7 +46,6 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
-import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as DB
 import Simplex.Chat.Archive
@@ -69,7 +68,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withTransactionCtx)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
@@ -1260,7 +1259,7 @@ processChatCommand = \case
               saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
           )
           `catchError` (toView . CRChatError (Just user))
-      CRBroadcastSent user mc (length cts) <$> liftIO getZonedTime
+      CRBroadcastSent user mc (length cts) <$> liftIO getCurrentTime
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -2787,7 +2786,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
-                notifyMemberConnected gInfo m
+                notifyMemberConnected gInfo m $ Just ct
                 let connectedIncognito = contactConnIncognito ct || memberIncognito membership
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
         SENT msgId -> do
@@ -2936,11 +2935,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
-                notifyMemberConnected gInfo m
+                notifyMemberConnected gInfo m Nothing
                 messageWarning "connected member does not have contact"
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
-                  notifyMemberConnected gInfo m
+                  notifyMemberConnected gInfo m $ Just ct
                   let connectedIncognito = contactConnIncognito ct || memberIncognito membership
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
@@ -3278,10 +3277,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     groupDescriptionChatItem gInfo m descr =
       createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvMsgContent $ MCText descr) Nothing
 
-    notifyMemberConnected :: GroupInfo -> GroupMember -> m ()
-    notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} = do
+    notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> m ()
+    notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} ct_ = do
       memberConnectedChatItem gInfo m
-      toView $ CRConnectedToGroupMember user gInfo m
+      toView $ CRConnectedToGroupMember user gInfo m ct_
       let g = groupName' gInfo
       whenGroupNtfs user gInfo $ do
         setActive $ ActiveG g
@@ -4420,10 +4419,9 @@ saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} conte
 
 mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
 mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs currentTs = do
-  tz <- getCurrentTimeZone
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) tz currentTs itemTs currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) currentTs itemTs currentTs currentTs
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 deleteDirectCI :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> Bool -> Bool -> m ChatResponse

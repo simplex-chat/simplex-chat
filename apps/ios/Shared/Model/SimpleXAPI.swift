@@ -1345,9 +1345,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if active(user) {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
-        case let .connectedToGroupMember(user, groupInfo, member):
+        case let .connectedToGroupMember(user, groupInfo, member, memberContact):
             if active(user) {
                 _ = m.upsertGroupMember(groupInfo, member)
+            }
+            if let contact = memberContact {
+                m.setContactNetworkStatus(contact, .connected)
             }
         case let .groupUpdated(user, toGroup):
             if active(user) {

@@ -108,6 +108,14 @@ struct ChatListNavLink: View {
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
+                .swipeActions(edge: .trailing) {
+                    if (groupInfo.membership.memberCurrent) {
+                        leaveGroupChatButton(groupInfo)
+                    }
+                    if groupInfo.canDelete {
+                        deleteGroupChatButton(groupInfo)
+                    }
+                }
         default:
             NavLinkPlain(
                 tag: chat.chatInfo.id,
@@ -124,12 +132,7 @@ struct ChatListNavLink: View {
                     clearChatButton()
                 }
                 if (groupInfo.membership.memberCurrent) {
-                    Button {
-                        AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
-                    } label: {
-                        Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                    .tint(Color.yellow)
+                    leaveGroupChatButton(groupInfo)
                 }
             }
             .swipeActions(edge: .trailing) {
@@ -177,7 +180,16 @@ struct ChatListNavLink: View {
         .tint(Color.orange)
     }
 
-    @ViewBuilder private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
+    private func leaveGroupChatButton(_ groupInfo: GroupInfo) -> some View {
+        Button {
+            AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
+        } label: {
+            Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
+        }
+        .tint(Color.yellow)
+    }
+
+    private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
         Button {
             AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
         } label: {

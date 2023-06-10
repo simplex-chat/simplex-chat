@@ -456,7 +456,7 @@ public enum ChatResponse: Decodable, Error {
     case groupInvitation(user: User, groupInfo: GroupInfo) // unused
     case userJoinedGroup(user: User, groupInfo: GroupInfo)
     case joinedGroupMember(user: User, groupInfo: GroupInfo, member: GroupMember)
-    case connectedToGroupMember(user: User, groupInfo: GroupInfo, member: GroupMember)
+    case connectedToGroupMember(user: User, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
     case groupRemoved(user: User, groupInfo: GroupInfo) // unused
     case groupUpdated(user: User, toGroup: GroupInfo)
     case groupLinkCreated(user: User, groupInfo: GroupInfo, connReqContact: String, memberRole: GroupMemberRole)
@@ -692,7 +692,7 @@ public enum ChatResponse: Decodable, Error {
             case let .groupInvitation(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .userJoinedGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .joinedGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
-            case let .connectedToGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
             case let .groupRemoved(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
             case let .groupLinkCreated(u, groupInfo, connReqContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)\nmemberRole: \(memberRole)")
