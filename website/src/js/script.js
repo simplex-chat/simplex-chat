@@ -187,6 +187,13 @@ function openOverlay() {
                 const scrollToEl = document.getElementById(scrollTo)
                 if (scrollToEl) scrollToEl.scrollIntoView(true)
             }
+
+            const currentOpenedGlossaryOverlay = document.querySelector('.glossary-overlay.flex')
+            if (currentOpenedGlossaryOverlay) {
+                currentOpenedGlossaryOverlay.classList.remove('flex')
+                currentOpenedGlossaryOverlay.classList.add('hidden')
+            }
+
             el.classList.remove('hidden')
             el.classList.add('flex')
             document.body.classList.add('lock-scroll')
