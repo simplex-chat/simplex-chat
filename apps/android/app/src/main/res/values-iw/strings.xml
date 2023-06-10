@@ -98,7 +98,7 @@
     <string name="v4_2_auto_accept_contact_requests">אשר אוטומטית בקשות ליצירת קשר.</string>
     <string name="authentication_cancelled">אימות בוטל</string>
     <string name="auth_unavailable">אימות לא זמין</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>הוסיפו איש קשר חדש</b>: ליצירת קוד QR חד פעמי עבור איש הקשר שלכם.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>הוסיפו איש קשר חדש</b>: ליצירת קוד QR חד־פעמי עבור איש הקשר שלכם.</string>
     <string name="onboarding_notifications_mode_off_desc"><b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת (ללא שירות רקע).</string>
     <string name="onboarding_notifications_mode_periodic_desc"><b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.</string>
     <string name="both_you_and_your_contacts_can_delete">גם אתם וגם איש הקשר יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
@@ -138,7 +138,7 @@
     <string name="smp_server_test_compare_file">השווה קובץ</string>
     <string name="database_initialization_error_title">לא ניתן לאתחל את מסד הנתונים</string>
     <string name="notifications_mode_periodic_desc">בודק הודעות חדשות כל 10 דקות למשך עד דקה אחת.</string>
-    <string name="notification_contact_connected">מחובר</string>
+    <string name="notification_contact_connected">מחובר/ת</string>
     <string name="la_change_app_passcode">שנה קוד גישה</string>
     <string name="auth_confirm_credential">אימות אישורך</string>
     <string name="chat_with_developers">צ׳אט עם המפתחים</string>
@@ -161,7 +161,7 @@
     <string name="confirm_password">אימות סיסמה</string>
     <string name="colored">צבעוני</string>
     <string name="callstatus_connecting">מתחבר לשיחה…</string>
-    <string name="callstate_connected">מחובר</string>
+    <string name="callstate_connected">מחובר/ת</string>
     <string name="callstate_connecting">מתחבר…</string>
     <string name="icon_descr_call_connecting">מתחבר לשיחה</string>
     <string name="confirm_passcode">אימות קוד גישה</string>
@@ -178,12 +178,12 @@
     <string name="chat_is_stopped_indication">צ׳אט מופסק</string>
     <string name="alert_title_cant_invite_contacts">לא ניתן להזמין את אנשי הקשר!</string>
     <string name="rcv_group_event_changed_your_role">שונה תפקידך ל%s</string>
-    <string name="rcv_group_event_member_connected">מחובר</string>
+    <string name="rcv_group_event_member_connected">מחובר/ת</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">כתובתך שונתה</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">משנה כתובת…</string>
     <string name="snd_conn_event_switch_queue_phase_changing">משנה כתובת…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">משנה כתובת עבור %s…</string>
-    <string name="group_member_status_connected">מחובר</string>
+    <string name="group_member_status_connected">מחובר/ת</string>
     <string name="group_member_status_accepted">מתחבר (הזמנה אושרה)</string>
     <string name="group_member_status_announced">מתחבר (הוכרז)</string>
     <string name="group_member_status_intro_invitation">מתחבר (הזמנת היכרות)</string>
