@@ -11,7 +11,7 @@ active_home: true
 
 <section id="why-privacy" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5 lg:h-[888px]">
     <div class="container">
-        <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">{{ "privacy-matters-section-header" | i18n({}, lang ) | safe }}</p>
+        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">{{ "privacy-matters-section-header" | i18n({}, lang ) | safe }}</h2>
         <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">{{ "privacy-matters-section-subheader" | i18n({}, lang ) | safe }}</p>
         <div class="flex flex-col lg:flex-row gap-[20px] mb-[62px] lg:mb-[90px]">
 
@@ -41,7 +41,7 @@ active_home: true
 {# Features #}
 <section id="features" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[95px] px-5 lg:h-[888px]">
     <div class="container">
-        <p class="text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold gradient-text mb-20">{{ "features" | i18n({}, lang ) | safe }}</p>
+        <h2 class="text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold gradient-text mb-20">{{ "features" | i18n({}, lang ) | safe }}</h2>
 
         <div class="mb-[50px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-32">
             {% for feature in features.sections %}
@@ -60,7 +60,7 @@ active_home: true
 {# what makes simplex private #}
 <section id="privacy" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[90px] overflow-hidden px-5 lg:h-[888px]">
     <div class="container scale-100">
-        <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-20">{{ "simplex-private-section-header" | i18n({}, lang ) | safe }}</p>
+        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-20">{{ "simplex-private-section-header" | i18n({}, lang ) | safe }}</h2>
 
         <div class="swiper private-swiper overflow-hidden px-4 py-2">
             <div class="swiper-wrapper mb-16">
@@ -71,8 +71,8 @@ active_home: true
                         <img class="w-full max-w-[223px] h-full max-h-[226px] dark:hidden" src="{{ section.imgLight }}" alt=""/>
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="{{ section.imgDark }}" alt=""/>
                     </div>
-                    <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title | i18n({}, lang ) | safe }}</p>
+                    <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
+                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title | i18n({}, lang ) | safe }}</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             {% for point in section.points %}
                             <p class="text-grey-black dark:text-white text-[14px] text-center">{{ point | i18n({}, lang ) | safe }}</p>
@@ -102,7 +102,7 @@ active_home: true
 {# Network #}
 <section id="network" class="bg-secondary-bg-light dark:bg-secondary-bg-dark lg:h-[642px] py-[95px] px-5">
     <div class="container">
-        <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-5">{{ "simplex-network-section-header" | i18n({}, lang ) | safe }}</p>
+        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-5">{{ "simplex-network-section-header" | i18n({}, lang ) | safe }}</h2>
         <p class="text-black dark:text-white text-[16px] font-normal text-center mb-16">{{ "simplex-network-section-desc" | i18n({}, lang ) | safe }}</p>
 
         <div class="flex flex-col lg:flex-row justify-between gap-12 md:gap-14 lg:gap-16">
@@ -112,7 +112,7 @@ active_home: true
                     <img src="/img/new/network-1-dark.svg" alt="" class="hidden dark:block"/>
                 </div>
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
-                    <p class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-1-header" | i18n({}, lang ) | safe }}</p>
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-1-header" | i18n({}, lang ) | safe }}</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
                         {{ "simplex-network-1-desc" | i18n({}, lang ) | safe }} <a href="javascript:void(0)" data-show-overlay="{{ simplex_network_overlay.sections[0].overlayContent.overlayId }}" class="open-overlay-btn">{{ "simplex-network-1-overlay-linktext" | i18n({}, lang ) | safe }}</a>.
                         {{ overlay(simplex_network_overlay.sections[0],lang) }}
@@ -128,7 +128,7 @@ active_home: true
                     <img src="/img/new/network-2-dark.svg" alt="" class="hidden dark:block"/>
                 </div>
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
-                    <p class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-2-header" | i18n({}, lang ) | safe }}</p>
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-2-header" | i18n({}, lang ) | safe }}</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
                         {{ "simplex-network-2-desc" | i18n({}, lang ) | safe }}
                     </p>
@@ -143,7 +143,7 @@ active_home: true
                     <img src="/img/new/network-3-dark.svg" alt="" class="hidden dark:block"/>
                 </div>
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
-                    <p class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-3-header" | i18n({}, lang ) | safe }}</p>
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-3-header" | i18n({}, lang ) | safe }}</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
                         {{ "simplex-network-3-desc" | i18n({}, lang ) | safe }}
                     </p>
@@ -163,7 +163,7 @@ active_home: true
 {# Comparison #}
 <section id="comparison" class="bg-secondary-bg-light dark:bg-secondary-bg-dark lg:h-[950px] py-[90px] px-5">
     <div class="text-grey-black dark:text-white container flex flex-col">
-        <p class="text-[35px] leading-[43px] md:leading-[55px] lg:leading-[36px] text-center font-bold mb-12 lg:mb-[90px]">{{ "comparison-section-header" | i18n({}, lang ) | safe }}</p>
+        <h2 class="text-[35px] leading-[43px] md:leading-[55px] lg:leading-[36px] text-center font-bold mb-12 lg:mb-[90px]">{{ "comparison-section-header" | i18n({}, lang ) | safe }}</h2>
 
         <div class="w-full overflow-auto">
             <table class="w-full border-separate border-spacing-x-5 border-spacing-y-2 mb-14">
