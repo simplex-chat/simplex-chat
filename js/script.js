@@ -65,6 +65,19 @@ const privateSwiper = new Swiper('.private-swiper', {
             allowTouchMove: true,
         }
     },
+    on: {
+        slideChange: function () {
+            const privateSwiperGlossaryTerms = document.querySelectorAll('.private-swiper .glossary-term');
+            privateSwiperGlossaryTerms.forEach(function (glossaryTerm) {
+                var tooltipId = glossaryTerm.getAttribute('data-glossary');
+                var tooltip = document.getElementById(tooltipId);
+                tooltip.style.visibility = 'hidden';
+                tooltip.style.opacity = '0';
+                const privateSwiper = glossaryTerm.closest('.private-swiper')
+                if (privateSwiper) glossaryTerm.closest('.card').classList.remove('hovered');
+            })
+        }
+    }
 });
 
 const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
@@ -86,6 +99,17 @@ const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
     pagination: {
         el: ".simplex-explained-swiper-pagination",
         clickable: true
+    },
+    on: {
+        slideChange: function () {
+            const explainedSwiperGlossaryTerms = document.querySelectorAll('.simplex-explained-swiper .glossary-term');
+            explainedSwiperGlossaryTerms.forEach(function (glossaryTerm) {
+                var tooltipId = glossaryTerm.getAttribute('data-glossary');
+                var tooltip = document.getElementById(tooltipId);
+                tooltip.style.visibility = 'hidden';
+                tooltip.style.opacity = '0';
+            })
+        }
     }
 });
 
@@ -163,6 +187,13 @@ function openOverlay() {
                 const scrollToEl = document.getElementById(scrollTo)
                 if (scrollToEl) scrollToEl.scrollIntoView(true)
             }
+
+            const currentOpenedGlossaryOverlay = document.querySelector('.glossary-overlay.flex')
+            if (currentOpenedGlossaryOverlay) {
+                currentOpenedGlossaryOverlay.classList.remove('flex')
+                currentOpenedGlossaryOverlay.classList.add('hidden')
+            }
+
             el.classList.remove('hidden')
             el.classList.add('flex')
             document.body.classList.add('lock-scroll')
@@ -170,5 +201,111 @@ function openOverlay() {
     }
 }
 
-window.addEventListener('load', openOverlay);
-window.addEventListener('hashchange', openOverlay);
+function updatePointerEventsInPrivateSwiperCards() {
+    var privateSwiperCards = document.querySelectorAll('.private-swiper .card')
+
+    privateSwiperCards.forEach(function (card) {
+        var cardContent = card.querySelector('.card-content')
+
+        function updatePointerEvents() {
+            var cardContentGlossaryTerms = cardContent.querySelectorAll('.glossary-term')
+            cardContentGlossaryTerms.forEach(function (glossaryTerm) {
+                if (cardContent.offsetHeight >= 270) {
+                    glossaryTerm.style.pointerEvents = 'all'
+                } else {
+                    glossaryTerm.style.pointerEvents = 'none'
+                }
+            })
+        }
+        updatePointerEvents()
+
+        cardContent.addEventListener('click', updatePointerEvents)
+        cardContent.addEventListener('mousemove', updatePointerEvents)
+    })
+}
+
+function updateTooltipPosition(glossaryTerm, tooltip) {
+    var glossaryTermOffset = glossaryTerm.getBoundingClientRect()
+    var tooltipOffset = tooltip.getBoundingClientRect()
+
+    if (glossaryTermOffset.top >= tooltipOffset.height) {
+        tooltip.style.top = glossaryTermOffset.top - tooltipOffset.height + 'px'
+    } else {
+        tooltip.style.top = glossaryTermOffset.bottom + 'px'
+    }
+
+    var leftPosition = glossaryTermOffset.left + glossaryTerm.offsetWidth / 2 - tooltip.offsetWidth / 2
+    if (leftPosition < 0) {
+        tooltip.style.left = '0px'
+    } else if (leftPosition + tooltip.offsetWidth > window.innerWidth) {
+        tooltip.style.left = window.innerWidth - tooltip.offsetWidth + 'px'
+    } else {
+        tooltip.style.left = leftPosition + 'px'
+    }
+}
+
+function setupTooltip(glossaryTerm) {
+    var tooltipId = glossaryTerm.getAttribute('data-glossary')
+    var tooltip = document.getElementById(tooltipId)
+
+    function showTooltip() {
+        tooltip.style.visibility = 'visible'
+        tooltip.style.opacity = '1'
+        updateTooltipPosition(glossaryTerm, tooltip)
+        const privateSwiper = glossaryTerm.closest('.private-swiper')
+        if (privateSwiper) glossaryTerm.closest('.card').classList.add('hovered')
+    }
+
+    function hideTooltip() {
+        tooltip.style.visibility = 'hidden'
+        tooltip.style.opacity = '0'
+        const privateSwiper = glossaryTerm.closest('.private-swiper')
+        if (privateSwiper) glossaryTerm.closest('.card').classList.remove('hovered')
+        if (!glossaryTerm.matches(':hover') && !tooltip.matches(':hover')) {
+            glossaryTerm.classList.remove('active-term')
+            tooltip.removeEventListener('mouseover', showTooltip)
+            tooltip.removeEventListener('mouseout', hideTooltip)
+        }
+    }
+
+    let click = 0
+    glossaryTerm.addEventListener('mouseover', () => {
+        glossaryTerm.classList.add('active-term')
+        showTooltip()
+        tooltip.addEventListener('mouseover', showTooltip)
+        tooltip.addEventListener('mouseout', hideTooltip)
+    })
+    glossaryTerm.addEventListener('mouseout', function (event) {
+        click = 0
+        hideTooltip()
+    })
+    glossaryTerm.addEventListener('click', function (event) {
+        event.stopPropagation()
+        if (click == 1) {
+            hideTooltip()
+            click = 0
+        }
+        else {
+            showTooltip()
+            click = 1
+        }
+    })
+}
+
+window.addEventListener('load', () => {
+    openOverlay()
+    updatePointerEventsInPrivateSwiperCards()
+
+    window.addEventListener('scroll', function () {
+        let activeTerm = document.querySelector('.active-term')
+        if (activeTerm) {
+            var tooltipId = activeTerm.getAttribute('data-glossary')
+            var tooltip = document.getElementById(tooltipId)
+            updateTooltipPosition(activeTerm, tooltip)
+        }
+    })
+
+    const glossaryTerms = document.querySelectorAll('.glossary-term')
+    glossaryTerms.forEach(setupTooltip)
+})
+window.addEventListener('hashchange', openOverlay)

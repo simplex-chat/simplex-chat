@@ -606,10 +606,6 @@ video {
   right: 0.25rem;
 }
 
-.right-5 {
-  right: 1.25rem;
-}
-
 .right-\[-6px\] {
   right: -6px;
 }
@@ -624,10 +620,6 @@ video {
 
 .top-11 {
   top: 2.75rem;
-}
-
-.top-5 {
-  top: 1.25rem;
 }
 
 .top-\[52\%\] {

@@ -157,6 +157,8 @@
                             </a></li>
                             <li><a href="/docs/protocol/simplex-chat.html" class="lg:px-[20px] inline-block"
                                 >Protocole de chat</a></li>
+                            <li><a href="/docs/glossary.html" class="lg:px-[20px] inline-block"
+                                >Glossary</a></li>
                             
                             <hr class=" h-[1px] w-full dark:opacity-[0.1]">
                             
@@ -712,10 +714,10 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><p>| 31.01.2023 | FR, <a href="/docs/SERVER.html">EN</a>, <a href="/docs/lang/cs/SERVER.html">CZ</a> |</p>
+                    <div><p>| 05.06.2023 | FR, <a href="/docs/SERVER.html">EN</a>, <a href="/docs/lang/cs/SERVER.html">CZ</a> |</p>
 <h1 id="heberger-votre-propre-serveur-smp" tabindex="-1">Héberger votre propre serveur SMP</h1>
 <h2 id="presentation-generale" tabindex="-1">Présentation générale</h2>
-<p>Un serveur SMP est un serveur relais utilisé pour transmettre les messages sur le réseau SimpleX. Les apps SimpleX Chat ont des serveurs prédéfinis (pour les apps mobiles, smp8, smp9 et <a href="http://smp10.simplex.im">smp10.simplex.im</a>), mais vous pouvez facilement modifier la configuration de l'app pour utiliser d'autres serveurs.</p>
+<p>Un serveur SMP est un serveur relais utilisé pour transmettre les messages sur le réseau SimpleX. Les apps SimpleX Chat ont des serveurs prédéfinis (pour les apps mobiles, smp11, smp12 et <a href="http://smp14.simplex.im">smp14.simplex.im</a>), mais vous pouvez facilement modifier la configuration de l'app pour utiliser d'autres serveurs.</p>
 <p>Seuls les utilisateurs de SimpleX déterminent quel serveur est utilisé pour recevoir les messages, séparément pour chaque contact (ou pour chaque connexion à un membre d'un groupe), et ces serveurs ne sont que temporaires, car l'adresse de réception peut changer.</p>
 <p><em>Veuillez noter</em> : lorsque vous modifiez les serveurs dans la configuration de l'app, cela n'affecte que les serveurs qui seront utilisés pour les nouveaux contacts. Les contacts existants ne seront pas automatiquement déplacés vers les nouveaux serveurs, mais vous pouvez les déplacer manuellement à l'aide du bouton <a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html#change-your-delivery-address-beta">&quot;Changer d'adresse de réception&quot;</a> sur les fiches d'information de contact/membre – ce sera bientôt automatisé.</p>
 <h2 id="installation" tabindex="-1">Installation</h2>
@@ -1065,7 +1067,7 @@ allow_local_mode = true
                 <div class="h-[40px] flex gap-4 justify-center">
                     <a href="https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion">
                         <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M26.585 0C11.9025 0 0 11.9025 0 26.585C0 41.2674 11.9025 53.1699 26.585 53.1699C41.2674 53.1699 53.1699 41.2674 53.1699 26.585C53.1699 11.9025 41.2674 0 26.585 0ZM11.3862 17.3518L17.6366 23.4373L23.9313 17.3088L17.6787 11.2209L20.866 8.1179L27.1187 14.2061L33.4932 8L36.6199 11.044L30.2448 17.25L36.4982 23.3379L42.8733 17.1321L46 20.1761L39.6249 26.3818L45.8789 32.4702L42.6916 35.5732L36.4376 29.4848L30.0631 35.6906L36.3171 41.7791L33.1299 44.8821L26.8759 38.7936L20.5026 45L17.3759 41.956L23.8003 35.693L17.5493 29.6073L11.1255 35.8621L8 32.8194L14.4244 26.5646L8.17397 20.4792L11.3862 17.3518ZM27.0125 32.5656L33.311 26.4408L27.0576 20.3535L27.0568 20.3516L20.7615 26.4799L27.0125 32.5656Z" fill="#0053D0"/>
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M26.585 0C11.9025 0 0 11.9025 0 26.585C0 41.2674 11.9025 53.1699 26.585 53.1699C41.2674 53.1699 53.1699 41.2674 53.1699 26.585C53.1699 11.9025 41.2674 0 26.585 0ZM11.3862 17.3518L17.6366 23.4373L23.9313 17.3088L17.6787 11.2209L20.866 8.1179L27.1187 14.2061L33.4932 8L36.6199 11.044L30.2448 17.25L36.4982 23.3379L42.8733 17.1321L46 20.1761L39.6249 26.3818L45.8789 32.4702L42.6916 35.5732L36.4376 29.4848L30.0631 35.6906L36.3171 41.7791L33.1299 44.8821L26.8759 38.7936L20.5026 45L17.3759 41.956L23.8003 35.693L17.5493 29.6073L11.1255 35.8621L8 32.8194L14.4244 26.5646L8.17397 20.4792L11.3862 17.3518ZM27.0125 32.5656L33.311 26.4408L27.0576 20.3535L27.0568 20.3516L20.7615 26.4799L27.0125 32.5656Z"/>
                         </svg>
                     </a>
                     <a href="https://github.com/simplex-chat" target="_blank">
