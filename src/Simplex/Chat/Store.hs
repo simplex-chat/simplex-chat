@@ -397,7 +397,7 @@ import Simplex.Chat.Migrations.M20230511_reactions
 import Simplex.Chat.Migrations.M20230519_item_deleted_ts
 import Simplex.Chat.Migrations.M20230526_indexes
 import Simplex.Chat.Migrations.M20230529_indexes
-import Simplex.Chat.Migrations.M20230608_contacts_marked_for_deletion
+import Simplex.Chat.Migrations.M20230608_deleted_contacts
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -480,7 +480,7 @@ schemaMigrations =
     ("20230519_item_deleted_ts", m20230519_item_deleted_ts, Just down_m20230519_item_deleted_ts),
     ("20230526_indexes", m20230526_indexes, Just down_m20230526_indexes),
     ("20230529_indexes", m20230529_indexes, Just down_m20230529_indexes),
-    ("20230608_contacts_marked_for_deletion", m20230608_contacts_marked_for_deletion, Just down_m20230608_contacts_marked_for_deletion)
+    ("20230608_deleted_contacts", m20230608_deleted_contacts, Just down_m20230608_deleted_contacts)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -708,14 +708,14 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
             SELECT
               -- Contact
               ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs,
-              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.marked_for_deletion,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.deleted,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND c.via_contact_uri_hash = ? AND ct.marked_for_deletion = 0
+            WHERE ct.user_id = ? AND c.via_contact_uri_hash = ? AND ct.deleted = 0
             ORDER BY c.connection_id DESC
             LIMIT 1
           |]
@@ -797,7 +797,7 @@ createDirectContact db user@User {userId} activeConn@Connection {connId, localAl
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt, markedForDeletion = False}
+  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt, deleted = False}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> Maybe UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image, contactLink, preferences} localAlias viaGroup currentTs chatTs =
@@ -856,11 +856,11 @@ deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDispla
 setContactMarkedForDeletion :: DB.Connection -> User -> Contact -> IO ()
 setContactMarkedForDeletion db User {userId} Contact {contactId} = do
   currentTs <- getCurrentTime
-  DB.execute db "UPDATE contacts SET marked_for_deletion = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+  DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
 
 getContactsMarkedForDeletion :: DB.Connection -> User -> IO [Contact]
 getContactsMarkedForDeletion db user@User {userId} = do
-  contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND marked_for_deletion = 1" (Only userId)
+  contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)
   rights <$> mapM (runExceptT . getContactMarkedForDeletion db user) contactIds
 
 getContactMarkedForDeletion :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
@@ -1054,21 +1054,21 @@ updateContact_ db userId contactId displayName newName updatedAt = do
 type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Bool)
 
 toContact :: User -> ContactRow :. ConnectionRow -> Contact
-toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs, markedForDeletion)) :. connRow) =
+toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs, deleted)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       activeConn = toConnection connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, markedForDeletion}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, deleted}
 
 toContactOrError :: User -> ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs, markedForDeletion)) :. connRow) =
+toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs, deleted)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
    in case toMaybeConnection connRow of
         Just activeConn ->
           let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, markedForDeletion}
+           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, deleted}
         _ -> Left $ SEContactNotReady localDisplayName
 
 getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
@@ -1078,7 +1078,7 @@ getContactByName db user localDisplayName = do
 
 getUserContacts :: DB.Connection -> User -> IO [Contact]
 getUserContacts db user@User {userId} = do
-  contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND marked_for_deletion = 0" (Only userId)
+  contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
   rights <$> mapM (runExceptT . getContact db user) contactIds
 
 -- only used in tests
@@ -1375,14 +1375,14 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
             SELECT
               -- Contact
               ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs,
-              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.marked_for_deletion,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.deleted,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             LEFT JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.marked_for_deletion = 0
+            WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
             ORDER BY c.connection_id DESC
             LIMIT 1
           |]
@@ -1508,7 +1508,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, markedForDeletion = False}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, deleted = False}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -1632,7 +1632,7 @@ getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalPro
           FROM contacts ct
           JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
           WHERE ct.user_id = ? AND ct.contact_id != ?
-            AND ct.marked_for_deletion = 0
+            AND ct.deleted = 0
             AND p.display_name = ? AND p.full_name = ?
             AND ((p.image IS NULL AND ? IS NULL) OR p.image = ?)
         |]
@@ -1823,18 +1823,18 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT
               c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, c.via_group, c.contact_used, c.enable_ntfs,
-              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.marked_for_deletion
+              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.deleted
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
-            WHERE c.user_id = ? AND c.contact_id = ? AND c.marked_for_deletion = 0
+            WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0
           |]
           (userId, contactId)
     toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Bool)] -> Either StoreError Contact
-    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, contactLink, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs, markedForDeletion)] =
+    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, contactLink, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs, deleted)] =
       let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, markedForDeletion}
+       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, deleted}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = ExceptT $ do
@@ -1931,7 +1931,7 @@ getConnectionsContacts db agentConnIds = do
           JOIN connections c ON c.contact_id = ct.contact_id
           WHERE c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
             AND c.conn_type = ?
-            AND ct.marked_for_deletion = 0
+            AND ct.deleted = 0
         |]
         (Only ConnContact)
   DB.execute_ db "DROP TABLE temp.conn_ids"
@@ -2395,7 +2395,7 @@ getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.marked_for_deletion,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.deleted,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
@@ -2407,7 +2407,7 @@ getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
           where cc.contact_id = ct.contact_id
         )
         JOIN group_members m ON m.contact_id = ct.contact_id
-        WHERE ct.user_id = ? AND m.group_member_id = ? AND ct.marked_for_deletion = 0
+        WHERE ct.user_id = ? AND m.group_member_id = ? AND ct.deleted = 0
       |]
       (userId, groupMemberId)
 
@@ -2734,7 +2734,7 @@ getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
       [sql|
         SELECT
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, ct.via_group, ct.contact_used, ct.enable_ntfs,
-          p.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.marked_for_deletion,
+          p.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.deleted,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
         FROM contacts ct
@@ -2746,17 +2746,17 @@ getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
         )
         JOIN groups g ON g.group_id = ct.via_group
         JOIN group_members m ON m.group_id = g.group_id AND m.contact_id = ct.contact_id
-        WHERE ct.user_id = ? AND m.group_member_id = ? AND ct.marked_for_deletion = 0
+        WHERE ct.user_id = ? AND m.group_member_id = ? AND ct.deleted = 0
       |]
       (userId, groupMemberId)
   where
     toContact' :: ((ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Bool)) :. ConnectionRow -> Contact
-    toContact' (((contactId, profileId, localDisplayName, displayName, fullName, image, contactLink, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs, markedForDeletion)) :. connRow) =
+    toContact' (((contactId, profileId, localDisplayName, displayName, fullName, image, contactLink, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs, deleted)) :. connRow) =
       let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           activeConn = toConnection connRow
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, markedForDeletion}
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, deleted}
 
 createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Maybe ConnId -> Integer -> IO FileTransferMeta
 createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize, fileInline} acId_ chunkSize = do
@@ -3813,7 +3813,7 @@ getDirectChatPreviews_ db user@User {userId} = do
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.marked_for_deletion,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.deleted,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
@@ -3845,7 +3845,7 @@ getDirectChatPreviews_ db user@User {userId} = do
         LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE ct.user_id = ?
           AND ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
-          AND ct.marked_for_deletion = 0
+          AND ct.deleted = 0
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
@@ -4133,7 +4133,7 @@ getContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
 getContact db user contactId = getContact_ db user contactId False
 
 getContact_ :: DB.Connection -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
-getContact_ db user@User {userId} contactId markedForDeletion =
+getContact_ db user@User {userId} contactId deleted =
   ExceptT . fmap join . firstRow (toContactOrError user) (SEContactNotFound contactId) $
     DB.query
       db
@@ -4141,7 +4141,7 @@ getContact_ db user@User {userId} contactId markedForDeletion =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.marked_for_deletion,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.deleted,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
@@ -4149,7 +4149,7 @@ getContact_ db user@User {userId} contactId markedForDeletion =
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = ? AND ct.contact_id = ?
-          AND ct.marked_for_deletion = ?
+          AND ct.deleted = ?
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
@@ -4162,7 +4162,7 @@ getContact_ db user@User {userId} contactId markedForDeletion =
             )
           )
       |]
-      (userId, contactId, markedForDeletion, ConnReady, ConnSndReady)
+      (userId, contactId, deleted, ConnReady, ConnSndReady)
 
 getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChat db user groupId pagination search_ = do

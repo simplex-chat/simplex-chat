@@ -177,7 +177,7 @@ data Contact = Contact
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    markedForDeletion :: Bool
+    deleted :: Bool
   }
   deriving (Eq, Show, Generic)
 
