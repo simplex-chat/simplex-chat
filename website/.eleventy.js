@@ -30,11 +30,6 @@ glossary.forEach(item => {
 
     while (sibling && sibling.tagName !== 'H2') {
       if (sibling.tagName === 'P') {
-        Array.from(sibling.getElementsByTagName('a')).forEach(a => {
-          if (a.getAttribute('href').startsWith('#')) {
-            a.setAttribute('href', '/docs/glossary.html' + a.getAttribute('href'))
-          }
-        })
         paragraphCount += 1
         if (firstParagraph === '') {
           firstParagraph = sibling.innerHTML
@@ -102,14 +97,15 @@ module.exports = function (ty) {
     const { document } = dom.window
     const body = document.querySelector('body')
     const allContentNodes = document.querySelectorAll('p, td, a, h1, h2, h3, h4')
+    const overlayIds = []
 
     glossary.forEach((term, index) => {
       let changeNoted = false
-      const id = `glossary-${index}`
+      const id = term.term.toLowerCase().replace(/\s/g, '-')
 
       allContentNodes.forEach((node) => {
         const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
-        const replacement = `<span data-glossary=${id} class="glossary-term">${term.term}</span>`
+        const replacement = `<span data-glossary="tooltip-${id}" class="glossary-term">${term.term}</span>`
         const beforeContent = node.innerHTML
         node.innerHTML = node.innerHTML.replace(regex, replacement)
         if (beforeContent !== node.innerHTML && !changeNoted) {
@@ -119,7 +115,7 @@ module.exports = function (ty) {
 
       if (changeNoted) {
         const definitionTooltipDiv = document.createElement('div')
-        definitionTooltipDiv.id = id
+        definitionTooltipDiv.id = `tooltip-${id}`
         definitionTooltipDiv.className = "glossary-tooltip"
         const titleH4 = document.createElement('h4')
         titleH4.innerHTML = term.term
@@ -133,20 +129,41 @@ module.exports = function (ty) {
           const readMoreBtn = document.createElement('button')
           readMoreBtn.innerHTML = "Read more"
           readMoreBtn.className = "read-more-btn open-overlay-btn"
-          readMoreBtn.setAttribute('data-show-overlay', `overlay-${id}`)
+          readMoreBtn.setAttribute('data-show-overlay', id)
           innerDiv.appendChild(readMoreBtn)
+        }
+        innerDiv.className = "tooltip-content"
+        definitionTooltipDiv.appendChild(innerDiv)
+        body.appendChild(definitionTooltipDiv)
+      }
+
+      let tooltipDom = new JSDOM(term.definition)
+      let tooltipDocument = tooltipDom.window.document
+      const hashList = [term.term.toLowerCase().replace(/\s/g, '-')]
+      tooltipDocument.querySelectorAll('a[href*="#"]').forEach(a => {
+        let hashIndex = a.href.indexOf("#")
+        if (hashIndex !== -1) {
+          let hash = a.href.substring(hashIndex + 1)
+          hashList.push(hash)
+        }
+      })
+
+      hashList.forEach(hash => {
+        if (!overlayIds.includes(hash)) {
+          let termFromHash = glossary.find(term => term.term.toLowerCase().replace(/\s/g, '-') === hash)
+          if (!termFromHash) return
 
           const overlayDiv = document.createElement('div')
-          overlayDiv.id = `overlay-${id}`
+          overlayDiv.id = hash
           overlayDiv.className = "overlay glossary-overlay hidden"
           const overlayCardDiv = document.createElement('div')
           overlayCardDiv.className = "overlay-card"
           const overlayTitleH1 = document.createElement('h1')
           overlayTitleH1.className = "overlay-title"
-          overlayTitleH1.innerHTML = term.term
+          overlayTitleH1.innerHTML = termFromHash.term
           const overlayContent = document.createElement('div')
           overlayContent.className = "overlay-content"
-          overlayContent.innerHTML = term.definition
+          overlayContent.innerHTML = termFromHash.definition
           const crossSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg")
           crossSVG.setAttribute('class', 'close-overlay-btn')
           crossSVG.setAttribute('id', 'cross')
@@ -163,11 +180,9 @@ module.exports = function (ty) {
           overlayCardDiv.appendChild(crossSVG)
           overlayDiv.appendChild(overlayCardDiv)
           body.appendChild(overlayDiv)
+          overlayIds.push(hash)
         }
-        innerDiv.className = "tooltip-content"
-        definitionTooltipDiv.appendChild(innerDiv)
-        body.appendChild(definitionTooltipDiv)
-      }
+      })
     })
 
     return dom.serialize()

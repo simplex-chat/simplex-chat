@@ -187,6 +187,13 @@ function openOverlay() {
                 const scrollToEl = document.getElementById(scrollTo)
                 if (scrollToEl) scrollToEl.scrollIntoView(true)
             }
+
+            const currentOpenedGlossaryOverlay = document.querySelector('.glossary-overlay.flex')
+            if (currentOpenedGlossaryOverlay) {
+                currentOpenedGlossaryOverlay.classList.remove('flex')
+                currentOpenedGlossaryOverlay.classList.add('hidden')
+            }
+
             el.classList.remove('hidden')
             el.classList.add('flex')
             document.body.classList.add('lock-scroll')
@@ -254,15 +261,23 @@ function setupTooltip(glossaryTerm) {
         tooltip.style.opacity = '0'
         const privateSwiper = glossaryTerm.closest('.private-swiper')
         if (privateSwiper) glossaryTerm.closest('.card').classList.remove('hovered')
+        if (!glossaryTerm.matches(':hover') && !tooltip.matches(':hover')) {
+            glossaryTerm.classList.remove('active-term')
+            tooltip.removeEventListener('mouseover', showTooltip)
+            tooltip.removeEventListener('mouseout', hideTooltip)
+        }
     }
 
     let click = 0
-    glossaryTerm.addEventListener('mouseover', showTooltip)
+    glossaryTerm.addEventListener('mouseover', () => {
+        glossaryTerm.classList.add('active-term')
+        showTooltip()
+        tooltip.addEventListener('mouseover', showTooltip)
+        tooltip.addEventListener('mouseout', hideTooltip)
+    })
     glossaryTerm.addEventListener('mouseout', function (event) {
         click = 0
-        if (event.relatedTarget !== tooltip) {
-            hideTooltip()
-        }
+        hideTooltip()
     })
     glossaryTerm.addEventListener('click', function (event) {
         event.stopPropagation()
@@ -275,25 +290,22 @@ function setupTooltip(glossaryTerm) {
             click = 1
         }
     })
-
-    tooltip.addEventListener('mouseover', showTooltip)
-    tooltip.addEventListener('mouseout', hideTooltip)
 }
 
 window.addEventListener('load', () => {
     openOverlay()
     updatePointerEventsInPrivateSwiperCards()
 
-    const glossaryTerms = document.querySelectorAll('.glossary-term')
-
     window.addEventListener('scroll', function () {
-        glossaryTerms.forEach(function (glossaryTerm) {
-            var tooltipId = glossaryTerm.getAttribute('data-glossary')
+        let activeTerm = document.querySelector('.active-term')
+        if (activeTerm) {
+            var tooltipId = activeTerm.getAttribute('data-glossary')
             var tooltip = document.getElementById(tooltipId)
-            updateTooltipPosition(glossaryTerm, tooltip)
-        })
+            updateTooltipPosition(activeTerm, tooltip)
+        }
     })
 
+    const glossaryTerms = document.querySelectorAll('.glossary-term')
     glossaryTerms.forEach(setupTooltip)
 })
 window.addEventListener('hashchange', openOverlay)
