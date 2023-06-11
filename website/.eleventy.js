@@ -272,7 +272,7 @@ module.exports = function (ty) {
           const url = doc.url.replace("/docs/", "")
           const urlParts = url.split("/")
 
-          if (doc.inputPath.includes(referenceSubmenu)) {
+          if (doc.inputPath.split('/').includes(referenceSubmenu)) {
             if (urlParts.length === 1 && urlParts[0] !== "") {
               const index = newDocs.findIndex((ele) => ele.lang === 'en' && ele.menu === referenceMenu.menu)
               if (index !== -1) {
