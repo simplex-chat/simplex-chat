@@ -247,7 +247,7 @@ module Simplex.Chat.Store
     getGroupMemberCIBySharedMsgId,
     getGroupMemberChatItemLast,
     getDirectChatItemIdByText,
-    getDirectChatItemIdByText', 
+    getDirectChatItemIdByText',
     getGroupChatItemIdByText,
     getGroupChatItemIdByText',
     getChatItemByFileId,
