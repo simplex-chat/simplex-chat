@@ -837,12 +837,11 @@ processChatCommand = \case
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
-      Group gInfo@GroupInfo {membership} members <-
-        withStoreCtx (Just "APIDeleteChat CTGroup, getGroup") $ \db -> getGroup db user chatId
+      Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
       let isOwner = memberRole (membership :: GroupMember) == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
-      filesInfo <- withStoreCtx' (Just "APIDeleteChat CTGroup, getGroupFileInfo") $ \db -> getGroupFileInfo db user gInfo
+      filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         deleteFilesAndConns user filesInfo
         when (memberActive membership && isOwner) . void $ sendGroupMessage user gInfo members XGrpDel
@@ -850,9 +849,9 @@ processChatCommand = \case
         deleteMembersConnections user members
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
-        withStoreCtx' (Just "APIDeleteChat CTGroup, deleteGroupConnectionsAndFiles") $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        withStoreCtx' (Just "APIDeleteChat CTGroup, deleteGroupItemsAndMembers") $ \db -> deleteGroupItemsAndMembers db user gInfo members
-        withStoreCtx' (Just "APIDeleteChat CTGroup, deleteGroup") $ \db -> deleteGroup db user gInfo
+        withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
+        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
+        withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
         deleteAgentConnectionsAsync user . concat =<< mapM deleteUnusedContact contactIds
         pure $ CRGroupDeletedUser user gInfo
@@ -2390,9 +2389,9 @@ cleanupManager = do
       timedItems <- withStoreCtx' (Just "cleanupManager, getTimedItems") $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
     cleanupContactsMarkedForDeletion user = do
-      contacts <- withStoreCtx' (Just "cleanupManager, getContactsMarkedForDeletion") (`getContactsMarkedForDeletion` user)
+      contacts <- withStore' (`getContactsMarkedForDeletion` user)
       forM_ contacts $ \ct ->
-        withStoreCtx' (Just "cleanupManager, deleteContactWithoutGroups") (\db -> deleteContactWithoutGroups db user ct)
+        withStore' (\db -> deleteContactWithoutGroups db user ct)
           `catchError` (toView . CRChatError (Just user))
     cleanupMessages = do
       ts <- liftIO getCurrentTime
