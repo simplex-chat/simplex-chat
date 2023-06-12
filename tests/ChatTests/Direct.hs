@@ -1327,7 +1327,7 @@ testUsersDifferentCIExpirationTTL tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testUsersRestartCIExpiration :: HasCallStack => FilePath -> IO ()
 testUsersRestartCIExpiration tmp = do
@@ -1410,7 +1410,7 @@ testUsersRestartCIExpiration tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testEnableCIExpirationOnlyForOneUser :: HasCallStack => FilePath -> IO ()
 testEnableCIExpirationOnlyForOneUser tmp = do
@@ -1481,7 +1481,7 @@ testEnableCIExpirationOnlyForOneUser tmp = do
       -- new messages are not deleted for second user
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4"), (1, "alisa 5"), (0, "alisa 6")])
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testDisableCIExpirationOnlyForOneUser :: HasCallStack => FilePath -> IO ()
 testDisableCIExpirationOnlyForOneUser tmp = do
@@ -1539,7 +1539,7 @@ testDisableCIExpirationOnlyForOneUser tmp = do
       -- second user messages are deleted
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testUsersTimedMessages :: HasCallStack => FilePath -> IO ()
 testUsersTimedMessages tmp = do

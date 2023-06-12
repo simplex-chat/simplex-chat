@@ -9,6 +9,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (when)
 import qualified Data.Text as T
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
 import System.Directory (copyFile)
@@ -420,7 +421,7 @@ testGroup2 =
 
 testGroupDelete :: HasCallStack => FilePath -> IO ()
 testGroupDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/d #team"
@@ -444,12 +445,15 @@ testGroupDelete =
       alice <##> bob
       alice <##> cath
       -- unused group contacts are deleted
+      threadDelay 3000000
       bob ##> "@cath hi"
       bob <## "no contact cath"
       (cath </)
       cath ##> "@bob hi"
       cath <## "no contact bob"
       (bob </)
+  where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testGroupSameName :: HasCallStack => FilePath -> IO ()
 testGroupSameName =
@@ -1151,7 +1155,7 @@ testUpdateMemberRole =
 
 testGroupDeleteUnusedContacts :: HasCallStack => FilePath -> IO ()
 testGroupDeleteUnusedContacts =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       -- create group 1
       createGroup3 "team" alice bob cath
@@ -1210,6 +1214,7 @@ testGroupDeleteUnusedContacts =
       cath `hasContactProfiles` ["alice", "bob", "cath"]
       -- delete group 2, unused contacts and profiles are deleted
       deleteGroup alice bob cath "club"
+      threadDelay 3000000
       bob ##> "/contacts"
       bob <## "alice (Alice)"
       bob `hasContactProfiles` ["alice", "bob"]
@@ -1217,6 +1222,7 @@ testGroupDeleteUnusedContacts =
       cath <## "alice (Alice)"
       cath `hasContactProfiles` ["alice", "cath"]
   where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
     deleteGroup :: HasCallStack => TestCC -> TestCC -> TestCC -> String -> IO ()
     deleteGroup alice bob cath group = do
       alice ##> ("/d #" <> group)
@@ -1827,7 +1833,7 @@ testGroupLinkIncognitoMembership =
 
 testGroupLinkUnusedHostContactDeleted :: HasCallStack => FilePath -> IO ()
 testGroupLinkUnusedHostContactDeleted =
-  testChat2 aliceProfile bobProfile $
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       -- create group 1
       alice ##> "/g team"
@@ -1881,10 +1887,12 @@ testGroupLinkUnusedHostContactDeleted =
       bob `hasContactProfiles` ["alice", "bob"]
       -- delete group 2, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "club"
+      threadDelay 3000000
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
   where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
     bobLeaveDeleteGroup :: HasCallStack => TestCC -> TestCC -> String -> IO ()
     bobLeaveDeleteGroup alice bob group = do
       bob ##> ("/l " <> group)
@@ -1899,7 +1907,7 @@ testGroupLinkUnusedHostContactDeleted =
 
 testGroupLinkIncognitoUnusedHostContactsDeleted :: HasCallStack => FilePath -> IO ()
 testGroupLinkIncognitoUnusedHostContactsDeleted =
-  testChat2 aliceProfile bobProfile $
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       bob #$> ("/incognito on", id, "ok")
       bobIncognitoTeam <- createGroupBobIncognito alice bob "team" "alice"
@@ -1912,15 +1920,18 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       bob `hasContactProfiles` ["alice", "alice", "bob", T.pack bobIncognitoTeam, T.pack bobIncognitoClub]
       -- delete group 1, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "team" bobIncognitoTeam
+      threadDelay 3000000
       bob ##> "/contacts"
       bob <## "i alice_1 (Alice)"
       bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognitoClub]
       -- delete group 2, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "club" bobIncognitoClub
+      threadDelay 3000000
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
   where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
     createGroupBobIncognito :: HasCallStack => TestCC -> TestCC -> String -> String -> IO String
     createGroupBobIncognito alice bob group bobsAliceContact = do
       alice ##> ("/g " <> group)
