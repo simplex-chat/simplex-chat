@@ -121,15 +121,16 @@ defaultChatConfig =
       testView = False,
       initialCleanupManagerDelay = 30 * 1000000, -- 30 seconds
       cleanupManagerInterval = 30 * 60, -- 30 minutes
+      cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000 -- 30 minutes
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
 _defaultSMPServers =
   L.fromList
-    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
-      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
-      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion"
+    [ "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
+      "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
+      "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion"
     ]
 
 _defaultNtfServers :: [NtfServer]
@@ -867,7 +868,7 @@ processChatCommand = \case
                   Just _ -> pure []
                   Nothing -> do
                     conns <- withStore $ \db -> getContactConnections db userId ct
-                    withStore' (\db -> deleteContactWithoutGroups db user ct)
+                    withStore' (\db -> setContactDeleted db user ct)
                       `catchError` (toView . CRChatError (Just user))
                     pure $ map aConnId conns
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -2358,15 +2359,16 @@ cleanupManager :: forall m. ChatMonad m => m ()
 cleanupManager = do
   interval <- asks (cleanupManagerInterval . config)
   runWithoutInitialDelay interval
-  delay <- asks (initialCleanupManagerDelay . config)
-  liftIO $ threadDelay' delay
+  initialDelay <- asks (initialCleanupManagerDelay . config)
+  liftIO $ threadDelay' initialDelay
+  stepDelay <- asks (cleanupManagerStepDelay . config)
   forever $ do
     flip catchError (toView . CRChatError Nothing) $ do
       waitChatStarted
       users <- withStoreCtx' (Just "cleanupManager, getUsers 1") getUsers
       let (us, us') = partition activeUser users
-      forM_ us $ cleanupUser interval
-      forM_ us' $ cleanupUser interval
+      forM_ us $ cleanupUser interval stepDelay
+      forM_ us' $ cleanupUser interval stepDelay
       cleanupMessages `catchError` (toView . CRChatError Nothing)
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
@@ -2376,13 +2378,21 @@ cleanupManager = do
       let (us, us') = partition activeUser users
       forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
       forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
-    cleanupUser cleanupInterval user =
+    cleanupUser cleanupInterval stepDelay user = do
       cleanupTimedItems cleanupInterval user `catchError` (toView . CRChatError (Just user))
+      liftIO $ threadDelay' stepDelay
+      cleanupDeletedContacts user `catchError` (toView . CRChatError (Just user))
+      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
       timedItems <- withStoreCtx' (Just "cleanupManager, getTimedItems") $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
+    cleanupDeletedContacts user = do
+      contacts <- withStore' (`getDeletedContacts` user)
+      forM_ contacts $ \ct ->
+        withStore' (\db -> deleteContactWithoutGroups db user ct)
+          `catchError` (toView . CRChatError (Just user))
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (- (30 * nominalDay)) ts
@@ -4295,7 +4305,9 @@ throwChatError = throwError . ChatError
 
 deleteMembersConnections :: ChatMonad m => User -> [GroupMember] -> m ()
 deleteMembersConnections user members = do
-  let memberConns = mapMaybe (\GroupMember {activeConn} -> activeConn) members
+  let memberConns =
+        filter (\Connection {connStatus} -> connStatus /= ConnDeleted) $
+          mapMaybe (\GroupMember {activeConn} -> activeConn) members
   deleteAgentConnectionsAsync user $ map aConnId memberConns
   forM_ memberConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
@@ -4719,7 +4731,6 @@ withStoreCtx ctx_ action = do
   ChatController {chatStore} <- ask
   liftEitherError ChatErrorStore $ case ctx_ of
     Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
     -- uncomment to debug store performance
     -- Just ctx -> do
     --   t1 <- liftIO getCurrentTime
@@ -4728,6 +4739,7 @@ withStoreCtx ctx_ action = do
     --   t2 <- liftIO getCurrentTime
     --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
     --   pure r
+    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
   where
     handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
