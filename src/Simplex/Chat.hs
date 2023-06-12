@@ -2381,14 +2381,14 @@ cleanupManager = do
     cleanupUser cleanupInterval stepDelay user = do
       cleanupTimedItems cleanupInterval user `catchError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
-      cleanupContactsMarkedForDeletion user `catchError` (toView . CRChatError (Just user))
+      cleanupDeletedContacts user `catchError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
       timedItems <- withStoreCtx' (Just "cleanupManager, getTimedItems") $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
-    cleanupContactsMarkedForDeletion user = do
+    cleanupDeletedContacts user = do
       contacts <- withStore' (`getDeletedContacts` user)
       forM_ contacts $ \ct ->
         withStore' (\db -> deleteContactWithoutGroups db user ct)
