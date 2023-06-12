@@ -772,4 +772,51 @@
     <string name="simplex_link_mode_browser_warning">การเปิดลิงก์ในเบราว์เซอร์อาจลดความเป็นส่วนตัวและความปลอดภัยของการเชื่อมต่อ ลิงก์ SimpleX ที่ไม่น่าเชื่อถือจะเป็นสีแดง</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">โปรดตรวจสอบว่าคุณใช้ลิงก์ที่ถูกต้องหรือขอให้ผู้ติดต่อของคุณส่งลิงก์ใหม่ให้คุณ</string>
     <string name="network_error_desc">โปรดตรวจสอบการเชื่อมต่อเครือข่ายของคุณกับ <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> แล้วลองอีกครั้ง</string>
+    <string name="contact_developers">โปรดอัปเดตแอปและติดต่อนักพัฒนาแอป</string>
+    <string name="error_smp_test_certificate">อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง</string>
+    <string name="received_message">ได้รับข้อความ</string>
+    <string name="icon_descr_profile_image_placeholder">ตัวยึดตำแหน่งรูปโปรไฟล์</string>
+    <string name="image_descr_profile_image">รูปโปรไฟล์</string>
+    <string name="image_descr_qr_code">คิวอาร์โค้ด</string>
+    <string name="read_more_in_user_guide_with_link">อ่านเพิ่มเติมใน <font color="#0088ff"> คู่มือผู้ใช้ </font></string>
+    <string name="smp_servers_preset_address">ที่อยู่เซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า</string>
+    <string name="smp_servers_preset_server">เซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า</string>
+    <string name="rate_the_app">ให้คะแนนแอป</string>
+    <string name="port_verb">พอร์ต</string>
+    <string name="network_proxy_port">พอร์ต %d</string>
+    <string name="callstate_received_answer">ได้รับคำตอบ…</string>
+    <string name="callstate_received_confirmation">ได้รับการยืนยัน…</string>
+    <string name="privacy_redefined">นิยามความเป็นส่วนตัวใหม่</string>
+    <string name="read_more_in_github_with_link">อ่านเพิ่มเติมใน <font color="#0088ff"> GitHub repository </font> ของเรา</string>
+    <string name="read_more_in_github">อ่านเพิ่มเติมใน GitHub repository ของเรา</string>
+    <string name="onboarding_notifications_mode_title">การแจ้งเตือนส่วนตัว</string>
+    <string name="alert_text_fragment_please_report_to_developers">โปรดรายงานไปยังผู้พัฒนาแอป</string>
+    <string name="privacy_and_security">ความเป็นส่วนตัวและความปลอดภัย</string>
+    <string name="protect_app_screen">ปกป้องหน้าจอแอป</string>
+    <string name="store_passphrase_securely">โปรดจัดเก็บรหัสผ่านอย่างปลอดภัย คุณจะไม่สามารถเปลี่ยนรหัสผ่านได้หากคุณทำรหัสผ่านหาย</string>
+    <string name="store_passphrase_securely_without_recover">โปรดเก็บรหัสผ่านไว้อย่างปลอดภัย คุณจะไม่สามารถเข้าถึงแชทได้หากทำหาย</string>
+    <string name="restore_database_alert_desc">โปรดใส่รหัสผ่านก่อนหน้านี้หลังจากกู้คืนข้อมูลสํารองฐานข้อมูล การกระทํานี้ไม่สามารถยกเลิกได้</string>
+    <string name="share_text_received_at">ได้รับเมื่อ: %s</string>
+    <string name="info_row_received_at">ได้รับเมื่อ</string>
+    <string name="group_welcome_preview">ดูตัวอย่าง</string>
+    <string name="network_option_protocol_timeout">หมดเวลาโปรโตคอล</string>
+    <string name="users_delete_with_connections">การเชื่อมต่อโปรไฟล์และเซิร์ฟเวอร์</string>
+    <string name="profile_password">รหัสผ่านโปรไฟล์</string>
+    <string name="color_received_message">ข้อความที่ได้รับ</string>
+    <string name="prohibit_sending_disappearing_messages">ห้ามส่งข้อความแบบหายไปได้</string>
+    <string name="prohibit_sending_voice_messages">ห้ามส่งข้อความเสียง</string>
+    <string name="prohibit_message_reactions">ห้ามแสดงปฏิกิริยาต่อข้อความ</string>
+    <string name="prohibit_calls">ห้ามการโทรด้วยเสียง/วิดีโอ</string>
+    <string name="prohibit_message_deletion">ห้ามการลบข้อความที่ย้อนกลับไม่ได้</string>
+    <string name="prohibit_message_reactions_group">ห้ามแสดงปฏิกิริยาต่อข้อความ</string>
+    <string name="prohibit_direct_messages">ห้ามส่งข้อความส่วนตัวถึงสมาชิก</string>
+    <string name="prohibit_sending_disappearing">ห้ามส่งข้อความแบบหายไปได้</string>
+    <string name="prohibit_sending_voice">ห้ามส่งข้อความเสียง</string>
+    <string name="whats_new_read_more">อ่านเพิ่มเติม</string>
+    <string name="v4_5_message_draft_descr">เก็บร่างข้อความล่าสุดพร้อมไฟล์แนบ</string>
+    <string name="v4_5_private_filenames">ชื่อไฟล์ส่วนตัว</string>
+    <string name="v4_6_hidden_chat_profiles_descr">ปกป้องโปรไฟล์การแชทของคุณด้วยรหัสผ่าน!</string>
+    <string name="v5_0_polish_interface">อินเตอร์เฟซภาษาโปแลนด์</string>
+    <string name="la_please_remember_to_store_password">โปรดจำหรือเก็บไว้อย่างปลอดภัย - ไม่มีทางกู้คืนรหัสผ่านที่หายไปได้!</string>
+    <string name="profile_update_will_be_sent_to_contacts">การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ</string>
 </resources>
