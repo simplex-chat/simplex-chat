@@ -868,7 +868,7 @@ processChatCommand = \case
                   Just _ -> pure []
                   Nothing -> do
                     conns <- withStore $ \db -> getContactConnections db userId ct
-                    withStore' (\db -> setContactMarkedForDeletion db user ct)
+                    withStore' (\db -> setContactDeleted db user ct)
                       `catchError` (toView . CRChatError (Just user))
                     pure $ map aConnId conns
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -2389,7 +2389,7 @@ cleanupManager = do
       timedItems <- withStoreCtx' (Just "cleanupManager, getTimedItems") $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
     cleanupContactsMarkedForDeletion user = do
-      contacts <- withStore' (`getContactsMarkedForDeletion` user)
+      contacts <- withStore' (`getDeletedContacts` user)
       forM_ contacts $ \ct ->
         withStore' (\db -> deleteContactWithoutGroups db user ct)
           `catchError` (toView . CRChatError (Just user))

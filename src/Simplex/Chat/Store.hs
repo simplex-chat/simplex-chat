@@ -52,8 +52,8 @@ module Simplex.Chat.Store
     deleteContactConnectionsAndFiles,
     deleteContact,
     deleteContactWithoutGroups,
-    setContactMarkedForDeletion,
-    getContactsMarkedForDeletion,
+    setContactDeleted,
+    getDeletedContacts,
     getContactByName,
     getContact,
     getContactIdByName,
@@ -852,18 +852,18 @@ deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDispla
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
 
-setContactMarkedForDeletion :: DB.Connection -> User -> Contact -> IO ()
-setContactMarkedForDeletion db User {userId} Contact {contactId} = do
+setContactDeleted :: DB.Connection -> User -> Contact -> IO ()
+setContactDeleted db User {userId} Contact {contactId} = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
 
-getContactsMarkedForDeletion :: DB.Connection -> User -> IO [Contact]
-getContactsMarkedForDeletion db user@User {userId} = do
+getDeletedContacts :: DB.Connection -> User -> IO [Contact]
+getDeletedContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)
-  rights <$> mapM (runExceptT . getContactMarkedForDeletion db user) contactIds
+  rights <$> mapM (runExceptT . getDeletedContact db user) contactIds
 
-getContactMarkedForDeletion :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
-getContactMarkedForDeletion db user contactId = getContact_ db user contactId True
+getDeletedContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
+getDeletedContact db user contactId = getContact_ db user contactId True
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
