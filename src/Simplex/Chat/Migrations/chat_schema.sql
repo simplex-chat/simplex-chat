@@ -63,6 +63,7 @@ CREATE TABLE contacts(
   contact_used INTEGER DEFAULT 0 CHECK(contact_used NOT NULL),
   user_preferences TEXT DEFAULT '{}' CHECK(user_preferences NOT NULL),
   chat_ts TEXT,
+  deleted INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -651,4 +652,7 @@ CREATE INDEX idx_group_members_group_id ON group_members(user_id, group_id);
 CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON msg_deliveries(
   connection_id,
   agent_ack_cmd_id
+);
+CREATE INDEX msg_delivery_events_msg_delivery_id ON msg_delivery_events(
+  msg_delivery_id
 );
