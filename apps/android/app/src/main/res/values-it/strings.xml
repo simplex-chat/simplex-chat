@@ -395,7 +395,6 @@
     <string name="database_passphrase">Password del database</string>
     <string name="delete_chat_profile_question">Eliminare il profilo di chat\?</string>
     <string name="delete_database">Elimina database</string>
-    <string name="settings_section_title_develop">SVILUPPA</string>
     <string name="settings_developer_tools">Strumenti di sviluppo</string>
     <string name="settings_section_title_device">DISPOSITIVO</string>
     <string name="error_deleting_database">Errore nell\'eliminazione del database della chat</string>

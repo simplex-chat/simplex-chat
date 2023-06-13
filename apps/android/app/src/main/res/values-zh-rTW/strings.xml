@@ -681,7 +681,6 @@
     <string name="integrity_msg_duplicate">重覆的訊息</string>
     <string name="protect_app_screen">保護應用程式螢幕</string>
     <string name="send_link_previews">傳送可以預覽的連結</string>
-    <string name="settings_section_title_develop">開發</string>
     <string name="settings_section_title_device">裝置</string>
     <string name="settings_section_title_help">幫助</string>
     <string name="settings_section_title_settings">設定</string>

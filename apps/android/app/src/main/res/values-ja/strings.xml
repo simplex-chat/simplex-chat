@@ -349,7 +349,6 @@
     <string name="icon_descr_flip_camera">カメラ切り替え</string>
     <string name="icon_descr_call_missed">不在着信</string>
     <string name="icon_descr_call_rejected">拒否した通話</string>
-    <string name="settings_section_title_develop">開発</string>
     <string name="integrity_msg_duplicate">重複メッセージ</string>
     <string name="settings_section_title_help">ヘルプ</string>
     <string name="protect_app_screen">アプリ画面を守る</string>
