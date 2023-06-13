@@ -537,20 +537,21 @@ struct ChatView: View {
         private func menu(live: Bool) -> [UIMenuElement] {
             var menu: [UIMenuElement] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+                let rs = allReactions()
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
-                   let rm = reactionUIMenu() {
+                   rs.count > 0 {
+                    var rm: UIMenu
                     if #available(iOS 16, *) {
-                        var children: [UIMenuElement] = []
-                        topReactions().forEach {
-                            children.append($0)
+                        var children: [UIMenuElement] = Array(rs.prefix(topReactionsCount(rs)))
+                        if let sm = reactionUIMenu(rs) {
+                            children.append(sm)
                         }
-                        children.append(rm)
-                        let m = UIMenu(title: "", options: .displayInline, children: children)
-                        m.preferredElementSize = .small
-                        menu.append(m)
+                        rm = UIMenu(title: "", options: .displayInline, children: children)
+                        rm.preferredElementSize = .small
                     } else {
-                        menu.append(rm)
+                        rm = reactionUIMenuPreiOS16(rs)
                     }
+                    menu.append(rm)
                 }
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
                     menu.append(replyUIAction())
@@ -613,23 +614,24 @@ struct ChatView: View {
             }
         }
 
-        private func reactionUIMenu() -> UIMenu? {
-            var rs = allReactions()
-            if rs.count > 0 {
-                let image: UIImage?
-                if #available(iOS 16, *) {
-                    rs.removeFirst(min(rs.count, (rs.count > 4 ? 3 : 4)))
-                    image = UIImage(systemName: "ellipsis")
-                } else {
-                    image = UIImage(systemName: "face.smiling")
-                }
-                return UIMenu(
-                    title: NSLocalizedString("React...", comment: "chat item menu"),
-                    image: image,
-                    children: rs
-                )
-            }
-            return nil
+        private func reactionUIMenuPreiOS16(_ rs: [UIAction]) -> UIMenu {
+            UIMenu(
+                title: NSLocalizedString("React...", comment: "chat item menu"),
+                image: UIImage(systemName: "face.smiling"),
+                children: rs
+            )
+        }
+
+        @available(iOS 16.0, *)
+        private func reactionUIMenu(_ rs: [UIAction]) -> UIMenu? {
+            var children = rs
+            children.removeFirst(min(rs.count, topReactionsCount(rs)))
+            if children.count == 0 { return nil }
+            return UIMenu(
+                title: "",
+                image: UIImage(systemName: "ellipsis"),
+                children: children
+            )
         }
 
         private func allReactions() -> [UIAction] {
@@ -640,9 +642,8 @@ struct ChatView: View {
             }
         }
 
-        private func topReactions() -> [UIAction] {
-            let rs = allReactions()
-            return rs.dropLast(max(0, rs.count - (rs.count > 4 ? 3 : 4)))
+        private func topReactionsCount(_ rs: [UIAction]) -> Int {
+            rs.count > 4 ? 3 : 4
         }
 
         private func setReaction(add: Bool, reaction: MsgReaction) {
