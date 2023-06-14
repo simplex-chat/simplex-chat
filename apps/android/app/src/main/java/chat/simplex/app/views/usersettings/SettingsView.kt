@@ -6,7 +6,7 @@ import SectionItemView
 import SectionItemViewWithIcon
 import SectionView
 import TextIconSpaced
-import android.content.Context
+import android.content.*
 import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -25,16 +25,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.fragment.app.FragmentActivity
+import androidx.work.WorkManager
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.database.DatabaseView
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.CreateLinkTab
-import chat.simplex.app.views.newchat.CreateLinkView
 import chat.simplex.app.views.onboarding.SimpleXInfo
 import chat.simplex.app.views.onboarding.WhatsNewView
+import com.jakewharton.processphoenix.ProcessPhoenix
 
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity) -> Unit) {
@@ -181,7 +181,9 @@ fun SettingsLayout(
       }
       SectionDividerSpaced()
 
-      SectionView(stringResource(R.string.settings_section_title_develop)) {
+      SectionView(stringResource(R.string.settings_section_title_app)) {
+        SettingsActionItem(painterResource(R.drawable.ic_restart_alt), stringResource(R.string.settings_restart_app), ::restartApp, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_power_settings_new), stringResource(R.string.settings_shutdown), { shutdownAppAlert(::shutdownApp) }, extraPadding = true)
         SettingsActionItem(painterResource(R.drawable.ic_code), stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
         AppVersionItem(showVersion)
       }
@@ -487,6 +489,26 @@ private fun runAuth(title: String, desc: String, context: Context, onFinish: (su
     completed = { laResult ->
       onFinish(laResult == LAResult.Success || laResult is LAResult.Unavailable)
     }
+  )
+}
+
+private fun restartApp() {
+  ProcessPhoenix.triggerRebirth(SimplexApp.context)
+  shutdownApp()
+}
+
+private fun shutdownApp() {
+  WorkManager.getInstance(SimplexApp.context).cancelAllWork()
+  SimplexService.safeStopService(SimplexApp.context)
+  Runtime.getRuntime().exit(0)
+}
+
+private fun shutdownAppAlert(onConfirm: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.shutdown_alert_question),
+    text = generalGetString(R.string.shutdown_alert_desc),
+    destructive = true,
+    onConfirm = onConfirm
   )
 }
 

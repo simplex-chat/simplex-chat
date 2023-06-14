@@ -515,7 +515,6 @@
     <string name="settings_section_title_chats">CZATY</string>
     <string name="database_passphrase">Hasło do bazy danych</string>
     <string name="delete_database">Usuń bazę danych</string>
-    <string name="settings_section_title_develop">DEWELOPERSKIE</string>
     <string name="settings_developer_tools">Narzędzia deweloperskie</string>
     <string name="settings_section_title_device">URZĄDZENIE</string>
     <string name="error_starting_chat">Błąd uruchamiania czatu</string>
