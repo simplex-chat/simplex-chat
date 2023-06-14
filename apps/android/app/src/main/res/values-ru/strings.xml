@@ -573,7 +573,7 @@
     <string name="settings_developer_tools">Инструменты разработчика</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
-    <string name="settings_section_title_icon">ИКОНКА</string>
+    <string name="settings_section_title_icon">ЗНАЧОК</string>
     <string name="settings_section_title_themes">ТЕМЫ</string>
     <string name="settings_section_title_messages">СООБЩЕНИЯ И ФАЙЛЫ</string>
     <string name="settings_section_title_calls">ЗВОНКИ</string>
