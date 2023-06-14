@@ -1262,4 +1262,9 @@
     <string name="share_text_disappears_at">Scompare il: %s</string>
     <string name="item_info_no_text">nessun testo</string>
     <string name="non_fatal_errors_occured_during_import">Si sono verificati alcuni errori non gravi durante l\'importazione: vedi la console della chat per i dettagli.</string>
+    <string name="settings_restart_app">Riavvia</string>
+    <string name="settings_section_title_app">APP</string>
+    <string name="shutdown_alert_desc">Le notifiche smetteranno di funzionare fino a quando non riavvierai l\'app</string>
+    <string name="settings_shutdown">Spegni</string>
+    <string name="shutdown_alert_question">Spegnere\?</string>
 </resources>
