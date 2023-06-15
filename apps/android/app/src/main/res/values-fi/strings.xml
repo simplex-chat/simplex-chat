@@ -1261,4 +1261,9 @@
     <string name="voice_messages_are_prohibited">Ääniviestit ovat kiellettyjä tässä ryhmässä.</string>
     <string name="v4_5_transport_isolation">Kuljetuksen eristäminen</string>
     <string name="custom_time_unit_weeks">viikkoa</string>
+    <string name="shutdown_alert_desc">Ilmoitukset lakkaavat toimimasta, kunnes käynnistät sovelluksen uudelleen</string>
+    <string name="settings_shutdown">Sulje</string>
+    <string name="settings_section_title_app">SOVELLUS</string>
+    <string name="settings_restart_app">Käynnistä uudelleen</string>
+    <string name="shutdown_alert_question">Sulje\?</string>
 </resources>
