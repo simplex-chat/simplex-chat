@@ -103,7 +103,7 @@ data ChatConfig = ChatConfig
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
-    autoAcceptFileSize :: Int,
+    autoAcceptFileSize :: Integer,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
     showReactions :: Bool,

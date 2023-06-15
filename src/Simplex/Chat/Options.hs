@@ -38,7 +38,7 @@ data ChatOpts = ChatOpts
     optFilesFolder :: Maybe FilePath,
     showReactions :: Bool,
     allowInstantFiles :: Bool,
-    autoAcceptFileSize :: Int,
+    autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     maintenance :: Bool
   }
