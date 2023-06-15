@@ -1174,8 +1174,8 @@ processChatCommand = \case
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
-  StopSwitchContact cName -> withContactName cName APISwitchContact
-  StopSwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
+  StopSwitchContact cName -> withContactName cName APIStopSwitchContact
+  StopSwitchGroupMember gName mName -> withMemberName gName mName APIStopSwitchGroupMember
   GetContactCode cName -> withContactName cName APIGetContactCode
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
   VerifyContact cName code -> withContactName cName (`APIVerifyContact` code)

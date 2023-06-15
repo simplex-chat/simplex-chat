@@ -73,9 +73,11 @@ chatDirectTests = do
     it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
-  describe "queue rotation" $ do
+  describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
+    it "stop switching contact to a different queue" testStopSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
+    it "stop switching group member to a different queue" testStopSwitchGroupMember
   describe "connection verification code" $ do
     it "verificationCode function converts ByteString to series of digits" $ \_ ->
       verificationCode (C.sha256Hash "abcd") `shouldBe` "61889 38426 63934 09576 96390 79389 84124 85253 63658 69469 70853 37788 95900 68296 20156 25"
@@ -1827,6 +1829,33 @@ testSwitchContact =
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
 
+testStopSwitchContact :: HasCallStack => FilePath -> IO ()
+testStopSwitchContact tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+    alice #$> ("/switch bob", id, "ok")
+    alice <## "bob: you started changing address"
+    -- repeat switch is prohibited
+    alice ##> "/switch bob"
+    alice <## "error: command is prohibited"
+    -- stop switch
+    alice #$> ("/switch_stop bob", id, "switch stopped")
+    -- repeat switch stop is prohibited
+    alice ##> "/switch_stop bob"
+    alice <## "error: command is prohibited"
+    withTestChatContactConnected tmp "bob" $ \bob -> do
+      bob <## "alice started changing address for you"
+      -- alice changes address again
+      alice #$> ("/switch bob", id, "ok")
+      alice <## "bob: you started changing address"
+      bob <## "alice started changing address for you"
+      bob <## "alice changed address for you"
+      alice <## "bob: you changed address"
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "started changing address..."), (1, "you changed address")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
+      alice <##> bob
+
 testSwitchGroupMember :: HasCallStack => FilePath -> IO ()
 testSwitchGroupMember =
   testChat2 aliceProfile bobProfile $
@@ -1839,6 +1868,37 @@ testSwitchGroupMember =
       alice <## "#team: you changed address for bob"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
+      alice #> "#team hey"
+      bob <# "#team alice> hey"
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+
+testStopSwitchGroupMember :: HasCallStack => FilePath -> IO ()
+testStopSwitchGroupMember tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+    alice #$> ("/switch #team bob", id, "ok")
+    alice <## "#team: you started changing address for bob"
+    -- repeat switch is prohibited
+    alice ##> "/switch #team bob"
+    alice <## "error: command is prohibited"
+    -- stop switch
+    alice #$> ("/switch_stop #team bob", id, "switch stopped")
+    -- repeat switch stop is prohibited
+    alice ##> "/switch_stop #team bob"
+    alice <## "error: command is prohibited"
+    withTestChatContactConnected tmp "bob" $ \bob -> do
+      bob <## "#team: connected to server(s)"
+      bob <## "#team: alice started changing address for you"
+      -- alice changes address again
+      alice #$> ("/switch #team bob", id, "ok")
+      alice <## "#team: you started changing address for bob"
+      bob <## "#team: alice started changing address for you"
+      bob <## "#team: alice changed address for you"
+      alice <## "#team: you changed address for bob"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       bob #> "#team hi"

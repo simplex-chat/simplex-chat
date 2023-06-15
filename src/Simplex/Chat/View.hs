@@ -1497,6 +1497,7 @@ viewChatError logLevel = \case
     DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err entity_ -> case err of
+    CMD PROHIBITED -> [withConnEntity <> "error: command is prohibited"]
     SMP SMP.AUTH ->
       [ withConnEntity
           <> "error: connection authorization failed - this could happen if connection was deleted,\
