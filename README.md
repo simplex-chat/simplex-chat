@@ -64,7 +64,7 @@ You must:
 
 Messages not following these rules will be deleted, the right to send messages may be revoked, and the access to the new members to the group may be temporarily restricted, to prevent re-joining under a different name - our imperfect group moderation does not have a better solution at the moment.
 
-You can join an English-speaking users group if you want to ask any questions: [#SimpleX-Group-3](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fp-j-D_PrY2UMDchFHEUtbSES0nmzCnvD%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA3gBfMjB_GDEmKQwjNdqGbnX91yfuZ7nRJgQijsx5Khc%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%2262MvNZ_Ec2mmlS8V0QNtLQ%3D%3D%22%7D)
+You can join an English-speaking users group if you want to ask any questions: [#SimpleX-Group-4](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2Fw2GlucRXtRVgYnbt_9ZP-kmt76DekxxS%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA0tJhTyMGUxznwmjb7aT24P1I1Wry_iURTuhOFlMb1Eo%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22WoPxjFqGEDlVazECOSi2dg%3D%3D%22%7D)
 
 There are groups in other languages, that we have the apps interface translated into. These groups are for testing, and asking questions to other SimpleX Chat users:
 
