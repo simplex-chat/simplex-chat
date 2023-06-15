@@ -385,7 +385,7 @@ rcvConnEventToText = \case
   RCESwitchQueue phase -> case phase of
     SPStarted -> "started changing address for you..."
     SPConfirmed -> "confirmed changing address for you..."
-    SPFinalizing -> "finalizes changing address for you..."
+    SPSecured -> "secured new address for you..."
     SPCompleted -> "changed address for you"
 
 sndConnEventToText :: SndConnEvent -> Text
@@ -393,7 +393,7 @@ sndConnEventToText = \case
   SCESwitchQueue phase m -> case phase of
     SPStarted -> "started changing address" <> forMember m <> "..."
     SPConfirmed -> "confirmed changing address" <> forMember m <> "..."
-    SPFinalizing -> "finalizing changing address" <> forMember m <> "..."
+    SPSecured -> "secured new address" <> forMember m <> "..."
     SPCompleted -> "you changed address" <> forMember m
   where
     forMember member_ =

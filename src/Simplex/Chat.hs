@@ -2812,7 +2812,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> pure ()
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
-          when (phase `notElem` [SPConfirmed, SPFinalizing]) $ case qd of
+          when (phase `notElem` [SPConfirmed, SPSecured]) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
         OK ->
@@ -2991,7 +2991,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         checkSndInlineFTComplete conn msgId
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
-        when (phase `notElem` [SPConfirmed, SPFinalizing]) $ case qd of
+        when (phase `notElem` [SPConfirmed, SPSecured]) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
       OK ->

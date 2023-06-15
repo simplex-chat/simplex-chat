@@ -933,15 +933,10 @@ viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
       showSMPServer rcvServer
         <> maybe "" (\s -> " (" <> showSwitchStatus s <> ")") rcvSwitchStatus
     showSwitchStatus = \case
-      RSSQueueingSwch -> "switch started"
-      RSSSwchStarted -> "switch started"
-      RSSQueueingQADD -> "switch started"
-      RSSReceivedQKEY -> "switch confirmed"
-      RSSQueueingSecure -> "switch confirmed"
-      RSSSecureStarted -> "switch confirmed"
-      RSSQueueingQUSE -> "finalizing switch"
-      RSSQueueingDelete -> "finalizing switch"
-      RSSDeleteStarted -> "finalizing switch"
+      RSSwitchStarted -> "switch started"
+      RSSendingQADD -> "switch started"
+      RSSendingQUSE -> "switch confirmed"
+      RSReceivedMessage -> "switch secured"
 
 viewSndQueuesInfo :: [SndQueueInfo] -> StyledString
 viewSndQueuesInfo = plain . intercalate ", " . map showQueueInfo
@@ -950,25 +945,22 @@ viewSndQueuesInfo = plain . intercalate ", " . map showQueueInfo
       showSMPServer sndServer
         <> maybe "" (\s -> " (" <> showSwitchStatus s <> ")") sndSwitchStatus
     showSwitchStatus = \case
-      SSSReceivedQADD -> "switch started"
-      SSSQueueingQKEY -> "switch started" -- switch confirmed?
-      SSSReceivedQUSE -> "switch started" -- switch confirmed?
-      SSSQueueingQTEST -> "switch confirmed" -- finalizing switch?
-      SSSSentQTEST -> "switch confirmed" -- finalizing switch?
+      SSSendingQKEY -> "switch started"
+      SSSendingQTEST -> "switch secured"
 
 viewContactSwitch :: Contact -> SwitchProgress -> [StyledString]
 viewContactSwitch _ (SwitchProgress _ SPConfirmed _) = []
-viewContactSwitch _ (SwitchProgress _ SPFinalizing _) = []
+viewContactSwitch _ (SwitchProgress _ SPSecured _) = []
 viewContactSwitch ct (SwitchProgress qd phase _) = case qd of
-  QDRcv -> [ttyContact' ct <> ": you " <> viewSwitchPhase qd phase]
-  QDSnd -> [ttyContact' ct <> " " <> viewSwitchPhase qd phase <> " for you"]
+  QDRcv -> [ttyContact' ct <> ": you " <> viewSwitchPhase phase]
+  QDSnd -> [ttyContact' ct <> " " <> viewSwitchPhase phase <> " for you"]
 
 viewGroupMemberSwitch :: GroupInfo -> GroupMember -> SwitchProgress -> [StyledString]
 viewGroupMemberSwitch _ _ (SwitchProgress _ SPConfirmed _) = []
-viewGroupMemberSwitch _ _ (SwitchProgress _ SPFinalizing _) = []
+viewGroupMemberSwitch _ _ (SwitchProgress _ SPSecured _) = []
 viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
-  QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase qd phase <> " for " <> ttyMember m]
-  QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase qd phase <> " for you"]
+  QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
+  QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
 
 viewContactCode :: Contact -> Text -> Bool -> [StyledString]
 viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> c <> " <code from your contact>")
@@ -981,16 +973,11 @@ viewSecurityCode name cmd code testView
   | testView = [plain code]
   | otherwise = [name <> " security code:", plain code, "pass this code to your contact and use " <> highlight cmd <> " to verify"]
 
-viewSwitchPhase :: QueueDirection -> SwitchPhase -> StyledString
-viewSwitchPhase QDRcv = \case
+viewSwitchPhase :: SwitchPhase -> StyledString
+viewSwitchPhase = \case
   SPStarted -> "started changing address"
   SPConfirmed -> "confirmed changing address"
-  SPFinalizing -> "are finalizing changing address"
-  SPCompleted -> "changed address"
-viewSwitchPhase QDSnd = \case
-  SPStarted -> "started changing address"
-  SPConfirmed -> "confirmed changing address"
-  SPFinalizing -> "finalizes changing address"
+  SPSecured -> "secured new address"
   SPCompleted -> "changed address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
