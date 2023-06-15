@@ -1261,4 +1261,9 @@
 \n- bewerkingsgeschiedenis.</string>
     <string name="item_info_no_text">geen tekst</string>
     <string name="non_fatal_errors_occured_during_import">Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - mogelijk ziet u Chatconsole voor meer informatie.</string>
+    <string name="shutdown_alert_question">Afsluiten\?</string>
+    <string name="settings_section_title_app">APP</string>
+    <string name="settings_restart_app">Herstarten</string>
+    <string name="settings_shutdown">Afsluiten</string>
+    <string name="shutdown_alert_desc">Meldingen werken niet meer totdat u de app opnieuw start</string>
 </resources>
