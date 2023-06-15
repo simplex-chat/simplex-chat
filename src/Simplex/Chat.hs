@@ -1109,16 +1109,16 @@ processChatCommand = \case
     case memberConnId m of
       Just connId -> withAgent (\a -> switchConnectionAsync a "" connId) >> ok user
       _ -> throwChatError CEGroupMemberNotActive
-  APIStopSwitchContact contactId -> withUser $ \user -> do
+  APIAbortSwitchContact contactId -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
     connectionStats <- withAgent $ \a -> stopConnectionSwitch a $ contactConnId ct
-    pure $ CRContactSwitchStopped user ct connectionStats
-  APIStopSwitchGroupMember gId gMemberId -> withUser $ \user -> do
+    pure $ CRContactSwitchAborted user ct connectionStats
+  APIAbortSwitchGroupMember gId gMemberId -> withUser $ \user -> do
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
       Just connId -> do
         connectionStats <- withAgent $ \a -> stopConnectionSwitch a connId
-        pure $ CRGroupMemberSwitchStopped user g m connectionStats
+        pure $ CRGroupMemberSwitchAborted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
     ct@Contact {activeConn = conn@Connection {connId}} <- withStore $ \db -> getContact db user contactId
@@ -1174,8 +1174,8 @@ processChatCommand = \case
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
-  StopSwitchContact cName -> withContactName cName APIStopSwitchContact
-  StopSwitchGroupMember gName mName -> withMemberName gName mName APIStopSwitchGroupMember
+  AbortSwitchContact cName -> withContactName cName APIAbortSwitchContact
+  AbortSwitchGroupMember gName mName -> withMemberName gName mName APIAbortSwitchGroupMember
   GetContactCode cName -> withContactName cName APIGetContactCode
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
   VerifyContact cName code -> withContactName cName (`APIVerifyContact` code)
@@ -2812,7 +2812,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> pure ()
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
-          when (phase `notElem` [SPConfirmed, SPSecured]) $ case qd of
+          when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
         OK ->
@@ -2991,7 +2991,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         checkSndInlineFTComplete conn msgId
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
-        when (phase `notElem` [SPConfirmed, SPSecured]) $ case qd of
+        when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
       OK ->
@@ -4852,12 +4852,12 @@ chatCommandP =
       ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayName),
       "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_switch @" *> (APISwitchContact <$> A.decimal),
-      "/_switch_stop #" *> (APIStopSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
-      "/_switch_stop @" *> (APIStopSwitchContact <$> A.decimal),
+      "/_abort switch #" *> (APIAbortSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
+      "/_abort switch @" *> (APIAbortSwitchContact <$> A.decimal),
       "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/switch " *> char_ '@' *> (SwitchContact <$> displayName),
-      "/switch_stop #" *> (StopSwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
-      "/switch_stop " *> char_ '@' *> (StopSwitchContact <$> displayName),
+      "/abort switch #" *> (AbortSwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
+      "/abort switch " *> char_ '@' *> (AbortSwitchContact <$> displayName),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
       "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),

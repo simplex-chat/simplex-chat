@@ -75,9 +75,9 @@ chatDirectTests = do
     it "set chat item TTL" testSetChatItemTTL
   describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
-    it "stop switching contact to a different queue" testStopSwitchContact
+    it "stop switching contact to a different queue" testAbortSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
-    it "stop switching group member to a different queue" testStopSwitchGroupMember
+    it "stop switching group member to a different queue" testAbortSwitchGroupMember
   describe "connection verification code" $ do
     it "verificationCode function converts ByteString to series of digits" $ \_ ->
       verificationCode (C.sha256Hash "abcd") `shouldBe` "61889 38426 63934 09576 96390 79389 84124 85253 63658 69469 70853 37788 95900 68296 20156 25"
@@ -1829,8 +1829,8 @@ testSwitchContact =
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
 
-testStopSwitchContact :: HasCallStack => FilePath -> IO ()
-testStopSwitchContact tmp = do
+testAbortSwitchContact :: HasCallStack => FilePath -> IO ()
+testAbortSwitchContact tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       connectUsers alice bob
@@ -1840,9 +1840,9 @@ testStopSwitchContact tmp = do
     alice ##> "/switch bob"
     alice <## "error: command is prohibited"
     -- stop switch
-    alice #$> ("/switch_stop bob", id, "switch stopped")
+    alice #$> ("/abort switch bob", id, "switch aborted")
     -- repeat switch stop is prohibited
-    alice ##> "/switch_stop bob"
+    alice ##> "/abort switch bob"
     alice <## "error: command is prohibited"
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "alice started changing address for you"
@@ -1873,8 +1873,8 @@ testSwitchGroupMember =
       bob #> "#team hi"
       alice <# "#team bob> hi"
 
-testStopSwitchGroupMember :: HasCallStack => FilePath -> IO ()
-testStopSwitchGroupMember tmp = do
+testAbortSwitchGroupMember :: HasCallStack => FilePath -> IO ()
+testAbortSwitchGroupMember tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
@@ -1884,9 +1884,9 @@ testStopSwitchGroupMember tmp = do
     alice ##> "/switch #team bob"
     alice <## "error: command is prohibited"
     -- stop switch
-    alice #$> ("/switch_stop #team bob", id, "switch stopped")
+    alice #$> ("/abort switch #team bob", id, "switch aborted")
     -- repeat switch stop is prohibited
-    alice ##> "/switch_stop #team bob"
+    alice ##> "/abort switch #team bob"
     alice <## "error: command is prohibited"
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "#team: connected to server(s)"

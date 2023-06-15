@@ -79,8 +79,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
-  CRContactSwitchStopped {} -> ["switch stopped"]
-  CRGroupMemberSwitchStopped {} -> ["switch stopped"]
+  CRContactSwitchAborted {} -> ["switch aborted"]
+  CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CRGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
