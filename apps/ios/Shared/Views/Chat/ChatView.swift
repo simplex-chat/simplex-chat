@@ -537,8 +537,20 @@ struct ChatView: View {
         private func menu(live: Bool) -> [UIMenuElement] {
             var menu: [UIMenuElement] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+                let rs = allReactions()
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
-                   let rm = reactionUIMenu() {
+                   rs.count > 0 {
+                    var rm: UIMenu
+                    if #available(iOS 16, *) {
+                        var children: [UIMenuElement] = Array(rs.prefix(topReactionsCount(rs)))
+                        if let sm = reactionUIMenu(rs) {
+                            children.append(sm)
+                        }
+                        rm = UIMenu(title: "", options: .displayInline, children: children)
+                        rm.preferredElementSize = .small
+                    } else {
+                        rm = reactionUIMenuPreiOS16(rs)
+                    }
                     menu.append(rm)
                 }
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
@@ -602,20 +614,36 @@ struct ChatView: View {
             }
         }
 
-        private func reactionUIMenu() -> UIMenu? {
-            let rs = MsgReaction.values.compactMap { r in
+        private func reactionUIMenuPreiOS16(_ rs: [UIAction]) -> UIMenu {
+            UIMenu(
+                title: NSLocalizedString("React...", comment: "chat item menu"),
+                image: UIImage(systemName: "face.smiling"),
+                children: rs
+            )
+        }
+
+        @available(iOS 16.0, *)
+        private func reactionUIMenu(_ rs: [UIAction]) -> UIMenu? {
+            var children = rs
+            children.removeFirst(min(rs.count, topReactionsCount(rs)))
+            if children.count == 0 { return nil }
+            return UIMenu(
+                title: "",
+                image: UIImage(systemName: "ellipsis"),
+                children: children
+            )
+        }
+
+        private func allReactions() -> [UIAction] {
+            MsgReaction.values.compactMap { r in
                 ci.reactions.contains(where: { $0.userReacted && $0.reaction == r })
                 ? nil
                 : UIAction(title: r.text) { _ in setReaction(add: true, reaction: r) }
             }
-            if rs.count > 0 {
-                return UIMenu(
-                    title: NSLocalizedString("React...", comment: "chat item menu"),
-                    image: UIImage(systemName: "face.smiling"),
-                    children: rs
-                )
-            }
-            return nil
+        }
+
+        private func topReactionsCount(_ rs: [UIAction]) -> Int {
+            rs.count > 4 ? 3 : 4
         }
 
         private func setReaction(add: Bool, reaction: MsgReaction) {

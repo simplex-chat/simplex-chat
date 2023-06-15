@@ -564,7 +564,6 @@
     <string name="settings_section_title_settings">EINSTELLUNGEN</string>
     <string name="settings_section_title_help">HILFE</string>
     <string name="settings_section_title_support">UNTERSTÜTZUNG VON SIMPLEX CHAT</string>
-    <string name="settings_section_title_develop">ENTWICKLUNG</string>
     <string name="settings_section_title_device">GERÄT</string>
     <string name="settings_section_title_chats">CHATS</string>
     <string name="settings_developer_tools">Entwicklertools</string>

@@ -242,7 +242,6 @@
     <string name="full_deletion">Verwijderen voor iedereen</string>
     <string name="delete_link">Link verwijderen</string>
     <string name="conn_level_desc_direct">direct</string>
-    <string name="settings_section_title_develop">ONTWIKKELEN</string>
     <string name="settings_section_title_device">APPARAAT</string>
     <string name="delete_files_and_media_all">Verwijder alle bestanden</string>
     <string name="delete_messages_after">Berichten verwijderen na</string>

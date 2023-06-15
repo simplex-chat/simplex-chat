@@ -521,8 +521,9 @@ testGetSetSMPServers =
       alice #$> ("/smp", id, "smp://1234-w==@smp1.example.im")
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
       alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
-      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice ##> "/smp"
+      alice <## "smp://2345-w==@smp2.example.im"
       alice <## "smp://3456-w==@smp3.example.im:5224"
       alice #$> ("/smp default", id, "ok")
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
@@ -551,8 +552,9 @@ testGetSetXFTPServers =
       alice #$> ("/xftp", id, "xftp://1234-w==@xftp1.example.im")
       alice #$> ("/xftp xftp://1234-w==:password@xftp1.example.im", id, "ok")
       alice #$> ("/xftp", id, "xftp://1234-w==:password@xftp1.example.im")
-      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im;xftp://3456-w==@xftp3.example.im:5224", id, "ok")
-      alice #$> ("/xftp", id, "xftp://2345-w==@xftp2.example.im")
+      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
+      alice ##> "/xftp"
+      alice <## "xftp://2345-w==@xftp2.example.im"
       alice <## "xftp://3456-w==@xftp3.example.im:5224"
       alice #$> ("/xftp default", id, "ok")
       alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
@@ -1135,39 +1137,55 @@ testCreateUserDefaultServers :: HasCallStack => FilePath -> IO ()
 testCreateUserDefaultServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
-      alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
+      checkCustomServers alice
 
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
 
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+      alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
 
-      -- with same_smp=off
+      -- with same_servers=off
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
-      alice <## "smp://3456-w==@smp3.example.im:5224"
+      checkCustomServers alice
 
-      alice ##> "/create user same_smp=off alisa2"
+      alice ##> "/create user same_servers=off alisa2"
       showActiveUser alice "alisa2"
 
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+      alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
+  where
+    checkCustomServers alice = do
+      alice ##> "/smp"
+      alice <## "smp://2345-w==@smp2.example.im"
+      alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice ##> "/xftp"
+      alice <## "xftp://2345-w==@xftp2.example.im"
+      alice <## "xftp://3456-w==@xftp3.example.im:5224"
 
 testCreateUserSameServers :: HasCallStack => FilePath -> IO ()
 testCreateUserSameServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
-      alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
+      checkCustomServers alice
 
-      alice ##> "/create user same_smp=on alisa"
+      alice ##> "/create user same_servers=on alisa"
       showActiveUser alice "alisa"
 
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      checkCustomServers alice
+  where
+    checkCustomServers alice = do
+      alice ##> "/smp"
+      alice <## "smp://2345-w==@smp2.example.im"
       alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice ##> "/xftp"
+      alice <## "xftp://2345-w==@xftp2.example.im"
+      alice <## "xftp://3456-w==@xftp3.example.im:5224"
 
 testDeleteUser :: HasCallStack => FilePath -> IO ()
 testDeleteUser =
@@ -1309,7 +1327,7 @@ testUsersDifferentCIExpirationTTL tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testUsersRestartCIExpiration :: HasCallStack => FilePath -> IO ()
 testUsersRestartCIExpiration tmp = do
@@ -1392,7 +1410,7 @@ testUsersRestartCIExpiration tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testEnableCIExpirationOnlyForOneUser :: HasCallStack => FilePath -> IO ()
 testEnableCIExpirationOnlyForOneUser tmp = do
@@ -1463,7 +1481,7 @@ testEnableCIExpirationOnlyForOneUser tmp = do
       -- new messages are not deleted for second user
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4"), (1, "alisa 5"), (0, "alisa 6")])
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testDisableCIExpirationOnlyForOneUser :: HasCallStack => FilePath -> IO ()
 testDisableCIExpirationOnlyForOneUser tmp = do
@@ -1521,7 +1539,7 @@ testDisableCIExpirationOnlyForOneUser tmp = do
       -- second user messages are deleted
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testUsersTimedMessages :: HasCallStack => FilePath -> IO ()
 testUsersTimedMessages tmp = do

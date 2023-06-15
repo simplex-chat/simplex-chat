@@ -1,15 +1,15 @@
 ---
 title: Hosting your own SMP Server
-revision: 31.01.2023
+revision: 05.06.2023
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
+| Updated 05.06.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
 
 # Hosting your own SMP Server
 
 ## Overview
 
-SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp8, smp9 and smp10.simplex.im), but you can easily change app configuration to use other servers.
+SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and smp14.simplex.im), but you can easily change app configuration to use other servers.
 
 SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.
 
@@ -47,7 +47,10 @@ Manual installation requires some preliminary actions:
 
    ```sh
    # For Ubuntu
-   ufw allow 5223
+   sudo ufw allow 5223/tcp
+   # For Fedora
+   sudo firewall-cmd --permanent --add-port=5223/tcp && \
+   sudo firewall-cmd --reload
    ```
 
 4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
