@@ -22,6 +22,7 @@ import qualified Data.ByteString.Char8 as B
 import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, versionString)
+import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
@@ -37,6 +38,7 @@ data ChatOpts = ChatOpts
     optFilesFolder :: Maybe FilePath,
     showReactions :: Bool,
     allowInstantFiles :: Bool,
+    autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     maintenance :: Bool
   }
@@ -236,6 +238,15 @@ chatOptsP appDir defaultDbFileName = do
           <> short 'f'
           <> help "Send and receive instant files without acceptance"
       )
+  autoAcceptFileSize <-
+    flag' (mb 1) (short 'a' <> help "Automatically accept files up to 1MB")
+      <|> option
+        auto
+        ( long "auto-accept-files"
+            <> metavar "FILE_SIZE"
+            <> help "Automatically accept files up to specified size"
+            <> value 0
+        )
   muteNotifications <-
     switch
       ( long "mute"
@@ -256,6 +267,7 @@ chatOptsP appDir defaultDbFileName = do
         optFilesFolder,
         showReactions,
         allowInstantFiles,
+        autoAcceptFileSize,
         muteNotifications,
         maintenance
       }

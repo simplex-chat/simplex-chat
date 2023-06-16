@@ -74,6 +74,7 @@ testOpts =
       optFilesFolder = Nothing,
       showReactions = True,
       allowInstantFiles = True,
+      autoAcceptFileSize = 0,
       muteNotifications = True,
       maintenance = False
     }

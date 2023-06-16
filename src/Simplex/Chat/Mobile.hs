@@ -130,6 +130,7 @@ mobileChatOpts dbFilePrefix dbKey =
       optFilesFolder = Nothing,
       showReactions = False,
       allowInstantFiles = True,
+      autoAcceptFileSize = 0,
       muteNotifications = True,
       maintenance = True
     }
