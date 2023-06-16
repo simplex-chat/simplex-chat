@@ -218,12 +218,12 @@ fun ChatInfoLayout(
           )}) {
           NetworkStatusRow(contactNetworkStatus)
         }
-        val rcvServers = connStats.rcvServers
-        if (rcvServers != null && rcvServers.isNotEmpty()) {
+        val rcvServers = connStats.rcvQueuesInfo.map { it.rcvServer }
+        if (rcvServers.isNotEmpty()) {
           SimplexServers(stringResource(R.string.receiving_via), rcvServers)
         }
-        val sndServers = connStats.sndServers
-        if (sndServers != null && sndServers.isNotEmpty()) {
+        val sndServers = connStats.sndQueuesInfo.map { it.sndServer }
+        if (sndServers.isNotEmpty()) {
           SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
       }

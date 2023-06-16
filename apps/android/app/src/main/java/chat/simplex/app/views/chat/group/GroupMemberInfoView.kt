@@ -238,18 +238,14 @@ fun GroupMemberInfoLayout(
     if (connStats != null) {
       SectionDividerSpaced()
       SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-      SwitchAddressButton(switchMemberAddress)
-        val rcvServers = connStats.rcvServers
-        val sndServers = connStats.sndServers
-        if ((rcvServers != null && rcvServers.isNotEmpty()) || (sndServers != null && sndServers.isNotEmpty())) {
-          if (rcvServers != null && rcvServers.isNotEmpty()) {
-            SimplexServers(stringResource(R.string.receiving_via), rcvServers)
-            if (sndServers != null && sndServers.isNotEmpty()) {
-              SimplexServers(stringResource(R.string.sending_via), sndServers)
-            }
-          } else if (sndServers != null && sndServers.isNotEmpty()) {
-            SimplexServers(stringResource(R.string.sending_via), sndServers)
-          }
+        SwitchAddressButton(switchMemberAddress)
+        val rcvServers = connStats.rcvQueuesInfo.map { it.rcvServer }
+        if (rcvServers.isNotEmpty()) {
+          SimplexServers(stringResource(R.string.receiving_via), rcvServers)
+        }
+        val sndServers = connStats.sndQueuesInfo.map { it.sndServer }
+        if (sndServers.isNotEmpty()) {
+          SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
       }
     }
