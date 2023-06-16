@@ -114,7 +114,6 @@
     <string name="encrypted_audio_call">Llamada con cifrado de extremo a extremo</string>
     <string name="status_e2e_encrypted">cifrado de extremo a extremo</string>
     <string name="integrity_msg_duplicate">mensaje duplicado</string>
-    <string name="settings_section_title_develop">DESARROLLO</string>
     <string name="settings_developer_tools">Herramientas desarrollo</string>
     <string name="delete_files_and_media_for_all_users">Eliminar los archivos de todos los perfiles</string>
     <string name="delete_messages">Eliminar mensaje</string>

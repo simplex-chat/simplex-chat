@@ -383,14 +383,18 @@ sndGroupEventToText = \case
 rcvConnEventToText :: RcvConnEvent -> Text
 rcvConnEventToText = \case
   RCESwitchQueue phase -> case phase of
+    SPStarted -> "started changing address for you..."
+    SPConfirmed -> "confirmed changing address for you..."
+    SPSecured -> "secured new address for you..."
     SPCompleted -> "changed address for you"
-    _ -> decodeLatin1 (strEncode phase) <> " changing address for you..."
 
 sndConnEventToText :: SndConnEvent -> Text
 sndConnEventToText = \case
   SCESwitchQueue phase m -> case phase of
+    SPStarted -> "started changing address" <> forMember m <> "..."
+    SPConfirmed -> "confirmed changing address" <> forMember m <> "..."
+    SPSecured -> "secured new address" <> forMember m <> "..."
     SPCompleted -> "you changed address" <> forMember m
-    _ -> decodeLatin1 (strEncode phase) <> " changing address" <> forMember m <> "..."
   where
     forMember member_ =
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_

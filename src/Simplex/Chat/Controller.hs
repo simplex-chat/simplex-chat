@@ -103,6 +103,7 @@ data ChatConfig = ChatConfig
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
+    autoAcceptFileSize :: Integer,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
     showReactions :: Bool,
@@ -283,6 +284,8 @@ data ChatCommand
   | APIGroupMemberInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
+  | APIAbortSwitchContact ContactId
+  | APIAbortSwitchGroupMember GroupId GroupMemberId
   | APIGetContactCode ContactId
   | APIGetGroupMemberCode GroupId GroupMemberId
   | APIVerifyContact ContactId (Maybe Text)
@@ -294,6 +297,8 @@ data ChatCommand
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
+  | AbortSwitchContact ContactName
+  | AbortSwitchGroupMember GroupName ContactName
   | GetContactCode ContactName
   | GetGroupMemberCode GroupName ContactName
   | VerifyContact ContactName (Maybe Text)
@@ -402,6 +407,8 @@ data ChatResponse
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
+  | CRContactSwitchAborted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
+  | CRGroupMemberSwitchAborted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitch {user :: User, contact :: Contact, switchProgress :: SwitchProgress}
   | CRGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}

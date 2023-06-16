@@ -112,6 +112,7 @@ defaultChatConfig =
       fileChunkSize = 15780, -- do not change
       xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
+      autoAcceptFileSize = 0,
       xftpFileConfig = Just defaultXFTPFileConfig,
       tempDir = Nothing,
       showReactions = False,
@@ -158,9 +159,9 @@ createChatDatabase filePrefix key confirmMigrations = runExceptT $ do
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, showReactions, allowInstantFiles} sendToast = do
-  let inlineFiles' = if allowInstantFiles then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
-      config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, showReactions, allowInstantFiles, autoAcceptFileSize} sendToast = do
+  let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
+      config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
@@ -1109,6 +1110,17 @@ processChatCommand = \case
     case memberConnId m of
       Just connId -> withAgent (\a -> switchConnectionAsync a "" connId) >> ok user
       _ -> throwChatError CEGroupMemberNotActive
+  APIAbortSwitchContact contactId -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db user contactId
+    connectionStats <- withAgent $ \a -> abortConnectionSwitch a $ contactConnId ct
+    pure $ CRContactSwitchAborted user ct connectionStats
+  APIAbortSwitchGroupMember gId gMemberId -> withUser $ \user -> do
+    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
+    case memberConnId m of
+      Just connId -> do
+        connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
+        pure $ CRGroupMemberSwitchAborted user g m connectionStats
+      _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
     ct@Contact {activeConn = conn@Connection {connId}} <- withStore $ \db -> getContact db user contactId
     code <- getConnectionCode (contactConnId ct)
@@ -1163,6 +1175,8 @@ processChatCommand = \case
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
+  AbortSwitchContact cName -> withContactName cName APIAbortSwitchContact
+  AbortSwitchGroupMember gName mName -> withMemberName gName mName APIAbortSwitchGroupMember
   GetContactCode cName -> withContactName cName APIGetContactCode
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
   VerifyContact cName code -> withContactName cName (`APIVerifyContact` code)
@@ -2809,7 +2823,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> pure ()
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
-          when (phase /= SPConfirmed) $ case qd of
+          when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
         OK ->
@@ -2988,7 +3002,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         checkSndInlineFTComplete conn msgId
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
-        when (phase /= SPConfirmed) $ case qd of
+        when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
       OK ->
@@ -3332,8 +3346,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           let ExtMsgContent _ _ itemTTL live_ = mcExtMsgContent mc
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
-          ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
-          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_ timed_ live
+          file_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
+          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
+          autoAcceptFile file_
           whenContactNtfs user ct $ do
             showMsgToast (c <> "> ") content formattedText
             setActive $ ActiveC c
@@ -3343,6 +3358,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getDirectCIReactions db ct sharedMsgId) sharedMsgId_
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci {reactions})
           pure ci
+
+    autoAcceptFile :: Maybe (RcvFileTransfer, CIFile 'MDRcv) -> m ()
+    autoAcceptFile = mapM_ $ \(ft, CIFile {fileSize}) -> do
+      ChatConfig {autoAcceptFileSize = sz} <- asks config
+      when (sz > fileSize) $ receiveFile' user ft Nothing Nothing >>= toView
 
     messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> MsgMeta -> m ()
     messageFileDescription ct@Contact {contactId} sharedMsgId fileDescr msgMeta = do
@@ -3380,7 +3400,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     cancelGroupMessageFile _gInfo _m _sharedMsgId _msgMeta = do
       pure ()
 
-    processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
+    processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> m (Maybe (RcvFileTransfer, CIFile 'MDRcv))
     processFileInvitation fInv_ mc createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
       ChatConfig {fileChunkSize} <- asks config
       inline <- receiveInlineMode fInv (Just mc) fileChunkSize
@@ -3392,7 +3412,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withStore' $ \db -> startRcvInlineFT db user ft fPath inline
           pure (Just fPath, CIFSRcvAccepted)
         _ -> pure (Nothing, CIFSRcvInvitation)
-      pure CIFile {fileId, fileName, fileSize, filePath, fileStatus, fileProtocol}
+      pure (ft, CIFile {fileId, fileName, fileSize, filePath, fileStatus, fileProtocol})
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
@@ -3503,8 +3523,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           let ExtMsgContent _ _ itemTTL live_ = mcExtMsgContent mc
               timed_ = rcvGroupCITimed gInfo itemTTL
               live = fromMaybe False live_
-          ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_ timed_ live
+          file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
+          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
+          autoAcceptFile file_
           let g = groupName' gInfo
           whenGroupNtfs user gInfo $ do
             showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
@@ -4850,8 +4871,12 @@ chatCommandP =
       ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayName),
       "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_switch @" *> (APISwitchContact <$> A.decimal),
+      "/_abort switch #" *> (APIAbortSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
+      "/_abort switch @" *> (APIAbortSwitchContact <$> A.decimal),
       "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/switch " *> char_ '@' *> (SwitchContact <$> displayName),
+      "/abort switch #" *> (AbortSwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
+      "/abort switch " *> char_ '@' *> (AbortSwitchContact <$> displayName),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
       "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),
