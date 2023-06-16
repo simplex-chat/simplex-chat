@@ -36,9 +36,8 @@ func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) 
     }
 }
 
-@ViewBuilder func smpServers(_ title: LocalizedStringKey, _ servers: [String]?) -> some View {
-    if let servers = servers,
-       servers.count > 0 {
+@ViewBuilder func smpServers(_ title: LocalizedStringKey, _ servers: [String]) -> some View {
+    if servers.count > 0 {
         HStack {
             Text(title).frame(width: 120, alignment: .leading)
             Button(serverHost(servers[0])) {
@@ -76,6 +75,7 @@ struct ChatInfoView: View {
         case clearChatAlert
         case networkStatusAlert
         case switchAddressAlert
+        case abortSwitchAddressAlert
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -84,6 +84,7 @@ struct ChatInfoView: View {
             case .clearChatAlert: return "clearChatAlert"
             case .networkStatusAlert: return "networkStatusAlert"
             case .switchAddressAlert: return "switchAddressAlert"
+            case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -136,12 +137,19 @@ struct ChatInfoView: View {
                         .onTapGesture {
                             alert = .networkStatusAlert
                         }
-                    Button("Change receiving address") {
-                        alert = .switchAddressAlert
-                    }
                     if let connStats = connectionStats {
-                        smpServers("Receiving via", connStats.rcvServers)
-                        smpServers("Sending via", connStats.sndServers)
+                        Button("Change receiving address") {
+                            alert = .switchAddressAlert
+                        }
+                        .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil })
+                        if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
+                            Button("Abort changing address") {
+                                alert = .abortSwitchAddressAlert
+                            }
+                            .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch })
+                        }
+                        smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
+                        smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
                     }
                 }
 
@@ -166,6 +174,7 @@ struct ChatInfoView: View {
             case .clearChatAlert: return clearChatAlert()
             case .networkStatusAlert: return networkStatusAlert()
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
+            case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
@@ -369,13 +378,37 @@ struct ChatInfoView: View {
             }
         }
     }
+
+    private func abortSwitchContactAddress() {
+        Task {
+            do {
+                let stats = try apiAbortSwitchContact(contact.apiId)
+                connectionStats = stats
+            } catch let error {
+                logger.error("abortSwitchContactAddress apiAbortSwitchContact error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error aborting address change")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
 }
 
 func switchAddressAlert(_ switchAddress: @escaping () -> Void) -> Alert {
     Alert(
         title: Text("Change receiving address?"),
-        message: Text("This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)."),
-        primaryButton: .destructive(Text("Change"), action: switchAddress),
+        message: Text("Receiving address will be changed to a different server. Address change will complete after sender comes online."),
+        primaryButton: .default(Text("Change"), action: switchAddress),
+        secondaryButton: .cancel()
+    )
+}
+
+func abortSwitchAddressAlert(_ abortSwitchAddress: @escaping () -> Void) -> Alert {
+    Alert(
+        title: Text("Abort changing address?"),
+        message: Text("Address change will be aborted. Old receiving address will be used."),
+        primaryButton: .destructive(Text("Abort"), action: abortSwitchAddress),
         secondaryButton: .cancel()
     )
 }

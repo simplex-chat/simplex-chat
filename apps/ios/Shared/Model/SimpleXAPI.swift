@@ -488,6 +488,18 @@ func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) async throws
     try await sendCommandOkResp(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
 }
 
+func apiAbortSwitchContact(_ contactId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiAbortSwitchContact(contactId: contactId))
+    if case let .contactSwitchAborted(_, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiAbortSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiAbortSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberSwitchAborted(_, _, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
 func apiGetContactCode(_ contactId: Int64) async throws -> (Contact, String) {
     let r = await chatSendCmd(.apiGetContactCode(contactId: contactId))
     if case let .contactCode(_, contact, connectionCode) = r { return (contact, connectionCode) }
