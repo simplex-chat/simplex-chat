@@ -46,6 +46,7 @@ import qualified Simplex.FileTransfer.Protocol as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store (canAbortRcvSwitch)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -929,9 +930,10 @@ viewServers f = map (plain . B.unpack . strEncode . f) . L.toList
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
 viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
   where
-    showQueueInfo RcvQueueInfo {rcvServer, rcvSwitchStatus} =
-      showSMPServer rcvServer
-        <> maybe "" (\s -> " (" <> showSwitchStatus s <> ")") rcvSwitchStatus
+    showQueueInfo RcvQueueInfo {rcvServer, rcvSwitchStatus, canAbortSwitch} =
+      let switchCanBeAborted = if canAbortSwitch then ", can be aborted" else ""
+       in showSMPServer rcvServer
+            <> maybe "" (\s -> " (" <> showSwitchStatus s <> switchCanBeAborted <> ")") rcvSwitchStatus
     showSwitchStatus = \case
       RSSwitchStarted -> "switch started"
       RSSendingQADD -> "switch started"
