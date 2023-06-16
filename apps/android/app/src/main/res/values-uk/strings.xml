@@ -115,4 +115,5 @@
     <string name="available_in_v51">"
 \nДоступно у версії 5.1"</string>
     <string name="calls_prohibited_with_this_contact">Аудіо/відео дзвінки заборонені.</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
 </resources>
