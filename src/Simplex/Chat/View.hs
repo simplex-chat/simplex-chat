@@ -47,6 +47,7 @@ import qualified Simplex.FileTransfer.Protocol as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store (canAbortRcvSwitch)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -80,6 +81,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
+  CRContactSwitchAborted {} -> ["switch aborted"]
+  CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CRGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
@@ -918,24 +921,46 @@ viewConnectionVerified (Just _) = "connection verified" -- TODO show verificatio
 viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
-viewConnectionStats ConnectionStats {rcvServers, sndServers} =
-  ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
-    <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
+viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
+  ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
+    <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
 viewServers :: ProtocolTypeI p => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
 viewServers f = map (plain . B.unpack . strEncode . f) . L.toList
 
-viewServerHosts :: [SMPServer] -> StyledString
-viewServerHosts = plain . intercalate ", " . map showSMPServer
+viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
+viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
+  where
+    showQueueInfo RcvQueueInfo {rcvServer, rcvSwitchStatus, canAbortSwitch} =
+      let switchCanBeAborted = if canAbortSwitch then ", can be aborted" else ""
+       in showSMPServer rcvServer
+            <> maybe "" (\s -> " (" <> showSwitchStatus s <> switchCanBeAborted <> ")") rcvSwitchStatus
+    showSwitchStatus = \case
+      RSSwitchStarted -> "switch started"
+      RSSendingQADD -> "switch started"
+      RSSendingQUSE -> "switch confirmed"
+      RSReceivedMessage -> "switch secured"
+
+viewSndQueuesInfo :: [SndQueueInfo] -> StyledString
+viewSndQueuesInfo = plain . intercalate ", " . map showQueueInfo
+  where
+    showQueueInfo SndQueueInfo {sndServer, sndSwitchStatus} =
+      showSMPServer sndServer
+        <> maybe "" (\s -> " (" <> showSwitchStatus s <> ")") sndSwitchStatus
+    showSwitchStatus = \case
+      SSSendingQKEY -> "switch started"
+      SSSendingQTEST -> "switch secured"
 
 viewContactSwitch :: Contact -> SwitchProgress -> [StyledString]
 viewContactSwitch _ (SwitchProgress _ SPConfirmed _) = []
+viewContactSwitch _ (SwitchProgress _ SPSecured _) = []
 viewContactSwitch ct (SwitchProgress qd phase _) = case qd of
   QDRcv -> [ttyContact' ct <> ": you " <> viewSwitchPhase phase]
   QDSnd -> [ttyContact' ct <> " " <> viewSwitchPhase phase <> " for you"]
 
 viewGroupMemberSwitch :: GroupInfo -> GroupMember -> SwitchProgress -> [StyledString]
 viewGroupMemberSwitch _ _ (SwitchProgress _ SPConfirmed _) = []
+viewGroupMemberSwitch _ _ (SwitchProgress _ SPSecured _) = []
 viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
   QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
   QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
@@ -952,8 +977,11 @@ viewSecurityCode name cmd code testView
   | otherwise = [name <> " security code:", plain code, "pass this code to your contact and use " <> highlight cmd <> " to verify"]
 
 viewSwitchPhase :: SwitchPhase -> StyledString
-viewSwitchPhase SPCompleted = "changed address"
-viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
+viewSwitchPhase = \case
+  SPStarted -> "started changing address"
+  SPConfirmed -> "confirmed changing address"
+  SPSecured -> "secured new address"
+  SPCompleted -> "changed address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} =
@@ -1478,6 +1506,7 @@ viewChatError logLevel = \case
     DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err entity_ -> case err of
+    CMD PROHIBITED -> [withConnEntity <> "error: command is prohibited"]
     SMP SMP.AUTH ->
       [ withConnEntity
           <> "error: connection authorization failed - this could happen if connection was deleted,\
