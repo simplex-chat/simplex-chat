@@ -3,7 +3,7 @@
     <string name="send_disappearing_message_1_minute">1 хвилина</string>
     <string name="about_simplex">Про SimpleX</string>
     <string name="accept_connection_request__question">Прийняти запит на підключення\?</string>
-    <string name="above_then_preposition_continuation">вище, тоді:</string>
+    <string name="above_then_preposition_continuation">вище, потім:</string>
     <string name="accept_contact_button">Прийняти</string>
     <string name="accept_call_on_lock_screen">Прийняти</string>
     <string name="color_primary">Акцент</string>
@@ -116,4 +116,5 @@
 \nДоступно у версії 5.1"</string>
     <string name="calls_prohibited_with_this_contact">Аудіо/відео дзвінки заборонені.</string>
     <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="both_you_and_your_contact_can_make_calls">Здійснювати дзвінки можете як ви, так і ваш контакт.</string>
 </resources>
