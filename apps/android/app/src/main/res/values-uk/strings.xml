@@ -77,4 +77,42 @@
     <string name="network_session_mode_user_description">Окреме TCP-з’єднання (і облікові дані SOCKS) використовуватиметься <b>для кожного профілю чату, який ви маєте в програмі</b>.</string>
     <string name="appearance_settings">Зовнішній вигляд</string>
     <string name="app_version_name">Версія додатку: v%s</string>
+    <string name="network_session_mode_entity_description">Окреме TCP-з\'єднання (і облікові дані SOCKS) використовуватиметься <b>для кожного контакту та члена групи</b>.
+\n <b>Зверніть увагу</b>: якщо у вас багато з’єднань, споживання заряду акумулятора та трафіку може бути значно вищим, а деякі з’єднання можуть бути невдалими.</string>
+    <string name="turning_off_service_and_periodic">Активна оптимізація заряду батареї, яка вимикає фоновий сервіс і періодичні запити на нові повідомлення. Ви можете знову увімкнути їх через налаштування.</string>
+    <string name="back">Назад</string>
+    <string name="bold">сміливий</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Добрий для акумулятора</b>. Фонова служба перевіряє повідомлення кожні 10 хвилин. Ви можете пропустити дзвінки або термінові повідомлення.</string>
+    <string name="settings_audio_video_calls">Аудіо та відео дзвінки</string>
+    <string name="icon_descr_audio_off">Вимкнути звук.</string>
+    <string name="auth_unavailable">Автентифікація недоступна</string>
+    <string name="icon_descr_video_asked_to_receive">Попросили отримати відео</string>
+    <string name="v4_2_auto_accept_contact_requests">Автоматичне прийняття запитів на контакт</string>
+    <string name="audio_call_no_encryption">аудіовиклик (без шифрування e2e)</string>
+    <string name="both_you_and_your_contacts_can_delete">І ви, і ваш контакт можете безповоротно видалити надіслані повідомлення.</string>
+    <string name="alert_title_msg_bad_hash">Поганий хеш повідомлення</string>
+    <string name="alert_title_msg_bad_id">Неправильний ідентифікатор повідомлення</string>
+    <string name="auto_accept_images">Автоматичне прийняття зображень</string>
+    <string name="v5_1_better_messages">Кращі повідомлення</string>
+    <string name="icon_descr_audio_on">Звук увімкнено</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Реакції на повідомлення можете додавати як ви, так і ваш контакт.</string>
+    <string name="icon_descr_audio_call">аудіо дзвінок</string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Найкраще для акумулятора</b>. Ви отримуватимете сповіщення, лише коли програма запущена (БЕЗ фонової служби).</string>
+    <string name="v4_6_audio_video_calls">Аудіо та відео дзвінки</string>
+    <string name="la_authenticate">Автентифікація</string>
+    <string name="la_auth_failed">Помилка автентифікації</string>
+    <string name="authentication_cancelled">Аутентифікацію скасовано</string>
+    <string name="auto_accept_contact">Автоприйняття</string>
+    <string name="integrity_msg_bad_hash">поганий хеш повідомлення</string>
+    <string name="integrity_msg_bad_id">помилковий ідентифікатор повідомлення</string>
+    <string name="color_background">Фон</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>Додати новий контакт</b>: щоб створити одноразовий QR-код для свого контакту.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Це можна вимкнути в налаштуваннях</b> – сповіщення все одно відображатимуться під час роботи програми.</string>
+    <string name="notifications_mode_service_desc">Фоновий сервіс працює постійно - сповіщення з\'являтимуться, щойно повідомлення стануть доступними.</string>
+    <string name="icon_descr_asked_to_receive">Попросили отримати зображення</string>
+    <string name="attach">Прикріпити</string>
+    <string name="audio_video_calls">Аудіо/відео дзвінки</string>
+    <string name="available_in_v51">"
+\nДоступно у версії 5.1"</string>
+    <string name="calls_prohibited_with_this_contact">Аудіо/відео дзвінки заборонені.</string>
 </resources>
