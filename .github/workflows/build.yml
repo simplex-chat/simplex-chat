@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone project
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v1
+        uses: mikepenz/release-changelog-builder-action@v4
         with:
           configuration: .github/changelog_conf.json
           failOnError: true
@@ -71,16 +71,16 @@ jobs:
           disk-root: "C:"
 
       - name: Clone project
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Haskell
-        uses: haskell/actions/setup@v1
+        uses: haskell/actions/setup@v2
         with:
           ghc-version: "8.10.7"
           cabal-version: "latest"
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ matrix.cache_path }}
