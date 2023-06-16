@@ -47,7 +47,6 @@ import qualified Simplex.FileTransfer.Protocol as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store (canAbortRcvSwitch)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -98,7 +97,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
-  CRBroadcastSent u mc n t -> ttyUser u $ viewSentBroadcast mc n ts tz t
+  CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
   CRCmdOk u_ -> ttyUser' u_ ["ok"]
@@ -152,7 +151,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
   CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
-  CRUserProfileUpdated u p p' -> ttyUser u $ viewUserProfileUpdated p p'
+  CRUserProfileUpdated u p p' s f -> ttyUser u $ viewUserProfileUpdated p p' s f
+  CRUserProfileImage u p -> ttyUser u $ viewUserProfileImage p
   CRContactPrefsUpdated {user = u, fromContact, toContact} -> ttyUser u $ viewUserContactPrefsUpdated u fromContact toContact
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
   CRConnectionAliasUpdated u c -> ttyUser u $ viewConnectionAliasUpdated c
@@ -983,8 +983,8 @@ viewSwitchPhase = \case
   SPSecured -> "secured new address"
   SPCompleted -> "changed address"
 
-viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} =
+viewUserProfileUpdated :: Profile -> Profile -> Int -> Int -> [StyledString]
+viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} s f =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     profileUpdated
@@ -993,7 +993,15 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, p
       | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
       | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
       | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
-    notified = " (your contacts are notified)"
+    notified = " (your " <> sShow s <> " contacts are notified" <> failures <> ")"
+    failures
+      | f > 0 = ", " <> sShow f <> " failures"
+      | otherwise = ""
+
+viewUserProfileImage :: Profile -> [StyledString]
+viewUserProfileImage Profile {image} = case image of
+  Just (ImageData img) -> ["Profile image:", plain img]
+  _ -> ["No profile image"]
 
 viewUserContactPrefsUpdated :: User -> Contact -> Contact -> [StyledString]
 viewUserContactPrefsUpdated user ct ct'@Contact {mergedPreferences = cups}
@@ -1163,8 +1171,12 @@ viewSentMessage to quote mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive
         Just False -> ttyTo "[LIVE] "
         _ -> ""
 
-viewSentBroadcast :: MsgContent -> Int -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
-viewSentBroadcast mc n ts tz time = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts tz time <> " ") (ttyMsgContent mc)
+viewSentBroadcast :: MsgContent -> Int -> Int -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
+viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <> sShow s <> "" <> failures <> ") " <> ttyMsgTime ts tz time <> " ") (ttyMsgContent mc)
+  where
+    failures
+      | f > 0 = ", " <> sShow f <> " failures"
+      | otherwise = ""
 
 viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts tz = case filePath of
