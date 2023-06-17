@@ -3200,7 +3200,7 @@
 "You can create it later" = "Вы можете создать его позже";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "Вы можете скрыть профиль или выключить уведомления - потяните его вправо.\nБлокировка SimpleX должна быть включена.";
+"You can hide or mute a user profile - swipe it to the right." = "Вы можете скрыть профиль или выключить уведомления - потяните его вправо.";
 
 /* notification body */
 "You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
