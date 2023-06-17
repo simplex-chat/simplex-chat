@@ -23,6 +23,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDataba
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))

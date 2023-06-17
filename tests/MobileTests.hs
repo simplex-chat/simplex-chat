@@ -6,6 +6,7 @@ import ChatTests.Utils
 import Control.Monad.Except
 import Simplex.Chat.Mobile
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import System.FilePath ((</>))
