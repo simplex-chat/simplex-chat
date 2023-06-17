@@ -1034,4 +1034,213 @@
     <string name="theme_system">ระบบ</string>
     <string name="v4_6_chinese_spanish_interface_descr">ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!</string>
     <string name="v5_0_polish_interface_descr">ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">แพลตฟอร์มการส่งข้อความและแอปพลิเคชันที่ปกป้องความเป็นส่วนตัวและความปลอดภัยของคุณ</string>
+    <string name="next_generation_of_private_messaging">การส่งข้อความส่วนตัวรุ่นต่อไป</string>
+    <string name="member_role_will_be_changed_with_notification">บทบาทจะเปลี่ยนเป็น \"%s\" ทุกคนในกลุ่มจะได้รับแจ้ง</string>
+    <string name="delete_files_and_media_desc">การดำเนินการนี้ไม่สามารถยกเลิกได้ ไฟล์และสื่อที่ได้รับและส่งทั้งหมดจะถูกลบ รูปภาพความละเอียดต่ำจะยังคงอยู่</string>
+    <string name="to_reveal_profile_enter_password">หากต้องการเปิดเผยโปรไฟล์ที่ซ่อนอยู่ ให้ป้อนรหัสผ่านแบบเต็มในช่องค้นหาในหน้าโปรไฟล์แชทของคุณ</string>
+    <string name="network_session_mode_transport_isolation">การแยกการขนส่ง</string>
+    <string name="unhide_chat_profile">ยกเลิกการซ่อนโปรไฟล์การแชท</string>
+    <string name="update_database">อัปเดต</string>
+    <string name="use_simplex_chat_servers__question">ใช้เซิร์ฟเวอร์ <xliff:g id="appNameFull">SimpleX Chat</xliff:g> ไหม\?</string>
+    <string name="video_call_no_encryption">การสนทนาทางวิดีโอ (ไม่ได้ encrypt จากต้นจนจบ)</string>
+    <string name="using_simplex_chat_servers">กำลังใช้เซิร์ฟเวอร์ <xliff:g id="appNameFull">SimpleX Chat</xliff:g>อยู่</string>
+    <string name="v5_1_better_messages_descr">- ข้อความเสียงสูงสุด 5 นาที
+\n- เวลาที่กำหนดเองที่จะหายไป
+\n- ประวัติการแก้ไข</string>
+    <string name="callstate_waiting_for_confirmation">รอการยืนยัน…</string>
+    <string name="whats_new">มีอะไรใหม่</string>
+    <string name="onboarding_notifications_mode_off">เมื่อแอพกำลังทำงาน</string>
+    <string name="v4_4_verify_connection_security">ตรวจสอบความปลอดภัยในการเชื่อมต่อ</string>
+    <string name="incognito_info_share">เมื่อคุณแชร์โปรไฟล์ที่ไม่ระบุตัวตนกับใครสักคน โปรไฟล์นี้จะใช้สำหรับกลุ่มที่พวกเขาเชิญคุณ</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> ต้องการเชื่อมต่อกับคุณผ่านทาง</string>
+    <string name="alert_text_decryption_error_header">ข้อความ <xliff:g id="message count" example="1">%1$d</xliff:g> ไม่สามารถ decrypt ได้</string>
+    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> สมาชิก</string>
+    <string name="you_can_connect_to_simplex_chat_founder">คุณสามารถ <font color="#0088ff">เชื่อมต่อกับ <xliff:g id="appNameFull">SimpleX Chat</xliff:g> นักพัฒนาแอปเพื่อถามคำถามและรับการอัปเดต</font></string>
+    <string name="you_can_share_your_address">คุณสามารถแชร์ที่อยู่ของคุณเป็นลิงก์หรือรหัสคิวอาร์ - ใคร ๆ ก็สามารถเชื่อมต่อกับคุณได้</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">คุณเปลี่ยนที่อยู่</string>
+    <string name="snd_group_event_changed_role_for_yourself">คุณเปลี่ยนบทบาทของตัวเองเป็น %s</string>
+    <string name="your_current_profile">โปรไฟล์ปัจจุบันของคุณ</string>
+    <string name="invite_prohibited_description">คุณกำลังพยายามเชิญผู้ติดต่อที่คุณแบ่งปันโปรไฟล์ที่ไม่ระบุตัวตนไปยังกลุ่มที่คุณใช้โปรไฟล์หลักของคุณ</string>
+    <string name="your_privacy">ความเป็นส่วนตัวของคุณ</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น <xliff:g id="appName"> เซิร์ฟเวอร์ SimpleX </xliff:g> ไม่สามารถดูโปรไฟล์ของคุณได้</string>
+    <string name="settings_section_title_you">คุณ</string>
+    <string name="you_are_invited_to_group">คุณได้รับเชิญให้เข้าร่วมกลุ่ม</string>
+    <string name="incognito_random_profile">โปรไฟล์แบบสุ่มของคุณ</string>
+    <string name="theme">ธีม</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: <xliff:g id="errorMsg">%1$s</xliff:g>)</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="connected_to_server_to_receive_messages_from_contact">คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">โปรไฟล์ของคุณจะถูกส่งไปยังผู้ติดต่อที่ส่งลิงก์นี้มาให้คุณ</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">พยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
+    <string name="unknown_message_format">รูปแบบข้อความที่ไม่รู้จัก</string>
+    <string name="sender_you_pronoun">คุณ</string>
+    <string name="description_via_group_link">ผ่านลิงค์กลุ่ม</string>
+    <string name="description_via_one_time_link">ผ่านลิงค์แบบครั้งเดียว</string>
+    <string name="description_via_contact_address_link">ผ่านลิงค์ที่อยู่ติดต่อ</string>
+    <string name="description_you_shared_one_time_link">คุณแชร์ลิงก์แบบใช้ครั้งเดียว</string>
+    <string name="description_you_shared_one_time_link_incognito">คุณแชร์ลิงก์แบบใช้ครั้งเดียวโดยไม่ระบุตัวตน</string>
+    <string name="simplex_link_mode_browser">ผ่านเบราว์เซอร์</string>
+    <string name="simplex_link_connection">ผ่าน <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="failed_to_create_user_duplicate_desc">คุณมีโปรไฟล์แชทที่ใช้ชื่อแสดงเดียวกันอยู่แล้ว กรุณาเลือกชื่ออื่น</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">คุณเชื่อมต่อกับ <xliff:g id="contactName" example="Alice">%1$s</xliff:g> แล้ว</string>
+    <string name="connection_error_auth_desc">เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน
+\nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร</string>
+    <string name="smp_server_test_upload_file">อัปโหลดไฟล์</string>
+    <string name="enter_passphrase_notification_desc">หากต้องการรับการแจ้งเตือน โปรดป้อนรหัสผ่านของฐานข้อมูล</string>
+    <string name="simplex_service_notification_title">บริการ <xliff:g id="appNameFull"> SimpleX Chat </xliff:g></string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">เพื่อปกป้องข้อมูลของคุณ ให้เปิด SimpleX Lock
+\nคุณจะได้รับแจ้งให้ยืนยันตัวตนให้เสร็จสมบูรณ์ก่อนที่จะเปิดใช้งานคุณลักษณะนี้</string>
+    <string name="la_notice_turn_on">เปิด</string>
+    <string name="la_could_not_be_verified">เราไม่สามารถยืนยันคุณได้ กรุณาลองอีกครั้ง.</string>
+    <string name="auth_unlock">ปลดล็อค</string>
+    <string name="you_can_turn_on_lock">คุณสามารถเปิด SimpleX Lock ผ่านการตั้งค่า</string>
+    <string name="moderate_message_will_be_deleted_warning">ข้อความจะถูกลบสำหรับสมาชิกทั้งหมด</string>
+    <string name="moderate_message_will_be_marked_warning">ข้อความจะถูกทำเครื่องหมายว่ากลั่นกรองสำหรับสมาชิกทุกคน</string>
+    <string name="icon_descr_received_msg_status_unread">เปลี่ยนเป็นยังไม่ได้อ่าน</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">ส่งโดยไม่ได้รับอนุญาต</string>
+    <string name="welcome">ยินดีต้อนรับ!</string>
+    <string name="personal_welcome">ยินดีต้อนรับ <xliff:g>%1$s</xliff:g>!</string>
+    <string name="group_preview_you_are_invited">คุณได้รับเชิญให้เข้าร่วมกลุ่ม</string>
+    <string name="you_have_no_chats">คุณไม่มีการแชท</string>
+    <string name="your_chats">แชทของคุณ</string>
+    <string name="you_are_observer">คุณเป็นผู้สังเกตการณ์</string>
+    <string name="image_decoding_exception_desc">ไม่สามารถถอดรหัสภาพได้ โปรดลองใช้ภาพอื่นหรือติดต่อผู้พัฒนาแอป</string>
+    <string name="observer_cant_send_message_title">คุณไม่สามารถส่งข้อความได้!</string>
+    <string name="icon_descr_waiting_for_image">กําลังรอภาพ</string>
+    <string name="waiting_for_image">กําลังรอภาพ</string>
+    <string name="video_descr">วิดีโอ</string>
+    <string name="icon_descr_video_snd_complete">ส่งวิดีโอแล้ว</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">จะได้รับวิดีโอเมื่อผู้ติดต่อของคุณอัปโหลดเสร็จ</string>
+    <string name="icon_descr_waiting_for_video">กำลังรอวิดีโอ</string>
+    <string name="waiting_for_video">กําลังรอวิดีโอ</string>
+    <string name="video_will_be_received_when_contact_is_online">จะได้รับวิดีโอเมื่อผู้ติดต่อของคุณออนไลน์ โปรดรอหรือตรวจสอบในภายหลัง!</string>
+    <string name="contact_sent_large_file">ผู้ติดต่อของคุณส่งไฟล์ที่ใหญ่กว่าขนาดสูงสุดที่รองรับในปัจจุบัน (<xliff:g id="maxFileSize">%1$s</xliff:g>)</string>
+    <string name="voice_message">ข้อความเสียง</string>
+    <string name="voice_message_send_text">ข้อความเสียง…</string>
+    <string name="voice_message_with_duration">ข้อความเสียง (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="waiting_for_file">กำลังรอไฟล์</string>
+    <string name="verify_security_code">ตรวจสอบรหัสความปลอดภัย</string>
+    <string name="view_security_code">ดูรหัสความปลอดภัย</string>
+    <string name="voice_messages_prohibited">ห้ามข้อความเสียง!</string>
+    <string name="you_need_to_allow_to_send_voice">คุณต้องอนุญาตให้ผู้ติดต่อของคุณส่งข้อความเสียงจึงจะสามารถส่งได้</string>
+    <string name="to_share_with_your_contact">(เพื่อแบ่งปันกับผู้ติดต่อของคุณ)</string>
+    <string name="to_start_a_new_chat_help_header">เพื่อเริ่มแชทใหม่</string>
+    <string name="gallery_video_button">วิดีโอ</string>
+    <string name="unmute_chat">เปิดเสียง</string>
+    <string name="you_invited_your_contact">คุณได้เชิญผู้ติดต่อของคุณ</string>
+    <string name="you_accepted_connection">คุณยอมรับการเชื่อมต่อ</string>
+    <string name="contact_wants_to_connect_with_you">ต้องการเชื่อมต่อกับคุณ!</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">ผู้ติดต่อของคุณจะต้องออนไลน์เพื่อให้การเชื่อมต่อเสร็จสมบูรณ์
+\nคุณสามารถยกเลิกการเชื่อมต่อนี้และลบผู้ติดต่อออก (และลองใหม่ในภายหลังด้วยลิงก์ใหม่)</string>
+    <string name="icon_descr_address">ที่อยู่ <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="image_descr_simplex_logo">โลโก้ <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> ทีม</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">คุณจะเชื่อมต่อกับกลุ่มเมื่ออุปกรณ์โฮสต์ของกลุ่มออนไลน์อยู่ โปรดรอหรือตรวจสอบภายหลัง!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">คุณจะเชื่อมต่อเมื่อคำขอเชื่อมต่อของคุณได้รับการยอมรับ โปรดรอหรือตรวจสอบในภายหลัง!</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">โปรไฟล์แชทของคุณจะถูกส่ง
+\nให้กับผู้ติดต่อของคุณ</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">คุณจะเชื่อมต่อเมื่ออุปกรณ์ของผู้ติดต่อของคุณออนไลน์อยู่ โปรดรอหรือตรวจสอบภายหลัง!</string>
+    <string name="your_profile_will_be_sent">โปรไฟล์การแชทของคุณจะถูกส่งไปยังผู้ติดต่อของคุณ</string>
+    <string name="you_can_accept_or_reject_connection">เมื่อมีคนขอเชื่อมต่อ คุณสามารถยอมรับหรือปฏิเสธได้</string>
+    <string name="you_can_also_connect_by_clicking_the_link">คุณสามารถเชื่อมต่อได้โดยคลิกที่ลิงค์ หากเปิดในเบราว์เซอร์ ให้คลิกปุ่ม <b>เปิดในแอปมือถือ</b></string>
+    <string name="to_verify_compare">ในการตรวจสอบการเข้ารหัสแบบ encrypt จากต้นจนจบ กับผู้ติดต่อของคุณ ให้เปรียบเทียบ (หรือสแกน) รหัสบนอุปกรณ์ของคุณ</string>
+    <string name="your_settings">การตั้งค่าของคุณ</string>
+    <string name="your_simplex_contact_address">ที่อยู่ SimpleX ของคุณ</string>
+    <string name="your_chat_profiles">โปรไฟล์แชทของคุณ</string>
+    <string name="smp_servers_use_server">ใช้เซิร์ฟเวอร์</string>
+    <string name="smp_servers_your_server">เซิร์ฟเวอร์ของคุณ</string>
+    <string name="smp_servers_your_server_address">ที่อยู่เซิร์ฟเวอร์ของคุณ</string>
+    <string name="smp_servers_per_user">เซิร์ฟเวอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ</string>
+    <string name="smp_servers_use_server_for_new_conn">ใช้สำหรับการเชื่อมต่อใหม่</string>
+    <string name="xftp_servers">เซิร์ฟเวอร์ XFTP</string>
+    <string name="your_SMP_servers">เซิร์ฟเวอร์ SMP ของคุณ</string>
+    <string name="your_XFTP_servers">เซิร์ฟเวอร์ XFTP ของคุณ</string>
+    <string name="your_ICE_servers">เซิร์ฟเวอร์ ICE ของคุณ</string>
+    <string name="network_socks_toggle_use_socks_proxy">ใช้พร็อกซี SOCKS</string>
+    <string name="network_disable_socks">ใช้การเชื่อมต่ออินเทอร์เน็ตโดยตรงหรือไม่\?</string>
+    <string name="network_enable_socks">ใช้พร็อกซี SOCKS หรือไม่\?</string>
+    <string name="update_onion_hosts_settings_question">อัปเดตการตั้งค่าโฮสต์ .onion ไหม\?</string>
+    <string name="network_use_onion_hosts">ใช้โฮสต์ .onion</string>
+    <string name="network_use_onion_hosts_prefer">เมื่อพร้อมใช้งาน</string>
+    <string name="update_network_session_mode_question">อัปเดตโหมดการแยกการขนส่งไหม\?</string>
+    <string name="theme_colors_section_title">ธีมสี</string>
+    <string name="your_contacts_will_remain_connected">ผู้ติดต่อของคุณจะยังคงเชื่อมต่ออยู่</string>
+    <string name="you_can_create_it_later">คุณสามารถสร้างได้ในภายหลัง</string>
+    <string name="your_contacts_will_see_it">ผู้ติดต่อของคุณใน SimpleX จะเห็น
+\nคุณสามารถเปลี่ยนได้ในการตั้งค่า</string>
+    <string name="you_control_your_chat">คุณเป็นผู้ควบคุมการแชทของคุณ!</string>
+    <string name="profile_is_only_shared_with_your_contacts">โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">เราไม่เก็บผู้ติดต่อหรือข้อความของคุณ (เมื่อส่งแล้ว) ไว้บนเซิร์ฟเวอร์</string>
+    <string name="your_profile_is_stored_on_your_device">โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">คุณสามารถใช้มาร์กดาวน์เพื่อจัดรูปแบบข้อความ:</string>
+    <string name="callstate_waiting_for_answer">รอคำตอบ…</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">คุณควบคุมผ่านเซิร์ฟเวอร์ที่จะ<b>รับ</b>ข้อความและผู้ติดต่อของคุณ – เซิร์ฟเวอร์ที่คุณใช้เพื่อส่งข้อความถึงพวกเขา</string>
+    <string name="use_chat">ใช้แชท</string>
+    <string name="icon_descr_video_call">การสนทนาทางวิดีโอ</string>
+    <string name="your_calls">การโทรของคุณ</string>
+    <string name="webrtc_ice_servers">เซิร์ฟเวอร์ WebRTC ICE</string>
+    <string name="your_ice_servers">เซิร์ฟเวอร์ ICE ของคุณ</string>
+    <string name="call_connection_via_relay">ผ่านรีเลย์</string>
+    <string name="icon_descr_video_off">ปิดวิดีโอ</string>
+    <string name="icon_descr_video_on">เปิดวิดีโอ</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> ข้อความที่ถูกข้าม</string>
+    <string name="alert_text_msg_bad_id">ID ของข้อความถัดไปไม่ถูกต้อง (น้อยกว่าหรือเท่ากับข้อความก่อนหน้า)
+\nอาจเกิดขึ้นได้เนื่องจากข้อบกพร่องบางอย่างหรือเมื่อการเชื่อมต่อถูกบุกรุก</string>
+    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1"> %1$d ข้อความ </xliff:g> ถูกข้ามไป</string>
+    <string name="settings_section_title_themes">ธีม</string>
+    <string name="your_chat_database">ฐานข้อมูลการแชทของคุณ</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">ฐานข้อมูลแชทปัจจุบันของคุณจะถูกลบและแทนที่ด้วยฐานข้อมูลที่นำเข้า
+\nการดำเนินการนี้ไม่สามารถยกเลิกได้ - โปรไฟล์ ผู้ติดต่อ ข้อความ และไฟล์ของคุณจะสูญหายไปอย่างถาวร</string>
+    <string name="you_must_use_the_most_recent_version_of_database">คุณต้องใช้ฐานข้อมูลแชทเวอร์ชันล่าสุดบนอุปกรณ์เครื่องเดียวเท่านั้น มิฉะนั้น คุณอาจหยุดได้รับข้อความจากผู้ติดต่อบางคน</string>
+    <string name="enable_automatic_deletion_message">การดำเนินการนี้ไม่สามารถเลิกทำได้ - ข้อความที่ส่งและรับก่อนหน้าที่เลือกไว้จะถูกลบ อาจใช้เวลาหลายนาที</string>
+    <string name="update_database_passphrase">อัปเดตรหัสผ่านของฐานข้อมูล</string>
+    <string name="database_is_not_encrypted">ฐานข้อมูลการแชทของคุณไม่ได้ถูก encrypt - ตั้งรหัสผ่านเพื่อป้องกัน</string>
+    <string name="you_have_to_enter_passphrase_every_time">คุณต้องใส่รหัสผ่านทุกครั้งที่เริ่มแอป - รหัสผ่านไม่ได้จัดเก็บไว้ในอุปกรณ์</string>
+    <string name="wrong_passphrase">รหัสผ่านฐานข้อมูลไม่ถูกต้อง</string>
+    <string name="unknown_database_error_with_info">ข้อผิดพลาดของฐานข้อมูลที่ไม่รู้จัก: %s</string>
+    <string name="unknown_error">ข้อผิดพลาดที่ไม่รู้จัก</string>
+    <string name="wrong_passphrase_title">รหัสผ่านผิด!</string>
+    <string name="upgrade_and_open_chat">อัปเกรดและเปิดการแชท</string>
+    <string name="database_downgrade_warning">คำเตือน: คุณอาจสูญเสียข้อมูลบางส่วน!</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">คุณสามารถเริ่มแชทผ่านการตั้งค่าแอป / ฐานข้อมูล หรือโดยการรีสตาร์ทแอป</string>
+    <string name="you_are_invited_to_group_join_to_connect_with_group_members">คุณได้รับเชิญให้เข้าร่วมกลุ่ม เข้าร่วมเพื่อเชื่อมต่อกับสมาชิกในกลุ่ม</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">คุณเข้าร่วมกลุ่มนี้แล้ว กำลังเชื่อมต่อเพื่อเชิญสมาชิกกลุ่ม</string>
+    <string name="alert_title_cant_invite_contacts_descr">คุณกำลังใช้โปรไฟล์ที่ไม่ระบุตัวตนสำหรับกลุ่มนี้ - ไม่อนุญาตให้แชร์โปรไฟล์หลักของคุณ ไม่อนุญาตให้เชิญผู้ติดต่อ</string>
+    <string name="you_sent_group_invitation">คุณส่งคำเชิญเข้าร่วมกลุ่มแล้ว</string>
+    <string name="you_joined_this_group">คุณเข้าร่วมกลุ่มนี้แล้ว</string>
+    <string name="you_rejected_group_invitation">คุณปฏิเสธคำเชิญเข้าร่วมกลุ่ม</string>
+    <string name="rcv_group_event_updated_group_profile">อัปเดตโปรไฟล์กลุ่มแล้ว</string>
+    <string name="snd_group_event_changed_member_role">คุณเปลี่ยนบทบาทของ %s เป็น %s</string>
+    <string name="snd_group_event_user_left">คุณออกไปแล้ว</string>
+    <string name="snd_group_event_member_deleted">คุณลบ <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">คุณเปลี่ยนที่อยู่สำหรับ %s</string>
+    <string name="button_welcome_message">ข้อความต้อนรับ</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">คุณสามารถแชร์ลิงก์หรือคิวอาร์โค้ดได้ ทุกคนจะสามารถเข้าร่วมกลุ่มได้ คุณจะไม่สูญเสียสมาชิกของกลุ่มหากคุณลบในภายหลัง</string>
+    <string name="you_can_share_this_address_with_your_contacts">คุณสามารถแบ่งปันที่อยู่นี้กับผู้ติดต่อของคุณเพื่อให้พวกเขาเชื่อมต่อกับ %s</string>
+    <string name="member_role_will_be_changed_with_invitation">บทบาทจะเปลี่ยนเป็น \"%s\" สมาชิกจะได้รับคำเชิญใหม่</string>
+    <string name="group_welcome_title">ข้อความต้อนรับ</string>
+    <string name="group_main_profile_sent">โปรไฟล์การแชทของคุณจะถูกส่งไปยังสมาชิกในกลุ่ม</string>
+    <string name="update_network_settings_confirmation">อัพเดต</string>
+    <string name="update_network_settings_question">อัปเดตการตั้งค่าเครือข่ายไหม\?</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง</string>
+    <string name="user_unhide">ยกเลิกการซ่อน</string>
+    <string name="user_unmute">เปิดเสียง</string>
+    <string name="should_be_at_least_one_profile">ควรมีโปรไฟล์ผู้ใช้อย่างน้อยหนึ่งโปรไฟล์</string>
+    <string name="should_be_at_least_one_visible_profile">ควรมีอย่างน้อยหนึ่งโปรไฟล์ผู้ใช้ที่มองเห็นได้</string>
+    <string name="you_can_hide_or_mute_user_profile">คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - กดค้างไว้เพื่อที่จะแสดงเมนู</string>
+    <string name="unhide_profile">เลิกซ่อนโปรไฟล์</string>
+    <string name="chat_preferences_you_allow">คุณอนุญาต</string>
+    <string name="chat_preferences_yes">ใช่</string>
+    <string name="your_preferences">การตั้งค่าของคุณ</string>
+    <string name="voice_messages">ข้อความเสียง</string>
+    <string name="voice_prohibited_in_this_chat">ห้ามส่งข้อความเสียงในแชทนี้</string>
+    <string name="voice_messages_are_prohibited">ข้อความเสียงเป็นสิ่งต้องห้ามในกลุ่มนี้</string>
+    <string name="v4_3_voice_messages">ข้อความเสียง</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">พร้อมข้อความต้อนรับเพิ่มเติม</string>
+    <string name="v4_3_irreversible_message_deletion_desc">ผู้ติดต่อของคุณสามารถอนุญาตให้ลบข้อความทั้งหมดได้</string>
+    <string name="v4_5_transport_isolation">การแยกการขนส่ง</string>
+    <string name="v4_5_private_filenames_descr">ไฟล์ภาพ/เสียงใช้ UTC เพื่อป้องกันเขตเวลา</string>
+    <string name="v5_0_large_files_support">วิดีโอและไฟล์สูงสุด 1gb</string>
+    <string name="custom_time_unit_weeks">สัปดาห์</string>
 </resources>
