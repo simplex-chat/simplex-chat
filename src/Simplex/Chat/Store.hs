@@ -330,7 +330,7 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.ChatItemContent
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
 import Simplex.Chat.Migrations.M20220205_chat_item_status
