@@ -3203,7 +3203,7 @@
 "You can create it later" = "Możesz go utworzyć później";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "Możesz ukryć lub wyciszyć profil użytkownika - przesuń palcem w prawo.\nFunkcja blokady SimpleX musi być włączona.";
+"You can hide or mute a user profile - swipe it to the right." = "Możesz ukryć lub wyciszyć profil użytkownika - przesuń palcem w prawo.";
 
 /* notification body */
 "You can now send messages to %@" = "Możesz teraz wysyłać wiadomości do %@";

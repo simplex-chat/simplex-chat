@@ -3194,7 +3194,7 @@
 "You can create it later" = "後からでも作成できます";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。\nSimpleXロックが有効になっている必要があります。";
+"You can hide or mute a user profile - swipe it to the right." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。";
 
 /* notification body */
 "You can now send messages to %@" = "%@ にメッセージを送信できるようになりました";
