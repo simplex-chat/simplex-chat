@@ -1172,7 +1172,7 @@ viewSentMessage to quote mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive
         _ -> ""
 
 viewSentBroadcast :: MsgContent -> Int -> Int -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
-viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <> sShow s <> "" <> failures <> ") " <> ttyMsgTime ts tz time <> " ") (ttyMsgContent mc)
+viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <> sShow s <> failures <> ") " <> ttyMsgTime ts tz time <> " ") (ttyMsgContent mc)
   where
     failures
       | f > 0 = ", " <> sShow f <> " failures"
