@@ -4002,8 +4002,9 @@
         <target>Messages manqués</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
+      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve" approved="no">
         <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
+        <target state="translated">Des erreurs non fatales se sont produites lors de l'importation - vous pouvez consulter la console de chat pour plus de détails.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
