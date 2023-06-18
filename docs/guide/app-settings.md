@@ -14,7 +14,6 @@ title: App settings
 ## Your profile settings
 
 This section is labelled **"You"** in the app settings.
-[asdf](#your-chat-profiles)
 
 ### Your active chat profile
 
