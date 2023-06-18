@@ -130,9 +130,9 @@ struct ChatPreviewView: View {
                 Image(systemName: "star.fill")
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 20, height: 20)
+                    .frame(width: 18, height: 18)
                     .padding(.trailing, 1)
-                    .foregroundColor(.secondary.opacity(0.7))
+                    .foregroundColor(.secondary.opacity(0.65))
             }
         }
     }

@@ -115,7 +115,6 @@ struct ChatListView: View {
     private func toggleShowUnreadButton() -> some View {
         Button {
             showUnread = !showUnread
-            showFavorites = false
         } label: {
             filterButtonImage(showUnread, image: "line.3.horizontal.decrease.circle", size: 22)
         }
@@ -124,7 +123,6 @@ struct ChatListView: View {
     private func toggleShowFavouritesButton() -> some View {
         Button {
             showFavorites = !showFavorites
-            showUnread = false
         } label: {
             filterButtonImage(showFavorites, image: "star", size: 24)
         }
@@ -216,9 +214,13 @@ struct ChatListView: View {
         return s == "" && !showFavorites && !showUnread
             ? chatModel.chats
             : chatModel.chats.filter { chat in
-                let contains = !(showFavorites && s == "" && !(chat.chatInfo.chatSettings?.favorite ?? false)) &&
-                               !(showUnread && s == "" && chat.chatStats.unreadCount == 0 && !chat.chatStats.unreadChat) &&
-                               (s == "" || chat.chatInfo.chatViewName.localizedLowercase.contains(s))
+                let contains = s != ""
+                                ? chat.chatInfo.chatViewName.localizedLowercase.contains(s)
+                                : (
+                                    (showFavorites && (chat.chatInfo.chatSettings?.favorite ?? false)) ||
+                                    (showUnread && (chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat)) ||
+                                    (!showFavorites && !showUnread)
+                                )
                 switch chat.chatInfo {
                 case let .direct(contact):
                     return contains
