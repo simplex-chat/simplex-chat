@@ -1173,11 +1173,17 @@ processChatCommand = \case
         ok user
       _ -> throwChatError CEGroupMemberNotActive
   ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
-    chatId <- case cType of
-      CTDirect -> withStore $ \db -> getContactIdByName db user name
-      CTGroup -> withStore $ \db -> getGroupIdByName db user name
+    (chatId, chatSettings) <- case cType of
+      CTDirect -> withStore $ \db -> do
+        ctId <- getContactIdByName db user name
+        Contact {chatSettings} <- getContact db user ctId
+        pure (ctId, chatSettings)
+      CTGroup -> withStore $ \db -> do
+        gId <- getGroupIdByName db user name
+        GroupInfo {chatSettings} <- getGroupInfo db user gId
+        pure (gId, chatSettings)
       _ -> throwChatError $ CECommandError "not supported"
-    processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ ChatSettings ntfOn
+    processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ chatSettings {enableNtfs = ntfOn}
   ContactInfo cName -> withContactName cName APIContactInfo
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact

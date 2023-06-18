@@ -134,7 +134,7 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs,
+              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.favorite,
               cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
@@ -421,7 +421,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs,
+              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.favorite,
               cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
@@ -566,7 +566,7 @@ getContact_ db user@User {userId} contactId deleted =
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.favorite,
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
@@ -673,8 +673,8 @@ updateConnectionStatus db Connection {connId} connStatus = do
   DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ? WHERE connection_id = ?" (connStatus, currentTs, connId)
 
 updateContactSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
-updateContactSettings db User {userId} contactId ChatSettings {enableNtfs} =
-  DB.execute db "UPDATE contacts SET enable_ntfs = ? WHERE user_id = ? AND contact_id = ?" (enableNtfs, userId, contactId)
+updateContactSettings db User {userId} contactId ChatSettings {enableNtfs, favorite} =
+  DB.execute db "UPDATE contacts SET enable_ntfs = ?, favorite = ? WHERE user_id = ? AND contact_id = ?" (enableNtfs, favorite, userId, contactId)
 
 setConnConnReqInv :: DB.Connection -> User -> Int64 -> ConnReqInvitation -> IO ()
 setConnConnReqInv db User {userId} connId connReq = do
