@@ -1342,4 +1342,9 @@
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
     <string name="non_fatal_errors_occured_during_import">Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten - weitere Details finden Sie in der Chat-Konsole.</string>
+    <string name="shutdown_alert_question">Herunterfahren\?</string>
+    <string name="shutdown_alert_desc">Bis zum Neustart der App erhalten Sie keine Benachrichtigungen mehr</string>
+    <string name="settings_section_title_app">APP</string>
+    <string name="settings_restart_app">Neustart</string>
+    <string name="settings_shutdown">Herunterfahren</string>
 </resources>
