@@ -301,9 +301,9 @@
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
-        <target state="translated">- Bis zu 5 Minuten lange Sprachnachrichten
-- Zeitdauer für verschwindende Nachrichten anpassen
-- Nachrichten-Historie bearbeiten</target>
+        <target state="translated">- Bis zu 5 Minuten lange Sprachnachrichten.
+- Zeitdauer für verschwindende Nachrichten anpassen.
+- Nachrichten-Historie bearbeiten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="." xml:space="preserve">
@@ -661,9 +661,9 @@
         <target>App Version: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Appearance" xml:space="preserve">
+      <trans-unit id="Appearance" xml:space="preserve" approved="no">
         <source>Appearance</source>
-        <target>Design</target>
+        <target state="translated">Erscheinungsbild</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -872,9 +872,9 @@
         <target>Datenbank Archiv</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat console" xml:space="preserve">
+      <trans-unit id="Chat console" xml:space="preserve" approved="no">
         <source>Chat console</source>
-        <target>Chat Konsole</target>
+        <target state="translated">Chat-Konsole</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database" xml:space="preserve">
@@ -5670,9 +5670,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Ja</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
+      <trans-unit id="you are invited to group" xml:space="preserve" approved="no">
         <source>you are invited to group</source>
-        <target>Sie sind zur Gruppe eingeladen</target>
+        <target state="translated">Sie sind zu der Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
