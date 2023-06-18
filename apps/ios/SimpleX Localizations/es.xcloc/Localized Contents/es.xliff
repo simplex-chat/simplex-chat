@@ -2548,9 +2548,9 @@
         <target>Únete en modo incógnito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Joining group" xml:space="preserve">
+      <trans-unit id="Joining group" xml:space="preserve" approved="no">
         <source>Joining group</source>
-        <target>Únete al grupo</target>
+        <target state="translated">Entrando al grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="KeyChain error" xml:space="preserve">
@@ -2868,9 +2868,9 @@
         <target>Nuevo rol de miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New message" xml:space="preserve">
+      <trans-unit id="New message" xml:space="preserve" approved="no">
         <source>New message</source>
-        <target>mensaje nuevo</target>
+        <target state="translated">Mensaje nuevo</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="New passphrase…" xml:space="preserve">
@@ -3152,9 +3152,9 @@
         <target>Periódico</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Permanent decryption error" xml:space="preserve">
+      <trans-unit id="Permanent decryption error" xml:space="preserve" approved="no">
         <source>Permanent decryption error</source>
-        <target>Error de descifrado</target>
+        <target state="translated">Error de descifrado permanente</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -3192,9 +3192,9 @@
         <target>Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve">
+      <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve" approved="no">
         <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
-        <target>Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay ninguna manera de recuperar un código perdido!</target>
+        <target state="translated">Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay forma de recuperar un código perdido!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please report it to the developers." xml:space="preserve">
@@ -4002,8 +4002,9 @@
         <target>Mensajes omitidos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
+      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve" approved="no">
         <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
+        <target state="translated">Algunos errores no críticos ocurrieron durante la importación - para más detalles puedes ver la consola de Chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -4843,9 +4844,9 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>Te has unido a este grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve">
+      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve" approved="no">
         <source>You joined this group. Connecting to inviting group member.</source>
-        <target>Te has unido a este grupo. Conectando con el miembro que emite la invitacíon.</target>
+        <target state="translated">Te has unido a este grupo. Conectando con el emisor de la invitacíon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
