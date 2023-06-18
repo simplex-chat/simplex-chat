@@ -355,7 +355,7 @@
     <string name="chat_with_the_founder">Senden Sie Fragen und Ideen</string>
     <string name="send_us_an_email">Senden Sie uns eine E-Mail</string>
     <string name="chat_lock">SimpleX Sperre</string>
-    <string name="chat_console">Chat Konsole</string>
+    <string name="chat_console">Chat-Konsole</string>
     <string name="smp_servers">SMP-Server</string>
     <string name="smp_servers_preset_address">Voreingestellte Serveradresse</string>
     <string name="smp_servers_preset_add">Füge voreingestellte Server hinzu</string>
@@ -410,7 +410,7 @@
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion-Hosts werden verwendet, wenn sie verfügbar sind.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Für die Verbindung werden Onion-Hosts benötigt.</string>
-    <string name="appearance_settings">Design</string>
+    <string name="appearance_settings">Erscheinungsbild</string>
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Adresse erstellen</string>
     <string name="delete_address__question">Adresse löschen?</string>
@@ -705,7 +705,7 @@
     <string name="alert_title_cant_invite_contacts_descr">Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.</string>
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Sie haben eine Gruppeneinladung gesendet</string>
-    <string name="you_are_invited_to_group">Sie sind zur Gruppe eingeladen</string>
+    <string name="you_are_invited_to_group">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_invitation_tap_to_join">Zum Beitreten tippen</string>
     <string name="group_invitation_tap_to_join_incognito">Tippen, um Inkognito beizutreten</string>
     <string name="you_joined_this_group">Sie sind dieser Gruppe beigetreten</string>
