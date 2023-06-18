@@ -548,7 +548,7 @@
     <string name="messages_section_title">Mensajes</string>
     <string name="new_passphrase">Contraseña nueva…</string>
     <string name="join_group_question">¿Unirse al grupo\?</string>
-    <string name="joining_group">Únete al grupo</string>
+    <string name="joining_group">Entrando al grupo</string>
     <string name="keychain_error">Error en Keystore</string>
     <string name="icon_descr_add_members">Invitar miembros</string>
     <string name="group_member_role_observer">observador</string>
@@ -857,7 +857,7 @@
     <string name="icon_descr_video_on">Activar vídeo</string>
     <string name="wrong_passphrase">Contraseña de base de datos incorrecta</string>
     <string name="wrong_passphrase_title">¡Contraseña incorrecta!</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Te has unido a este grupo. Conectando con el miembro que emite la invitacíon.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Te has unido a este grupo. Conectando con el emisor de la invitacíon.</string>
     <string name="alert_title_cant_invite_contacts_descr">Estás usando un perfil incógnito para este grupo, por tanto para evitar compartir tu perfil principal no se permite invitar a contactos</string>
     <string name="you_are_invited_to_group">Has sido invitado al grupo</string>
     <string name="v4_3_voice_messages">Mensajes de voz</string>
@@ -1077,7 +1077,7 @@
     <string name="la_minutes">%d minutos</string>
     <string name="la_enter_app_passcode">Introduce código</string>
     <string name="la_immediately">Inmediatamente</string>
-    <string name="la_please_remember_to_store_password">Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay ninguna manera de recuperar un código perdido!</string>
+    <string name="la_please_remember_to_store_password">Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay forma de recuperar un código perdido!</string>
     <string name="lock_not_enabled">¡Bloqueo SimpleX no activado!</string>
     <string name="you_can_turn_on_lock">Puedes activar el Bloqueo SimpleX a través de Configuración.</string>
     <string name="confirm_passcode">Confirma código</string>
