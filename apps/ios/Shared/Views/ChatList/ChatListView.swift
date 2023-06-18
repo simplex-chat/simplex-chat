@@ -85,14 +85,16 @@ struct ChatListView: View {
                 }
             }
             ToolbarItem(placement: .principal) {
-                HStack(spacing: 0) {
+                HStack(spacing: 4) {
                     if (chatModel.incognito) {
-                        Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
-                            .padding(.trailing, 32)
+                        Image(systemName: "theatermasks")
+                            .frame(maxWidth: 22, maxHeight: 22, alignment: .center)
+                            .foregroundColor(.indigo)
+                            .padding(.trailing, 24)
                     }
                     Text("Chats")
                         .font(.headline)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, 12)
                     if chatModel.chats.count > 0 {
                         toggleShowUnreadButton()
                         toggleShowFavouritesButton()
@@ -115,11 +117,7 @@ struct ChatListView: View {
             showUnread = !showUnread
             showFavorites = false
         } label: {
-            if showUnread {
-                Image(systemName: "line.3.horizontal.decrease.circle.fill").foregroundColor(.accentColor)
-            } else {
-                Image(systemName: "line.3.horizontal.decrease.circle").foregroundColor(.secondary)
-            }
+            filterButtonImage(showUnread, image: "line.3.horizontal.decrease.circle", size: 22)
         }
     }
 
@@ -128,12 +126,16 @@ struct ChatListView: View {
             showFavorites = !showFavorites
             showUnread = false
         } label: {
-            if showFavorites {
-                Image(systemName: "star.fill").foregroundColor(.accentColor)
-            } else {
-                Image(systemName: "star").foregroundColor(.secondary)
-            }
+            filterButtonImage(showFavorites, image: "star", size: 24)
         }
+    }
+
+    private func filterButtonImage(_ on: Bool, image: String, size: CGFloat) -> some View {
+        Image(systemName: image + (on ? ".fill" : ""))
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .foregroundColor(on ? .accentColor : .secondary)
     }
 
     private var chatList: some View {
