@@ -58,6 +58,13 @@ import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Connections
+import Simplex.Chat.Store.Direct
+import Simplex.Chat.Store.Files
+import Simplex.Chat.Store.Groups
+import Simplex.Chat.Store.Messages
+import Simplex.Chat.Store.Profiles
+import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)

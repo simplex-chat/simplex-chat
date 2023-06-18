@@ -107,6 +107,14 @@ library
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Store
+      Simplex.Chat.Store.Connections
+      Simplex.Chat.Store.Direct
+      Simplex.Chat.Store.Files
+      Simplex.Chat.Store.Groups
+      Simplex.Chat.Store.Messages
+      Simplex.Chat.Store.Migrations
+      Simplex.Chat.Store.Profiles
+      Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
       Simplex.Chat.Terminal
       Simplex.Chat.Terminal.Input
