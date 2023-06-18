@@ -2040,6 +2040,10 @@
         <target>Rapide et ne nécessitant pas d'attendre que l'expéditeur soit en ligne !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Favorite" xml:space="preserve">
+        <source>Favorite</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
         <target>Le fichier sera supprimé des serveurs.</target>
@@ -4415,6 +4419,10 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>État de la migration inattendu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unfav" xml:space="preserve">
+        <source>Unfav</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
         <source>Unhide</source>
         <target>Dévoiler</target>
@@ -4970,11 +4978,6 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Vos profils de chat</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chats" xml:space="preserve">
-        <source>Your chats</source>
-        <target>Vos chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">

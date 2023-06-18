@@ -2040,6 +2040,10 @@
         <target>Snel en niet wachten tot de afzender online is!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Favorite" xml:space="preserve">
+        <source>Favorite</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
         <target>Het bestand wordt van de servers verwijderd.</target>
@@ -4415,6 +4419,10 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Onverwachte migratiestatus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unfav" xml:space="preserve">
+        <source>Unfav</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
         <source>Unhide</source>
         <target>zichtbaar maken</target>
@@ -4970,11 +4978,6 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Uw chat profielen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chats" xml:space="preserve">
-        <source>Your chats</source>
-        <target>Jouw gesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">

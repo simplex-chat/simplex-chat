@@ -2040,6 +2040,10 @@
         <target>Szybko i bez czekania aż nadawca będzie online!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Favorite" xml:space="preserve">
+        <source>Favorite</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
         <target>Plik zostanie usunięty z serwerów.</target>
@@ -4415,6 +4419,10 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
         <target>Nieoczekiwany stan migracji</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unfav" xml:space="preserve">
+        <source>Unfav</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
         <source>Unhide</source>
         <target>Odkryj</target>
@@ -4970,11 +4978,6 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Twoje profile czatu</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chats" xml:space="preserve">
-        <source>Your chats</source>
-        <target>Twoje czaty</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
