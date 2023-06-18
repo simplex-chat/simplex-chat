@@ -129,7 +129,7 @@ struct ChatListView: View {
             showUnread = false
         } label: {
             if showFavorites {
-                Image(systemName: "star.fill").foregroundColor(.yellow)
+                Image(systemName: "star.fill").foregroundColor(.accentColor)
             } else {
                 Image(systemName: "star").foregroundColor(.secondary)
             }

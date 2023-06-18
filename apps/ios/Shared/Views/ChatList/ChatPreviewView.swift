@@ -128,7 +128,7 @@ struct ChatPreviewView: View {
                     .foregroundColor(.secondary)
             } else if chat.chatInfo.chatSettings?.favorite ?? false {
                 Image(systemName: "star.fill")
-                    .foregroundColor(.yellow)
+                    .foregroundColor(.secondary.opacity(0.7))
             }
         }
     }
