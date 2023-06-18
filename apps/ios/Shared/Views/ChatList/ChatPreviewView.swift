@@ -128,6 +128,10 @@ struct ChatPreviewView: View {
                     .foregroundColor(.secondary)
             } else if chat.chatInfo.chatSettings?.favorite ?? false {
                 Image(systemName: "star.fill")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 20, height: 20)
+                    .padding(.trailing, 1)
                     .foregroundColor(.secondary.opacity(0.7))
             }
         }
