@@ -208,20 +208,20 @@ deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
     |]
     [":user_id" := userId, ":profile_id" := profile_id]
 
-type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime)
+type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool, Maybe Bool, Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime)
 
 toContact :: User -> ContactRow :. ConnectionRow -> Contact
-toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
+toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, enableNtfs_, favorite) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       activeConn = toConnection connRow
-      chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
+      chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_, favorite}
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
    in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
 
 toContactOrError :: User -> ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
+toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, enableNtfs_, favorite) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
-      chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
+      chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_, favorite}
    in case toMaybeConnection connRow of
         Just activeConn ->
           let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn

@@ -71,6 +71,7 @@ import Simplex.Chat.Migrations.M20230519_item_deleted_ts
 import Simplex.Chat.Migrations.M20230526_indexes
 import Simplex.Chat.Migrations.M20230529_indexes
 import Simplex.Chat.Migrations.M20230608_deleted_contacts
+import Simplex.Chat.Migrations.M20230618_favorite_chats
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -141,7 +142,8 @@ schemaMigrations =
     ("20230519_item_deleted_ts", m20230519_item_deleted_ts, Just down_m20230519_item_deleted_ts),
     ("20230526_indexes", m20230526_indexes, Just down_m20230526_indexes),
     ("20230529_indexes", m20230529_indexes, Just down_m20230529_indexes),
-    ("20230608_deleted_contacts", m20230608_deleted_contacts, Just down_m20230608_deleted_contacts)
+    ("20230608_deleted_contacts", m20230608_deleted_contacts, Just down_m20230608_deleted_contacts),
+    ("20230618_favorite_chats", m20230618_favorite_chats, Just down_m20230618_favorite_chats)
   ]
 
 -- | The list of migrations in ascending order by date
