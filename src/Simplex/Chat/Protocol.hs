@@ -28,6 +28,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
+import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -42,7 +43,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (fromTextField_, fstToLower, parseAll, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ConnectionEntity
@@ -179,9 +180,12 @@ instance StrEncoding AChatMessage where
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
+  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
+  XMsgFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: SharedMsgId -> Maybe MemberId -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
+  XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
   XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
@@ -221,6 +225,50 @@ deriving instance Show (ChatMsgEvent e)
 data AChatMsgEvent = forall e. MsgEncodingI e => ACME (SMsgEncoding e) (ChatMsgEvent e)
 
 deriving instance Show AChatMsgEvent
+
+data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
+  deriving (Eq, Show)
+
+emojiTag :: IsString a => a
+emojiTag = "emoji"
+
+instance FromJSON MsgReaction where
+  parseJSON (J.Object v) = do
+    tag <- v .: "type"
+    if tag == emojiTag
+      then (MREmoji <$> v .: emojiTag) <|> pure (MRUnknown tag v)
+      else pure $ MRUnknown tag v
+  parseJSON invalid =
+    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON MsgReaction where
+  toJSON = \case
+    MRUnknown {json} -> J.Object json
+    MREmoji emoji -> J.object ["type" .= (emojiTag :: Text), emojiTag .= emoji]
+  toEncoding = \case
+    MRUnknown {json} -> JE.value $ J.Object json
+    MREmoji emoji -> J.pairs $ "type" .= (emojiTag :: Text) <> emojiTag .= emoji
+
+instance ToField MsgReaction where
+  toField = toField . encodeJSON
+
+instance FromField MsgReaction where
+  fromField = fromTextField_ decodeJSON
+
+newtype MREmojiChar = MREmojiChar Char
+  deriving (Eq, Show)
+
+instance ToJSON MREmojiChar where
+  toEncoding (MREmojiChar c) = J.toEncoding c
+  toJSON (MREmojiChar c) = J.toJSON c
+
+instance FromJSON MREmojiChar where
+  parseJSON v = mrEmojiChar <$?> J.parseJSON v
+
+mrEmojiChar :: Char -> Either String MREmojiChar
+mrEmojiChar c
+  | c `elem` ("👍👎😀😢❤️🚀" :: String) = Right $ MREmojiChar c
+  | otherwise = Left "bad emoji"
 
 data FileChunk = FileChunk {chunkNo :: Integer, chunkBytes :: ByteString} | FileChunkCancel
   deriving (Eq, Show)
@@ -264,7 +312,7 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVoice_ | MCFile_ | MCUnknown_ Text
+data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCUnknown_ Text
   deriving (Eq)
 
 instance StrEncoding MsgContentTag where
@@ -272,6 +320,7 @@ instance StrEncoding MsgContentTag where
     MCText_ -> "text"
     MCLink_ -> "link"
     MCImage_ -> "image"
+    MCVideo_ -> "video"
     MCFile_ -> "file"
     MCVoice_ -> "voice"
     MCUnknown_ t -> encodeUtf8 t
@@ -279,6 +328,7 @@ instance StrEncoding MsgContentTag where
     "text" -> Right MCText_
     "link" -> Right MCLink_
     "image" -> Right MCImage_
+    "video" -> Right MCVideo_
     "voice" -> Right MCVoice_
     "file" -> Right MCFile_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
@@ -303,7 +353,10 @@ mcExtMsgContent = \case
   MCQuote _ c -> c
   MCForward c -> c
 
-data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData}
+data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
+  deriving (Eq, Show, Generic)
+
+data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show, Generic)
 
 instance FromJSON LinkPreview where
@@ -313,10 +366,26 @@ instance ToJSON LinkPreview where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+instance FromJSON LinkContent where
+  parseJSON v@(J.Object j) =
+    J.genericParseJSON (taggedObjectJSON $ dropPrefix "LC") v
+      <|> LCUnknown <$> j .: "type" <*> pure j
+  parseJSON invalid =
+    JT.prependFailure "bad LinkContent, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON LinkContent where
+  toJSON = \case
+    LCUnknown _ j -> J.Object j
+    v -> J.genericToJSON (taggedObjectJSON $ dropPrefix "LC") v
+  toEncoding = \case
+    LCUnknown _ j -> JE.value $ J.Object j
+    v -> J.genericToEncoding (taggedObjectJSON $ dropPrefix "LC") v
+
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
   | MCImage {text :: Text, image :: ImageData}
+  | MCVideo {text :: Text, image :: ImageData, duration :: Int}
   | MCVoice {text :: Text, duration :: Int}
   | MCFile Text
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
@@ -327,12 +396,16 @@ msgContentText = \case
   MCText t -> t
   MCLink {text} -> text
   MCImage {text} -> text
+  MCVideo {text} -> text
   MCVoice {text, duration} ->
     if T.null text then msg else msg <> "; " <> text
     where
       msg = "voice message " <> durationText duration
   MCFile t -> t
   MCUnknown {text} -> text
+
+toMCText :: MsgContent -> MsgContent
+toMCText = MCText . msgContentText
 
 durationText :: Int -> Text
 durationText duration =
@@ -352,6 +425,7 @@ msgContentTag = \case
   MCText _ -> MCText_
   MCLink {} -> MCLink_
   MCImage {} -> MCImage_
+  MCVideo {} -> MCVideo_
   MCVoice {} -> MCVoice_
   MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
@@ -385,7 +459,12 @@ instance FromJSON MsgContent where
       MCImage_ -> do
         text <- v .: "text"
         image <- v .: "image"
-        pure MCImage {image, text}
+        pure MCImage {text, image}
+      MCVideo_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        duration <- v .: "duration"
+        pure MCVideo {text, image, duration}
       MCVoice_ -> do
         text <- v .: "text"
         duration <- v .: "duration"
@@ -415,6 +494,7 @@ instance ToJSON MsgContent where
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
     MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
   toEncoding = \case
@@ -422,6 +502,7 @@ instance ToJSON MsgContent where
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
     MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
+    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
 
@@ -433,9 +514,12 @@ instance FromField MsgContent where
 
 data CMEventTag (e :: MsgEncoding) where
   XMsgNew_ :: CMEventTag 'Json
+  XMsgFileDescr_ :: CMEventTag 'Json
+  XMsgFileCancel_ :: CMEventTag 'Json
   XMsgUpdate_ :: CMEventTag 'Json
   XMsgDel_ :: CMEventTag 'Json
   XMsgDeleted_ :: CMEventTag 'Json
+  XMsgReact_ :: CMEventTag 'Json
   XFile_ :: CMEventTag 'Json
   XFileAcpt_ :: CMEventTag 'Json
   XFileAcptInv_ :: CMEventTag 'Json
@@ -475,9 +559,12 @@ deriving instance Eq (CMEventTag e)
 instance MsgEncodingI e => StrEncoding (CMEventTag e) where
   strEncode = \case
     XMsgNew_ -> "x.msg.new"
+    XMsgFileDescr_ -> "x.msg.file.descr"
+    XMsgFileCancel_ -> "x.msg.file.cancel"
     XMsgUpdate_ -> "x.msg.update"
     XMsgDel_ -> "x.msg.del"
     XMsgDeleted_ -> "x.msg.deleted"
+    XMsgReact_ -> "x.msg.react"
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XFileAcptInv_ -> "x.file.acpt.inv"
@@ -518,9 +605,12 @@ instance StrEncoding ACMEventTag where
     ((,) <$> A.peekChar' <*> A.takeTill (== ' ')) >>= \case
       ('x', t) -> pure . ACMEventTag SJson $ case t of
         "x.msg.new" -> XMsgNew_
+        "x.msg.file.descr" -> XMsgFileDescr_
+        "x.msg.file.cancel" -> XMsgFileCancel_
         "x.msg.update" -> XMsgUpdate_
         "x.msg.del" -> XMsgDel_
         "x.msg.deleted" -> XMsgDeleted_
+        "x.msg.react" -> XMsgReact_
         "x.file" -> XFile_
         "x.file.acpt" -> XFileAcpt_
         "x.file.acpt.inv" -> XFileAcptInv_
@@ -557,9 +647,12 @@ instance StrEncoding ACMEventTag where
 toCMEventTag :: ChatMsgEvent e -> CMEventTag e
 toCMEventTag msg = case msg of
   XMsgNew _ -> XMsgNew_
+  XMsgFileDescr _ _ -> XMsgFileDescr_
+  XMsgFileCancel _ -> XMsgFileCancel_
   XMsgUpdate {} -> XMsgUpdate_
   XMsgDel {} -> XMsgDel_
   XMsgDeleted -> XMsgDeleted_
+  XMsgReact {} -> XMsgReact_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XFileAcptInv {} -> XFileAcptInv_
@@ -642,9 +735,12 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
+      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
+      XMsgFileCancel_ -> XMsgFileCancel <$> p "msgId"
       XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> opt "ttl" <*> opt "live"
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId"
       XMsgDeleted_ -> pure XMsgDeleted
+      XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> p "reaction" <*> p "add"
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
@@ -695,9 +791,12 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
       XMsgNew container -> msgContainerJSON container
+      XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
+      XMsgFileCancel msgId' -> o ["msgId" .= msgId']
       XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
+      XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]        
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]

@@ -11,7 +11,7 @@ import kotlinx.serialization.encoding.Encoder
 
 sealed class SharedContent {
   data class Text(val text: String): SharedContent()
-  data class Images(val text: String, val uris: List<Uri>): SharedContent()
+  data class Media(val text: String, val uris: List<Uri>): SharedContent()
   data class File(val text: String, val uri: Uri): SharedContent()
 }
 
@@ -48,4 +48,5 @@ object UriSerializer : KSerializer<Uri> {
 sealed class UploadContent {
   @Serializable data class SimpleImage(val uri: Uri): UploadContent()
   @Serializable data class AnimatedImage(val uri: Uri): UploadContent()
+  @Serializable data class Video(val uri: Uri, val duration: Int): UploadContent()
 }

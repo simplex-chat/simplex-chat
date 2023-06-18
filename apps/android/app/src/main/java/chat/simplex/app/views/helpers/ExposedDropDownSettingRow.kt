@@ -2,21 +2,19 @@ package chat.simplex.app.views.helpers
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.ui.theme.DEFAULT_PADDING
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.usersettings.SettingsActionItemWithContent
 
 @Composable
 fun <T> ExposedDropDownSettingRow(
@@ -24,31 +22,17 @@ fun <T> ExposedDropDownSettingRow(
   values: List<Pair<T, String>>,
   selection: State<T>,
   label: String? = null,
-  icon: ImageVector? = null,
-  iconTint: Color = HighOrLowlight,
+  icon: Painter? = null,
+  iconTint: Color = MaterialTheme.colors.secondary,
   enabled: State<Boolean> = mutableStateOf(true),
   onSelected: (T) -> Unit
 ) {
-  Row(
-    Modifier.fillMaxWidth().padding(vertical = 10.dp),
-    verticalAlignment = Alignment.CenterVertically,
-  ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    if (icon != null) {
-      Icon(
-        icon,
-        "",
-        Modifier.padding(end = 8.dp),
-        tint = iconTint
-      )
-    }
-    Text(title, Modifier.weight(1f), color = if (enabled.value) Color.Unspecified else HighOrLowlight)
-
+  SettingsActionItemWithContent(icon, title, iconColor = iconTint, disabled = !enabled.value) {
+    val expanded = remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
-      expanded = expanded,
+      expanded = expanded.value,
       onExpandedChange = {
-        expanded = !expanded && enabled.value
+        expanded.value = !expanded.value && enabled.value
       }
     ) {
       Row(
@@ -56,39 +40,38 @@ fun <T> ExposedDropDownSettingRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End
       ) {
-        val maxWidth = with(LocalDensity.current){ 180.sp.toDp() }
+        val maxWidth = with(LocalDensity.current) { 180.sp.toDp() }
         Text(
           values.first { it.first == selection.value }.second + (if (label != null) " $label" else ""),
           Modifier.widthIn(max = maxWidth),
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
+          color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.size(12.dp))
         Icon(
-          if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
           generalGetString(R.string.icon_descr_more_button),
-          tint = HighOrLowlight
+          tint = MaterialTheme.colors.secondary
         )
       }
-      ExposedDropdownMenu(
+      DefaultExposedDropdownMenu(
         modifier = Modifier.widthIn(min = 200.dp),
         expanded = expanded,
-        onDismissRequest = {
-          expanded = false
-        }
       ) {
         values.forEach { selectionOption ->
           DropdownMenuItem(
             onClick = {
               onSelected(selectionOption.first)
-              expanded = false
-            }
+              expanded.value = false
+            },
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
               selectionOption.second + (if (label != null) " $label" else ""),
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
+              color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
             )
           }
         }

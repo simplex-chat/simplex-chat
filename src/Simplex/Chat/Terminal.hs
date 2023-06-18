@@ -17,6 +17,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Notification
 import Simplex.Chat.Terminal.Output
+import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
 import System.Exit (exitFailure)
@@ -33,14 +34,15 @@ terminalChatConfig =
                   "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
                 ],
             ntf = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"],
+            xftp = defaultXFTPServers,
             netCfg = defaultNetworkConfig
           }
     }
 
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
 simplexChatTerminal cfg opts t = do
-  sendToast <- initializeNotifications
-  handle checkDBKeyError . simplexChatCore cfg opts (Just sendToast) $ \u cc -> do
+  sendToast <- if muteNotifications opts then pure Nothing else Just <$> initializeNotifications
+  handle checkDBKeyError . simplexChatCore cfg opts sendToast $ \u cc -> do
     ct <- newChatTerminal t
     when (firstTime cc) . printToTerminal ct $ chatWelcome u
     runChatTerminal ct cc

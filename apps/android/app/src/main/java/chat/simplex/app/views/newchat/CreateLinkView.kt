@@ -2,17 +2,16 @@ package chat.simplex.app.views.newchat
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.UserAddressView
@@ -46,14 +45,13 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
     when {
       it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() -> stringResource(R.string.create_one_time_link)
       it == CreateLinkTab.ONE_TIME -> stringResource(R.string.one_time_link)
-      it == CreateLinkTab.LONG_TERM -> stringResource(R.string.your_contact_address)
+      it == CreateLinkTab.LONG_TERM -> stringResource(R.string.your_simplex_contact_address)
       else -> ""
     }
   }
   Column(
     Modifier
-      .fillMaxHeight()
-      .padding(horizontal = DEFAULT_PADDING),
+      .fillMaxHeight(),
     verticalArrangement = Arrangement.SpaceBetween
   ) {
     Column(Modifier.weight(1f)) {
@@ -62,13 +60,13 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
           AddContactView(connReqInvitation.value ?: "", m.incognito.value)
         }
         CreateLinkTab.LONG_TERM -> {
-          UserAddressView(m)
+          UserAddressView(m, viaCreateLinkView = true, close = {})
         }
       }
     }
     TabRow(
       selectedTabIndex = selection.value.ordinal,
-      backgroundColor = MaterialTheme.colors.background,
+      backgroundColor = Color.Transparent,
       contentColor = MaterialTheme.colors.primary,
     ) {
       tabTitles.forEachIndexed { index, it ->
@@ -80,12 +78,12 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
           text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
-              if (CreateLinkTab.ONE_TIME.ordinal == index) Icons.Outlined.RepeatOne else Icons.Outlined.AllInclusive,
+              if (CreateLinkTab.ONE_TIME.ordinal == index) painterResource(R.drawable.ic_repeat_one) else painterResource(R.drawable.ic_all_inclusive),
               it
             )
           },
           selectedContentColor = MaterialTheme.colors.primary,
-          unselectedContentColor = HighOrLowlight,
+          unselectedContentColor = MaterialTheme.colors.secondary,
         )
       }
     }

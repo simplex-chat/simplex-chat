@@ -1,3 +1,6 @@
+---
+title: Chat profiles
+---
 # Your chat profiles
 
 ## Creating additional chat profiles

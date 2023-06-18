@@ -9,15 +9,14 @@ android {
 
     defaultConfig {
         applicationId "chat.simplex.app"
-        minSdk 29
+        minSdk 26
         targetSdk 32
-        versionCode 103
-        versionName "4.5.4"
+        // !!!
+        // skip version code after release to F-Droid, as it uses two version codes
+        versionCode 125
+        versionName "5.1.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        ndk {
-            abiFilters 'arm64-v8a'
-        }
         vectorDrawables {
             useSupportLibrary true
         }
@@ -77,9 +76,39 @@ android {
         jniLibs.useLegacyPackaging = compression_level != "0"
     }
     def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
-    if (isRelease) {
+    def isBundle = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("bundle") }) != null
+//    if (isRelease) {
         // Comma separated list of languages that will be included in the apk
-        android.defaultConfig.resConfigs("en", "ru", "de", "fr", "it", "nl", "cs")
+    android.defaultConfig.resConfigs(
+        "en",
+        "cs",
+        "de",
+        "es",
+        "fr",
+        "it",
+        "ja",
+        "nl",
+        "pl",
+        "pt-rBR",
+        "ru",
+        "zh-rCN"
+    )
+//    }
+    if (isBundle) {
+        defaultConfig.ndk.abiFilters 'arm64-v8a', 'armeabi-v7a'
+    } else {
+        splits {
+            abi {
+                enable true
+                reset()
+                if (isRelease) {
+                    include 'arm64-v8a', 'armeabi-v7a'
+                } else {
+                    include 'arm64-v8a', 'armeabi-v7a'
+                    universalApk false
+                }
+            }
+        }
     }
 }
 
@@ -94,7 +123,8 @@ dependencies {
     implementation 'androidx.fragment:fragment:1.4.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-datetime:0.3.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
-    implementation "androidx.compose.material:material-icons-extended:$compose_version"
+    implementation 'com.charleskorn.kaml:kaml:0.43.0'
+    //implementation "androidx.compose.material:material-icons-extended:$compose_version"
     implementation "androidx.compose.ui:ui-util:$compose_version"
     implementation "androidx.navigation:navigation-compose:2.4.1"
     implementation "com.google.accompanist:accompanist-insets:0.23.0"
@@ -129,6 +159,12 @@ dependencies {
     implementation "io.coil-kt:coil-compose:2.1.0"
     implementation "io.coil-kt:coil-gif:2.1.0"
 
+    // Video support
+    implementation "com.google.android.exoplayer:exoplayer:2.17.1"
+
+    // Wheel picker
+    implementation 'com.github.zj565061763:compose-wheel-picker:1.0.0-alpha10'
+
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
@@ -136,19 +172,12 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
 }
 
-def buildType = "unknown"
 // Don't do anything if no compression is needed
 if (compression_level != "0") {
     tasks.whenTaskAdded { task ->
         if (task.name == 'packageDebug') {
-            task.doLast {
-                buildType = "debug"
-            }
             task.finalizedBy compressApk
         } else if (task.name == 'packageRelease') {
-            task.doLast {
-                buildType = "release"
-            }
             task.finalizedBy compressApk
         }
     }
@@ -156,6 +185,13 @@ if (compression_level != "0") {
 
 tasks.register("compressApk") {
     doLast {
+        def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
+        def buildType
+        if (isRelease) {
+            buildType = "release"
+        } else {
+            buildType = "debug"
+        }
         def javaHome = System.properties['java.home'] ?: org.gradle.internal.jvm.Jvm.current().getJavaHome()
         def sdkDir = android.getSdkDirectory().getAbsolutePath()
         def keyAlias = ""
@@ -196,6 +232,8 @@ tasks.register("compressApk") {
 
         if (project.properties['android.injected.signing.key.alias'] != null && buildType == 'release') {
             new File(outputDir, "app-release.apk").renameTo(new File(outputDir, "simplex.apk"))
+            new File(outputDir, "app-armeabi-v7a-release.apk").renameTo(new File(outputDir, "simplex-armv7a.apk"))
+            new File(outputDir, "app-arm64-v8a-release.apk").renameTo(new File(outputDir, "simplex.apk"))
         }
 
         // View all gradle properties set

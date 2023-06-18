@@ -8,13 +8,15 @@
 
 import UserNotifications
 import OSLog
+import StoreKit
+import CallKit
 import SimpleXChat
 
 let logger = Logger()
 
 let suspendingDelay: UInt64 = 2_000_000_000
 
-typealias NtfStream = AsyncStream<UNMutableNotificationContent>
+typealias NtfStream = AsyncStream<NSENotification>
 
 actor PendingNtfs {
     static let shared = PendingNtfs()
@@ -31,13 +33,13 @@ actor PendingNtfs {
         }
     }
 
-    func readStream(_ id: String, for nse: NotificationService, msgCount: Int = 1) async {
+    func readStream(_ id: String, for nse: NotificationService, msgCount: Int = 1, showNotifications: Bool) async {
         logger.debug("PendingNtfs.readStream: \(id, privacy: .public) \(msgCount, privacy: .public)")
         if let s = ntfStreams[id] {
             logger.debug("PendingNtfs.readStream: has stream")
             var rcvCount = max(1, msgCount)
             for await ntf in s {
-                nse.setBestAttemptNtf(ntf)
+                nse.setBestAttemptNtf(showNotifications ? ntf : .empty)
                 rcvCount -= 1
                 if rcvCount == 0 || ntf.categoryIdentifier == ntfCategoryCallInvitation { break }
             }
@@ -45,7 +47,7 @@ actor PendingNtfs {
         }
     }
 
-    func writeStream(_ id: String, _ ntf: UNMutableNotificationContent) {
+    func writeStream(_ id: String, _ ntf: NSENotification) {
         logger.debug("PendingNtfs.writeStream: \(id, privacy: .public)")
         if let cont = ntfConts[id] {
             logger.debug("PendingNtfs.writeStream: writing ntf")
@@ -54,16 +56,30 @@ actor PendingNtfs {
     }
 }
 
+enum NSENotification {
+    case nse(notification: UNMutableNotificationContent)
+    case callkit(invitation: RcvCallInvitation)
+    case empty
 
+    var categoryIdentifier: String? {
+        switch self {
+        case let .nse(ntf): return ntf.categoryIdentifier
+        case .callkit: return ntfCategoryCallInvitation
+        case .empty: return nil
+        }
+    }
+}
 
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
-    var bestAttemptNtf: UNMutableNotificationContent?
+    var bestAttemptNtf: NSENotification?
     var badgeCount: Int = 0
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        setBestAttemptNtf(request.content.mutableCopy() as? UNMutableNotificationContent)
+        if let ntf = request.content.mutableCopy() as? UNMutableNotificationContent {
+            setBestAttemptNtf(ntf)
+        }
         self.contentHandler = contentHandler
         registerGroupDefaults()
         let appState = appStateGroupDefault.get()
@@ -110,12 +126,16 @@ class NotificationService: UNNotificationServiceExtension {
                let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
-                    setBestAttemptNtf(createConnectionEventNtf(ntfMsgInfo.user, connEntity))
+                    setBestAttemptNtf(
+                        ntfMsgInfo.user.showNotifications
+                        ? .nse(notification: createConnectionEventNtf(ntfMsgInfo.user, connEntity))
+                        : .empty
+                    )
                     if let id = connEntity.id {
                         Task {
                             logger.debug("NotificationService: receiveNtfMessages: in Task, connEntity id \(id, privacy: .public)")
                             await PendingNtfs.shared.createStream(id)
-                            await PendingNtfs.shared.readStream(id, for: self, msgCount: ntfMsgInfo.ntfMessages.count)
+                            await PendingNtfs.shared.readStream(id, for: self, msgCount: ntfMsgInfo.ntfMessages.count, showNotifications: ntfMsgInfo.user.showNotifications)
                             deliverBestAttemptNtf()
                         }
                     }
@@ -138,16 +158,40 @@ class NotificationService: UNNotificationServiceExtension {
         ntfBadgeCountGroupDefault.set(badgeCount)
     }
 
-    func setBestAttemptNtf(_ ntf: UNMutableNotificationContent?) {
+    func setBestAttemptNtf(_ ntf: UNMutableNotificationContent) {
+        setBestAttemptNtf(.nse(notification: ntf))
+    }
+
+    func setBestAttemptNtf(_ ntf: NSENotification) {
         logger.debug("NotificationService.setBestAttemptNtf")
-        bestAttemptNtf = ntf
-        bestAttemptNtf?.badge = badgeCount as NSNumber
+        if case let .nse(notification) = ntf {
+            notification.badge = badgeCount as NSNumber
+            bestAttemptNtf = .nse(notification: notification)
+        } else {
+            bestAttemptNtf = ntf
+        }
     }
 
     private func deliverBestAttemptNtf() {
         logger.debug("NotificationService.deliverBestAttemptNtf")
-        if let handler = contentHandler, let content = bestAttemptNtf {
-            handler(content)
+        if let handler = contentHandler, let ntf = bestAttemptNtf {
+            switch ntf {
+            case let .nse(content): handler(content)
+            case let .callkit(invitation):
+                CXProvider.reportNewIncomingVoIPPushPayload([
+                    "displayName": invitation.contact.displayName,
+                    "contactId": invitation.contact.id,
+                    "media": invitation.callType.media.rawValue
+                ]) { error in
+                    if error == nil {
+                        handler(UNMutableNotificationContent())
+                    } else {
+                        logger.debug("reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
+                        handler(createCallInvitationNtf(invitation))
+                    }
+                }
+            case .empty: handler(UNMutableNotificationContent())
+            }
             bestAttemptNtf = nil
         }
     }
@@ -155,11 +199,12 @@ class NotificationService: UNNotificationServiceExtension {
 
 var chatStarted = false
 var networkConfig: NetCfg = getNetCfg()
+var xftpConfig: XFTPFileConfig? = getXFTPCfg()
 
 func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
     if chatStarted { return .ok }
-    let (_, dbStatus) = chatMigrateInit()
+    let (_, dbStatus) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation())
     if dbStatus != .ok {
         resetChatCtrl()
         return dbStatus
@@ -168,10 +213,12 @@ func startChat() -> DBMigrationResult? {
         logger.debug("active user \(String(describing: user))")
         do {
             try setNetworkConfig(networkConfig)
+            try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
+            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+            try setXFTPConfig(xftpConfig)
             let justStarted = try apiStartChat()
             chatStarted = true
             if justStarted {
-                try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
                 try apiSetIncognito(incognito: incognitoGroupDefault.get())
                 chatLastStartGroupDefault.set(Date.now)
                 Task { await receiveMessages() }
@@ -206,38 +253,47 @@ func chatRecvMsg() async -> ChatResponse? {
     }
 }
 
-func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
+private let isInChina = SKStorefront().countryCode == "CHN"
+private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
+
+func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
     logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
     switch res {
     case let .contactConnected(user, contact, _):
-        return (contact.id, createContactConnectedNtf(user, contact))
+        return (contact.id, .nse(notification: createContactConnectedNtf(user, contact)))
 //        case let .contactConnecting(contact):
 //            TODO profile update
     case let .receivedContactRequest(user, contactRequest):
-        return (UserContact(contactRequest: contactRequest).id, createContactRequestNtf(user, contactRequest))
+        return (UserContact(contactRequest: contactRequest).id, .nse(notification: createContactRequestNtf(user, contactRequest)))
     case let .newChatItem(user, aChatItem):
         let cInfo = aChatItem.chatInfo
         var cItem = aChatItem.chatItem
         if !cInfo.ntfsEnabled {
             ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
         }
-        if case .image = cItem.content.msgContent {
-           if let file = cItem.file,
-              file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
-              privacyAcceptImagesGroupDefault.get() {
-               cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
-           }
-        } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
-            if let file = cItem.file,
-               file.fileSize <= MAX_IMAGE_SIZE,
-               file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND,
-               privacyAcceptImagesGroupDefault.get() {
-                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
-            }
-         }
-        return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(user, cInfo, cItem)) : nil
+        if let file = cItem.autoReceiveFile() {
+            cItem = autoReceiveFile(file) ?? cItem
+        }
+        let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(notification: createMessageReceivedNtf(user, cInfo, cItem)) : .empty
+        return cItem.showMutableNotification ? (aChatItem.chatId, ntf) : nil
+    case let .rcvFileSndCancelled(_, aChatItem, _):
+        cleanupFile(aChatItem)
+        return nil
+    case let .sndFileComplete(_, aChatItem, _):
+        cleanupDirectFile(aChatItem)
+        return nil
+    case let .sndFileRcvCancelled(_, aChatItem, _):
+        cleanupDirectFile(aChatItem)
+        return nil
+    case let .sndFileCompleteXFTP(_, aChatItem, _):
+        cleanupFile(aChatItem)
+        return nil
     case let .callInvitation(invitation):
-        return (invitation.contact.id, createCallInvitationNtf(invitation))
+        // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
+        return (
+            invitation.contact.id,
+            useCallKit() ? .callkit(invitation: invitation) : .nse(notification: createCallInvitationNtf(invitation))
+        )
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
         return nil
@@ -270,7 +326,7 @@ func apiGetActiveUser() -> User? {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = sendSimpleXCmd(.startChat(subscribe: false, expire: false))
+    let r = sendSimpleXCmd(.startChat(subscribe: false, expire: false, xftp: false))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -278,8 +334,20 @@ func apiStartChat() throws -> Bool {
     }
 }
 
+func apiSetTempFolder(tempFolder: String) throws {
+    let r = sendSimpleXCmd(.setTempFolder(tempFolder: tempFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiSetFilesFolder(filesFolder: String) throws {
     let r = sendSimpleXCmd(.setFilesFolder(filesFolder: filesFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
+    let r = sendSimpleXCmd(.apiSetXFTPConfig(config: cfg))
     if case .cmdOk = r { return }
     throw r
 }
@@ -311,6 +379,22 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil) -> AChatItem? {
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
+}
+
+func apiSetFileToReceive(fileId: Int64) {
+    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId))
+    if case .cmdOk = r { return }
+    logger.error("setFileToReceive error: \(responseError(r))")
+}
+
+func autoReceiveFile(_ file: CIFile) -> ChatItem? {
+    switch file.fileProtocol {
+    case .smp:
+        return apiReceiveFile(fileId: file.fileId)?.chatItem
+    case .xftp:
+        apiSetFileToReceive(fileId: file.fileId)
+        return nil
+    }
 }
 
 func setNetworkConfig(_ cfg: NetCfg) throws {

@@ -1,19 +1,17 @@
 package chat.simplex.app.views.chat.group
 
-import SectionItemView
+import SectionBottomSpacer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,7 +65,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
       }
     },
     deleteLink = {
-      AlertManager.shared.showAlertMsg(
+      AlertManager.shared.showAlertDialog(
         title = generalGetString(R.string.delete_link_question),
         text = generalGetString(R.string.all_group_members_will_remain_connected),
         confirmText = generalGetString(R.string.delete_verb),
@@ -79,7 +77,8 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
               onGroupLinkUpdated(null to null)
             }
           }
-        }
+        },
+        destructive = true,
       )
     }
   )
@@ -101,15 +100,12 @@ fun GroupLinkLayout(
 ) {
   Column(
     Modifier
-      .verticalScroll(rememberScrollState())
-      .padding(start = DEFAULT_PADDING, bottom = DEFAULT_BOTTOM_PADDING, end = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.Top
+      .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.group_link), false)
+    AppBarTitle(stringResource(R.string.group_link))
     Text(
       stringResource(R.string.you_can_share_group_link_anybody_will_be_able_to_connect),
-      Modifier.padding(bottom = 12.dp),
+      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 12.dp),
       lineHeight = 22.sp
     )
     Column(
@@ -118,11 +114,9 @@ fun GroupLinkLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (groupLink == null) {
-        SimpleButton(stringResource(R.string.button_create_group_link), icon = Icons.Outlined.AddLink, disabled = creatingLink, click = createLink)
+        SimpleButton(stringResource(R.string.button_create_group_link), icon = painterResource(R.drawable.ic_add_link), disabled = creatingLink, click = createLink)
       } else {
-//        SectionItemView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
-//          RoleSelectionRow(groupInfo, groupLinkMemberRole)
-//        }
+        RoleSelectionRow(groupInfo, groupLinkMemberRole)
         var initialLaunch by remember { mutableStateOf(true) }
         LaunchedEffect(groupLinkMemberRole.value) {
           if (!initialLaunch) {
@@ -130,26 +124,27 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        QRCode(groupLink, Modifier.aspectRatio(1f))
+        QRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.padding(vertical = 10.dp)
+          modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
         ) {
           SimpleButton(
             stringResource(R.string.share_link),
-            icon = Icons.Outlined.Share,
+            icon = painterResource(R.drawable.ic_share),
             click = share
           )
           SimpleButton(
             stringResource(R.string.delete_link),
-            icon = Icons.Outlined.Delete,
+            icon = painterResource(R.drawable.ic_delete),
             color = Color.Red,
             click = deleteLink
           )
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -166,9 +161,8 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
       values,
       selectedRole,
       icon = null,
-      enabled = rememberUpdatedState(enabled),
-      onSelected = { selectedRole.value = it }
-    )
+      enabled = rememberUpdatedState(enabled)
+    ) { selectedRole.value = it }
   }
 }
 
@@ -182,7 +176,7 @@ fun ProgressIndicator() {
       Modifier
         .padding(horizontal = 2.dp)
         .size(30.dp),
-      color = HighOrLowlight,
+      color = MaterialTheme.colors.secondary,
       strokeWidth = 2.5.dp
     )
   }

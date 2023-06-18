@@ -17,7 +17,7 @@ public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     fatalError("chat controller not initialized")
 }
 
-public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
+public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: MigrationConfirmation? = nil) -> (Bool, DBMigrationResult) {
     if let res = migrationResult { return res }
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
@@ -30,19 +30,21 @@ public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult
             logger.debug("chatMigrateInit generating a random DB key")
             dbKey = randomDatabasePassword()
             initialRandomDBPassphraseGroupDefault.set(true)
-        } else if let key = getDatabaseKey() {
+        } else if let key = kcDatabasePassword.get() {
             dbKey = key
         }
     }
-    logger.debug("chatMigrateInit DB path: \(dbPath)")
+    let confirm = confirmMigrations ?? defaultMigrationConfirmation()
+    logger.debug("chatMigrateInit DB path: \(dbPath), confirm: \(confirm.rawValue)")
 //    logger.debug("chatMigrateInit DB key: \(dbKey)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
+    var cConfirm = confirm.rawValue.cString(using: .utf8)!
     // the last parameter of chat_migrate_init is used to return the pointer to chat controller
-    let cjson = chat_migrate_init(&cPath, &cKey, &chatController)!
+    let cjson = chat_migrate_init(&cPath, &cKey, &cConfirm, &chatController)!
     let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
-    let keychainErr = dbRes == .ok && useKeychain && encrypted && !setDatabaseKey(dbKey)
+    let keychainErr = dbRes == .ok && useKeychain && encrypted && !kcDatabasePassword.set(dbKey)
     let result = (encrypted, keychainErr ? .errorKeychain : dbRes)
     migrationResult = result
     return result
@@ -109,7 +111,7 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
-private func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
+public func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
     let s = String.init(cString: c)
     free(c)
     return s
@@ -151,6 +153,11 @@ public func chatResponse(_ s: String) -> ChatResponse {
                    let chat = try? parseChatData(jChat) {
                     return .apiChat(user: user, chat: chat)
                 }
+            } else if type == "chatCmdError" {
+                if let jError = jResp["chatCmdError"] as? NSDictionary {
+                    let user: User? = try? decodeObject(jError["user_"] as Any)
+                    return .chatCmdError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                }
             }
         }
         json = prettyJSON(j)
@@ -167,13 +174,24 @@ func parseChatData(_ jChat: Any) throws -> ChatData {
         if let ci: ChatItem = try? decodeObject(jCI) {
             return ci
         }
-        return ChatItem.invalidJSON(prettyJSON(jCI) ?? "")
+        return ChatItem.invalidJSON(
+            chatDir: decodeProperty(jCI, "chatDir"),
+            meta: decodeProperty(jCI, "meta"),
+            json: prettyJSON(jCI) ?? ""
+        )
     }
     return ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
 }
 
 func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
     try jsonDecoder.decode(T.self, from: JSONSerialization.data(withJSONObject: obj))
+}
+
+func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
+    if let jProp = (obj as? NSDictionary)?[prop] {
+        return try? decodeObject(jProp)
+    }
+    return nil
 }
 
 func prettyJSON(_ obj: Any) -> String? {
@@ -185,18 +203,55 @@ func prettyJSON(_ obj: Any) -> String? {
 
 public func responseError(_ err: Error) -> String {
     if let r = err as? ChatResponse {
-        return String(describing: r)
+        switch r {
+        case let .chatCmdError(_, chatError): return chatErrorString(chatError)
+        case let .chatError(_, chatError): return chatErrorString(chatError)
+        default: return String(describing: r)
+        }
     } else {
-        return err.localizedDescription
+        return String(describing: err)
     }
+}
+
+func chatErrorString(_ err: ChatError) -> String {
+    if case let .invalidJSON(json) = err { return json }
+    return String(describing: err)
 }
 
 public enum DBMigrationResult: Decodable, Equatable {
     case ok
+    case invalidConfirmation
     case errorNotADatabase(dbFile: String)
-    case error(dbFile: String, migrationError: String)
+    case errorMigration(dbFile: String, migrationError: MigrationError)
+    case errorSQL(dbFile: String, migrationSQLError: String)
     case errorKeychain
     case unknown(json: String)
+}
+
+public enum MigrationConfirmation: String {
+    case yesUp
+    case yesUpDown
+    case error
+}
+
+public func defaultMigrationConfirmation() -> MigrationConfirmation {
+    confirmDBUpgradesGroupDefault.get() ? .error : .yesUp
+}
+
+public enum MigrationError: Decodable, Equatable {
+    case upgrade(upMigrations: [UpMigration])
+    case downgrade(downMigrations: [String])
+    case migrationError(mtrError: MTRError)
+}
+
+public struct UpMigration: Decodable, Equatable {
+    public var upName: String
+//    public var withDown: Bool
+}
+
+public enum MTRError: Decodable, Equatable {
+    case noDown(dbMigrations: [String])
+    case different(appMigration: String, dbMigration: String)
 }
 
 func dbMigrationResult(_ s: String) -> DBMigrationResult {

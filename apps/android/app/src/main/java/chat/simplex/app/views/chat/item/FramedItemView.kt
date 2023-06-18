@@ -4,9 +4,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,12 +11,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.util.fastMap
@@ -29,11 +28,6 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 import kotlin.math.min
-
-val SentColorLight = Color(0x1E45B8FF)
-val ReceivedColorLight = Color(0x20B1B0B5)
-val SentQuoteColorLight = Color(0x2545B8FF)
-val ReceivedQuoteColorLight = Color(0x25B1B0B5)
 
 @Composable
 fun FramedItemView(
@@ -56,6 +50,9 @@ fun FramedItemView(
   }
 
   @Composable
+  fun Color.toQuote(): Color = if (isInDarkTheme()) lighter(0.12f) else darker(0.12f)
+
+  @Composable
   fun ciQuotedMsgView(qi: CIQuote) {
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
@@ -70,15 +67,14 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: ImageVector? = null) {
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null) {
+    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+    val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
     Row(
       Modifier
-        .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
+        .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
         .fillMaxWidth()
-        .padding(start = 8.dp)
-        .padding(end = 12.dp)
-        .padding(top = 6.dp)
-        .padding(bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
+        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
       if (icon != null) {
@@ -91,20 +87,24 @@ fun FramedItemView(
       }
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = HighOrLowlight)) {
+          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
             append(caption)
           }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
       )
     }
   }
 
   @Composable
   fun ciQuoteView(qi: CIQuote) {
+    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+    val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
     Row(
       Modifier
-        .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
+        .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
         .fillMaxWidth()
         .combinedClickable(
           onLongClick = { showMenu.value = true },
@@ -124,12 +124,24 @@ fun FramedItemView(
             modifier = Modifier.size(68.dp).clipToBounds()
           )
         }
+        is MsgContent.MCVideo -> {
+          Box(Modifier.fillMaxWidth().weight(1f)) {
+            ciQuotedMsgView(qi)
+          }
+          val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
+          Image(
+            imageBitmap,
+            contentDescription = stringResource(R.string.video_descr),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(68.dp).clipToBounds()
+          )
+        }
         is MsgContent.MCFile, is MsgContent.MCVoice -> {
           Box(Modifier.fillMaxWidth().weight(1f)) {
             ciQuotedMsgView(qi)
           }
           Icon(
-            if (qi.content is MsgContent.MCFile) Icons.Filled.InsertDriveFile else Icons.Filled.Mic,
+            if (qi.content is MsgContent.MCFile) painterResource(R.drawable.ic_draft_filled) else painterResource(R.drawable.ic_mic_filled),
             if (qi.content is MsgContent.MCFile) stringResource(R.string.icon_descr_file) else stringResource(R.string.voice_message),
             Modifier
               .padding(top = 6.dp, end = 4.dp)
@@ -150,23 +162,30 @@ fun FramedItemView(
     }
   }
 
-  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage) && !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
+  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
+      !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
 
+  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
     .background(
       when {
         transparentBackground -> Color.Transparent
-        sent -> SentColorLight
-        else -> ReceivedColorLight
+        sent -> sentColor
+        else -> receivedColor
       }
     )) {
-    var metaColor = HighOrLowlight
+    var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
-            FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+            if (ci.meta.itemDeleted is CIDeleted.Moderated) {
+              FramedItemHeader(String.format(stringResource(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(R.drawable.ic_flag))
+            } else {
+              FramedItemHeader(stringResource(R.string.marked_deleted_description), true, painterResource(R.drawable.ic_delete))
+            }
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(R.string.live), false)
           }
@@ -193,8 +212,16 @@ fun FramedItemView(
                   CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler)
                 }
               }
+              is MsgContent.MCVideo -> {
+                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
+                if (mc.text == "" && !ci.meta.isLive) {
+                  metaColor = Color.White
+                } else {
+                  CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler)
+                }
+              }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, longClick = { onLinkLongClick("") })
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, longClick = { onLinkLongClick("") }, receiveFile)
                 if (mc.text != "") {
                   CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler)
                 }

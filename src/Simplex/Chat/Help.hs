@@ -11,6 +11,7 @@ module Simplex.Chat.Help
     messagesHelpInfo,
     markdownInfo,
     settingsInfo,
+    databaseHelpInfo,
   )
 where
 
@@ -85,7 +86,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "settings"],
+      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "settings", "db"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/chats           " <> " - most recent chats",
@@ -200,6 +201,7 @@ myAddressHelpInfo =
     styleMarkdown
     [ green "Your contact address commands:",
       indent <> highlight "/address                 " <> " - create your address",
+      -- indent <> highlight "/profile_address on/off  " <> " - share address with your contacts (it will be added to your profile)",
       indent <> highlight "/delete_address          " <> " - delete your address (accepted contacts will remain connected)",
       indent <> highlight "/show_address            " <> " - show your address",
       indent <> highlight "/accept <name>           " <> " - accept contact request",
@@ -268,7 +270,8 @@ settingsInfo =
     [ green "Chat settings:",
       indent <> highlight "/incognito on/off        " <> " - enable/disable incognito mode",
       indent <> highlight "/network                 " <> " - show / set network access options",
-      indent <> highlight "/smp                     " <> " - show / set custom SMP servers",
+      indent <> highlight "/smp                     " <> " - show / set configured SMP servers",
+      indent <> highlight "/xftp                    " <> " - show / set configured XFTP servers",
       indent <> highlight "/info <contact>          " <> " - information about contact connection",
       indent <> highlight "/info #<group> <member>  " <> " - information about member connection",
       indent <> highlight "/(un)mute <contact>      " <> " - (un)mute contact, the last messages can be printed with /tail command",
@@ -276,3 +279,17 @@ settingsInfo =
       indent <> highlight "/get stats               " <> " - get usage statistics",
       indent <> highlight "/reset stats             " <> " - reset usage statistics"
     ]
+
+databaseHelpInfo :: [StyledString]
+databaseHelpInfo =
+  map
+    styleMarkdown
+      [ green "Database export:",
+        indent <> highlight "/db export             " <> " - create database export file that can be imported in mobile apps",
+        indent <> highlight "/files_folder <path>   " <> " - set files folder path to include app files in the exported archive",
+        "",
+        green "Database encryption:",
+        indent <> highlight "/db encrypt <key>      " <> " - encrypt chat database with key/passphrase",
+        indent <> highlight "/db key <current> <new>" <> " - change the key of the encrypted app database",
+        indent <> highlight "/db decrypt <key>      " <> " - decrypt chat database"
+      ]

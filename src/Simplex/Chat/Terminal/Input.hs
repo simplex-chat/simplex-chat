@@ -4,26 +4,39 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Terminal.Input where
 
+import Control.Applicative (optional, (<|>))
 import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, threadDelay)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Char (isAlphaNum)
-import Data.List (dropWhileEnd, foldl')
+import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Bifunctor (second)
+import qualified Data.ByteString.Char8 as B
+import Data.Char (isAlpha, isAlphaNum, isAscii)
+import Data.Either (fromRight)
+import Data.List (dropWhileEnd, foldl', sort)
 import Data.Maybe (isJust, isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Database.SQLite.Simple (Only (..))
+import qualified Database.SQLite.Simple as DB
+import Database.SQLite.Simple.QQ (sql)
 import GHC.Weak (deRefWeak)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.ChatItemContent
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
-import Simplex.Messaging.Util (whenM)
+import Simplex.Chat.Types (User (..))
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
+import Simplex.Messaging.Util (catchAll_, safeDecodeUtf8, whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -119,7 +132,7 @@ runTerminalInput ct cc = withChatTerm ct $ do
   receiveFromTTY cc ct
 
 receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, termState, liveMessageState} =
+receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState} =
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
@@ -132,13 +145,18 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
         | (c == 'l' || c == 'L') && ms == ctrlKey -> submit True
         | otherwise -> update key
       _ -> update key
-    submit live =
-      atomically (readTVar termState >>= submitInput live)
-        >>= mapM_ (uncurry endLiveMessage)
-    update key = atomically $ do
-      ac <- readTVar activeTo
-      live <- isJust <$> readTVar liveMessageState
-      modifyTVar termState $ updateTermState ac live (width termSize) key
+    submit live = do
+      ts <- readTVarIO termState
+      isLive <- isJust <$> readTVarIO liveMessageState
+      when (inputString ts /= "" || isLive) $
+        atomically (submitInput live ts) >>= mapM_ (uncurry endLiveMessage)
+    update key = do
+      ac <- readTVarIO activeTo
+      live <- isJust <$> readTVarIO liveMessageState
+      ts <- readTVarIO termState
+      user_ <- readTVarIO currentUser
+      ts' <- updateTermState user_ chatStore ac live (width termSize) key ts
+      atomically $ writeTVar termState $! ts'
 
     endLiveMessage :: String -> LiveMessage -> IO ()
     endLiveMessage sentMsg lm = do
@@ -173,21 +191,38 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
       pure $ (s,) <$> lm_
       where
         isSend s = length s > 1 && (head s == '@' || head s == '#')
-        ts' = ts {inputString = "", inputPosition = 0}
+        ts' = ts {inputString = "", inputPosition = 0, autoComplete = mkAutoComplete}
 
-updateTermState :: ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
-updateTermState ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
+data AutoComplete
+  = ACContact Text
+  | ACContactRequest Text
+  | ACMember Text Text
+  | ACGroup Text
+  | ACCommand Text
+  | ACNone
+
+updateTermState :: Maybe User -> SQLiteStore -> ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
+updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p, autoComplete = acp} = case key of
   CharKey c
-    | ms == mempty || ms == shiftKey -> insertCharsWithContact [c]
-    | ms == altKey && c == 'b' -> setPosition prevWordPos
-    | ms == altKey && c == 'f' -> setPosition nextWordPos
-    | otherwise -> ts
-  TabKey -> insertCharsWithContact "    "
-  BackspaceKey -> backDeleteChar
-  DeleteKey -> deleteChar
-  HomeKey -> setPosition 0
-  EndKey -> setPosition $ length s
-  ArrowKey d -> case d of
+    | ms == mempty || ms == shiftKey -> pure $ insertChars $ charsWithContact [c]
+    | ms == altKey && c == 'b' -> pure $ setPosition prevWordPos
+    | ms == altKey && c == 'f' -> pure $ setPosition nextWordPos
+    | otherwise -> pure ts
+  TabKey -> do
+    (pfx, vs) <- autoCompleteVariants user_
+    let sv = acShowVariants acp
+        sv'
+          | not (acTabPressed acp) = if null pfx || sv /= SVNone then SVSome else SVNone
+          | sv == SVNone = SVSome
+          | sv == SVSome && length vs > 4 = SVAll
+          | otherwise = SVNone
+        acp' = acp {acVariants = vs, acInputString = s, acShowVariants = sv', acTabPressed = True}
+    pure $ (insertChars pfx) {autoComplete = acp'}
+  BackspaceKey -> pure backDeleteChar
+  DeleteKey -> pure deleteChar
+  HomeKey -> pure $ setPosition 0
+  EndKey -> pure $ setPosition $ length s
+  ArrowKey d -> pure $ case d of
     Leftwards -> setPosition leftPos
     Rightwards -> setPosition rightPos
     Upwards
@@ -197,15 +232,102 @@ updateTermState ac live tw (key, ms) ts@TerminalState {inputString = s, inputPos
     Downwards
       | ms == mempty -> let p' = p + tw in if p' <= length s then setPosition p' else ts
       | otherwise -> ts
-  _ -> ts
+  _ -> pure ts
   where
-    insertCharsWithContact cs
-      | live = insertChars cs
-      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" =
-        insertChars $ contactPrefix <> cs
+    autoCompleteVariants Nothing = pure ("", [charsWithContact "    "])
+    autoCompleteVariants (Just User {userId, userContactId}) =
+      getAutoCompleteChars $ fromRight ACNone $ A.parseOnly autoCompleteP $ encodeUtf8 $ T.pack s
+      where
+        autoCompleteP =
+          A.choice
+            [ ACContact <$> (contactPfx *> displayName <* A.endOfInput),
+              ACContactRequest <$> (contactReqPfx *> displayName <* A.endOfInput),
+              ACMember <$> (groupMemberPfx *> displayName) <* A.space <* optional (A.char '@') <*> displayName <* A.endOfInput,
+              ACGroup <$> (groupPfx *> displayName <* A.endOfInput),
+              ACCommand . safeDecodeUtf8 <$> ((<>) <$> ("/" *> alphaP) <*> (B.cons <$> A.space <*> alphaP <|> "")) <* A.endOfInput
+            ]
+        displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' ') <|> "")
+        refChar c = c > ' ' && c /= '#' && c /= '@'
+        alphaP = A.takeWhile $ \c -> isAscii c && isAlpha c
+        contactPfx =
+          A.choice $
+            ops '@' [">>", ">", "!", "\\"]
+              <> cmd '@' ["t", "tail", "?", "search", "set voice", "set delete", "set disappear"]
+              <> cmd_ '@' ["i ", "info ", "f ", "file ", "clear", "d ", "delete ", "code ", "verify "]
+              <> ["@"]
+        contactReqPfx = A.choice $ cmd_ '@' ["ac", "accept", "rc", "reject"]
+        groupPfx =
+          A.choice $
+            ops '#' [">", "!", "\\\\", "\\"]
+              <> cmd '#' ["t", "tail", "?", "search", "i", "info", "f", "file", "clear", "d", "delete", "code", "verify", "set voice", "set delete", "set disappear", "set direct"]
+              <> cmd_ '#' ["a", "add", "j", "join", "rm", "remove", "l", "leave", "ms", "members", "mr", "member role"]
+              <> ["#"]
+        groupMemberPfx =
+          A.choice $
+            ops '#' [">", "\\\\"]
+              <> cmd '#' ["i", "info", "code", "verify"]
+              <> cmd_ '#' ["rm", "remove", "l", "leave", "mr", "member role"]
+        ops c = map (<* (optional A.space <* A.char c))
+        cmd c = map $ \t -> A.char '/' *> t <* A.space <* A.char c
+        cmd_ c = map $ \t -> A.char '/' *> t <* A.space <* optional (A.char c)
+        getAutoCompleteChars = \case
+          ACContact pfx -> common pfx <$> getContactSfxs pfx
+          ACContactRequest pfx -> common pfx <$> getNameSfxs "contact_requests" pfx
+          ACGroup pfx -> common pfx <$> getNameSfxs "groups" pfx
+          ACMember gName pfx -> common pfx <$> getMemberNameSfxs gName pfx
+          ACCommand pfx -> pure $ second (map ('/' :)) $ common pfx $ hasPfx pfx commands
+          ACNone -> pure ("", [charsWithContact ""])
+          where
+            getMemberNameSfxs gName pfx =
+              getNameSfxs_
+                pfx
+                (userId, userContactId, gName, pfx <> "%")
+                [sql|
+                  SELECT m.local_display_name
+                  FROM group_members m
+                  JOIN groups g USING (group_id)
+                  WHERE g.user_id = ?
+                    AND (m.contact_id IS NULL OR m.contact_id != ?)
+                    AND g.local_display_name = ?
+                    AND m.local_display_name LIKE ?
+                |]
+            getContactSfxs pfx =
+              getNameSfxs_
+                pfx
+                (userId, pfx <> "%")
+                "SELECT local_display_name FROM contacts WHERE is_user = 0 AND user_id = ? AND local_display_name LIKE ?"
+            getNameSfxs table pfx =
+              getNameSfxs_ pfx (userId, pfx <> "%") $
+                "SELECT local_display_name FROM " <> table <> " WHERE user_id = ? AND local_display_name LIKE ?"
+            getNameSfxs_ :: DB.ToRow p => Text -> p -> DB.Query -> IO [String]
+            getNameSfxs_ pfx ps q =
+              withTransaction st (\db -> hasPfx pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
+            commands =
+              ["connect", "search", "tail", "info", "clear", "delete", "code", "verify"]
+                <> ["file", "freceive", "fcancel", "fstatus", "fforward", "image", "image_forward"]
+                <> ["address", "delete_address", "show_address", "auto_accept", "accept @", "reject @"]
+                <> ["group", "groups", "members #", "member role #", "add #", "join #", "remove #", "leave #"]
+                <> ["create link #", "set link role #", "delete link #", "show link #"]
+                <> ["set voice", "set delete", "set direct #", "set disappear", "mute", "unmute"]
+                <> ["create user", "profile", "users", "user", "mute user", "unmute user", "hide user", "unhide user", "delete user"]
+                <> ["chats", "contacts", "help", "markdown", "quit", "db export", "db encrypt", "db decrypt", "db key"]
+            hasPfx pfx = map T.unpack . sort . filter (pfx `T.isPrefixOf`)
+            common pfx xs = (commonPrefix $ map (drop $ T.length pfx) xs, xs)
+    commonPrefix = \case
+      x : xs -> foldl go x xs
+      _ -> ""
+      where
+        go (c : cs) (c' : cs')
+          | c == c' = c : go cs cs'
+          | otherwise = ""
+        go _ _ = ""
+    charsWithContact cs
+      | live = cs
+      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" && cs /= "+" && cs /= "-" =
+        contactPrefix <> cs
       | (s == ">" || s == "\\" || s == "!") && cs == " " =
-        insertChars $ cs <> contactPrefix
-      | otherwise = insertChars cs
+        cs <> contactPrefix
+      | otherwise = cs
     insertChars = ts' . if p >= length s then append else insert
     append cs = let s' = s <> cs in (s', length s')
     insert cs = let (b, a) = splitAt p s in (b <> cs <> a, p + length cs)
@@ -253,4 +375,4 @@ updateTermState ac live tw (key, ms) ts@TerminalState {inputString = s, inputPos
         let after = drop p s
             afterWord = dropWhile (/= ' ') $ dropWhile (== ' ') after
          in min (length s) $ p + length after - length afterWord
-    ts' (s', p') = ts {inputString = s', inputPosition = p'}
+    ts' (s', p') = ts {inputString = s', inputPosition = p', autoComplete = acp {acTabPressed = False}}

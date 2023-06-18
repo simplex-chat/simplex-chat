@@ -116,6 +116,21 @@ struct ChatInfoView: View {
                     contactPreferencesButton()
                 }
 
+                if let contactLink = contact.contactLink {
+                    Section {
+                        QRCode(uri: contactLink)
+                        Button {
+                            showShareSheet(items: [contactLink])
+                        } label: {
+                            Label("Share address", systemImage: "square.and.arrow.up")
+                        }
+                    } header: {
+                        Text("Address")
+                    } footer: {
+                        Text("You can share this address with your contacts to let them connect with **\(contact.displayName)**.")
+                    }
+                }
+
                 Section("Servers") {
                     networkStatusRow()
                         .onTapGesture {

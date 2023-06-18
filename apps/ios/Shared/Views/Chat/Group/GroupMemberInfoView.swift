@@ -20,19 +20,24 @@ struct GroupMemberInfoView: View {
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @State private var justOpened = true
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
+        case connRequestSentAlert(type: ConnReqType)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
+        case other(alert: Alert)
 
         var id: String {
             switch self {
             case .removeMemberAlert: return "removeMemberAlert"
             case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
+            case .connRequestSentAlert: return "connRequestSentAlert"
             case let .error(title, _): return "error \(title)"
+            case let .other(alert): return "other \(alert)"
             }
         }
     }
@@ -45,6 +50,15 @@ struct GroupMemberInfoView: View {
         }
     }
 
+    private func knownDirectChat(_ contactId: Int64) -> Chat? {
+        if let chat = chatModel.getContactChat(contactId),
+           chat.chatInfo.contact?.directOrUsed == true {
+            return chat
+        } else {
+            return nil
+        }
+    }
+
     private func groupMemberInfoView() -> some View {
         VStack {
             List {
@@ -54,14 +68,35 @@ struct GroupMemberInfoView: View {
                 if member.memberActive {
                     Section {
                         if let contactId = member.memberContactId {
-                            if let chat = chatModel.getContactChat(contactId),
-                               chat.chatInfo.contact?.directOrUsed ?? false {
+                            if let chat = knownDirectChat(contactId) {
                                 knownDirectChatButton(chat)
                             } else if groupInfo.fullGroupPreferences.directMessages.on {
                                 newDirectChatButton(contactId)
                             }
                         }
                         if let code = connectionCode { verifyCodeButton(code) }
+                    }
+                }
+
+                if let contactLink = member.contactLink {
+                    Section {
+                        QRCode(uri: contactLink)
+                        Button {
+                            showShareSheet(items: [contactLink])
+                        } label: {
+                            Label("Share address", systemImage: "square.and.arrow.up")
+                        }
+                        if let contactId = member.memberContactId {
+                            if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on {
+                                connectViaAddressButton(contactLink)
+                            }
+                        } else {
+                            connectViaAddressButton(contactLink)
+                        }
+                    } header: {
+                        Text("Address")
+                    } footer: {
+                        Text("You can share this address with your contacts to let them connect with **\(member.displayName)**.")
                     }
                 }
 
@@ -112,6 +147,10 @@ struct GroupMemberInfoView: View {
             }
             .navigationBarHidden(true)
             .onAppear {
+                if #unavailable(iOS 16) {
+                    // this condition prevents re-setting picker
+                    if !justOpened { return }
+                }
                 newRole = member.memberRole
                 do {
                     let stats = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
@@ -122,6 +161,7 @@ struct GroupMemberInfoView: View {
                 } catch let error {
                     logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
                 }
+                justOpened = false
             }
             .onChange(of: newRole) { _ in
                 if newRole != member.memberRole {
@@ -135,7 +175,28 @@ struct GroupMemberInfoView: View {
             case let .removeMemberAlert(mem): return removeMemberAlert(mem)
             case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
             case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
+            case let .connRequestSentAlert(type): return connReqSentAlert(type)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
+            case let .other(alert): return alert
+            }
+        }
+    }
+
+    func connectViaAddressButton(_ contactLink: String) -> some View {
+        Button {
+            connectViaAddress(contactLink)
+        } label: {
+            Label("Connect", systemImage: "link")
+        }
+    }
+
+    func connectViaAddress(_ contactLink: String) {
+        Task {
+            let (connReqType, connectAlert) = await apiConnect_(connReq: contactLink)
+            if let connReqType = connReqType {
+                alert = .connRequestSentAlert(type: connReqType)
+            } else if let connectAlert = connectAlert {
+                alert = .other(alert: connectAlert)
             }
         }
     }

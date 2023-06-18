@@ -1,3 +1,6 @@
+---
+title: Privacy & security
+---
 # Privacy and Security
 
 SimpleX Chat's default configuration aims to balance privacy, security, and convenience. You may want to change the default options to suit your specific needs.

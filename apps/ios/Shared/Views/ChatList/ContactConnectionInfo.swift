@@ -39,6 +39,11 @@ struct ContactConnectionInfo: View {
                         .padding(.bottom, 16)
 
                     Text(contactConnectionText(contactConnection))
+                        .padding(.bottom, 16)
+
+                    if let connReqInv = contactConnection.connReqInv {
+                        OneTimeLinkProfileText(contactConnection: contactConnection, connReqInvitation: connReqInv)
+                    }
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -47,11 +52,7 @@ struct ContactConnectionInfo: View {
 
                 Section {
                     if contactConnection.groupLinkId == nil {
-                        HStack(spacing: 20) {
-                            Image(systemName: "pencil")
-                                .foregroundColor(.secondary)
-                                .padding(.leading, 6)
-                                .onTapGesture { aliasTextFieldFocused = true }
+                        settingsRow("pencil") {
                             TextField("Set contact name…", text: $localAlias)
                                 .autocapitalization(.none)
                                 .autocorrectionDisabled(true)
@@ -59,20 +60,18 @@ struct ContactConnectionInfo: View {
                                 .submitLabel(.done)
                                 .onSubmit(setConnectionAlias)
                         }
+                        .onTapGesture { aliasTextFieldFocused = true }
                     }
 
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
-                        NavigationLink {
-                            AddContactView(contactConnection: contactConnection, connReqInvitation: connReqInv)
-                                .navigationTitle(CreateLinkTab.oneTime.title)
-                                .navigationBarTitleDisplayMode(.large)
-                        } label: {
-                            Label("Show QR code", systemImage: "qrcode")
-                                .foregroundColor(contactConnection.incognito ? .indigo : .accentColor)
-                        }
+                        oneTimeLinkSection(contactConnection: contactConnection, connReqInvitation: connReqInv)
+                    } else {
+                        oneTimeLinkLearnMoreButton()
                     }
+                }
 
+                Section {
                     Button(role: .destructive) {
                         alert = .deleteInvitationAlert
                     } label: {
@@ -81,7 +80,6 @@ struct ContactConnectionInfo: View {
                     }
                 }
             }
-            .listStyle(.insetGrouped)
         }
         .alert(item: $alert) { _alert in
             switch _alert {
@@ -96,7 +94,6 @@ struct ContactConnectionInfo: View {
         }
         .onAppear {
             localAlias = contactConnection.localAlias
-            aliasTextFieldFocused = true
         }
     }
 

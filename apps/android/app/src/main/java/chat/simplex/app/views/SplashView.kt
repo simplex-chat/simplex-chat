@@ -1,6 +1,5 @@
 package chat.simplex.app.views
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -11,8 +10,8 @@ import androidx.compose.ui.Modifier
 fun SplashView() {
   Surface(
     Modifier
-      .background(MaterialTheme.colors.background)
-      .fillMaxSize()
+      .fillMaxSize(),
+    color = MaterialTheme.colors.background
   ) {
 //    Image(
 //      painter = painterResource(R.drawable.logo),

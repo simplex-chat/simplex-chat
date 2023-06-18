@@ -1,3 +1,6 @@
+---
+title: Making connections
+---
 # Connect to somebody in the chat
 
 _Work in progress_

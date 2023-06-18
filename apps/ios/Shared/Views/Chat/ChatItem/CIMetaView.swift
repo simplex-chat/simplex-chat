@@ -32,7 +32,7 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparen
         r = r + statusIconText("timer", color).font(.caption2)
         let ttl = meta.itemTimed?.ttl
         if ttl != chatTTL {
-            r = r + Text(TimedMessagesPreference.shortTtlText(ttl)).foregroundColor(color)
+            r = r + Text(shortTimeText(ttl)).foregroundColor(color)
         }
         r = r + Text(" ")
     }

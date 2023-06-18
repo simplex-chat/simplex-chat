@@ -20,7 +20,9 @@ struct PreferencesView: View {
             List {
                 timedMessagesFeatureSection($preferences.timedMessages.allow)
                 featureSection(.fullDelete, $preferences.fullDelete.allow)
+                // featureSection(.reactions, $preferences.reactions.allow)
                 featureSection(.voice, $preferences.voice.allow)
+                featureSection(.calls, $preferences.calls.allow)
 
                 Section {
                     Button("Reset") { preferences = currentPreferences }

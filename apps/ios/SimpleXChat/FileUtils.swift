@@ -11,16 +11,20 @@ import OSLog
 
 let logger = Logger()
 
-// maximum image file size to be auto-accepted
-public let MAX_IMAGE_SIZE: Int64 = 236700
+// image file size for complession
+public let MAX_IMAGE_SIZE: Int64 = 261_120 // 255KB
 
 public let MAX_IMAGE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
-public let MAX_FILE_SIZE: Int64 = 8000000
+public let MAX_VOICE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
-public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(30)
+public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 1_047_552 // 1023KB
 
-public let MAX_VOICE_MESSAGE_SIZE_INLINE_SEND: Int64 = 94680
+public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824 // 1GB
+
+public let MAX_FILE_SIZE_SMP: Int64 = 8000000
+
+public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300)
 
 private let CHAT_DB: String = "_chat.db"
 
@@ -42,7 +46,6 @@ func getAppDirectory() -> URL {
     dbContainerGroupDefault.get() == .group
     ? getGroupContainerDirectory()
     : getDocumentsDirectory()
-//    getDocumentsDirectory()
 }
 
 let DB_FILE_PREFIX = "simplex_v1"
@@ -158,6 +161,10 @@ public func removeLegacyDatabaseAndFiles() -> Bool {
     return r1 && r2
 }
 
+public func getTempFilesDirectory() -> URL {
+    getAppDirectory().appendingPathComponent("temp_files", isDirectory: true)
+}
+
 public func getAppFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
@@ -177,10 +184,40 @@ public func saveFile(_ data: Data, _ fileName: String) -> String? {
     }
 }
 
+public func removeFile(_ url: URL) {
+    do {
+        try FileManager.default.removeItem(atPath: url.path)
+    } catch {
+        logger.error("FileUtils.removeFile error: \(error.localizedDescription)")
+    }
+}
+
 public func removeFile(_ fileName: String) {
     do {
         try FileManager.default.removeItem(atPath: getAppFilePath(fileName).path)
     } catch {
         logger.error("FileUtils.removeFile error: \(error.localizedDescription)")
+    }
+}
+
+public func cleanupDirectFile(_ aChatItem: AChatItem) {
+    if aChatItem.chatInfo.chatType == .direct {
+        cleanupFile(aChatItem)
+    }
+}
+
+public func cleanupFile(_ aChatItem: AChatItem) {
+    let cItem = aChatItem.chatItem
+    let mc = cItem.content.msgContent
+    if case .file = mc,
+       let fileName = cItem.file?.filePath {
+        removeFile(fileName)
+    }
+}
+
+public func getMaxFileSize(_ fileProtocol: FileProtocol) -> Int64 {
+    switch fileProtocol {
+    case .xftp: return MAX_FILE_SIZE_XFTP
+    case .smp: return MAX_FILE_SIZE_SMP
     }
 }

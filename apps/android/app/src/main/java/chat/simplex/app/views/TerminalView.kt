@@ -86,7 +86,7 @@ fun TerminalLayout(
             userIsObserver = false,
             userCanSend = true,
             allowVoiceToContact = {},
-            sendMessage = sendCommand,
+            sendMessage = { sendCommand() },
             sendLiveMessage = null,
             updateLiveMessage = null,
             onMessageChange = ::onMessageChange,
@@ -99,8 +99,8 @@ fun TerminalLayout(
       Surface(
         modifier = Modifier
           .padding(contentPadding)
-          .fillMaxWidth()
-          .background(MaterialTheme.colors.background)
+          .fillMaxWidth(),
+        color = MaterialTheme.colors.background
       ) {
         TerminalLog(terminalItems)
       }

@@ -17,7 +17,10 @@ struct SetNotificationsMode: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Push notifications").font(.largeTitle)
+                Text("Push notifications")
+                    .font(.largeTitle)
+                    .bold()
+                    .frame(maxWidth: .infinity)
 
                 Text("Send notifications:")
                 ForEach(NotificationsMode.values) { mode in
@@ -32,6 +35,7 @@ struct SetNotificationsMode: View {
                     } else {
                         AlertManager.shared.showAlertMsg(title: "No device token!")
                     }
+                    onboardingStageDefault.set(.onboardingComplete)
                     m.onboardingStage = .onboardingComplete
                 } label: {
                     if case .off = notificationMode {
@@ -62,9 +66,10 @@ struct SetNotificationsMode: View {
                         m.notificationMode = mode
                     }
                 } catch let error {
+                    let a = getErrorAlert(error, "Error enabling notifications")
                     AlertManager.shared.showAlertMsg(
-                        title: "Error enabling notifications",
-                        message: "\(responseError(error))"
+                        title: a.title,
+                        message: a.message
                     )
                 }
             }

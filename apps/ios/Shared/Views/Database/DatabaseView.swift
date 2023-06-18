@@ -14,6 +14,7 @@ enum DatabaseAlert: Identifiable {
     case exportProhibited
     case importArchive
     case archiveImported
+    case archiveImportedWithErrors(archiveErrors: [ArchiveError])
     case deleteChat
     case chatDeleted
     case deleteLegacyDatabase
@@ -27,6 +28,7 @@ enum DatabaseAlert: Identifiable {
         case .exportProhibited: return "exportProhibited"
         case .importArchive: return "importArchive"
         case .archiveImported: return "archiveImported"
+        case .archiveImportedWithErrors: return "archiveImportedWithErrors"
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
@@ -77,7 +79,7 @@ struct DatabaseView: View {
                     }
                 }
                 .frame(height: 36)
-                .disabled(m.chatDbChanged || progressIndicator)
+                .disabled(stopped || progressIndicator)
             } header: {
                 Text("Messages")
             } footer: {
@@ -185,7 +187,7 @@ struct DatabaseView: View {
                     if fileCount == 0 {
                         Text("No received or sent files")
                     } else {
-                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter().string(fromByteCount: Int64(size)))")
+                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
                     }
                 }
             }
@@ -251,7 +253,11 @@ struct DatabaseView: View {
                 title: Text("Chat database imported"),
                 message: Text("Restart the app to use imported chat database")
             )
-
+        case .archiveImportedWithErrors:
+            return Alert(
+                title: Text("Chat database imported"),
+                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occurred during import - you may see Chat console for more details.")
+            )
         case .deleteChat:
             return Alert(
                 title: Text("Delete chat profile?"),
@@ -317,10 +323,7 @@ struct DatabaseView: View {
     private func stopChat() {
         Task {
             do {
-                try await apiStopChat()
-                ChatReceiver.shared.stop()
-                await MainActor.run { m.chatRunning = false }
-                appStateGroupDefault.set(.stopped)
+                try await stopChatAsync()
             } catch let error {
                 await MainActor.run {
                     runChat = true
@@ -354,9 +357,13 @@ struct DatabaseView: View {
                     try await apiDeleteStorage()
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
-                        try await apiImportArchive(config: config)
-                        _ = removeDatabaseKey()
-                        await operationEnded(.archiveImported)
+                        let archiveErrors = try await apiImportArchive(config: config)
+                        _ = kcDatabasePassword.remove()
+                        if archiveErrors.isEmpty {
+                            await operationEnded(.archiveImported)
+                        } else {
+                            await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors))
+                        }
                     } catch let error {
                         await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
                     }
@@ -374,9 +381,7 @@ struct DatabaseView: View {
         progressIndicator = true
         Task {
             do {
-                try await apiDeleteStorage()
-                _ = removeDatabaseKey()
-                storeDBPassphraseGroupDefault.set(true)
+                try await deleteChatAsync()
                 await operationEnded(.chatDeleted)
                 appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
             } catch let error {
@@ -466,6 +471,19 @@ struct DatabaseView: View {
         deleteAppFiles()
         appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
     }
+}
+
+func stopChatAsync() async throws {
+    try await apiStopChat()
+    ChatReceiver.shared.stop()
+    await MainActor.run { ChatModel.shared.chatRunning = false }
+    appStateGroupDefault.set(.stopped)
+}
+
+func deleteChatAsync() async throws {
+    try await apiDeleteStorage()
+    _ = kcDatabasePassword.remove()
+    storeDBPassphraseGroupDefault.set(true)
 }
 
 struct DatabaseView_Previews: PreviewProvider {

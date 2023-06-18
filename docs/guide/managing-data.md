@@ -1,3 +1,6 @@
+---
+title: Managing data
+---
 # Managing Your Data
 
 ## Automatic message deletion

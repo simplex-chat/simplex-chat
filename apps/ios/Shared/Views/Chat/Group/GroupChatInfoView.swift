@@ -46,6 +46,9 @@ struct GroupChatInfoView: View {
                     if groupInfo.canEdit {
                         editGroupButton()
                     }
+                    if groupInfo.groupProfile.description != nil || groupInfo.canEdit {
+                        addOrEditWelcomeMessage()
+                    }
                     groupPreferencesButton($groupInfo)
                 } header: {
                     Text("")
@@ -141,7 +144,12 @@ struct GroupChatInfoView: View {
         NavigationLink {
             AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 .onAppear {
-                    ChatModel.shared.groupMembers = apiListMembersSync(groupInfo.groupId)
+                    Task {
+                        let groupMembers = await apiListMembers(groupInfo.groupId)
+                        await MainActor.run {
+                            ChatModel.shared.groupMembers = groupMembers
+                        }
+                    }
                 }
         } label: {
             Label("Invite members", systemImage: "plus")
@@ -212,6 +220,18 @@ struct GroupChatInfoView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
+        }
+    }
+
+    private func addOrEditWelcomeMessage() -> some View {
+        NavigationLink {
+            GroupWelcomeView(groupId: groupInfo.groupId, groupInfo: $groupInfo)
+            .navigationTitle("Welcome message")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            groupInfo.groupProfile.description == nil
+                ? Label("Add welcome message", systemImage: "plus.message")
+                : Label("Welcome message", systemImage: "message")
         }
     }
 

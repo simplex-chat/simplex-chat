@@ -147,6 +147,7 @@ struct AdvancedNetworkSettings: View {
                 Text("\(value) \(label)")
             }
         }
+        .frame(height: 36)
     }
 
     private func timeoutSettingPicker(_ title: LocalizedStringKey, selection: Binding<Int>, values: [Int], label: String) -> some View {
@@ -155,6 +156,7 @@ struct AdvancedNetworkSettings: View {
                 Text("\(String(format: "%g", (Double(value) / 1000000))) \(secondsLabel)")
             }
         }
+        .frame(height: 36)
     }
 }
 

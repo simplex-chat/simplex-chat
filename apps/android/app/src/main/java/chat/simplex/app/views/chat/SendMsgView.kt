@@ -8,19 +8,18 @@ import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.text.InputType
+import android.util.Log
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.*
 import android.widget.EditText
+import android.widget.TextView
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,15 +27,16 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.*
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
@@ -44,12 +44,12 @@ import androidx.core.widget.*
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.*
+import java.lang.reflect.Field
 
 @Composable
 fun SendMsgView(
@@ -63,30 +63,43 @@ fun SendMsgView(
   userIsObserver: Boolean,
   userCanSend: Boolean,
   allowVoiceToContact: () -> Unit,
-  sendMessage: () -> Unit,
+  timedMessageAllowed: Boolean = false,
+  customDisappearingMessageTimePref: SharedPreference<Int>? = null,
+  sendMessage: (Int?) -> Unit,
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
+  val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
+
+  if (showCustomDisappearingMessageDialog.value) {
+    CustomDisappearingMessageDialog(
+      sendMessage = sendMessage,
+      setShowDialog = { showCustomDisappearingMessageDialog.value = it },
+      customDisappearingMessageTimePref = customDisappearingMessageTimePref
+    )
+  }
+
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
-    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
+    val showProgress = cs.inProgress && (cs.preview is ComposePreview.MediaPreview || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     NativeKeyboard(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange)
     // Disable clicks on text field
-    if (cs.preview is ComposePreview.VoicePreview || !userCanSend) {
-      Box(Modifier
-        .matchParentSize()
-        .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(R.string.observer_cant_send_message_title),
-            text = generalGetString(R.string.observer_cant_send_message_desc)
-          )
-        })
+    if (cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
+      Box(
+        Modifier
+          .matchParentSize()
+          .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(R.string.observer_cant_send_message_title),
+              text = generalGetString(R.string.observer_cant_send_message_desc)
+            )
+          })
       )
     }
     if (showDeleteTextButton.value) {
@@ -123,10 +136,11 @@ fun SendMsgView(
               else ->
                 RecordVoiceView(recState, stopRecOnNextClick)
             }
-            if (sendLiveMessage != null 
-                && updateLiveMessage != null
-                && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
-                && cs.contextItem is ComposeContextItem.NoContextItem) {
+            if (sendLiveMessage != null
+              && updateLiveMessage != null
+              && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
+              && cs.contextItem is ComposeContextItem.NoContextItem
+            ) {
               Spacer(Modifier.width(10.dp))
               StartLiveMessageButton(userCanSend) {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
@@ -143,34 +157,151 @@ fun SendMsgView(
         }
         else -> {
           val cs = composeState.value
-          val icon = if (cs.editing || cs.liveMessage != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward
+          val icon = if (cs.editing || cs.liveMessage != null) painterResource(R.drawable.ic_check_filled) else painterResource(R.drawable.ic_arrow_upward)
           val disabled = !cs.sendEnabled() ||
-                        (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
-                        cs.endLiveDisabled
-          if (cs.liveMessage == null &&
-            cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
-            cs.contextItem is ComposeContextItem.NoContextItem &&
-            sendLiveMessage != null && updateLiveMessage != null
-          ) {
-            var showDropdown by rememberSaveable { mutableStateOf(false) }
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown = true }
+              (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
+              cs.endLiveDisabled
+          val showDropdown = rememberSaveable { mutableStateOf(false) }
 
-            DropdownMenu(
-              expanded = showDropdown,
-              onDismissRequest = { showDropdown = false },
-              Modifier.width(220.dp),
-            ) {
-              ItemAction(
-                generalGetString(R.string.send_live_message),
-                Icons.Filled.Bolt,
-                onClick = {
-                  startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
-                  showDropdown = false
+          @Composable
+          fun MenuItems(): List<@Composable () -> Unit> {
+            val menuItems = mutableListOf<@Composable () -> Unit>()
+
+            if (cs.liveMessage == null && !cs.editing) {
+              if (
+                cs.preview !is ComposePreview.VoicePreview &&
+                cs.contextItem is ComposeContextItem.NoContextItem &&
+                sendLiveMessage != null && updateLiveMessage != null
+              ) {
+                menuItems.add {
+                  ItemAction(
+                    generalGetString(R.string.send_live_message),
+                    BoltFilled,
+                    onClick = {
+                      startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
+                      showDropdown.value = false
+                    }
+                  )
                 }
-              )
+              }
+              if (timedMessageAllowed) {
+                menuItems.add {
+                  ItemAction(
+                    generalGetString(R.string.disappearing_message),
+                    painterResource(R.drawable.ic_timer),
+                    onClick = {
+                      showCustomDisappearingMessageDialog.value = true
+                      showDropdown.value = false
+                    }
+                  )
+                }
+              }
+            }
+
+            return menuItems
+          }
+
+          val menuItems = MenuItems()
+          if (menuItems.isNotEmpty()) {
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown.value = true }
+            DefaultDropdownMenu(showDropdown) {
+              menuItems.forEach { composable -> composable() }
             }
           } else {
             SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage)
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun CustomDisappearingMessageDialog(
+  sendMessage: (Int?) -> Unit,
+  setShowDialog: (Boolean) -> Unit,
+  customDisappearingMessageTimePref: SharedPreference<Int>?
+) {
+  val showCustomTimePicker = remember { mutableStateOf(false) }
+
+  if (showCustomTimePicker.value) {
+    val selectedDisappearingMessageTime = remember {
+      mutableStateOf(customDisappearingMessageTimePref?.get?.invoke() ?: 300)
+    }
+    CustomTimePickerDialog(
+      selectedDisappearingMessageTime,
+      title = generalGetString(R.string.delete_after),
+      confirmButtonText = generalGetString(R.string.send_disappearing_message_send),
+      confirmButtonAction = { ttl ->
+        sendMessage(ttl)
+        customDisappearingMessageTimePref?.set?.invoke(ttl)
+        setShowDialog(false)
+      },
+      cancel = { setShowDialog(false) }
+    )
+  } else {
+    @Composable
+    fun ChoiceButton(
+      text: String,
+      onClick: () -> Unit
+    ) {
+      TextButton(onClick) {
+        Text(
+          text,
+          fontSize = 18.sp,
+          color = MaterialTheme.colors.primary
+        )
+      }
+    }
+
+    Dialog(onDismissRequest = { setShowDialog(false) }) {
+      Surface(
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      ) {
+        Box(
+          contentAlignment = Alignment.Center
+        ) {
+          Column(
+            modifier = Modifier.padding(DEFAULT_PADDING),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(" ") // centers title
+              Text(
+                generalGetString(R.string.send_disappearing_message),
+                fontSize = 16.sp,
+                color = MaterialTheme.colors.secondary
+              )
+              Icon(
+                painterResource(R.drawable.ic_close),
+                generalGetString(R.string.icon_descr_close_button),
+                tint = MaterialTheme.colors.secondary,
+                modifier = Modifier
+                  .size(25.dp)
+                  .clickable { setShowDialog(false) }
+              )
+            }
+
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_30_seconds)) {
+              sendMessage(30)
+              setShowDialog(false)
+            }
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_1_minute)) {
+              sendMessage(60)
+              setShowDialog(false)
+            }
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_5_minutes)) {
+              sendMessage(300)
+              setShowDialog(false)
+            }
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_custom_time)) {
+              showCustomTimePicker.value = true
+            }
           }
         }
       }
@@ -188,7 +319,7 @@ private fun NativeKeyboard(
 ) {
   val cs = composeState.value
   val textColor = MaterialTheme.colors.onBackground
-  val tintColor = MaterialTheme.colors.secondary
+  val tintColor = MaterialTheme.colors.secondaryVariant
   val padding = PaddingValues(12.dp, 7.dp, 45.dp, 0.dp)
   val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
@@ -224,7 +355,7 @@ private fun NativeKeyboard(
           } catch (e: Exception) {
             return@OnCommitContentListener false
           }
-          SimplexApp.context.chatModel.sharedContent.value = SharedContent.Images("", listOf(inputContentInfo.contentUri))
+          SimplexApp.context.chatModel.sharedContent.value = SharedContent.Media("", listOf(inputContentInfo.contentUri))
           true
         }
         return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
@@ -240,15 +371,31 @@ private fun NativeKeyboard(
     editText.background = drawable
     editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
-    editText.textCursorDrawable?.let { DrawableCompat.setTint(it, HighOrLowlight.toArgb()) }
-    editText.doOnTextChanged { text, _, _, _ -> onMessageChange(text.toString()) }
+    if (Build.VERSION.SDK_INT >= 29) {
+      editText.textCursorDrawable?.let { DrawableCompat.setTint(it, CurrentColors.value.colors.secondary.toArgb()) }
+    } else {
+      try {
+        val f: Field = TextView::class.java.getDeclaredField("mCursorDrawableRes")
+        f.isAccessible = true
+        f.set(editText, R.drawable.edit_text_cursor)
+      } catch (e: Exception) {
+        Log.e(chat.simplex.app.TAG, e.stackTraceToString())
+      }
+    }
+    editText.doOnTextChanged { text, _, _, _ ->
+      if (!composeState.value.inProgress) {
+        onMessageChange(text.toString())
+      } else if (text.toString() != composeState.value.message) {
+        editText.setText(composeState.value.message)
+      }
+    }
     editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
     editText
   }) {
     it.setTextColor(textColor.toArgb())
     it.textSize = textStyle.value.fontSize.value
     DrawableCompat.setTint(it.background, tintColor.toArgb())
-    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
+    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview && !cs.inProgress
     it.isFocusableInTouchMode = it.isFocusable
     if (cs.message != it.text.toString()) {
       it.setText(cs.message)
@@ -261,7 +408,7 @@ private fun NativeKeyboard(
       imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
       showKeyboard = false
     }
-    showDeleteTextButton.value = it.lineCount >= 4
+    showDeleteTextButton.value = it.lineCount >= 4 && !cs.inProgress
   }
   if (composeState.value.preview is ComposePreview.VoicePreview) {
     ComposeOverlay(R.string.voice_message_send_text, textStyle, padding)
@@ -275,7 +422,7 @@ private fun ComposeOverlay(textId: Int, textStyle: MutableState<TextStyle>, padd
   Text(
     generalGetString(textId),
     Modifier.padding(padding),
-    color = HighOrLowlight,
+    color = MaterialTheme.colors.secondary,
     style = textStyle.value.copy(fontStyle = FontStyle.Italic)
   )
 }
@@ -286,13 +433,13 @@ private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) 
     { composeState.value = composeState.value.copy(message = "") },
     Modifier.align(Alignment.TopEnd).size(36.dp)
   ) {
-    Icon(Icons.Filled.Close, null, Modifier.padding(7.dp).size(36.dp), tint = HighOrLowlight)
+    Icon(painterResource(R.drawable.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
   }
 }
 
 @Composable
 private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNextClick: MutableState<Boolean>) {
-  val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
+  val rec: Recorder = remember { RecorderNative() }
   DisposableEffect(Unit) { onDispose { rec.stop() } }
   val stopRecordingAndAddAudio: () -> Unit = {
     recState.value.filePathNullable?.let {
@@ -343,9 +490,9 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
 private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp), enabled = enabled) {
     Icon(
-      Icons.Outlined.KeyboardVoice,
+      painterResource(R.drawable.ic_keyboard_voice),
       stringResource(R.string.icon_descr_record_voice_message),
-      tint = HighOrLowlight,
+      tint = MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)
@@ -357,7 +504,7 @@ private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
 private fun VoiceButtonWithoutPermission(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      Icons.Filled.KeyboardVoice,
+      painterResource(R.drawable.ic_keyboard_voice_filled),
       stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
@@ -389,7 +536,7 @@ private fun LockToCurrentOrientationUntilDispose() {
 private fun StopRecordButton(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      Icons.Filled.Stop,
+      painterResource(R.drawable.ic_stop_filled),
       stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
@@ -403,7 +550,7 @@ private fun StopRecordButton(onClick: () -> Unit) {
 private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
   IconButton({}, Modifier.size(36.dp), interactionSource = interactionSource) {
     Icon(
-      Icons.Filled.KeyboardVoice,
+      painterResource(R.drawable.ic_keyboard_voice_filled),
       stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
@@ -415,7 +562,7 @@ private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
 
 @Composable
 private fun ProgressIndicator() {
-  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
+  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
 }
 
 @Composable
@@ -424,7 +571,7 @@ private fun CancelLiveMessageButton(
 ) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      Icons.Filled.Close,
+      painterResource(R.drawable.ic_close),
       stringResource(R.string.icon_descr_cancel_live_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
@@ -436,18 +583,18 @@ private fun CancelLiveMessageButton(
 
 @Composable
 private fun SendMsgButton(
-  icon: ImageVector,
+  icon: Painter,
   sizeDp: Animatable<Float, AnimationVector1D>,
   alpha: Animatable<Float, AnimationVector1D>,
   enabled: Boolean,
-  sendMessage: () -> Unit,
+  sendMessage: (Int?) -> Unit,
   onLongClick: (() -> Unit)? = null
 ) {
   val interactionSource = remember { MutableInteractionSource() }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .combinedClickable(
-        onClick = sendMessage,
+        onClick = { sendMessage(null) },
         onLongClick = onLongClick,
         enabled = enabled,
         role = Role.Button,
@@ -465,7 +612,7 @@ private fun SendMsgButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(if (enabled) MaterialTheme.colors.primary else HighOrLowlight)
+        .background(if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
         .padding(3.dp)
     )
   }
@@ -486,9 +633,9 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
     contentAlignment = Alignment.Center
   ) {
     Icon(
-      Icons.Filled.Bolt,
+      BoltFilled,
       stringResource(R.string.icon_descr_send_message),
-      tint = if (enabled) MaterialTheme.colors.primary else HighOrLowlight,
+      tint = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)
@@ -592,6 +739,7 @@ fun PreviewSendMsgView() {
       userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
+      timedMessageAllowed = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
@@ -622,6 +770,7 @@ fun PreviewSendMsgViewEditing() {
       userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
+      timedMessageAllowed = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
@@ -652,6 +801,7 @@ fun PreviewSendMsgViewInProgress() {
       userIsObserver = false,
       userCanSend = true,
       allowVoiceToContact = {},
+      timedMessageAllowed = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle

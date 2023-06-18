@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var showSettings = false
+    @Binding var showSettings: Bool
     @State private var searchText = ""
     @State private var showAddChat = false
     @State var userPickerVisible = false
@@ -29,11 +29,7 @@ struct ChatListView: View {
                     if chatModel.chats.isEmpty {
                         onboardingButtons()
                     }
-                    if chatModel.chats.count > 8 {
-                        chatList.searchable(text: $searchText)
-                    } else {
-                        chatList
-                    }
+                    chatListView
                 }
             }
             if userPickerVisible {
@@ -47,18 +43,12 @@ struct ChatListView: View {
         }
     }
 
-    var chatList: some View {
-        List {
-            ForEach(filteredChats(), id: \.viewId) { chat in
-                ChatListNavLink(chat: chat)
-                    .padding(.trailing, -16)
-                    .disabled(chatModel.chatRunning != true)
-            }
-        }
-        .onChange(of: chatModel.chatId) { _ in
-            if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
-                chatModel.chatToTop = nil
-                chatModel.popChat(chatId)
+    private var chatListView: some View {
+        VStack {
+            if chatModel.chats.count > 0 {
+                chatList.searchable(text: $searchText)
+            } else {
+                chatList
             }
         }
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
@@ -71,7 +61,7 @@ struct ChatListView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    if chatModel.users.count > 1 {
+                    if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
                         withAnimation {
                             userPickerVisible.toggle()
                         }
@@ -85,7 +75,7 @@ struct ChatListView: View {
                             .frame(width: 32, height: 32)
                             .padding(.trailing, 4)
                         let allRead = chatModel.users
-                            .filter { !$0.user.activeUser }
+                            .filter { u in !u.user.activeUser && !u.user.hidden }
                             .allSatisfy { u in u.unreadCount == 0 }
                         if !allRead {
                             unreadBadge(size: 12)
@@ -114,8 +104,21 @@ struct ChatListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView(showSettings: $showSettings)
+    }
+
+    private var chatList: some View {
+        List {
+            ForEach(filteredChats(), id: \.viewId) { chat in
+                ChatListNavLink(chat: chat)
+                    .padding(.trailing, -16)
+                    .disabled(chatModel.chatRunning != true)
+            }
+        }
+        .onChange(of: chatModel.chatId) { _ in
+            if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
+                chatModel.chatToTop = nil
+                chatModel.popChat(chatId)
+            }
         }
     }
 
@@ -224,9 +227,9 @@ struct ChatListView_Previews: PreviewProvider {
 
         ]
         return Group {
-            ChatListView()
+            ChatListView(showSettings: Binding.constant(false))
                 .environmentObject(chatModel)
-            ChatListView()
+            ChatListView(showSettings: Binding.constant(false))
                 .environmentObject(ChatModel())
         }
     }

@@ -21,7 +21,7 @@ interface Recorder {
   fun stop(): Int
 }
 
-class RecorderNative(private val recordedBytesLimit: Long): Recorder {
+class RecorderNative(): Recorder {
   companion object {
     // Allows to stop the recorder from outside without having the recorder in a variable
     var stopRecording: (() -> Unit)? = null
@@ -39,6 +39,7 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     }
 
   override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
+    VideoPlayer.stopAll()
     AudioPlayer.stop()
     val rec: MediaRecorder
     recorder = initRecorder().also { rec = it }
@@ -47,9 +48,8 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     rec.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
     rec.setAudioChannels(1)
     rec.setAudioSamplingRate(16000)
-    rec.setAudioEncodingBitRate(16000)
+    rec.setAudioEncodingBitRate(32000)
     rec.setMaxDuration(MAX_VOICE_MILLIS_FOR_SENDING)
-    rec.setMaxFileSize(recordedBytesLimit)
     val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
     val fileToSave = File.createTempFile(generateNewFileName(SimplexApp.context, "voice", "${extension}_"), ".tmp", tmpDir)
     fileToSave.deleteOnExit()
@@ -152,6 +152,7 @@ object AudioPlayer {
       return null
     }
 
+    VideoPlayer.stopAll()
     RecorderNative.stopRecording?.invoke()
     val current = currentlyPlaying.value
     if (current == null || current.first != filePath) {
@@ -270,6 +271,13 @@ object AudioPlayer {
   fun pause(audioPlaying: MutableState<Boolean>, pro: MutableState<Int>) {
     pro.value = pause()
     audioPlaying.value = false
+  }
+
+  fun seekTo(ms: Int, pro: MutableState<Int>, filePath: String?) {
+    pro.value = ms
+    if (this.currentlyPlaying.value?.first == filePath) {
+      player.seekTo(ms)
+    }
   }
 
   fun duration(filePath: String): Int? {

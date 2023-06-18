@@ -9,17 +9,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -59,7 +56,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
 }
 
 private val titles = listOf(R.string.share_one_time_link, R.string.connect_via_link_or_qr, R.string.create_group)
-private val icons = listOf(Icons.Outlined.AddLink, Icons.Outlined.QrCode, Icons.Outlined.Group)
+private val icons = listOf(R.drawable.ic_add_link, R.drawable.ic_qr_code, R.drawable.ic_group)
 
 @Composable
 private fun NewChatSheetLayout(
@@ -132,7 +129,7 @@ private fun NewChatSheetLayout(
                 fontWeight = FontWeight.Medium,
               )
               Icon(
-                icons[index],
+                painterResource(icons[index]),
                 stringResource(titles[index]),
                 Modifier.size(42.dp),
                 tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
@@ -146,22 +143,22 @@ private fun NewChatSheetLayout(
     }
     FloatingActionButton(
       onClick = { if (!stopped) closeNewChatSheet(true) },
-      Modifier.padding(end = 16.dp, bottom = 16.dp),
+      Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
       elevation = FloatingActionButtonDefaults.elevation(
         defaultElevation = 0.dp,
         pressedElevation = 0.dp,
         hoveredElevation = 0.dp,
         focusedElevation = 0.dp,
       ),
-      backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
+      backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       contentColor = Color.White
     ) {
       Icon(
-        Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group),
+        painterResource(R.drawable.ic_edit_filled), stringResource(R.string.add_contact_or_create_group),
         Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }
       )
       Icon(
-        Icons.Default.Close, stringResource(R.string.add_contact_or_create_group),
+        painterResource(R.drawable.ic_close), stringResource(R.string.add_contact_or_create_group),
         Modifier.graphicsLayer { alpha = animatedFloat.value }
       )
     }
@@ -172,18 +169,64 @@ private fun NewChatSheetLayout(
 fun ActionButton(
   text: String?,
   comment: String?,
-  icon: ImageVector,
+  icon: Painter,
   disabled: Boolean = false,
   click: () -> Unit = {}
 ) {
-  Surface(shape = RoundedCornerShape(18.dp)) {
+  Surface(shape = RoundedCornerShape(18.dp), color = Color.Transparent) {
     Column(
       Modifier
         .clickable(onClick = click)
         .padding(8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      val tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+      Icon(
+        icon, text,
+        tint = tint,
+        modifier = Modifier
+          .size(40.dp)
+          .padding(bottom = 8.dp)
+      )
+      if (text != null) {
+        Text(
+          text,
+          textAlign = TextAlign.Center,
+          fontWeight = FontWeight.Bold,
+          color = tint,
+          modifier = Modifier.padding(bottom = 4.dp)
+        )
+      }
+      if (comment != null) {
+        Text(
+          comment,
+          textAlign = TextAlign.Center,
+          style = MaterialTheme.typography.body2
+        )
+      }
+    }
+  }
+}
+
+@Composable
+fun ActionButton(
+  modifier: Modifier,
+  text: String?,
+  comment: String?,
+  icon: Painter,
+  tint: Color = MaterialTheme.colors.primary,
+  disabled: Boolean = false,
+  click: () -> Unit = {}
+) {
+  Surface(modifier, shape = RoundedCornerShape(18.dp)) {
+    Column(
+      Modifier
+        .fillMaxWidth()
+        .clickable(onClick = click)
+        .padding(8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      val tint = if (disabled) MaterialTheme.colors.secondary else tint
       Icon(
         icon, text,
         tint = tint,

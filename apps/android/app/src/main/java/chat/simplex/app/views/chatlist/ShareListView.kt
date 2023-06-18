@@ -6,14 +6,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
@@ -21,21 +19,22 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.Indigo
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
+  val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
+  val switchingUsers = rememberSaveable { mutableStateOf(false) }
   Scaffold(
-    topBar = { Column { ShareListToolbar(chatModel, stopped) { searchInList = it.trim() } } },
+    topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
   ) {
     Box(Modifier.padding(it)) {
       Column(
         modifier = Modifier
           .fillMaxSize()
-          .background(MaterialTheme.colors.background)
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ShareList(chatModel, search = searchInList)
@@ -45,27 +44,45 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
       }
     }
   }
+  UserPicker(chatModel, userPickerState, switchingUsers, showSettings = false, showCancel = true, cancelClicked = {
+    chatModel.sharedContent.value = null
+  })
 }
 
 @Composable
 private fun EmptyList() {
-  Box {
-    Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Text(stringResource(R.string.you_have_no_chats), color = MaterialTheme.colors.secondary)
   }
 }
 
 @Composable
-private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
+private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val hideSearchOnBack = { onSearchValueChanged(""); showSearch = false }
   if (showSearch) {
     BackHandler(onBack = hideSearchOnBack)
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
+  val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
+  val navButton: @Composable RowScope.() -> Unit = {
+    when {
+      showSearch -> NavigationButtonBack(hideSearchOnBack)
+      users.size > 1 -> {
+        val allRead = users
+          .filter { u -> !u.user.activeUser && !u.user.hidden }
+          .all { u -> u.unreadCount == 0 }
+        UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
+          userPickerState.value = AnimatedViewState.VISIBLE
+        }
+      }
+      else -> NavigationButtonBack { chatModel.sharedContent.value = null }
+    }
+  }
   if (chatModel.chats.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(Icons.Outlined.Search, stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -78,7 +95,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
         )
       }) {
         Icon(
-          Icons.Filled.Report,
+          painterResource(R.drawable.ic_report_filled),
           generalGetString(R.string.chat_is_stopped_indication),
           tint = Color.Red,
         )
@@ -87,13 +104,13 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
   }
 
   DefaultTopAppBar(
-    navigationButton = { if (showSearch) NavigationButtonBack(hideSearchOnBack) else NavigationButtonBack { chatModel.sharedContent.value = null } },
+    navigationButton = navButton,
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
           when (chatModel.sharedContent.value) {
             is SharedContent.Text -> stringResource(R.string.share_message)
-            is SharedContent.Images -> stringResource(R.string.share_image)
+            is SharedContent.Media -> stringResource(R.string.share_image)
             is SharedContent.File -> stringResource(R.string.share_file)
             else -> stringResource(R.string.share_message)
           },
@@ -102,7 +119,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
         )
         if (chatModel.incognito.value) {
           Icon(
-            Icons.Filled.TheaterComedy,
+            painterResource(R.drawable.ic_theater_comedy_filled),
             stringResource(R.string.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)

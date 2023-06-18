@@ -80,7 +80,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) {
-    notifyMessageReceived(
+    displayNotification(
       user = user,
       chatId = cInfo.id,
       displayName = cInfo.displayName,
@@ -91,7 +91,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyContactConnected(user: User, contact: Contact) {
-    notifyMessageReceived(
+    displayNotification(
       user = user,
       chatId = contact.id,
       displayName = contact.displayName,
@@ -101,11 +101,11 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
   fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {
     if (!cInfo.ntfsEnabled) return
-
-    notifyMessageReceived(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+    displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
   }
 
-  fun notifyMessageReceived(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
+  fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
+    if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
     val now = Clock.System.now().toEpochMilliseconds()
     val recentNotification = (now - prevNtfTime.getOrDefault(chatId, 0) < msgNtfTimeoutMs)
@@ -229,6 +229,10 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
   fun cancelCallNotification() {
     manager.cancel(CallNotificationId)
+  }
+
+  fun cancelAllNotifications() {
+    manager.cancelAll()
   }
 
   fun hasNotificationsForChat(chatId: String): Boolean = manager.activeNotifications.any { it.id == chatId.hashCode() }

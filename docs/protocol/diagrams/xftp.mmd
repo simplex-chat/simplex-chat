@@ -1,0 +1,42 @@
+sequenceDiagram
+  participant A as Alice
+  participant AC as Alice Chat
+  participant AA as Alice Agent
+  participant XFTP as Alice's XFTP relay(s)
+  participant SMP as Bob's SMP relay
+  participant BA as Bob Agent
+  participant BC as Bob Chat
+  participant B as Bob
+  
+  A ->> AC: APISendMessage
+  AC ->> AA: sendMessage(x.msg.new) /<br>CIFSSndStored
+  AA ->> SMP: SEND<x.msg.new>
+  SMP ->> BA: MSG<x.msg.new>
+  BA ->> BC: MSG<x.msg.new>
+  BC ->> B: CRNewChatItem<br>(file not ready)
+  B ->> BC: ReceiveFile
+  BC ->> B: error: no file description
+  AC ->> AA: sendFile
+  AC ->> A: CRSndFileStart
+  AA ->> XFTP: chunk (FNEW, FPUT)
+  AA ->> AC: SFPROG /<br>CIFSSndTransfer
+  AC ->> A: CRSndFileProgress (new)
+  AA ->> XFTP: chunks
+  AA ->> AC: SFDONE sd rds
+  AC ->> AA: sendMessage(x.msg.file.descr) /<br>FSComplete / CIFSSndComplete
+  AC ->> A: CRSndFileComplete (?)
+  AA ->> SMP: SEND<x.msg.file.descr>
+  SMP ->> BA: MSG<x.msg.file.descr>
+  BA ->> BC: MSG<x.msg.file.descr>
+  BC ->> B: CRChatItemUpdated<br>(file is ready)
+  BC ->> B: CRFileReady (TBC)
+  B ->> BC: ReceiveFile
+  BC ->> BA: getFile
+  BC ->> B: CRRcvFileStart
+  XFTP ->> BA: chunk (FGET / FRFile)
+  BA ->> BC: RFPROG
+  BC ->> B: CRRcvFileProgress (new)
+  XFTP ->> BA: chunks
+  BA ->> BC: RFDONE
+  BC ->> B: CRNewChatItem<br>(file received)
+  BC ->> B: CRRcvFileComplete

@@ -1,0 +1,40 @@
+name: Feature
+description: Suggest your feature
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+- type: checkboxes
+  attributes:
+    label: Is there an existing issue for this?
+    description: Please search to see if an issue already exists for the bug you encountered.
+    options:
+    - label: I have searched the existing issues
+      required: true
+- type: dropdown
+  attributes:
+    label: Platform
+    description: Multiple selections are possible. If selected input is "all", this considered to be a general feature.
+    multiple: true
+    options:
+      - Linux
+      - Mac
+      - Windows
+      - Android
+      - iOS
+      - all
+  validations:
+    required: true
+- type: input
+  attributes:
+    label: App version
+    description: Specify the SimpleX version
+    placeholder: ex. 4.3.2
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Feature
+    description: Describe the feature you would like to see added
+    placeholder: SimpleX Chat should make me coffee! 
+  validations:
+    required: true

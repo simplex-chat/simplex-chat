@@ -1,3 +1,6 @@
+---
+title: Secret groups
+---
 # Secret groups
 
 Secret groups are anonymous and private; they are designed to be hard to track by outsiders. Every message and file gets sent separately to each member of the group, which makes secret groups only fit for smaller groups with less than 100 members.

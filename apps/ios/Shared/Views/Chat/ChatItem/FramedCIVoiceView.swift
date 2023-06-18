@@ -15,9 +15,15 @@ struct FramedCIVoiceView: View {
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
-    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
-    @State var playbackTime: TimeInterval?
-
+    
+    @Binding var allowMenu: Bool
+    
+    @Binding var audioPlayer: AudioPlayer?
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+    
+    @State private var seek: (TimeInterval) -> Void = { _ in }
+    
     var body: some View {
         HStack {
             VoiceMessagePlayer(
@@ -25,8 +31,11 @@ struct FramedCIVoiceView: View {
                 recordingFile: recordingFile,
                 recordingTime: TimeInterval(duration),
                 showBackground: false,
+                seek: $seek,
+                audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
-                playbackTime: $playbackTime
+                playbackTime: $playbackTime,
+                allowMenu: $allowMenu
             )
             VoiceMessagePlayerTime(
                 recordingTime: TimeInterval(duration),
@@ -35,11 +44,30 @@ struct FramedCIVoiceView: View {
             )
             .foregroundColor(.secondary)
             .frame(width: 50, alignment: .leading)
+            if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
+                playbackSlider()
+            }
         }
         .padding(.top, 6)
         .padding(.leading, 6)
         .padding(.trailing, 12)
         .padding(.bottom, chatItem.content.text.isEmpty ? 10 : 0)
+    }
+    
+    private func playbackSlider() -> some View {
+        ComposeVoiceView.SliderBar(
+            length: TimeInterval(duration),
+            progress: $playbackTime,
+            seek: {
+                let time = max(0.0001, $0)
+                seek(time)
+                playbackTime = time
+            })
+        .onChange(of: .playing == playbackState || (playbackTime ?? 0) > 0) { show in
+            if !show {
+                allowMenu = true
+            }
+        }
     }
 }
 
@@ -62,7 +90,7 @@ struct FramedCIVoiceView_Previews: PreviewProvider {
         Group {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage, revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWithQuote, revealed: Binding.constant(false))
         }

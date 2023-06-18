@@ -12,19 +12,19 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,7 +36,6 @@ import chat.simplex.app.model.*
 import chat.simplex.app.model.NtfManager.Companion.OpenChatAction
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
-import chat.simplex.app.views.onboarding.SimpleXLogo
 import kotlinx.datetime.Clock
 
 class IncomingCallActivity: ComponentActivity() {
@@ -98,8 +97,9 @@ fun IncomingCallActivityView(m: ChatModel) {
   SimpleXTheme {
     Surface(
       Modifier
-        .background(MaterialTheme.colors.background)
-        .fillMaxSize()) {
+        .fillMaxSize(),
+      color = MaterialTheme.colors.background
+    ) {
       if (showCallView) {
         Box {
           ActiveCallView(m)
@@ -170,24 +170,35 @@ fun IncomingCallLockScreenAlertLayout(
       Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
-        LockScreenCallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
+        LockScreenCallButton(stringResource(R.string.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
         Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
+        LockScreenCallButton(stringResource(R.string.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
         Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
+        LockScreenCallButton(stringResource(R.string.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
       }
     } else if (callOnLockScreen == CallOnLockScreen.SHOW) {
       SimpleXLogo()
       Text(stringResource(R.string.open_simplex_chat_to_accept_call), textAlign = TextAlign.Center, lineHeight = 22.sp)
       Text(stringResource(R.string.allow_accepting_calls_from_lock_screen), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2, lineHeight = 22.sp)
       Spacer(Modifier.fillMaxHeight().weight(1f))
-      SimpleButton(text = stringResource(R.string.open_verb), icon = Icons.Filled.Check, click = openApp)
+      SimpleButton(text = stringResource(R.string.open_verb), icon = painterResource(R.drawable.ic_check_filled), click = openApp)
     }
   }
 }
 
 @Composable
-private fun LockScreenCallButton(text: String, icon: ImageVector, color: Color, action: () -> Unit) {
+private fun SimpleXLogo() {
+  Image(
+    painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
+    contentDescription = stringResource(R.string.image_descr_simplex_logo),
+    modifier = Modifier
+      .padding(vertical = DEFAULT_PADDING)
+      .fillMaxWidth(0.80f)
+  )
+}
+
+@Composable
+private fun LockScreenCallButton(text: String, icon: Painter, color: Color, action: () -> Unit) {
   Surface(
     shape = RoundedCornerShape(10.dp),
     color = Color.Transparent
@@ -201,8 +212,8 @@ private fun LockScreenCallButton(text: String, icon: ImageVector, color: Color, 
       IconButton(action) {
         Icon(icon, text, tint = color, modifier = Modifier.scale(1.75f))
       }
-      Spacer(Modifier.height(16.dp))
-      Text(text, style = MaterialTheme.typography.body2, color = HighOrLowlight)
+      Spacer(Modifier.height(DEFAULT_PADDING))
+      Text(text, style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -216,8 +227,9 @@ fun PreviewIncomingCallLockScreenAlert() {
   SimpleXTheme(true) {
     Surface(
       Modifier
-        .background(MaterialTheme.colors.background)
-        .fillMaxSize()) {
+        .fillMaxSize(),
+      color = MaterialTheme.colors.background
+    ) {
       IncomingCallLockScreenAlertLayout(
         invitation = RcvCallInvitation(
           user = User.sampleData,

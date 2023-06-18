@@ -9,7 +9,6 @@
 import Foundation
 import Combine
 import SwiftUI
-import WebKit
 import SimpleXChat
 
 final class ChatModel: ObservableObject {
@@ -22,6 +21,7 @@ final class ChatModel: ObservableObject {
     @Published var chatDbChanged = false
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
+    @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // map of connections network statuses, key is agent connection id
@@ -34,8 +34,6 @@ final class ChatModel: ObservableObject {
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: UserContactLink?
-    @Published var userSMPServers: [ServerCfg]?
-    @Published var presetSMPServers: [String]?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
     @Published var deviceToken: DeviceToken?
@@ -56,18 +54,42 @@ final class ChatModel: ObservableObject {
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
-    @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
+    @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
-    var callWebView: WKWebView?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
-    var filesToDelete: [String] = []
+    var filesToDelete: Set<URL> = []
 
     static let shared = ChatModel()
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
+
+    func getUser(_ userId: Int64) -> User? {
+        currentUser?.userId == userId
+        ? currentUser
+        : users.first { $0.user.userId == userId }?.user
+    }
+
+    func getUserIndex(_ user: User) -> Int? {
+        users.firstIndex { $0.user.userId == user.userId }
+    }
+
+    func updateUser(_ user: User) {
+        if let i = getUserIndex(user) {
+            users[i].user = user
+        }
+        if currentUser?.userId == user.userId {
+            currentUser = user
+        }
+    }
+
+    func removeUser(_ user: User) {
+        if let i = getUserIndex(user), users[i].user.userId != currentUser?.userId {
+            users.remove(at: i)
+        }
+    }
 
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil
@@ -216,16 +238,9 @@ final class ChatModel: ObservableObject {
     }
 
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
-        if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-            let ci = reversedChatItems[i]
+        if let i = getChatItemIndex(cItem) {
             withAnimation {
-                self.reversedChatItems[i] = cItem
-                self.reversedChatItems[i].viewTimestamp = .now
-                // on some occasions the confirmation of message being accepted by the server (tick)
-                // arrives earlier than the response from API, and item remains without tick
-                if case .sndNew = cItem.meta.itemStatus {
-                    self.reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
-                }
+                _updateChatItem(at: i, with: cItem)
             }
             return false
         } else {
@@ -242,7 +257,30 @@ final class ChatModel: ObservableObject {
             }
         }
     }
-    
+
+    func updateChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
+            withAnimation {
+                _updateChatItem(at: i, with: cItem)
+            }
+        }
+    }
+
+    private func _updateChatItem(at i: Int, with cItem: ChatItem) {
+        let ci = reversedChatItems[i]
+        reversedChatItems[i] = cItem
+        reversedChatItems[i].viewTimestamp = .now
+        // on some occasions the confirmation of message being accepted by the server (tick)
+        // arrives earlier than the response from API, and item remains without tick
+        if case .sndNew = cItem.meta.itemStatus {
+            reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
+        }
+    }
+
+    private func getChatItemIndex(_ cItem: ChatItem) -> Int? {
+        reversedChatItems.firstIndex(where: { $0.id == cItem.id })
+    }
+
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if cItem.isRcvNew {
             decreaseUnreadCounter(cInfo)
@@ -255,7 +293,7 @@ final class ChatModel: ObservableObject {
         }
         // remove from current chat
         if chatId == cInfo.id {
-            if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            if let i = getChatItemIndex(cItem) {
                 _ = withAnimation {
                     self.reversedChatItems.remove(at: i)
                 }
@@ -335,7 +373,7 @@ final class ChatModel: ObservableObject {
 
     func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
         if let cItem = aboveItem {
-            if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
                 markCurrentChatRead(fromIndex: i)
                 _updateChat(cInfo.id) { chat in
                     var unreadBelow = 0
@@ -358,7 +396,7 @@ final class ChatModel: ObservableObject {
             markChatItemsRead(cInfo)
         }
     }
-   
+
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
         _updateChat(cInfo.id) { chat in
             chat.chatStats.unreadChat = unreadChat
@@ -383,7 +421,7 @@ final class ChatModel: ObservableObject {
         // update preview
         decreaseUnreadCounter(cInfo)
         // update current chat
-        if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+        if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
             markChatItemRead_(i)
         }
     }
@@ -428,7 +466,7 @@ final class ChatModel: ObservableObject {
     }
 
     func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = reversedChatItems.firstIndex(where: { $0.id == ci.id }), i < reversedChatItems.count - 1  {
+        if let i = getChatItemIndex(ci), i < reversedChatItems.count - 1  {
             return reversedChatItems[i + 1]
         } else {
             return nil

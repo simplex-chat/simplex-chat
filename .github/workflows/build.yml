@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone project
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v1
+        uses: mikepenz/release-changelog-builder-action@v4
         with:
           configuration: .github/changelog_conf.json
           failOnError: true
@@ -52,9 +52,9 @@ jobs:
           - os: ubuntu-20.04
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-20_04-x86-64
-          - os: ubuntu-18.04
+          - os: ubuntu-22.04
             cache_path: ~/.cabal/store
-            asset_name: simplex-chat-ubuntu-18_04-x86-64
+            asset_name: simplex-chat-ubuntu-22_04-x86-64
           - os: macos-latest
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-x86-64
@@ -62,17 +62,25 @@ jobs:
             cache_path: C:/cabal
             asset_name: simplex-chat-windows-x86-64
     steps:
+      - name: Configure pagefile (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: al-cheb/configure-pagefile-action@v1.3
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          disk-root: "C:"
+
       - name: Clone project
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Haskell
-        uses: haskell/actions/setup@v1
+        uses: haskell/actions/setup@v2
         with:
           ghc-version: "8.10.7"
           cabal-version: "latest"
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ matrix.cache_path }}
@@ -96,7 +104,7 @@ jobs:
         run: brew install pkg-config
 
       - name: Unix prepare cabal.project.local for Ubuntu
-        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-18.04'
+        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
           echo "ignore-project: False"    >> cabal.project.local
@@ -111,12 +119,6 @@ jobs:
           cabal build --enable-tests
           echo "::set-output name=bin_path::$(cabal list-bin simplex-chat)"
 
-      - name: Unix test
-        if: matrix.os != 'windows-latest' && matrix.os != 'ubuntu-20.04'
-        timeout-minutes: 20
-        shell: bash
-        run: cabal test --test-show-details=direct
-
       - name: Unix upload binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
         uses: svenstaro/upload-release-action@v2
@@ -125,6 +127,12 @@ jobs:
           file: ${{ steps.unix_build.outputs.bin_path }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
+
+      - name: Unix test
+        if: matrix.os != 'windows-latest'
+        timeout-minutes: 30
+        shell: bash
+        run: cabal test --test-show-details=direct
 
       # Unix /
 

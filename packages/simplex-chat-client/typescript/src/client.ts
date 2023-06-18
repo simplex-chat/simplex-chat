@@ -105,8 +105,8 @@ export class ChatClient {
     }
   }
 
-  async apiCreateActiveUser(profile: CC.Profile): Promise<CR.User> {
-    const r = await this.sendChatCommand({type: "createActiveUser", profile})
+  async apiCreateActiveUser(profile?: Profile, sameServers = true, pastTimestamp = false): Promise<CR.User> {
+    const r = await this.sendChatCommand({type: "createActiveUser", profile, sameServers, pastTimestamp})
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
   }
@@ -129,15 +129,22 @@ export class ChatClient {
     return this.okChatCommand({type: "setIncognito", incognito})
   }
 
-  async addressAutoAccept(autoAccept: boolean, autoReply: CC.MsgContent): Promise<void> {
-    const r = await this.sendChatCommand({type: "addressAutoAccept", autoAccept, autoReply})
+  async enableAddressAutoAccept(acceptIncognito = false, autoReply?: CC.MsgContent): Promise<void> {
+    const r = await this.sendChatCommand({type: "addressAutoAccept", autoAccept: {acceptIncognito, autoReply}})
     if (r.type !== "userContactLinkUpdated") {
       throw new ChatCommandError("error changing user contact address mode", r)
     }
   }
 
-  async apiGetChats(): Promise<CR.Chat[]> {
-    const r = await this.sendChatCommand({type: "apiGetChats"})
+  async disableAddressAutoAccept(): Promise<void> {
+    const r = await this.sendChatCommand({type: "addressAutoAccept"})
+    if (r.type !== "userContactLinkUpdated") {
+      throw new ChatCommandError("error changing user contact address mode", r)
+    }
+  }
+
+  async apiGetChats(userId: number): Promise<CR.Chat[]> {
+    const r = await this.sendChatCommand({type: "apiGetChats", userId})
     if (r.type === "apiChats") return r.chats
     throw new ChatCommandError("error loading chats", r)
   }
@@ -169,9 +176,14 @@ export class ChatClient {
     throw new ChatCommandError("error updating chat item", r)
   }
 
-  async apiDeleteChatItem(chatType: ChatType, chatId: number, chatItemId: number, deleteMode: CC.DeleteMode): Promise<CR.ChatItem> {
+  async apiDeleteChatItem(
+    chatType: ChatType,
+    chatId: number,
+    chatItemId: number,
+    deleteMode: CC.DeleteMode
+  ): Promise<CR.ChatItem | undefined> {
     const r = await this.sendChatCommand({type: "apiDeleteChatItem", chatType, chatId, chatItemId, deleteMode})
-    if (r.type === "chatItemDeleted") return r.toChatItem.chatItem
+    if (r.type === "chatItemDeleted") return r.toChatItem?.chatItem
     throw new ChatCommandError("error deleting chat item", r)
   }
 
@@ -215,8 +227,8 @@ export class ChatClient {
     throw new ChatCommandError("error clearing chat", r)
   }
 
-  async apiUpdateProfile(profile: CC.Profile): Promise<CC.Profile | undefined> {
-    const r = await this.sendChatCommand({type: "apiUpdateProfile", profile})
+  async apiUpdateProfile(userId: number, profile: CC.Profile): Promise<CC.Profile | undefined> {
+    const r = await this.sendChatCommand({type: "apiUpdateProfile", userId, profile})
     switch (r.type) {
       case "userProfileNoChange":
         return undefined

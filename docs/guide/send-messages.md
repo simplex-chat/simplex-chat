@@ -1,4 +1,7 @@
-# Sending, editing, quoting, and deleting messages
+---
+title: Sending messages
+---
+# Sending, editing and deleting messages
 
 SimpleX Chat allows for sending, editing, quoting, and deleting messages.
 
