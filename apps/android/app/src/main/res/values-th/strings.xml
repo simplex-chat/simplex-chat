@@ -75,7 +75,7 @@
     <string name="v4_2_auto_accept_contact_requests">ตอบรับคำขอเป็นเพื่อนโดยอัตโนมัติ</string>
     <string name="v4_2_group_links_desc">ผู้ดูแลระบบสามารถสร้างลิงก์เพื่อเข้าร่วมกลุ่มต่างๆได้</string>
     <string name="network_settings">การตั้งค่าระบบเครือข่ายขั้นสูง</string>
-    <string name="all_app_data_will_be_cleared">ข้อมูลแอปทั้งหมดจะถูกลบ</string>
+    <string name="all_app_data_will_be_cleared">ข้อมูลแอปทั้งหมดถูกลบแล้ว</string>
     <string name="color_secondary_variant">รองเพิ่มเติม</string>
     <string name="users_add">เพิ่มโปรไฟล์</string>
     <string name="smp_servers_preset_add">เพิ่มเซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า</string>
@@ -271,7 +271,7 @@
     <string name="dark_theme">ธีมมืด</string>
     <string name="chat_preferences_contact_allows">ผู้ติดต่ออนุญาต</string>
     <string name="chat_preferences">การตั้งค่าการแชท</string>
-    <string name="contact_preferences">การกําหนดลักษณะการติดต่อ</string>
+    <string name="contact_preferences">การตั้งค่าผู้ติดต่อ</string>
     <string name="contacts_can_mark_messages_for_deletion">ผู้ติดต่อสามารถทําเครื่องหมายข้อความเพื่อลบได้ คุณจะสามารถดูได้</string>
     <string name="v4_6_chinese_spanish_interface">อินเทอร์เฟซภาษาจีนและสเปน</string>
     <string name="v5_1_custom_themes_descr">ปรับแต่งและแชร์ธีมสี</string>
@@ -404,7 +404,7 @@
     <string name="settings_section_title_develop">พัฒนา</string>
     <string name="settings_developer_tools">เครื่องมือสำหรับนักพัฒนา</string>
     <string name="settings_section_title_device">อุปกรณ์</string>
-    <string name="settings_experimental_features">feature สำหรับการทดลอง</string>
+    <string name="settings_experimental_features">คุณลักษณะสำหรับการทดลอง</string>
     <string name="settings_section_title_experimenta">สำหรับการทดลอง</string>
     <string name="database_passphrase">รหัสผ่านของฐานข้อมูล</string>
     <string name="export_database">ส่งออกฐานข้อมูล</string>
@@ -742,7 +742,7 @@
     <string name="only_you_can_send_voice">มีเพียงคุณเท่านั้นที่สามารถส่งข้อความเสียงได้</string>
     <string name="only_your_contact_can_delete">เฉพาะผู้ติดต่อของคุณเท่านั้นที่สามารถลบข้อความแบบย้อนกลับไม่ได้ (คุณสามารถทำเครื่องหมายเพื่อลบได้)</string>
     <string name="message_reactions_prohibited_in_this_chat">ห้ามแสดงปฏิกิริยาบนข้อความในแชทนี้</string>
-    <string name="only_you_can_add_message_reactions">มีเพียงคุณเท่านั้นที่สามารถเพิ่มการโต้ตอบข้อความได้</string>
+    <string name="only_you_can_add_message_reactions">มีเพียงคุณเท่านั้นที่สามารถแสดงปฏิกิริยาต่อข้อความได้</string>
     <string name="only_your_contact_can_add_message_reactions">เฉพาะผู้ติดต่อของคุณเท่านั้นที่สามารถเพิ่มการโต้ตอบข้อความได้</string>
     <string name="only_you_can_make_calls">มีเพียงคุณเท่านั้นที่โทรออกได้</string>
     <string name="only_your_contact_can_make_calls">ผู้ติดต่อของคุณเท่านั้นที่สามารถโทรออกได้</string>
@@ -1206,7 +1206,7 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">คุณสามารถเริ่มแชทผ่านการตั้งค่าแอป / ฐานข้อมูล หรือโดยการรีสตาร์ทแอป</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">คุณได้รับเชิญให้เข้าร่วมกลุ่ม เข้าร่วมเพื่อเชื่อมต่อกับสมาชิกในกลุ่ม</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">คุณเข้าร่วมกลุ่มนี้แล้ว กำลังเชื่อมต่อเพื่อเชิญสมาชิกกลุ่ม</string>
-    <string name="alert_title_cant_invite_contacts_descr">คุณกำลังใช้โปรไฟล์ที่ไม่ระบุตัวตนสำหรับกลุ่มนี้ - ไม่อนุญาตให้แชร์โปรไฟล์หลักของคุณ ไม่อนุญาตให้เชิญผู้ติดต่อ</string>
+    <string name="alert_title_cant_invite_contacts_descr">คุณกำลังใช้โปรไฟล์ที่ไม่ระบุตัวตนสำหรับกลุ่มนี้ - ไม่อนุญาตให้เชิญผู้ติดต่อเพื่อป้องกันการแชร์โปรไฟล์หลักของคุณ</string>
     <string name="you_sent_group_invitation">คุณส่งคำเชิญเข้าร่วมกลุ่มแล้ว</string>
     <string name="you_joined_this_group">คุณเข้าร่วมกลุ่มนี้แล้ว</string>
     <string name="you_rejected_group_invitation">คุณปฏิเสธคำเชิญเข้าร่วมกลุ่ม</string>
@@ -1243,4 +1243,27 @@
     <string name="v4_5_private_filenames_descr">ไฟล์ภาพ/เสียงใช้ UTC เพื่อป้องกันเขตเวลา</string>
     <string name="v5_0_large_files_support">วิดีโอและไฟล์สูงสุด 1gb</string>
     <string name="custom_time_unit_weeks">สัปดาห์</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">การดำเนินการนี้ไม่สามารถยกเลิกได้ - โปรไฟล์ ผู้ติดต่อ ข้อความ และไฟล์ของคุณจะสูญหายไปอย่างถาวร</string>
+    <string name="incognito_info_find">หากต้องการค้นหาโปรไฟล์ที่ใช้สำหรับการเชื่อมต่อแบบไม่ระบุตัวตน ให้แตะชื่อผู้ติดต่อหรือชื่อกลุ่มที่ด้านบนของแชท</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">เพื่อรักษาความเป็นส่วนตัวของคุณ แทนที่จะใช้การแจ้งเตือนแบบพุช แอปมีบริการพื้นหลัง <b><xliff:g id="appName">SimpleX</xliff:g> </b> – ใช้แบตเตอรี่เพียงไม่กี่เปอร์เซ็นต์ต่อวัน</string>
+    <string name="group_info_member_you">คุณ: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">เพื่อปกป้องความเป็นส่วนตัว แทนที่จะใช้ ID ผู้ใช้เหมือนที่แพลตฟอร์มอื่นๆใช้ <xliff:g id="appName">SimpleX</xliff:g> มีตัวระบุสำหรับคิวข้อความ โดยแยกจากกันสำหรับผู้ติดต่อแต่ละราย</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">คุณจะต้องยืนยันตัวตนเมื่อคุณเริ่มหรือกลับมาใช้แอปพลิเคชันอีกครั้งหลังจากผ่านไป 30 วินาทีในพื้นหลัง</string>
+    <string name="you_will_join_group">คุณจะเข้าร่วมกลุ่มที่ลิงก์นี้อ้างถึงและเชื่อมต่อกับสมาชิกในกลุ่ม</string>
+    <string name="this_text_is_available_in_settings">ตัวบทนี้มีอยู่ในการตั้งค่า</string>
+    <string name="images_limit_title">รูปเยอะเกิน!</string>
+    <string name="videos_limit_title">วิดีโอเยอะเกิน!</string>
+    <string name="switch_receiving_address_desc">คุณลักษณะนี้เป็นการทดลอง! จะใช้งานได้ก็ต่อเมื่อลูกค้าอื่นติดตั้งเวอร์ชัน 4.2 คุณควรเห็นข้อความในการสนทนาเมื่อการเปลี่ยนแปลงที่อยู่เสร็จสิ้น – โปรดตรวจสอบว่าคุณยังคงสามารถรับข้อความจากผู้ติดต่อนี้ (หรือสมาชิกในกลุ่ม)</string>
+    <string name="to_connect_via_link_title">เพื่อการเชื่อมต่อผ่านลิงค์</string>
+    <string name="this_link_is_not_a_valid_connection_link">ลิงค์นี้ไม่ใช่ลิงค์เชื่อมต่อที่ถูกต้อง!</string>
+    <string name="this_QR_code_is_not_a_link">รหัสคิวอาร์นี้ไม่ใช่ลิงก์!</string>
+    <string name="scan_qr_to_connect_to_contact">เพื่อการเชื่อมต่อ ผู้ติดต่อของคุณสามารถสแกนคิวอาร์โค้ดหรือใช้ลิงก์ในแอป</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">คุณจะไม่สูญเสียรายชื่อผู้ติดต่อของคุณหากคุณลบที่อยู่ในภายหลัง</string>
+    <string name="this_string_is_not_a_connection_link">สตริงนี้ไม่ใช่ลิงค์เชื่อมต่อ!</string>
+    <string name="alert_text_fragment_permanent_error_reconnect">ข้อผิดพลาดนี้เกิดขึ้นอย่างถาวรสำหรับการเชื่อมต่อนี้ โปรดเชื่อมต่อใหม่</string>
+    <string name="messages_section_description">การตั้งค่านี้ใช้กับข้อความในโปรไฟล์แชทปัจจุบันของคุณ</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">คุณจะหยุดได้รับข้อความจากกลุ่มนี้ ประวัติการแชทจะถูกรักษาไว้</string>
+    <string name="alert_message_no_group">ไม่มีกลุ่มนี้แล้ว</string>
+    <string name="you_will_still_receive_calls_and_ntfs">คุณจะยังได้รับสายเรียกเข้าและการแจ้งเตือนจากโปรไฟล์ที่ปิดเสียงเมื่อโปรไฟล์ของเขามีการใช้งาน</string>
+    <string name="color_title">ชื่อ</string>
 </resources>
