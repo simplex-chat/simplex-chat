@@ -126,6 +126,9 @@ struct ChatPreviewView: View {
             } else if !chat.chatInfo.ntfsEnabled {
                 Image(systemName: "speaker.slash.fill")
                     .foregroundColor(.secondary)
+            } else if chat.chatInfo.chatSettings?.favorite ?? false {
+                Image(systemName: "star.fill")
+                    .foregroundColor(.yellow)
             }
         }
     }

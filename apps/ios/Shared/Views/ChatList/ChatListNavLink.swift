@@ -27,7 +27,7 @@ private let rowHeights: [DynamicTypeSize: CGFloat] = [
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @State var chat: Chat
+    @ObservedObject var chat: Chat
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
@@ -57,6 +57,8 @@ struct ChatListNavLink: View {
         )
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
+            toggleFavoriteButton()
+            toggleNtfsButton(chat)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             if !chat.chatItems.isEmpty {
@@ -126,6 +128,8 @@ struct ChatListNavLink: View {
             .frame(height: rowHeights[dynamicTypeSize])
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
+                toggleFavoriteButton()
+                toggleNtfsButton(chat)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 if !chat.chatItems.isEmpty {
@@ -134,8 +138,6 @@ struct ChatListNavLink: View {
                 if (groupInfo.membership.memberCurrent) {
                     leaveGroupChatButton(groupInfo)
                 }
-            }
-            .swipeActions(edge: .trailing) {
                 if groupInfo.canDelete {
                     deleteGroupChatButton(groupInfo)
                 }
@@ -169,6 +171,24 @@ struct ChatListNavLink: View {
             .tint(Color.accentColor)
         }
 
+    }
+
+    @ViewBuilder private func toggleFavoriteButton() -> some View {
+        if chat.chatInfo.chatSettings?.favorite == true {
+            Button {
+                toggleChatFavorite(chat, favorite: false)
+            } label: {
+                Label("Unfav", systemImage: "star")
+            }
+            .tint(.green)
+        } else {
+            Button {
+                toggleChatFavorite(chat, favorite: true)
+            } label: {
+                Label("Favorite", systemImage: "star.fill")
+            }
+            .tint(.green)
+        }
     }
 
     private func clearChatButton() -> some View {
