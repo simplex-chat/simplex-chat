@@ -408,6 +408,8 @@ data ChatResponse
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
+  | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
+  | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitchAborted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberSwitchAborted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitch {user :: User, contact :: Contact, switchProgress :: SwitchProgress}

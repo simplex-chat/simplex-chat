@@ -1110,12 +1110,14 @@ processChatCommand = \case
     pure $ CRGroupMemberInfo user g m connectionStats
   APISwitchContact contactId -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
-    withAgent $ \a -> switchConnectionAsync a "" $ contactConnId ct
-    ok user
+    connectionStats <- withAgent $ \a -> switchConnectionAsync a "" $ contactConnId ct
+    pure $ CRContactSwitchStarted user ct connectionStats
   APISwitchGroupMember gId gMemberId -> withUser $ \user -> do
-    m <- withStore $ \db -> getGroupMember db user gId gMemberId
+    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
-      Just connId -> withAgent (\a -> switchConnectionAsync a "" connId) >> ok user
+      Just connId -> do
+        connectionStats <- withAgent (\a -> switchConnectionAsync a "" connId)
+        pure $ CRGroupMemberSwitchStarted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APIAbortSwitchContact contactId -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
