@@ -403,6 +403,8 @@ public enum ChatResponse: Decodable, Error {
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: User, contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
     case groupMemberInfo(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
+    case contactSwitchStarted(user: User, contact: Contact, connectionStats: ConnectionStats)
+    case groupMemberSwitchStarted(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
     case contactSwitchAborted(user: User, contact: Contact, connectionStats: ConnectionStats)
     case groupMemberSwitchAborted(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
     case contactCode(user: User, contact: Contact, connectionCode: String)
@@ -524,6 +526,8 @@ public enum ChatResponse: Decodable, Error {
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
             case .groupMemberInfo: return "groupMemberInfo"
+            case .contactSwitchStarted: return "contactSwitchStarted"
+            case .groupMemberSwitchStarted: return "groupMemberSwitchStarted"
             case .contactSwitchAborted: return "contactSwitchAborted"
             case .groupMemberSwitchAborted: return "groupMemberSwitchAborted"
             case .contactCode: return "contactCode"
@@ -644,6 +648,8 @@ public enum ChatResponse: Decodable, Error {
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(u, contact, connectionStats, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))")
             case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))")
+            case let .contactSwitchStarted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
+            case let .groupMemberSwitchStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
             case let .contactSwitchAborted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
             case let .groupMemberSwitchAborted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
             case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")

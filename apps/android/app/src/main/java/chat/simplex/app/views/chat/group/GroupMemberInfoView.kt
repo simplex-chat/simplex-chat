@@ -101,7 +101,7 @@ fun GroupMemberInfoView(
       switchMemberAddress = {
         showSwitchAddressAlert(switchAddress = {
           withApi {
-            chatModel.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            connStats.value = chatModel.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
           }
         })
       },

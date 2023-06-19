@@ -83,7 +83,7 @@ fun ChatInfoView(
       switchContactAddress = {
         showSwitchAddressAlert(switchAddress = {
           withApi {
-            chatModel.controller.apiSwitchContact(contact.contactId)
+            connStats.value = chatModel.controller.apiSwitchContact(contact.contactId)
           }
         })
       },
