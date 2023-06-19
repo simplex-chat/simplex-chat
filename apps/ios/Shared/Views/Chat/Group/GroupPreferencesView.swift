@@ -25,7 +25,7 @@ struct GroupPreferencesView: View {
                 featureSection(.timedMessages, $preferences.timedMessages.enable)
                 featureSection(.fullDelete, $preferences.fullDelete.enable)
                 featureSection(.directMessages, $preferences.directMessages.enable)
-                // featureSection(.reactions, $preferences.reactions.enable)
+                featureSection(.reactions, $preferences.reactions.enable)
                 featureSection(.voice, $preferences.voice.enable)
 
                 if groupInfo.canEdit {
