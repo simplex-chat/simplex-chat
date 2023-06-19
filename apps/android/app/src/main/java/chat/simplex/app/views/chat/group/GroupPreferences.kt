@@ -30,9 +30,9 @@ fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
   fun savePrefs(afterSave: () -> Unit = {}) {
     withApi {
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
-      val gInfo = m.controller.apiUpdateGroup(gInfo.groupId, gp)
-      if (gInfo != null) {
-        m.updateGroup(gInfo)
+      val g = m.controller.apiUpdateGroup(gInfo.groupId, gp)
+      if (g != null) {
+        m.updateGroup(g)
         currentPreferences = preferences
       }
       afterSave()
@@ -74,11 +74,11 @@ private fun GroupPreferencesLayout(
     AppBarTitle(stringResource(R.string.group_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
     val onTTLUpdated = { ttl: Int? ->
-      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl ?: 86400)))
+      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
     }
     FeatureSection(GroupFeature.TimedMessages, timedMessages, groupInfo, preferences, onTTLUpdated) { enable ->
       if (enable == GroupFeatureEnabled.ON) {
-         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
+        applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
       } else {
         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
       }
