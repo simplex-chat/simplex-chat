@@ -193,7 +193,7 @@ struct ChatView: View {
                     .focused($searchFocussed)
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity)
-                
+
                 Button {
                     searchText = ""
                 } label: {
@@ -204,7 +204,7 @@ struct ChatView: View {
             .foregroundColor(.secondary)
             .background(Color(.secondarySystemBackground))
             .cornerRadius(10.0)
-            
+
             Button ("Cancel") {
                 searchText = ""
                 searchMode = false
