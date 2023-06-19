@@ -4419,8 +4419,8 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Stato di migrazione imprevisto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unfav" xml:space="preserve">
-        <source>Unfav</source>
+      <trans-unit id="Unfav." xml:space="preserve">
+        <source>Unfav.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">

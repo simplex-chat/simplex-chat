@@ -87,7 +87,6 @@ struct ChatListView: View {
                 HStack(spacing: 4) {
                     if (chatModel.incognito) {
                         Image(systemName: "theatermasks")
-//                            .frame(maxWidth: 22, maxHeight: 22, alignment: .center)
                             .foregroundColor(.indigo)
                             .padding(.trailing, 8)
                     }

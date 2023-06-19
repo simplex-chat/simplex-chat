@@ -4419,8 +4419,8 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Unerwarteter Migrationsstatus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unfav" xml:space="preserve">
-        <source>Unfav</source>
+      <trans-unit id="Unfav." xml:space="preserve">
+        <source>Unfav.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">

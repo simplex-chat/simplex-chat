@@ -4421,9 +4421,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Unexpected migration state</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unfav" xml:space="preserve">
-        <source>Unfav</source>
-        <target>Unfav</target>
+      <trans-unit id="Unfav." xml:space="preserve">
+        <source>Unfav.</source>
+        <target>Unfav.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
