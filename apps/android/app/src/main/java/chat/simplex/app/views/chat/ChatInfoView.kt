@@ -381,7 +381,7 @@ private fun ServerImage(networkStatus: NetworkStatus) {
   Box(Modifier.size(18.dp)) {
     when (networkStatus) {
       is NetworkStatus.Connected ->
-        Icon(painterResource(R.drawable.ic_circle_filled), stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
+        Icon(painterResource(R.drawable.ic_circle_filled), stringResource(R.string.icon_descr_server_status_connected), tint = Color.Green)
       is NetworkStatus.Disconnected ->
         Icon(painterResource(R.drawable.ic_pending_filled), stringResource(R.string.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
       is NetworkStatus.Error ->
