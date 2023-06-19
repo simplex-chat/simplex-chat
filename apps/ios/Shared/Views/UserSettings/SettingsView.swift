@@ -49,6 +49,7 @@ let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
 let DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME = "customDisappearingMessageTime"
+let DEFAULT_SHOW_UNREAD_AND_FAVORITES = "showUnreadAndFavorites"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -78,6 +79,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
     DEFAULT_ONBOARDING_STAGE: OnboardingStage.onboardingComplete.rawValue,
     DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME: 300,
+    DEFAULT_SHOW_UNREAD_AND_FAVORITES: false
 ]
 
 enum SimpleXLinkMode: String, Identifiable {

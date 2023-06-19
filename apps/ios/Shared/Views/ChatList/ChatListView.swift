@@ -15,7 +15,7 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var showAddChat = false
     @State private var userPickerVisible = false
-    @State private var showUnreadAndFavorites = false
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -87,13 +87,12 @@ struct ChatListView: View {
                 HStack(spacing: 4) {
                     if (chatModel.incognito) {
                         Image(systemName: "theatermasks")
-                            .frame(maxWidth: 22, maxHeight: 22, alignment: .center)
+//                            .frame(maxWidth: 22, maxHeight: 22, alignment: .center)
                             .foregroundColor(.indigo)
-                            .padding(.trailing, 24)
+                            .padding(.trailing, 8)
                     }
                     Text("Chats")
                         .font(.headline)
-                        .padding(.trailing, 12)
                     if chatModel.chats.count > 0 {
                         toggleFilterButton()
                     }

@@ -178,7 +178,7 @@ struct ChatListNavLink: View {
             Button {
                 toggleChatFavorite(chat, favorite: false)
             } label: {
-                Label("Unfav", systemImage: "star.slash")
+                Label("Unfav.", systemImage: "star.slash")
             }
             .tint(.green)
         } else {
