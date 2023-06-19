@@ -126,6 +126,13 @@ struct ChatPreviewView: View {
             } else if !chat.chatInfo.ntfsEnabled {
                 Image(systemName: "speaker.slash.fill")
                     .foregroundColor(.secondary)
+            } else if chat.chatInfo.chatSettings?.favorite ?? false {
+                Image(systemName: "star.fill")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 18, height: 18)
+                    .padding(.trailing, 1)
+                    .foregroundColor(.secondary.opacity(0.65))
             }
         }
     }

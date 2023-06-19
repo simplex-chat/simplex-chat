@@ -1240,10 +1240,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     }
 
     public var ntfsEnabled: Bool {
+        self.chatSettings?.enableNtfs ?? false
+    }
+
+    public var chatSettings: ChatSettings? {
         switch self {
-        case let .direct(contact): return contact.chatSettings.enableNtfs
-        case let .group(groupInfo): return groupInfo.chatSettings.enableNtfs
-        default: return false
+        case let .direct(contact): return contact.chatSettings
+        case let .group(groupInfo): return groupInfo.chatSettings
+        default: return nil
         }
     }
 
@@ -3063,6 +3067,7 @@ public enum SndConnEvent: Decodable {
 public enum SwitchPhase: String, Decodable {
     case started
     case confirmed
+    case secured
     case completed
 }
 

@@ -53,11 +53,18 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.ChatItemContent
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Connections
+import Simplex.Chat.Store.Direct
+import Simplex.Chat.Store.Files
+import Simplex.Chat.Store.Groups
+import Simplex.Chat.Store.Messages
+import Simplex.Chat.Store.Profiles
+import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
@@ -1103,12 +1110,14 @@ processChatCommand = \case
     pure $ CRGroupMemberInfo user g m connectionStats
   APISwitchContact contactId -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
-    withAgent $ \a -> switchConnectionAsync a "" $ contactConnId ct
-    ok user
+    connectionStats <- withAgent $ \a -> switchConnectionAsync a "" $ contactConnId ct
+    pure $ CRContactSwitchStarted user ct connectionStats
   APISwitchGroupMember gId gMemberId -> withUser $ \user -> do
-    m <- withStore $ \db -> getGroupMember db user gId gMemberId
+    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
-      Just connId -> withAgent (\a -> switchConnectionAsync a "" connId) >> ok user
+      Just connId -> do
+        connectionStats <- withAgent (\a -> switchConnectionAsync a "" connId)
+        pure $ CRGroupMemberSwitchStarted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APIAbortSwitchContact contactId -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
@@ -1166,11 +1175,17 @@ processChatCommand = \case
         ok user
       _ -> throwChatError CEGroupMemberNotActive
   ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
-    chatId <- case cType of
-      CTDirect -> withStore $ \db -> getContactIdByName db user name
-      CTGroup -> withStore $ \db -> getGroupIdByName db user name
+    (chatId, chatSettings) <- case cType of
+      CTDirect -> withStore $ \db -> do
+        ctId <- getContactIdByName db user name
+        Contact {chatSettings} <- getContact db user ctId
+        pure (ctId, chatSettings)
+      CTGroup -> withStore $ \db -> do
+        gId <- getGroupIdByName db user name
+        GroupInfo {chatSettings} <- getGroupInfo db user gId
+        pure (gId, chatSettings)
       _ -> throwChatError $ CECommandError "not supported"
-    processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ ChatSettings ntfOn
+    processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ chatSettings {enableNtfs = ntfOn}
   ContactInfo cName -> withContactName cName APIContactInfo
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
@@ -1231,7 +1246,7 @@ processChatCommand = \case
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     r <- updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user Nothing
     let user' = case r of
-          CRUserProfileUpdated u' _ _ -> u'
+          CRUserProfileUpdated u' _ _ _ _ -> u'
           _ -> user
     pure $ CRUserContactLinkDeleted user'
   DeleteMyAddress -> withUser $ \User {userId} ->
@@ -1264,17 +1279,19 @@ processChatCommand = \case
   SendLiveMessage chatName msg -> sendTextMessage chatName msg True
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore' (`getUserContacts` user)
+    let cts = filter (\ct -> isReady ct && directOrUsed ct) contacts
+    ChatConfig {logLevel} <- asks config
     withChatLock "sendMessageBroadcast" . procCmd $ do
-      let mc = MCText msg
-          cts = filter (\ct -> isReady ct && directOrUsed ct) contacts
-      forM_ cts $ \ct ->
-        void
-          ( do
-              (sndMsg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-              saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
-          )
-          `catchError` (toView . CRChatError (Just user))
-      CRBroadcastSent user mc (length cts) <$> liftIO getCurrentTime
+      (successes, failures) <- foldM (sendAndCount user logLevel) (0, 0) cts
+      timestamp <- liftIO getCurrentTime
+      pure CRBroadcastSent {user, msgContent = mc, successes, failures, timestamp}
+    where
+      mc = MCText msg
+      sendAndCount user ll (s, f) ct =
+        (sendToContact user ct $> (s + 1, f)) `catchError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
+      sendToContact user ct = do
+        (sndMsg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+        void $ saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -1596,6 +1613,7 @@ processChatCommand = \case
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
+  ShowProfileImage -> withUser $ \user@User {profile} -> pure $ CRUserProfileImage user $ fromLocalProfile profile
   SetUserFeature (ACF f) allowed -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
     updateProfile user p
@@ -1756,10 +1774,11 @@ processChatCommand = \case
         user' <- updateUser
         asks currentUser >>= atomically . (`writeTVar` Just user')
         withChatLock "updateProfile" . procCmd $ do
-          forM_ contacts $ \ct -> do
-            processContact user' ct `catchError` (toView . CRChatError (Just user))
-          pure $ CRUserProfileUpdated user' (fromLocalProfile p) p'
+          ChatConfig {logLevel} <- asks config
+          (successes, failures) <- foldM (processAndCount user' logLevel) (0, 0) contacts
+          pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' successes failures
       where
+        processAndCount user' ll (s, f) ct = (processContact user' ct $> (s + 1, f)) `catchError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
         processContact user' ct = do
           let mergedProfile = userProfileToSend user Nothing $ Just ct
               ct' = updateMergedPreferences user' ct
@@ -4970,8 +4989,9 @@ chatCommandP =
       ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayName),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
       ("/welcome" <|> "/w") $> Welcome,
-      "/profile_image " *> (UpdateProfileImage . Just . ImageData <$> imageP),
-      "/profile_image" $> UpdateProfileImage Nothing,
+      "/set profile image " *> (UpdateProfileImage . Just . ImageData <$> imageP),
+      "/delete profile image" $> UpdateProfileImage Nothing,
+      "/show profile image" $> ShowProfileImage,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNames),
       ("/profile" <|> "/p") $> ShowProfile,
       "/set voice #" *> (SetGroupFeature (AGF SGFVoice) <$> displayName <*> (A.space *> strP)),

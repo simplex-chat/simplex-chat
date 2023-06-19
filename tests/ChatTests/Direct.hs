@@ -899,8 +899,8 @@ testMaintenanceModeWithFiles tmp = do
 
 testDatabaseEncryption :: HasCallStack => FilePath -> IO ()
 testDatabaseEncryption tmp = do
-  withNewTestChat tmp "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
-    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       connectUsers alice bob
@@ -918,7 +918,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
-    withTestChatOpts tmp (getTestOpts True "mykey") "alice" $ \a -> withTestOutput a $ \alice -> do
+    withTestChatOpts tmp (getTestOpts True "mykey") "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
@@ -930,7 +930,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
       alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
       alice <## "ok"
-    withTestChatOpts tmp (getTestOpts True "anotherkey") "alice" $ \a -> withTestOutput a $ \alice -> do
+    withTestChatOpts tmp (getTestOpts True "anotherkey") "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
@@ -938,7 +938,7 @@ testDatabaseEncryption tmp = do
       alice <## "chat stopped"
       alice ##> "/db decrypt anotherkey"
       alice <## "ok"
-    withTestChat tmp "alice" $ \a -> withTestOutput a $ \alice -> do
+    withTestChat tmp "alice" $ \alice -> do
       testChatWorking alice bob
 
 testMuteContact :: HasCallStack => FilePath -> IO ()
@@ -1838,7 +1838,7 @@ testSwitchContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice #$> ("/switch bob", id, "ok")
+      alice #$> ("/switch bob", id, "switch started")
       bob <## "alice started changing address for you"
       alice <## "bob: you started changing address"
       bob <## "alice changed address for you"
@@ -1852,7 +1852,7 @@ testAbortSwitchContact tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       connectUsers alice bob
-    alice #$> ("/switch bob", id, "ok")
+    alice #$> ("/switch bob", id, "switch started")
     alice <## "bob: you started changing address"
     -- repeat switch is prohibited
     alice ##> "/switch bob"
@@ -1865,7 +1865,7 @@ testAbortSwitchContact tmp = do
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "alice started changing address for you"
       -- alice changes address again
-      alice #$> ("/switch bob", id, "ok")
+      alice #$> ("/switch bob", id, "switch started")
       alice <## "bob: you started changing address"
       bob <## "alice started changing address for you"
       bob <## "alice changed address for you"
@@ -1879,7 +1879,7 @@ testSwitchGroupMember =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      alice #$> ("/switch #team bob", id, "ok")
+      alice #$> ("/switch #team bob", id, "switch started")
       bob <## "#team: alice started changing address for you"
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice changed address for you"
@@ -1896,7 +1896,7 @@ testAbortSwitchGroupMember tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-    alice #$> ("/switch #team bob", id, "ok")
+    alice #$> ("/switch #team bob", id, "switch started")
     alice <## "#team: you started changing address for bob"
     -- repeat switch is prohibited
     alice ##> "/switch #team bob"
@@ -1910,7 +1910,7 @@ testAbortSwitchGroupMember tmp = do
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice started changing address for you"
       -- alice changes address again
-      alice #$> ("/switch #team bob", id, "ok")
+      alice #$> ("/switch #team bob", id, "switch started")
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice started changing address for you"
       bob <## "#team: alice changed address for you"

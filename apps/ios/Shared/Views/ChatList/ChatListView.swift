@@ -14,7 +14,8 @@ struct ChatListView: View {
     @Binding var showSettings: Bool
     @State private var searchText = ""
     @State private var showAddChat = false
-    @State var userPickerVisible = false
+    @State private var userPickerVisible = false
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -56,7 +57,6 @@ struct ChatListView: View {
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .offset(x: -8)
         .listStyle(.plain)
-        .navigationTitle("Your chats")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -84,17 +84,19 @@ struct ChatListView: View {
                 }
             }
             ToolbarItem(placement: .principal) {
-                if (chatModel.incognito) {
-                    HStack {
-                        if (chatModel.chats.count > 8) {
-                            Text("Your chats").font(.headline)
-                            Spacer().frame(width: 16)
-                        }
-                        Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                HStack(spacing: 4) {
+                    if (chatModel.incognito) {
+                        Image(systemName: "theatermasks")
+                            .foregroundColor(.indigo)
+                            .padding(.trailing, 8)
                     }
-                } else {
-                    Text("Your chats").font(.headline)
+                    Text("Chats")
+                        .font(.headline)
+                    if chatModel.chats.count > 0 {
+                        toggleFilterButton()
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch chatModel.chatRunning {
@@ -103,6 +105,15 @@ struct ChatListView: View {
                 case .none: EmptyView()
                 }
             }
+        }
+    }
+
+    private func toggleFilterButton() -> some View {
+        Button {
+            showUnreadAndFavorites = !showUnreadAndFavorites
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
+                .foregroundColor(.accentColor)
         }
     }
 
@@ -181,10 +192,12 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == ""
+        return s == "" && !showUnreadAndFavorites
             ? chatModel.chats
             : chatModel.chats.filter { chat in
-                let contains = chat.chatInfo.chatViewName.localizedLowercase.contains(s)
+                let contains = s == ""
+                                ? ((chat.chatInfo.chatSettings?.favorite ?? false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat)
+                                : chat.chatInfo.chatViewName.localizedLowercase.contains(s)
                 switch chat.chatInfo {
                 case let .direct(contact):
                     return contains

@@ -14,7 +14,7 @@ import Simplex.Chat.Bot
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.ChatItemContent
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Types

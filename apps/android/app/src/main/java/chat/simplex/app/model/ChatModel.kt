@@ -2352,6 +2352,7 @@ sealed class SndConnEvent {
 enum class SwitchPhase {
   @SerialName("started") Started,
   @SerialName("confirmed") Confirmed,
+  @SerialName("secured") Secured,
   @SerialName("completed") Completed
 }
 
