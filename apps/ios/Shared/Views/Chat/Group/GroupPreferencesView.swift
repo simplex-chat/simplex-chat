@@ -79,7 +79,7 @@ struct GroupPreferencesView: View {
                     DropdownCustomTimePicker(
                         selection: $preferences.timedMessages.ttl,
                         label: "Delete after",
-                        dropdownValues: TimedMessagesPreference.ttlValues.filter { $0 != nil }, // TODO in 5.2 - allow "off"
+                        dropdownValues: TimedMessagesPreference.ttlValues,
                         customPickerConfirmButtonText: "Select",
                         customPickerDescription: "Delete after"
                     )

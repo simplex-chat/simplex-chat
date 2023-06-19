@@ -144,7 +144,7 @@ private fun FeatureSection(
           selection = ttl,
           propagateExternalSelectionUpdate = true, // for Reset
           label = generalGetString(R.string.delete_after),
-          dropdownValues = TimedMessagesPreference.ttlValues.filterNotNull(), // TODO in 5.2 - allow "off"
+          dropdownValues = TimedMessagesPreference.ttlValues,
           customPickerTitle = generalGetString(R.string.delete_after),
           customPickerConfirmButtonText = generalGetString(R.string.custom_time_picker_select),
           onSelected = onTTLUpdated
