@@ -82,7 +82,10 @@ fun ChatInfoView(
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       switchContactAddress = {
-        showSwitchContactAddressAlert(chatModel, contact.contactId)
+        showSwitchAddressAlert(switchAddress = { switchContactAddress(chatModel, contact.contactId) })
+      },
+      abortSwitchContactAddress = {
+        showAbortSwitchAddressAlert(abortSwitchAddress = { abortSwitchContactAddress(chatModel, contact.contactId) })
       },
       verifyClicked = {
         ModalManager.shared.showModalCloseable { close ->
@@ -167,6 +170,7 @@ fun ChatInfoLayout(
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
   switchContactAddress: () -> Unit,
+  abortSwitchContactAddress: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
   Column(
@@ -209,14 +213,23 @@ fun ChatInfoLayout(
     }
 
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-      SwitchAddressButton(switchContactAddress)
+      SectionItemView({
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.network_status),
+          contactNetworkStatus.statusExplanation
+        )}) {
+        NetworkStatusRow(contactNetworkStatus)
+      }
       if (connStats != null) {
-        SectionItemView({
-          AlertManager.shared.showAlertMsg(
-            generalGetString(R.string.network_status),
-            contactNetworkStatus.statusExplanation
-          )}) {
-          NetworkStatusRow(contactNetworkStatus)
+        SwitchAddressButton(
+          disabled = connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null },
+          switchAddress = switchContactAddress
+        )
+        if (connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
+          AbortSwitchAddressButton(
+            disabled = connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch },
+            abortSwitchAddress = abortSwitchContactAddress
+          )
         }
         val rcvServers = connStats.rcvQueuesInfo.map { it.rcvServer }
         if (rcvServers.isNotEmpty()) {
@@ -381,9 +394,22 @@ fun SimplexServers(text: String, servers: List<String>) {
 }
 
 @Composable
-fun SwitchAddressButton(onClick: () -> Unit) {
-  SectionItemView(onClick) {
-    Text(stringResource(R.string.switch_receiving_address), color = MaterialTheme.colors.primary)
+fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
+  SectionItemView(switchAddress) {
+    Text(
+      stringResource(R.string.switch_receiving_address),
+      color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+    )
+  }
+}
+
+@Composable
+fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) {
+  SectionItemView(abortSwitchAddress) {
+    Text(
+      stringResource(R.string.abort_switch_receiving_address),
+      color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+    )
   }
 }
 
@@ -445,20 +471,31 @@ private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: C
   }
 }
 
-private fun showSwitchContactAddressAlert(m: ChatModel, contactId: Long) {
+fun showSwitchAddressAlert(switchAddress: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.switch_receiving_address_question),
     text = generalGetString(R.string.switch_receiving_address_desc),
     confirmText = generalGetString(R.string.switch_verb),
-    onConfirm = {
-      switchContactAddress(m, contactId)
-    },
-    destructive = true,
+    onConfirm = switchAddress
   )
 }
 
 private fun switchContactAddress(m: ChatModel, contactId: Long) = withApi {
   m.controller.apiSwitchContact(contactId)
+}
+
+fun showAbortSwitchAddressAlert(abortSwitchAddress: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.abort_switch_receiving_address_question),
+    text = generalGetString(R.string.abort_switch_receiving_address_desc),
+    confirmText = generalGetString(R.string.abort_switch_receiving_address_confirm),
+    onConfirm = abortSwitchAddress,
+    destructive = true,
+  )
+}
+
+private fun abortSwitchContactAddress(m: ChatModel, contactId: Long) = withApi {
+  m.controller.apiAbortSwitchContact(contactId)
 }
 
 @Preview
@@ -482,6 +519,7 @@ fun PreviewChatInfoLayout() {
       deleteContact = {},
       clearChat = {},
       switchContactAddress = {},
+      abortSwitchContactAddress = {},
       verifyClicked = {},
     )
   }

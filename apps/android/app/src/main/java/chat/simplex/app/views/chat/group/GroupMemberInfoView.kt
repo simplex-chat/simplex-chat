@@ -98,7 +98,10 @@ fun GroupMemberInfoView(
         }
       },
       switchMemberAddress = {
-        switchMemberAddress(chatModel, groupInfo, member)
+        showSwitchAddressAlert(switchAddress = { switchMemberAddress(chatModel, groupInfo, member) })
+      },
+      abortSwitchMemberAddress = {
+        showAbortSwitchAddressAlert(abortSwitchAddress = { abortSwitchMemberAddress(chatModel, groupInfo, member) })
       },
       verifyClicked = {
         ModalManager.shared.showModalCloseable { close ->
@@ -162,6 +165,7 @@ fun GroupMemberInfoLayout(
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
+  abortSwitchMemberAddress: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
   fun knownDirectChat(contactId: Long): Chat? {
@@ -238,7 +242,16 @@ fun GroupMemberInfoLayout(
     if (connStats != null) {
       SectionDividerSpaced()
       SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-        SwitchAddressButton(switchMemberAddress)
+        SwitchAddressButton(
+          disabled = connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null },
+          switchAddress = switchMemberAddress
+        )
+        if (connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
+          AbortSwitchAddressButton(
+            disabled = connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch },
+            abortSwitchAddress = abortSwitchMemberAddress
+          )
+        }
         val rcvServers = connStats.rcvQueuesInfo.map { it.rcvServer }
         if (rcvServers.isNotEmpty()) {
           SimplexServers(stringResource(R.string.receiving_via), rcvServers)
@@ -376,6 +389,10 @@ private fun switchMemberAddress(m: ChatModel, groupInfo: GroupInfo, member: Grou
   m.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
 }
 
+private fun abortSwitchMemberAddress(m: ChatModel, groupInfo: GroupInfo, member: GroupMember) = withApi {
+  m.controller.apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+}
+
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayout() {
@@ -393,6 +410,7 @@ fun PreviewGroupMemberInfoLayout() {
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},
+      abortSwitchMemberAddress = {},
       verifyClicked = {},
     )
   }
