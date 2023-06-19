@@ -583,6 +583,14 @@ final class Chat: ObservableObject, Identifiable {
         self.chatStats = chatStats
     }
 
+    func copy(chatInfo: ChatInfo? = nil, chatItems: [ChatItem]? = nil, chatStats: ChatStats? = nil) -> Chat {
+        Chat(
+            chatInfo: chatInfo ?? self.chatInfo,
+            chatItems: chatItems ?? self.chatItems,
+            chatStats: chatStats ?? self.chatStats
+        )
+    }
+
     var userCanSend: Bool {
         switch chatInfo {
         case .direct: return true
