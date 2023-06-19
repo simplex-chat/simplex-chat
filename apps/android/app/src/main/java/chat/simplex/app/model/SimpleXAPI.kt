@@ -3671,10 +3671,10 @@ class RcvQueueInfo(
 
 @Serializable
 enum class RcvSwitchStatus {
-  @SerialName("switchStarted") SwitchStarted,
-  @SerialName("sendingQADD") SendingQADD,
-  @SerialName("sendingQUSE") SendingQUSE,
-  @SerialName("receivedMessage") ReceivedMessage
+  @SerialName("switch_started") SwitchStarted,
+  @SerialName("sending_qadd") SendingQADD,
+  @SerialName("sending_quse") SendingQUSE,
+  @SerialName("received_message") ReceivedMessage
 }
 
 @Serializable
@@ -3685,8 +3685,8 @@ class SndQueueInfo(
 
 @Serializable
 enum class SndSwitchStatus {
-  @SerialName("sendingQKEY") SendingQKEY,
-  @SerialName("sendingQTEST") SendingQTEST
+  @SerialName("sending_qkey") SendingQKEY,
+  @SerialName("sending_qtest") SendingQTEST
 }
 
 @Serializable

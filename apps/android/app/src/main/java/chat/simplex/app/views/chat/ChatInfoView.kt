@@ -5,11 +5,9 @@ import InfoRowEllipsis
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
-import SectionItemViewWithIcon
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import TextIconSpaced
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -46,7 +44,7 @@ import kotlinx.datetime.Clock
 fun ChatInfoView(
   chatModel: ChatModel,
   contact: Contact,
-  connStats: ConnectionStats?,
+  connectionStats: ConnectionStats?,
   customUserProfile: Profile?,
   localAlias: String,
   connectionCode: String?,
@@ -54,6 +52,7 @@ fun ChatInfoView(
 ) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
     val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
@@ -62,7 +61,7 @@ fun ChatInfoView(
     ChatInfoLayout(
       chat,
       contact,
-      connStats,
+      connStats = connStats,
       contactNetworkStatus.value,
       customUserProfile,
       localAlias,
@@ -82,10 +81,18 @@ fun ChatInfoView(
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       switchContactAddress = {
-        showSwitchAddressAlert(switchAddress = { switchContactAddress(chatModel, contact.contactId) })
+        showSwitchAddressAlert(switchAddress = {
+          withApi {
+            chatModel.controller.apiSwitchContact(contact.contactId)
+          }
+        })
       },
       abortSwitchContactAddress = {
-        showAbortSwitchAddressAlert(abortSwitchAddress = { abortSwitchContactAddress(chatModel, contact.contactId) })
+        showAbortSwitchAddressAlert(abortSwitchAddress = {
+          withApi {
+            connStats.value = chatModel.controller.apiAbortSwitchContact(contact.contactId)
+          }
+        })
       },
       verifyClicked = {
         ModalManager.shared.showModalCloseable { close ->
@@ -159,7 +166,7 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
 fun ChatInfoLayout(
   chat: Chat,
   contact: Contact,
-  connStats: ConnectionStats?,
+  connStats: MutableState<ConnectionStats?>,
   contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,
@@ -173,6 +180,7 @@ fun ChatInfoLayout(
   abortSwitchContactAddress: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
+  val cStats = connStats.value
   Column(
     Modifier
       .fillMaxWidth()
@@ -220,22 +228,22 @@ fun ChatInfoLayout(
         )}) {
         NetworkStatusRow(contactNetworkStatus)
       }
-      if (connStats != null) {
+      if (cStats != null) {
         SwitchAddressButton(
-          disabled = connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null },
+          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null },
           switchAddress = switchContactAddress
         )
-        if (connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
+        if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
           AbortSwitchAddressButton(
-            disabled = connStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch },
+            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch },
             abortSwitchAddress = abortSwitchContactAddress
           )
         }
-        val rcvServers = connStats.rcvQueuesInfo.map { it.rcvServer }
+        val rcvServers = cStats.rcvQueuesInfo.map { it.rcvServer }
         if (rcvServers.isNotEmpty()) {
           SimplexServers(stringResource(R.string.receiving_via), rcvServers)
         }
-        val sndServers = connStats.sndQueuesInfo.map { it.sndServer }
+        val sndServers = cStats.sndQueuesInfo.map { it.sndServer }
         if (sndServers.isNotEmpty()) {
           SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
@@ -475,13 +483,9 @@ fun showSwitchAddressAlert(switchAddress: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.switch_receiving_address_question),
     text = generalGetString(R.string.switch_receiving_address_desc),
-    confirmText = generalGetString(R.string.switch_verb),
+    confirmText = generalGetString(R.string.change_verb),
     onConfirm = switchAddress
   )
-}
-
-private fun switchContactAddress(m: ChatModel, contactId: Long) = withApi {
-  m.controller.apiSwitchContact(contactId)
 }
 
 fun showAbortSwitchAddressAlert(abortSwitchAddress: () -> Unit) {
@@ -492,10 +496,6 @@ fun showAbortSwitchAddressAlert(abortSwitchAddress: () -> Unit) {
     onConfirm = abortSwitchAddress,
     destructive = true,
   )
-}
-
-private fun abortSwitchContactAddress(m: ChatModel, contactId: Long) = withApi {
-  m.controller.apiAbortSwitchContact(contactId)
 }
 
 @Preview
@@ -511,7 +511,7 @@ fun PreviewChatInfoLayout() {
       localAlias = "",
       connectionCode = "123",
       developerTools = false,
-      connStats = null,
+      connStats = remember { mutableStateOf(null) },
       contactNetworkStatus = NetworkStatus.Connected(),
       onLocalAliasChanged = {},
       customUserProfile = null,

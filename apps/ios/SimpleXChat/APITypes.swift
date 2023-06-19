@@ -1104,10 +1104,10 @@ public struct RcvQueueInfo: Codable {
 }
 
 public enum RcvSwitchStatus: String, Codable {
-    case switchStarted
-    case sendingQADD
-    case sendingQUSE
-    case receivedMessage
+    case switchStarted = "switch_started"
+    case sendingQADD = "sending_qadd"
+    case sendingQUSE = "sending_quse"
+    case receivedMessage = "received_message"
 }
 
 public struct SndQueueInfo: Codable {
@@ -1116,8 +1116,8 @@ public struct SndQueueInfo: Codable {
 }
 
 public enum SndSwitchStatus: String, Codable {
-    case sendingQKEY
-    case sendingQTEST
+    case sendingQKEY = "sending_qkey"
+    case sendingQTEST = "sending_qtest"
 }
 
 public struct UserContactLink: Decodable {
