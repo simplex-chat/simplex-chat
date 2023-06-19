@@ -80,6 +80,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
+  CRContactSwitchStarted {} -> ["switch started"]
+  CRGroupMemberSwitchStarted {} -> ["switch started"]
   CRContactSwitchAborted {} -> ["switch aborted"]
   CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress

@@ -1838,7 +1838,7 @@ testSwitchContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice #$> ("/switch bob", id, "ok")
+      alice #$> ("/switch bob", id, "switch started")
       bob <## "alice started changing address for you"
       alice <## "bob: you started changing address"
       bob <## "alice changed address for you"
@@ -1852,7 +1852,7 @@ testAbortSwitchContact tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       connectUsers alice bob
-    alice #$> ("/switch bob", id, "ok")
+    alice #$> ("/switch bob", id, "switch started")
     alice <## "bob: you started changing address"
     -- repeat switch is prohibited
     alice ##> "/switch bob"
@@ -1865,7 +1865,7 @@ testAbortSwitchContact tmp = do
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "alice started changing address for you"
       -- alice changes address again
-      alice #$> ("/switch bob", id, "ok")
+      alice #$> ("/switch bob", id, "switch started")
       alice <## "bob: you started changing address"
       bob <## "alice started changing address for you"
       bob <## "alice changed address for you"
@@ -1879,7 +1879,7 @@ testSwitchGroupMember =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      alice #$> ("/switch #team bob", id, "ok")
+      alice #$> ("/switch #team bob", id, "switch started")
       bob <## "#team: alice started changing address for you"
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice changed address for you"
@@ -1896,7 +1896,7 @@ testAbortSwitchGroupMember tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-    alice #$> ("/switch #team bob", id, "ok")
+    alice #$> ("/switch #team bob", id, "switch started")
     alice <## "#team: you started changing address for bob"
     -- repeat switch is prohibited
     alice ##> "/switch #team bob"
@@ -1910,7 +1910,7 @@ testAbortSwitchGroupMember tmp = do
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice started changing address for you"
       -- alice changes address again
-      alice #$> ("/switch #team bob", id, "ok")
+      alice #$> ("/switch #team bob", id, "switch started")
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice started changing address for you"
       bob <## "#team: alice changed address for you"
