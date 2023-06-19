@@ -1084,12 +1084,14 @@ public struct KeepAliveOpts: Codable, Equatable {
 
 public struct ChatSettings: Codable {
     public var enableNtfs: Bool
+    public var favorite: Bool? = false
 
-    public init(enableNtfs: Bool) {
+    public init(enableNtfs: Bool, favorite: Bool?) {
         self.enableNtfs = enableNtfs
+        self.favorite = favorite
     }
 
-    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true)
+    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, favorite: false)
 }
 
 public struct ConnectionStats: Codable {

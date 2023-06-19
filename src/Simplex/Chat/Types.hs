@@ -333,17 +333,21 @@ contactAndGroupIds = \case
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
-  { enableNtfs :: Bool
+  { enableNtfs :: Bool,
+    favorite :: Bool
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOptions
 
 defaultChatSettings :: ChatSettings
-defaultChatSettings = ChatSettings {enableNtfs = True}
+defaultChatSettings = ChatSettings
+  { enableNtfs = True,
+    favorite = False
+  }
 
 pattern DisableNtfs :: ChatSettings
-pattern DisableNtfs = ChatSettings {enableNtfs = False}
+pattern DisableNtfs <- ChatSettings {enableNtfs = False}
 
 data ChatFeature
   = CFTimedMessages

@@ -11,7 +11,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Simplex.Chat.Messages.ChatItemContent where
+module Simplex.Chat.Messages.CIContent where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J

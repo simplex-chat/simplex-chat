@@ -897,9 +897,20 @@ struct ChatView: View {
 }
 
 func toggleNotifications(_ chat: Chat, enableNtfs: Bool) {
+    var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+    chatSettings.enableNtfs = enableNtfs
+    updateChatSettings(chat, chatSettings: chatSettings)
+}
+
+func toggleChatFavorite(_ chat: Chat, favorite: Bool) {
+    var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+    chatSettings.favorite = favorite
+    updateChatSettings(chat, chatSettings: chatSettings)
+}
+
+func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
     Task {
         do {
-            let chatSettings = ChatSettings(enableNtfs: enableNtfs)
             try await apiSetChatSettings(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, chatSettings: chatSettings)
             await MainActor.run {
                 switch chat.chatInfo {

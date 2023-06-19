@@ -3200,7 +3200,7 @@
 "You can create it later" = "Puoi crearlo più tardi";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "Puoi nascondere o silenziare un profilo utente - scorrilo verso destra.\nSimpleX Lock deve essere attivato.";
+"You can hide or mute a user profile - swipe it to the right." = "Puoi nascondere o silenziare un profilo utente - scorrilo verso destra.";
 
 /* notification body */
 "You can now send messages to %@" = "Ora puoi inviare messaggi a %@";
@@ -3339,9 +3339,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "I tuoi profili di chat";
-
-/* No comment provided by engineer. */
-"Your chats" = "Le tue chat";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Il tuo contatto deve essere in linea per completare la connessione.\nPuoi annullare questa connessione e rimuovere il contatto (e riprovare più tardi con un link nuovo).";

@@ -64,6 +64,7 @@ CREATE TABLE contacts(
   user_preferences TEXT DEFAULT '{}' CHECK(user_preferences NOT NULL),
   chat_ts TEXT,
   deleted INTEGER NOT NULL DEFAULT 0,
+  favorite INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -135,7 +136,8 @@ CREATE TABLE groups(
   enable_ntfs INTEGER,
   host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
-  chat_ts TEXT, -- received
+  chat_ts TEXT,
+  favorite INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
