@@ -884,7 +884,9 @@ func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
             let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
             let cInfo = chat.chatInfo
             try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-            await MainActor.run { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+            await MainActor.run {
+                withAnimation { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+            }
         }
         if chat.chatStats.unreadChat {
             await markChatUnread(chat, unreadChat: false)
@@ -898,7 +900,9 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     do {
         let cInfo = chat.chatInfo
         try await apiChatUnread(type: cInfo.chatType, id: cInfo.apiId, unreadChat: unreadChat)
-        await MainActor.run { ChatModel.shared.markChatUnread(cInfo, unreadChat: unreadChat) }
+        await MainActor.run {
+            withAnimation { ChatModel.shared.markChatUnread(cInfo, unreadChat: unreadChat) }
+        }
     } catch {
         logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
     }

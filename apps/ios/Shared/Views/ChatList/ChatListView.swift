@@ -15,8 +15,7 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var showAddChat = false
     @State private var userPickerVisible = false
-    @State private var showFavorites = false
-    @State private var showUnread = false
+    @State private var showUnreadAndFavorites = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -96,8 +95,7 @@ struct ChatListView: View {
                         .font(.headline)
                         .padding(.trailing, 12)
                     if chatModel.chats.count > 0 {
-                        toggleShowUnreadButton()
-                        toggleShowFavouritesButton()
+                        toggleFilterButton()
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -112,28 +110,13 @@ struct ChatListView: View {
         }
     }
 
-    private func toggleShowUnreadButton() -> some View {
+    private func toggleFilterButton() -> some View {
         Button {
-            showUnread = !showUnread
+            showUnreadAndFavorites = !showUnreadAndFavorites
         } label: {
-            filterButtonImage(showUnread, image: "line.3.horizontal.decrease.circle", size: 22)
+            Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
+                .foregroundColor(.accentColor)
         }
-    }
-
-    private func toggleShowFavouritesButton() -> some View {
-        Button {
-            showFavorites = !showFavorites
-        } label: {
-            filterButtonImage(showFavorites, image: "star", size: 24)
-        }
-    }
-
-    private func filterButtonImage(_ on: Bool, image: String, size: CGFloat) -> some View {
-        Image(systemName: image + (on ? ".fill" : ""))
-            .resizable()
-            .scaledToFit()
-            .frame(width: size, height: size)
-            .foregroundColor(on ? .accentColor : .secondary)
     }
 
     private var chatList: some View {
@@ -211,16 +194,12 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == "" && !showFavorites && !showUnread
+        return s == "" && !showUnreadAndFavorites
             ? chatModel.chats
             : chatModel.chats.filter { chat in
-                let contains = s != ""
-                                ? chat.chatInfo.chatViewName.localizedLowercase.contains(s)
-                                : (
-                                    (showFavorites && (chat.chatInfo.chatSettings?.favorite ?? false)) ||
-                                    (showUnread && (chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat)) ||
-                                    (!showFavorites && !showUnread)
-                                )
+                let contains = s == ""
+                                ? ((chat.chatInfo.chatSettings?.favorite ?? false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat)
+                                : chat.chatInfo.chatViewName.localizedLowercase.contains(s)
                 switch chat.chatInfo {
                 case let .direct(contact):
                     return contains
