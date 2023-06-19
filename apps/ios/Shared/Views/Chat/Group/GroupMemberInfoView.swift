@@ -26,6 +26,7 @@ struct GroupMemberInfoView: View {
         case removeMemberAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
+        case abortSwitchAddressAlert
         case connRequestSentAlert(type: ConnReqType)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
         case other(alert: Alert)
@@ -35,6 +36,7 @@ struct GroupMemberInfoView: View {
             case .removeMemberAlert: return "removeMemberAlert"
             case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
+            case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .connRequestSentAlert: return "connRequestSentAlert"
             case let .error(title, _): return "error \(title)"
             case let .other(alert): return "other \(alert)"
@@ -127,8 +129,15 @@ struct GroupMemberInfoView: View {
                         Button("Change receiving address") {
                             alert = .switchAddressAlert
                         }
-                        smpServers("Receiving via", connStats.rcvServers)
-                        smpServers("Sending via", connStats.sndServers)
+                        .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil })
+                        if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
+                            Button("Abort changing address") {
+                                alert = .abortSwitchAddressAlert
+                            }
+                            .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch })
+                        }
+                        smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
+                        smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
                     }
                 }
 
@@ -175,6 +184,7 @@ struct GroupMemberInfoView: View {
             case let .removeMemberAlert(mem): return removeMemberAlert(mem)
             case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
             case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
+            case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
             case let .connRequestSentAlert(type): return connReqSentAlert(type)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             case let .other(alert): return alert
@@ -350,6 +360,21 @@ struct GroupMemberInfoView: View {
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+
+    private func abortSwitchMemberAddress() {
+        Task {
+            do {
+                let stats = try apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                connectionStats = stats
+            } catch let error {
+                logger.error("abortSwitchMemberAddress apiAbortSwitchGroupMember error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error aborting address change")
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)
                 }

@@ -3067,6 +3067,7 @@ public enum SndConnEvent: Decodable {
 public enum SwitchPhase: String, Decodable {
     case started
     case confirmed
+    case secured
     case completed
 }
 
