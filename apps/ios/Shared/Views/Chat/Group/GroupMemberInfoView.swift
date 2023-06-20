@@ -356,7 +356,8 @@ struct GroupMemberInfoView: View {
     private func switchMemberAddress() {
         Task {
             do {
-                try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                let stats = try apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                connectionStats = stats 
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")

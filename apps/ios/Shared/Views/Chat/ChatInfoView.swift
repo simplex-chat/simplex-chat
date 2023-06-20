@@ -368,7 +368,8 @@ struct ChatInfoView: View {
     private func switchContactAddress() {
         Task {
             do {
-                try await apiSwitchContact(contactId: contact.apiId)
+                let stats = try apiSwitchContact(contactId: contact.apiId)
+                connectionStats = stats
             } catch let error {
                 logger.error("switchContactAddress apiSwitchContact error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")

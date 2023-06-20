@@ -736,22 +736,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiSwitchContact(contactId: Long) {
-    return when (val r = sendCmd(CC.APISwitchContact(contactId))) {
-      is CR.CmdOk -> {}
-      else -> {
-        apiErrorAlert("apiSwitchContact", generalGetString(R.string.error_changing_address), r)
-      }
-    }
+  suspend fun apiSwitchContact(contactId: Long): ConnectionStats? {
+    val r = sendCmd(CC.APISwitchContact(contactId))
+    if (r is CR.ContactSwitchStarted) return r.connectionStats
+    apiErrorAlert("apiSwitchContact", generalGetString(R.string.error_changing_address), r)
+    return null
   }
 
-  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long) {
-    return when (val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))) {
-      is CR.CmdOk -> {}
-      else -> {
-        apiErrorAlert("apiSwitchGroupMember", generalGetString(R.string.error_changing_address), r)
-      }
-    }
+  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
+    val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))
+    if (r is CR.GroupMemberSwitchStarted) return r.connectionStats
+    apiErrorAlert("apiSwitchGroupMember", generalGetString(R.string.error_changing_address), r)
+    return null
   }
 
   suspend fun apiAbortSwitchContact(contactId: Long): ConnectionStats? {
@@ -3298,6 +3294,8 @@ sealed class CR {
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: User, val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
+  @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("contactSwitchAborted") class ContactSwitchAborted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("groupMemberSwitchAborted") class GroupMemberSwitchAborted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("contactCode") class ContactCode(val user: User, val contact: Contact, val connectionCode: String): CR()
@@ -3414,6 +3412,8 @@ sealed class CR {
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
     is GroupMemberInfo -> "groupMemberInfo"
+    is ContactSwitchStarted -> "contactSwitchStarted"
+    is GroupMemberSwitchStarted -> "groupMemberSwitchStarted"
     is ContactSwitchAborted -> "contactSwitchAborted"
     is GroupMemberSwitchAborted -> "groupMemberSwitchAborted"
     is ContactCode -> "contactCode"
@@ -3527,6 +3527,8 @@ sealed class CR {
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is GroupMemberInfo -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
+    is ContactSwitchStarted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is GroupMemberSwitchStarted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is ContactSwitchAborted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is GroupMemberSwitchAborted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is ContactCode -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode")

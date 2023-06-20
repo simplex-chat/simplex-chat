@@ -480,12 +480,16 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (Con
     throw r
 }
 
-func apiSwitchContact(contactId: Int64) async throws {
-    try await sendCommandOkResp(.apiSwitchContact(contactId: contactId))
+func apiSwitchContact(contactId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSwitchContact(contactId: contactId))
+    if case let .contactSwitchStarted(_, _, connectionStats) = r { return connectionStats }
+    throw r
 }
 
-func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) async throws {
-    try await sendCommandOkResp(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberSwitchStarted(_, _, _, connectionStats) = r { return connectionStats }
+    throw r
 }
 
 func apiAbortSwitchContact(_ contactId: Int64) throws -> ConnectionStats {
