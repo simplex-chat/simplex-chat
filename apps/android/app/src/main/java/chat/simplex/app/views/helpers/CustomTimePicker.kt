@@ -123,7 +123,7 @@ data class TimeUnitLimits(
         CustomTimeUnit.Minute -> TimeUnitLimits(CustomTimeUnit.Minute, maxValue = 120)
         CustomTimeUnit.Hour -> TimeUnitLimits(CustomTimeUnit.Hour, maxValue = 72)
         CustomTimeUnit.Day -> TimeUnitLimits(CustomTimeUnit.Day, maxValue = 60)
-        CustomTimeUnit.Week -> TimeUnitLimits(CustomTimeUnit.Week, maxValue = 54)
+        CustomTimeUnit.Week -> TimeUnitLimits(CustomTimeUnit.Week, maxValue = 52)
         CustomTimeUnit.Month -> TimeUnitLimits(CustomTimeUnit.Month, maxValue = 12)
       }
     }
