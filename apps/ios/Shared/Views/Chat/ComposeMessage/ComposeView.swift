@@ -296,9 +296,7 @@ struct ComposeView: View {
                         },
                         finishVoiceMessageRecording: finishVoiceMessageRecording,
                         allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                        // TODO in 5.2 - allow if ttl is not configured
-                        // timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
-                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages) && chat.chatInfo.timedMessagesTTL != nil,
+                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                         keyboardVisible: $keyboardVisible
                     )
