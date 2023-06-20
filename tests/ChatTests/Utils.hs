@@ -358,7 +358,7 @@ getContactLink cc created = do
   cc <## ""
   cc <## "Anybody can send you contact requests with: /c <contact_link_above>"
   cc <## "to show it again: /sa"
-  -- cc <## "to share with your contacts: /profile_address on"
+  cc <## "to share with your contacts: /profile_address on"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
 

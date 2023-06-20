@@ -81,12 +81,11 @@ struct CreateSimpleXAddress: View {
                         DispatchQueue.main.async {
                             m.userAddress = UserContactLink(connReqContact: connReqContact)
                         }
-//                        TODO uncomment in v5.2
-//                        if let u = try await apiSetProfileAddress(on: true) {
-//                            DispatchQueue.main.async {
-//                                m.updateUser(u)
-//                            }
-//                        }
+                        if let u = try await apiSetProfileAddress(on: true) {
+                            DispatchQueue.main.async {
+                                m.updateUser(u)
+                            }
+                        }
                         await MainActor.run { progressIndicator = false }
                     } catch let error {
                         logger.error("CreateSimpleXAddress create address: \(responseError(error))")
@@ -102,11 +101,9 @@ struct CreateSimpleXAddress: View {
                 Text("Create SimpleX address").font(.title)
             }
             Text("Your contacts in SimpleX will see it.\nYou can change it in Settings.")
-            // TODO remove in in v5.2
-            .foregroundColor(.clear)
-            .multilineTextAlignment(.center)
-            .font(.footnote)
-            .padding(.horizontal, 32)
+                .multilineTextAlignment(.center)
+                .font(.footnote)
+                .padding(.horizontal, 32)
         }
     }
 
