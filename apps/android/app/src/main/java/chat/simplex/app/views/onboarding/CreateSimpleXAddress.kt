@@ -9,7 +9,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -45,15 +44,14 @@ fun CreateSimpleXAddress(m: ChatModel) {
         val connReqContact = m.controller.apiCreateUserAddress()
         if (connReqContact != null) {
           m.userAddress.value = UserContactLinkRec(connReqContact)
-//          TODO uncomment in v5.2
-//          try {
-//            val u = m.controller.apiSetProfileAddress(true)
-//            if (u != null) {
-//              m.updateUser(u)
-//            }
-//          } catch (e: Exception) {
-//            Log.e(TAG, "CreateSimpleXAddress apiSetProfileAddress: ${e.stackTraceToString()}")
-//          }
+          try {
+            val u = m.controller.apiSetProfileAddress(true)
+            if (u != null) {
+              m.updateUser(u)
+            }
+          } catch (e: Exception) {
+            Log.e(TAG, "CreateSimpleXAddress apiSetProfileAddress: ${e.stackTraceToString()}")
+          }
           progressIndicator = false
         }
       }
@@ -94,8 +92,7 @@ private fun CreateSimpleXAddressLayout(
       ContinueButton(nextStep)
     } else {
       CreateAddressButton(createAddress)
-//      TODO remove color in v5.2
-      TextBelowButton(stringResource(R.string.your_contacts_will_see_it), color = Color.Transparent)
+      TextBelowButton(stringResource(R.string.your_contacts_will_see_it))
       Spacer(Modifier.weight(1f))
       SkipButton(nextStep)
     }
@@ -144,8 +141,7 @@ private fun SkipButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun TextBelowButton(text: String, color: Color = Color.Unspecified) {
-  // TODO remove color in v5.2
+private fun TextBelowButton(text: String) {
   Text(
     text,
     Modifier
@@ -153,7 +149,6 @@ private fun TextBelowButton(text: String, color: Color = Color.Unspecified) {
       .padding(horizontal = DEFAULT_PADDING * 3),
     style = MaterialTheme.typography.subtitle1,
     textAlign = TextAlign.Center,
-    color = color
   )
 }
 
