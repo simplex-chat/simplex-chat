@@ -21,7 +21,6 @@ CREATE TABLE chat_item_moderations (
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 
-CREATE INDEX idx_chat_item_moderations_shared_msg_id ON chat_item_moderations(shared_msg_id);
 CREATE INDEX idx_chat_item_moderations_group_id ON chat_item_moderations(group_id);
 CREATE INDEX idx_chat_item_moderations_moderator_member_id ON chat_item_moderations(moderator_member_id);
 CREATE INDEX idx_chat_item_moderations_created_by_msg_id ON chat_item_moderations(created_by_msg_id);
@@ -37,7 +36,6 @@ DROP INDEX idx_chat_item_moderations_group;
 DROP INDEX idx_chat_item_moderations_created_by_msg_id;
 DROP INDEX idx_chat_item_moderations_moderator_member_id;
 DROP INDEX idx_chat_item_moderations_group_id;
-DROP INDEX idx_chat_item_moderations_shared_msg_id;
 
 DROP TABLE chat_item_moderations;
 |]

@@ -669,9 +669,6 @@ CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON msg_deliveries(
 CREATE INDEX msg_delivery_events_msg_delivery_id ON msg_delivery_events(
   msg_delivery_id
 );
-CREATE INDEX idx_chat_item_moderations_shared_msg_id ON chat_item_moderations(
-  shared_msg_id
-);
 CREATE INDEX idx_chat_item_moderations_group_id ON chat_item_moderations(
   group_id
 );
