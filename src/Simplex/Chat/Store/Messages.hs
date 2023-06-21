@@ -14,6 +14,7 @@ module Simplex.Chat.Store.Messages
   ( getContactConnIds_,
     getDirectChatReactions_,
     toDirectChatItem,
+
     -- * Message and chat item functions
     deleteContactCIs,
     getGroupFileInfo,
@@ -83,6 +84,7 @@ module Simplex.Chat.Store.Messages
     deleteContactExpiredCIs,
     getGroupExpiredFileInfo,
     deleteGroupExpiredCIs,
+    createChatItemModeration,
   )
 where
 
@@ -1803,3 +1805,14 @@ deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate create
   DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, min expirationDate createdAtCutoff)
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ? AND reaction_ts <= ? AND created_at <= ?" (groupId, expirationDate, createdAtCutoff)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ?" (userId, groupId, expirationDate, createdAtCutoff)
+
+createChatItemModeration :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> MessageId -> UTCTime -> IO ()
+createChatItemModeration db GroupInfo {groupId} moderatorMember itemMemberId itemSharedMId msgId moderatedAtTs =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO chat_item_moderations
+        (group_id, moderator_member_id, item_member_id, shared_msg_id, created_by_msg_id, moderated_at_ts)
+        VALUES (?,?,?,?,?,?)
+    |]
+    (groupId, groupMemberId' moderatorMember, itemMemberId, itemSharedMId, msgId, moderatedAtTs)

@@ -3533,7 +3533,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         e -> throwError e
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
-    newGroupContentMessage gInfo m@GroupMember {localDisplayName = c, memberId} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
+    newGroupContentMessage gInfo m@GroupMember {localDisplayName = c, memberId} mc msg@RcvMessage {msgId, sharedMsgId_} msgMeta = do
       -- TODO integrity message check
       let (ExtMsgContent content fInv_ _ _) = mcExtMsgContent mc
       if isVoice content && not (groupFeatureAllowed SGFVoice gInfo)
@@ -3542,13 +3542,22 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           let ExtMsgContent _ _ itemTTL live_ = mcExtMsgContent mc
               timed_ = rcvGroupCITimed gInfo itemTTL
               live = fromMaybe False live_
-          file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
-          autoAcceptFile file_
-          let g = groupName' gInfo
-          whenGroupNtfs user gInfo $ do
-            showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
-            setActive $ ActiveG g
+          withStore' (\db -> findModeratorMember db user gInfo memberId sharedMsgId_) >>= \case
+            Nothing -> do
+              file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
+              ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
+              autoAcceptFile file_
+              let g = groupName' gInfo
+              whenGroupNtfs user gInfo $ do
+                showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
+                setActive $ ActiveG g
+            Just (moderatorMember, moderatedAtTs)
+              | groupFeatureAllowed SGFFullDelete gInfo -> pure ()
+              | otherwise -> do
+                file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
+                ci <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ False
+                cr <- markGroupCIDeleted user gInfo (CChatItem SMDRcv ci) msgId False (Just moderatorMember) moderatedAtTs
+                toView cr
       where
         newChatItem ciContent ciFile_ timed_ live = do
           ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta ciContent ciFile_ timed_ live
@@ -3602,7 +3611,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             | sameMemberId memberId mem && msgMemberId == memberId -> delete ci Nothing >>= toView
             | otherwise -> deleteMsg mem ci
           CIGroupSnd -> deleteMsg membership ci
-        Left e -> messageError $ "x.msg.del: message not found, " <> tshow e
+        Left e
+          | msgMemberId /= memberId ->
+            withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user groupId msgMemberId) >>= \case
+              Right itemMember -> checkRole itemMember $
+                withStore' $ \db -> createChatItemModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
+              Left e' -> messageError $ "x.msg.del: message sender not found, " <> tshow e'
+          | otherwise -> messageError $ "x.msg.del: message not found, " <> tshow e
       where
         deleteMsg :: GroupMember -> CChatItem 'CTGroup -> m ()
         deleteMsg mem ci = case sndMemberId_ of

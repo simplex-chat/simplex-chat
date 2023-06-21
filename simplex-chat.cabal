@@ -102,6 +102,7 @@ library
       Simplex.Chat.Migrations.M20230529_indexes
       Simplex.Chat.Migrations.M20230608_deleted_contacts
       Simplex.Chat.Migrations.M20230618_favorite_chats
+      Simplex.Chat.Migrations.M20230621_chat_item_moderations
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
