@@ -3625,7 +3625,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Left e
           | msgMemberId /= memberId ->
             if senderRole < GRAdmin
-              then messageError "x.msg.del: message of another member with insufficient member permissions"
+              then messageError "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
               else withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
           | otherwise -> messageError $ "x.msg.del: message not found, " <> tshow e
       where
