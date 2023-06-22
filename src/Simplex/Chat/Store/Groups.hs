@@ -17,6 +17,7 @@ module Simplex.Chat.Store.Groups
     toGroupInfo,
     toGroupMember,
     toMaybeGroupMember,
+
     -- * Group functions
     createGroupLink,
     getGroupLinkConnection,
@@ -1060,9 +1061,6 @@ getGroupMemberIdByName :: DB.Connection -> User -> GroupId -> ContactName -> Exc
 getGroupMemberIdByName db User {userId} groupId groupMemberName =
   ExceptT . firstRow fromOnly (SEGroupMemberNameNotFound groupId groupMemberName) $
     DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?" (userId, groupId, groupMemberName)
-
-
-
 
 getMatchingContacts :: DB.Connection -> User -> Contact -> IO [Contact]
 getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do

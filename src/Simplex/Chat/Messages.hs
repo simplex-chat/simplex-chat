@@ -907,3 +907,11 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
           itemVersionTs = itemTs,
           createdAt = createdAt
         }
+
+data CIModeration = CIModeration
+  { moderationId :: Int64,
+    moderatorMember :: GroupMember,
+    createdByMsgId :: MessageId,
+    moderatedAt :: UTCTime
+  }
+  deriving (Show)

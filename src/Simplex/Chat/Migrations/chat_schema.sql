@@ -481,6 +481,17 @@ CREATE TABLE chat_item_reactions(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE chat_item_moderations(
+  chat_item_moderation_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  moderator_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  item_member_id BLOB NOT NULL,
+  shared_msg_id BLOB NOT NULL,
+  created_by_msg_id INTEGER REFERENCES messages(message_id) ON DELETE SET NULL,
+  moderated_at TEXT NOT NULL, -- broker_ts of creating message
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -657,4 +668,18 @@ CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON msg_deliveries(
 );
 CREATE INDEX msg_delivery_events_msg_delivery_id ON msg_delivery_events(
   msg_delivery_id
+);
+CREATE INDEX idx_chat_item_moderations_group_id ON chat_item_moderations(
+  group_id
+);
+CREATE INDEX idx_chat_item_moderations_moderator_member_id ON chat_item_moderations(
+  moderator_member_id
+);
+CREATE INDEX idx_chat_item_moderations_created_by_msg_id ON chat_item_moderations(
+  created_by_msg_id
+);
+CREATE INDEX idx_chat_item_moderations_group ON chat_item_moderations(
+  group_id,
+  item_member_id,
+  shared_msg_id
 );
