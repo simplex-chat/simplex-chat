@@ -3545,7 +3545,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Just ciModeration -> do
               applyModeration timed_ live ciModeration
               withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
-            _ -> createItem timed_ live
+            Nothing -> createItem timed_ live
       where
         ExtMsgContent content fInv_ itemTTL live_ = mcExtMsgContent mc
         applyModeration timed_ live CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, createdByMsgId, moderatedAt}
