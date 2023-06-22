@@ -283,8 +283,8 @@
     <string name="clear_verb">Löschen</string>
     <string name="clear_chat_button">Chatinhalte löschen</string>
     <string name="clear_chat_menu_action">Chatinhalte löschen</string>
-    <string name="delete_contact_menu_action">Kontakt löschen</string>
-    <string name="delete_group_menu_action">Gruppe löschen</string>
+    <string name="delete_contact_menu_action">Löschen</string>
+    <string name="delete_group_menu_action">Löschen</string>
     <string name="mark_read">Als gelesen markieren</string>
     <string name="mark_unread">Als ungelesen markieren</string>
     <string name="set_contact_name">Kontaktname festlegen</string>
