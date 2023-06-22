@@ -3546,20 +3546,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
             Nothing -> createItem content fInv_ timed_ live
             Just CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, createdByMsgId, moderatedAt} -> do
-              if moderatorRole >= GRAdmin && moderatorRole >= memberRole
-                then
-                  if groupFeatureAllowed SGFFullDelete gInfo
-                    then do
-                      ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta CIRcvModerated Nothing timed_ False
-                      ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo (CChatItem SMDRcv ci) moderator moderatedAt
-                      toView $ CRNewChatItem user ci'
-                    else do
-                      file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-                      ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta (CIRcvMsgContent content) (snd <$> file_) timed_ False
-                      cr <- markGroupCIDeleted user gInfo (CChatItem SMDRcv ci) createdByMsgId False (Just moderator) moderatedAt
-                      toView cr
-                else createItem content fInv_ timed_ live
+              applyModeration
               withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
+              where
+                applyModeration
+                  | moderatorRole < GRAdmin || moderatorRole < memberRole =
+                    createItem content fInv_ timed_ live
+                  | groupFeatureAllowed SGFFullDelete gInfo = do
+                    ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta CIRcvModerated Nothing timed_ False
+                    ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo (CChatItem SMDRcv ci) moderator moderatedAt
+                    toView $ CRNewChatItem user ci'
+                  | otherwise = do
+                    file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
+                    ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta (CIRcvMsgContent content) (snd <$> file_) timed_ False
+                    cr <- markGroupCIDeleted user gInfo (CChatItem SMDRcv ci) createdByMsgId False (Just moderator) moderatedAt
+                    toView cr
       where
         createItem content fInv_ timed_ live = do
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
@@ -3623,21 +3624,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           CIGroupSnd -> deleteMsg membership ci
         Left e
           | msgMemberId /= memberId ->
-            checkRole (senderRole >= GRAdmin) $
-              withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
+            if senderRole < GRAdmin
+              then messageError "x.msg.del: message of another member with insufficient member permissions"
+              else withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
           | otherwise -> messageError $ "x.msg.del: message not found, " <> tshow e
       where
         deleteMsg :: GroupMember -> CChatItem 'CTGroup -> m ()
-        deleteMsg mem@GroupMember {memberRole} ci = case sndMemberId_ of
+        deleteMsg mem ci = case sndMemberId_ of
           Just sndMemberId
-            | sameMemberId sndMemberId mem ->
-              checkRole (senderRole >= GRAdmin && senderRole >= memberRole) $
-                delete ci (Just m) >>= toView
+            | sameMemberId sndMemberId mem -> checkRole mem $ delete ci (Just m) >>= toView
             | otherwise -> messageError "x.msg.del: message of another member with incorrect memberId"
           _ -> messageError "x.msg.del: message of another member without memberId"
-        checkRole p a
-          | p = a
-          | otherwise = messageError "x.msg.del: message of another member with insufficient member permissions"
+        checkRole GroupMember {memberRole} a
+          | senderRole < GRAdmin || senderRole < memberRole =
+            messageError "x.msg.del: message of another member with insufficient member permissions"
+          | otherwise = a
         delete ci byGroupMember
           | groupFeatureAllowed SGFFullDelete gInfo = deleteGroupCI user gInfo ci False False byGroupMember brokerTs
           | otherwise = markGroupCIDeleted user gInfo ci msgId False byGroupMember brokerTs
