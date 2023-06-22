@@ -85,6 +85,7 @@ module Simplex.Chat.Store.Messages
     getGroupExpiredFileInfo,
     deleteGroupExpiredCIs,
     createChatItemModeration,
+    deleteChatItemModeration,
   )
 where
 
@@ -1816,3 +1817,7 @@ createChatItemModeration db GroupInfo {groupId} moderatorMember itemMemberId ite
         VALUES (?,?,?,?,?,?)
     |]
     (groupId, groupMemberId' moderatorMember, itemMemberId, itemSharedMId, msgId, moderatedAtTs)
+
+deleteChatItemModeration :: DB.Connection -> Int64 -> IO ()
+deleteChatItemModeration db moderationId =
+  DB.execute db "DELETE FROM chat_item_moderations WHERE chat_item_moderation_id = ?" (Only moderationId)

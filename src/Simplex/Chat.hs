@@ -3542,7 +3542,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           let ExtMsgContent _ _ itemTTL live_ = mcExtMsgContent mc
               timed_ = rcvGroupCITimed gInfo itemTTL
               live = fromMaybe False live_
-          withStore' (\db -> findModeratorMember db user gInfo memberId sharedMsgId_) >>= \case
+          -- check if message moderation event was received ahead of message
+          withStore' (\db -> findModeration db user gInfo memberId sharedMsgId_) >>= \case
             Nothing -> do
               file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
               ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
@@ -3551,13 +3552,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               whenGroupNtfs user gInfo $ do
                 showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
                 setActive $ ActiveG g
-            Just (moderatorMember, moderatedAtTs)
-              | groupFeatureAllowed SGFFullDelete gInfo -> pure ()
-              | otherwise -> do
+            Just (moderationId, moderatorMember, createdByMsgId, moderatedAtTs) -> do
+              unless (groupFeatureAllowed SGFFullDelete gInfo) $ do
                 file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
                 ci <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ False
-                cr <- markGroupCIDeleted user gInfo (CChatItem SMDRcv ci) msgId False (Just moderatorMember) moderatedAtTs
+                cr <- markGroupCIDeleted user gInfo (CChatItem SMDRcv ci) createdByMsgId False (Just moderatorMember) moderatedAtTs
                 toView cr
+              withStore' (`deleteChatItemModeration` moderationId)
       where
         newChatItem ciContent ciFile_ timed_ live = do
           ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta ciContent ciFile_ timed_ live

@@ -42,6 +42,7 @@ chatGroupTests = do
     it "group description is shown as the first message to new members" testGroupDescription
     it "delete message of another group member" testGroupMemberMessageDelete
     it "full delete message of another group member" testGroupMemberMessageFullDelete
+    it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1376,6 +1377,44 @@ testGroupMemberMessageFullDelete =
       alice #$> ("/_get chat #1 count=1", chat, [(0, "moderated [deleted by bob]")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "moderated [deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "moderated [deleted by bob]")])
+
+testGroupDelayedModeration :: HasCallStack => FilePath -> IO ()
+testGroupDelayedModeration tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+      connectUsers alice cath
+      addMember "team" alice cath GRMember
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath <## "#team: you joined the group"
+        ]
+      threadDelay 1000000
+      cath #> "#team hi" -- message is pending for bob
+      alice <# "#team cath> hi"
+      alice ##> "\\\\ #team @cath hi"
+      alice <## "message marked deleted by you"
+      cath <# "#team cath> [marked deleted by alice] hi"
+    withTestChat tmp "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "#team: connected to server(s)"
+      bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+      withTestChat tmp "cath" $ \cath -> do
+        cath <## "2 contacts connected (use /cs for the list)"
+        cath <## "#team: connected to server(s)"
+        cath <## "#team: member bob (Bob) is connected"
+        bob
+          <### [ "#team: new member cath is connected",
+                 EndsWith "#team cath> hi",
+                 EndsWith "#team cath> [marked deleted by alice] hi"
+               ]
+        alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
+        cath #$> ("/_get chat #1 count=2", chat, [(1, "hi [marked deleted by alice]"), (0, "connected")])
+        bob ##> "/_get chat #1 count=2"
+        r <- chat <$> getTermLine bob
+        r `shouldMatchList` [(0, "connected"), (0, "hi [marked deleted by alice]")]
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do

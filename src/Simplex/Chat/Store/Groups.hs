@@ -40,7 +40,7 @@ module Simplex.Chat.Store.Groups
     getGroupMemberByMemberId,
     getGroupMembers,
     getGroupMembersForExpiration,
-    findModeratorMember,
+    findModeration,
     deleteGroupConnectionsAndFiles,
     deleteGroupItemsAndMembers,
     deleteGroup,
@@ -554,24 +554,24 @@ getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {gro
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
-findModeratorMember :: DB.Connection -> User -> GroupInfo -> MemberId -> Maybe SharedMsgId -> IO (Maybe (GroupMember, UTCTime))
-findModeratorMember _ _ _ _ Nothing = pure Nothing
-findModeratorMember db user GroupInfo {groupId} itemMemberId (Just sharedMsgId) = do
-  moderatorIdTs_ <-
+findModeration :: DB.Connection -> User -> GroupInfo -> MemberId -> Maybe SharedMsgId -> IO (Maybe (Int64, GroupMember, MessageId, UTCTime))
+findModeration _ _ _ _ Nothing = pure Nothing
+findModeration db user GroupInfo {groupId} itemMemberId (Just sharedMsgId) = do
+  r_ <-
     maybeFirstRow id $
       DB.query
         db
         [sql|
-          SELECT moderator_member_id, moderated_at_ts
+          SELECT chat_item_moderation_id, moderator_member_id, created_by_msg_id, moderated_at_ts
           FROM chat_item_moderations
           WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
           LIMIT 1
         |]
         (groupId, itemMemberId, sharedMsgId)
-  case moderatorIdTs_ of
-    Just (moderatorId, moderatedAtTs) -> do
+  case r_ of
+    Just (moderationId, moderatorId, createdByMsgId, moderatedAtTs) -> do
       runExceptT (getGroupMember db user groupId moderatorId) >>= \case
-        Right moderatorMember -> pure (Just (moderatorMember, moderatedAtTs))
+        Right moderatorMember -> pure (Just (moderationId, moderatorMember, createdByMsgId, moderatedAtTs))
         _ -> pure Nothing
     _ -> pure Nothing
 
