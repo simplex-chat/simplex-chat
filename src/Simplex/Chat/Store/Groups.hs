@@ -37,10 +37,8 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByName,
     getGroupMember,
     getGroupMemberById,
-    getGroupMemberByMemberId,
     getGroupMembers,
     getGroupMembersForExpiration,
-    findModeration,
     deleteGroupConnectionsAndFiles,
     deleteGroupItemsAndMembers,
     deleteGroup,
@@ -96,7 +94,6 @@ import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), (:.) (..)
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -522,14 +519,6 @@ getGroupMemberById db user@User {userId} groupMemberId =
       (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ?")
       (groupMemberId, userId)
 
-getGroupMemberByMemberId :: DB.Connection -> User -> GroupId -> MemberId -> ExceptT StoreError IO GroupMember
-getGroupMemberByMemberId db user@User {userId} groupId memberId =
-  ExceptT . firstRow (toContactMember user) (SEGroupMemberNotFoundByMemberId memberId) $
-    DB.query
-      db
-      (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ? AND m.user_id = ?")
-      (groupId, memberId, userId)
-
 getGroupMembers :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
   map (toContactMember user)
@@ -553,27 +542,6 @@ getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {gro
               |]
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-
-findModeration :: DB.Connection -> User -> GroupInfo -> MemberId -> Maybe SharedMsgId -> IO (Maybe (Int64, GroupMember, MessageId, UTCTime))
-findModeration _ _ _ _ Nothing = pure Nothing
-findModeration db user GroupInfo {groupId} itemMemberId (Just sharedMsgId) = do
-  r_ <-
-    maybeFirstRow id $
-      DB.query
-        db
-        [sql|
-          SELECT chat_item_moderation_id, moderator_member_id, created_by_msg_id, moderated_at_ts
-          FROM chat_item_moderations
-          WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
-          LIMIT 1
-        |]
-        (groupId, itemMemberId, sharedMsgId)
-  case r_ of
-    Just (moderationId, moderatorId, createdByMsgId, moderatedAtTs) -> do
-      runExceptT (getGroupMember db user groupId moderatorId) >>= \case
-        Right moderatorMember -> pure (Just (moderationId, moderatorMember, createdByMsgId, moderatedAtTs))
-        _ -> pure Nothing
-    _ -> pure Nothing
 
 toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember User {userContactId} (memberRow :. connRow) =

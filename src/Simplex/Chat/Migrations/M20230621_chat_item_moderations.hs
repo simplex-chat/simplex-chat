@@ -16,7 +16,7 @@ CREATE TABLE chat_item_moderations (
   item_member_id BLOB NOT NULL,
   shared_msg_id BLOB NOT NULL,
   created_by_msg_id INTEGER REFERENCES messages(message_id) ON DELETE SET NULL,
-  moderated_at_ts TEXT NOT NULL, -- broker_ts of creating message
+  moderated_at TEXT NOT NULL, -- broker_ts of creating message
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
