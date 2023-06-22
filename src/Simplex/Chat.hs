@@ -3545,11 +3545,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           -- check if message moderation event was received ahead of message
           withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
             Nothing -> createItem content fInv_ timed_ live
-            Just CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, createdByMsgId, moderatedAt} -> do
-              applyModeration
+            Just ciModeration -> do
+              applyModeration ciModeration
               withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
               where
-                applyModeration
+                applyModeration CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, createdByMsgId, moderatedAt}
                   | moderatorRole < GRAdmin || moderatorRole < memberRole =
                     createItem content fInv_ timed_ live
                   | groupFeatureAllowed SGFFullDelete gInfo = do
