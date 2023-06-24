@@ -264,7 +264,7 @@ struct ComposeView: View {
             default: previewView()
             }
             HStack (alignment: .bottom) {
-                Button {
+                let b = Button {
                     showChooseSource = true
                 } label: {
                     Image(systemName: "paperclip")
@@ -274,6 +274,16 @@ struct ComposeView: View {
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
+                if case let .group(g) = chat.chatInfo, !g.fullGroupPreferences.files.on {
+                    b.disabled(true).onTapGesture {
+                        AlertManager.shared.showAlertMsg(
+                            title: "Files and media prohibited!",
+                            message: "Only group owners can enable files and media."
+                        )
+                    }
+                } else {
+                    b
+                }
                 ZStack(alignment: .leading) {
                     SendMessageView(
                         composeState: $composeState,
