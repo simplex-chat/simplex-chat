@@ -274,7 +274,8 @@ struct ComposeView: View {
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
-                if case let .group(g) = chat.chatInfo, !g.fullGroupPreferences.files.on {
+                if case let .group(g) = chat.chatInfo,
+                   !g.fullGroupPreferences.files.on {
                     b.disabled(true).onTapGesture {
                         AlertManager.shared.showAlertMsg(
                             title: "Files and media prohibited!",
