@@ -204,7 +204,8 @@ groupFeatures'' =
     ((0, "Direct messages: on"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),
-    ((0, "Voice messages: on"), Nothing, Nothing)
+    ((0, "Voice messages: on"), Nothing, Nothing),
+    ((0, "Files and media: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String

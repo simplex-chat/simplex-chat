@@ -551,22 +551,25 @@ processChatCommand = \case
             quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
             quoteData _ = throwChatError CEInvalidQuote
     CTGroup -> do
-      g@(Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms) <- withStore $ \db -> getGroup db user chatId
+      g@(Group gInfo _) <- withStore $ \db -> getGroup db user chatId
       assertUserGroupRole gInfo GRAuthor
-      if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
-        then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
-        else do
-          (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
-          timed_ <- sndGroupCITimed live gInfo itemTTL
-          (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
-          msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
-          mapM_ (sendGroupFileInline ms sharedMsgId) ft_
-          ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
-          forM_ (timed_ >>= timedDeleteAt') $
-            startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
-          setActive $ ActiveG gName
-          pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+      send g
       where
+        send g@(Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms)
+          | isVoice mc && not (groupFeatureAllowed SGFVoice gInfo) = notAllowedError GFVoice
+          | not (isVoice mc) && isJust file_ && not (groupFeatureAllowed SGFFiles gInfo) = notAllowedError GFFiles
+          | otherwise = do
+            (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
+            timed_ <- sndGroupCITimed live gInfo itemTTL
+            (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
+            msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
+            mapM_ (sendGroupFileInline ms sharedMsgId) ft_
+            ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
+            forM_ (timed_ >>= timedDeleteAt') $
+              startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
+            setActive $ ActiveG gName
+            pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+        notAllowedError f = pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText f))
         setupSndFileTransfer :: Group -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer g@(Group gInfo _) n = forM file_ $ \file -> do
           (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
@@ -3533,15 +3536,35 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         e -> throwError e
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
-    newGroupContentMessage gInfo m@GroupMember {localDisplayName = c, memberId} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
-      -- TODO integrity message check
-      let (ExtMsgContent content fInv_ _ _) = mcExtMsgContent mc
-      if isVoice content && not (groupFeatureAllowed SGFVoice gInfo)
-        then void $ newChatItem (CIRcvGroupFeatureRejected GFVoice) Nothing Nothing False
-        else do
-          let ExtMsgContent _ _ itemTTL live_ = mcExtMsgContent mc
-              timed_ = rcvGroupCITimed gInfo itemTTL
-              live = fromMaybe False live_
+    newGroupContentMessage gInfo m@GroupMember {localDisplayName = c, memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} msgMeta
+      | isVoice content && not (groupFeatureAllowed SGFVoice gInfo) = rejected GFVoice
+      | not (isVoice content) && isJust fInv_ && not (groupFeatureAllowed SGFFiles gInfo) = rejected GFFiles
+      | otherwise = do
+        -- TODO integrity message check
+        -- check if message moderation event was received ahead of message
+        let timed_ = rcvGroupCITimed gInfo itemTTL
+            live = fromMaybe False live_
+        withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
+          Just ciModeration -> do
+            applyModeration timed_ live ciModeration
+            withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
+          Nothing -> createItem timed_ live
+      where
+        rejected f = void $ newChatItem (CIRcvGroupFeatureRejected f) Nothing Nothing False
+        ExtMsgContent content fInv_ itemTTL live_ = mcExtMsgContent mc
+        applyModeration timed_ live CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, createdByMsgId, moderatedAt}
+          | moderatorRole < GRAdmin || moderatorRole < memberRole =
+            createItem timed_ live
+          | groupFeatureAllowed SGFFullDelete gInfo = do
+            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta CIRcvModerated Nothing timed_ False
+            ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo (CChatItem SMDRcv ci) moderator moderatedAt
+            toView $ CRNewChatItem user ci'
+          | otherwise = do
+            file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
+            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta (CIRcvMsgContent content) (snd <$> file_) timed_ False
+            cr <- markGroupCIDeleted user gInfo (CChatItem SMDRcv ci) createdByMsgId False (Just moderator) moderatedAt
+            toView cr
+        createItem timed_ live = do
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
           autoAcceptFile file_
@@ -3549,7 +3572,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           whenGroupNtfs user gInfo $ do
             showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
             setActive $ ActiveG g
-      where
         newChatItem ciContent ciFile_ timed_ live = do
           ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta ciContent ciFile_ timed_ live
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo memberId sharedMsgId) sharedMsgId_
@@ -3602,7 +3624,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             | sameMemberId memberId mem && msgMemberId == memberId -> delete ci Nothing >>= toView
             | otherwise -> deleteMsg mem ci
           CIGroupSnd -> deleteMsg membership ci
-        Left e -> messageError $ "x.msg.del: message not found, " <> tshow e
+        Left e
+          | msgMemberId == memberId -> messageError $ "x.msg.del: message not found, " <> tshow e
+          | senderRole < GRAdmin -> messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
+          | otherwise -> withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
       where
         deleteMsg :: GroupMember -> CChatItem 'CTGroup -> m ()
         deleteMsg mem ci = case sndMemberId_ of
@@ -4997,6 +5022,7 @@ chatCommandP =
       "/set voice #" *> (SetGroupFeature (AGF SGFVoice) <$> displayName <*> (A.space *> strP)),
       "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayName <*> optional (A.space *> strP)),
       "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
+      "/set files #" *> (SetGroupFeature (AGF SGFFiles) <$> displayName <*> (A.space *> strP)),
       "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayName <*> optional (A.space *> strP)),
       "/set calls " *> (SetUserFeature (ACF SCFCalls) <$> strP),
       "/set delete #" *> (SetGroupFeature (AGF SGFFullDelete) <$> displayName <*> (A.space *> strP)),

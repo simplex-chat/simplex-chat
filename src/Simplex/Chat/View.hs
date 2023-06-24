@@ -404,6 +404,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
         CIRcvDecryptionError err n -> viewRcvDecryptionError from err n ts tz meta
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
+        CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g m) quote meta [plainContent content] False
         _ -> showRcvItem from
         where
           from = ttyFromGroup g m
