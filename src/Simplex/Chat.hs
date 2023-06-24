@@ -5022,6 +5022,7 @@ chatCommandP =
       "/set voice #" *> (SetGroupFeature (AGF SGFVoice) <$> displayName <*> (A.space *> strP)),
       "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayName <*> optional (A.space *> strP)),
       "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
+      "/set files #" *> (SetGroupFeature (AGF SGFFiles) <$> displayName <*> (A.space *> strP)),
       "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayName <*> optional (A.space *> strP)),
       "/set calls " *> (SetUserFeature (ACF SCFCalls) <$> strP),
       "/set delete #" *> (SetGroupFeature (AGF SGFFullDelete) <$> displayName <*> (A.space *> strP)),
