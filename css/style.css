@@ -628,20 +628,6 @@ header{
   }
 }
 
-.tablet-hero-phone-background {
-  background-image: url("../Images/bg_gfx.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  position: absolute;
-  width: 40%;
-  top: 5%;
-  left: 30%;
-}
-.tablet-hero-phone {
-  transform: skewY(25deg);
-}
-
 /* Overlays */
 .overlay a,
 p a{
@@ -936,4 +922,32 @@ p a{
 
 .glossary-overlay ol li {
   list-style: decimal;
+}
+
+/* media queries for hero section for short height screens */
+.hero-section-1{
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+@media screen and (max-height: 760px) and (min-width: 1280px), screen and (max-height: 860px) and (min-width: 1280px) and (max-width: 1399px) {
+  .hero-section-1{
+    height: 100%;
+  }
+
+  h1{
+    font-size: 48px !important;
+  }
+  h2{
+    font-size: 36px !important;
+  }
+}
+
+@media screen and (max-height: 780px) {
+  .hero-phone-background{
+    height: 100%;
+    margin-top: 2rem;
+    margin-bottom: 4rem;
+    top: calc(66px + 2rem);
+  }
 }
