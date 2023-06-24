@@ -70,6 +70,7 @@ chatFileTests = do
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "should accept file automatically with CLI option" testAutoAcceptFile
+    it "should prohibit file transfers in groups based on preference" testProhibitFiles
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -1413,6 +1414,30 @@ testAutoAcceptFile =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
     opts = (testOpts :: ChatOpts) {autoAcceptFileSize = 200000}
+
+testProhibitFiles :: HasCallStack => FilePath -> IO ()
+testProhibitFiles =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> withXFTPServer $ do
+    createGroup3 "team" alice bob cath
+    alice ##> "/set files #team off"
+    alice <## "updated group preferences:"
+    alice <## "Files and media: off"
+    concurrentlyN_
+      [ do
+          bob <## "alice updated group #team:"
+          bob <## "updated group preferences:"
+          bob <## "Files and media: off",
+        do
+          cath <## "alice updated group #team:"
+          cath <## "updated group preferences:"
+          cath <## "Files and media: off"
+      ]
+    alice ##> "/f #team ./tests/fixtures/test.jpg"
+    alice <## "bad chat command: feature not allowed Files and media"
+    (bob </)
+    (cath </)
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 xftpCLI :: [String] -> IO [String]
 xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
