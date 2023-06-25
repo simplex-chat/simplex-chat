@@ -315,7 +315,7 @@
 "All app data is deleted." = "Todos los datos de la aplicación se eliminarán.";
 
 /* No comment provided by engineer. */
-"All chats and messages will be deleted - this cannot be undone!" = "Se eliminarán todos los chats y mensajes. ¡No se puede deshacer!";
+"All chats and messages will be deleted - this cannot be undone!" = "Se eliminarán todos los chats y mensajes. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Al introducirlo todos los datos son eliminados.";
@@ -324,7 +324,7 @@
 "All group members will remain connected." = "Todos los miembros del grupo permanecerán conectados.";
 
 /* No comment provided by engineer. */
-"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Se eliminarán todos los mensajes SOLO para tí. ¡No se puede deshacer!";
+"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Se eliminarán todos los mensajes SOLO para tí. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Todos tus contactos permanecerán conectados.";
@@ -745,7 +745,7 @@
 "Contact already exists" = "El contácto ya existe";
 
 /* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "El contacto y todos los mensajes serán eliminados. ¡No se puede deshacer!";
+"Contact and all messages will be deleted - this cannot be undone!" = "El contacto y todos los mensajes serán eliminados. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "el contacto dispone de cifrado de extremo a extremo";
@@ -784,7 +784,7 @@
 "Create" = "Crear";
 
 /* No comment provided by engineer. */
-"Create an address to let people connect with you." = "Crear una dirección para que la gente se pueda conectar contigo.";
+"Create an address to let people connect with you." = "Crear una dirección para que otras personas se puedan conectar contigo.";
 
 /* server test step */
 "Create file" = "Crear archivo";
@@ -1483,10 +1483,10 @@
 "Group welcome message" = "Mensaje de bienvenida en grupos";
 
 /* No comment provided by engineer. */
-"Group will be deleted for all members - this cannot be undone!" = "El grupo se eliminará para todos los miembros. ¡No se puede deshacer!";
+"Group will be deleted for all members - this cannot be undone!" = "El grupo se eliminará para todos los miembros. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
-"Group will be deleted for you - this cannot be undone!" = "El grupo se eliminará para tí. ¡No se puede deshacer!";
+"Group will be deleted for you - this cannot be undone!" = "El grupo se eliminará para tí. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
 "Help" = "Ayuda";
@@ -1732,7 +1732,7 @@
 "Join incognito" = "Únete en modo incógnito";
 
 /* No comment provided by engineer. */
-"Joining group" = "Únete al grupo";
+"Joining group" = "Entrando al grupo";
 
 /* No comment provided by engineer. */
 "Keychain error" = "Error en Keychain";
@@ -1837,7 +1837,7 @@
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "El rol del miembro cambiará a \"%@\". El miembro recibirá una invitación nueva.";
 
 /* No comment provided by engineer. */
-"Member will be removed from group - this cannot be undone!" = "El miembro será expulsado del grupo. ¡No se puede deshacer!";
+"Member will be removed from group - this cannot be undone!" = "El miembro será expulsado del grupo. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
 "Message delivery error" = "Error en la entrega del mensaje";
@@ -1957,7 +1957,7 @@
 "new message" = "mensaje nuevo";
 
 /* notification */
-"New message" = "mensaje nuevo";
+"New message" = "Mensaje nuevo";
 
 /* No comment provided by engineer. */
 "New Passcode" = "Código Nuevo";
@@ -2156,7 +2156,7 @@
 "Periodically" = "Periódico";
 
 /* message decrypt error item */
-"Permanent decryption error" = "Error de descifrado";
+"Permanent decryption error" = "Error de descifrado permanente";
 
 /* No comment provided by engineer. */
 "PING count" = "Contador PING";
@@ -2186,7 +2186,7 @@
 "Please enter the previous password after restoring database backup. This action can not be undone." = "Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.";
 
 /* No comment provided by engineer. */
-"Please remember or store it securely - there is no way to recover a lost passcode!" = "Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay ninguna manera de recuperar un código perdido!";
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay forma de recuperar un código perdido!";
 
 /* No comment provided by engineer. */
 "Please report it to the developers." = "Por favor, informa a los desarrolladores.";
@@ -2698,6 +2698,9 @@
 /* No comment provided by engineer. */
 "SMP servers" = "Servidores SMP";
 
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Algunos errores no críticos ocurrieron durante la importación - para más detalles puedes ver la consola de Chat.";
+
 /* notification title */
 "Somebody" = "Alguien";
 
@@ -2880,9 +2883,6 @@
 
 /* No comment provided by engineer. */
 "This error is permanent for this connection, please re-connect." = "El error es permanente para esta conexión, por favor vuelve a conectarte.";
-
-/* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "¡Experimental! Sólo funcionará si el otro cliente tiene instalada la versión 4.2. Deberías ver el mensaje en la conversación una vez completado el cambio de dirección. Comprueba que puedes seguir recibiendo mensajes de este contacto (o miembro del grupo).";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Este grupo ya no existe.";
@@ -3263,7 +3263,7 @@
 "You joined this group" = "Te has unido a este grupo";
 
 /* No comment provided by engineer. */
-"You joined this group. Connecting to inviting group member." = "Te has unido a este grupo. Conectando con el miembro que emite la invitacíon.";
+"You joined this group. Connecting to inviting group member." = "Te has unido a este grupo. Conectando con el emisor de la invitacíon.";
 
 /* snd group event chat item */
 "you left" = "has salido";
@@ -3326,7 +3326,7 @@
 "Your %@ servers" = "Mis servidores %@";
 
 /* No comment provided by engineer. */
-"Your calls" = "Mis llamadas";
+"Your calls" = "Llamadas";
 
 /* No comment provided by engineer. */
 "Your chat database" = "Base de datos Chat";
@@ -3365,7 +3365,7 @@
 "Your current profile" = "Tu perfil actual";
 
 /* No comment provided by engineer. */
-"Your ICE servers" = "Mis servidores ICE";
+"Your ICE servers" = "Servidores ICE";
 
 /* No comment provided by engineer. */
 "Your preferences" = "Mis preferencias";
@@ -3398,8 +3398,8 @@
 "Your SimpleX address" = "Mi dirección SimpleX";
 
 /* No comment provided by engineer. */
-"Your SMP servers" = "Mis servidores SMP";
+"Your SMP servers" = "Servidores SMP";
 
 /* No comment provided by engineer. */
-"Your XFTP servers" = "Mis servidores XFTP";
+"Your XFTP servers" = "Servidores XFTP";
 

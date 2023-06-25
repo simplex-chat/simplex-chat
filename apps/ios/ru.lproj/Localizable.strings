@@ -2879,9 +2879,6 @@
 "This error is permanent for this connection, please re-connect." = "Эта ошибка постоянная для этого соединения, пожалуйста, соединитесь снова.";
 
 /* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса Вы увидите сообщение — убедитесь, что Вы все еще можете получать сообщения от этого контакта (или члена группы).";
-
-/* No comment provided by engineer. */
 "This group no longer exists." = "Эта группа больше не существует.";
 
 /* No comment provided by engineer. */

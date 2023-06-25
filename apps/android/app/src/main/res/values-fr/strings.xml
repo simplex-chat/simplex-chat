@@ -764,7 +764,7 @@
     <string name="update_network_settings_confirmation">Mise à jour</string>
     <string name="chat_preferences_on">on</string>
     <string name="chat_preferences_off">off</string>
-    <string name="direct_messages">Messages dynamiques</string>
+    <string name="direct_messages">Messages directs</string>
     <string name="full_deletion">Supprimer pour tous</string>
     <string name="only_you_can_delete_messages">Vous êtes le seul à pouvoir supprimer des messages de manière irréversible (votre contact peut les marquer comme supprimé).</string>
     <string name="conn_stats_section_title_servers">SERVEURS</string>
@@ -1261,4 +1261,10 @@
     <string name="share_text_sent_at">Envoyé le : %s</string>
     <string name="sent_message">Message envoyé</string>
     <string name="item_info_no_text">aucun texte</string>
+    <string name="non_fatal_errors_occured_during_import">Des erreurs non fatales se sont produites lors de l\'importation - vous pouvez consulter la console de chat pour plus de détails.</string>
+    <string name="shutdown_alert_desc">Les notifications ne fonctionnent pas tant que vous ne relancez pas l\'application</string>
+    <string name="shutdown_alert_question">Arrêt \?</string>
+    <string name="settings_shutdown">Mise à l\'arrêt</string>
+    <string name="settings_restart_app">Redémarrer</string>
+    <string name="settings_section_title_app">APP</string>
 </resources>

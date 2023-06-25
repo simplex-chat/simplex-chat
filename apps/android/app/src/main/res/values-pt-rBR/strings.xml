@@ -166,7 +166,7 @@
     <string name="connect_via_link_verb">Conectar</string>
     <string name="server_connected">conectado</string>
     <string name="server_connecting">conectando</string>
-    <string name="deleted_description">excluído</string>
+    <string name="deleted_description">apagado</string>
     <string name="smp_server_test_connect">Conectar</string>
     <string name="delete_group_menu_action">Excluir</string>
     <string name="connect_button">Conectar</string>
@@ -1258,4 +1258,5 @@
     <string name="change_self_destruct_passcode">Alterar senha de auto-destruição</string>
     <string name="if_you_enter_self_destruct_code">Se você digitar sua senha de auto-destruição ao abrir o aplicativo:</string>
     <string name="item_info_no_text">Sem texto</string>
+    <string name="non_fatal_errors_occured_during_import">Alguns erros não-fatais ocurreram durante importação - pode ver o console de Chat para mais detalhes.</string>
 </resources>
