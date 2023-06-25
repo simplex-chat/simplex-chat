@@ -283,8 +283,8 @@
     <string name="clear_verb">Löschen</string>
     <string name="clear_chat_button">Chatinhalte löschen</string>
     <string name="clear_chat_menu_action">Chatinhalte löschen</string>
-    <string name="delete_contact_menu_action">Kontakt löschen</string>
-    <string name="delete_group_menu_action">Gruppe löschen</string>
+    <string name="delete_contact_menu_action">Löschen</string>
+    <string name="delete_group_menu_action">Löschen</string>
     <string name="mark_read">Als gelesen markieren</string>
     <string name="mark_unread">Als ungelesen markieren</string>
     <string name="set_contact_name">Kontaktname festlegen</string>
@@ -355,7 +355,7 @@
     <string name="chat_with_the_founder">Senden Sie Fragen und Ideen</string>
     <string name="send_us_an_email">Senden Sie uns eine E-Mail</string>
     <string name="chat_lock">SimpleX Sperre</string>
-    <string name="chat_console">Chat Konsole</string>
+    <string name="chat_console">Chat-Konsole</string>
     <string name="smp_servers">SMP-Server</string>
     <string name="smp_servers_preset_address">Voreingestellte Serveradresse</string>
     <string name="smp_servers_preset_add">Füge voreingestellte Server hinzu</string>
@@ -410,7 +410,7 @@
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion-Hosts werden verwendet, wenn sie verfügbar sind.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Für die Verbindung werden Onion-Hosts benötigt.</string>
-    <string name="appearance_settings">Design</string>
+    <string name="appearance_settings">Erscheinungsbild</string>
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Adresse erstellen</string>
     <string name="delete_address__question">Adresse löschen?</string>
@@ -705,7 +705,7 @@
     <string name="alert_title_cant_invite_contacts_descr">Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.</string>
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Sie haben eine Gruppeneinladung gesendet</string>
-    <string name="you_are_invited_to_group">Sie sind zur Gruppe eingeladen</string>
+    <string name="you_are_invited_to_group">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_invitation_tap_to_join">Zum Beitreten tippen</string>
     <string name="group_invitation_tap_to_join_incognito">Tippen, um Inkognito beizutreten</string>
     <string name="you_joined_this_group">Sie sind dieser Gruppe beigetreten</string>
@@ -1132,21 +1132,21 @@
     <string name="smp_server_test_delete_file">Datei löschen</string>
     <string name="lock_mode">Sperr-Modus</string>
     <string name="authentication_cancelled">Authentifizierung abgebrochen</string>
-    <string name="confirm_passcode">PIN bestätigen</string>
+    <string name="confirm_passcode">Zugangscode bestätigen</string>
     <string name="enable_lock">Sperre aktivieren</string>
-    <string name="incorrect_passcode">PIN ist falsch</string>
+    <string name="incorrect_passcode">Zugangscode ist falsch</string>
     <string name="lock_after">Sperre nach</string>
-    <string name="new_passcode">Neue PIN</string>
-    <string name="la_mode_passcode">PIN</string>
-    <string name="passcode_changed">Die PIN wurde geändert!</string>
-    <string name="passcode_set">Die PIN wurde geändert!</string>
+    <string name="new_passcode">Neuer Zugangscode</string>
+    <string name="la_mode_passcode">Zugangscode</string>
+    <string name="passcode_changed">Zugangscode wurde geändert!</string>
+    <string name="passcode_set">Zugangscode wurde eingestellt!</string>
     <string name="change_lock_mode">Sperr-Modus ändern</string>
-    <string name="passcode_not_changed">Die PIN wurde nicht geändert!</string>
+    <string name="passcode_not_changed">Zugangscode wurde nicht geändert!</string>
     <string name="decryption_error">Entschlüsselungsfehler</string>
     <string name="error_loading_xftp_servers">Fehler beim Laden der XFTP-Server</string>
-    <string name="la_lock_mode_passcode">PIN-Eingabe</string>
-    <string name="la_enter_app_passcode">PIN eingeben</string>
-    <string name="la_no_app_password">Keine App-PIN</string>
+    <string name="la_lock_mode_passcode">Eingabe des Zugangscodes</string>
+    <string name="la_enter_app_passcode">Zugangscode eingeben</string>
+    <string name="la_no_app_password">Kein App-Zugangscode</string>
     <string name="la_authenticate">Authentifizieren</string>
     <string name="la_minutes">%d Minuten</string>
     <string name="la_seconds">%d Sekunden</string>
@@ -1154,11 +1154,11 @@
     <string name="port_verb">Port</string>
     <string name="network_proxy_port">Port %d</string>
     <string name="smp_server_test_create_file">Datei erstellen</string>
-    <string name="la_current_app_passcode">Aktuelle PIN</string>
+    <string name="la_current_app_passcode">Aktueller Zugangscode</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Dies kann passieren, falls Sie oder Ihre Verbindung ein altes Datenbank-Backup genutzt haben.</string>
     <string name="la_please_remember_to_store_password">Es gibt keine Möglichkeit ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!</string>
     <string name="alert_text_fragment_please_report_to_developers">Bitte melden Sie es den Entwicklern.</string>
-    <string name="la_change_app_passcode">PIN ändern</string>
+    <string name="la_change_app_passcode">Zugangscode ändern</string>
     <string name="alert_title_msg_bad_hash">Ungültiger Nachrichten-Hash</string>
     <string name="la_auth_failed">Authentifizierung fehlgeschlagen</string>
     <string name="alert_title_msg_bad_id">Falsche Nachrichten-ID</string>
@@ -1206,7 +1206,7 @@
     <string name="v5_0_app_passcode_descr">Anstelle der System-Authentifizierung festlegen.</string>
     <string name="v5_0_polish_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
     <string name="only_your_contact_can_make_calls">Nur Ihr Kontakt kann Anrufe tätigen.</string>
-    <string name="v5_0_app_passcode">App-PIN</string>
+    <string name="v5_0_app_passcode">App-Zugangscode</string>
     <string name="calls_prohibited_with_this_contact">Audio/Video Anrufe sind nicht erlaubt.</string>
     <string name="address_section_title">Adresse</string>
     <string name="share_address">Adresse teilen</string>
@@ -1267,19 +1267,19 @@
 \nSie können es in den Einstellungen ändern.</string>
     <string name="all_app_data_will_be_cleared">Werden die App-Daten komplett gelöscht.</string>
     <string name="empty_chat_profile_is_created">Es wurde ein leeres Chat-Profil mit dem eingegebenen Namen erstellt und die App öffnet wie gewohnt.</string>
-    <string name="if_you_enter_self_destruct_code">Wenn Sie Ihre Selbstzerstörungs-PIN während des Öffnens der App eingeben:</string>
+    <string name="if_you_enter_self_destruct_code">Wenn Sie Ihren Selbstzerstörungs-Zugangscode während des Öffnens der App eingeben:</string>
     <string name="self_destruct_new_display_name">Neuer angezeigter Name:</string>
-    <string name="self_destruct_passcode_changed">Die Selbstzerstörungs-PIN wurde geändert!</string>
+    <string name="self_destruct_passcode_changed">Selbstzerstörungs-Zugangscode wurde geändert!</string>
     <string name="change_self_destruct_mode">Selbstzerstörungs-Modus ändern</string>
-    <string name="change_self_destruct_passcode">Selbstzerstörungs-PIN ändern</string>
-    <string name="enabled_self_destruct_passcode">Selbstzerstörungs-PIN aktivieren</string>
+    <string name="change_self_destruct_passcode">Selbstzerstörungs-Zugangscode ändern</string>
+    <string name="enabled_self_destruct_passcode">Selbstzerstörungs-Zugangscode aktivieren</string>
     <string name="self_destruct">Selbstzerstörung</string>
-    <string name="self_destruct_passcode_enabled">Die Selbstzerstörungs-PIN wurde aktiviert!</string>
-    <string name="app_passcode_replaced_with_self_destruct">Die App-PIN wurde durch die Selbstzerstörungs-PIN ersetzt.</string>
+    <string name="self_destruct_passcode_enabled">Selbstzerstörungs-Zugangscode wurde aktiviert!</string>
+    <string name="app_passcode_replaced_with_self_destruct">App-Zugangscode wurde durch den Selbstzerstörungs-Zugangscode ersetzt.</string>
     <string name="enable_self_destruct">Selbstzerstörung aktivieren</string>
-    <string name="if_you_enter_passcode_data_removed">Wenn Sie diese PIN während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</string>
-    <string name="self_destruct_passcode">Selbstzerstörungs-PIN</string>
-    <string name="set_passcode">PIN eingeben</string>
+    <string name="if_you_enter_passcode_data_removed">Wenn Sie diesen Zugangscode während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</string>
+    <string name="self_destruct_passcode">Selbstzerstörungs-Zugangscode</string>
+    <string name="set_passcode">Zugangscode einstellen</string>
     <string name="message_reactions_are_prohibited">In dieser Gruppe sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="error_loading_details">Fehler beim Laden von Details</string>
     <string name="received_message">Empfangene Nachricht</string>
@@ -1314,8 +1314,8 @@
     <string name="whats_new_read_more">Mehr erfahren</string>
     <string name="v5_1_message_reactions_descr">Endlich haben wir sie! 🚀</string>
     <string name="v5_1_message_reactions">Reaktionen auf Nachrichten</string>
-    <string name="v5_1_self_destruct_passcode">Selbstzerstörungs-PIN</string>
-    <string name="v5_1_self_destruct_passcode_descr">Alle Daten werden gelöscht, sobald diese eingegeben wird.</string>
+    <string name="v5_1_self_destruct_passcode">Selbstzerstörungs-Zugangscode</string>
+    <string name="v5_1_self_destruct_passcode_descr">Alle Daten werden gelöscht, sobald dieser eingegeben wird.</string>
     <string name="v5_1_custom_themes">Benutzerdefinierte Designs</string>
     <string name="v5_1_japanese_portuguese_interface">Japanische und Portugiesische Bedienoberfläche</string>
     <string name="custom_time_unit_minutes">Minuten</string>
@@ -1342,4 +1342,9 @@
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
     <string name="non_fatal_errors_occured_during_import">Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten - weitere Details finden Sie in der Chat-Konsole.</string>
+    <string name="shutdown_alert_question">Herunterfahren\?</string>
+    <string name="shutdown_alert_desc">Bis zum Neustart der App erhalten Sie keine Benachrichtigungen mehr</string>
+    <string name="settings_section_title_app">APP</string>
+    <string name="settings_restart_app">Neustart</string>
+    <string name="settings_shutdown">Herunterfahren</string>
 </resources>

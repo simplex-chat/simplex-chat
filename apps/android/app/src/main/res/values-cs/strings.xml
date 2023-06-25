@@ -1261,4 +1261,9 @@
     <string name="you_wont_lose_your_contacts_if_delete_address">Pokud později adresu odstraníte, o kontakty nepřijdete.</string>
     <string name="app_passcode_replaced_with_self_destruct">Přístupový kód aplikace je nahrazen sebedestrukčním přístupovým heslem.</string>
     <string name="item_info_no_text">žádný text</string>
+    <string name="non_fatal_errors_occured_during_import">Během importu došlo k nezávažným chybám - podrobnosti naleznete v chat konzoli.</string>
+    <string name="shutdown_alert_question">Vypnout\?</string>
+    <string name="shutdown_alert_desc">Oznámení přestanou fungovat až do nového spuštění aplikace</string>
+    <string name="settings_shutdown">Vypnout</string>
+    <string name="settings_restart_app">Restartovat</string>
 </resources>

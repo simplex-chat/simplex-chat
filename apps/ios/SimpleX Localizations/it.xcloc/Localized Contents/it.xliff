@@ -72,9 +72,9 @@
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ is connected!" xml:space="preserve">
+      <trans-unit id="%@ is connected!" xml:space="preserve" approved="no">
         <source>%@ is connected!</source>
-        <target>%@ è connesso!</target>
+        <target state="translated">%@ è connesso/a!</target>
         <note>notification title</note>
       </trans-unit>
       <trans-unit id="%@ is not verified" xml:space="preserve">
@@ -611,9 +611,9 @@
         <target>Permetti ai tuoi contatti di inviare messaggi vocali.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Already connected?" xml:space="preserve">
+      <trans-unit id="Already connected?" xml:space="preserve" approved="no">
         <source>Already connected?</source>
-        <target>Già connesso?</target>
+        <target state="translated">Già connesso/a?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Always use relay" xml:space="preserve">
@@ -1052,9 +1052,9 @@
         <target>Errore di connessione (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection request" xml:space="preserve">
+      <trans-unit id="Connection request" xml:space="preserve" approved="no">
         <source>Connection request</source>
-        <target>Richieste di connessione</target>
+        <target state="translated">Richiesta di connessione</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection request sent!" xml:space="preserve">
@@ -4006,8 +4006,9 @@
         <target>Messaggi saltati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
+      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve" approved="no">
         <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
+        <target state="translated">Si sono verificati alcuni errori non gravi durante l'importazione: vedi la console della chat per i dettagli.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -4480,9 +4481,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Sblocca l'app</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Unmute" xml:space="preserve">
+      <trans-unit id="Unmute" xml:space="preserve" approved="no">
         <source>Unmute</source>
-        <target>Riattiva audio</target>
+        <target state="translated">Riattiva notifiche</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unread" xml:space="preserve">
@@ -4745,9 +4746,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Sei già connesso/a a %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
+      <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve" approved="no">
         <source>You are connected to the server used to receive messages from this contact.</source>
-        <target>Sei connesso al server usato per ricevere messaggi da questo contatto.</target>
+        <target state="translated">Sei connesso/a al server usato per ricevere messaggi da questo contatto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -5191,9 +5192,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>connettiti agli sviluppatori di SimpleX Chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connected" xml:space="preserve">
+      <trans-unit id="connected" xml:space="preserve" approved="no">
         <source>connected</source>
-        <target>connesso</target>
+        <target state="translated">connesso/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
@@ -5401,14 +5402,14 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>invito al gruppo %@</target>
         <note>group name</note>
       </trans-unit>
-      <trans-unit id="invited" xml:space="preserve">
+      <trans-unit id="invited" xml:space="preserve" approved="no">
         <source>invited</source>
-        <target>invitato</target>
+        <target state="translated">ha invitato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="invited %@" xml:space="preserve">
+      <trans-unit id="invited %@" xml:space="preserve" approved="no">
         <source>invited %@</source>
-        <target>invitato %@</target>
+        <target state="translated">ha invitato %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve">
@@ -5431,9 +5432,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>entra come %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="left" xml:space="preserve">
+      <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
-        <target>uscito/a</target>
+        <target state="translated">è uscito/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve">
@@ -5446,9 +5447,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>membro</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="member connected" xml:space="preserve">
+      <trans-unit id="member connected" xml:space="preserve" approved="no">
         <source>connected</source>
-        <target>connesso</target>
+        <target state="translated">connesso/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">
@@ -5562,14 +5563,14 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>chiamata rifiutata</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="removed" xml:space="preserve">
+      <trans-unit id="removed" xml:space="preserve" approved="no">
         <source>removed</source>
-        <target>rimosso</target>
+        <target state="translated">ha rimosso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="removed %@" xml:space="preserve">
+      <trans-unit id="removed %@" xml:space="preserve" approved="no">
         <source>removed %@</source>
-        <target>rimosso %@</target>
+        <target state="translated">ha rimosso %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
