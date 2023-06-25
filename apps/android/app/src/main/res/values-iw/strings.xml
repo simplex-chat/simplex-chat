@@ -328,7 +328,6 @@
     <string name="button_delete_group">מחק קבוצה</string>
     <string name="delete_group_question">למחוק קבוצה\?</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 שולחן עבודה: סירקו את קוד ה־QR המוצג באפליקציה, באמצעות <b>סריקת קוד QR</b>.</string>
-    <string name="settings_section_title_develop">פיתוח</string>
     <string name="settings_section_title_device">מכשיר</string>
     <string name="auth_device_authentication_is_disabled_turning_off">נעילת המכשיר מושבתת. מכבה נעילת SimpleX.</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">נעילת המכשיר אינה מופעלת. ניתן להפעיל את נעילת SimpleX, לאחר שתפעילו את נעילת המכשיר.</string>

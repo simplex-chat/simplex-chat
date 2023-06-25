@@ -3203,7 +3203,7 @@
 "You can create it later" = "Můžete vytvořit později";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.\nSimpleX zámek musí být povolen.";
+"You can hide or mute a user profile - swipe it to the right." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.";
 
 /* notification body */
 "You can now send messages to %@" = "Nyní můžete posílat zprávy %@";
@@ -3342,9 +3342,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Vaše chat profily";
-
-/* No comment provided by engineer. */
-"Your chats" = "Vaše konverzace";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "K dokončení připojení, musí být váš kontakt online.\nToto připojení můžete zrušit a kontakt odebrat (a zkusit to později s novým odkazem).";

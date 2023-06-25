@@ -378,7 +378,6 @@
     <string name="encrypt_database_question">加密数据库？</string>
     <string name="encrypted_with_random_passphrase">数据库使用随机密码进行加密，您可以更改它。</string>
     <string name="database_passphrase_is_required">打开聊天需要数据库密码。</string>
-    <string name="settings_section_title_develop">开发</string>
     <string name="error_stopping_chat">停止聊天错误</string>
     <string name="import_database_question">导入聊天数据库？</string>
     <string name="error_deleting_database">删除聊天数据库错误</string>

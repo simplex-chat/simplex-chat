@@ -745,7 +745,6 @@
     <string name="callstatus_missed">chamada perdida</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Você pode usar markdown para formatar mensagens:</string>
     <string name="callstatus_rejected">chamada rejeitada</string>
-    <string name="settings_section_title_develop">DESENVOLVER</string>
     <string name="rcv_group_event_member_left">saiu</string>
     <string name="incompatible_database_version">Versão do banco de dados incompatível</string>
     <string name="button_remove_member">Remover membro</string>

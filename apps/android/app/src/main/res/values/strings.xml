@@ -103,6 +103,7 @@
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
   <string name="error_changing_address">Error changing address</string>
+  <string name="error_aborting_address_change">Error aborting address change</string>
   <string name="error_smp_test_failed_at_step">Test failed at step %s.</string>
   <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password</string>
   <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password</string>
@@ -329,8 +330,11 @@
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>
   <string name="icon_descr_server_status_pending">Pending</string>
-  <string name="switch_receiving_address_question">Switch receiving address?</string>
-  <string name="switch_receiving_address_desc">This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
+  <string name="switch_receiving_address_question">Change receiving address?</string>
+  <string name="switch_receiving_address_desc">Receiving address will be changed to a different server. Address change will complete after sender comes online.</string>
+  <string name="abort_switch_receiving_address_question">Abort changing address?</string>
+  <string name="abort_switch_receiving_address_desc">Address change will be aborted. Old receiving address will be used.</string>
+  <string name="abort_switch_receiving_address_confirm">Abort</string>
   <string name="view_security_code">View security code</string>
   <string name="verify_security_code">Verify security code</string>
 
@@ -602,6 +606,8 @@
   <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
+  <string name="shutdown_alert_question">Shutdown?</string>
+  <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -851,9 +857,11 @@
   <string name="settings_section_title_settings">SETTINGS</string>
   <string name="settings_section_title_help">HELP</string>
   <string name="settings_section_title_support">SUPPORT SIMPLEX CHAT</string>
-  <string name="settings_section_title_develop">DEVELOP</string>
+  <string name="settings_section_title_app">APP</string>
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
+  <string name="settings_restart_app">Restart</string>
+  <string name="settings_shutdown">Shutdown</string>
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
@@ -1166,7 +1174,8 @@
   <string name="receiving_via">Receiving via</string>
   <string name="sending_via">Sending via</string>
   <string name="network_status">Network status</string>
-  <string name="switch_receiving_address">Switch receiving address</string>
+  <string name="switch_receiving_address">Change receiving address</string>
+  <string name="abort_switch_receiving_address">Abort changing address</string>
 
   <!-- AddGroupView.kt -->
   <string name="create_secret_group_title">Create secret group</string>

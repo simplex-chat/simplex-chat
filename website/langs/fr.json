@@ -91,7 +91,7 @@
     "simplex-unique-4-overlay-1-title": "Entièrement décentralisé &mdash; les utilisateurs sont maîtres de leur réseau SimpleX",
     "hero-overlay-card-1-p-1": "Beaucoup d'utilisateurs se demandent : <em>si SimpleX n'a pas d'identifiant utilisateur, comment peut-il savoir où envoyer les messages ?</em>",
     "hero-overlay-card-1-p-2": "Pour distribuer les messages, au lieu d'utiliser des identifiants d'utilisateur comme toutes les autres plateformes, SimpleX utilise des identifiants anonymes temporaires par paire de files d'attente de messages, distincts pour chacune de vos connexions ; il n'y a pas d'identifiants à long terme.",
-    "hero-overlay-card-1-p-3": "Vous définissez le ou les serveurs que vous souhaitez utiliser pour recevoir les messages et vos contacts &mdash ; les serveurs que vous utilisez pour leur envoyer des messages. Chaque conversation est susceptible d'utiliser deux serveurs différents.",
+    "hero-overlay-card-1-p-3": "Vous définissez le ou les serveurs que vous souhaitez utiliser pour recevoir les messages et vos contacts &mdash; les serveurs que vous utilisez pour leur envoyer des messages. Chaque conversation est susceptible d'utiliser deux serveurs différents.",
     "hero-overlay-card-1-p-4": "Cette méthode empêche la fuite de métadonnées des utilisateurs au niveau de l'application. Pour améliorer encore la protection de votre vie privée et protéger votre adresse IP, vous pouvez vous connecter aux serveurs de messagerie via Tor.",
     "hero-overlay-card-1-p-5": "Seuls les appareils clients stockent les profils des utilisateurs, les contacts et les groupes ; les messages sont envoyés avec un chiffrement de bout en bout à deux couches.",
     "hero-overlay-card-1-p-6": "En savoir plus sur le <a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>SimpleX Whitepaper</a>.",
@@ -232,5 +232,6 @@
     "guide-dropdown-8": "Paramètres de l'app",
     "guide": "Guide",
     "docs-dropdown-4": "Hébergement d'un serveur SMP",
-    "on-this-page": "Sur cette page"
+    "on-this-page": "Sur cette page",
+    "glossary": "Glossaire"
 }

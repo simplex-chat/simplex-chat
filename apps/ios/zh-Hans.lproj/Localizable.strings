@@ -3203,7 +3203,7 @@
 "You can create it later" = "您可以以后创建它";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "您可以隐藏或静音用户个人资料——只需向右滑动。\n必须启用 SimpleX Lock。";
+"You can hide or mute a user profile - swipe it to the right." = "您可以隐藏或静音用户个人资料——只需向右滑动。";
 
 /* notification body */
 "You can now send messages to %@" = "您现在可以给 %@ 发送消息";
@@ -3342,9 +3342,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "您的聊天资料";
-
-/* No comment provided by engineer. */
-"Your chats" = "您的聊天";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "您的联系人需要在线才能完成连接。\n您可以取消此连接并删除联系人（然后尝试使用新链接）。";

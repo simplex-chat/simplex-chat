@@ -2040,6 +2040,10 @@
         <target>Rychle a bez čekání, než bude odesílatel online!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Favorite" xml:space="preserve">
+        <source>Favorite</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
         <target>Soubor bude smazán ze serverů.</target>
@@ -4002,6 +4006,10 @@
         <target>Přeskočené zprávy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
+        <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
         <source>Somebody</source>
         <target>Někdo</target>
@@ -4411,6 +4419,10 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
         <target>Neočekávaný stav přenášení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unfav." xml:space="preserve">
+        <source>Unfav.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
         <source>Unhide</source>
         <target>Odkrýt</target>
@@ -4758,11 +4770,9 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Můžete vytvořit později</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
-        <source>You can hide or mute a user profile - swipe it to the right.
-SimpleX Lock must be enabled.</source>
-        <target>Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.
-SimpleX zámek musí být povolen.</target>
+      <trans-unit id="You can hide or mute a user profile - swipe it to the right." xml:space="preserve">
+        <source>You can hide or mute a user profile - swipe it to the right.</source>
+        <target>Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -4968,11 +4978,6 @@ SimpleX zámek musí být povolen.</target>
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Vaše chat profily</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chats" xml:space="preserve">
-        <source>Your chats</source>
-        <target>Vaše konverzace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">

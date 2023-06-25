@@ -10,6 +10,7 @@ import chat.simplex.app.ui.theme.DefaultTheme
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationsMode
+import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import java.io.*
@@ -101,6 +102,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onCreate() {
     super.onCreate()
+    if (ProcessPhoenix.isPhoenixProcess(this)) {
+      return;
+    }
     context = this
     context.getDir("temp", MODE_PRIVATE).deleteRecursively()
     withBGApi {

@@ -18,7 +18,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
-import Simplex.Chat.Store (getUserContactProfiles)
+import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
 import Simplex.Messaging.Encoding.String
@@ -204,7 +204,8 @@ groupFeatures'' =
     ((0, "Direct messages: on"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),
-    ((0, "Voice messages: on"), Nothing, Nothing)
+    ((0, "Voice messages: on"), Nothing, Nothing),
+    ((0, "Files and media: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String
@@ -358,7 +359,7 @@ getContactLink cc created = do
   cc <## ""
   cc <## "Anybody can send you contact requests with: /c <contact_link_above>"
   cc <## "to show it again: /sa"
-  -- cc <## "to share with your contacts: /profile_address on"
+  cc <## "to share with your contacts: /profile_address on"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
 

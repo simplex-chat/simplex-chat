@@ -37,7 +37,7 @@ import kotlinx.datetime.Clock
 fun GroupMemberInfoView(
   groupInfo: GroupInfo,
   member: GroupMember,
-  connStats: ConnectionStats?,
+  connectionStats: ConnectionStats?,
   connectionCode: String?,
   chatModel: ChatModel,
   close: () -> Unit,
@@ -45,6 +45,7 @@ fun GroupMemberInfoView(
 ) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
     val newRole = remember { mutableStateOf(member.memberRole) }
@@ -98,7 +99,18 @@ fun GroupMemberInfoView(
         }
       },
       switchMemberAddress = {
-        switchMemberAddress(chatModel, groupInfo, member)
+        showSwitchAddressAlert(switchAddress = {
+          withApi {
+            connStats.value = chatModel.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+          }
+        })
+      },
+      abortSwitchMemberAddress = {
+        showAbortSwitchAddressAlert(abortSwitchAddress = {
+          withApi {
+            connStats.value = chatModel.controller.apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+          }
+        })
       },
       verifyClicked = {
         ModalManager.shared.showModalCloseable { close ->
@@ -152,7 +164,7 @@ fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: Cha
 fun GroupMemberInfoLayout(
   groupInfo: GroupInfo,
   member: GroupMember,
-  connStats: ConnectionStats?,
+  connStats: MutableState<ConnectionStats?>,
   newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
   connectionCode: String?,
@@ -162,8 +174,10 @@ fun GroupMemberInfoLayout(
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
+  abortSwitchMemberAddress: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
+  val cStats = connStats.value
   fun knownDirectChat(contactId: Long): Chat? {
     val chat = getContactChat(contactId)
     return if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
@@ -235,21 +249,26 @@ fun GroupMemberInfoLayout(
         InfoRow(stringResource(R.string.info_row_connection), connLevelDesc)
       }
     }
-    if (connStats != null) {
+    if (cStats != null) {
       SectionDividerSpaced()
       SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-      SwitchAddressButton(switchMemberAddress)
-        val rcvServers = connStats.rcvServers
-        val sndServers = connStats.sndServers
-        if ((rcvServers != null && rcvServers.isNotEmpty()) || (sndServers != null && sndServers.isNotEmpty())) {
-          if (rcvServers != null && rcvServers.isNotEmpty()) {
-            SimplexServers(stringResource(R.string.receiving_via), rcvServers)
-            if (sndServers != null && sndServers.isNotEmpty()) {
-              SimplexServers(stringResource(R.string.sending_via), sndServers)
-            }
-          } else if (sndServers != null && sndServers.isNotEmpty()) {
-            SimplexServers(stringResource(R.string.sending_via), sndServers)
-          }
+        SwitchAddressButton(
+          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null },
+          switchAddress = switchMemberAddress
+        )
+        if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
+          AbortSwitchAddressButton(
+            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch },
+            abortSwitchAddress = abortSwitchMemberAddress
+          )
+        }
+        val rcvServers = cStats.rcvQueuesInfo.map { it.rcvServer }
+        if (rcvServers.isNotEmpty()) {
+          SimplexServers(stringResource(R.string.receiving_via), rcvServers)
+        }
+        val sndServers = cStats.sndQueuesInfo.map { it.sndServer }
+        if (sndServers.isNotEmpty()) {
+          SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
       }
     }
@@ -376,10 +395,6 @@ private fun updateMemberRoleDialog(
   )
 }
 
-private fun switchMemberAddress(m: ChatModel, groupInfo: GroupInfo, member: GroupMember) = withApi {
-  m.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
-}
-
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayout() {
@@ -387,7 +402,7 @@ fun PreviewGroupMemberInfoLayout() {
     GroupMemberInfoLayout(
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
-      connStats = null,
+      connStats = remember { mutableStateOf(null) },
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
       connectionCode = "123",
@@ -397,6 +412,7 @@ fun PreviewGroupMemberInfoLayout() {
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},
+      abortSwitchMemberAddress = {},
       verifyClicked = {},
     )
   }

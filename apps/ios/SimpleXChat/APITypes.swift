@@ -71,6 +71,8 @@ public enum ChatCommand {
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
     case apiSwitchContact(contactId: Int64)
     case apiSwitchGroupMember(groupId: Int64, groupMemberId: Int64)
+    case apiAbortSwitchContact(contactId: Int64)
+    case apiAbortSwitchGroupMember(groupId: Int64, groupMemberId: Int64)
     case apiGetContactCode(contactId: Int64)
     case apiGetGroupMemberCode(groupId: Int64, groupMemberId: Int64)
     case apiVerifyContact(contactId: Int64, connectionCode: String?)
@@ -179,6 +181,8 @@ public enum ChatCommand {
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
             case let .apiSwitchContact(contactId): return "/_switch @\(contactId)"
             case let .apiSwitchGroupMember(groupId, groupMemberId): return "/_switch #\(groupId) \(groupMemberId)"
+            case let .apiAbortSwitchContact(contactId): return "/_abort switch @\(contactId)"
+            case let .apiAbortSwitchGroupMember(groupId, groupMemberId): return "/_abort switch #\(groupId) \(groupMemberId)"
             case let .apiGetContactCode(contactId): return "/_get code @\(contactId)"
             case let .apiGetGroupMemberCode(groupId, groupMemberId): return "/_get code #\(groupId) \(groupMemberId)"
             case let .apiVerifyContact(contactId, .some(connectionCode)): return "/_verify code @\(contactId) \(connectionCode)"
@@ -285,6 +289,8 @@ public enum ChatCommand {
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
             case .apiSwitchContact: return "apiSwitchContact"
             case .apiSwitchGroupMember: return "apiSwitchGroupMember"
+            case .apiAbortSwitchContact: return "apiAbortSwitchContact"
+            case .apiAbortSwitchGroupMember: return "apiAbortSwitchGroupMember"
             case .apiGetContactCode: return "apiGetContactCode"
             case .apiGetGroupMemberCode: return "apiGetGroupMemberCode"
             case .apiVerifyContact: return "apiVerifyContact"
@@ -397,6 +403,10 @@ public enum ChatResponse: Decodable, Error {
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: User, contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
     case groupMemberInfo(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
+    case contactSwitchStarted(user: User, contact: Contact, connectionStats: ConnectionStats)
+    case groupMemberSwitchStarted(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
+    case contactSwitchAborted(user: User, contact: Contact, connectionStats: ConnectionStats)
+    case groupMemberSwitchAborted(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
     case contactCode(user: User, contact: Contact, connectionCode: String)
     case groupMemberCode(user: User, groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
     case connectionVerified(user: User, verified: Bool, expectedCode: String)
@@ -456,7 +466,7 @@ public enum ChatResponse: Decodable, Error {
     case groupInvitation(user: User, groupInfo: GroupInfo) // unused
     case userJoinedGroup(user: User, groupInfo: GroupInfo)
     case joinedGroupMember(user: User, groupInfo: GroupInfo, member: GroupMember)
-    case connectedToGroupMember(user: User, groupInfo: GroupInfo, member: GroupMember)
+    case connectedToGroupMember(user: User, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
     case groupRemoved(user: User, groupInfo: GroupInfo) // unused
     case groupUpdated(user: User, toGroup: GroupInfo)
     case groupLinkCreated(user: User, groupInfo: GroupInfo, connReqContact: String, memberRole: GroupMemberRole)
@@ -516,6 +526,10 @@ public enum ChatResponse: Decodable, Error {
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
             case .groupMemberInfo: return "groupMemberInfo"
+            case .contactSwitchStarted: return "contactSwitchStarted"
+            case .groupMemberSwitchStarted: return "groupMemberSwitchStarted"
+            case .contactSwitchAborted: return "contactSwitchAborted"
+            case .groupMemberSwitchAborted: return "groupMemberSwitchAborted"
             case .contactCode: return "contactCode"
             case .groupMemberCode: return "groupMemberCode"
             case .connectionVerified: return "connectionVerified"
@@ -633,7 +647,11 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(u, contact, connectionStats, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))")
-            case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_)))")
+            case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))")
+            case let .contactSwitchStarted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
+            case let .groupMemberSwitchStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
+            case let .contactSwitchAborted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
+            case let .groupMemberSwitchAborted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
             case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
@@ -692,7 +710,7 @@ public enum ChatResponse: Decodable, Error {
             case let .groupInvitation(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .userJoinedGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .joinedGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
-            case let .connectedToGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
             case let .groupRemoved(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
             case let .groupLinkCreated(u, groupInfo, connReqContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)\nmemberRole: \(memberRole)")
@@ -1072,17 +1090,42 @@ public struct KeepAliveOpts: Codable, Equatable {
 
 public struct ChatSettings: Codable {
     public var enableNtfs: Bool
+    public var favorite: Bool? = false
 
-    public init(enableNtfs: Bool) {
+    public init(enableNtfs: Bool, favorite: Bool?) {
         self.enableNtfs = enableNtfs
+        self.favorite = favorite
     }
 
-    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true)
+    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, favorite: false)
 }
 
 public struct ConnectionStats: Codable {
-    public var rcvServers: [String]?
-    public var sndServers: [String]?
+    public var rcvQueuesInfo: [RcvQueueInfo]
+    public var sndQueuesInfo: [SndQueueInfo]
+}
+
+public struct RcvQueueInfo: Codable {
+    public var rcvServer: String
+    public var rcvSwitchStatus: RcvSwitchStatus?
+    public var canAbortSwitch: Bool
+}
+
+public enum RcvSwitchStatus: String, Codable {
+    case switchStarted = "switch_started"
+    case sendingQADD = "sending_qadd"
+    case sendingQUSE = "sending_quse"
+    case receivedMessage = "received_message"
+}
+
+public struct SndQueueInfo: Codable {
+    public var sndServer: String
+    public var sndSwitchStatus: SndSwitchStatus?
+}
+
+public enum SndSwitchStatus: String, Codable {
+    case sendingQKEY = "sending_qkey"
+    case sendingQTEST = "sending_qtest"
 }
 
 public struct UserContactLink: Decodable {

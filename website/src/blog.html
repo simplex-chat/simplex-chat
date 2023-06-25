@@ -35,7 +35,7 @@ active_blog: true
 
 <section class="py-10 px-5 mt-[66px]" id="blog-list">
     <div class="container">
-        <p class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</p>
+        <h1 class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</h1>
 
         {% for blog in collections.blogs %}
         {% if not(blog.data.draft) %}

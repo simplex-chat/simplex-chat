@@ -232,7 +232,6 @@
     <string name="delete_address__question">주소를 삭제할까요\?</string>
     <string name="delete_image">이미지 삭제</string>
     <string name="decentralized">탈중앙화</string>
-    <string name="settings_section_title_develop">개발</string>
     <string name="settings_developer_tools">개발자 도구</string>
     <string name="settings_section_title_device">기기</string>
     <string name="database_passphrase">데이터베이스 비밀번호</string>
