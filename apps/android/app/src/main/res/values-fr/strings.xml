@@ -535,7 +535,6 @@
     <string name="call_already_ended">Appel déjà terminé !</string>
     <string name="settings_audio_video_calls">Appels audio et vidéo</string>
     <string name="status_e2e_encrypted">chiffré de bout en bout</string>
-    <string name="settings_section_title_develop">DEVELOPPER</string>
     <string name="settings_experimental_features">Fonctionnalités expérimentales</string>
     <string name="settings_section_title_socks">SOCKS PROXY</string>
     <string name="settings_section_title_themes">THEMES</string>

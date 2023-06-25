@@ -1,7 +1,7 @@
 name: Bug
 description: File a bug report/issue
 title: "[Bug]: "
-labels: ["type:bug", "type:triage"]
+labels: ["bug", "triage"]
 body:
 - type: checkboxes
   attributes:

@@ -3,10 +3,47 @@ const markdownItAnchor = require("markdown-it-anchor")
 const markdownItReplaceLink = require('markdown-it-replace-link')
 const slugify = require("slugify")
 const uri = require('fast-uri')
-const i18n = require('eleventy-plugin-i18n');
-const fs = require("fs");
-const path = require("path");
-const pluginRss = require('@11ty/eleventy-plugin-rss');
+const i18n = require('eleventy-plugin-i18n')
+const fs = require("fs")
+const path = require("path")
+const pluginRss = require('@11ty/eleventy-plugin-rss')
+const { JSDOM } = require('jsdom')
+
+
+// The implementation of Glossary feature
+const md = new markdownIt()
+const glossaryMarkdownContent = fs.readFileSync(path.resolve(__dirname, '../docs/GLOSSARY.md'), 'utf8')
+const glossaryHtmlContent = md.render(glossaryMarkdownContent)
+const glossaryDOM = new JSDOM(glossaryHtmlContent)
+const glossaryDocument = glossaryDOM.window.document
+const glossary = require('./src/_data/glossary.json')
+
+glossary.forEach(item => {
+  const headers = Array.from(glossaryDocument.querySelectorAll("h2"))
+  const matchingHeader = headers.find(header => header.textContent.trim() === item.definition)
+
+  if (matchingHeader) {
+    let sibling = matchingHeader.nextElementSibling
+    let definition = ''
+    let firstParagraph = ''
+    let paragraphCount = 0
+
+    while (sibling && sibling.tagName !== 'H2') {
+      if (sibling.tagName === 'P') {
+        paragraphCount += 1
+        if (firstParagraph === '') {
+          firstParagraph = sibling.innerHTML
+        }
+      }
+      definition += sibling.outerHTML || sibling.textContent
+      sibling = sibling.nextElementSibling
+    }
+
+    item.definition = definition
+    item.tooltip = firstParagraph
+    item.hasMultipleParagraphs = paragraphCount > 1
+  }
+})
 
 
 const globalConfig = {
@@ -55,6 +92,102 @@ module.exports = function (ty) {
     }
   })
 
+  ty.addFilter('applyGlossary', function (content) {
+    const dom = new JSDOM(content)
+    const { document } = dom.window
+    const body = document.querySelector('body')
+    const allContentNodes = document.querySelectorAll('p, td, a, h1, h2, h3, h4')
+    const overlayIds = []
+
+    glossary.forEach((term, index) => {
+      let changeNoted = false
+      const id = term.term.toLowerCase().replace(/\s/g, '-')
+
+      allContentNodes.forEach((node) => {
+        const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
+        const replacement = `<span data-glossary="tooltip-${id}" class="glossary-term">${term.term}</span>`
+        const beforeContent = node.innerHTML
+        node.innerHTML = node.innerHTML.replace(regex, replacement)
+        if (beforeContent !== node.innerHTML && !changeNoted) {
+          changeNoted = true
+        }
+      })
+
+      if (changeNoted) {
+        const definitionTooltipDiv = document.createElement('div')
+        definitionTooltipDiv.id = `tooltip-${id}`
+        definitionTooltipDiv.className = "glossary-tooltip"
+        const titleH4 = document.createElement('h4')
+        titleH4.innerHTML = term.term
+        titleH4.className = "tooltip-title"
+        const p = document.createElement('p')
+        p.innerHTML = term.tooltip
+        const innerDiv = document.createElement('div')
+        innerDiv.appendChild(titleH4)
+        innerDiv.appendChild(p)
+        if (term.hasMultipleParagraphs) {
+          const readMoreBtn = document.createElement('button')
+          readMoreBtn.innerHTML = "Read more"
+          readMoreBtn.className = "read-more-btn open-overlay-btn"
+          readMoreBtn.setAttribute('data-show-overlay', id)
+          innerDiv.appendChild(readMoreBtn)
+        }
+        innerDiv.className = "tooltip-content"
+        definitionTooltipDiv.appendChild(innerDiv)
+        body.appendChild(definitionTooltipDiv)
+      }
+
+      let tooltipDom = new JSDOM(term.definition)
+      let tooltipDocument = tooltipDom.window.document
+      const hashList = [term.term.toLowerCase().replace(/\s/g, '-')]
+      tooltipDocument.querySelectorAll('a[href*="#"]').forEach(a => {
+        let hashIndex = a.href.indexOf("#")
+        if (hashIndex !== -1) {
+          let hash = a.href.substring(hashIndex + 1)
+          hashList.push(hash)
+        }
+      })
+
+      hashList.forEach(hash => {
+        if (!overlayIds.includes(hash)) {
+          let termFromHash = glossary.find(term => term.term.toLowerCase().replace(/\s/g, '-') === hash)
+          if (!termFromHash) return
+
+          const overlayDiv = document.createElement('div')
+          overlayDiv.id = hash
+          overlayDiv.className = "overlay glossary-overlay hidden"
+          const overlayCardDiv = document.createElement('div')
+          overlayCardDiv.className = "overlay-card"
+          const overlayTitleH1 = document.createElement('h1')
+          overlayTitleH1.className = "overlay-title"
+          overlayTitleH1.innerHTML = termFromHash.term
+          const overlayContent = document.createElement('div')
+          overlayContent.className = "overlay-content"
+          overlayContent.innerHTML = termFromHash.definition
+          const crossSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+          crossSVG.setAttribute('class', 'close-overlay-btn')
+          crossSVG.setAttribute('id', 'cross')
+          crossSVG.setAttribute('width', '16')
+          crossSVG.setAttribute('height', '16')
+          crossSVG.setAttribute('viewBox', '0 0 13 13')
+          crossSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+          const crossPath = document.createElementNS("http://www.w3.org/2000/svg", "path")
+          crossPath.setAttribute('d', 'M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.805 0.002228 0.430001 0.002228 0.135211 0.182228C-0.159579 0.362228 -0.159579 0.697228 0.135211 0.877228L5.68885 6.27528L0.4918 11.3295C0.231501 11.5825 0.220703 12.0042 0.467664 12.2709C0.714625 12.5376 1.12625 12.5486 1.38655 12.2956L6.63302 7.196L12.1867 12.5941C12.4815 12.7741 12.8565 12.7741 13.1513 12.5941C13.4461 12.4141 13.4461 12.0791 13.1513 11.8991L12.7973 11.5525Z')
+          crossSVG.appendChild(crossPath)
+
+          overlayCardDiv.appendChild(overlayTitleH1)
+          overlayCardDiv.appendChild(overlayContent)
+          overlayCardDiv.appendChild(crossSVG)
+          overlayDiv.appendChild(overlayCardDiv)
+          body.appendChild(overlayDiv)
+          overlayIds.push(hash)
+        }
+      })
+    })
+
+    return dom.serialize()
+  })
+
   ty.addShortcode("completeRoute", (obj) => {
     const urlParts = obj.url.split("/")
 
@@ -88,7 +221,7 @@ module.exports = function (ty) {
     }
   })
 
-  ty.addPlugin(pluginRss);
+  ty.addPlugin(pluginRss)
 
   ty.addPlugin(i18n, {
     translations,
@@ -139,7 +272,7 @@ module.exports = function (ty) {
           const url = doc.url.replace("/docs/", "")
           const urlParts = url.split("/")
 
-          if (doc.inputPath.includes(referenceSubmenu)) {
+          if (doc.inputPath.split('/').includes(referenceSubmenu)) {
             if (urlParts.length === 1 && urlParts[0] !== "") {
               const index = newDocs.findIndex((ele) => ele.lang === 'en' && ele.menu === referenceMenu.menu)
               if (index !== -1) {

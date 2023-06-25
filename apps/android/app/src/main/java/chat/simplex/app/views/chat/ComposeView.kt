@@ -790,9 +790,7 @@ fun ComposeView(
         }
       }
 
-      // TODO in 5.2 - allow if ttl is not configured
-      // val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
-      val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) && chat.chatInfo.timedMessagesTTL != null }
+      val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
       SendMsgView(
         composeState,
         showVoiceRecordIcon = true,

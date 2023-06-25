@@ -3203,7 +3203,7 @@
 "You can create it later" = "U kan het later maken";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "U kunt een gebruikers profiel verbergen of dempen - veeg het naar rechts.\nSimpleX Lock moet ingeschakeld zijn.";
+"You can hide or mute a user profile - swipe it to the right." = "U kunt een gebruikers profiel verbergen of dempen - veeg het naar rechts.";
 
 /* notification body */
 "You can now send messages to %@" = "Je kunt nu berichten sturen naar %@";
@@ -3342,9 +3342,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Uw chat profielen";
-
-/* No comment provided by engineer. */
-"Your chats" = "Jouw gesprekken";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Uw contactpersoon moet online zijn om de verbinding te voltooien.\nU kunt deze verbinding verbreken en het contact verwijderen (en later proberen met een nieuwe link).";

@@ -95,11 +95,11 @@ private fun ContactPreferencesLayout(
       applyPrefs(featuresAllowed.copy(fullDelete = it))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
-//    val allowReactions: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.reactions) }
-//    FeatureSection(ChatFeature.Reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, allowReactions) {
-//      applyPrefs(featuresAllowed.copy(reactions = it))
-//    }
-//    SectionDividerSpaced(true, maxBottomPadding = false)
+    val allowReactions: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.reactions) }
+    FeatureSection(ChatFeature.Reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, allowReactions) {
+      applyPrefs(featuresAllowed.copy(reactions = it))
+    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
     FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))

@@ -736,22 +736,32 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiSwitchContact(contactId: Long) {
-    return when (val r = sendCmd(CC.APISwitchContact(contactId))) {
-      is CR.CmdOk -> {}
-      else -> {
-        apiErrorAlert("apiSwitchContact", generalGetString(R.string.connection_error), r)
-      }
-    }
+  suspend fun apiSwitchContact(contactId: Long): ConnectionStats? {
+    val r = sendCmd(CC.APISwitchContact(contactId))
+    if (r is CR.ContactSwitchStarted) return r.connectionStats
+    apiErrorAlert("apiSwitchContact", generalGetString(R.string.error_changing_address), r)
+    return null
   }
 
-  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long) {
-    return when (val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))) {
-      is CR.CmdOk -> {}
-      else -> {
-        apiErrorAlert("apiSwitchGroupMember", generalGetString(R.string.error_changing_address), r)
-      }
-    }
+  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
+    val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))
+    if (r is CR.GroupMemberSwitchStarted) return r.connectionStats
+    apiErrorAlert("apiSwitchGroupMember", generalGetString(R.string.error_changing_address), r)
+    return null
+  }
+
+  suspend fun apiAbortSwitchContact(contactId: Long): ConnectionStats? {
+    val r = sendCmd(CC.APIAbortSwitchContact(contactId))
+    if (r is CR.ContactSwitchAborted) return r.connectionStats
+    apiErrorAlert("apiAbortSwitchContact", generalGetString(R.string.error_aborting_address_change), r)
+    return null
+  }
+
+  suspend fun apiAbortSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
+    val r = sendCmd(CC.APIAbortSwitchGroupMember(groupId, groupMemberId))
+    if (r is CR.GroupMemberSwitchAborted) return r.connectionStats
+    apiErrorAlert("apiAbortSwitchGroupMember", generalGetString(R.string.error_aborting_address_change), r)
+    return null
   }
 
   suspend fun apiGetContactCode(contactId: Long): Pair<Contact, String> {
@@ -1480,10 +1490,14 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         if (active(r.user)) {
           chatModel.upsertGroupMember(r.groupInfo, r.member)
         }
-      is CR.ConnectedToGroupMember ->
+      is CR.ConnectedToGroupMember -> {
         if (active(r.user)) {
           chatModel.upsertGroupMember(r.groupInfo, r.member)
         }
+        if (r.memberContact != null) {
+          chatModel.setContactNetworkStatus(r.memberContact, NetworkStatus.Connected())
+        }
+      }
       is CR.GroupUpdated ->
         if (active(r.user)) {
           chatModel.updateGroup(r.toGroup)
@@ -1935,6 +1949,8 @@ sealed class CC {
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
   class APISwitchContact(val contactId: Long): CC()
   class APISwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
+  class APIAbortSwitchContact(val contactId: Long): CC()
+  class APIAbortSwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
   class APIGetContactCode(val contactId: Long): CC()
   class APIGetGroupMemberCode(val groupId: Long, val groupMemberId: Long): CC()
   class APIVerifyContact(val contactId: Long, val connectionCode: String?): CC()
@@ -2028,6 +2044,8 @@ sealed class CC {
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
     is APISwitchContact -> "/_switch @$contactId"
     is APISwitchGroupMember -> "/_switch #$groupId $groupMemberId"
+    is APIAbortSwitchContact -> "/_abort switch @$contactId"
+    is APIAbortSwitchGroupMember -> "/_abort switch #$groupId $groupMemberId"
     is APIGetContactCode -> "/_get code @$contactId"
     is APIGetGroupMemberCode -> "/_get code #$groupId $groupMemberId"
     is APIVerifyContact -> "/_verify code @$contactId" + if (connectionCode != null) " $connectionCode" else ""
@@ -2116,6 +2134,8 @@ sealed class CC {
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
     is APISwitchContact -> "apiSwitchContact"
     is APISwitchGroupMember -> "apiSwitchGroupMember"
+    is APIAbortSwitchContact -> "apiAbortSwitchContact"
+    is APIAbortSwitchGroupMember -> "apiAbortSwitchGroupMember"
     is APIGetContactCode -> "apiGetContactCode"
     is APIGetGroupMemberCode -> "apiGetGroupMemberCode"
     is APIVerifyContact -> "apiVerifyContact"
@@ -3273,7 +3293,11 @@ sealed class CR {
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: User, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: User, val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
-  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?): CR()
+  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
+  @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("contactSwitchAborted") class ContactSwitchAborted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("groupMemberSwitchAborted") class GroupMemberSwitchAborted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("contactCode") class ContactCode(val user: User, val contact: Contact, val connectionCode: String): CR()
   @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
   @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: User, val verified: Boolean, val expectedCode: String): CR()
@@ -3333,7 +3357,7 @@ sealed class CR {
   @Serializable @SerialName("groupInvitation") class GroupInvitation(val user: User, val groupInfo: GroupInfo): CR() // unused
   @Serializable @SerialName("userJoinedGroup") class UserJoinedGroup(val user: User, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
   @Serializable @SerialName("groupRemoved") class GroupRemoved(val user: User, val groupInfo: GroupInfo): CR() // unused
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: User, val toGroup: GroupInfo): CR()
   @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: User, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
@@ -3388,6 +3412,10 @@ sealed class CR {
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
     is GroupMemberInfo -> "groupMemberInfo"
+    is ContactSwitchStarted -> "contactSwitchStarted"
+    is GroupMemberSwitchStarted -> "groupMemberSwitchStarted"
+    is ContactSwitchAborted -> "contactSwitchAborted"
+    is GroupMemberSwitchAborted -> "groupMemberSwitchAborted"
     is ContactCode -> "contactCode"
     is GroupMemberCode -> "groupMemberCode"
     is ConnectionVerified -> "connectionVerified"
@@ -3499,6 +3527,10 @@ sealed class CR {
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is GroupMemberInfo -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
+    is ContactSwitchStarted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is GroupMemberSwitchStarted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is ContactSwitchAborted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is GroupMemberSwitchAborted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is ContactCode -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode")
     is GroupMemberCode -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode")
     is ConnectionVerified -> withUser(user, "verified: $verified\nconnectionCode: $expectedCode")
@@ -3558,7 +3590,7 @@ sealed class CR {
     is GroupInvitation -> withUser(user, json.encodeToString(groupInfo))
     is UserJoinedGroup -> withUser(user, json.encodeToString(groupInfo))
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
-    is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
+    is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
     is GroupRemoved -> withUser(user, json.encodeToString(groupInfo))
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
     is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\nconnReqContact: $connReqContact\nmemberRole: $memberRole")
@@ -3630,7 +3662,34 @@ abstract class TerminalItem {
 }
 
 @Serializable
-class ConnectionStats(val rcvServers: List<String>?, val sndServers: List<String>?)
+class ConnectionStats(val rcvQueuesInfo: List<RcvQueueInfo>, val sndQueuesInfo: List<SndQueueInfo>)
+
+@Serializable
+class RcvQueueInfo(
+  val rcvServer: String,
+  val rcvSwitchStatus: RcvSwitchStatus?,
+  var canAbortSwitch: Boolean
+)
+
+@Serializable
+enum class RcvSwitchStatus {
+  @SerialName("switch_started") SwitchStarted,
+  @SerialName("sending_qadd") SendingQADD,
+  @SerialName("sending_quse") SendingQUSE,
+  @SerialName("received_message") ReceivedMessage
+}
+
+@Serializable
+class SndQueueInfo(
+  val sndServer: String,
+  val sndSwitchStatus: SndSwitchStatus?
+)
+
+@Serializable
+enum class SndSwitchStatus {
+  @SerialName("sending_qkey") SendingQKEY,
+  @SerialName("sending_qtest") SendingQTEST
+}
 
 @Serializable
 class UserContactLinkRec(val connReqContact: String, val autoAccept: AutoAccept? = null) {

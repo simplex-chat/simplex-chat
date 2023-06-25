@@ -480,12 +480,28 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (Con
     throw r
 }
 
-func apiSwitchContact(contactId: Int64) async throws {
-    try await sendCommandOkResp(.apiSwitchContact(contactId: contactId))
+func apiSwitchContact(contactId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSwitchContact(contactId: contactId))
+    if case let .contactSwitchStarted(_, _, connectionStats) = r { return connectionStats }
+    throw r
 }
 
-func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) async throws {
-    try await sendCommandOkResp(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberSwitchStarted(_, _, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiAbortSwitchContact(_ contactId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiAbortSwitchContact(contactId: contactId))
+    if case let .contactSwitchAborted(_, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiAbortSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiAbortSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberSwitchAborted(_, _, _, connectionStats) = r { return connectionStats }
+    throw r
 }
 
 func apiGetContactCode(_ contactId: Int64) async throws -> (Contact, String) {
@@ -884,7 +900,9 @@ func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
             let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
             let cInfo = chat.chatInfo
             try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-            await MainActor.run { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+            await MainActor.run {
+                withAnimation { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+            }
         }
         if chat.chatStats.unreadChat {
             await markChatUnread(chat, unreadChat: false)
@@ -898,7 +916,9 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     do {
         let cInfo = chat.chatInfo
         try await apiChatUnread(type: cInfo.chatType, id: cInfo.apiId, unreadChat: unreadChat)
-        await MainActor.run { ChatModel.shared.markChatUnread(cInfo, unreadChat: unreadChat) }
+        await MainActor.run {
+            withAnimation { ChatModel.shared.markChatUnread(cInfo, unreadChat: unreadChat) }
+        }
     } catch {
         logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
     }
@@ -1345,9 +1365,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if active(user) {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
-        case let .connectedToGroupMember(user, groupInfo, member):
+        case let .connectedToGroupMember(user, groupInfo, member, memberContact):
             if active(user) {
                 _ = m.upsertGroupMember(groupInfo, member)
+            }
+            if let contact = memberContact {
+                m.setContactNetworkStatus(contact, .connected)
             }
         case let .groupUpdated(user, toGroup):
             if active(user) {

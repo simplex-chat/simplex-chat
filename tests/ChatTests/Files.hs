@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -68,6 +69,8 @@ chatFileTests = do
     xit' "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
+    it "should accept file automatically with CLI option" testAutoAcceptFile
+    it "should prohibit file transfers in groups based on preference" testProhibitFiles
 
 runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
@@ -1383,6 +1386,56 @@ testXFTPCancelRcvRepeat =
       src <- B.readFile "./tests/tmp/testfile"
       dest <- B.readFile "./tests/tmp/testfile_1"
       dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testAutoAcceptFile :: HasCallStack => FilePath -> IO ()
+testAutoAcceptFile =
+  testChatCfgOpts2 cfg opts aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
+    connectUsers alice bob
+    bob ##> "/_files_folder ./tests/tmp/bob_files"
+    bob <## "ok"
+    alice #> "/f @bob ./tests/fixtures/test.jpg"
+    alice <## "use /fc 1 to cancel sending"
+    alice <## "completed uploading file 1 (test.jpg) for bob"
+    bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob <## "saving file 1 from alice to test.jpg"
+    bob <## "started receiving file 1 (test.jpg) from alice"
+    bob <## "completed receiving file 1 (test.jpg) from alice"
+    (bob </)
+    alice #> "/f @bob ./tests/fixtures/test_1MB.pdf"
+    alice <## "use /fc 2 to cancel sending"
+    alice <## "completed uploading file 2 (test_1MB.pdf) for bob"
+    bob <# "alice> sends file test_1MB.pdf (1017.7 KiB / 1042157 bytes)"
+    bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+    -- no auto accept for large files
+    (bob </)
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    opts = (testOpts :: ChatOpts) {autoAcceptFileSize = 200000}
+
+testProhibitFiles :: HasCallStack => FilePath -> IO ()
+testProhibitFiles =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> withXFTPServer $ do
+    createGroup3 "team" alice bob cath
+    alice ##> "/set files #team off"
+    alice <## "updated group preferences:"
+    alice <## "Files and media: off"
+    concurrentlyN_
+      [ do
+          bob <## "alice updated group #team:"
+          bob <## "updated group preferences:"
+          bob <## "Files and media: off",
+        do
+          cath <## "alice updated group #team:"
+          cath <## "updated group preferences:"
+          cath <## "Files and media: off"
+      ]
+    alice ##> "/f #team ./tests/fixtures/test.jpg"
+    alice <## "bad chat command: feature not allowed Files and media"
+    (bob </)
+    (cath </)
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 

@@ -153,6 +153,7 @@ groupsHelpInfo =
       "",
       green "Group chat preferences:",
       indent <> highlight "/set voice #<group> on/off         " <> " - enable/disable voice messages",
+      -- indent <> highlight "/set files #<group> on/off         " <> " - enable/disable files and media (other than voice)",
       indent <> highlight "/set delete #<group> on/off        " <> " - enable/disable full message deletion",
       indent <> highlight "/set direct #<group> on/off        " <> " - enable/disable direct messages to other members",
       indent <> highlight "/set disappear #<group> on <time>  " <> " - enable disappearing messages with <time>:",
@@ -201,7 +202,7 @@ myAddressHelpInfo =
     styleMarkdown
     [ green "Your contact address commands:",
       indent <> highlight "/address                 " <> " - create your address",
-      -- indent <> highlight "/profile_address on/off  " <> " - share address with your contacts (it will be added to your profile)",
+      indent <> highlight "/profile_address on/off  " <> " - share address with your contacts (it will be added to your profile)",
       indent <> highlight "/delete_address          " <> " - delete your address (accepted contacts will remain connected)",
       indent <> highlight "/show_address            " <> " - show your address",
       indent <> highlight "/accept <name>           " <> " - accept contact request",
