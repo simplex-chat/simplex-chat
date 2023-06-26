@@ -1,23 +1,29 @@
 package chat.simplex.common.views.helpers
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Density
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
+import dev.icerock.moko.resources.StringResource
 import java.io.File
 import java.net.URI
 import javax.imageio.ImageIO
 import kotlin.io.path.toPath
 
-actual fun spannableStringToAnnotatedString(
-  text: CharSequence,
-  density: Density,
-): AnnotatedString {
-  // LALAL
-  return AnnotatedString(text.toString())
+@Composable
+actual fun annotatedStringResource(id: StringResource): AnnotatedString {
+  val density = LocalDensity.current
+  return remember(id) {
+    val text = id.localized()
+    // LALAL
+    AnnotatedString(text)
+  }
 }
 
 actual fun getLoadedImage(file: CIFile?): ImageBitmap? {

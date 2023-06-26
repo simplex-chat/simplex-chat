@@ -42,18 +42,7 @@ fun generalGetString(id: StringResource): String {
 }
 
 @Composable
-fun annotatedStringResource(id: StringResource): AnnotatedString {
-  val density = LocalDensity.current
-  return remember(id) {
-    val text = id.localized()
-    spannableStringToAnnotatedString(text, density)
-  }
-}
-
-expect fun spannableStringToAnnotatedString(
-  text: CharSequence,
-  density: Density,
-): AnnotatedString
+expect fun annotatedStringResource(id: StringResource): AnnotatedString
 
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB

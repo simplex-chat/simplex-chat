@@ -41,8 +41,8 @@ kotlin {
         api("com.russhwolf:multiplatform-settings:1.0.0")
         api("com.charleskorn.kaml:kaml:0.43.0")
         api("dev.icerock.moko:resources-compose:0.22.3")
-        api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose_version"] as String}")
-        implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose_version"] as String}")
+        api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
+        implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
         api("org.boofcv:boofcv-core:0.40.1")
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")

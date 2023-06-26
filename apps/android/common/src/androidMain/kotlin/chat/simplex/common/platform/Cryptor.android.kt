@@ -10,6 +10,8 @@ import java.security.KeyStore
 import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec
 
+actual val cryptor: CryptorInterface = Cryptor()
+
 @SuppressLint("ObsoleteSdkInt")
 internal class Cryptor: CryptorInterface {
   private var keyStore: KeyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }

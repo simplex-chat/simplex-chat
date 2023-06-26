@@ -34,16 +34,16 @@ android {
         }
         manifestPlaceholders["app_name"] = "@string/app_name"
         manifestPlaceholders["provider_authorities"] = "chat.simplex.app.provider"
-        manifestPlaceholders["extract_native_libs"] = rootProject.extra["compression_level"] as Int != 0
+        manifestPlaceholders["extract_native_libs"] = rootProject.extra["compression.level"] as Int != 0
     }
 
     buildTypes {
         debug {
-            applicationIdSuffix = rootProject.extra["application_id_suffix"] as String
+            applicationIdSuffix = rootProject.extra["application_id.suffix"] as String
             isDebuggable = rootProject.extra["enable_debuggable"] as Boolean
-            manifestPlaceholders["app_name"] = rootProject.extra["app_name"] as String
+            manifestPlaceholders["app_name"] = rootProject.extra["app.name"] as String
             // Provider can"t be the same for different apps on the same device
-            manifestPlaceholders["provider_authorities"] = "chat.simplex.app${rootProject.extra["application_id_suffix"]}.provider"
+            manifestPlaceholders["provider_authorities"] = "chat.simplex.app${rootProject.extra["application_id.suffix"]}.provider"
         }
         release {
             isMinifyEnabled = false
@@ -79,7 +79,7 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
-        jniLibs.useLegacyPackaging = rootProject.extra["compression_level"] as Int != 0
+        jniLibs.useLegacyPackaging = rootProject.extra["compression.level"] as Int != 0
     }
     val isRelease = gradle.startParameter.taskNames.find { it.toLowerCase().contains("release") } != null
     val isBundle = gradle.startParameter.taskNames.find { it.toLowerCase().contains("bundle") } != null
@@ -121,7 +121,7 @@ android {
 dependencies {
     implementation(project(":common"))
     implementation("androidx.core:core-ktx:1.7.0")
-    //implementation("androidx.compose.ui:ui:${rootProject.extra["compose_version"] as String}")
+    //implementation("androidx.compose.ui:ui:${rootProject.extra["compose.version"] as String}")
     //implementation("androidx.compose.material:material:$compose_version")
     //implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.4.1")
@@ -136,7 +136,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.3")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
     //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose_version")
-    debugImplementation("androidx.compose.ui:ui-tooling:${rootProject.extra["compose_version"] as String}")
+    debugImplementation("androidx.compose.ui:ui-tooling:${rootProject.extra["compose.version"] as String}")
 }
 
 tasks {
@@ -177,7 +177,7 @@ tasks {
                 setEnvironment(mapOf("JAVA_HOME" to "$javaHome"))
                 commandLine = listOf(
                     "./compress-and-sign-apk.sh",
-                    "${rootProject.extra["compression_level"]}",
+                    "${rootProject.extra["compression.level"]}",
                     "$outputDir",
                     "$sdkDir",
                     "$storeFile",
@@ -198,7 +198,7 @@ tasks {
     }
 
     // Don"t do anything if no compression is needed
-    if (rootProject.extra["compression_level"] as Int != 0) {
+    if (rootProject.extra["compression.level"] as Int != 0) {
         whenTaskAdded {
             if (name == "packageDebug") {
                 finalizedBy(compressApk)

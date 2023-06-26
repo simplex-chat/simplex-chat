@@ -10,7 +10,6 @@ import chat.simplex.common.platform.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -24,19 +23,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.icerockdev.library.MR
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.common.model.*
 import chat.simplex.app.model.NtfManager.OpenChatAction
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.views.call.*
-import chat.simplex.common.views.helpers.SimpleButton
+import chat.simplex.common.views.helpers.*
 import kotlinx.datetime.Clock
 
 class IncomingCallActivity: ComponentActivity() {
@@ -170,18 +168,18 @@ fun IncomingCallLockScreenAlertLayout(
       Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
-        LockScreenCallButton(stringResource(R.string.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
+        LockScreenCallButton(generalGetString(MR.strings.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
         Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(R.string.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
+        LockScreenCallButton(generalGetString(MR.strings.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
         Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(R.string.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
+        LockScreenCallButton(generalGetString(MR.strings.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
       }
     } else if (callOnLockScreen == CallOnLockScreen.SHOW) {
       SimpleXLogo()
-      Text(stringResource(R.string.open_simplex_chat_to_accept_call), textAlign = TextAlign.Center, lineHeight = 22.sp)
-      Text(stringResource(R.string.allow_accepting_calls_from_lock_screen), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2, lineHeight = 22.sp)
+      Text(generalGetString(MR.strings.open_simplex_chat_to_accept_call), textAlign = TextAlign.Center, lineHeight = 22.sp)
+      Text(generalGetString(MR.strings.allow_accepting_calls_from_lock_screen), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2, lineHeight = 22.sp)
       Spacer(Modifier.fillMaxHeight().weight(1f))
-      SimpleButton(text = stringResource(R.string.open_verb), icon = painterResource(R.drawable.ic_check_filled), click = openApp)
+      SimpleButton(text = generalGetString(MR.strings.open_verb), icon = painterResource(R.drawable.ic_check_filled), click = openApp)
     }
   }
 }
@@ -190,7 +188,7 @@ fun IncomingCallLockScreenAlertLayout(
 private fun SimpleXLogo() {
   Image(
     painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
-    contentDescription = stringResource(R.string.image_descr_simplex_logo),
+    contentDescription = generalGetString(MR.strings.image_descr_simplex_logo),
     modifier = Modifier
       .padding(vertical = DEFAULT_PADDING)
       .fillMaxWidth(0.80f)

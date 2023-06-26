@@ -6,21 +6,22 @@ import android.graphics.*
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.media.MediaMetadataRetriever
-import android.net.Uri
 import android.os.*
 import android.provider.OpenableColumns
 import android.text.Spanned
 import android.text.SpannedString
 import android.text.style.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import androidx.core.text.HtmlCompat
-import chat.simplex.common.helpers.toURI
 import chat.simplex.common.helpers.toUri
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -44,7 +45,16 @@ fun Resources.getText(id: StringResource, vararg args: Any): CharSequence {
   return HtmlCompat.fromHtml(formattedHtml, HtmlCompat.FROM_HTML_MODE_LEGACY)
 }
 
-actual fun spannableStringToAnnotatedString(
+@Composable
+actual fun annotatedStringResource(id: StringResource): AnnotatedString {
+  val density = LocalDensity.current
+  val resources = LocalContext.current.resources
+  return remember(id) {
+    spannableStringToAnnotatedString(resources.getText(id.resourceId), density)
+  }
+}
+
+private fun spannableStringToAnnotatedString(
   text: CharSequence,
   density: Density,
 ): AnnotatedString {

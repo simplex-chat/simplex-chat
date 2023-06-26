@@ -442,7 +442,7 @@
     <string name="how_to_use_markdown">Comment utiliser markdown</string>
     <string name="a_plus_b">a + b</string>
     <string name="colored">coloré</string>
-    <string name="secret">secret</string>
+    <string name="secret_text">secret</string>
     <string name="callstatus_calling">appel…</string>
     <string name="callstatus_missed">appel manqué</string>
     <string name="callstate_waiting_for_answer">en attente de réponse…</string>
