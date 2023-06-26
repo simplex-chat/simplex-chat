@@ -104,7 +104,7 @@
 "%@ %@" = "%@ %@";
 
 /* notification title */
-"%@ is connected!" = "%@ è connesso!";
+"%@ is connected!" = "%@ è connesso/a!";
 
 /* No comment provided by engineer. */
 "%@ is not verified" = "%@ non è verificato/a";
@@ -384,7 +384,7 @@
 "Allow your contacts to send voice messages." = "Permetti ai tuoi contatti di inviare messaggi vocali.";
 
 /* No comment provided by engineer. */
-"Already connected?" = "Già connesso?";
+"Already connected?" = "Già connesso/a?";
 
 /* pref value */
 "always" = "sempre";
@@ -685,7 +685,7 @@
 "Connect via one-time link?" = "Connettere via link una tantum?";
 
 /* No comment provided by engineer. */
-"connected" = "connesso";
+"connected" = "connesso/a";
 
 /* No comment provided by engineer. */
 "connecting" = "in connessione";
@@ -727,7 +727,7 @@
 "connection established" = "connessione stabilita";
 
 /* No comment provided by engineer. */
-"Connection request" = "Richieste di connessione";
+"Connection request" = "Richiesta di connessione";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "Richiesta di connessione inviata!";
@@ -1672,10 +1672,10 @@
 "Invite to group" = "Invita al gruppo";
 
 /* No comment provided by engineer. */
-"invited" = "invitato";
+"invited" = "ha invitato";
 
 /* rcv group event chat item */
-"invited %@" = "invitato %@";
+"invited %@" = "ha invitato %@";
 
 /* chat list item title */
 "invited to connect" = "invitato a connettersi";
@@ -1756,7 +1756,7 @@
 "Leave group?" = "Uscire dal gruppo?";
 
 /* rcv group event chat item */
-"left" = "uscito/a";
+"left" = "è uscito/a";
 
 /* email subject */
 "Let's talk in SimpleX Chat" = "Parliamo in SimpleX Chat";
@@ -1828,7 +1828,7 @@
 "Member" = "Membro";
 
 /* rcv group event chat item */
-"member connected" = "connesso";
+"member connected" = "connesso/a";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Tutti i membri del gruppo verranno avvisati.";
@@ -1994,6 +1994,9 @@
 
 /* No comment provided by engineer. */
 "No received or sent files" = "Nessun file ricevuto o inviato";
+
+/* copied message info in history */
+"no text" = "nessun testo";
 
 /* No comment provided by engineer. */
 "Notifications" = "Notifiche";
@@ -2360,10 +2363,10 @@
 "Remove passphrase from keychain?" = "Rimuovere la password dal portachiavi?";
 
 /* No comment provided by engineer. */
-"removed" = "rimosso";
+"removed" = "ha rimosso";
 
 /* rcv group event chat item */
-"removed %@" = "rimosso %@";
+"removed %@" = "ha rimosso %@";
 
 /* rcv group event chat item */
 "removed you" = "sei stato/a rimosso/a";
@@ -2695,6 +2698,9 @@
 /* No comment provided by engineer. */
 "SMP servers" = "Server SMP";
 
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Si sono verificati alcuni errori non gravi durante l'importazione: vedi la console della chat per i dettagli.";
+
 /* notification title */
 "Somebody" = "Qualcuno";
 
@@ -2879,9 +2885,6 @@
 "This error is permanent for this connection, please re-connect." = "L'errore è permanente per questa connessione, riconnettiti.";
 
 /* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Questa funzionalità è sperimentale! Funzionerà solo se l'altro client ha la versione 4.2 installata. Dovresti vedere il messaggio nella conversazione una volta completato il cambio di indirizzo. Controlla di potere ancora ricevere messaggi da questo contatto (o membro del gruppo).";
-
-/* No comment provided by engineer. */
 "This group no longer exists." = "Questo gruppo non esiste più.";
 
 /* No comment provided by engineer. */
@@ -2984,7 +2987,7 @@
 "Unlock app" = "Sblocca l'app";
 
 /* No comment provided by engineer. */
-"Unmute" = "Riattiva audio";
+"Unmute" = "Riattiva notifiche";
 
 /* No comment provided by engineer. */
 "Unread" = "Non letto";
@@ -3179,7 +3182,7 @@
 "You are already connected to %@." = "Sei già connesso/a a %@.";
 
 /* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Sei connesso al server usato per ricevere messaggi da questo contatto.";
+"You are connected to the server used to receive messages from this contact." = "Sei connesso/a al server usato per ricevere messaggi da questo contatto.";
 
 /* No comment provided by engineer. */
 "you are invited to group" = "sei stato/a invitato/a al gruppo";

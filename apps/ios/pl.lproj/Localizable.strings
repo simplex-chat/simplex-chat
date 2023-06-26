@@ -2882,9 +2882,6 @@
 "This error is permanent for this connection, please re-connect." = "Ten błąd jest trwały dla tego połączenia, proszę o ponowne połączenie.";
 
 /* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Ta funkcja jest eksperymentalna! Będzie działać tylko wtedy, gdy drugi klient ma zainstalowaną wersję 4.2. Po zakończeniu zmiany adresu powinieneś zobaczyć wiadomość w konwersacji - sprawdź, czy nadal możesz otrzymywać wiadomości od tego kontaktu (lub członka grupy).";
-
-/* No comment provided by engineer. */
 "This group no longer exists." = "Ta grupa już nie istnieje.";
 
 /* No comment provided by engineer. */

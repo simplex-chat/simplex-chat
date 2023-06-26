@@ -2698,6 +2698,9 @@
 /* No comment provided by engineer. */
 "SMP servers" = "SMP 服务器";
 
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "导入过程中发生了一些非致命错误——您可以查看聊天控制台了解更多详细信息。";
+
 /* notification title */
 "Somebody" = "某人";
 
@@ -2880,9 +2883,6 @@
 
 /* No comment provided by engineer. */
 "This error is permanent for this connection, please re-connect." = "此错误对于此连接是永久性的，请重新连接。";
-
-/* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "此功能是实验性的！ 它仅在其他客户端安装了 4.2 版时才有效。 地址更改完成后，您应该会在对话中看到该消息——请检查您是否仍能收到来自该联系人（或群组成员）的消息。";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "该群组已不存在。";

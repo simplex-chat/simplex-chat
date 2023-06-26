@@ -2698,6 +2698,9 @@
 /* No comment provided by engineer. */
 "SMP servers" = "SMP servery";
 
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Během importu došlo k nezávažným chybám - podrobnosti naleznete v chat konzoli.";
+
 /* notification title */
 "Somebody" = "Někdo";
 
@@ -2880,9 +2883,6 @@
 
 /* No comment provided by engineer. */
 "This error is permanent for this connection, please re-connect." = "Tato chyba je pro toto připojení trvalá, připojte se znovu.";
-
-/* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Tato funkce je experimentální! Bude fungovat pouze v případě, že druhý klient má nainstalovanou verzi 4.2. Po dokončení změny adresy by se měla v konverzaci zobrazit zpráva - zkontrolujte, zda můžete od tohoto kontaktu (nebo člena skupiny) stále přijímat zprávy.";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Tato skupina již neexistuje.";

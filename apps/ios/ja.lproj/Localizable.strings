@@ -2873,9 +2873,6 @@
 "This error is permanent for this connection, please re-connect." = "このエラーはこの接続では永続的なものです。再接続してください。";
 
 /* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "開発中の機能です！相手のクライアントが4.2でなければ機能しません。アドレス変更が完了すると、会話にメッセージが出ます。連絡相手 (またはグループのメンバー) からメッセージを受信できないかをご確認ください。";
-
-/* No comment provided by engineer. */
 "This group no longer exists." = "このグループはもう存在しません。";
 
 /* No comment provided by engineer. */

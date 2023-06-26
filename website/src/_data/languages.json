@@ -64,6 +64,12 @@
             "enabled": true
         },
         {
+            "label": "uk",
+            "name": "Українська",
+            "flag": "/img/flags/ua.svg",
+            "enabled": true
+        },
+        {
             "label": "zh_Hans",
             "name": "简体中文",
             "flag": "/img/flags/cn.svg",

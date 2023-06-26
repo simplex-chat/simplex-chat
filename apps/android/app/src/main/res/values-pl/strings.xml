@@ -1261,4 +1261,10 @@
 \n- niestandardowy czas zniknięcia.
 \n- historia edycji.</string>
     <string name="item_info_no_text">brak tekstu</string>
+    <string name="non_fatal_errors_occured_during_import">Podczas importu wystąpiły niekrytyczne błędy - więcej szczegółów można znaleźć w konsoli czatu.</string>
+    <string name="settings_restart_app">Restart</string>
+    <string name="settings_section_title_app">APLIKACJA</string>
+    <string name="shutdown_alert_desc">Powiadomienia przestaną działać do momentu ponownego uruchomienia aplikacji.</string>
+    <string name="settings_shutdown">Wyłączenie</string>
+    <string name="shutdown_alert_question">Wyłączyć\?</string>
 </resources>
