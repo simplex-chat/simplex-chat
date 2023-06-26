@@ -530,11 +530,17 @@ private fun importArchive(
         m.controller.apiDeleteStorage()
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = cacheDir.toString())
-          m.controller.apiImportArchive(config)
+          val archiveErrors = m.controller.apiImportArchive(config)
           DatabaseUtils.ksDatabasePassword.remove()
           appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory())
-          operationEnded(m, progressIndicator) {
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
+          if (archiveErrors.isEmpty()) {
+            operationEnded(m, progressIndicator) {
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
+            }
+          } else {
+            operationEnded(m, progressIndicator) {
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database) + "\n" + generalGetString(MR.strings.non_fatal_errors_occured_during_import))
+            }
           }
         } catch (e: Error) {
           operationEnded(m, progressIndicator) {

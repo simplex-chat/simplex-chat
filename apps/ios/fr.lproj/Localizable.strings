@@ -1069,10 +1069,10 @@
 "Disappearing messages are prohibited in this group." = "Les messages éphémères sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
-"Disappears at" = "Disparaît à";
+"Disappears at" = "Disparaîtra le";
 
 /* copied message info */
-"Disappears at: %@" = "Disparaît à : %@";
+"Disappears at: %@" = "Disparaîtra le : %@";
 
 /* server test step */
 "Disconnect" = "Se déconnecter";
@@ -1995,6 +1995,9 @@
 /* No comment provided by engineer. */
 "No received or sent files" = "Aucun fichier reçu ou envoyé";
 
+/* copied message info in history */
+"no text" = "aucun texte";
+
 /* No comment provided by engineer. */
 "Notifications" = "Notifications";
 
@@ -2695,6 +2698,9 @@
 /* No comment provided by engineer. */
 "SMP servers" = "Serveurs SMP";
 
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Des erreurs non fatales se sont produites lors de l'importation - vous pouvez consulter la console de chat pour plus de détails.";
+
 /* notification title */
 "Somebody" = "Quelqu'un";
 
@@ -2877,9 +2883,6 @@
 
 /* No comment provided by engineer. */
 "This error is permanent for this connection, please re-connect." = "Cette erreur est persistante pour cette connexion, veuillez vous reconnecter.";
-
-/* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Cette fonctionnalité est expérimentale ! Elle ne fonctionnera que si l'autre client a la version 4.2 installée. Vous devriez voir le message dans la conversation une fois le changement d'adresse effectué. Vérifiez que vous pouvez toujours recevoir des messages de ce contact (ou membre du groupe).";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Ce groupe n'existe plus.";
@@ -3200,7 +3203,7 @@
 "You can create it later" = "Vous pouvez la créer plus tard";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "Vous pouvez masquer ou mettre en sourdine un profil d'utilisateur - faites-le glisser vers la droite.\nSimpleX Lock doit être activé.";
+"You can hide or mute a user profile - swipe it to the right." = "Vous pouvez masquer ou mettre en sourdine un profil d'utilisateur - faites-le glisser vers la droite.";
 
 /* notification body */
 "You can now send messages to %@" = "Vous pouvez maintenant envoyer des messages à %@";
@@ -3339,9 +3342,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Vos profils de chat";
-
-/* No comment provided by engineer. */
-"Your chats" = "Vos chats";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Votre contact a besoin d'être en ligne pour completer la connexion.\nVous pouvez annuler la connexion et supprimer le contact (et réessayer plus tard avec un autre lien).";

@@ -282,7 +282,7 @@
     <string name="chat_archive_section">ARCHIVIO CHAT</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="chat_is_stopped">Chat fermata</string>
-    <string name="group_member_status_introduced">connessione (presentato)</string>
+    <string name="group_member_status_introduced">in connessione (presentato)</string>
     <string name="connection_request_sent">Richiesta di connessione inviata!</string>
     <string name="delete_link_question">Eliminare il link\?</string>
     <string name="delete_link">Elimina link</string>
@@ -395,7 +395,6 @@
     <string name="database_passphrase">Password del database</string>
     <string name="delete_chat_profile_question">Eliminare il profilo di chat\?</string>
     <string name="delete_database">Elimina database</string>
-    <string name="settings_section_title_develop">SVILUPPA</string>
     <string name="settings_developer_tools">Strumenti di sviluppo</string>
     <string name="settings_section_title_device">DISPOSITIVO</string>
     <string name="error_deleting_database">Errore nell\'eliminazione del database della chat</string>
@@ -424,10 +423,10 @@
     <string name="rcv_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">cambio indirizzo per %s…</string>
     <string name="rcv_group_event_member_connected">connesso</string>
-    <string name="group_member_status_connected">connesso</string>
-    <string name="group_member_status_accepted">connessione (accettato)</string>
-    <string name="group_member_status_announced">connessione (annunciato)</string>
-    <string name="group_member_status_intro_invitation">connessione (invito di presentazione)</string>
+    <string name="group_member_status_connected">connesso/a</string>
+    <string name="group_member_status_accepted">in connessione (accettato)</string>
+    <string name="group_member_status_announced">in connessione (annunciato)</string>
+    <string name="group_member_status_intro_invitation">in connessione (invito di presentazione)</string>
     <string name="rcv_group_event_group_deleted">gruppo eliminato</string>
     <string name="group_member_status_group_deleted">gruppo eliminato</string>
     <string name="group_invitation_expired">Invito al gruppo scaduto</string>
@@ -439,7 +438,7 @@
     <string name="change_member_role_question">Cambiare il ruolo del gruppo\?</string>
     <string name="clear_contacts_selection_button">Svuota</string>
     <string name="group_member_status_complete">completo</string>
-    <string name="group_member_status_connecting">connessione</string>
+    <string name="group_member_status_connecting">in connessione</string>
     <string name="icon_descr_contact_checked">Contatto controllato</string>
     <string name="create_group_link">Crea link del gruppo</string>
     <string name="group_member_status_creator">creatore</string>
@@ -563,7 +562,7 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Il contatto con cui hai condiviso questo link NON sarà in grado di connettersi!</string>
     <string name="this_link_is_not_a_valid_connection_link">Questo non è un link di connessione valido!</string>
     <string name="this_QR_code_is_not_a_link">Questo codice QR non è un link!</string>
-    <string name="unmute_chat">Riattiva audio</string>
+    <string name="unmute_chat">Riattiva notifiche</string>
     <string name="contact_wants_to_connect_with_you">vuole connettersi con te!</string>
     <string name="image_descr_simplex_logo">Logo di <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="icon_descr_address">Indirizzo di <xliff:g id="appName">SimpleX</xliff:g></string>
@@ -767,14 +766,14 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puoi avviare la chat tramite Impostazioni -&gt; Database o riavviando l\'app.</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Sei entrato/a in questo gruppo. Connessione al membro del gruppo invitante.</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Non riceverai più messaggi da questo gruppo. La cronologia della chat verrà conservata.</string>
-    <string name="group_member_status_invited">invitato</string>
+    <string name="group_member_status_invited">ha invitato</string>
     <string name="rcv_group_event_invited_via_your_group_link">invitato via link del tuo gruppo</string>
     <string name="rcv_group_event_member_added">invitato <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_member_left">uscito/a</string>
-    <string name="group_member_status_left">uscito/a</string>
+    <string name="group_member_status_left">è uscito/a</string>
     <string name="group_member_role_member">membro</string>
     <string name="group_member_role_owner">proprietario</string>
-    <string name="group_member_status_removed">rimosso</string>
+    <string name="group_member_status_removed">ha rimosso</string>
     <string name="rcv_group_event_member_deleted">rimosso <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_user_deleted">sei stato/a rimosso/a</string>
     <string name="group_invitation_tap_to_join">Tocca per entrare</string>
@@ -1010,7 +1009,7 @@
     <string name="v4_6_hidden_chat_profiles">Profili di chat nascosti</string>
     <string name="user_hide">Nascondi</string>
     <string name="v4_6_group_welcome_message_descr">Imposta il messaggio mostrato ai nuovi membri!</string>
-    <string name="user_unmute">Riattiva audio</string>
+    <string name="user_unmute">Riattiva notifiche</string>
     <string name="database_downgrade">Downgrade del database</string>
     <string name="database_upgrade">Aggiornamento del database</string>
     <string name="incompatible_database_version">Versione del database incompatibile</string>
@@ -1261,4 +1260,11 @@
     <string name="share_text_deleted_at">Eliminato il: %s</string>
     <string name="info_row_disappears_at">Scompare il</string>
     <string name="share_text_disappears_at">Scompare il: %s</string>
+    <string name="item_info_no_text">nessun testo</string>
+    <string name="non_fatal_errors_occured_during_import">Si sono verificati alcuni errori non gravi durante l\'importazione: vedi la console della chat per i dettagli.</string>
+    <string name="settings_restart_app">Riavvia</string>
+    <string name="settings_section_title_app">APP</string>
+    <string name="shutdown_alert_desc">Le notifiche smetteranno di funzionare fino a quando non riavvierai l\'app</string>
+    <string name="settings_shutdown">Spegni</string>
+    <string name="shutdown_alert_question">Spegnere\?</string>
 </resources>

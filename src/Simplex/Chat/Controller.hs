@@ -32,7 +32,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
-import Data.Time (ZonedTime)
+import Data.Time (NominalDiffTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
@@ -42,6 +42,7 @@ import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
@@ -102,6 +103,7 @@ data ChatConfig = ChatConfig
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
+    autoAcceptFileSize :: Integer,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
     showReactions :: Bool,
@@ -109,6 +111,9 @@ data ChatConfig = ChatConfig
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
     testView :: Bool,
+    initialCleanupManagerDelay :: Int64,
+    cleanupManagerInterval :: NominalDiffTime,
+    cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64 -- microseconds
   }
 
@@ -139,6 +144,12 @@ defaultInlineFilesConfig =
 
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
   deriving (Eq)
+
+chatActiveTo :: ChatName -> ActiveTo
+chatActiveTo (ChatName cType name) = case cType of
+  CTDirect -> ActiveC name
+  CTGroup -> ActiveG name
+  _ -> ActiveNone
 
 data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
 
@@ -273,6 +284,8 @@ data ChatCommand
   | APIGroupMemberInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
+  | APIAbortSwitchContact ContactId
+  | APIAbortSwitchGroupMember GroupId GroupMemberId
   | APIGetContactCode ContactId
   | APIGetGroupMemberCode GroupId GroupMemberId
   | APIVerifyContact ContactId (Maybe Text)
@@ -284,6 +297,8 @@ data ChatCommand
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
+  | AbortSwitchContact ContactName
+  | AbortSwitchGroupMember GroupName ContactName
   | GetContactCode ContactName
   | GetGroupMemberCode GroupName ContactName
   | VerifyContact ContactName (Maybe Text)
@@ -359,6 +374,7 @@ data ChatCommand
   | ShowProfile -- UserId (not used in UI)
   | UpdateProfile ContactName Text -- UserId (not used in UI)
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
+  | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
@@ -392,6 +408,10 @@ data ChatResponse
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
+  | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
+  | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
+  | CRContactSwitchAborted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
+  | CRGroupMemberSwitchAborted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitch {user :: User, contact :: Contact, switchProgress :: SwitchProgress}
   | CRGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
@@ -404,7 +424,7 @@ data ChatResponse
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
-  | CRBroadcastSent User MsgContent Int ZonedTime
+  | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}
   | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk {user_ :: Maybe User}
@@ -460,7 +480,8 @@ data ChatResponse
   | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileError {user :: User, chatItem :: AChatItem}
-  | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile}
+  | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, successes :: Int, failures :: Int}
+  | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
@@ -482,7 +503,7 @@ data ChatResponse
   | CRJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CRMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CRMemberRoleUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
-  | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
   | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
@@ -776,7 +797,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CEInvalidChatMessage {messageData :: Text, message :: String}
+  | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
@@ -827,6 +848,7 @@ data ChatErrorType
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEInternalError {message :: String}
+  | CEException {message :: String}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatErrorType where

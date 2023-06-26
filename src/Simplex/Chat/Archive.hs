@@ -25,6 +25,7 @@ import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
 import UnliftIO.Exception (SomeException, bracket, catch)
+import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 import UnliftIO.Temporary
 
@@ -57,7 +58,8 @@ importArchive cfg@ArchiveConfig {archivePath} =
     backup agentDb
     copyFile (dir </> archiveChatDbFile) chatDb
     copyFile (dir </> archiveAgentDbFile) agentDb
-    copyFiles dir filesPath `catchError` \e -> pure [AEImport e]
+    copyFiles dir filesPath
+      `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
     copyFiles dir filesPath = do
@@ -82,7 +84,8 @@ copyDirectoryFiles fromDir toDir = do
   foldM copyFileCatchError [] fs
   where
     copyFileCatchError fileErrs f =
-      (copyDirectoryFile f $> fileErrs) `catchError` \e -> pure (AEImportFile f e : fileErrs)
+      (copyDirectoryFile f $> fileErrs)
+        `E.catch` \(e :: E.SomeException) -> pure (AEImportFile f (ChatError . CEException $ show e) : fileErrs)
     copyDirectoryFile f = do
       let fn = takeFileName f
           f' = fromDir </> fn

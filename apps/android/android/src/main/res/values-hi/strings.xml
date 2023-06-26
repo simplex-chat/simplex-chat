@@ -271,7 +271,6 @@
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">%s के लिए पता बदल रहा है…</string>
     <string name="dont_show_again">दोबारा मत दिखाओ</string>
     <string name="both_you_and_your_contact_can_send_voice">आप और आपका संपर्क दोनों ध्वनि संदेश भेज सकते हैं।</string>
-    <string name="settings_section_title_develop">विकास करना</string>
     <string name="user_mute">आवाज़ बंद करना</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">अपने संपर्कों को गायब होने वाले संदेश भेजने की अनुमति दें।</string>
     <string name="v4_6_audio_video_calls">ऑडियो और वीडियो कॉल</string>

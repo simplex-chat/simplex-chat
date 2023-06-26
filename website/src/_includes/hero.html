@@ -1,14 +1,14 @@
 <div class="first-two-sections pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="md:flex md:flex-col-reverse md:items-center xl:flex xl:flex-row xl:items-start relative xl:justify-between xl:gap-10 container">
         <div class="">
-            <section class="xl:h-[calc(100vh-66px)] xl:max-h-[888px] m-auto w-full flex items-center justify-between landing-page-header px-5">
+            <section class="xl:h-[calc(100vh-66px)] hero-section-1 xl:max-h-[888px] m-auto w-full flex items-center justify-between landing-page-header px-5">
                 <div class="xl:h-full flex flex-col items-center xl:items-start xl:justify-around w-full landing-page-header-div">
                     {# <img class="static-phone-tablet hidden md:block xl:hidden" src="/img/new/tab-hero.svg" alt="" /> #}
                     <img class="static-phone-mobile md:hidden" src="/img/new/mobile-hero.png" alt="" />
 
                     <article class="w-full xl:max-w-[600px] landing-page-header-article">
-                        <p class="primary-header text-center xl:text-left xl:rtl:text-right font-bold text-[38px] md:text-[55px] leading-[46px] md:leading-[63px] mb-2 xl:mb-8">{{ "hero-header" | i18n({}, lang ) | safe }}</p>
-                        <p class="secondary-header text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[38px] leading-[36px] md:leading-[43px] mb-2 xl:mb-8 tracking-[0.01em]">{{ "hero-subheader" | i18n({}, lang ) | safe }}</p>
+                        <h1 class="primary-header text-center xl:text-left xl:rtl:text-right font-bold text-[38px] md:text-[55px] leading-[46px] md:leading-[63px] mb-2 xl:mb-8">{{ "hero-header" | i18n({}, lang ) | safe }}</h1>
+                        <h2 class="secondary-header text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[38px] leading-[36px] md:leading-[43px] mb-2 xl:mb-8 tracking-[0.01em]">{{ "hero-subheader" | i18n({}, lang ) | safe }}</h2>
                         <p class="landing-page-header-article-paragraph text-black dark:text-white text-center xl:text-justify text-[16px] leading-[24px] mb-[20px] header-description">
                             {{ "hero-p-1" | i18n({}, lang ) | safe }}
                         </p>
@@ -87,9 +87,9 @@
                     </div>
 
                     <article class="w-full xl:max-w-[600px] landing-page-header-article px-5">
-                        <p class="text-active-blue text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[35px] leading-[36px] md:leading-[43px] mb-[28px]">
+                        <h2 class="text-active-blue text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[35px] leading-[36px] md:leading-[43px] mb-[28px]">
                             {{ "hero-2-header" | i18n({}, lang ) | safe }}
-                        </p>
+                        </h2>
                         <p class="text-center text-black dark:text-white xl:text-justify leading-[24px] text-[16px] mb-10 xl:mb-[25px] header-description">
                             {{ "hero-2-header-desc" | i18n({}, lang ) | safe }}
                         </p>

@@ -18,8 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.icerockdev.library.MR
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.UserContactLinkRec
-import chat.simplex.common.platform.sendEmail
-import chat.simplex.common.platform.shareText
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
@@ -46,15 +45,14 @@ fun CreateSimpleXAddress(m: ChatModel) {
         val connReqContact = m.controller.apiCreateUserAddress()
         if (connReqContact != null) {
           m.userAddress.value = UserContactLinkRec(connReqContact)
-//          TODO uncomment in v5.2
-//          try {
-//            val u = m.controller.apiSetProfileAddress(true)
-//            if (u != null) {
-//              m.updateUser(u)
-//            }
-//          } catch (e: Exception) {
-//            Log.e(TAG, "CreateSimpleXAddress apiSetProfileAddress: ${e.stackTraceToString()}")
-//          }
+          try {
+            val u = m.controller.apiSetProfileAddress(true)
+            if (u != null) {
+              m.updateUser(u)
+            }
+          } catch (e: Exception) {
+            Log.e(TAG, "CreateSimpleXAddress apiSetProfileAddress: ${e.stackTraceToString()}")
+          }
           progressIndicator = false
         }
       }
@@ -95,8 +93,7 @@ private fun CreateSimpleXAddressLayout(
       ContinueButton(nextStep)
     } else {
       CreateAddressButton(createAddress)
-//      TODO remove color in v5.2
-      TextBelowButton(stringResource(MR.strings.your_contacts_will_see_it), color = Color.Transparent)
+      TextBelowButton(stringResource(MR.strings.your_contacts_will_see_it))
       Spacer(Modifier.weight(1f))
       SkipButton(nextStep)
     }
@@ -145,8 +142,7 @@ private fun SkipButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun TextBelowButton(text: String, color: Color = Color.Unspecified) {
-  // TODO remove color in v5.2
+private fun TextBelowButton(text: String) {
   Text(
     text,
     Modifier
@@ -154,7 +150,6 @@ private fun TextBelowButton(text: String, color: Color = Color.Unspecified) {
       .padding(horizontal = DEFAULT_PADDING * 3),
     style = MaterialTheme.typography.subtitle1,
     textAlign = TextAlign.Center,
-    color = color
   )
 }
 

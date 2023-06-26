@@ -23,6 +23,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDataba
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
@@ -74,6 +75,7 @@ testOpts =
       optFilesFolder = Nothing,
       showReactions = True,
       allowInstantFiles = True,
+      autoAcceptFileSize = 0,
       muteNotifications = True,
       maintenance = False
     }
@@ -95,7 +97,8 @@ data TestCC = TestCC
     virtualTerminal :: VirtualTerminal,
     chatAsync :: Async (),
     termAsync :: Async (),
-    termQ :: TQueue String
+    termQ :: TQueue String,
+    printOutput :: Bool
   }
 
 aCfg :: AgentConfig
@@ -149,7 +152,7 @@ startTestChat_ db cfg opts user = do
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
-  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
+  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput = False}
 
 stopTestChat :: TestCC -> IO ()
 stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
@@ -191,6 +194,9 @@ withTestChatOpts tmp = withTestChatCfgOpts tmp testCfg
 
 withTestChatCfgOpts :: HasCallStack => FilePath -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatCfgOpts tmp cfg opts dbPrefix = bracket (startTestChat tmp cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
+
+withTestOutput :: HasCallStack => TestCC -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestOutput cc runTest = runTest cc {printOutput = True}
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -239,14 +245,15 @@ getTermLine :: HasCallStack => TestCC -> IO String
 getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
-      -- uncomment 2 lines below to echo virtual terminal
-      -- name <- userName cc
-      -- putStrLn $ name <> ": " <> s
+      -- remove condition to always echo virtual terminal
+      when (printOutput cc) $ do
+        name <- userName cc
+        putStrLn $ name <> ": " <> s
       pure s
     _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
+userName (TestCC ChatController {currentUser} _ _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
 
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts

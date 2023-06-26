@@ -9,11 +9,11 @@ import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.ui.theme.DefaultTheme
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.RcvCallInvitation
+import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
 import java.io.*
 import java.util.*
@@ -29,6 +29,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onCreate() {
     super.onCreate()
+    if (ProcessPhoenix.isPhoenixProcess(this)) {
+      return;
+    }
     context = this
     initHaskell()
     initMultiplatform()

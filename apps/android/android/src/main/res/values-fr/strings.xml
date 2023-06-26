@@ -535,7 +535,6 @@
     <string name="call_already_ended">Appel déjà terminé !</string>
     <string name="settings_audio_video_calls">Appels audio et vidéo</string>
     <string name="status_e2e_encrypted">chiffré de bout en bout</string>
-    <string name="settings_section_title_develop">DEVELOPPER</string>
     <string name="settings_experimental_features">Fonctionnalités expérimentales</string>
     <string name="settings_section_title_socks">SOCKS PROXY</string>
     <string name="settings_section_title_themes">THEMES</string>
@@ -765,7 +764,7 @@
     <string name="update_network_settings_confirmation">Mise à jour</string>
     <string name="chat_preferences_on">on</string>
     <string name="chat_preferences_off">off</string>
-    <string name="direct_messages">Messages dynamiques</string>
+    <string name="direct_messages">Messages directs</string>
     <string name="full_deletion">Supprimer pour tous</string>
     <string name="only_you_can_delete_messages">Vous êtes le seul à pouvoir supprimer des messages de manière irréversible (votre contact peut les marquer comme supprimé).</string>
     <string name="conn_stats_section_title_servers">SERVEURS</string>
@@ -1247,8 +1246,8 @@
     <string name="info_row_sent_at">Envoyé le</string>
     <string name="share_text_database_id">ID de base de données : %d</string>
     <string name="share_text_deleted_at">Supprimé à : %s</string>
-    <string name="share_text_disappears_at">Disparaît à : %s</string>
-    <string name="info_row_disappears_at">Disparaît à</string>
+    <string name="share_text_disappears_at">Disparaîtra le : %s</string>
+    <string name="info_row_disappears_at">Disparaîtra le</string>
     <string name="v5_1_japanese_portuguese_interface">Interface en japonais et en portugais</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Merci aux utilisateurs - contribuez via Weblate !</string>
     <string name="v5_1_message_reactions_descr">Enfin, les voilà ! 🚀</string>
@@ -1261,4 +1260,11 @@
     <string name="v5_1_self_destruct_passcode">Code d\'autodestruction</string>
     <string name="share_text_sent_at">Envoyé le : %s</string>
     <string name="sent_message">Message envoyé</string>
+    <string name="item_info_no_text">aucun texte</string>
+    <string name="non_fatal_errors_occured_during_import">Des erreurs non fatales se sont produites lors de l\'importation - vous pouvez consulter la console de chat pour plus de détails.</string>
+    <string name="shutdown_alert_desc">Les notifications ne fonctionnent pas tant que vous ne relancez pas l\'application</string>
+    <string name="shutdown_alert_question">Arrêt \?</string>
+    <string name="settings_shutdown">Mise à l\'arrêt</string>
+    <string name="settings_restart_app">Redémarrer</string>
+    <string name="settings_section_title_app">APP</string>
 </resources>

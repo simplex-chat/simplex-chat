@@ -78,7 +78,7 @@
     <string name="ttl_s">%ds</string>
     <string name="ttl_min">%d min</string>
     <string name="ttl_hour">%d hodinu</string>
-    <string name="feature_offered_item_with_param">offered %s: %2s</string>
+    <string name="feature_offered_item_with_param">nabízeno %s: %2s</string>
     <string name="v4_2_group_links">Odkazy na skupiny</string>
     <string name="v4_3_voice_messages">Hlasové zprávy</string>
     <string name="v4_3_irreversible_message_deletion_desc">Vaše kontakty mohou povolit úplné mazání zpráv.</string>
@@ -723,7 +723,6 @@
 \n3. Spojení je kompromitováno.</string>
     <string name="settings_section_title_you">VY</string>
     <string name="settings_section_title_support">PODPOŘIT SIMPLEX CHAT</string>
-    <string name="settings_section_title_develop">VÝVOJ</string>
     <string name="settings_developer_tools">Nástroje pro vývojáře</string>
     <string name="settings_section_title_incognito">inkognito mód</string>
     <string name="your_chat_database">Chat databáze</string>
@@ -809,7 +808,7 @@
     <string name="you_joined_this_group">Připojili jste se k této skupině</string>
     <string name="you_rejected_group_invitation">Odmítli jste pozvánku do skupiny</string>
     <string name="group_invitation_expired">Platnost pozvánky do skupiny vypršela</string>
-    <string name="rcv_group_event_member_added">pozvaný <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_added">pozval <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_member_connected">připojen</string>
     <string name="rcv_group_event_changed_member_role">změnil roli %s na %s</string>
     <string name="rcv_group_event_changed_your_role">změnil svou roli na %s</string>
@@ -1168,11 +1167,11 @@
     <string name="share_address">Sdílet adresu</string>
     <string name="info_row_moderated_at">Upraveno v</string>
     <string name="info_row_received_at">Přijato v</string>
-    <string name="share_text_received_at">Přijato v: %s</string>
-    <string name="share_text_updated_at">Záznam aktualizován v: %s</string>
-    <string name="share_text_sent_at">Posláno v: %s</string>
-    <string name="share_text_disappears_at">Zmizí v: %s</string>
-    <string name="share_text_moderated_at">Upraveno v: %s</string>
+    <string name="share_text_received_at">Přijato: %s</string>
+    <string name="share_text_updated_at">Záznam aktualizován: %s</string>
+    <string name="share_text_sent_at">Posláno: %s</string>
+    <string name="share_text_disappears_at">Zmizí: %s</string>
+    <string name="share_text_moderated_at">Upraveno: %s</string>
     <string name="current_version_timestamp">%s (aktuální)</string>
     <string name="dark_theme">Tmavý motiv</string>
     <string name="import_theme">Import motivu</string>
@@ -1245,7 +1244,7 @@
     <string name="item_info_current">(aktuální)</string>
     <string name="share_text_database_id">ID databáze: %d</string>
     <string name="info_row_deleted_at">Smazáno v</string>
-    <string name="share_text_deleted_at">Smazáno v: %s</string>
+    <string name="share_text_deleted_at">Smazáno: %s</string>
     <string name="info_row_disappears_at">Zmizí v</string>
     <string name="enter_welcome_message">Zadat uvítací zprávu…</string>
     <string name="import_theme_error">Chyba importu motivu</string>
@@ -1261,4 +1260,10 @@
     <string name="you_can_share_your_address">Svou adresu můžete sdílet jako odkaz nebo QR kód - kdokoli se k vám může připojit.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Pokud později adresu odstraníte, o kontakty nepřijdete.</string>
     <string name="app_passcode_replaced_with_self_destruct">Přístupový kód aplikace je nahrazen sebedestrukčním přístupovým heslem.</string>
+    <string name="item_info_no_text">žádný text</string>
+    <string name="non_fatal_errors_occured_during_import">Během importu došlo k nezávažným chybám - podrobnosti naleznete v chat konzoli.</string>
+    <string name="shutdown_alert_question">Vypnout\?</string>
+    <string name="shutdown_alert_desc">Oznámení přestanou fungovat až do nového spuštění aplikace</string>
+    <string name="settings_shutdown">Vypnout</string>
+    <string name="settings_restart_app">Restartovat</string>
 </resources>

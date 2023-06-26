@@ -71,16 +71,15 @@ fun UserAddressView(
           if (connReqContact != null) {
             chatModel.userAddress.value = UserContactLinkRec(connReqContact)
 
-//            TODO uncomment in v5.2
-//            AlertManager.shared.showAlertDialog(
-//              title = generalGetString(MR.strings.share_address_with_contacts_question),
-//              text = generalGetString(MR.strings.add_address_to_your_profile),
-//              confirmText = generalGetString(MR.strings.share_verb),
-//              onConfirm = {
-//                setProfileAddress(true)
-//                shareViaProfile.value = true
-//              }
-//            )
+            AlertManager.shared.showAlertDialog(
+              title = generalGetString(MR.strings.share_address_with_contacts_question),
+              text = generalGetString(MR.strings.add_address_to_your_profile),
+              confirmText = generalGetString(MR.strings.share_verb),
+              onConfirm = {
+                setProfileAddress(true)
+                shareViaProfile.value = true
+              }
+            )
           }
           progressIndicator = false
         }
@@ -205,8 +204,7 @@ private fun UserAddressLayout(
           QRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
           ShareAddressButton { share(userAddress.connReqContact) }
           ShareViaEmailButton { sendEmail(userAddress) }
-//          TODO uncomment in v5.2
-//          ShareWithContactsButton(shareViaProfile, setProfileAddress)
+          ShareWithContactsButton(shareViaProfile, setProfileAddress)
           AutoAcceptToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
           LearnMoreButton(learnMore)
         }

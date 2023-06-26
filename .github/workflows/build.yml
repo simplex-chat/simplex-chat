@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone project
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v1
+        uses: mikepenz/release-changelog-builder-action@v4
         with:
           configuration: .github/changelog_conf.json
           failOnError: true
@@ -71,16 +71,16 @@ jobs:
           disk-root: "C:"
 
       - name: Clone project
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Haskell
-        uses: haskell/actions/setup@v1
+        uses: haskell/actions/setup@v2
         with:
           ghc-version: "8.10.7"
           cabal-version: "latest"
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ matrix.cache_path }}
@@ -119,12 +119,6 @@ jobs:
           cabal build --enable-tests
           echo "::set-output name=bin_path::$(cabal list-bin simplex-chat)"
 
-      - name: Unix test
-        if: matrix.os != 'windows-latest'
-        timeout-minutes: 30
-        shell: bash
-        run: cabal test --test-show-details=direct
-
       - name: Unix upload binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
         uses: svenstaro/upload-release-action@v2
@@ -133,6 +127,12 @@ jobs:
           file: ${{ steps.unix_build.outputs.bin_path }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
+
+      - name: Unix test
+        if: matrix.os != 'windows-latest'
+        timeout-minutes: 30
+        shell: bash
+        run: cabal test --test-show-details=direct
 
       # Unix /
 

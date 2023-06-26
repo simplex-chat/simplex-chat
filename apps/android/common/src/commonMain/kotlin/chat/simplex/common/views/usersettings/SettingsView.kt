@@ -175,14 +175,19 @@ fun SettingsLayout(
       }
       SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.settings_section_title_develop)) {
-        SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
-        AppVersionItem(showVersion)
-      }
+      SettingsSectionApp(showSettingsModal, showCustomModal, showVersion, withAuth)
       SectionBottomSpacer()
     }
   }
 }
+
+@Composable
+expect fun SettingsSectionApp(
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showVersion: () -> Unit,
+  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
+)
 
 @Composable
 fun SettingsIncognitoActionItem(
@@ -346,7 +351,8 @@ fun ChatLockItem(
   }
 }
 
-@Composable private fun AppVersionItem(showVersion: () -> Unit) {
+@Composable
+fun AppVersionItem(showVersion: () -> Unit) {
   SectionItemViewWithIcon(showVersion) { AppVersionText() }
 }
 

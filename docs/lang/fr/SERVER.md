@@ -1,14 +1,14 @@
 ---
 title: Héberger votre propre serveur SMP
-revision: 31.01.2023
+revision: 05.06.2023
 ---
-| 31.01.2023 | FR, [EN](/docs/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
+| 05.06.2023 | FR, [EN](/docs/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
 
 # Héberger votre propre serveur SMP
 
 ## Présentation générale
 
-Un serveur SMP est un serveur relais utilisé pour transmettre les messages sur le réseau SimpleX. Les apps SimpleX Chat ont des serveurs prédéfinis (pour les apps mobiles, smp8, smp9 et smp10.simplex.im), mais vous pouvez facilement modifier la configuration de l'app pour utiliser d'autres serveurs.
+Un serveur SMP est un serveur relais utilisé pour transmettre les messages sur le réseau SimpleX. Les apps SimpleX Chat ont des serveurs prédéfinis (pour les apps mobiles, smp11, smp12 et smp14.simplex.im), mais vous pouvez facilement modifier la configuration de l'app pour utiliser d'autres serveurs.
 
 Seuls les utilisateurs de SimpleX déterminent quel serveur est utilisé pour recevoir les messages, séparément pour chaque contact (ou pour chaque connexion à un membre d'un groupe), et ces serveurs ne sont que temporaires, car l'adresse de réception peut changer.
 
@@ -46,7 +46,10 @@ L'installation manuelle nécessite quelques actions préalables :
 
    ```sh
    # Pour Ubuntu
-   ufw allow 5223
+   sudo ufw allow 5223/tcp
+   # Pour Fedora
+   sudo firewall-cmd --permanent --add-port=5223/tcp && \
+   sudo firewall-cmd --reload
    ```
 
 4. **Optionnel** - Si vous utilisez une distribution avec `systemd`, créez le fichier `/etc/systemd/system/smp-server.service` avec le contenu suivant :

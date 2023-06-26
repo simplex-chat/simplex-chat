@@ -1995,6 +1995,9 @@
 /* No comment provided by engineer. */
 "No received or sent files" = "Geen ontvangen of verzonden bestanden";
 
+/* copied message info in history */
+"no text" = "geen tekst";
+
 /* No comment provided by engineer. */
 "Notifications" = "Meldingen";
 
@@ -2695,6 +2698,9 @@
 /* No comment provided by engineer. */
 "SMP servers" = "SMP servers";
 
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - u kunt de Chat console raadplegen voor meer details.";
+
 /* notification title */
 "Somebody" = "Iemand";
 
@@ -2877,9 +2883,6 @@
 
 /* No comment provided by engineer. */
 "This error is permanent for this connection, please re-connect." = "Deze fout is permanent voor deze verbinding, maak opnieuw verbinding.";
-
-/* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Deze functie is experimenteel! Het werkt alleen als op de andere client versie 4.2 is geïnstalleerd. U zou het bericht in het gesprek moeten zien zodra de adreswijziging is voltooid. Controleer of u nog steeds berichten van dit contact (of groepslid) kunt ontvangen.";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Deze groep bestaat niet meer.";
@@ -3200,7 +3203,7 @@
 "You can create it later" = "U kan het later maken";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "U kunt een gebruikers profiel verbergen of dempen - veeg het naar rechts.\nSimpleX Lock moet ingeschakeld zijn.";
+"You can hide or mute a user profile - swipe it to the right." = "U kunt een gebruikers profiel verbergen of dempen - veeg het naar rechts.";
 
 /* notification body */
 "You can now send messages to %@" = "Je kunt nu berichten sturen naar %@";
@@ -3339,9 +3342,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Uw chat profielen";
-
-/* No comment provided by engineer. */
-"Your chats" = "Jouw gesprekken";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Uw contactpersoon moet online zijn om de verbinding te voltooien.\nU kunt deze verbinding verbreken en het contact verwijderen (en later proberen met een nieuwe link).";

@@ -159,8 +159,8 @@
     <string name="change_member_role_question">更改群组角色？</string>
     <string name="icon_descr_cancel_link_preview">取消链接预览</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">正在为 %s 更改地址……</string>
-    <string name="rcv_conn_event_switch_queue_phase_changing">更改地址……</string>
-    <string name="snd_conn_event_switch_queue_phase_changing">正在更改地址……</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">更改地址中……</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">更改地址中……</string>
     <string name="create_your_profile">创建您的资料</string>
     <string name="chat_database_deleted">聊天数据库已删除</string>
     <string name="chat_database_imported">聊天数据库已导入</string>
@@ -325,7 +325,7 @@
     <string name="callstatus_connecting">连接通话中……</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">联系人和所有的消息都将被删除——这是不可逆回的！</string>
     <string name="notification_preview_mode_contact">联系人姓名</string>
-    <string name="group_member_status_intro_invitation">连接（介绍邀请）</string>
+    <string name="group_member_status_intro_invitation">连接中（介绍邀请）</string>
     <string name="callstate_connecting">连接中……</string>
     <string name="contacts_can_mark_messages_for_deletion">联系人可以将信息标记为删除；您将可以查看这些信息。</string>
     <string name="contribute">贡献</string>
@@ -378,7 +378,6 @@
     <string name="encrypt_database_question">加密数据库？</string>
     <string name="encrypted_with_random_passphrase">数据库使用随机密码进行加密，您可以更改它。</string>
     <string name="database_passphrase_is_required">打开聊天需要数据库密码。</string>
-    <string name="settings_section_title_develop">开发</string>
     <string name="error_stopping_chat">停止聊天错误</string>
     <string name="import_database_question">导入聊天数据库？</string>
     <string name="error_deleting_database">删除聊天数据库错误</string>
@@ -847,7 +846,7 @@
     <string name="use_chat">使用聊天</string>
     <string name="read_more_in_github_with_link">在我们的 <font color="#0088ff">GitHub 存储库</font> 中阅读更多内容。</string>
     <string name="auth_open_chat_console">打开聊天控制台</string>
-    <string name="auth_stop_chat">Stop chat</string>
+    <string name="auth_stop_chat">停止聊天程序</string>
     <string name="toast_permission_denied">权限被拒绝！</string>
     <string name="chat_help_tap_button">点击按钮</string>
     <string name="thank_you_for_installing_simplex">感谢您安装 <xliff:g id="appNameFull">SimpleX Chat</xliff:g>！</string>
@@ -1056,8 +1055,8 @@
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">确保 XFTP 服务器地址格式正确、行分隔且不重复。</string>
     <string name="smp_server_test_create_file">创建文件</string>
     <string name="smp_server_test_download_file">下载文件</string>
-    <string name="error_loading_smp_servers">加载 SMP 服务器时出错</string>
-    <string name="error_loading_xftp_servers">加载 XFTP 服务器时出错</string>
+    <string name="error_loading_smp_servers">加载 SMP 服务器错误</string>
+    <string name="error_loading_xftp_servers">加载 XFTP 服务器错误</string>
     <string name="error_saving_xftp_servers">保存 SMP 服务器时出错</string>
     <string name="network_proxy_port">端口 %d</string>
     <string name="network_socks_proxy_settings">SOCKS 代理设置</string>
@@ -1108,7 +1107,7 @@
     <string name="stop_snd_file__message">即将停止发送文件。</string>
     <string name="stop_rcv_file__title">停止接收文件？</string>
     <string name="stop_rcv_file__message">即将停止接收文件。</string>
-    <string name="stop_file__confirm">Stop</string>
+    <string name="stop_file__confirm">停止</string>
     <string name="revoke_file__action">撤销文件</string>
     <string name="revoke_file__title">撤销文件？</string>
     <string name="revoke_file__message">文件将从服务器中删除。</string>
@@ -1159,7 +1158,7 @@
     <string name="enabled_self_destruct_passcode">启用自毁密码</string>
     <string name="self_destruct">自毁</string>
     <string name="share_text_database_id">数据库 ID：%d</string>
-    <string name="info_row_disappears_at">消失在</string>
+    <string name="info_row_disappears_at">消失于</string>
     <string name="error_setting_address">设置地址错误</string>
     <string name="customize_theme_title">自定义主题</string>
     <string name="create_address_and_let_people_connect">创建一个地址，让人们与您联系。</string>
@@ -1176,7 +1175,96 @@
     <string name="custom_time_unit_days">天</string>
     <string name="custom_time_picker_custom">自定义</string>
     <string name="item_info_current">（当前）</string>
-    <string name="info_row_deleted_at">已删除在</string>
-    <string name="share_text_deleted_at">已删除在：%s</string>
-    <string name="share_text_disappears_at">消失在：%s</string>
+    <string name="info_row_deleted_at">已删除于</string>
+    <string name="share_text_deleted_at">已删除于：%s</string>
+    <string name="share_text_disappears_at">消失于：%s</string>
+    <string name="prohibit_message_reactions">禁止消息回应。</string>
+    <string name="only_you_can_add_message_reactions">只有您可以添加消息回应。</string>
+    <string name="group_members_can_add_message_reactions">群组成员可以添加信息回应。</string>
+    <string name="message_reactions_are_prohibited">该群组禁用了消息回应。</string>
+    <string name="self_destruct_passcode_changed">自毁密码已更改!</string>
+    <string name="self_destruct_passcode_enabled">自毁密码已启用!</string>
+    <string name="set_passcode">设置密码</string>
+    <string name="info_menu">信息</string>
+    <string name="sent_message">已发信息</string>
+    <string name="edit_history">历史记录</string>
+    <string name="send_disappearing_message_send">发送</string>
+    <string name="if_you_enter_passcode_data_removed">如果您在打开应用时输入该密码，所有应用程序数据将被不可撤回地删除！</string>
+    <string name="self_destruct_new_display_name">新的显示名：</string>
+    <string name="info_row_moderated_at">已被管理员移除于</string>
+    <string name="info_row_sent_at">已发送于</string>
+    <string name="share_text_received_at">已收到于： %s</string>
+    <string name="share_text_updated_at">记录更新于： %s</string>
+    <string name="share_text_moderated_at">已被管理员移除于: %s</string>
+    <string name="current_version_timestamp">%s (当前)</string>
+    <string name="share_text_sent_at">发送于 %s</string>
+    <string name="color_received_message">收到的信息</string>
+    <string name="only_your_contact_can_add_message_reactions">只有您的联系人可以添加消息回应。</string>
+    <string name="opening_database">打开数据库中……</string>
+    <string name="auth_open_chat_profiles">打开聊天资料</string>
+    <string name="scan_qr_to_connect_to_contact">您的联系人可以扫描二维码或使用应用程序中的链接来建立连接。</string>
+    <string name="you_can_share_your_address">您可以将您的地址作为链接或二维码共享——任何人都可以连接到您。</string>
+    <string name="if_you_cant_meet_in_person">如果您不能亲自见面，可以在视频通话中展示二维码，或分享链接。</string>
+    <string name="learn_more">了解更多</string>
+    <string name="you_can_accept_or_reject_connection">当人们请求连接时，您可以接受或拒绝它。</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">如果您以后删除您的地址，您不会丢失您的联系人。</string>
+    <string name="read_more_in_user_guide_with_link">在<font color="#0088ff">用户指南</font>中阅读更多。</string>
+    <string name="theme_colors_section_title">主题颜色</string>
+    <string name="your_contacts_will_remain_connected">与您的联系人保持连接。</string>
+    <string name="share_with_contacts">与联系人分享</string>
+    <string name="invite_friends">邀请朋友</string>
+    <string name="save_auto_accept_settings">保存自动接受设置</string>
+    <string name="save_settings_question">保存设置？</string>
+    <string name="stop_sharing">停止分享</string>
+    <string name="email_invite_body">你好！
+\n用 SimpleX Chat 与我联系：%s</string>
+    <string name="email_invite_subject">让我们一起在 SimpleX Chat 里聊天</string>
+    <string name="your_contacts_will_see_it">您的 SimpleX 的联系人会看到它。
+\n您可以在设置中更改它。</string>
+    <string name="you_can_create_it_later">您可以以后创建它</string>
+    <string name="share_address">分享地址</string>
+    <string name="you_can_share_this_address_with_your_contacts">您可以与您的联系人分享该地址，让他们与 %s 联系。</string>
+    <string name="group_welcome_preview">预览</string>
+    <string name="import_theme">导入主题</string>
+    <string name="theme_simplex">SimpleX</string>
+    <string name="import_theme_error_desc">请确保该文件具有正确的YAML语法。导出主题，以便有一个主题文件结构的例子。</string>
+    <string name="color_secondary">第二选项</string>
+    <string name="color_title">标题</string>
+    <string name="whats_new_read_more">阅读更多</string>
+    <string name="v5_1_message_reactions_descr">终于我们有它们了！ 🚀</string>
+    <string name="v5_1_message_reactions">消息回应</string>
+    <string name="v5_1_self_destruct_passcode">自毁密码</string>
+    <string name="custom_time_unit_hours">小时</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">感谢用户——通过 Weblate 做出贡献！</string>
+    <string name="v5_1_japanese_portuguese_interface">日语和葡萄牙语用户界面</string>
+    <string name="custom_time_unit_minutes">分钟</string>
+    <string name="custom_time_unit_seconds">秒</string>
+    <string name="custom_time_unit_months">月</string>
+    <string name="custom_time_picker_select">选择</string>
+    <string name="custom_time_unit_weeks">周</string>
+    <string name="item_info_no_text">无文本</string>
+    <string name="import_theme_error">导入主题错误</string>
+    <string name="color_surface">菜单和警报</string>
+    <string name="color_sent_message">已发信息</string>
+    <string name="message_reactions">消息回应</string>
+    <string name="message_reactions_prohibited_in_this_chat">该聊天禁用了消息回应。</string>
+    <string name="if_you_enter_self_destruct_code">如果您在打开应用程序时输入自毁密码：</string>
+    <string name="profile_update_will_be_sent_to_contacts">个人资料更新将被发送给您的联系人。</string>
+    <string name="info_row_updated_at">记录更新于</string>
+    <string name="prohibit_message_reactions_group">禁止消息回应。</string>
+    <string name="info_row_received_at">已收到于</string>
+    <string name="received_message">收到的信息</string>
+    <string name="send_disappearing_message">发送限时消息中</string>
+    <string name="share_address_with_contacts_question">与联系人分享地址？</string>
+    <string name="stop_sharing_address">停止分享地址？</string>
+    <string name="simplex_address">SimpleX 地址</string>
+    <string name="v5_1_better_messages_descr">- 语音消息最长5分钟。
+\n- 自定义限时消息。
+\n- 编辑消息历史。</string>
+    <string name="non_fatal_errors_occured_during_import">导入过程中发生了一些非致命错误——您可以查看聊天控制台了解更多详细信息。</string>
+    <string name="settings_section_title_app">应用程序</string>
+    <string name="settings_restart_app">重启</string>
+    <string name="shutdown_alert_desc">通知将停止工作直到您重启应用程序</string>
+    <string name="shutdown_alert_question">关闭？</string>
+    <string name="settings_shutdown">关闭</string>
 </resources>

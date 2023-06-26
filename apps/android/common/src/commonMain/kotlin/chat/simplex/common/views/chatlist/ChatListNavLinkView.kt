@@ -161,6 +161,14 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
       }
     }
+    GroupMemberStatus.MemAccepted -> {
+      if (groupInfo.membership.memberCurrent) {
+        LeaveGroupAction(groupInfo, chatModel, showMenu)
+      }
+      if (groupInfo.canDelete) {
+        DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
+      }
+    }
     else -> {
       if (showMarkRead) {
         MarkReadChatAction(chat, chatModel, showMenu)

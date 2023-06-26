@@ -26,8 +26,8 @@ struct CustomTimePicker: View {
             case .minute: return TimeUnitLimits.init(timeUnit: .minute, maxValue: 120)
             case .hour: return TimeUnitLimits.init(timeUnit: .hour, maxValue: 72)
             case .day: return TimeUnitLimits.init(timeUnit: .day, maxValue: 60)
-            case .week: return TimeUnitLimits.init(timeUnit: .week, maxValue: 12) // TODO in 5.2 - 54
-            case .month: return TimeUnitLimits.init(timeUnit: .month, maxValue: 3) // TODO in 5.2 - 12
+            case .week: return TimeUnitLimits.init(timeUnit: .week, maxValue: 52)
+            case .month: return TimeUnitLimits.init(timeUnit: .month, maxValue: 12)
             }
         }
 
@@ -147,6 +147,7 @@ struct DropdownCustomTimePicker: View {
     @State private var dropdownSelection: DropdownSelection = .dropdownValue(value: nil)
     @State private var showCustomTimePicker = false
     @State private var selectedCustomTime: Int? = nil
+    @State private var justOpened = true
 
     enum DropdownSelection: Hashable {
         case dropdownValue(value: Int?)
@@ -167,7 +168,12 @@ struct DropdownCustomTimePicker: View {
             }
         }
         .onAppear {
+            if #unavailable(iOS 16) {
+                // this condition prevents re-setting picker
+                if !justOpened { return }
+            }
             dropdownSelection = .dropdownValue(value: selection)
+            justOpened = false
         }
         .onChange(of: selection) { v in
             logger.debug("*** .onChange(of: selection)")

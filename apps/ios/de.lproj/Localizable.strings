@@ -20,7 +20,7 @@
 "_italic_" = "\\_kursiv_";
 
 /* No comment provided by engineer. */
-"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- Bis zu 5 Minuten lange Sprachnachrichten\n- Zeit für verschwindende Nachrichten anpassen\n- Vergangenheit bearbeiten";
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- Bis zu 5 Minuten lange Sprachnachrichten.\n- Zeitdauer für verschwindende Nachrichten anpassen.\n- Nachrichten-Historie bearbeiten.";
 
 /* No comment provided by engineer. */
 ", " = ", ";
@@ -312,13 +312,13 @@
 "Advanced network settings" = "Erweiterte Netzwerkeinstellungen";
 
 /* No comment provided by engineer. */
-"All app data is deleted." = "App-Daten werden komplett gelöscht.";
+"All app data is deleted." = "Werden die App-Daten komplett gelöscht.";
 
 /* No comment provided by engineer. */
 "All chats and messages will be deleted - this cannot be undone!" = "Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
-"All data is erased when it is entered." = "Sobald es eingegeben wird, werden alle Daten gelöscht.";
+"All data is erased when it is entered." = "Alle Daten werden gelöscht, sobald diese eingegeben wird.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Alle Gruppenmitglieder bleiben verbunden.";
@@ -405,10 +405,10 @@
 "App icon" = "App Icon";
 
 /* No comment provided by engineer. */
-"App passcode" = "App Passwort";
+"App passcode" = "App-Zugangscode";
 
 /* No comment provided by engineer. */
-"App passcode is replaced with self-destruct passcode." = "Das App Passwort wurde durch das Selbstzerstörungspasswort ersetzt.";
+"App passcode is replaced with self-destruct passcode." = "App-Zugangscode wurde durch den Selbstzerstörungs-Zugangscode ersetzt.";
 
 /* No comment provided by engineer. */
 "App version" = "App Version";
@@ -417,7 +417,7 @@
 "App version: v%@" = "App Version: v%@";
 
 /* No comment provided by engineer. */
-"Appearance" = "Design";
+"Appearance" = "Erscheinungsbild";
 
 /* No comment provided by engineer. */
 "Attach" = "Anhängen";
@@ -546,7 +546,7 @@
 "Change member role?" = "Die Mitgliederrolle ändern?";
 
 /* authentication reason */
-"Change passcode" = "Passwort ändern";
+"Change passcode" = "Zugangscode ändern";
 
 /* No comment provided by engineer. */
 "Change receiving address" = "Wechseln der Empfängeradresse";
@@ -562,7 +562,7 @@
 
 /* authentication reason
    set passcode view */
-"Change self-destruct passcode" = "Selbstzerstörungspasswort ändern";
+"Change self-destruct passcode" = "Selbstzerstörungs-Zugangscode ändern";
 
 /* chat item text */
 "changed address for you" = "wechselte die Adresse für Sie";
@@ -583,7 +583,7 @@
 "Chat archive" = "Datenbank Archiv";
 
 /* No comment provided by engineer. */
-"Chat console" = "Chat Konsole";
+"Chat console" = "Chat-Konsole";
 
 /* No comment provided by engineer. */
 "Chat database" = "Chat-Datenbank";
@@ -658,7 +658,7 @@
 "Confirm new passphrase…" = "Neues Passwort bestätigen…";
 
 /* No comment provided by engineer. */
-"Confirm Passcode" = "Passwort bestätigen";
+"Confirm Passcode" = "Zugangscode bestätigen";
 
 /* No comment provided by engineer. */
 "Confirm password" = "Passwort bestätigen";
@@ -817,7 +817,7 @@
 "creator" = "Ersteller";
 
 /* No comment provided by engineer. */
-"Current Passcode" = "Aktuelles Passwort";
+"Current Passcode" = "Aktueller Zugangscode";
 
 /* No comment provided by engineer. */
 "Current passphrase…" = "Aktuelles Passwort…";
@@ -1141,7 +1141,7 @@
 "Enable self-destruct" = "Selbstzerstörung aktivieren";
 
 /* set passcode view */
-"Enable self-destruct passcode" = "Selbstzerstörungspasswort aktivieren";
+"Enable self-destruct passcode" = "Selbstzerstörungs-Zugangscode aktivieren";
 
 /* authentication reason */
 "Enable SimpleX Lock" = "SimpleX Sperre aktivieren";
@@ -1195,7 +1195,7 @@
 "Enter correct passphrase." = "Geben Sie das korrekte Passwort ein.";
 
 /* No comment provided by engineer. */
-"Enter Passcode" = "Passwort eingeben";
+"Enter Passcode" = "Zugangscode eingeben";
 
 /* No comment provided by engineer. */
 "Enter passphrase…" = "Passwort eingeben…";
@@ -1306,7 +1306,7 @@
 "Error saving ICE servers" = "Fehler beim Speichern der ICE-Server";
 
 /* No comment provided by engineer. */
-"Error saving passcode" = "Fehler beim Speichern des Passworts";
+"Error saving passcode" = "Fehler beim Speichern des Zugangscodes";
 
 /* No comment provided by engineer. */
 "Error saving passphrase to keychain" = "Fehler beim Speichern des Passworts in den Schlüsselbund";
@@ -1543,10 +1543,10 @@
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs gescannt werden**, oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.";
 
 /* No comment provided by engineer. */
-"If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "Wenn Sie dieses Passwort während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!";
+"If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "Wenn Sie diesen Zugangscode während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!";
 
 /* No comment provided by engineer. */
-"If you enter your self-destruct passcode while opening the app:" = "Wenn Sie Ihr Selbstzerstörungspasswort während des Öffnens der App eingeben:";
+"If you enter your self-destruct passcode while opening the app:" = "Wenn Sie Ihren Selbstzerstörungs-Zugangscode während des Öffnens der App eingeben:";
 
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Tippen Sie unten auf **Später wiederholen**, wenn Sie den Chat jetzt benötigen (es wird Ihnen angeboten, die Datenbank bei einem Neustart der App zu migrieren).";
@@ -1615,7 +1615,7 @@
 "Incompatible database version" = "Inkompatible Datenbank-Version";
 
 /* PIN entry */
-"Incorrect passcode" = "Passwort falsch";
+"Incorrect passcode" = "Zugangscode ist falsch";
 
 /* No comment provided by engineer. */
 "Incorrect security code!" = "Falscher Sicherheitscode!";
@@ -1960,7 +1960,7 @@
 "New message" = "Neue Nachricht";
 
 /* No comment provided by engineer. */
-"New Passcode" = "Neues Passwort";
+"New Passcode" = "Neuer Zugangscode";
 
 /* No comment provided by engineer. */
 "New passphrase…" = "Neues Passwort…";
@@ -1994,6 +1994,9 @@
 
 /* No comment provided by engineer. */
 "No received or sent files" = "Keine empfangenen oder gesendeten Dateien";
+
+/* copied message info in history */
+"no text" = "Kein Text";
 
 /* No comment provided by engineer. */
 "Notifications" = "Benachrichtigungen";
@@ -2114,19 +2117,19 @@
 "owner" = "Eigentümer";
 
 /* No comment provided by engineer. */
-"Passcode" = "Passwort";
+"Passcode" = "Zugangscode";
 
 /* No comment provided by engineer. */
-"Passcode changed!" = "Passwort geändert!";
+"Passcode changed!" = "Zugangscode wurde geändert!";
 
 /* No comment provided by engineer. */
-"Passcode entry" = "Passworteingabe";
+"Passcode entry" = "Eingabe des Zugangscodes";
 
 /* No comment provided by engineer. */
-"Passcode not changed!" = "Passwort wurde nicht geändert!";
+"Passcode not changed!" = "Der Zugangscode wurde nicht geändert!";
 
 /* No comment provided by engineer. */
-"Passcode set!" = "Passwort wurde geändert!";
+"Passcode set!" = "Zugangscode eingestellt!";
 
 /* No comment provided by engineer. */
 "Password to show" = "Passwort anzeigen";
@@ -2183,7 +2186,7 @@
 "Please enter the previous password after restoring database backup. This action can not be undone." = "Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.";
 
 /* No comment provided by engineer. */
-"Please remember or store it securely - there is no way to recover a lost passcode!" = "Es gibt keine Möglichkeit ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!";
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Es gibt keine Möglichkeit einen vergessenen Zugangscode wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie ihn sicher ab!";
 
 /* No comment provided by engineer. */
 "Please report it to the developers." = "Bitte melden Sie es den Entwicklern.";
@@ -2513,13 +2516,13 @@
 "Self-destruct" = "Selbstzerstörung";
 
 /* No comment provided by engineer. */
-"Self-destruct passcode" = "Selbstzerstörungspasswort";
+"Self-destruct passcode" = "Selbstzerstörungs-Zugangscode";
 
 /* No comment provided by engineer. */
-"Self-destruct passcode changed!" = "Das Selbstzerstörungspasswort wurde geändert!";
+"Self-destruct passcode changed!" = "Der Selbstzerstörungs-Zugangscode wurde geändert!";
 
 /* No comment provided by engineer. */
-"Self-destruct passcode enabled!" = "Das Selbstzerstörungspasswort wurde aktiviert!";
+"Self-destruct passcode enabled!" = "Der Selbstzerstörungs-Zugangscode wurde aktiviert!";
 
 /* No comment provided by engineer. */
 "Send" = "Senden";
@@ -2603,7 +2606,7 @@
 "Set it instead of system authentication." = "Anstelle der System-Authentifizierung festlegen.";
 
 /* No comment provided by engineer. */
-"Set passcode" = "Passwort eingeben";
+"Set passcode" = "Zugangscode einstellen";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Passwort für den Export festlegen";
@@ -2695,6 +2698,9 @@
 /* No comment provided by engineer. */
 "SMP servers" = "SMP-Server";
 
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten - in der Chat-Konsole finden Sie weitere Einzelheiten.";
+
 /* notification title */
 "Somebody" = "Jemand";
 
@@ -2744,7 +2750,7 @@
 "strike" = "durchstreichen";
 
 /* No comment provided by engineer. */
-"Submit" = "Übermitteln";
+"Submit" = "Bestätigen";
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "Unterstützung von SimpleX Chat";
@@ -2877,9 +2883,6 @@
 
 /* No comment provided by engineer. */
 "This error is permanent for this connection, please re-connect." = "Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.";
-
-/* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls eine SimpleX-Version ab v4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Diese Gruppe existiert nicht mehr.";
@@ -3182,7 +3185,7 @@
 "You are connected to the server used to receive messages from this contact." = "Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "Sie sind zur Gruppe eingeladen";
+"you are invited to group" = "Sie sind zu der Gruppe eingeladen";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sie sind zu der Gruppe eingeladen";
@@ -3200,7 +3203,7 @@
 "You can create it later" = "Sie können dies später erstellen";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "Sie können ein Benutzerprofil verbergen oder stummschalten - wischen Sie es nach rechts.\nDafür muss die SimpleX Sperre aktiviert sein.";
+"You can hide or mute a user profile - swipe it to the right." = "Sie können ein Benutzerprofil verbergen oder stummschalten - wischen Sie es nach rechts.";
 
 /* notification body */
 "You can now send messages to %@" = "Sie können nun Nachrichten an %@ versenden";
@@ -3339,9 +3342,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Meine Chat-Profile";
-
-/* No comment provided by engineer. */
-"Your chats" = "Meine Chats";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Damit die Verbindung hergestellt werden kann, muss Ihr Kontakt online sein.\nSie können diese Verbindung abbrechen und den Kontakt entfernen (und es später nochmals mit einem neuen Link versuchen).";

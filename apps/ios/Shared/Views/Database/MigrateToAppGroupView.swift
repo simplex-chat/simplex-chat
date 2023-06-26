@@ -203,7 +203,7 @@ struct MigrateToAppGroupView: View {
                 dbContainerGroupDefault.set(.group)
                 resetChatCtrl()
                 try await MainActor.run { try initializeChat(start: false) }
-                try await apiImportArchive(config: config)
+                let _ = try await apiImportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.migrated) }
             } catch let error {
                 dbContainerGroupDefault.set(.documents)

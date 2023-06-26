@@ -1633,8 +1633,9 @@ fun getTimestampText(t: Instant): String {
   val tz = TimeZone.currentSystemDefault()
   val now: LocalDateTime = Clock.System.now().toLocalDateTime(tz)
   val time: LocalDateTime = t.toLocalDateTime(tz)
+  val period = now.date.minus(time.date)
   val recent = now.date == time.date ||
-      (now.date.minus(time.date).days == 1 && now.hour < 12 && time.hour >= 18 )
+      (period.years == 0 && period.months == 0 && period.days == 1 && now.hour < 12 && time.hour >= 18 )
   val dateFormatter =
     if (recent) {
       DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
@@ -2359,6 +2360,7 @@ sealed class SndConnEvent {
 enum class SwitchPhase {
   @SerialName("started") Started,
   @SerialName("confirmed") Confirmed,
+  @SerialName("secured") Secured,
   @SerialName("completed") Completed
 }
 

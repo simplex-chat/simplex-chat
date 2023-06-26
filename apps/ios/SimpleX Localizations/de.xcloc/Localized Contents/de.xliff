@@ -301,9 +301,9 @@
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
-        <target>- Bis zu 5 Minuten lange Sprachnachrichten
-- Zeit für verschwindende Nachrichten anpassen
-- Vergangenheit bearbeiten</target>
+        <target>- Bis zu 5 Minuten lange Sprachnachrichten.
+- Zeitdauer für verschwindende Nachrichten anpassen.
+- Nachrichten-Historie bearbeiten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="." xml:space="preserve">
@@ -400,6 +400,18 @@
 **Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Abort" xml:space="preserve">
+        <source>Abort</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Abort changing address" xml:space="preserve">
+        <source>Abort changing address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Abort changing address?" xml:space="preserve">
+        <source>Abort changing address?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
         <source>About SimpleX</source>
         <target>Über SimpleX</target>
@@ -481,6 +493,10 @@
         <target>Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
+        <source>Address change will be aborted. Old receiving address will be used.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
         <target>Administratoren können Links für den Beitritt zu Gruppen erzeugen.</target>
@@ -493,7 +509,7 @@
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
         <source>All app data is deleted.</source>
-        <target>App-Daten werden komplett gelöscht.</target>
+        <target>Werden die App-Daten komplett gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
@@ -503,7 +519,7 @@
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
         <source>All data is erased when it is entered.</source>
-        <target>Sobald es eingegeben wird, werden alle Daten gelöscht.</target>
+        <target>Alle Daten werden gelöscht, sobald diese eingegeben wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -643,12 +659,12 @@
       </trans-unit>
       <trans-unit id="App passcode" xml:space="preserve">
         <source>App passcode</source>
-        <target>App Passwort</target>
+        <target>App-Zugangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve">
         <source>App passcode is replaced with self-destruct passcode.</source>
-        <target>Das App Passwort wurde durch das Selbstzerstörungspasswort ersetzt.</target>
+        <target>App-Zugangscode wurde durch den Selbstzerstörungs-Zugangscode ersetzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -663,7 +679,7 @@
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
         <source>Appearance</source>
-        <target>Design</target>
+        <target>Erscheinungsbild</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -838,7 +854,7 @@
       </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
         <source>Change passcode</source>
-        <target>Passwort ändern</target>
+        <target>Zugangscode ändern</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
@@ -863,7 +879,7 @@
       </trans-unit>
       <trans-unit id="Change self-destruct passcode" xml:space="preserve">
         <source>Change self-destruct passcode</source>
-        <target>Selbstzerstörungspasswort ändern</target>
+        <target>Selbstzerstörungs-Zugangscode ändern</target>
         <note>authentication reason
    set passcode view</note>
       </trans-unit>
@@ -874,7 +890,7 @@
       </trans-unit>
       <trans-unit id="Chat console" xml:space="preserve">
         <source>Chat console</source>
-        <target>Chat Konsole</target>
+        <target>Chat-Konsole</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database" xml:space="preserve">
@@ -979,7 +995,7 @@
       </trans-unit>
       <trans-unit id="Confirm Passcode" xml:space="preserve">
         <source>Confirm Passcode</source>
-        <target>Passwort bestätigen</target>
+        <target>Zugangscode bestätigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
@@ -1184,7 +1200,7 @@
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
         <source>Current Passcode</source>
-        <target>Aktuelles Passwort</target>
+        <target>Aktueller Zugangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current passphrase…" xml:space="preserve">
@@ -1692,7 +1708,7 @@
       </trans-unit>
       <trans-unit id="Enable self-destruct passcode" xml:space="preserve">
         <source>Enable self-destruct passcode</source>
-        <target>Selbstzerstörungspasswort aktivieren</target>
+        <target>Selbstzerstörungs-Zugangscode aktivieren</target>
         <note>set passcode view</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -1742,7 +1758,7 @@
       </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
         <source>Enter Passcode</source>
-        <target>Passwort eingeben</target>
+        <target>Zugangscode eingeben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">
@@ -1778,6 +1794,10 @@
       <trans-unit id="Error" xml:space="preserve">
         <source>Error</source>
         <target>Fehler</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error aborting address change" xml:space="preserve">
+        <source>Error aborting address change</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
@@ -1927,7 +1947,7 @@
       </trans-unit>
       <trans-unit id="Error saving passcode" xml:space="preserve">
         <source>Error saving passcode</source>
-        <target>Fehler beim Speichern des Passworts</target>
+        <target>Fehler beim Speichern des Zugangscodes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
@@ -2038,6 +2058,10 @@
       <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve">
         <source>Fast and no wait until the sender is online!</source>
         <target>Schnell und ohne warten auf den Absender, bis er online ist!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Favorite" xml:space="preserve">
+        <source>Favorite</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
@@ -2307,12 +2331,12 @@
       </trans-unit>
       <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
         <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
-        <target>Wenn Sie dieses Passwort während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</target>
+        <target>Wenn Sie diesen Zugangscode während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve">
         <source>If you enter your self-destruct passcode while opening the app:</source>
-        <target>Wenn Sie Ihr Selbstzerstörungspasswort während des Öffnens der App eingeben:</target>
+        <target>Wenn Sie Ihren Selbstzerstörungs-Zugangscode während des Öffnens der App eingeben:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
@@ -2412,7 +2436,7 @@
       </trans-unit>
       <trans-unit id="Incorrect passcode" xml:space="preserve">
         <source>Incorrect passcode</source>
-        <target>Passwort falsch</target>
+        <target>Zugangscode ist falsch</target>
         <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Incorrect security code!" xml:space="preserve">
@@ -2835,7 +2859,7 @@
       </trans-unit>
       <trans-unit id="New Passcode" xml:space="preserve">
         <source>New Passcode</source>
-        <target>Neues Passwort</target>
+        <target>Neuer Zugangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -3094,27 +3118,27 @@
       </trans-unit>
       <trans-unit id="Passcode" xml:space="preserve">
         <source>Passcode</source>
-        <target>Passwort</target>
+        <target>Zugangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Passcode changed!" xml:space="preserve">
         <source>Passcode changed!</source>
-        <target>Passwort geändert!</target>
+        <target>Zugangscode wurde geändert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Passcode entry" xml:space="preserve">
         <source>Passcode entry</source>
-        <target>Passworteingabe</target>
+        <target>Eingabe des Zugangscodes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Passcode not changed!" xml:space="preserve">
         <source>Passcode not changed!</source>
-        <target>Passwort wurde nicht geändert!</target>
+        <target>Der Zugangscode wurde nicht geändert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Passcode set!" xml:space="preserve">
         <source>Passcode set!</source>
-        <target>Passwort wurde geändert!</target>
+        <target>Zugangscode eingestellt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
@@ -3194,7 +3218,7 @@
       </trans-unit>
       <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve">
         <source>Please remember or store it securely - there is no way to recover a lost passcode!</source>
-        <target>Es gibt keine Möglichkeit ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!</target>
+        <target>Es gibt keine Möglichkeit einen vergessenen Zugangscode wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie ihn sicher ab!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please report it to the developers." xml:space="preserve">
@@ -3396,6 +3420,10 @@
         <source>Received message</source>
         <target>Empfangene Nachricht</target>
         <note>message info title</note>
+      </trans-unit>
+      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
+        <source>Receiving address will be changed to a different server. Address change will complete after sender comes online.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
@@ -3704,17 +3732,17 @@
       </trans-unit>
       <trans-unit id="Self-destruct passcode" xml:space="preserve">
         <source>Self-destruct passcode</source>
-        <target>Selbstzerstörungspasswort</target>
+        <target>Selbstzerstörungs-Zugangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Self-destruct passcode changed!" xml:space="preserve">
         <source>Self-destruct passcode changed!</source>
-        <target>Das Selbstzerstörungspasswort wurde geändert!</target>
+        <target>Der Selbstzerstörungs-Zugangscode wurde geändert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve">
         <source>Self-destruct passcode enabled!</source>
-        <target>Das Selbstzerstörungspasswort wurde aktiviert!</target>
+        <target>Der Selbstzerstörungs-Zugangscode wurde aktiviert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve">
@@ -3854,7 +3882,7 @@
       </trans-unit>
       <trans-unit id="Set passcode" xml:space="preserve">
         <source>Set passcode</source>
-        <target>Passwort eingeben</target>
+        <target>Zugangscode einstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -4002,6 +4030,11 @@
         <target>Übersprungene Nachrichten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
+        <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
+        <target>Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten - in der Chat-Konsole finden Sie weitere Einzelheiten.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
         <source>Somebody</source>
         <target>Jemand</target>
@@ -4074,7 +4107,7 @@
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
         <source>Submit</source>
-        <target>Übermitteln</target>
+        <target>Bestätigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
@@ -4294,11 +4327,6 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">
-        <source>This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</source>
-        <target>Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls eine SimpleX-Version ab v4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
         <source>This group no longer exists.</source>
         <target>Diese Gruppe existiert nicht mehr.</target>
@@ -4409,6 +4437,10 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       <trans-unit id="Unexpected migration state" xml:space="preserve">
         <source>Unexpected migration state</source>
         <target>Unerwarteter Migrationsstatus</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unfav." xml:space="preserve">
+        <source>Unfav.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
@@ -4758,11 +4790,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Sie können dies später erstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can hide or mute a user profile - swipe it to the right.&#10;SimpleX Lock must be enabled." xml:space="preserve">
-        <source>You can hide or mute a user profile - swipe it to the right.
-SimpleX Lock must be enabled.</source>
-        <target>Sie können ein Benutzerprofil verbergen oder stummschalten - wischen Sie es nach rechts.
-Dafür muss die SimpleX Sperre aktiviert sein.</target>
+      <trans-unit id="You can hide or mute a user profile - swipe it to the right." xml:space="preserve">
+        <source>You can hide or mute a user profile - swipe it to the right.</source>
+        <target>Sie können ein Benutzerprofil verbergen oder stummschalten - wischen Sie es nach rechts.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -4968,11 +4998,6 @@ Dafür muss die SimpleX Sperre aktiviert sein.</target>
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Meine Chat-Profile</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chats" xml:space="preserve">
-        <source>Your chats</source>
-        <target>Meine Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
@@ -5498,6 +5523,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">
         <source>no text</source>
+        <target>Kein Text</target>
         <note>copied message info in history</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
@@ -5668,7 +5694,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="you are invited to group" xml:space="preserve">
         <source>you are invited to group</source>
-        <target>Sie sind zur Gruppe eingeladen</target>
+        <target>Sie sind zu der Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">

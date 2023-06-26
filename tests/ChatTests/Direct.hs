@@ -73,9 +73,11 @@ chatDirectTests = do
     it "user profile privacy: hide profiles and notificaitons" testUserPrivacy
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
-  describe "queue rotation" $ do
+  describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
+    it "stop switching contact to a different queue" testAbortSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
+    it "stop switching group member to a different queue" testAbortSwitchGroupMember
   describe "connection verification code" $ do
     it "verificationCode function converts ByteString to series of digits" $ \_ ->
       verificationCode (C.sha256Hash "abcd") `shouldBe` "61889 38426 63934 09576 96390 79389 84124 85253 63658 69469 70853 37788 95900 68296 20156 25"
@@ -521,8 +523,9 @@ testGetSetSMPServers =
       alice #$> ("/smp", id, "smp://1234-w==@smp1.example.im")
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
       alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
-      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice ##> "/smp"
+      alice <## "smp://2345-w==@smp2.example.im"
       alice <## "smp://3456-w==@smp3.example.im:5224"
       alice #$> ("/smp default", id, "ok")
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
@@ -551,8 +554,9 @@ testGetSetXFTPServers =
       alice #$> ("/xftp", id, "xftp://1234-w==@xftp1.example.im")
       alice #$> ("/xftp xftp://1234-w==:password@xftp1.example.im", id, "ok")
       alice #$> ("/xftp", id, "xftp://1234-w==:password@xftp1.example.im")
-      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im;xftp://3456-w==@xftp3.example.im:5224", id, "ok")
-      alice #$> ("/xftp", id, "xftp://2345-w==@xftp2.example.im")
+      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
+      alice ##> "/xftp"
+      alice <## "xftp://2345-w==@xftp2.example.im"
       alice <## "xftp://3456-w==@xftp3.example.im:5224"
       alice #$> ("/xftp default", id, "ok")
       alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
@@ -934,7 +938,8 @@ testDatabaseEncryption tmp = do
       alice <## "chat stopped"
       alice ##> "/db decrypt anotherkey"
       alice <## "ok"
-    withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
+    withTestChat tmp "alice" $ \alice -> do
+      testChatWorking alice bob
 
 testMuteContact :: HasCallStack => FilePath -> IO ()
 testMuteContact =
@@ -1134,39 +1139,55 @@ testCreateUserDefaultServers :: HasCallStack => FilePath -> IO ()
 testCreateUserDefaultServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
-      alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
+      checkCustomServers alice
 
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
 
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+      alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
 
-      -- with same_smp=off
+      -- with same_servers=off
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
-      alice <## "smp://3456-w==@smp3.example.im:5224"
+      checkCustomServers alice
 
-      alice ##> "/create user same_smp=off alisa2"
+      alice ##> "/create user same_servers=off alisa2"
       showActiveUser alice "alisa2"
 
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
+      alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
+  where
+    checkCustomServers alice = do
+      alice ##> "/smp"
+      alice <## "smp://2345-w==@smp2.example.im"
+      alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice ##> "/xftp"
+      alice <## "xftp://2345-w==@xftp2.example.im"
+      alice <## "xftp://3456-w==@xftp3.example.im:5224"
 
 testCreateUserSameServers :: HasCallStack => FilePath -> IO ()
 testCreateUserSameServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
-      alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
+      checkCustomServers alice
 
-      alice ##> "/create user same_smp=on alisa"
+      alice ##> "/create user same_servers=on alisa"
       showActiveUser alice "alisa"
 
-      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im")
+      checkCustomServers alice
+  where
+    checkCustomServers alice = do
+      alice ##> "/smp"
+      alice <## "smp://2345-w==@smp2.example.im"
       alice <## "smp://3456-w==@smp3.example.im:5224"
+      alice ##> "/xftp"
+      alice <## "xftp://2345-w==@xftp2.example.im"
+      alice <## "xftp://3456-w==@xftp3.example.im:5224"
 
 testDeleteUser :: HasCallStack => FilePath -> IO ()
 testDeleteUser =
@@ -1308,20 +1329,20 @@ testUsersDifferentCIExpirationTTL tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testUsersRestartCIExpiration :: HasCallStack => FilePath -> IO ()
 testUsersRestartCIExpiration tmp = do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
       -- set ttl for first user
-      alice #$> ("/_ttl 1 1", id, "ok")
+      alice #$> ("/_ttl 1 2", id, "ok")
       connectUsers alice bob
 
       -- create second user and set ttl
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 3", id, "ok")
+      alice #$> ("/_ttl 2 5", id, "ok")
       connectUsers alice bob
 
       -- first user messages
@@ -1353,7 +1374,7 @@ testUsersRestartCIExpiration tmp = do
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
 
       alice #> "@bob alice 3"
       bob <# "alice> alice 3"
@@ -1365,7 +1386,7 @@ testUsersRestartCIExpiration tmp = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 3 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 5 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -1374,7 +1395,7 @@ testUsersRestartCIExpiration tmp = do
 
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 3000000
 
       -- messages both before and after restart are deleted
       -- first user messages
@@ -1387,11 +1408,11 @@ testUsersRestartCIExpiration tmp = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 3000000
 
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testEnableCIExpirationOnlyForOneUser :: HasCallStack => FilePath -> IO ()
 testEnableCIExpirationOnlyForOneUser tmp = do
@@ -1462,7 +1483,7 @@ testEnableCIExpirationOnlyForOneUser tmp = do
       -- new messages are not deleted for second user
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4"), (1, "alisa 5"), (0, "alisa 6")])
   where
-    cfg = testCfg {ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testDisableCIExpirationOnlyForOneUser :: HasCallStack => FilePath -> IO ()
 testDisableCIExpirationOnlyForOneUser tmp = do
@@ -1520,7 +1541,7 @@ testDisableCIExpirationOnlyForOneUser tmp = do
       -- second user messages are deleted
       alice #$> ("/_get chat @4 count=100", chat, [])
   where
-    cfg = testCfg {ciExpirationInterval = 500000}
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testUsersTimedMessages :: HasCallStack => FilePath -> IO ()
 testUsersTimedMessages tmp = do
@@ -1817,7 +1838,7 @@ testSwitchContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice #$> ("/switch bob", id, "ok")
+      alice #$> ("/switch bob", id, "switch started")
       bob <## "alice started changing address for you"
       alice <## "bob: you started changing address"
       bob <## "alice changed address for you"
@@ -1826,18 +1847,76 @@ testSwitchContact =
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
 
+testAbortSwitchContact :: HasCallStack => FilePath -> IO ()
+testAbortSwitchContact tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+    alice #$> ("/switch bob", id, "switch started")
+    alice <## "bob: you started changing address"
+    -- repeat switch is prohibited
+    alice ##> "/switch bob"
+    alice <## "error: command is prohibited"
+    -- stop switch
+    alice #$> ("/abort switch bob", id, "switch aborted")
+    -- repeat switch stop is prohibited
+    alice ##> "/abort switch bob"
+    alice <## "error: command is prohibited"
+    withTestChatContactConnected tmp "bob" $ \bob -> do
+      bob <## "alice started changing address for you"
+      -- alice changes address again
+      alice #$> ("/switch bob", id, "switch started")
+      alice <## "bob: you started changing address"
+      bob <## "alice started changing address for you"
+      bob <## "alice changed address for you"
+      alice <## "bob: you changed address"
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "started changing address..."), (1, "you changed address")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
+      alice <##> bob
+
 testSwitchGroupMember :: HasCallStack => FilePath -> IO ()
 testSwitchGroupMember =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      alice #$> ("/switch #team bob", id, "ok")
+      alice #$> ("/switch #team bob", id, "switch started")
       bob <## "#team: alice started changing address for you"
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
+      alice #> "#team hey"
+      bob <# "#team alice> hey"
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+
+testAbortSwitchGroupMember :: HasCallStack => FilePath -> IO ()
+testAbortSwitchGroupMember tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+    alice #$> ("/switch #team bob", id, "switch started")
+    alice <## "#team: you started changing address for bob"
+    -- repeat switch is prohibited
+    alice ##> "/switch #team bob"
+    alice <## "error: command is prohibited"
+    -- stop switch
+    alice #$> ("/abort switch #team bob", id, "switch aborted")
+    -- repeat switch stop is prohibited
+    alice ##> "/abort switch #team bob"
+    alice <## "error: command is prohibited"
+    withTestChatContactConnected tmp "bob" $ \bob -> do
+      bob <## "#team: connected to server(s)"
+      bob <## "#team: alice started changing address for you"
+      -- alice changes address again
+      alice #$> ("/switch #team bob", id, "switch started")
+      alice <## "#team: you started changing address for bob"
+      bob <## "#team: alice started changing address for you"
+      bob <## "#team: alice changed address for you"
+      alice <## "#team: you changed address for bob"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       bob #> "#team hi"

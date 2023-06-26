@@ -33,9 +33,9 @@ fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
   fun savePrefs(afterSave: () -> Unit = {}) {
     withApi {
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
-      val gInfo = m.controller.apiUpdateGroup(gInfo.groupId, gp)
-      if (gInfo != null) {
-        m.updateGroup(gInfo)
+      val g = m.controller.apiUpdateGroup(gInfo.groupId, gp)
+      if (g != null) {
+        m.updateGroup(g)
         currentPreferences = preferences
       }
       afterSave()
@@ -77,11 +77,11 @@ private fun GroupPreferencesLayout(
     AppBarTitle(stringResource(MR.strings.group_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
     val onTTLUpdated = { ttl: Int? ->
-      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl ?: 86400)))
+      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
     }
     FeatureSection(GroupFeature.TimedMessages, timedMessages, groupInfo, preferences, onTTLUpdated) { enable ->
       if (enable == GroupFeatureEnabled.ON) {
-         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
+        applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
       } else {
         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
       }
@@ -97,11 +97,11 @@ private fun GroupPreferencesLayout(
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
     }
     SectionDividerSpaced(true, maxBottomPadding = false)
-//    val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.enable) }
-//    FeatureSection(GroupFeature.Reactions, allowReactions, groupInfo, preferences, onTTLUpdated) {
-//      applyPrefs(preferences.copy(reactions = GroupPreference(enable = it)))
-//    }
-//    SectionDividerSpaced(true, maxBottomPadding = false)
+    val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.enable) }
+    FeatureSection(GroupFeature.Reactions, allowReactions, groupInfo, preferences, onTTLUpdated) {
+      applyPrefs(preferences.copy(reactions = GroupPreference(enable = it)))
+    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
@@ -147,7 +147,7 @@ private fun FeatureSection(
           selection = ttl,
           propagateExternalSelectionUpdate = true, // for Reset
           label = generalGetString(MR.strings.delete_after),
-          dropdownValues = TimedMessagesPreference.ttlValues.filterNotNull(), // TODO in 5.2 - allow "off"
+          dropdownValues = TimedMessagesPreference.ttlValues,
           customPickerTitle = generalGetString(MR.strings.delete_after),
           customPickerConfirmButtonText = generalGetString(MR.strings.custom_time_picker_select),
           onSelected = onTTLUpdated
