@@ -1,54 +1,61 @@
+@file:Suppress("UnstableApiUsage")
+
 plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-    id 'org.jetbrains.kotlin.plugin.serialization'
+    id("com.android.application")
+    id("org.jetbrains.compose")
+    kotlin("android")
+    id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+repositories {
+    maven("https://jitpack.io")
 }
 
 android {
-    compileSdk 32
+    compileSdkVersion(33)
 
     defaultConfig {
-        applicationId "chat.simplex.app"
-        minSdk 26
-        targetSdk 32
+        applicationId = "chat.simplex.app"
+        minSdkVersion(26)
+        targetSdkVersion(33)
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
-        versionCode 121
-        versionName "5.1"
+        versionCode = (extra["app.version_code"] as String).toInt()
+        versionName = extra["app.version_name"] as String
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables {
-            useSupportLibrary true
+            useSupportLibrary = true
         }
         externalNativeBuild {
             cmake {
-                cppFlags ''
+                cppFlags("")
             }
         }
-        manifestPlaceholders.app_name = "@string/app_name"
-        manifestPlaceholders.provider_authorities = "chat.simplex.app.provider"
-        manifestPlaceholders.extract_native_libs = compression_level != "0"
+        manifestPlaceholders["app_name"] = "@string/app_name"
+        manifestPlaceholders["provider_authorities"] = "chat.simplex.app.provider"
+        manifestPlaceholders["extract_native_libs"] = rootProject.extra["compression_level"] as Int != 0
     }
 
     buildTypes {
         debug {
-            applicationIdSuffix "$application_id_suffix"
-            debuggable new Boolean("$enable_debuggable")
-            manifestPlaceholders.app_name = "$app_name"
-            // Provider can't be the same for different apps on the same device
-            manifestPlaceholders.provider_authorities = "chat.simplex.app${application_id_suffix}.provider"
+            applicationIdSuffix = rootProject.extra["application_id_suffix"] as String
+            isDebuggable = rootProject.extra["enable_debuggable"] as Boolean
+            manifestPlaceholders["app_name"] = rootProject.extra["app_name"] as String
+            // Provider can"t be the same for different apps on the same device
+            manifestPlaceholders["provider_authorities"] = "chat.simplex.app${rootProject.extra["application_id_suffix"]}.provider"
         }
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility =  JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = "1.8"
         freeCompilerArgs += "-opt-in=kotlinx.coroutines.DelicateCoroutinesApi"
         freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
         freeCompilerArgs += "-opt-in=androidx.compose.ui.text.ExperimentalTextApi"
@@ -60,23 +67,22 @@ android {
     }
     externalNativeBuild {
         cmake {
-            path file('src/main/cpp/CMakeLists.txt')
+            path(File("../common/src/commonMain/cpp/android/CMakeLists.txt"))
         }
     }
-    buildFeatures {
-        compose true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion compose_version
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+        }
     }
     packagingOptions {
         resources {
-            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
-        jniLibs.useLegacyPackaging = compression_level != "0"
+        jniLibs.useLegacyPackaging = rootProject.extra["compression_level"] as Int != 0
     }
-    def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
-    def isBundle = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("bundle") }) != null
+    val isRelease = gradle.startParameter.taskNames.find { it.toLowerCase().contains("release") } != null
+    val isBundle = gradle.startParameter.taskNames.find { it.toLowerCase().contains("bundle") } != null
 //    if (isRelease) {
         // Comma separated list of languages that will be included in the apk
     android.defaultConfig.resConfigs(
@@ -95,17 +101,17 @@ android {
     )
 //    }
     if (isBundle) {
-        defaultConfig.ndk.abiFilters 'arm64-v8a', 'armeabi-v7a'
+        defaultConfig.ndk.abiFilters("arm64-v8a", "armeabi-v7a")
     } else {
         splits {
             abi {
-                enable true
+                isEnable = true
                 reset()
                 if (isRelease) {
-                    include 'arm64-v8a', 'armeabi-v7a'
+                    include("arm64-v8a", "armeabi-v7a")
                 } else {
-                    include 'arm64-v8a', 'armeabi-v7a'
-                    universalApk false
+                    include("arm64-v8a", "armeabi-v7a")
+                    isUniversalApk = false
                 }
             }
         }
@@ -113,130 +119,92 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.7.0'
-    implementation "androidx.compose.ui:ui:$compose_version"
-    implementation "androidx.compose.material:material:$compose_version"
-    implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.1'
-    implementation 'androidx.lifecycle:lifecycle-process:2.4.1'
-    implementation 'androidx.activity:activity-compose:1.4.0'
-    implementation 'androidx.fragment:fragment:1.4.1'
-    implementation 'org.jetbrains.kotlinx:kotlinx-datetime:0.3.2'
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
-    implementation 'com.charleskorn.kaml:kaml:0.43.0'
-    //implementation "androidx.compose.material:material-icons-extended:$compose_version"
-    implementation "androidx.compose.ui:ui-util:$compose_version"
-    implementation "androidx.navigation:navigation-compose:2.4.1"
-    implementation "com.google.accompanist:accompanist-insets:0.23.0"
-    implementation 'androidx.webkit:webkit:1.4.0'
-    implementation "com.godaddy.android.colorpicker:compose-color-picker:0.4.2"
+    implementation(project(":common"))
+    implementation("androidx.core:core-ktx:1.7.0")
+    //implementation("androidx.compose.ui:ui:${rootProject.extra["compose_version"] as String}")
+    //implementation("androidx.compose.material:material:$compose_version")
+    //implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.4.1")
+    implementation("androidx.lifecycle:lifecycle-process:2.4.1")
+    implementation("androidx.activity:activity-compose:1.5.0")
+    //implementation("androidx.compose.material:material-icons-extended:$compose_version")
+    //implementation("androidx.compose.ui:ui-util:$compose_version")
 
-    def work_version = "2.7.1"
-    implementation "androidx.work:work-runtime-ktx:$work_version"
-    implementation "androidx.work:work-multiprocess:$work_version"
+    implementation("com.google.accompanist:accompanist-pager:0.25.1")
 
-    def camerax_version = "1.1.0-beta01"
-    implementation "androidx.camera:camera-core:${camerax_version}"
-    implementation "androidx.camera:camera-camera2:${camerax_version}"
-    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
-    implementation "androidx.camera:camera-view:${camerax_version}"
-
-    //Barcode
-    implementation 'org.boofcv:boofcv-android:0.40.1'
-    implementation 'org.boofcv:boofcv-core:0.40.1'
-
-    //Camera Permission
-    implementation "com.google.accompanist:accompanist-permissions:0.23.0"
-    implementation "com.google.accompanist:accompanist-pager:0.25.1"
-
-    // Link Previews
-    implementation 'org.jsoup:jsoup:1.13.1'
-
-    // Biometric authentication
-    implementation 'androidx.biometric:biometric:1.2.0-alpha04'
-
-    // GIFs support
-    implementation "io.coil-kt:coil-compose:2.1.0"
-    implementation "io.coil-kt:coil-gif:2.1.0"
-
-    // Video support
-    implementation "com.google.android.exoplayer:exoplayer:2.17.1"
-
-    // Wheel picker
-    implementation 'com.github.zj565061763:compose-wheel-picker:1.0.0-alpha10'
-
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
-    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.3")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
+    //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose_version")
+    debugImplementation("androidx.compose.ui:ui-tooling:${rootProject.extra["compose_version"] as String}")
 }
 
-// Don't do anything if no compression is needed
-if (compression_level != "0") {
-    tasks.whenTaskAdded { task ->
-        if (task.name == 'packageDebug') {
-            task.finalizedBy compressApk
-        } else if (task.name == 'packageRelease') {
-            task.finalizedBy compressApk
+tasks {
+    val compressApk by creating {
+        doLast {
+            val isRelease = gradle.startParameter.taskNames.find { it.toLowerCase().contains("release") } != null
+            val buildType: String = if (isRelease) "release" else "debug"
+            val javaHome = System.getProperties()["java.home"] ?: org.gradle.internal.jvm.Jvm.current().javaHome
+            val sdkDir = android.sdkDirectory.absolutePath
+            var keyAlias = ""
+            var keyPassword = ""
+            var storeFile = ""
+            var storePassword = ""
+            if (project.properties["android.injected.signing.key.alias"] != null) {
+                keyAlias = project.properties["android.injected.signing.key.alias"] as String
+                keyPassword = project.properties["android.injected.signing.key.password"] as String
+                storeFile = project.properties["android.injected.signing.store.file"] as String
+                storePassword = project.properties["android.injected.signing.store.password"] as String
+            } else {
+                try {
+                    val gradleConfig = android.signingConfigs.getByName(buildType)
+                    keyAlias = gradleConfig.keyAlias!!
+                    keyPassword = gradleConfig.keyPassword!!
+                    storeFile = gradleConfig.storeFile!!.absolutePath
+                    storePassword = gradleConfig.storePassword!!
+                } catch (e: UnknownDomainObjectException) {
+                    // There is no signing config for current build type, can"t sign the apk
+                    println("No signing configs for this build type: $buildType")
+                    return@doLast
+                }
+            }
+            lateinit var outputDir: File
+            named(if (isRelease) "packageRelease" else "packageDebug") {
+                outputDir = outputs.files.files.last()
+            }
+            exec {
+                workingDir("../../../scripts/android")
+                setEnvironment(mapOf("JAVA_HOME" to "$javaHome"))
+                commandLine = listOf(
+                    "./compress-and-sign-apk.sh",
+                    "${rootProject.extra["compression_level"]}",
+                    "$outputDir",
+                    "$sdkDir",
+                    "$storeFile",
+                    "$storePassword",
+                    "$keyAlias",
+                    "$keyPassword"
+                )
+            }
+
+            if (project.properties["android.injected.signing.key.alias"] != null && buildType == "release") {
+                File(outputDir, "android-release.apk").renameTo(File(outputDir, "simplex.apk"))
+                File(outputDir, "android-armeabi-v7a-release.apk").renameTo(File(outputDir, "simplex-armv7a.apk"))
+                File(outputDir, "android-arm64-v8a-release.apk").renameTo(File(outputDir, "simplex.apk"))
+            }
+            // View all gradle properties set
+            // project.properties.each { k, v -> println "$k -> $v" }
         }
     }
-}
 
-tasks.register("compressApk") {
-    doLast {
-        def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
-        def buildType
-        if (isRelease) {
-            buildType = "release"
-        } else {
-            buildType = "debug"
+    // Don"t do anything if no compression is needed
+    if (rootProject.extra["compression_level"] as Int != 0) {
+        whenTaskAdded {
+            if (name == "packageDebug") {
+                finalizedBy(compressApk)
+            } else if (name == "packageRelease") {
+                finalizedBy(compressApk)
+            }
         }
-        def javaHome = System.properties['java.home'] ?: org.gradle.internal.jvm.Jvm.current().getJavaHome()
-        def sdkDir = android.getSdkDirectory().getAbsolutePath()
-        def keyAlias = ""
-        def keyPassword = ""
-        def storeFile = ""
-        def storePassword = ""
-        if (project.properties['android.injected.signing.key.alias'] != null) {
-            keyAlias = project.properties['android.injected.signing.key.alias']
-            keyPassword = project.properties['android.injected.signing.key.password']
-            storeFile = project.properties['android.injected.signing.store.file']
-            storePassword = project.properties['android.injected.signing.store.password']
-        } else if (android.signingConfigs.hasProperty(buildType)) {
-            def gradleConfig = android.signingConfigs[buildType]
-            keyAlias = gradleConfig.keyAlias
-            keyPassword = gradleConfig.keyPassword
-            storeFile = gradleConfig.storeFile
-            storePassword = gradleConfig.storePassword
-        } else {
-            // There is no signing config for current build type, can't sign the apk
-            println("No signing configs for this build type: $buildType")
-            return
-        }
-
-        def outputDir = tasks["package${buildType.capitalize()}"].outputs.files.last()
-
-        exec {
-            workingDir '../../../scripts/android'
-            setEnvironment(['JAVA_HOME': "$javaHome"])
-            commandLine './compress-and-sign-apk.sh',  \
-                     "$compression_level",  \
-                     "$outputDir",  \
-                     "$sdkDir",  \
-                     "$storeFile",  \
-                     "$storePassword",  \
-                     "$keyAlias",  \
-                     "$keyPassword"
-        }
-
-        if (project.properties['android.injected.signing.key.alias'] != null && buildType == 'release') {
-            new File(outputDir, "app-release.apk").renameTo(new File(outputDir, "simplex.apk"))
-            new File(outputDir, "app-armeabi-v7a-release.apk").renameTo(new File(outputDir, "simplex-armv7a.apk"))
-            new File(outputDir, "app-arm64-v8a-release.apk").renameTo(new File(outputDir, "simplex.apk"))
-        }
-
-        // View all gradle properties set
-        // project.properties.each { k, v -> println "$k -> $v" }
     }
 }

@@ -17,4 +17,11 @@
 .externalNativeBuild
 .cxx
 local.properties
-app/src/main/cpp/libs/
+common/src/commonMain/cpp/android/libs/
+common/src/commonMain/cpp/desktop/libs/
+common/src/commonMain/resources/libs/
+app/build
+android/build
+common/build
+desktop/build
+release
